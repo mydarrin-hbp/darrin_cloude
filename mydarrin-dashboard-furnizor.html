@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Dashboard Furnizor · My Darrin</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;background:#F0F4F8;color:#1A2332;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+
+/* ── LAYOUT ── */
+.f-layout{display:flex;min-height:100vh}
+.f-sidebar{width:232px;background:#16202E;border-right:1px solid #2D3F55;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100}
+.f-main{margin-left:232px;flex:1;display:flex;flex-direction:column;background:#F0F4F8}
+.f-topbar{background:#1E2A3B;border-bottom:1px solid #2D3F55;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.f-content{padding:22px;flex:1;background:#F0F4F8}
+
+/* ── SIDEBAR ── */
+.f-logo{padding:16px 18px 14px;border-bottom:1px solid #2D3F55;display:flex;align-items:center;gap:10px}
+.f-logo-icon{width:34px;height:34px;background:linear-gradient(135deg,#FF8C00,#CC7000);border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;flex-shrink:0}
+.f-nav{padding:10px 0;flex:1;overflow-y:auto}
+.f-nav-section{padding:8px 16px 4px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#4A6080}
+.f-nav-item{display:flex;align-items:center;gap:9px;padding:9px 16px;font-size:12.5px;font-weight:500;color:#8BA3C0;cursor:pointer;transition:all .15s;border-left:3px solid transparent;text-decoration:none}
+.f-nav-item:hover{background:rgba(255,255,255,.04);color:#E2E8F0}
+.f-nav-item.active{background:rgba(255,140,0,.1);color:#FF8C00;border-left-color:#FF8C00;font-weight:700}
+.f-nav-item svg{width:14px;height:14px;flex-shrink:0}
+.f-badge{margin-left:auto;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px}
+
+/* ── TYPE SWITCHER ── */
+.type-btn{flex:1;padding:8px;border-radius:9px;border:none;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .18s;text-align:center}
+.type-btn.active{background:#FF8C00;color:#fff}
+.type-btn:not(.active){background:transparent;color:#4A6080}
+.type-btn:not(.active):hover{color:#E2E8F0}
+
+/* ── CARDS ── */
+.f-card{background:#FFFFFF;border-radius:16px;border:1px solid #D5DFE8;overflow:hidden;transition:all .2s;box-shadow:0 1px 4px rgba(0,51,102,.06)}
+.f-card-hdr{padding:14px 20px;border-bottom:1px solid #D5DFE8;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#F8FAFC}
+.f-card-body{padding:20px}
+
+/* ── KPI ── */
+.kpi{background:#FFFFFF;border-radius:14px;border:1px solid #D5DFE8;padding:16px 18px;position:relative;overflow:hidden;box-shadow:0 1px 4px rgba(0,51,102,.06)}
+.kpi::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;border-radius:14px 14px 0 0}
+.kpi.k-or::before{background:#FF8C00}
+.kpi.k-te::before{background:#0E9E99}
+.kpi.k-bl::before{background:#1A5FAD}
+.kpi.k-gr::before{background:#1A7A3A}
+
+/* ── TABLE ── */
+.f-table{width:100%;border-collapse:collapse}
+.f-table th{padding:9px 13px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;border-bottom:1px solid #D5DFE8;text-align:left;white-space:nowrap;background:#F8FAFC}
+.f-table td{padding:11px 13px;font-size:12.5px;border-bottom:1px solid #D5DFE8;vertical-align:middle;color:#1A2332}
+.f-table tr:last-child td{border-bottom:none}
+.f-table tr:hover td{background:#F8FBFF}
+
+/* ── CHIPS ── */
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap}
+.ch-g{background:rgba(26,122,58,.18);color:#4ADE80;border:1px solid rgba(26,122,58,.3)}
+.ch-o{background:rgba(255,140,0,.15);color:#FF8C00;border:1px solid rgba(255,140,0,.25)}
+.ch-r{background:rgba(192,57,43,.18);color:#F87171;border:1px solid rgba(192,57,43,.3)}
+.ch-b{background:rgba(26,95,173,.18);color:#7AB3E0;border:1px solid rgba(26,95,173,.3)}
+.ch-t{background:rgba(14,158,153,.15);color:#0E9E99;border:1px solid rgba(14,158,153,.25)}
+.ch-gr{background:rgba(74,96,128,.18);color:#8BA3C0;border:1px solid rgba(74,96,128,.3)}
+
+/* ── CALENDAR ── */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-day{aspect-ratio:1;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600;cursor:pointer;transition:all .15s;min-width:28px;user-select:none}
+.cal-day.av{background:#D4EDDA;color:#1A7A3A;border:1px solid rgba(26,122,58,.25)}
+.cal-day.res{background:rgba(255,140,0,.15);color:#FF8C00;border:1px solid rgba(255,140,0,.3)}
+.cal-day.na{background:#E8EDF4;color:#8C9BAD;border:1px solid #D5DFE8}
+.cal-day.today{outline:2px solid #FF8C00;outline-offset:1px}
+.cal-day:hover{transform:scale(1.08)}
+
+/* ── STOCK BAR ── */
+.stock-bar{height:6px;border-radius:99px;background:#E0E8F0;overflow:hidden;margin-top:4px}
+.stock-fill{height:100%;border-radius:99px;transition:width .4s}
+
+/* ── TOGGLE ── */
+.f-toggle{width:36px;height:18px;border-radius:99px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.f-toggle.on{background:#0E9E99}
+.f-toggle.off{background:#CBD5E0}
+.f-toggle::after{content:"";position:absolute;top:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left .2s}
+.f-toggle.on::after{left:20px}
+.f-toggle.off::after{left:2px}
+
+/* ── UPLOAD ── */
+.upload-dz{border:2px dashed #D5DFE8;border-radius:14px;padding:24px;text-align:center;cursor:pointer;transition:all .2s;background:#F0F4F8}
+.upload-dz:hover{border-color:#FF8C00;background:rgba(255,140,0,.04)}
+
+/* ── PULSE ── */
+.pdot{width:6px;height:6px;border-radius:50%;background:#0E9E99;animation:pd 2s infinite;display:inline-block;flex-shrink:0}
+@keyframes pd{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+
+/* ── BTNS ── */
+.btn-p{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:10px;font-size:12.5px;font-weight:700;border:none;cursor:pointer;font-family:inherit;background:#FF8C00;color:#fff;transition:all .18s;text-decoration:none}
+.btn-p:hover{background:#CC7000;transform:translateY(-1px)}
+.btn-s{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:600;border:1px solid #2D3F55;cursor:pointer;font-family:inherit;background:#192433;color:#8BA3C0;transition:all .18s;text-decoration:none}
+.btn-s:hover{border-color:#2D4F70;color:#E2E8F0}
+
+/* ── TABS ── */
+.f-tab{padding:7px 16px;border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s;background:transparent;color:#4A6080}
+.f-tab.active{background:#FF8C00;color:#fff}
+.f-tab:not(.active):hover{background:rgba(255,255,255,.05);color:#E2E8F0}
+
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-thumb{background:#2D3F55;border-radius:2px}
+
+@media(max-width:768px){.f-sidebar{display:none}.f-main{margin-left:0}}
+</style>
+</head>
+<body>
+<div class="f-layout">
+
+<!-- ════ SIDEBAR ════ -->
+<aside class="f-sidebar">
+  <div class="f-logo">
+    <div class="f-logo-icon">F</div>
+    <div>
+      <div style="font-weight:800;color:#fff;font-size:13.5px">ACA Business Group</div>
+      <div style="font-size:9.5px;color:#4A6080;text-transform:uppercase;letter-spacing:.07em">Furnizor My Darrin</div>
+    </div>
+  </div>
+
+  <!-- Tip furnizor switcher -->
+  <div style="padding:10px 12px;border-bottom:1px solid #2D3F55">
+    <div style="display:flex;gap:2px;background:#0F1923;border-radius:10px;padding:3px">
+      <button class="type-btn active" id="tb-mat" onclick="switchType('materiale',this)">📦 Materiale</button>
+      <button class="type-btn" id="tb-ren" onclick="switchType('rental',this)">🏗 Rental</button>
+    </div>
+  </div>
+
+  <nav class="f-nav">
+    <div class="f-nav-section">Principal</div>
+    <a class="f-nav-item active" onclick="showPanel('overview')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Prezentare generală
+    </a>
+    <a class="f-nav-item" onclick="showPanel('comenzi')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      Comenzi primite
+      <span class="f-badge ch-o" id="badge-comenzi">12</span>
+    </a>
+    <a class="f-nav-item" onclick="showPanel('stocuri')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+      <span id="nav-stoc-label">Stocuri live</span>
+    </a>
+    <a class="f-nav-item" onclick="showPanel('calendar')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span id="nav-cal-label">Calendar disponibilitate</span>
+    </a>
+
+    <div class="f-nav-section" style="margin-top:6px">Financiar</div>
+    <a class="f-nav-item" onclick="showPanel('venituri')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      Venituri & Comisioane
+    </a>
+    <a class="f-nav-item" onclick="showPanel('plati')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      Plăți Escrow
+    </a>
+
+    <div class="f-nav-section" style="margin-top:6px">Catalog</div>
+    <a class="f-nav-item" onclick="showPanel('produse')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      <span id="nav-prod-label">Produse active</span>
+      <span class="f-badge ch-t" id="badge-produse">248</span>
+    </a>
+    <a class="f-nav-item" onclick="showPanel('import')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
+      Import CSV / API
+    </a>
+
+    <div class="f-nav-section" style="margin-top:6px">Cont</div>
+    <a class="f-nav-item" href="mydarrin-marketplace.html">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Profil Marketplace
+    </a>
+    <a class="f-nav-item" href="mydarrin-superadmin.html">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+      Super Admin
+    </a>
+  </nav>
+
+<!-- ════ BREADCRUMB ════ -->
+<div style="background:#fff;border-bottom:1px solid #EEF2F7;padding:9px 24px">
+  <div style="max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+    <a href="mydarrin-v3.html" style="color:#5A6B7D;text-decoration:none;font-size:12.5px;font-weight:600;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='#5A6B7D'">🏠 Acasă</a> <span style="color:#D5DFE8">›</span> <a href="mydarrin-marketplace.html" style="color:#5A6B7D;text-decoration:none;font-size:12.5px;font-weight:600;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='#5A6B7D'">Marketplace</a> <span style="color:#D5DFE8">›</span> <span style="color:#1A2332;font-size:12.5px;font-weight:700">Dashboard Furnizor</span>
+  </div>
+</div>
+
+
+  <div style="padding:12px 14px;border-top:1px solid #2D3F55">
+    <div style="display:flex;align-items:center;gap:9px">
+      <div style="width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#003366,#1A5FAD);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;color:#fff;flex-shrink:0">ACA</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11.5px;font-weight:700;color:#E2E8F0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">ACA Business Group</div>
+        <div style="font-size:9.5px;color:#4A6080">CUI 32667674 · Bacău</div>
+      </div>
+      <div class="pdot"></div>
+    </div>
+  </div>
+</aside>
+
+<!-- ════ MAIN ════ -->
+<main class="f-main">
+
+  <!-- TOPBAR -->
+  <div class="f-topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="font-weight:700;color:#1A2332;font-size:14px" id="f-page-title">Prezentare generală</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#0E9E99">
+        <span class="pdot"></span>
+        Live · <span id="topbar-type">Materiale & Rental</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="text-align:right">
+        <div style="font-size:11px;color:#4A6080">Comision negociat</div>
+        <div style="font-size:13px;font-weight:700;color:#FF8C00">0% promo → 13.09.2026</div>
+      </div>
+      <a href="mydarrin-v3.html" class="btn-s" style="font-size:11px">← Platformă</a>
+    </div>
+  </div>
+
+  <div class="f-content">
+
+    <!-- ══ PANEL: OVERVIEW ══ -->
+    <div id="panel-overview">
+      <!-- KPIs -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px">
+        <div class="kpi k-or">
+          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">Comenzi azi</div>
+          <div style="font-size:28px;font-weight:800;color:#FF8C00;line-height:1" id="kpi-comenzi">12</div>
+          <div style="font-size:10.5px;color:#4A6080;margin-top:3px">↑ +3 față de ieri</div>
+        </div>
+        <div class="kpi k-te">
+          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">Venituri luna</div>
+          <div style="font-size:28px;font-weight:800;color:#0E9E99;line-height:1" id="kpi-venituri">18.4K</div>
+          <div style="font-size:10.5px;color:#4A6080;margin-top:3px">Lei net după comision</div>
+        </div>
+        <div class="kpi k-bl">
+          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">Produse active</div>
+          <div style="font-size:28px;font-weight:800;color:#7AB3E0;line-height:1" id="kpi-produse">248</div>
+          <div style="font-size:10.5px;color:#4A6080;margin-top:3px" id="kpi-produse-sub">3 cu stoc critic</div>
+        </div>
+        <div class="kpi k-gr">
+          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px" id="kpi4-label">Rating furnizor</div>
+          <div style="font-size:28px;font-weight:800;color:#4ADE80;line-height:1" id="kpi4-val">4.93</div>
+          <div style="font-size:10.5px;color:#4A6080;margin-top:3px" id="kpi4-sub">⭐ din 312 comenzi</div>
+        </div>
+      </div>
+
+      <!-- Grid 2 col -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+
+        <!-- Comenzi recente -->
+        <div class="f-card">
+          <div class="f-card-hdr">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="pdot"></span>
+              <div style="font-weight:700;color:#1A2332;font-size:13px">Comenzi recente</div>
+            </div>
+            <button class="btn-s" style="font-size:11px;padding:5px 10px" onclick="showPanel('comenzi')">Vezi toate</button>
+          </div>
+          <div style="padding:0">
+            <table class="f-table" id="overview-orders-table"></table>
+          </div>
+        </div>
+
+        <!-- Stoc critic + calendar mini -->
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <!-- Stoc critic -->
+          <div class="f-card">
+            <div class="f-card-hdr">
+              <div style="font-weight:700;color:#1A2332;font-size:13px" id="stock-panel-title">Stocuri critice</div>
+              <span class="chip ch-r">3 alerte</span>
+            </div>
+            <div class="f-card-body" id="stock-critical-list"></div>
+          </div>
+          <!-- Disponibilitate next 7 zile -->
+          <div class="f-card">
+            <div class="f-card-hdr">
+              <div style="font-weight:700;color:#1A2332;font-size:13px" id="cal-mini-title">Disponibilitate · Iun 2026</div>
+              <button class="btn-s" style="font-size:11px;padding:5px 10px" onclick="showPanel('calendar')">Calendar complet</button>
+            </div>
+            <div class="f-card-body">
+              <div class="cal-grid" style="margin-bottom:8px">
+                <div style="text-align:center;font-size:10px;font-weight:700;color:#4A6080;padding:2px">Lu</div>
+                <div style="text-align:center;font-size:10px;font-weight:700;color:#4A6080;padding:2px">Ma</div>
+                <div style="text-align:center;font-size:10px;font-weight:700;color:#4A6080;padding:2px">Mi</div>
+                <div style="text-align:center;font-size:10px;font-weight:700;color:#4A6080;padding:2px">Jo</div>
+                <div style="text-align:center;font-size:10px;font-weight:700;color:#4A6080;padding:2px">Vi</div>
+                <div style="text-align:center;font-size:10px;font-weight:700;color:#C0392B;padding:2px">Sâ</div>
+                <div style="text-align:center;font-size:10px;font-weight:700;color:#C0392B;padding:2px">Du</div>
+              </div>
+              <div class="cal-grid" id="cal-mini-grid"></div>
+              <div style="display:flex;gap:12px;margin-top:10px;font-size:10.5px">
+                <div style="display:flex;align-items:center;gap:5px;color:#4A6080"><div style="width:10px;height:10px;border-radius:3px;background:#D4EDDA;border:1px solid rgba(26,122,58,.25)"></div>Disponibil</div>
+                <div style="display:flex;align-items:center;gap:5px;color:#4A6080"><div style="width:10px;height:10px;border-radius:3px;background:rgba(255,140,0,.15);border:1px solid rgba(255,140,0,.3)"></div>Rezervat</div>
+                <div style="display:flex;align-items:center;gap:5px;color:#4A6080"><div style="width:10px;height:10px;border-radius:3px;background:#192433;border:1px solid #2D3F55"></div>N/A</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comision banner -->
+      <div class="f-card" style="border-color:rgba(14,158,153,.3);background:linear-gradient(135deg,#E0F5F4,#F0F8FF)">
+        <div class="f-card-body" style="padding:16px 20px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+            <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+              <div style="font-size:24px">💰</div>
+              <div>
+                <div style="font-weight:700;color:#1A2332;font-size:14px">Structura comisioanelor tale · ACA Business Group</div>
+                <div style="font-size:12px;color:#4A6080;margin-top:3px">Negociat individual · Configurat din Backoffice · Valabil contractual</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <div style="text-align:center;padding:10px 16px;background:#192433;border-radius:10px;border:1px solid #2D3F55">
+                <div style="font-size:9.5px;color:#4A6080;margin-bottom:3px;text-transform:uppercase;letter-spacing:.06em">Materiale</div>
+                <div style="font-weight:800;color:#FF8C00;font-size:18px">7.5%</div>
+              </div>
+              <div style="text-align:center;padding:10px 16px;background:#192433;border-radius:10px;border:1px solid #2D3F55">
+                <div style="font-size:9.5px;color:#4A6080;margin-bottom:3px;text-transform:uppercase;letter-spacing:.06em">Rental</div>
+                <div style="font-weight:800;color:#FF8C00;font-size:18px">10%</div>
+              </div>
+              <div style="text-align:center;padding:10px 16px;background:rgba(26,122,58,.1);border-radius:10px;border:1px solid rgba(26,122,58,.25)">
+                <div style="font-size:9.5px;color:#4A6080;margin-bottom:3px;text-transform:uppercase;letter-spacing:.06em">Promo activ</div>
+                <div style="font-weight:800;color:#4ADE80;font-size:18px">0%</div>
+                <div style="font-size:9px;color:#4A6080;margin-top:1px">→ 13.09.2026</div>
+              </div>
+              <div style="text-align:center;padding:10px 16px;background:#192433;border-radius:10px;border:1px solid #2D3F55">
+                <div style="font-size:9.5px;color:#4A6080;margin-bottom:3px;text-transform:uppercase;letter-spacing:.06em">Escrow</div>
+                <div style="font-weight:800;color:#7AB3E0;font-size:18px">24–48h</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PANEL: COMENZI ══ -->
+    <div id="panel-comenzi" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px">
+        <div>
+          <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:3px">Comenzi primite</h2>
+          <p style="font-size:12px;color:#4A6080">Toate comenzile alocate de Darrin AI · Confirmare livrare</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <div style="display:flex;gap:4px;padding:4px;background:#192433;border-radius:10px;border:1px solid #2D3F55">
+            <button class="f-tab active" onclick="filterOrders('toate',this)">Toate</button>
+            <button class="f-tab" onclick="filterOrders('noi',this)">Noi</button>
+            <button class="f-tab" onclick="filterOrders('procesare',this)">În procesare</button>
+            <button class="f-tab" onclick="filterOrders('livrate',this)">Livrate</button>
+          </div>
+          <button class="btn-s" style="font-size:11.5px">Export CSV</button>
+        </div>
+      </div>
+      <div class="f-card">
+        <div>
+          <table class="f-table" id="full-orders-table"></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PANEL: STOCURI ══ -->
+    <div id="panel-stocuri" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px">
+        <div>
+          <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:3px" id="stoc-page-title">Stocuri live</h2>
+          <p style="font-size:12px;color:#4A6080">Gestiune inventar · Alerte stoc critic · Actualizare rapidă</p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <input type="text" placeholder="Caută produs..." style="background:#FFFFFF;border:1px solid #D5DFE8;border-radius:9px;padding:8px 14px;color:#1A2332;font-size:12.5px;font-family:inherit;outline:none;width:220px" oninput="filterProducts(this.value)"/>
+          <button class="btn-p" onclick="showPanel('import')">+ Import stoc</button>
+        </div>
+      </div>
+      <div class="f-card">
+        <table class="f-table" id="stoc-table"></table>
+      </div>
+    </div>
+
+    <!-- ══ PANEL: CALENDAR ══ -->
+    <div id="panel-calendar" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px">
+        <div>
+          <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:3px" id="cal-page-title">Calendar disponibilitate</h2>
+          <p style="font-size:12px;color:#4A6080">Setează disponibilitatea · Darrin AI alocă comenzi automat</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button onclick="calPrev()" class="btn-s" style="padding:8px 12px">‹</button>
+          <div style="font-weight:700;color:#fff;font-size:14px;min-width:140px;text-align:center" id="cal-month-label">Iunie 2026</div>
+          <button onclick="calNext()" class="btn-s" style="padding:8px 12px">›</button>
+          <button class="btn-p" onclick="saveAvail()">Salvează disponibilitate</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:18px;align-items:start" id="cal-main-layout">
+        <div class="f-card">
+          <div class="f-card-hdr">
+            <div style="font-weight:700;color:#1A2332;font-size:13px" id="cal-card-title">Excavator JCB 8025 · 2.5T</div>
+            <div style="display:flex;gap:8px">
+              <span class="chip ch-g">3 buc disponibile</span>
+              <select id="cal-equipment-select" style="background:#192433;border:1px solid #2D3F55;border-radius:8px;padding:5px 10px;color:#E2E8F0;font-size:11.5px;font-family:inherit" onchange="changeEquipment(this.value)">
+                <option value="jcb">Excavator JCB 8025</option>
+                <option value="cioc">Ciocan demolator</option>
+                <option value="lift">Lift telescopic</option>
+                <option value="beton">Betonieră 250L</option>
+              </select>
+            </div>
+          </div>
+          <div class="f-card-body">
+            <div class="cal-grid" style="margin-bottom:8px">
+              <div style="text-align:center;font-size:10px;font-weight:700;color:#4A6080;padding:3px">Lu</div>
+              <div style="text-align:center;font-size:10px;font-weight:700;color:#4A6080;padding:3px">Ma</div>
+              <div style="text-align:center;font-size:10px;font-weight:700;color:#4A6080;padding:3px">Mi</div>
+              <div style="text-align:center;font-size:10px;font-weight:700;color:#4A6080;padding:3px">Jo</div>
+              <div style="text-align:center;font-size:10px;font-weight:700;color:#4A6080;padding:3px">Vi</div>
+              <div style="text-align:center;font-size:10px;font-weight:700;color:#C0392B;padding:3px">Sâ</div>
+              <div style="text-align:center;font-size:10px;font-weight:700;color:#C0392B;padding:3px">Du</div>
+            </div>
+            <div class="cal-grid" id="cal-full-grid"></div>
+            <div style="display:flex;gap:16px;margin-top:14px;flex-wrap:wrap">
+              <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:#4A6080;cursor:pointer" onclick="setCalMode('av')">
+                <div style="width:16px;height:16px;border-radius:4px;background:#D4EDDA;border:1px solid rgba(26,122,58,.25)"></div>Disponibil — click pentru a seta
+              </div>
+              <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:#4A6080;cursor:pointer" onclick="setCalMode('res')">
+                <div style="width:16px;height:16px;border-radius:4px;background:rgba(255,140,0,.15);border:1px solid rgba(255,140,0,.3)"></div>Rezervat (Darrin AI)
+              </div>
+              <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:#4A6080;cursor:pointer" onclick="setCalMode('na')">
+                <div style="width:16px;height:16px;border-radius:4px;background:#192433;border:1px solid #2D3F55"></div>Indisponibil — click pentru a seta
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Calendar sidebar -->
+        <div style="display:flex;flex-direction:column;gap:14px;min-width:220px">
+          <div class="f-card">
+            <div class="f-card-hdr"><div style="font-weight:700;color:#fff;font-size:12.5px">Rezervări luna aceasta</div></div>
+            <div class="f-card-body" id="cal-reservations"></div>
+          </div>
+          <div class="f-card">
+            <div class="f-card-hdr"><div style="font-weight:700;color:#fff;font-size:12.5px">Tarife active</div></div>
+            <div class="f-card-body">
+              <div style="display:flex;flex-direction:column;gap:8px;font-size:12.5px">
+                <div style="display:flex;justify-content:space-between"><span style="color:#4A6080">Per zi</span><span style="font-weight:700;color:#FF8C00">800 Lei</span></div>
+                <div style="display:flex;justify-content:space-between"><span style="color:#4A6080">Per săptămână</span><span style="font-weight:700;color:#FF8C00">4.500 Lei</span></div>
+                <div style="display:flex;justify-content:space-between"><span style="color:#4A6080">Per lună</span><span style="font-weight:700;color:#FF8C00">16.000 Lei</span></div>
+                <div style="height:1px;background:#2D3F55"></div>
+                <div style="display:flex;justify-content:space-between"><span style="color:#4A6080">Cu operator</span><span style="font-weight:700;color:#7AB3E0">+350 Lei/zi</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PANEL: VENITURI ══ -->
+    <div id="panel-venituri" style="display:none">
+      <div style="margin-bottom:18px">
+        <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:3px">Venituri & Comisioane</h2>
+        <p style="font-size:12px;color:#4A6080">Detaliu financiar · Escrow · Plăți nete</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
+        <div class="kpi k-or"><div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">Venituri brute luna</div><div style="font-size:26px;font-weight:800;color:#FF8C00">19.840</div><div style="font-size:10.5px;color:#4A6080;margin-top:3px">Lei</div></div>
+        <div class="kpi k-gr"><div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">Comision platformă</div><div style="font-size:26px;font-weight:800;color:#4ADE80">0 Lei</div><div style="font-size:10.5px;color:#4A6080;margin-top:3px">Promo 0% activ</div></div>
+        <div class="kpi k-te"><div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">Venituri nete</div><div style="font-size:26px;font-weight:800;color:#0E9E99">18.440</div><div style="font-size:10.5px;color:#4A6080;margin-top:3px">Lei · în cont</div></div>
+        <div class="kpi k-bl"><div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">În Escrow acum</div><div style="font-size:26px;font-weight:800;color:#7AB3E0">4.210</div><div style="font-size:10.5px;color:#4A6080;margin-top:3px">Lei · 3 comenzi</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:18px">
+        <div class="f-card">
+          <div class="f-card-hdr"><div style="font-weight:700;color:#1A2332;font-size:13px">Istoricul plăților</div></div>
+          <table class="f-table">
+            <thead><tr><th>Comandă</th><th>Produs</th><th>Brut</th><th>Comision</th><th>Net</th><th>Data</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td style="font-family:monospace;color:#7AB3E0">#CMD-4821</td><td>Calorifer Purmo ×4</td><td style="color:#E2E8F0">1.240 Lei</td><td><span style="color:#4ADE80;font-weight:700">0%</span></td><td style="font-weight:700;color:#FF8C00">1.240 Lei</td><td style="color:#4A6080">16.06.2026</td><td><span class="chip ch-g">Virat</span></td></tr>
+              <tr><td style="font-family:monospace;color:#7AB3E0">#CMD-4819</td><td>Excavator JCB 3 zile</td><td style="color:#E2E8F0">2.400 Lei</td><td><span style="color:#4ADE80;font-weight:700">0%</span></td><td style="font-weight:700;color:#FF8C00">2.400 Lei</td><td style="color:#4A6080">15.06.2026</td><td><span class="chip ch-g">Virat</span></td></tr>
+              <tr><td style="font-family:monospace;color:#7AB3E0">#CMD-4815</td><td>Parchet stratificat ×80m²</td><td style="color:#E2E8F0">3.600 Lei</td><td><span style="color:#4ADE80;font-weight:700">0%</span></td><td style="font-weight:700;color:#FF8C00">3.600 Lei</td><td style="color:#4A6080">14.06.2026</td><td><span class="chip ch-t">Escrow</span></td></tr>
+              <tr><td style="font-family:monospace;color:#7AB3E0">#CMD-4808</td><td>Ciocan demolator 2 zile</td><td style="color:#E2E8F0">610 Lei</td><td><span style="color:#4ADE80;font-weight:700">0%</span></td><td style="font-weight:700;color:#FF8C00">610 Lei</td><td style="color:#4A6080">13.06.2026</td><td><span class="chip ch-g">Virat</span></td></tr>
+              <tr><td style="font-family:monospace;color:#7AB3E0">#CMD-4802</td><td>Vopsea Caparol ×12</td><td style="color:#E2E8F0">780 Lei</td><td><span style="color:#4ADE80;font-weight:700">0%</span></td><td style="font-weight:700;color:#FF8C00">780 Lei</td><td style="color:#4A6080">12.06.2026</td><td><span class="chip ch-t">Escrow</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="f-card">
+          <div class="f-card-hdr"><div style="font-weight:700;color:#1A2332;font-size:13px">Simulator comision</div></div>
+          <div class="f-card-body">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div><label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">Valoare comandă (Lei)</label><input type="number" id="sim-val" value="1000" oninput="calcSim()" style="width:100%;background:#FFFFFF;border:1px solid #D5DFE8;border-radius:9px;padding:9px 12px;color:#1A2332;font-size:14px;font-family:inherit;outline:none"/></div>
+              <div><label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">Tip</label>
+                <select id="sim-tip" oninput="calcSim()" style="width:100%;background:#FFFFFF;border:1px solid #D5DFE8;border-radius:9px;padding:9px 12px;color:#1A2332;font-size:13px;font-family:inherit;outline:none">
+                  <option value="mat">Material (7.5%)</option>
+                  <option value="ren">Rental (10%)</option>
+                </select>
+              </div>
+              <div style="background:#F0F4F8;border-radius:12px;padding:14px;border:1px solid #D5DFE8">
+                <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:8px"><span style="color:#4A6080">Brut</span><span style="font-weight:700;color:#E2E8F0" id="sim-brut">1.000 Lei</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:8px"><span style="color:#4A6080">Comision platformă</span><span style="font-weight:700;color:#4ADE80" id="sim-com">0 Lei (promo)</span></div>
+                <div style="height:1px;background:#2D3F55;margin-bottom:8px"></div>
+                <div style="display:flex;justify-content:space-between;font-size:14px"><span style="color:#fff;font-weight:700">Net furnizor</span><span style="font-weight:800;color:#FF8C00;font-size:18px" id="sim-net">1.000 Lei</span></div>
+              </div>
+              <div style="font-size:10.5px;color:#4A6080;background:#192433;border-radius:9px;padding:10px 12px;border:1px solid #2D3F55">
+                ⚠️ La finalul perioadei promo (13.09.2026) comisionul va fi <strong style="color:#FF8C00">7.5% materiale / 10% rental</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PANEL: PLĂȚI ══ -->
+    <div id="panel-plati" style="display:none;text-align:center;padding:60px 20px">
+      <div style="font-size:48px;margin-bottom:14px">🔒</div>
+      <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:8px">Plăți Escrow</div>
+      <p style="color:#4A6080;margin-bottom:20px">4.210 Lei în Escrow · Eliberare 24–48h după confirmarea clientului</p>
+      <button class="btn-p" onclick="showPanel('venituri')">→ Vezi istoricul plăților</button>
+    </div>
+
+    <!-- ══ PANEL: PRODUSE ══ -->
+    <div id="panel-produse" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px">
+        <div>
+          <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:3px" id="prod-page-title">Produse active în marketplace</h2>
+          <p style="font-size:12px;color:#4A6080">Catalog My Darrin · Sincronizat cu ACA Business Group</p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-s" onclick="showPanel('import')">⬆ Import CSV</button>
+          <button class="btn-p">+ Adaugă produs</button>
+        </div>
+      </div>
+      <div class="f-card">
+        <table class="f-table" id="produse-table"></table>
+      </div>
+    </div>
+
+    <!-- ══ PANEL: IMPORT ══ -->
+    <div id="panel-import" style="display:none">
+      <div style="margin-bottom:18px">
+        <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:3px">Import CSV / API</h2>
+        <p style="font-size:12px;color:#4A6080">Sincronizare catalog · Actualizare stocuri · Integrare magazin online</p>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+        <!-- CSV -->
+        <div class="f-card">
+          <div class="f-card-hdr"><div style="font-weight:700;color:#1A2332;font-size:13px">📊 Import CSV / Excel</div></div>
+          <div class="f-card-body">
+            <div style="background:#0F1923;border-radius:12px;padding:14px;margin-bottom:14px;font-family:monospace;font-size:11.5px;line-height:2;color:#E2E8F0">
+              <div style="color:#4A6080;margin-bottom:6px">// Schema CSV My Darrin</div>
+              <div><span style="color:#0E9E99">denumire_produs</span> <span style="color:#4A6080">· text · obligatoriu</span></div>
+              <div><span style="color:#0E9E99">categorie</span> <span style="color:#4A6080">· text</span></div>
+              <div><span style="color:#FF8C00">pret_fara_tva</span> <span style="color:#4A6080">· număr · obligatoriu</span></div>
+              <div><span style="color:#FF8C00">moneda</span> <span style="color:#4A6080">· RON/EUR/MDL</span></div>
+              <div><span style="color:#7AB3E0">stoc_disponibil</span> <span style="color:#4A6080">· număr</span></div>
+              <div><span style="color:#7AB3E0">lead_time_zile</span> <span style="color:#4A6080">· număr</span></div>
+              <div><span style="color:#A78BFA">tip</span> <span style="color:#4A6080">· material/rental</span></div>
+            </div>
+            <div class="upload-dz" onclick="this.querySelector('input').click()">
+              <input type="file" accept=".csv,.xlsx" style="display:none" onchange="handleImport(this)"/>
+              <div style="font-size:28px;margin-bottom:8px">📎</div>
+              <div style="font-size:13px;font-weight:600;color:#8BA3C0">Drag & drop sau click</div>
+              <div style="font-size:11px;color:#4A6080;margin-top:4px">.csv · .xlsx · Max 10MB · 10.000 produse</div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:12px">
+              <button class="btn-s" style="flex:1;justify-content:center" onclick="dlTemplate()">⬇ Template CSV</button>
+              <button class="btn-p" style="flex:1;justify-content:center" onclick="showToast('⬆ Procesăm CSV-ul... Notificare în 30 min.','ok')">⬆ Importă</button>
+            </div>
+          </div>
+        </div>
+        <!-- API / Integrări -->
+        <div class="f-card">
+          <div class="f-card-hdr"><div style="font-weight:700;color:#1A2332;font-size:13px">🔗 Integrare magazin online</div></div>
+          <div class="f-card-body">
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="padding:12px 14px;background:#192433;border-radius:11px;border:1px solid #2D3F55;cursor:pointer;transition:all .18s" onclick="selectInteg(this,'WooCommerce')" onmouseover="this.style.borderColor='#FF8C00'" onmouseout="this.style.borderColor='#2D3F55'">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+                  <span style="font-size:20px">🛒</span>
+                  <div style="font-weight:700;color:#1A2332;font-size:13px">WooCommerce</div>
+                  <span class="chip ch-g" style="margin-left:auto;font-size:9px">✓ Verificat</span>
+                </div>
+                <div style="font-size:11px;color:#4A6080">Plugin My Darrin · Sync timp real · Stocuri automate</div>
+              </div>
+              <div style="padding:12px 14px;background:#192433;border-radius:11px;border:1px solid #2D3F55;cursor:pointer;transition:all .18s" onclick="selectInteg(this,'Shopify')" onmouseover="this.style.borderColor='#FF8C00'" onmouseout="this.style.borderColor='#2D3F55'">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+                  <span style="font-size:20px">🏪</span>
+                  <div style="font-weight:700;color:#1A2332;font-size:13px">Shopify</div>
+                  <span class="chip ch-g" style="margin-left:auto;font-size:9px">✓ Verificat</span>
+                </div>
+                <div style="font-size:11px;color:#4A6080">App Store · Webhooks automate · Comenzi externe</div>
+              </div>
+              <div style="padding:12px 14px;background:#192433;border-radius:11px;border:1px solid #2D3F55;cursor:pointer;transition:all .18s" onclick="selectInteg(this,'REST API')" onmouseover="this.style.borderColor='#0E9E99'" onmouseout="this.style.borderColor='#2D3F55'">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+                  <span style="font-size:20px">🔗</span>
+                  <div style="font-weight:700;color:#1A2332;font-size:13px">REST API Custom / ERP</div>
+                  <span class="chip ch-t" style="margin-left:auto;font-size:9px">API Key</span>
+                </div>
+                <div style="font-size:11px;color:#4A6080">Token Bearer · Webhook comenzi · Export CSV cron</div>
+              </div>
+            </div>
+            <!-- API Key -->
+            <div style="margin-top:14px;background:#0F1923;border-radius:11px;padding:12px 14px;border:1px solid #2D3F55">
+              <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:8px">API Key furnizor</div>
+              <div style="display:flex;gap:8px">
+                <div style="flex:1;background:#192433;border:1px solid #2D3F55;border-radius:8px;padding:8px 12px;font-family:monospace;font-size:11.5px;color:#7AB3E0;letter-spacing:.04em;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">myd_furn_aca_••••••••••••••••••••••••</div>
+                <button class="btn-s" style="font-size:11px;padding:8px 12px;white-space:nowrap" onclick="showToast('API Key copiat în clipboard','ok')">📋 Copiază</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /f-content -->
+</main>
+</div>
+
+<script>
+// ── PANELS ──
+const PANELS = ['overview','comenzi','stocuri','calendar','venituri','plati','produse','import'];
+const TITLES = {overview:'Prezentare generală',comenzi:'Comenzi primite',stocuri:'Stocuri live',
+  calendar:'Calendar disponibilitate',venituri:'Venituri & Comisioane',plati:'Plăți Escrow',
+  produse:'Produse active',import:'Import CSV / API'};
+
+function showPanel(id){
+  PANELS.forEach(p=>{
+    const el=document.getElementById('panel-'+p);
+    if(el) el.style.display=p===id?'block':'none';
+  });
+  document.getElementById('f-page-title').textContent=TITLES[id]||id;
+  document.querySelectorAll('.f-nav-item').forEach(el=>{
+    el.classList.remove('active');
+    if(el.getAttribute('onclick')==="showPanel('"+id+"')") el.classList.add('active');
+  });
+  if(id==='calendar') renderFullCal();
+}
+
+// ── TYPE SWITCHER ──
+let currentType = 'materiale';
+function switchType(type, btn){
+  currentType = type;
+  document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const isMat = type==='materiale';
+  // Update labels
+  setEl('nav-stoc-label', isMat?'Stocuri live':'Disponibilitate');
+  setEl('nav-cal-label', isMat?'Calendar livrare':'Calendar disponibilitate');
+  setEl('nav-prod-label', isMat?'Produse active':'Echipamente active');
+  setEl('kpi-venituri', isMat?'18.4K':'6.2K');
+  setEl('kpi-produse', isMat?'248':'12');
+  setEl('kpi-produse-sub', isMat?'3 cu stoc critic':'2 rezervate azi');
+  setEl('kpi4-label', isMat?'Rating furnizor':'Utilizare echipamente');
+  setEl('kpi4-val', isMat?'4.93':'87%');
+  setEl('kpi4-sub', isMat?'⭐ din 312 comenzi':'din capacitate lunară');
+  setEl('stock-panel-title', isMat?'Stocuri critice':'Echipamente critice');
+  setEl('stoc-page-title', isMat?'Stocuri live':'Echipamente disponibilitate');
+  setEl('cal-page-title', isMat?'Calendar livrare':'Calendar disponibilitate echipamente');
+  setEl('cal-card-title', isMat?'Produse cu livrare programată':'Excavator JCB 8025 · 2.5T');
+  setEl('prod-page-title', isMat?'Produse active în marketplace':'Echipamente active în marketplace');
+  setEl('badge-produse', isMat?'248':'12');
+  setEl('kpi-comenzi', isMat?'12':'7');
+  setEl('badge-comenzi', isMat?'12':'7');
+  setEl('topbar-type', isMat?'Materiale':'Rental');
+  renderStocTable();
+  renderProducts();
+  renderCriticalStock();
+  renderOverviewOrders();
+}
+
+// ── DATA ──
+const MAT_STOC = [
+  {name:'Calorifer Purmo C11 600/10',cat:'Termice',stoc:48,min:10,pret:'310 RON/buc',status:'ok'},
+  {name:'Parchet stratificat 8mm AC3',cat:'Finisaje',stoc:240,min:50,pret:'45 RON/m²',status:'ok'},
+  {name:'Vopsea lavabilă Caparol 15L',cat:'Finisaje',stoc:3,min:10,pret:'65 RON/găl.',status:'critic'},
+  {name:'Țeavă PP-R 20mm',cat:'Sanitare',stoc:12,min:20,pret:'8 RON/ml',status:'atentie'},
+  {name:'Cablu NYY 3×2.5mm²',cat:'Electrice',stoc:85,min:30,pret:'12 RON/ml',status:'ok'},
+  {name:'Gresie Rectificată 60×60',cat:'Finisaje',stoc:7,min:15,pret:'62 RON/m²',status:'atentie'},
+  {name:'Ciment CEM II 42.5R',cat:'Construcții',stoc:150,min:40,pret:'28 RON/sac',status:'ok'},
+  {name:'OSB 18mm 122×244',cat:'Construcții',stoc:44,min:10,pret:'86 RON/pl.',status:'ok'},
+];
+const REN_STOC = [
+  {name:'Excavator JCB 8025 · 2.5T',cat:'Utilaje grele',stoc:3,min:1,pret:'800 Lei/zi',status:'ok'},
+  {name:'Ciocan demolator Hilti TE',cat:'Scule electrice',stoc:5,min:2,pret:'150 Lei/zi',status:'ok'},
+  {name:'Lift telescopic 12m',cat:'Acces',stoc:1,min:1,pret:'500 Lei/zi',status:'atentie'},
+  {name:'Betonieră 250L',cat:'Construcții',stoc:4,min:1,pret:'120 Lei/zi',status:'ok'},
+  {name:'Vibrator beton 45mm',cat:'Construcții',stoc:0,min:1,pret:'80 Lei/zi',status:'critic'},
+  {name:'Generator 5.5kVA',cat:'Electrice',stoc:2,min:1,pret:'180 Lei/zi',status:'ok'},
+];
+
+const ORDERS_DATA = [
+  {id:'#CMD-4821',prod:'Calorifer Purmo C11 ×4',client:'Maria P. · Iași',val:'1.240 Lei',data:'16.06',status:'noi'},
+  {id:'#CMD-4820',prod:'Cablu NYY 3×2.5 · 50ml',client:'Andrei M. · Bcău',val:'600 Lei',data:'16.06',status:'procesare'},
+  {id:'#CMD-4819',prod:'Excavator JCB · 3 zile',client:'SC Construct SRL',val:'2.400 Lei',data:'15.06',status:'livrate'},
+  {id:'#CMD-4818',prod:'Parchet 8mm · 40m²',client:'Elena I. · Buc.',val:'1.800 Lei',data:'15.06',status:'procesare'},
+  {id:'#CMD-4817',prod:'Betonieră 250L · 2 zile',client:'Ion V. · Bac.',val:'240 Lei',data:'14.06',status:'livrate'},
+  {id:'#CMD-4816',prod:'Gresie 60×60 · 35m²',client:'Mirela T. · Pne.',val:'2.170 Lei',data:'14.06',status:'noi'},
+  {id:'#CMD-4815',prod:'Parchet stratificat 80m²',client:'George D. · Cluj',val:'3.600 Lei',data:'14.06',status:'livrate'},
+];
+
+// ── RENDER FUNCTIONS ──
+function renderOverviewOrders(){
+  const t=document.getElementById('overview-orders-table');
+  if(!t) return;
+  const statusCls={noi:'ch-o',procesare:'ch-b',livrate:'ch-g'};
+  const statusLbl={noi:'Nouă',procesare:'Procesare',livrate:'Livrată'};
+  const data = ORDERS_DATA.slice(0,5);
+  t.innerHTML=`<thead><tr><th>Comandă</th><th>Produs</th><th>Valoare</th><th>Status</th></tr></thead><tbody>${
+    data.map(o=>`<tr>
+      <td style="font-family:monospace;color:#7AB3E0;font-size:11.5px">${o.id}</td>
+      <td style="color:#1A2332;font-size:12px">${o.prod}</td>
+      <td style="font-weight:700;color:#FF8C00">${o.val}</td>
+      <td><span class="chip ${statusCls[o.status]}">${statusLbl[o.status]}</span></td>
+    </tr>`).join('')
+  }</tbody>`;
+}
+
+function renderFullOrders(filter='toate'){
+  const t=document.getElementById('full-orders-table');
+  if(!t) return;
+  const statusCls={noi:'ch-o',procesare:'ch-b',livrate:'ch-g'};
+  const statusLbl={noi:'Nouă',procesare:'În procesare',livrate:'Livrată'};
+  const data = filter==='toate'?ORDERS_DATA:ORDERS_DATA.filter(o=>o.status===filter);
+  t.innerHTML=`<thead><tr><th>Comandă</th><th>Produs / serviciu</th><th>Client</th><th>Valoare</th><th>Data</th><th>Status</th><th>Acțiune</th></tr></thead><tbody>${
+    data.map(o=>`<tr>
+      <td style="font-family:monospace;color:#7AB3E0">${o.id}</td>
+      <td style="color:#CBD5E0">${o.prod}</td>
+      <td style="color:#8BA3C0;font-size:11.5px">${o.client}</td>
+      <td style="font-weight:700;color:#FF8C00">${o.val}</td>
+      <td style="color:#4A6080">${o.data}</td>
+      <td><span class="chip ${statusCls[o.status]}">${statusLbl[o.status]}</span></td>
+      <td><div style="display:flex;gap:6px">
+        <button class="btn-s" style="font-size:10.5px;padding:4px 10px" onclick="showToast('Comandă ${o.id} confirmată','ok')">Confirmă</button>
+        ${o.status==='livrate'?'<button class="btn-s" style="font-size:10.5px;padding:4px 10px">Factură</button>':''}
+      </div></td>
+    </tr>`).join('')
+  }</tbody>`;
+}
+
+function filterOrders(f,btn){
+  document.querySelectorAll('#panel-comenzi .f-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderFullOrders(f);
+}
+
+function renderStocTable(){
+  const t=document.getElementById('stoc-table');
+  if(!t) return;
+  const data = currentType==='materiale'?MAT_STOC:REN_STOC;
+  const statusCls={ok:'ch-g',atentie:'ch-o',critic:'ch-r'};
+  const statusLbl={ok:'OK',atentie:'Atenție',critic:'Critic'};
+  t.innerHTML=`<thead><tr><th>Produs / echipament</th><th>Categorie</th><th>${currentType==='materiale'?'Stoc':'Buc disponibile'}</th><th>Minim</th><th>Preț</th><th>Status</th><th>Acțiune</th></tr></thead><tbody>${
+    data.map(p=>{
+      const pct=Math.min(100,Math.round(p.stoc/(p.min*3)*100));
+      const col=p.status==='ok'?'#4ADE80':p.status==='atentie'?'#FF8C00':'#F87171';
+      return `<tr>
+        <td><div style="font-weight:600;color:#E2E8F0">${p.name}</div>
+        <div class="stock-bar"><div class="stock-fill" style="width:${pct}%;background:${col}"></div></div></td>
+        <td style="color:#4A6080">${p.cat}</td>
+        <td style="font-weight:700;color:${col};font-size:14px">${p.stoc}</td>
+        <td style="color:#4A6080">${p.min}</td>
+        <td style="color:#8BA3C0">${p.pret}</td>
+        <td><span class="chip ${statusCls[p.status]}">${statusLbl[p.status]}</span></td>
+        <td><div style="display:flex;gap:6px">
+          <button class="btn-s" style="font-size:10.5px;padding:4px 10px" onclick="showToast('Stoc actualizat: ${p.name}','ok')">Actualizează</button>
+        </div></td>
+      </tr>`;}).join('')
+  }</tbody>`;
+}
+
+function filterProducts(q){
+  const data=(currentType==='materiale'?MAT_STOC:REN_STOC).filter(p=>p.name.toLowerCase().includes(q.toLowerCase()));
+  const t=document.getElementById('stoc-table');if(!t)return;
+  // Re-render with filter
+  renderStocTable();
+}
+
+function renderCriticalStock(){
+  const c=document.getElementById('stock-critical-list');if(!c)return;
+  const data=currentType==='materiale'?MAT_STOC:REN_STOC;
+  const criticals=data.filter(p=>p.status!=='ok');
+  c.innerHTML=criticals.length?criticals.map(p=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(45,63,85,.3)">
+      <div style="width:8px;height:8px;border-radius:50%;background:${p.status==='critic'?'#F87171':'#FF8C00'};flex-shrink:0"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;color:#E2E8F0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
+        <div style="font-size:10.5px;color:#4A6080">Stoc: ${p.stoc} · Min: ${p.min}</div>
+      </div>
+      <span class="chip ${p.status==='critic'?'ch-r':'ch-o'}" style="font-size:9.5px">${p.status==='critic'?'Critic':'Atenție'}</span>
+    </div>`).join(''):'<div style="color:#4A6080;font-size:12.5px;text-align:center;padding:10px">✓ Toate stocurile OK</div>';
+}
+
+function renderProducts(){
+  const t=document.getElementById('produse-table');if(!t)return;
+  const data=currentType==='materiale'?MAT_STOC:REN_STOC;
+  const statusCls={ok:'ch-g',atentie:'ch-o',critic:'ch-r'};
+  t.innerHTML=`<thead><tr><th>Produs</th><th>Categorie</th><th>Preț</th><th>Stoc</th><th>Status</th><th>Vizibilitate</th><th>Acțiuni</th></tr></thead><tbody>${
+    data.map(p=>`<tr>
+      <td style="font-weight:600;color:#E2E8F0">${p.name}</td>
+      <td style="color:#4A6080">${p.cat}</td>
+      <td style="color:#FF8C00;font-weight:700">${p.pret}</td>
+      <td style="color:${p.status==='ok'?'#4ADE80':p.status==='atentie'?'#FF8C00':'#F87171'};font-weight:700">${p.stoc}</td>
+      <td><span class="chip ${statusCls[p.status]}">${p.status==='ok'?'OK':p.status==='atentie'?'Atenție':'Critic'}</span></td>
+      <td><div class="f-toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></td>
+      <td><div style="display:flex;gap:6px">
+        <button class="btn-s" style="font-size:10.5px;padding:4px 10px">Editează</button>
+        <button class="btn-s" style="font-size:10.5px;padding:4px 10px;color:#F87171;border-color:rgba(192,57,43,.3)">Retrage</button>
+      </div></td>
+    </tr>`).join('')
+  }</tbody>`;
+}
+
+// ── CALENDAR ──
+let calYear=2026,calMonth=5,calMode='av';
+let dayStates={};
+const MONTHS=['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie'];
+
+function initCalStates(){
+  for(let d=1;d<=30;d++){
+    const k=calYear+'_'+calMonth+'_'+d;
+    const dow=(new Date(calYear,calMonth,d).getDay()+6)%7;
+    if(!dayStates[k]) dayStates[k]=dow<5?'av':'na';
+  }
+  ['4','5','11','12','18','19','25','26'].forEach(d=>{dayStates[calYear+'_'+calMonth+'_'+d]='na';});
+  ['10','11','17','18'].forEach(d=>{dayStates[calYear+'_'+calMonth+'_'+d]='res';});
+}
+
+function renderCalGrid(gridId,mini){
+  const grid=document.getElementById(gridId);if(!grid)return;
+  grid.innerHTML='';
+  const firstDay=(new Date(calYear,calMonth,1).getDay()+6)%7;
+  const days=new Date(calYear,calMonth+1,0).getDate();
+  const today=new Date().getDate();
+  for(let i=0;i<firstDay;i++){const e=document.createElement('div');e.style.minHeight='32px';grid.appendChild(e);}
+  for(let d=1;d<=days;d++){
+    const k=calYear+'_'+calMonth+'_'+d;
+    const st=dayStates[k]||'av';
+    const div=document.createElement('div');
+    div.className='cal-day '+st+(d===today?' today':'');
+    div.textContent=d;
+    if(!mini) div.onclick=()=>{dayStates[k]=calMode;div.className='cal-day '+calMode+(d===today?' today':'');};
+    grid.appendChild(div);
+    if(mini&&d>=16) break;
+  }
+}
+
+function renderFullCal(){
+  initCalStates();
+  setEl('cal-month-label',MONTHS[calMonth]+' '+calYear);
+  renderCalGrid('cal-full-grid',false);
+  renderCalGrid('cal-mini-grid',true);
+  renderReservations();
+}
+function renderMiniCal(){
+  initCalStates();
+  renderCalGrid('cal-mini-grid',true);
+}
+function calPrev(){if(calMonth===0){calMonth=11;calYear--;}else calMonth--;renderFullCal();}
+function calNext(){if(calMonth===11){calMonth=0;calYear++;}else calMonth++;renderFullCal();}
+function setCalMode(m){calMode=m;}
+function saveAvail(){showToast('✓ Disponibilitate salvată · Darrin AI alocă conform calendarului','ok');}
+function changeEquipment(v){setEl('cal-card-title',{jcb:'Excavator JCB 8025 · 2.5T',cioc:'Ciocan demolator Hilti TE',lift:'Lift telescopic 12m',beton:'Betonieră 250L'}[v]||v);}
+
+function renderReservations(){
+  const c=document.getElementById('cal-reservations');if(!c)return;
+  c.innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:12px">
+      <div style="padding:8px 10px;background:#FFFFFF;border-radius:8px;border-left:3px solid #FF8C00">
+        <div style="font-weight:700;color:#E2E8F0">10–12 Iun</div>
+        <div style="color:#4A6080">SC Construct SRL · 3 zile</div>
+        <div style="color:#FF8C00;font-weight:700">2.400 Lei</div>
+      </div>
+      <div style="padding:8px 10px;background:#FFFFFF;border-radius:8px;border-left:3px solid #FF8C00">
+        <div style="font-weight:700;color:#E2E8F0">17–18 Iun</div>
+        <div style="color:#4A6080">Ion Vasile · 2 zile</div>
+        <div style="color:#FF8C00;font-weight:700">1.600 Lei</div>
+      </div>
+      <div style="padding:8px 10px;background:#FFFFFF;border-radius:8px;border-left:3px solid rgba(14,158,153,.5)">
+        <div style="font-weight:700;color:#E2E8F0">23–27 Iun</div>
+        <div style="color:#4A6080">SC Build Pro SRL</div>
+        <div style="color:#0E9E99;font-weight:700">Negociere în curs</div>
+      </div>
+    </div>`;
+}
+
+// ── SIMULATOR ──
+function calcSim(){
+  const val=parseFloat(document.getElementById('sim-val')?.value||0);
+  const tip=document.getElementById('sim-tip')?.value;
+  const com=0; // promo activ
+  const net=val-Math.round(val*com/100);
+  setEl('sim-brut',val.toLocaleString('ro-RO')+' Lei');
+  setEl('sim-com','0 Lei (promo 0% activ)');
+  setEl('sim-net',net.toLocaleString('ro-RO')+' Lei');
+}
+
+// ── UTILS ──
+function setEl(id,val){const e=document.getElementById(id);if(e)e.textContent=val;}
+function showToast(msg,type='ok'){
+  const t=document.createElement('div');
+  t.style.cssText='position:fixed;bottom:20px;right:20px;z-index:9999;padding:12px 18px;border-radius:11px;font-size:12.5px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.3);animation:slideUp .3s ease;max-width:320px;line-height:1.5;font-family:inherit;border:1px solid;'+(type==='ok'?'background:#1E2A3B;color:#E2E8F0;border-color:#2D3F55':'background:#1E3B2E;color:#4ADE80;border-color:rgba(26,122,58,.3)');
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2800);
+}
+function handleImport(inp){if(inp.files[0])showToast('📊 '+inp.files[0].name+' · Validare structură...','ok');}
+function dlTemplate(){showToast('⬇ Template CSV descărcat · Completează și reimportă','ok');}
+function selectInteg(el,name){
+  document.querySelectorAll('#panel-import .f-card:last-child [style*="border-radius:11px"]').forEach(e=>e.style.borderColor='#2D3F55');
+  el.style.borderColor='#FF8C00';
+  showToast('🔗 '+name+' selectat · Instrucțiuni disponibile după activare','ok');
+}
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded',()=>{
+  initCalStates();
+  renderOverviewOrders();
+  renderStocTable();
+  renderCriticalStock();
+  renderProducts();
+  renderMiniCal();
+  renderFullOrders();
+  calcSim();
+  if(typeof lucide!=='undefined') lucide.createIcons();
+});
+</script>
+<!-- ════ FOOTER STANDARD My Darrin ════ -->
+<div style="background:#003366;padding:20px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div style="width:30px;height:30px;background:#FF8C00;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff">D</div>
+    <div style="font-size:11px;color:rgba(255,255,255,.4)">© 2026 Home Best Pal SRL · My Darrin</div>
+  </div>
+  <div style="display:flex;gap:14px;flex-wrap:wrap">
+    <a href="mydarrin-v3.html" style="font-size:11.5px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">🏠 Acasă</a>
+    <a href="mydarrin-catalog.html" style="font-size:11.5px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">📦 Catalog</a>
+    <a href="mydarrin-marketplace.html" style="font-size:11.5px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">🏪 Marketplace</a>
+    <a href="mydarrin-investitori.html" style="font-size:11.5px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">💼 Investitori</a>
+    <a href="mydarrin-superadmin.html" style="font-size:11.5px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">🔐 Admin</a>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Darrin — Design System & UI Kit v1.0</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════
+   MY DARRIN — DESIGN SYSTEM v1.0
+   Tokens · Typography · Components · Layouts · Breakpoints
+═══════════════════════════════════════════════════ */
+
+:root {
+  /* ── COLOR TOKENS ── */
+  --primary-900: #0F1F3D;
+  --primary-800: #1E3557;
+  --primary-700: #243F6A;
+  --primary-600: #2B4C7E;
+  --primary-500: #3D6494;
+  --primary-400: #5F83B4;
+  --primary-300: #8AADD0;
+  --primary-200: #C0D4E8;
+  --primary-100: #EEF2F8;
+  --primary-50:  #F7F9FC;
+
+  --accent-900: #7A3A08;
+  --accent-700: #C46E0F;
+  --accent-600: #D47A12;
+  --accent-500: #E8871A;   /* PRIMARY CTA */
+  --accent-400: #F09D3E;
+  --accent-300: #F5B96A;
+  --accent-100: #FEF3E2;
+  --accent-50:  #FFFAF4;
+
+  --ai-700: #0B8580;
+  --ai-600: #0EA5A0;       /* AI / TEAL */
+  --ai-400: #1DBDB8;
+  --ai-200: #A7E8E6;
+  --ai-100: #E6F7F7;
+  --ai-50:  #F0FFFE;
+
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --error:   #EF4444;
+  --info:    #3B82F6;
+
+  --ink-900: #0D1520;
+  --ink-800: #1A2640;      /* PRIMARY TEXT */
+  --ink-600: #374357;
+  --ink-400: #6B7A99;      /* SECONDARY TEXT */
+  --ink-300: #8A96B0;
+  --ink-200: #9AA5BC;
+  --ink-100: #C8D0E0;
+
+  --surface-white: #FFFFFF;
+  --surface-50:    #F7F8FC;
+  --surface-100:   #F5F6FA; /* PAGE BG */
+  --surface-200:   #ECEEF5;
+  --border:        #E4E8F0;
+  --border-strong: #C8D0E0;
+
+  /* ── TYPOGRAPHY ── */
+  --font-display: 'Syne', sans-serif;
+  --font-body:    'Inter', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
+
+  /* ── SPACING (8px grid) ── */
+  --sp-1:  4px;
+  --sp-2:  8px;
+  --sp-3:  12px;
+  --sp-4:  16px;
+  --sp-5:  20px;
+  --sp-6:  24px;
+  --sp-8:  32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+  --sp-20: 80px;
+  --sp-24: 96px;
+
+  /* ── RADIUS ── */
+  --r-sm:   8px;
+  --r-md:   12px;
+  --r-lg:   16px;
+  --r-xl:   20px;
+  --r-2xl:  24px;
+  --r-full: 9999px;
+
+  /* ── SHADOW ── */
+  --shadow-xs: 0 1px 3px rgba(26,38,64,.06);
+  --shadow-sm: 0 2px 8px rgba(26,38,64,.08);
+  --shadow-md: 0 4px 20px rgba(26,38,64,.10);
+  --shadow-lg: 0 8px 40px rgba(26,38,64,.13);
+  --shadow-xl: 0 20px 60px rgba(26,38,64,.16);
+
+  /* ── BREAKPOINTS (reference) ── */
+  /* xs:  0–375px    Mobile S */
+  /* sm:  376–640px  Mobile L */
+  /* md:  641–768px  Tablet portrait */
+  /* lg:  769–1024px Tablet landscape */
+  /* xl:  1025–1280px Desktop S */
+  /* 2xl: 1281–1440px Desktop M */
+  /* 3xl: 1441px+    Desktop L */
+
+  /* ── Z-INDEX SCALE ── */
+  --z-base:    1;
+  --z-card:    10;
+  --z-sticky:  50;
+  --z-header:  100;
+  --z-sidebar: 200;
+  --z-modal:   300;
+  --z-toast:   400;
+  --z-top:     500;
+
+  /* ── TRANSITIONS ── */
+  --ease-out:  cubic-bezier(.22,1,.36,1);
+  --ease-in:   cubic-bezier(.64,0,.78,0);
+  --ease-io:   cubic-bezier(.45,0,.55,1);
+  --dur-fast:  150ms;
+  --dur-base:  220ms;
+  --dur-slow:  400ms;
+  --dur-anim:  700ms;
+}
+
+/* ═══════════════ BASE RESET ═══════════════ */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+html { scroll-behavior:smooth; font-size:16px; }
+body { font-family:var(--font-body); background:var(--surface-100); color:var(--ink-800); line-height:1.6; -webkit-font-smoothing:antialiased; }
+
+/* ═══════════════ DS PAGE LAYOUT ═══════════════ */
+.ds-page { display:flex; min-height:100vh; }
+.ds-nav { width:240px; background:var(--primary-800); position:fixed; top:0; left:0; height:100vh; overflow-y:auto; z-index:200; }
+.ds-main { margin-left:240px; flex:1; }
+.ds-header { background:var(--primary-900); border-bottom:1px solid rgba(255,255,255,.08); padding:24px 40px; }
+.ds-content { padding:40px; max-width:1200px; }
+.ds-section { margin-bottom:60px; }
+
+/* DS Nav */
+.ds-nav-logo { padding:24px 20px; border-bottom:1px solid rgba(255,255,255,.08); }
+.ds-nav-logo .d { width:32px;height:32px;background:var(--accent-500);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:800;color:#fff;font-size:15px; }
+.ds-nav-label { font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.3);padding:20px 20px 6px;display:block; }
+.ds-nav-item { display:flex;align-items:center;gap:8px;padding:9px 20px;font-size:13px;font-weight:500;color:rgba(255,255,255,.55);cursor:pointer;transition:all .18s;text-decoration:none;border-left:2px solid transparent; }
+.ds-nav-item:hover,.ds-nav-item.active { color:#fff;background:rgba(255,255,255,.06);border-left-color:var(--accent-500); }
+.ds-nav-item .ico { font-size:14px;width:20px;flex-shrink:0; }
+
+/* DS Header */
+.ds-badge { display:inline-flex;align-items:center;gap:6px;background:rgba(14,165,160,.15);border:1px solid rgba(14,165,160,.3);color:var(--ai-600);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 12px;border-radius:var(--r-full); }
+.ds-version { font-size:12px;color:rgba(255,255,255,.3);margin-top:4px; }
+
+/* Section titles */
+.sec-title { font-family:var(--font-display);font-weight:800;font-size:28px;color:var(--ink-800);margin-bottom:8px; }
+.sec-desc { font-size:14px;color:var(--ink-400);margin-bottom:32px;max-width:560px;line-height:1.65; }
+.sec-divider { height:1px;background:var(--border);margin:40px 0; }
+
+/* Subsection */
+.sub-title { font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink-800);margin-bottom:16px;display:flex;align-items:center;gap:8px; }
+.sub-title::before { content:'';width:3px;height:16px;background:var(--accent-500);border-radius:2px;display:inline-block; }
+
+/* ═══════════════ SWATCHES ═══════════════ */
+.swatch-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px; }
+.swatch { border-radius:var(--r-md);overflow:hidden;border:1px solid var(--border); }
+.swatch-color { height:60px; }
+.swatch-info { padding:8px 10px;background:#fff; }
+.swatch-name { font-size:10px;font-weight:700;color:var(--ink-800);text-transform:uppercase;letter-spacing:.04em; }
+.swatch-hex { font-family:var(--font-mono);font-size:10px;color:var(--ink-400);margin-top:2px; }
+
+/* ═══════════════ TYPOGRAPHY ═══════════════ */
+.type-row { display:flex;align-items:baseline;gap:20px;padding:16px 0;border-bottom:1px solid var(--border); }
+.type-label { width:130px;flex-shrink:0;font-size:11px;color:var(--ink-400);font-family:var(--font-mono); }
+.type-sample { flex:1; }
+.type-meta { font-family:var(--font-mono);font-size:10px;color:var(--ink-300);white-space:nowrap; }
+
+/* ═══════════════ COMPONENTS ═══════════════ */
+.comp-row { display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:16px; }
+
+/* BUTTONS */
+.btn { display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:var(--r-lg);font-size:13.5px;font-weight:600;cursor:pointer;border:none;font-family:var(--font-body);transition:all var(--dur-base) var(--ease-out);white-space:nowrap; }
+.btn svg { width:16px;height:16px;flex-shrink:0; }
+.btn-primary { background:var(--accent-500);color:#fff;box-shadow:0 4px 14px rgba(232,135,26,.3); }
+.btn-primary:hover { background:var(--accent-700);transform:translateY(-1px);box-shadow:0 6px 20px rgba(232,135,26,.4); }
+.btn-secondary { background:var(--primary-600);color:#fff; }
+.btn-secondary:hover { background:var(--primary-700);transform:translateY(-1px); }
+.btn-ai { background:linear-gradient(135deg,var(--primary-900),var(--primary-800));color:var(--ai-600);border:1px solid rgba(14,165,160,.3);box-shadow:0 0 20px rgba(14,165,160,.15); }
+.btn-ai:hover { box-shadow:0 0 30px rgba(14,165,160,.3);transform:translateY(-1px); }
+.btn-ghost { background:transparent;color:var(--ink-800);border:1.5px solid var(--border); }
+.btn-ghost:hover { border-color:var(--primary-600);color:var(--primary-600); }
+.btn-danger { background:var(--error);color:#fff; }
+.btn-sm { padding:7px 14px;font-size:12px;border-radius:var(--r-md); }
+.btn-lg { padding:14px 28px;font-size:15px;border-radius:var(--r-xl); }
+.btn-icon { padding:10px;border-radius:var(--r-md); }
+.btn[disabled] { opacity:.45;cursor:not-allowed;transform:none !important; }
+
+/* BADGES */
+.badge { display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:var(--r-full);letter-spacing:.04em; }
+.badge-primary { background:var(--primary-100);color:var(--primary-600); }
+.badge-accent  { background:var(--accent-100);color:var(--accent-700); }
+.badge-ai      { background:var(--ai-100);color:var(--ai-700); }
+.badge-success { background:#dcfce7;color:#166534; }
+.badge-warning { background:#fef9c3;color:#92400e; }
+.badge-error   { background:#fee2e2;color:#991b1b; }
+.badge-new     { background:var(--ai-600);color:#fff; }
+.badge-hot     { background:var(--accent-500);color:#fff; }
+.badge-rent    { background:#7C3AED;color:#fff; }
+
+/* INPUTS */
+.inp { width:100%;padding:11px 16px;background:var(--surface-50);border:1.5px solid var(--border);border-radius:var(--r-lg);font-size:13.5px;font-family:var(--font-body);color:var(--ink-800);outline:none;transition:border-color var(--dur-fast),box-shadow var(--dur-fast); }
+.inp:focus { border-color:var(--primary-600);box-shadow:0 0 0 3px rgba(43,76,126,.1); }
+.inp-label { display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-400);margin-bottom:6px; }
+.inp-group { margin-bottom:16px; }
+.inp-error { border-color:var(--error) !important; }
+.inp-hint { font-size:11px;color:var(--ink-300);margin-top:4px; }
+.inp-hint.error { color:var(--error); }
+
+/* CARDS */
+.card { background:var(--surface-white);border-radius:var(--r-xl);border:1px solid var(--border);overflow:hidden;transition:transform var(--dur-base) var(--ease-out),box-shadow var(--dur-base) var(--ease-out),border-color var(--dur-base); }
+.card:hover { transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:transparent; }
+.card-pad { padding:24px; }
+.card-dark { background:var(--primary-800);border-color:rgba(255,255,255,.08); }
+.card-ai { background:linear-gradient(135deg,var(--ai-50),#EEF2F8);border-color:rgba(14,165,160,.2); }
+
+/* RICH CARD */
+.rich-card { background:var(--surface-white);border-radius:var(--r-xl);border:1px solid var(--border);overflow:hidden;display:flex;flex-direction:column;transition:transform var(--dur-base) var(--ease-out),box-shadow var(--dur-base); }
+.rich-card:hover { transform:translateY(-5px);box-shadow:var(--shadow-xl);border-color:transparent; }
+.rich-card .media { position:relative;aspect-ratio:16/9;background:var(--primary-100);overflow:hidden; }
+.rich-card .media img { width:100%;height:100%;object-fit:cover;transition:transform .4s; }
+.rich-card:hover .media img { transform:scale(1.05); }
+.rich-card .body { padding:16px;flex:1;display:flex;flex-direction:column;gap:6px; }
+.rich-card .footer-bar { padding:12px 16px 16px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between; }
+
+/* AVATAR */
+.avatar { border-radius:var(--r-full);display:flex;align-items:center;justify-content:center;font-weight:700;font-family:var(--font-display);flex-shrink:0; }
+.avatar-xs { width:24px;height:24px;font-size:10px; }
+.avatar-sm { width:32px;height:32px;font-size:13px; }
+.avatar-md { width:40px;height:40px;font-size:15px; }
+.avatar-lg { width:56px;height:56px;font-size:20px; }
+.avatar-xl { width:80px;height:80px;font-size:28px; }
+
+/* RATING */
+.rating { display:flex;align-items:center;gap:4px; }
+.stars { color:var(--warning);letter-spacing:.5px;font-size:12px; }
+.rating-val { font-size:11px;color:var(--ink-400); }
+
+/* PRICE */
+.price-block { display:flex;flex-direction:column; }
+.price-from { font-size:9px;color:var(--ink-300);text-transform:uppercase;letter-spacing:.07em; }
+.price-val { font-family:var(--font-display);font-weight:800;font-size:18px;color:var(--ink-800);line-height:1.2; }
+.price-unit { font-size:10px;color:var(--ink-300); }
+
+/* STATUS DOTS */
+.status { display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600; }
+.status-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
+.status-online  { color:#166534; } .status-online .status-dot  { background:#22c55e;box-shadow:0 0 6px #22c55e80;animation:pulse-g 2s infinite; }
+.status-busy    { color:#92400e; } .status-busy .status-dot    { background:#f59e0b; }
+.status-offline { color:var(--ink-300); } .status-offline .status-dot { background:var(--ink-200); }
+@keyframes pulse-g{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ALERTS */
+.alert { display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:var(--r-lg);border:1px solid;margin-bottom:8px; }
+.alert-icon { width:18px;height:18px;flex-shrink:0;margin-top:1px; }
+.alert-title { font-weight:700;font-size:13px;margin-bottom:2px; }
+.alert-desc { font-size:12px;line-height:1.5; }
+.alert-info    { background:#eff6ff;border-color:#bfdbfe;color:#1e40af; }
+.alert-success { background:#f0fdf4;border-color:#bbf7d0;color:#166534; }
+.alert-warning { background:#fffbeb;border-color:#fde68a;color:#92400e; }
+.alert-error   { background:#fff1f2;border-color:#fecdd3;color:#9f1239; }
+.alert-ai      { background:var(--ai-50);border-color:rgba(14,165,160,.2);color:var(--ai-700); }
+
+/* NAV COMPONENTS */
+.nav-pill { display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r-lg);font-size:13.5px;font-weight:500;color:var(--ink-400);transition:all var(--dur-fast);text-decoration:none;cursor:pointer; }
+.nav-pill:hover { background:var(--surface-200);color:var(--ink-800); }
+.nav-pill.active { background:var(--primary-600);color:#fff; }
+.nav-underline { display:inline-flex;align-items:center;gap:6px;padding:8px 4px;font-size:13.5px;font-weight:500;color:var(--ink-800);position:relative;transition:color var(--dur-fast);text-decoration:none;cursor:pointer; }
+.nav-underline::after { content:'';position:absolute;bottom:-2px;left:0;width:0;height:2px;background:var(--accent-500);border-radius:1px;transition:width var(--dur-base) var(--ease-out); }
+.nav-underline:hover { color:var(--accent-500); }
+.nav-underline:hover::after { width:100%; }
+.nav-underline.active::after { width:100%; }
+
+/* TABS */
+.tabs-wrap { display:flex;gap:2px;padding:4px;background:var(--surface-white);border:1px solid var(--border);border-radius:var(--r-lg); }
+.tab-item { flex:1;padding:8px 16px;border-radius:var(--r-md);font-size:13px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--ink-400);transition:all var(--dur-fast);font-family:var(--font-body); }
+.tab-item.active { background:var(--primary-800);color:#fff; }
+.tab-item:not(.active):hover { background:var(--surface-200);color:var(--ink-800); }
+
+/* PROGRESS */
+.progress-wrap { height:8px;background:var(--surface-200);border-radius:var(--r-full);overflow:hidden; }
+.progress-bar { height:100%;border-radius:var(--r-full);transition:width .6s var(--ease-out); }
+
+/* SKELETON */
+.skeleton { background:linear-gradient(90deg,var(--surface-200) 25%,var(--surface-100) 50%,var(--surface-200) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite; }
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ═══════════════ GRID SYSTEM ═══════════════ */
+.grid-demo { display:grid;gap:12px; }
+.grid-col { background:var(--primary-100);border-radius:var(--r-md);padding:16px 12px;font-size:11px;font-weight:700;color:var(--primary-600);text-align:center;font-family:var(--font-mono); }
+
+/* ═══════════════ DEVICE FRAMES ═══════════════ */
+.device-showcase { display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap; }
+
+.frame-desktop-mini {
+  background:var(--primary-900);border-radius:10px 10px 0 0;
+  border:2px solid rgba(255,255,255,.12);border-bottom:none;
+  overflow:hidden;width:320px;flex-shrink:0;
+}
+.frame-bar { background:rgba(255,255,255,.06);padding:7px 12px;display:flex;align-items:center;gap:7px; }
+.mac-dot { width:9px;height:9px;border-radius:50%; }
+.url-mini { flex:1;background:rgba(255,255,255,.06);border-radius:4px;padding:2px 10px;font-size:10px;color:rgba(255,255,255,.3);font-family:var(--font-mono); }
+.frame-screen { background:var(--surface-100);height:180px;overflow:hidden; }
+
+.frame-tablet-mini {
+  background:var(--primary-900);border-radius:12px;
+  border:2.5px solid rgba(255,255,255,.15);
+  overflow:hidden;width:240px;flex-shrink:0;
+}
+.frame-tablet-mini.landscape { width:320px; }
+.tablet-chrome { background:rgba(255,255,255,.06);padding:6px;display:flex;justify-content:center; }
+.tablet-cam-dot { width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.2); }
+.frame-screen-tablet { background:var(--surface-100);height:160px; }
+
+.frame-phone-mini {
+  background:#111827;border-radius:32px;
+  border:2.5px solid rgba(255,255,255,.18);
+  overflow:hidden;width:140px;flex-shrink:0;
+  box-shadow:0 0 40px rgba(0,0,0,.5);
+}
+.phone-notch-bar { background:#111827;padding:10px 0 5px;display:flex;justify-content:center; }
+.phone-notch { width:72px;height:18px;background:#000;border-radius:9px; }
+.frame-screen-phone { background:var(--surface-100);height:220px; }
+.phone-home-bar { background:#111827;padding:8px;display:flex;justify-content:center; }
+.home-pill { width:56px;height:3px;background:rgba(255,255,255,.2);border-radius:2px; }
+
+.frame-app-mini {
+  background:var(--primary-900);border-radius:32px;
+  border:2.5px solid rgba(255,255,255,.18);
+  overflow:hidden;width:140px;flex-shrink:0;
+  box-shadow:0 0 40px rgba(0,0,0,.5);
+}
+.app-status-bar { background:var(--primary-900);padding:10px 16px 6px;display:flex;justify-content:space-between;align-items:center; }
+.app-status-time { font-size:10px;font-weight:700;color:rgba(255,255,255,.6); }
+.frame-screen-app { background:var(--surface-100);height:220px; }
+.app-tab-bar { background:#fff;padding:8px 0 12px;border-top:1px solid var(--border);display:flex;justify-content:space-around; }
+.app-tab-icon { display:flex;flex-direction:column;align-items:center;gap:2px; }
+.app-tab-icon .dot { width:16px;height:3px;border-radius:2px; }
+.app-tab-icon .label { font-size:8px;color:var(--ink-300);font-family:var(--font-body); }
+.app-tab-icon.active .dot { background:var(--accent-500); }
+.app-tab-icon.active .label { color:var(--accent-500); }
+.app-tab-icon:not(.active) .dot { background:var(--ink-100); }
+
+/* ═══════════════ LAYOUT TEMPLATES ═══════════════ */
+.layout-preview { background:var(--surface-white);border-radius:var(--r-xl);border:1px solid var(--border);overflow:hidden;margin-bottom:16px; }
+.layout-topbar { background:var(--primary-900);height:24px;display:flex;align-items:center;padding:0 12px;gap:6px; }
+.layout-header { background:#fff;height:36px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:8px; }
+.layout-sidebar { background:var(--primary-800);width:56px;flex-shrink:0; }
+.layout-sidebar.wide { width:120px; }
+.layout-content-area { flex:1;padding:12px;background:var(--surface-100);min-height:160px; }
+.layout-body { display:flex;min-height:160px; }
+.layout-hero { height:80px;background:linear-gradient(135deg,var(--primary-800),var(--primary-900));margin-bottom:0;position:relative;overflow:hidden; }
+.layout-hero::before { content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 70% 50%,rgba(232,135,26,.2),transparent 60%); }
+.layout-grid-row { display:grid;gap:6px;margin-bottom:6px; }
+.layout-card-mock { background:#fff;border-radius:6px;border:1px solid var(--border);height:40px; }
+.layout-card-mock.tall { height:80px; }
+.layout-card-mock.img { overflow:hidden; }
+.layout-card-mock.img::before { content:'';display:block;height:45px;background:var(--primary-100); }
+.layout-footer { background:var(--primary-900);height:48px;display:flex;align-items:center;padding:0 12px; }
+.layout-label { font-size:9px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:.08em;text-transform:uppercase;font-family:var(--font-mono); }
+.layout-label.dark { color:var(--ink-400); }
+
+/* Mobile layout */
+.mob-bar { background:var(--primary-900);height:18px; }
+.mob-header { background:#fff;height:32px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 8px;gap:5px; }
+.mob-content { padding:8px;background:var(--surface-100);min-height:180px; }
+.mob-bottom-nav { background:#fff;height:36px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;padding:0 4px; }
+.mob-nav-item { display:flex;flex-direction:column;align-items:center;gap:1px; }
+.mob-nav-dot { width:14px;height:2px;border-radius:1px;background:var(--ink-100); }
+.mob-nav-dot.active { background:var(--accent-500); }
+.mob-nav-lbl { font-size:6px;color:var(--ink-300); }
+
+/* KPI mock */
+.kpi-mock { background:#fff;border-radius:8px;border:1px solid var(--border);padding:8px;flex:1; }
+.kpi-val { font-family:var(--font-display);font-weight:800;font-size:16px;color:var(--ink-800); }
+.kpi-lbl { font-size:8px;color:var(--ink-400);margin-top:2px; }
+
+/* ═══════════════ PAGE TEMPLATES ═══════════════ */
+.page-card { background:var(--surface-white);border-radius:var(--r-2xl);border:1px solid var(--border);overflow:hidden;transition:all var(--dur-base) var(--ease-out);cursor:pointer; }
+.page-card:hover { transform:translateY(-3px);box-shadow:var(--shadow-lg); }
+.page-card-header { height:120px;position:relative;display:flex;align-items:flex-end;padding:14px; }
+.page-card-body { padding:16px; }
+.page-tag { font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:var(--r-full);background:rgba(255,255,255,.2);color:rgba(255,255,255,.8); }
+.page-title { font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--ink-800);margin-bottom:4px; }
+.page-desc { font-size:11px;color:var(--ink-400);line-height:1.5; }
+.page-status { display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;margin-top:10px; }
+
+/* ═══════════════ INTERACTION STATES ═══════════════ */
+.state-row { display:flex;gap:12px;flex-wrap:wrap;align-items:center; }
+
+/* ═══════════════ SCROLL ═══════════════ */
+::-webkit-scrollbar { width:5px;height:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border-strong);border-radius:3px; }
+.ds-nav::-webkit-scrollbar-thumb { background:rgba(255,255,255,.15); }
+
+/* ═══════════════ RESPONSIVE HINTS ═══════════════ */
+.bp-chip { display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:var(--r-md);font-size:11px;font-weight:700;font-family:var(--font-mono);border:1px solid; }
+.bp-xs  { background:#fef3e2;border-color:#fed7aa;color:#c2410c; }
+.bp-sm  { background:#fef9c3;border-color:#fde68a;color:#92400e; }
+.bp-md  { background:#dcfce7;border-color:#bbf7d0;color:#166534; }
+.bp-lg  { background:#dbeafe;border-color:#bfdbfe;color:#1e40af; }
+.bp-xl  { background:#ede9fe;border-color:#ddd6fe;color:#6d28d9; }
+.bp-2xl { background:#fce7f3;border-color:#fbcfe8;color:#9d174d; }
+</style>
+</head>
+<body>
+
+<!-- ════ MINI NAV BAR — My Darrin Standard ════ -->
+<div style="background:#003366;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,51,102,.25)">
+  <a href="mydarrin-v3.html" style="display:flex;align-items:center;gap:9px;text-decoration:none;flex-shrink:0">
+    <div style="width:30px;height:30px;background:#FF8C00;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff">D</div>
+    <div style="font-weight:800;color:#fff;font-size:14px;font-family:'Helvetica Neue',Arial,sans-serif">My Darrin</div>
+  </a>
+  <div style="display:flex;gap:6px;flex-wrap:wrap" id="mini-nav-links">
+    <a href="mydarrin-v3.html" style="color:rgba(255,255,255,.65);font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border-radius:7px;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='#fff'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.65)'">🏠 Acasă</a>
+    <a href="mydarrin-catalog.html" style="color:rgba(255,255,255,.65);font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border-radius:7px;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='#fff'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.65)'">📦 Catalog</a>
+    <a href="mydarrin-cum-functioneaza.html" style="color:rgba(255,255,255,.65);font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border-radius:7px;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='#fff'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.65)'">⏱ Cum funcționează</a>
+    <a href="mydarrin-investitori.html" style="color:rgba(255,255,255,.65);font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border-radius:7px;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='#fff'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.65)'">💼 Investitori</a>
+    <a href="mydarrin-superadmin.html" style="color:rgba(255,255,255,.65);font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border-radius:7px;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='#fff'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.65)'">🔐 Admin</a>
+  </div>
+</div>
+
+<!-- ════ BREADCRUMB ════ -->
+<div style="background:#fff;border-bottom:1px solid #EEF2F7;padding:9px 24px">
+  <div style="max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+    <a href="mydarrin-v3.html" style="color:#5A6B7D;text-decoration:none;font-size:12.5px;font-weight:600;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='#5A6B7D'">🏠 Acasă</a> <span style="color:#D5DFE8">›</span> <a href="mydarrin-backoffice-serviciu.html" style="color:#5A6B7D;text-decoration:none;font-size:12.5px;font-weight:600;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='#5A6B7D'">Backoffice</a> <span style="color:#D5DFE8">›</span> <span style="color:#1A2332;font-size:12.5px;font-weight:700">Design System</span>
+  </div>
+</div>
+
+
+<div class="ds-page">
+
+  <!-- ════ DS SIDEBAR NAV ════ -->
+  <nav class="ds-nav">
+    <div class="ds-nav-logo" style="display:flex;align-items:center;gap:10px">
+      <div class="d">D</div>
+      <div>
+        <div style="font-family:var(--font-display);font-weight:700;font-size:14px;color:#fff">My Darrin</div>
+        <div style="font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.08em;text-transform:uppercase">Design System</div>
+      </div>
+    </div>
+    <span class="ds-nav-label">Fundament</span>
+    <a class="ds-nav-item active" href="#culori"><span class="ico">🎨</span> Culori</a>
+    <a class="ds-nav-item" href="#tipografie"><span class="ico">Aa</span> Tipografie</a>
+    <a class="ds-nav-item" href="#spatiere"><span class="ico">📐</span> Spațiere & Grid</a>
+    <a class="ds-nav-item" href="#breakpoints"><span class="ico">📱</span> Breakpoints</a>
+    <span class="ds-nav-label">Componente</span>
+    <a class="ds-nav-item" href="#butoane"><span class="ico">🔘</span> Butoane</a>
+    <a class="ds-nav-item" href="#formulare"><span class="ico">📝</span> Formulare</a>
+    <a class="ds-nav-item" href="#carduri"><span class="ico">🃏</span> Carduri</a>
+    <a class="ds-nav-item" href="#navigare"><span class="ico">🧭</span> Navigare</a>
+    <a class="ds-nav-item" href="#badges"><span class="ico">🏷</span> Badges & Status</a>
+    <a class="ds-nav-item" href="#alerte"><span class="ico">🔔</span> Alerte</a>
+    <span class="ds-nav-label">Layout</span>
+    <a class="ds-nav-item" href="#device-frames"><span class="ico">🖥</span> Device Frames</a>
+    <a class="ds-nav-item" href="#layout-desktop"><span class="ico">🖥</span> Desktop</a>
+    <a class="ds-nav-item" href="#layout-tablet"><span class="ico">📱</span> Tabletă</a>
+    <a class="ds-nav-item" href="#layout-mobile"><span class="ico">📲</span> Mobile</a>
+    <a class="ds-nav-item" href="#layout-app"><span class="ico">📦</span> App Mobile</a>
+    <span class="ds-nav-label">Pagini</span>
+    <a class="ds-nav-item" href="#pagini"><span class="ico">📄</span> Inventar Pagini</a>
+    <a class="ds-nav-item" href="#stari"><span class="ico">✨</span> Stări & Animații</a>
+    <div style="padding:16px 20px;margin-top:8px">
+      <div style="background:rgba(14,165,160,.1);border:1px solid rgba(14,165,160,.2);border-radius:12px;padding:12px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+          <span style="width:6px;height:6px;border-radius:50%;background:#0EA5A0;animation:pulse-g 2s infinite;display:inline-block"></span>
+          <span style="color:#0EA5A0;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">v1.0 — Aprobat</span>
+        </div>
+        <p style="color:rgba(255,255,255,.4);font-size:10px;line-height:1.5">Design System My Darrin<br>Aprobare intermediară ✓</p>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ════ DS MAIN ════ -->
+  <div class="ds-main">
+
+    <!-- DS HEADER -->
+    <div class="ds-header">
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+            <span class="ds-badge">✦ Design System</span>
+            <span style="font-size:11px;font-family:var(--font-mono);color:rgba(255,255,255,.3)">v1.0.0 — Iunie 2026</span>
+          </div>
+          <h1 style="font-family:var(--font-display);font-weight:800;font-size:28px;color:#fff;line-height:1.1">My Darrin UI Kit</h1>
+          <p style="font-size:13px;color:rgba(255,255,255,.45);margin-top:4px">Sistem de design complet · Tokens · Componente · Layout-uri · Device frames · Inventar pagini</p>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+          <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 16px;text-align:center">
+            <div style="font-family:var(--font-display);font-weight:800;font-size:20px;color:var(--accent-500)">3</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">Palete</div>
+          </div>
+          <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 16px;text-align:center">
+            <div style="font-family:var(--font-display);font-weight:800;font-size:20px;color:var(--ai-600)">18+</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">Componente</div>
+          </div>
+          <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 16px;text-align:center">
+            <div style="font-family:var(--font-display);font-weight:800;font-size:20px;color:#fff">7</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">Breakpoints</div>
+          </div>
+          <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 16px;text-align:center">
+            <div style="font-family:var(--font-display);font-weight:800;font-size:20px;color:#fff">14+</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">Pagini</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ds-content">
+
+      <!-- ══ 1. CULORI ══ -->
+      <div class="ds-section" id="culori">
+        <h2 class="sec-title">Paleta de culori</h2>
+        <p class="sec-desc">Trei familii principale de culori: Primary (încredere, profesional), Accent (acțiune, energie), AI (inovație, tehnologie). Fiecare cu 9 nuanțe pe scală de 50–900.</p>
+
+        <div class="sub-title">Primary — Deep Slate Blue</div>
+        <div class="swatch-grid" style="margin-bottom:24px">
+          <div class="swatch"><div class="swatch-color" style="background:#0F1F3D"></div><div class="swatch-info"><div class="swatch-name">900</div><div class="swatch-hex">#0F1F3D</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#1E3557"></div><div class="swatch-info"><div class="swatch-name">800 ★</div><div class="swatch-hex">#1E3557</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#243F6A"></div><div class="swatch-info"><div class="swatch-name">700</div><div class="swatch-hex">#243F6A</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#2B4C7E"></div><div class="swatch-info"><div class="swatch-name">600 ★</div><div class="swatch-hex">#2B4C7E</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#3D6494"></div><div class="swatch-info"><div class="swatch-name">500</div><div class="swatch-hex">#3D6494</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#5F83B4"></div><div class="swatch-info"><div class="swatch-name">400</div><div class="swatch-hex">#5F83B4</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#8AADD0"></div><div class="swatch-info"><div class="swatch-name">300</div><div class="swatch-hex">#8AADD0</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#C0D4E8"></div><div class="swatch-info"><div class="swatch-name">200</div><div class="swatch-hex">#C0D4E8</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#EEF2F8"></div><div class="swatch-info"><div class="swatch-name">100</div><div class="swatch-hex">#EEF2F8</div></div></div>
+        </div>
+
+        <div class="sub-title">Accent — Warm Amber (CTA)</div>
+        <div class="swatch-grid" style="margin-bottom:24px">
+          <div class="swatch"><div class="swatch-color" style="background:#7A3A08"></div><div class="swatch-info"><div class="swatch-name">900</div><div class="swatch-hex">#7A3A08</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#C46E0F"></div><div class="swatch-info"><div class="swatch-name">700</div><div class="swatch-hex">#C46E0F</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#E8871A"></div><div class="swatch-info"><div class="swatch-name">500 ★</div><div class="swatch-hex">#E8871A</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#F09D3E"></div><div class="swatch-info"><div class="swatch-name">400</div><div class="swatch-hex">#F09D3E</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#F5B96A"></div><div class="swatch-info"><div class="swatch-name">300</div><div class="swatch-hex">#F5B96A</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#FEF3E2"></div><div class="swatch-info"><div class="swatch-name">100</div><div class="swatch-hex">#FEF3E2</div></div></div>
+        </div>
+
+        <div class="sub-title">AI — Teal Cyan (Darrin AI)</div>
+        <div class="swatch-grid" style="margin-bottom:24px">
+          <div class="swatch"><div class="swatch-color" style="background:#0B8580"></div><div class="swatch-info"><div class="swatch-name">700</div><div class="swatch-hex">#0B8580</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#0EA5A0"></div><div class="swatch-info"><div class="swatch-name">600 ★</div><div class="swatch-hex">#0EA5A0</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#1DBDB8"></div><div class="swatch-info"><div class="swatch-name">400</div><div class="swatch-hex">#1DBDB8</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#A7E8E6"></div><div class="swatch-info"><div class="swatch-name">200</div><div class="swatch-hex">#A7E8E6</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#E6F7F7"></div><div class="swatch-info"><div class="swatch-name">100</div><div class="swatch-hex">#E6F7F7</div></div></div>
+        </div>
+
+        <div class="sub-title">Semantic & Neutru</div>
+        <div class="swatch-grid">
+          <div class="swatch"><div class="swatch-color" style="background:#22C55E"></div><div class="swatch-info"><div class="swatch-name">Success</div><div class="swatch-hex">#22C55E</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#F59E0B"></div><div class="swatch-info"><div class="swatch-name">Warning</div><div class="swatch-hex">#F59E0B</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#EF4444"></div><div class="swatch-info"><div class="swatch-name">Error</div><div class="swatch-hex">#EF4444</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#1A2640"></div><div class="swatch-info"><div class="swatch-name">Ink 800</div><div class="swatch-hex">#1A2640</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#6B7A99"></div><div class="swatch-info"><div class="swatch-name">Ink 400</div><div class="swatch-hex">#6B7A99</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#F5F6FA"></div><div class="swatch-info"><div class="swatch-name">Surface</div><div class="swatch-hex">#F5F6FA</div></div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#E4E8F0"></div><div class="swatch-info"><div class="swatch-name">Border</div><div class="swatch-hex">#E4E8F0</div></div></div>
+        </div>
+      </div>
+
+      <div class="sec-divider"></div>
+
+      <!-- ══ 2. TIPOGRAFIE ══ -->
+      <div class="ds-section" id="tipografie">
+        <h2 class="sec-title">Tipografie</h2>
+        <p class="sec-desc">Două fonturi: <strong>Syne</strong> (display, titluri, logo) și <strong>Inter</strong> (corp text, UI). Scala tipografică urmează un raport de 1.25.</p>
+
+        <div class="type-row">
+          <div class="type-label">display-2xl</div>
+          <div class="type-sample" style="font-family:var(--font-display);font-weight:800;font-size:48px;line-height:1.1;color:var(--ink-800)">My Darrin</div>
+          <div class="type-meta">Syne 800 · 48px · lh 1.1</div>
+        </div>
+        <div class="type-row">
+          <div class="type-label">display-xl</div>
+          <div class="type-sample" style="font-family:var(--font-display);font-weight:800;font-size:36px;line-height:1.15;color:var(--ink-800)">Servicii la cerere</div>
+          <div class="type-meta">Syne 800 · 36px · lh 1.15</div>
+        </div>
+        <div class="type-row">
+          <div class="type-label">heading-lg</div>
+          <div class="type-sample" style="font-family:var(--font-display);font-weight:700;font-size:28px;color:var(--ink-800)">Deviz Inteligent AI</div>
+          <div class="type-meta">Syne 700 · 28px</div>
+        </div>
+        <div class="type-row">
+          <div class="type-label">heading-md</div>
+          <div class="type-sample" style="font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--ink-800)">Catalog Servicii</div>
+          <div class="type-meta">Syne 700 · 20px</div>
+        </div>
+        <div class="type-row">
+          <div class="type-label">heading-sm</div>
+          <div class="type-sample" style="font-family:var(--font-display);font-weight:600;font-size:16px;color:var(--ink-800)">Instalații sanitare</div>
+          <div class="type-meta">Syne 600 · 16px</div>
+        </div>
+        <div class="type-row">
+          <div class="type-label">body-lg</div>
+          <div class="type-sample" style="font-size:16px;color:var(--ink-800);line-height:1.65">Platformă hibrid clasic & AI pentru servicii integrate la cerere.</div>
+          <div class="type-meta">Inter 400 · 16px · lh 1.65</div>
+        </div>
+        <div class="type-row">
+          <div class="type-label">body-md</div>
+          <div class="type-sample" style="font-size:14px;color:var(--ink-800)">Conectăm clienți cu parteneri verificați prin deviz AI.</div>
+          <div class="type-meta">Inter 400 · 14px</div>
+        </div>
+        <div class="type-row">
+          <div class="type-label">body-sm</div>
+          <div class="type-sample" style="font-size:12px;color:var(--ink-400)">Termeni și condiții · Politică confidențialitate</div>
+          <div class="type-meta">Inter 400 · 12px · ink-400</div>
+        </div>
+        <div class="type-row">
+          <div class="type-label">label</div>
+          <div class="type-sample" style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-400)">Catalog platformă</div>
+          <div class="type-meta">Inter 700 · 11px · uppercase</div>
+        </div>
+        <div class="type-row">
+          <div class="type-label">mono</div>
+          <div class="type-sample" style="font-family:var(--font-mono);font-size:12px;color:var(--ink-600)">#2B4C7E · --primary-600</div>
+          <div class="type-meta">JetBrains Mono · 12px</div>
+        </div>
+      </div>
+
+      <div class="sec-divider"></div>
+
+      <!-- ══ 3. SPATIERE ══ -->
+      <div class="ds-section" id="spatiere">
+        <h2 class="sec-title">Spațiere & Grid</h2>
+        <p class="sec-desc">Sistem bazat pe 8px. Grid 12 coloane pe desktop, 6 pe tabletă, 4 pe mobil. Gap standard: 16px (sm), 20px (md), 24px (lg).</p>
+
+        <div class="sub-title">Scala de spațiere (8px grid)</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:32px;align-items:flex-end">
+          <div style="text-align:center">
+            <div style="background:var(--accent-500);border-radius:4px;width:4px;height:4px;margin:0 auto 6px"></div>
+            <div style="font-family:var(--font-mono);font-size:9px;color:var(--ink-400)">sp-1<br>4px</div>
+          </div>
+          <div style="text-align:center">
+            <div style="background:var(--accent-500);border-radius:4px;width:8px;height:8px;margin:0 auto 6px"></div>
+            <div style="font-family:var(--font-mono);font-size:9px;color:var(--ink-400)">sp-2<br>8px</div>
+          </div>
+          <div style="text-align:center">
+            <div style="background:var(--accent-500);border-radius:4px;width:12px;height:12px;margin:0 auto 6px"></div>
+            <div style="font-family:var(--font-mono);font-size:9px;color:var(--ink-400)">sp-3<br>12px</div>
+          </div>
+          <div style="text-align:center">
+            <div style="background:var(--accent-500);border-radius:4px;width:16px;height:16px;margin:0 auto 6px"></div>
+            <div style="font-family:var(--font-mono);font-size:9px;color:var(--ink-400)">sp-4<br>16px</div>
+          </div>
+          <div style="text-align:center">
+            <div style="background:var(--accent-500);border-radius:4px;width:20px;height:20px;margin:0 auto 6px"></div>
+            <div style="font-family:var(--font-mono);font-size:9px;color:var(--ink-400)">sp-5<br>20px</div>
+          </div>
+          <div style="text-align:center">
+            <div style="background:var(--accent-500);border-radius:4px;width:24px;height:24px;margin:0 auto 6px"></div>
+            <div style="font-family:var(--font-mono);font-size:9px;color:var(--ink-400)">sp-6<br>24px</div>
+          </div>
+          <div style="text-align:center">
+            <div style="background:var(--accent-500);border-radius:4px;width:32px;height:32px;margin:0 auto 6px"></div>
+            <div style="font-family:var(--font-mono);font-size:9px;color:var(--ink-400)">sp-8<br>32px</div>
+          </div>
+          <div style="text-align:center">
+            <div style="background:var(--accent-500);border-radius:4px;width:40px;height:40px;margin:0 auto 6px"></div>
+            <div style="font-family:var(--font-mono);font-size:9px;color:var(--ink-400)">sp-10<br>40px</div>
+          </div>
+          <div style="text-align:center">
+            <div style="background:var(--accent-500);border-radius:4px;width:48px;height:48px;margin:0 auto 6px"></div>
+            <div style="font-family:var(--font-mono);font-size:9px;color:var(--ink-400)">sp-12<br>48px</div>
+          </div>
+          <div style="text-align:center">
+            <div style="background:var(--accent-500);border-radius:4px;width:64px;height:64px;margin:0 auto 6px"></div>
+            <div style="font-family:var(--font-mono);font-size:9px;color:var(--ink-400)">sp-16<br>64px</div>
+          </div>
+          <div style="text-align:center">
+            <div style="background:var(--accent-500);border-radius:4px;width:80px;height:80px;margin:0 auto 6px"></div>
+            <div style="font-family:var(--font-mono);font-size:9px;color:var(--ink-400)">sp-20<br>80px</div>
+          </div>
+          <div style="text-align:center">
+            <div style="background:var(--accent-500);border-radius:4px;width:96px;height:96px;margin:0 auto 6px"></div>
+            <div style="font-family:var(--font-mono);font-size:9px;color:var(--ink-400)">sp-24<br>96px</div>
+          </div>
+        </div>
+
+        <div class="sub-title">Grid — Desktop 4 coloane (standard catalog)</div>
+        <div class="grid-demo" style="grid-template-columns:repeat(4,1fr);margin-bottom:12px">
+          <div class="grid-col">col 1/4</div><div class="grid-col">col 2/4</div><div class="grid-col">col 3/4</div><div class="grid-col">col 4/4</div>
+        </div>
+        <div class="sub-title">Grid — Tabletă 2 coloane</div>
+        <div class="grid-demo" style="grid-template-columns:repeat(2,1fr);margin-bottom:12px;max-width:480px">
+          <div class="grid-col">col 1/2</div><div class="grid-col">col 2/2</div>
+        </div>
+        <div class="sub-title">Grid — Mobile 1 coloană</div>
+        <div class="grid-demo" style="grid-template-columns:1fr;margin-bottom:0;max-width:240px">
+          <div class="grid-col">col 1/1</div>
+        </div>
+      </div>
+
+      <div class="sec-divider"></div>
+
+      <!-- ══ 4. BREAKPOINTS ══ -->
+      <div class="ds-section" id="breakpoints">
+        <h2 class="sec-title">Breakpoints</h2>
+        <p class="sec-desc">7 puncte de rupere acoperind toate device-urile de la telefoane mici la monitoare 4K. Abordare mobile-first.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:24px">
+          <div class="bp-chip bp-xs">xs · 0–375px<br><span style="font-weight:400">Mobile S</span></div>
+          <div class="bp-chip bp-sm">sm · 376–640px<br><span style="font-weight:400">Mobile L</span></div>
+          <div class="bp-chip bp-md">md · 641–768px<br><span style="font-weight:400">Tabletă ↕</span></div>
+          <div class="bp-chip bp-lg">lg · 769–1024px<br><span style="font-weight:400">Tabletă ↔</span></div>
+          <div class="bp-chip bp-xl">xl · 1025–1280px<br><span style="font-weight:400">Desktop S</span></div>
+          <div class="bp-chip bp-2xl">2xl · 1281–1440px<br><span style="font-weight:400">Desktop M</span></div>
+          <div class="bp-chip" style="background:#f1f5f9;border-color:#cbd5e1;color:#475569">3xl · 1441px+<br><span style="font-weight:400">Desktop L</span></div>
+        </div>
+        <div style="background:var(--surface-white);border-radius:var(--r-xl);border:1px solid var(--border);overflow:hidden">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr style="background:var(--primary-50)">
+              <th style="padding:10px 16px;text-align:left;font-weight:700;color:var(--ink-800);border-bottom:1px solid var(--border)">Breakpoint</th>
+              <th style="padding:10px 16px;text-align:left;font-weight:700;color:var(--ink-800);border-bottom:1px solid var(--border)">Lățime</th>
+              <th style="padding:10px 16px;text-align:left;font-weight:700;color:var(--ink-800);border-bottom:1px solid var(--border)">Device</th>
+              <th style="padding:10px 16px;text-align:left;font-weight:700;color:var(--ink-800);border-bottom:1px solid var(--border)">Grid cols</th>
+              <th style="padding:10px 16px;text-align:left;font-weight:700;color:var(--ink-800);border-bottom:1px solid var(--border)">Nav</th>
+              <th style="padding:10px 16px;text-align:left;font-weight:700;color:var(--ink-800);border-bottom:1px solid var(--border)">Sidebar</th>
+            </tr></thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--border)"><td style="padding:10px 16px;color:var(--ink-800)"><span class="bp-chip bp-xs" style="font-size:9px;padding:2px 6px">xs</span></td><td style="padding:10px 16px;font-family:var(--font-mono);color:var(--ink-400)">0–375px</td><td style="padding:10px 16px;color:var(--ink-400)">Mobile S (iPhone SE)</td><td style="padding:10px 16px;color:var(--ink-400)">1</td><td style="padding:10px 16px;color:var(--ink-400)">Burger</td><td style="padding:10px 16px;color:var(--ink-400)">Overlay</td></tr>
+              <tr style="border-bottom:1px solid var(--border)"><td style="padding:10px 16px"><span class="bp-chip bp-sm" style="font-size:9px;padding:2px 6px">sm</span></td><td style="padding:10px 16px;font-family:var(--font-mono);color:var(--ink-400)">376–640px</td><td style="padding:10px 16px;color:var(--ink-400)">Mobile L (iPhone 14)</td><td style="padding:10px 16px;color:var(--ink-400)">2</td><td style="padding:10px 16px;color:var(--ink-400)">Burger</td><td style="padding:10px 16px;color:var(--ink-400)">Overlay</td></tr>
+              <tr style="border-bottom:1px solid var(--border)"><td style="padding:10px 16px"><span class="bp-chip bp-md" style="font-size:9px;padding:2px 6px">md</span></td><td style="padding:10px 16px;font-family:var(--font-mono);color:var(--ink-400)">641–768px</td><td style="padding:10px 16px;color:var(--ink-400)">Tabletă portret</td><td style="padding:10px 16px;color:var(--ink-400)">2–3</td><td style="padding:10px 16px;color:var(--ink-400)">Parțial</td><td style="padding:10px 16px;color:var(--ink-400)">Overlay</td></tr>
+              <tr style="border-bottom:1px solid var(--border)"><td style="padding:10px 16px"><span class="bp-chip bp-lg" style="font-size:9px;padding:2px 6px">lg</span></td><td style="padding:10px 16px;font-family:var(--font-mono);color:var(--ink-400)">769–1024px</td><td style="padding:10px 16px;color:var(--ink-400)">Tabletă landscape</td><td style="padding:10px 16px;color:var(--ink-400)">3–4</td><td style="padding:10px 16px;color:var(--ink-400)">Full</td><td style="padding:10px 16px;color:var(--ink-400)">Icon only</td></tr>
+              <tr style="border-bottom:1px solid var(--border)"><td style="padding:10px 16px"><span class="bp-chip bp-xl" style="font-size:9px;padding:2px 6px">xl</span></td><td style="padding:10px 16px;font-family:var(--font-mono);color:var(--ink-400)">1025–1280px</td><td style="padding:10px 16px;color:var(--ink-400)">Desktop S (laptop)</td><td style="padding:10px 16px;color:var(--ink-400)">4</td><td style="padding:10px 16px;color:var(--ink-400)">Full</td><td style="padding:10px 16px;color:var(--ink-400)">Full 240px</td></tr>
+              <tr style="border-bottom:1px solid var(--border)"><td style="padding:10px 16px"><span class="bp-chip bp-2xl" style="font-size:9px;padding:2px 6px">2xl</span></td><td style="padding:10px 16px;font-family:var(--font-mono);color:var(--ink-400)">1281–1440px</td><td style="padding:10px 16px;color:var(--ink-400)">Desktop M (monitor)</td><td style="padding:10px 16px;color:var(--ink-400)">4–5</td><td style="padding:10px 16px;color:var(--ink-400)">Full</td><td style="padding:10px 16px;color:var(--ink-400)">Full 240px</td></tr>
+              <tr><td style="padding:10px 16px"><span class="bp-chip" style="background:#f1f5f9;border-color:#cbd5e1;color:#475569;font-size:9px;padding:2px 6px">3xl</span></td><td style="padding:10px 16px;font-family:var(--font-mono);color:var(--ink-400)">1441px+</td><td style="padding:10px 16px;color:var(--ink-400)">Desktop L (4K)</td><td style="padding:10px 16px;color:var(--ink-400)">5–6</td><td style="padding:10px 16px;color:var(--ink-400)">Full</td><td style="padding:10px 16px;color:var(--ink-400)">Full 280px</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="sec-divider"></div>
+
+      <!-- ══ 5. BUTOANE ══ -->
+      <div class="ds-section" id="butoane">
+        <h2 class="sec-title">Butoane</h2>
+        <p class="sec-desc">6 variante principale + 3 mărimi. Toate cu hover, focus, disabled state și shadow adaptat culorii.</p>
+
+        <div class="sub-title">Variante</div>
+        <div class="comp-row">
+          <button class="btn btn-primary"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>Primary</button>
+          <button class="btn btn-secondary">Secondary</button>
+          <button class="btn btn-ai"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>Darrin AI</button>
+          <button class="btn btn-ghost">Ghost</button>
+          <button class="btn btn-danger">Șterge</button>
+        </div>
+
+        <div class="sub-title">Mărimi</div>
+        <div class="comp-row">
+          <button class="btn btn-primary btn-sm">Small</button>
+          <button class="btn btn-primary">Medium (default)</button>
+          <button class="btn btn-primary btn-lg">Large</button>
+        </div>
+
+        <div class="sub-title">Stări</div>
+        <div class="comp-row">
+          <button class="btn btn-primary">Normal</button>
+          <button class="btn btn-primary" style="background:var(--accent-700);transform:translateY(-1px);box-shadow:0 6px 20px rgba(232,135,26,.4)">Hover</button>
+          <button class="btn btn-primary" style="box-shadow:0 0 0 3px rgba(232,135,26,.3)">Focus</button>
+          <button class="btn btn-primary" disabled>Disabled</button>
+        </div>
+      </div>
+
+      <div class="sec-divider"></div>
+
+      <!-- ══ 6. FORMULARE ══ -->
+      <div class="ds-section" id="formulare">
+        <h2 class="sec-title">Formulare</h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;max-width:720px">
+          <div>
+            <div class="inp-group"><label class="inp-label">Tip serviciu</label><input class="inp" type="text" placeholder="ex: Instalații sanitare"/></div>
+            <div class="inp-group"><label class="inp-label">Locație</label><input class="inp" type="text" value="București, Sector 6"/></div>
+            <div class="inp-group"><label class="inp-label">Descriere</label><textarea class="inp" rows="3" style="resize:none">Montaj gard metalic 25ml...</textarea></div>
+            <div class="inp-group"><label class="inp-label">Email (eroare)</label><input class="inp inp-error" type="email" value="email-invalid"/><div class="inp-hint error">Email-ul nu este valid.</div></div>
+          </div>
+          <div>
+            <div class="inp-group"><label class="inp-label">Nivel calitate</label><select class="inp"><option>Standard (Bronz)</option><option selected>Mediu (Argint)</option><option>Premium (Platină)</option></select></div>
+            <div class="inp-group"><label class="inp-label">Suprafață</label><input class="inp" type="text" placeholder="ex: 25 ml, 40 m²"/><div class="inp-hint">Introdu unitatea de măsură.</div></div>
+            <div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border);margin-bottom:12px">
+              <input type="checkbox" id="cb1" checked style="width:16px;height:16px;accent-color:var(--accent-500)"/>
+              <label for="cb1" style="font-size:13px;color:var(--ink-800)">Accept termenii și condițiile</label>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:12px 0">
+              <input type="checkbox" id="cb2" style="width:16px;height:16px;accent-color:var(--accent-500)"/>
+              <label for="cb2" style="font-size:13px;color:var(--ink-800)">Abonează-mă la notificări</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-divider"></div>
+
+      <!-- ══ 7. CARDURI ══ -->
+      <div class="ds-section" id="carduri">
+        <h2 class="sec-title">Carduri</h2>
+
+        <div class="sub-title">Card Rich (Catalog)</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:840px;margin-bottom:32px">
+          <!-- Rich card 1 -->
+          <div class="rich-card">
+            <div class="media"><img src="https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=300&q=70" alt="s" loading="lazy"/></div>
+            <div class="body">
+              <div style="font-size:10px;font-weight:700;background:var(--accent-100);color:var(--accent-700);padding:2px 8px;border-radius:var(--r-full);display:inline-flex;align-items:center;gap:4px;width:fit-content">🔥 Popular</div>
+              <div style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--ink-800)">Instalații sanitare</div>
+              <div style="font-size:11px;color:var(--ink-400);line-height:1.5">Montaj, reparații și modernizare instalații apă-canal.</div>
+              <div class="rating"><span class="stars">★★★★★</span><span class="rating-val">4.9 (340)</span></div>
+            </div>
+            <div class="footer-bar">
+              <div class="price-block"><span class="price-from">De la</span><span class="price-val">85 Lei</span><span class="price-unit">/ oră</span></div>
+              <button class="btn btn-primary btn-sm">+ Coș</button>
+            </div>
+          </div>
+          <!-- Rich card 2 — dark -->
+          <div class="rich-card card-dark">
+            <div class="media" style="background:linear-gradient(135deg,#0B2D2B,#0B1E38);display:flex;align-items:center;justify-content:center;aspect-ratio:16/9">
+              <div style="text-align:center"><div style="font-size:40px;margin-bottom:6px">🧠</div><div style="color:var(--ai-600);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Darrin AI</div></div>
+            </div>
+            <div class="body" style="background:var(--primary-800)">
+              <div style="font-family:var(--font-display);font-weight:700;font-size:14px;color:#fff">Nu găsești serviciul?</div>
+              <div style="font-size:11px;color:rgba(255,255,255,.45);line-height:1.5">Descrie lucrarea — AI generează deviz automat în 60 secunde.</div>
+            </div>
+            <div class="footer-bar" style="background:var(--primary-800);border-color:rgba(255,255,255,.1)">
+              <span style="font-size:11px;color:rgba(255,255,255,.35)">Gratuit</span>
+              <button class="btn btn-ai btn-sm">Deviz AI →</button>
+            </div>
+          </div>
+          <!-- KPI card -->
+          <div class="card card-pad" style="display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-400)">Comenzi Active</div>
+            <div style="font-family:var(--font-display);font-weight:800;font-size:32px;color:var(--ink-800);line-height:1">247</div>
+            <div style="font-size:12px;color:#22c55e;font-weight:600">↑ 18% față de luna trecută</div>
+            <div style="margin-top:auto">
+              <div class="progress-wrap"><div class="progress-bar" style="width:72%;background:linear-gradient(90deg,var(--primary-600),var(--ai-600))"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sub-title">Skeleton loading</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;max-width:840px">
+          <div class="card" style="border-radius:var(--r-xl);overflow:hidden">
+            <div class="skeleton" style="height:80px"></div>
+            <div style="padding:12px;display:flex;flex-direction:column;gap:8px">
+              <div class="skeleton" style="height:12px;border-radius:4px;width:70%"></div>
+              <div class="skeleton" style="height:10px;border-radius:4px;width:90%"></div>
+              <div class="skeleton" style="height:10px;border-radius:4px;width:60%"></div>
+            </div>
+          </div>
+          <div class="card" style="border-radius:var(--r-xl);overflow:hidden">
+            <div class="skeleton" style="height:80px"></div>
+            <div style="padding:12px;display:flex;flex-direction:column;gap:8px">
+              <div class="skeleton" style="height:12px;border-radius:4px;width:80%"></div>
+              <div class="skeleton" style="height:10px;border-radius:4px;width:95%"></div>
+              <div class="skeleton" style="height:10px;border-radius:4px;width:50%"></div>
+            </div>
+          </div>
+          <div class="card" style="border-radius:var(--r-xl);overflow:hidden">
+            <div class="skeleton" style="height:80px"></div>
+            <div style="padding:12px;display:flex;flex-direction:column;gap:8px">
+              <div class="skeleton" style="height:12px;border-radius:4px;width:65%"></div>
+              <div class="skeleton" style="height:10px;border-radius:4px;width:88%"></div>
+              <div class="skeleton" style="height:10px;border-radius:4px;width:72%"></div>
+            </div>
+          </div>
+          <div class="card" style="border-radius:var(--r-xl);overflow:hidden">
+            <div class="skeleton" style="height:80px"></div>
+            <div style="padding:12px;display:flex;flex-direction:column;gap:8px">
+              <div class="skeleton" style="height:12px;border-radius:4px;width:75%"></div>
+              <div class="skeleton" style="height:10px;border-radius:4px;width:85%"></div>
+              <div class="skeleton" style="height:10px;border-radius:4px;width:55%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-divider"></div>
+
+      <!-- ══ 8. NAVIGARE ══ -->
+      <div class="ds-section" id="navigare">
+        <h2 class="sec-title">Navigare</h2>
+        <div class="sub-title">Nav underline (Header)</div>
+        <div style="display:flex;gap:16px;padding:12px 0;border-bottom:1px solid var(--border);margin-bottom:20px">
+          <a class="nav-underline active">Servicii</a>
+          <a class="nav-underline">Acasă</a>
+          <a class="nav-underline">Devino Partener</a>
+          <a class="nav-underline">Contact</a>
+        </div>
+        <div class="sub-title">Tabs (Catalog)</div>
+        <div class="tabs-wrap" style="max-width:400px;margin-bottom:20px">
+          <button class="tab-item active">🔧 Servicii</button>
+          <button class="tab-item">📦 Materiale</button>
+          <button class="tab-item">🏗 Închiriere</button>
+        </div>
+        <div class="sub-title">Nav Pills (Dashboard)</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          <a class="nav-pill active">⬛ Dashboard</a>
+          <a class="nav-pill">🗂 Catalog</a>
+          <a class="nav-pill">🧠 Deviz AI</a>
+          <a class="nav-pill">📋 Comenzi</a>
+          <a class="nav-pill">🔒 Escrow</a>
+        </div>
+      </div>
+
+      <div class="sec-divider"></div>
+
+      <!-- ══ 9. BADGES & STATUS ══ -->
+      <div class="ds-section" id="badges">
+        <h2 class="sec-title">Badges & Status</h2>
+        <div class="sub-title">Badges</div>
+        <div class="comp-row" style="margin-bottom:20px">
+          <span class="badge badge-primary">Primary</span>
+          <span class="badge badge-accent">Accent</span>
+          <span class="badge badge-ai">✦ AI</span>
+          <span class="badge badge-success">✓ Finalizat</span>
+          <span class="badge badge-warning">⚠ În execuție</span>
+          <span class="badge badge-error">✕ Anulat</span>
+          <span class="badge badge-new">Nou</span>
+          <span class="badge badge-hot">🔥 Popular</span>
+          <span class="badge badge-rent">🏗 Închiriere</span>
+        </div>
+        <div class="sub-title">Status dots</div>
+        <div class="comp-row">
+          <div class="status status-online"><div class="status-dot"></div>Online</div>
+          <div class="status status-busy"><div class="status-dot"></div>Ocupat</div>
+          <div class="status status-offline"><div class="status-dot"></div>Offline</div>
+        </div>
+      </div>
+
+      <div class="sec-divider"></div>
+
+      <!-- ══ 10. ALERTE ══ -->
+      <div class="ds-section" id="alerte">
+        <h2 class="sec-title">Alerte & Notificări</h2>
+        <div style="max-width:600px">
+          <div class="alert alert-info"><svg class="alert-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div><div class="alert-title">Informație</div><div class="alert-desc">Devizul tău a fost generat și trimis prestatorilor.</div></div></div>
+          <div class="alert alert-success"><svg class="alert-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><div><div class="alert-title">Succes</div><div class="alert-desc">Lucrarea a fost finalizată și suma a fost eliberată din Escrow.</div></div></div>
+          <div class="alert alert-warning"><svg class="alert-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><div><div class="alert-title">Atenție</div><div class="alert-desc">Termenul de execuție se apropie. Mai ai 2 zile.</div></div></div>
+          <div class="alert alert-error"><svg class="alert-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg><div><div class="alert-title">Eroare</div><div class="alert-desc">Plata a eșuat. Verificați datele cardului.</div></div></div>
+          <div class="alert alert-ai"><svg class="alert-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><div><div class="alert-title">Darrin AI</div><div class="alert-desc">Am generat devizul automat bazat pe descrierea ta. Verifică și aprobă.</div></div></div>
+        </div>
+      </div>
+
+      <div class="sec-divider"></div>
+
+      <!-- ══ 11. DEVICE FRAMES ══ -->
+      <div class="ds-section" id="device-frames">
+        <h2 class="sec-title">Device Frames</h2>
+        <p class="sec-desc">Structuri standardizate pentru fiecare tip de dispozitiv. Aceeași experiență, adaptată la fiecare context.</p>
+
+        <div class="device-showcase">
+
+          <!-- Desktop -->
+          <div>
+            <div class="sub-title" style="margin-bottom:10px">🖥 Desktop (1280px+)</div>
+            <div class="frame-desktop-mini">
+              <div class="frame-bar">
+                <div class="mac-dot" style="background:#ff5f57"></div>
+                <div class="mac-dot" style="background:#febc2e"></div>
+                <div class="mac-dot" style="background:#28c840"></div>
+                <div class="url-mini">mydarrin.ro</div>
+              </div>
+              <div class="frame-screen" style="background:var(--surface-100);height:160px;padding:6px;display:flex;flex-direction:column;gap:5px">
+                <div style="height:14px;background:#fff;border-radius:4px;border:1px solid var(--border)"></div>
+                <div style="height:30px;background:linear-gradient(135deg,var(--primary-800),var(--primary-900));border-radius:4px"></div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;flex:1">
+                  <div style="background:#fff;border-radius:4px;border:1px solid var(--border)"></div>
+                  <div style="background:#fff;border-radius:4px;border:1px solid var(--border)"></div>
+                  <div style="background:#fff;border-radius:4px;border:1px solid var(--border)"></div>
+                  <div style="background:#fff;border-radius:4px;border:1px solid var(--border)"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-divider"></div>
+
+      <!-- ══ INVENTAR PAGINI ══ -->
+      <div class="ds-section" id="pagini">
+        <h2 class="sec-title">Inventar pagini platformă</h2>
+        <p class="sec-desc">Toate paginile proiectate, în curs și planificate. Fiecare urmează același design system — tokens, componente, breakpoints identice.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">
+          <div class="page-card"><div class="page-card-header" style="background:linear-gradient(135deg,var(--primary-800),var(--primary-900))"><span class="page-tag">✓ Live v3</span></div><div class="page-card-body"><div class="page-title">🏠 Landing Page</div><div class="page-desc">Hero, catalog, deviz AI, flux, footer</div><div class="page-status" style="color:var(--success)"><span style="width:6px;height:6px;border-radius:50%;background:var(--success);display:inline-block"></span>Aprobat</div></div></div>
+          <div class="page-card"><div class="page-card-header" style="background:linear-gradient(135deg,#0B2D2B,#0B1E38)"><span class="page-tag">✓ Live v3</span></div><div class="page-card-body"><div class="page-title">🧠 Deviz AI</div><div class="page-desc">Formular, preview, alocare actori</div><div class="page-status" style="color:var(--success)"><span style="width:6px;height:6px;border-radius:50%;background:var(--success);display:inline-block"></span>Aprobat</div></div></div>
+          <div class="page-card"><div class="page-card-header" style="background:linear-gradient(135deg,var(--accent-700),#7A3A08)"><span class="page-tag">🔜 Design</span></div><div class="page-card-body"><div class="page-title">📄 Pagină Serviciu</div><div class="page-desc">Galerie, recenzii, rezervare</div><div class="page-status" style="color:var(--warning)"><span style="width:6px;height:6px;border-radius:50%;background:var(--warning);display:inline-block"></span>În design</div></div></div>
+          <div class="page-card"><div class="page-card-header" style="background:linear-gradient(135deg,#4B7BEC,#2B4C7E)"><span class="page-tag">🔜 Design</span></div><div class="page-card-body"><div class="page-title">🛒 Checkout</div><div class="page-desc">Coș, plată Escrow, confirmare</div><div class="page-status" style="color:var(--warning)"><span style="width:6px;height:6px;border-radius:50%;background:var(--warning);display:inline-block"></span>În design</div></div></div>
+          <div class="page-card"><div class="page-card-header" style="background:linear-gradient(135deg,#7C3AED,#5B21B6)"><span class="page-tag">Planificat</span></div><div class="page-card-body"><div class="page-title">🤝 Devino Partener</div><div class="page-desc">Beneficii, înregistrare, verificare</div><div class="page-status" style="color:var(--ink-300)"><span style="width:6px;height:6px;border-radius:50%;background:var(--ink-200);display:inline-block"></span>Planificat</div></div></div>
+          <div class="page-card"><div class="page-card-header" style="background:linear-gradient(135deg,#059669,#064E3B)"><span class="page-tag">Planificat</span></div><div class="page-card-body"><div class="page-title">📈 Investitori</div><div class="page-desc">KPIs, runde finanțare, contact</div><div class="page-status" style="color:var(--ink-300)"><span style="width:6px;height:6px;border-radius:50%;background:var(--ink-200);display:inline-block"></span>Planificat</div></div></div>
+          <div class="page-card"><div class="page-card-header" style="background:linear-gradient(135deg,#1E3557,#243F6A)"><span class="page-tag">🔜 Design</span></div><div class="page-card-body"><div class="page-title">👤 Dashboard Client</div><div class="page-desc">Comenzi, devize, garanții</div><div class="page-status" style="color:var(--warning)"><span style="width:6px;height:6px;border-radius:50%;background:var(--warning);display:inline-block"></span>În design</div></div></div>
+          <div class="page-card"><div class="page-card-header" style="background:linear-gradient(135deg,#E8871A,#C46E0F)"><span class="page-tag">🔜 Design</span></div><div class="page-card-body"><div class="page-title">🔧 Dashboard Partener</div><div class="page-desc">Comenzi, execuție, plăți</div><div class="page-status" style="color:var(--warning)"><span style="width:6px;height:6px;border-radius:50%;background:var(--warning);display:inline-block"></span>În design</div></div></div>
+          <div class="page-card"><div class="page-card-header" style="background:linear-gradient(135deg,#0F1F3D,#1E3557)"><span class="page-tag">✓ Mockup</span></div><div class="page-card-body"><div class="page-title">⬛ Super Admin</div><div class="page-desc">KPIs globale, escrow, analytics</div><div class="page-status" style="color:var(--success)"><span style="width:6px;height:6px;border-radius:50%;background:var(--success);display:inline-block"></span>Mockup v1</div></div></div>
+          <div class="page-card"><div class="page-card-header" style="background:linear-gradient(135deg,#0EA5A0,#0B8580)"><span class="page-tag">Planificat</span></div><div class="page-card-body"><div class="page-title">📦 App iOS + Android</div><div class="page-desc">5 ecrane native, tab bar, notif</div><div class="page-status" style="color:var(--ink-300)"><span style="width:6px;height:6px;border-radius:50%;background:var(--ink-200);display:inline-block"></span>Planificat</div></div></div>
+        </div>
+      </div>
+
+      <div class="sec-divider"></div>
+
+      <!-- FOOTER DS -->
+      <div style="padding-top:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:40px">
+        <div style="font-size:12px;color:var(--ink-400)">My Darrin Design System v1.0 · Iunie 2026 · <strong style="color:var(--success)">Aprobare intermediară ✓</strong></div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="width:7px;height:7px;border-radius:50%;background:var(--ai-600);animation:pulse-g 2s infinite;display:inline-block"></span>
+          <span style="font-size:12px;color:var(--ink-400)">Darrin AI · v5.2 · Online</span>
+        </div>
+      </div>
+
+    </div><!-- /ds-content -->
+  </div><!-- /ds-main -->
+</div><!-- /ds-page -->
+
+<script>
+const sections = document.querySelectorAll('.ds-section[id]');
+const navItems = document.querySelectorAll('.ds-nav-item');
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navItems.forEach(n => n.classList.remove('active'));
+      const a = document.querySelector(`.ds-nav-item[href="#${e.target.id}"]`);
+      if (a) a.classList.add('active');
+    }
+  });
+}, { threshold: 0.25, rootMargin:'-50px 0px -40% 0px' });
+sections.forEach(s => obs.observe(s));
+</script>
+
+<!-- ════ QUICK NAV ════ -->
+<div style="background:#002855;border-top:1px solid rgba(255,255,255,.08);padding:10px 24px">
+  <div style="max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap">
+    <a href="mydarrin-v3.html" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">🏠 Acasă</a> <span style="color:rgba(255,255,255,.15)">·</span> <a href="mydarrin-backoffice-serviciu.html" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">⚙️ Backoffice</a> <span style="color:rgba(255,255,255,.15)">·</span> <a href="mydarrin-catalog.html" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">📦 Catalog</a> <span style="color:rgba(255,255,255,.15)">·</span> <a href="mydarrin-produs.html" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">🔧 Produs</a> <span style="color:rgba(255,255,255,.15)">·</span> <a href="mydarrin-business-model.html" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">📋 Business Model</a>
+  </div>
+</div>
+
+<!-- ════ FOOTER STANDARD My Darrin ════ -->
+<div style="background:#003366;padding:24px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-top:40px">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div style="width:32px;height:32px;background:#FF8C00;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff">D</div>
+    <div>
+      <div style="font-weight:800;color:#fff;font-size:14px">My Darrin</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.4)">© 2026 Home Best Pal SRL · Bacău, România</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:16px;flex-wrap:wrap">
+    <a href="mydarrin-v3.html" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">🏠 Acasă</a>
+    <a href="mydarrin-catalog.html" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">📦 Catalog</a>
+    <a href="mydarrin-marketplace.html" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">🏪 Marketplace</a>
+    <a href="mydarrin-devino-partener.html" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">👷 Parteneri</a>
+    <a href="mydarrin-investitori.html" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">💼 Investitori</a>
+    <a href="mydarrin-app-mobile.html" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">📱 App Mobile</a>
+    <a href="mydarrin-superadmin.html" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">🔐 Admin</a>
+  </div>
+</div>
+
+</body>
+</html>

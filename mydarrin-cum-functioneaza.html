@@ -1,0 +1,1997 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Cum funcționează My Darrin · Flux operațional</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script>tailwind.config={theme:{extend:{colors:{
+  primary:{DEFAULT:"#003366"},accent:{DEFAULT:"#FF8C00"},
+  ai:{DEFAULT:"#0E9E99"},surface:{DEFAULT:"#F4F7F9"}
+}}}}</script>
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+html { scroll-behavior:smooth; }
+body { font-family:'Helvetica World','Helvetica Neue',Arial,system-ui,sans-serif; background:#F4F7F9; color:#2D2D2D; overflow-x:hidden; }
+
+/* ── SCROLL PROGRESS ── */
+#spbar { position:fixed; top:0; left:0; height:3px; background:linear-gradient(90deg,#FF8C00,#0E9E99); z-index:9999; width:0%; transition:width .08s; }
+
+/* ── TOPBAR ── */
+#topbar { background:#003366; }
+
+/* ── HEADER ── */
+#hdr { background:#fff; border-bottom:1px solid #D5DFE8; transition:box-shadow .3s; }
+
+/* ── NAV LINKS ── */
+.nav-lnk {
+  position:relative; font-size:13.5px; font-weight:500;
+  color:#2D2D2D; transition:color .18s; white-space:nowrap;
+  padding:4px 0;
+}
+.nav-lnk::after {
+  content:''; position:absolute; bottom:-2px; left:0;
+  width:0; height:2px; background:#FF8C00;
+  border-radius:1px; transition:width .2s;
+}
+.nav-lnk:hover { color:#FF8C00; }
+.nav-lnk:hover::after { width:100%; }
+
+/* ── MEGA DROPDOWN ── */
+.mega-wrap { position:relative; }
+.mega-panel {
+  opacity:0; visibility:hidden;
+  transform:translateX(-50%) translateY(8px);
+  position:absolute; top:calc(100%+14px); left:50%;
+  transition:opacity .2s, transform .2s, visibility .2s;
+  z-index:200;
+}
+.mega-wrap:hover .mega-panel,
+.mega-wrap:focus-within .mega-panel {
+  opacity:1; visibility:visible; transform:translateX(-50%) translateY(0);
+}
+
+/* ── SIDEBAR ── */
+#sidebar {
+  position:fixed; top:0; left:-300px; height:100vh; width:300px;
+  background:#fff; z-index:300;
+  box-shadow:6px 0 40px rgba(27,52,87,.14);
+  transition:left .3s cubic-bezier(.22,1,.36,1);
+  overflow-y:auto; overflow-x:hidden;
+}
+#sidebar.open { left:0; }
+#sidebar-overlay {
+  display:none; position:fixed; inset:0;
+  background:rgba(26,38,64,.4); z-index:299;
+  backdrop-filter:blur(2px);
+}
+#sidebar-overlay.show { display:block; }
+
+.sb-label {
+  font-size:10px; font-weight:700; letter-spacing:.12em;
+  text-transform:uppercase; color:#8C9BAD;
+  padding:18px 24px 6px; display:block;
+}
+.sb-item {
+  display:flex; align-items:center; gap:12px;
+  padding:11px 24px; font-size:14px; font-weight:500;
+  color:#2B3A55; transition:color .15s, background .15s;
+  cursor:pointer; text-decoration:none;
+}
+.sb-item:hover { color:#FF8C00; background:#FFF0D6; }
+.sb-item .sb-ico {
+  width:32px; height:32px; border-radius:8px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:16px; background:#F4F7F9; flex-shrink:0;
+  transition:background .15s;
+}
+.sb-item:hover .sb-ico { background:#FFF0D6; }
+.sb-divider { height:1px; background:#F0F2F7; margin:6px 0; }
+
+/* ── CATALOG TABS ── */
+.cat-tab {
+  padding:9px 20px; border-radius:10px; font-size:13px;
+  font-weight:600; cursor:pointer; border:none;
+  font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif; transition:all .18s;
+  background:transparent; color:#6B7A8D;
+}
+.cat-tab.active { background:#003366; color:#fff; }
+.cat-tab:not(.active):hover { background:#EBF4FB; color:#003366; }
+
+/* ── SERVICE CARD ── */
+.svc-card {
+  background:#fff; border-radius:18px;
+  border:1px solid #D5DFE8; padding:24px 20px;
+  transition:transform .2s, box-shadow .2s, border-color .2s;
+  cursor:pointer;
+}
+.svc-card:hover {
+  transform:translateY(-4px);
+  box-shadow:0 16px 44px rgba(43,76,126,.1);
+  border-color:transparent;
+}
+
+/* ── BASKET PANEL ── */
+.basket-item {
+  display:flex; align-items:center; gap:12px;
+  padding:13px 16px; background:#fff; border-radius:14px;
+  border:1px solid #F0F2F7; margin-bottom:8px;
+  transition:box-shadow .18s;
+}
+.basket-item:hover { box-shadow:0 4px 18px rgba(43,76,126,.08); }
+.b-avatar {
+  width:48px; height:48px; background:#EBF4FB;
+  border-radius:10px; display:flex; align-items:center;
+  justify-content:center; font-size:20px; flex-shrink:0;
+}
+.qty-btn {
+  width:26px; height:26px; border-radius:7px;
+  border:1px solid #D5DFE8; background:#F4F7F9;
+  font-size:14px; cursor:pointer; display:flex;
+  align-items:center; justify-content:center; transition:all .15s;
+}
+.qty-btn:hover { background:#FF8C00; color:#fff; border-color:#FF8C00; }
+
+/* ── FLOW ── */
+.flow-box {
+  border-radius:12px; border:1.5px solid;
+  padding:11px 20px; font-size:13px; font-weight:600;
+  text-align:center; line-height:1.3;
+}
+.flow-arrow {
+  width:2px; height:26px;
+  background:linear-gradient(180deg,#CBD5E8,#9AACC4);
+  position:relative;
+}
+.flow-arrow::after {
+  content:''; position:absolute; bottom:-1px; left:50%;
+  transform:translateX(-50%);
+  border-left:5px solid transparent;
+  border-right:5px solid transparent;
+  border-top:7px solid #9AACC4;
+}
+.ai-node {
+  background:linear-gradient(135deg,#0B2D2B,#0B1E38) !important;
+  border-color:rgba(14,165,160,.5) !important;
+  color:#0E9E99 !important;
+  box-shadow:0 0 22px rgba(14,165,160,.3);
+}
+.actor-box {
+  border-radius:12px; border:1.5px solid; padding:10px 14px;
+  text-align:center; font-size:12px; font-weight:700;
+  transition:transform .18s, box-shadow .18s; cursor:default;
+}
+.actor-box:hover { transform:translateY(-3px); box-shadow:0 8px 22px rgba(0,0,0,.09); }
+
+/* ── REVEAL ── */
+.reveal { opacity:0; transform:translateY(32px); transition:opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1); }
+.reveal.d1{transition-delay:.1s} .reveal.d2{transition-delay:.2s}
+.reveal.d3{transition-delay:.3s} .reveal.d4{transition-delay:.45s}
+.reveal.visible { opacity:1; transform:none; }
+
+/* ── PULSE ── */
+.pulse-dot { width:7px; height:7px; border-radius:50%; background:#0E9E99; animation:pulse 2s infinite; display:inline-block; }
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ── HERO ── */
+.hero-bg { background:#003366; position:relative; overflow:hidden; }
+.hero-bg::before {
+  content:''; position:absolute; inset:0;
+  background:
+    radial-gradient(ellipse 65% 55% at 78% 42%, rgba(232,135,26,.24) 0%, transparent 65%),
+    radial-gradient(ellipse 45% 55% at 8% 78%, rgba(14,165,160,.16) 0%, transparent 55%);
+}
+.hero-grid {
+  position:absolute; inset:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+  background-size:52px 52px;
+}
+
+/* ── SEARCH BAR ── */
+.search-bar {
+  display:flex; align-items:center; gap:8px;
+  background:#F4F7F9; border:1.5px solid #D5DFE8;
+  border-radius:10px; padding:8px 14px;
+  font-size:13px; color:#8C9BAD;
+  transition:border-color .18s, box-shadow .18s;
+  cursor:pointer; min-width:170px;
+}
+.search-bar:hover { border-color:#003366; }
+
+/* ── LOCATION CHIP ── */
+.loc-chip {
+  display:flex; align-items:center; gap:5px;
+  font-size:12px; cursor:pointer;
+  transition:opacity .15s; white-space:nowrap;
+}
+.loc-chip:hover { opacity:.8; }
+
+/* ── LANG CHIP ── */
+.lang-chip {
+  display:flex; align-items:center; gap:4px;
+  font-size:12px; cursor:pointer;
+  transition:opacity .15s;
+}
+.lang-chip:hover { opacity:.8; }
+
+/* ── LANG DROPDOWN ── */
+.lang-dd { position:relative; }
+.lang-panel {
+  display:none; position:absolute; top:calc(100%+8px); right:0;
+  background:#fff; border-radius:12px; border:1px solid #D5DFE8;
+  box-shadow:0 8px 30px rgba(26,38,64,.12); min-width:140px;
+  overflow:hidden; z-index:100;
+}
+.lang-dd.open .lang-panel { display:block; }
+.lang-opt {
+  display:flex; align-items:center; gap:8px;
+  padding:9px 14px; font-size:13px; font-weight:500;
+  color:#2D2D2D; cursor:pointer; transition:background .15s;
+}
+.lang-opt:hover { background:#EBF4FB; }
+.lang-opt.active { color:#003366; font-weight:700; }
+
+/* ── SOCIAL BUTTONS ── */
+.social-btn {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.1);
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,.6);
+  transition: all .2s; text-decoration: none; flex-shrink: 0;
+}
+.social-btn:hover {
+  background: var(--sc, #FF8C00);
+  border-color: var(--sc, #FF8C00);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,.25);
+}
+
+/* ── FOOTER LINKS ── */
+footer a { color:rgba(255,255,255,.45); font-size:12.5px; transition:color .18s; text-decoration:none; }
+footer a:hover { color:#FF8C00; }
+
+  /* ══ HELVETICA WORLD — Master Font Override ══ */
+  @font-face {
+    font-family: 'Helvetica World';
+    font-weight: 400;
+    font-style: normal;
+    src: local('Helvetica World'), local('HelveticaWorld'), local('Helvetica Neue'), local('Arial');
+  }
+  @font-face {
+    font-family: 'Helvetica World';
+    font-weight: 500;
+    font-style: normal;
+    src: local('Helvetica World Medium'), local('HelveticaWorld-Medium'), local('Helvetica Neue Medium'), local('Arial');
+  }
+  @font-face {
+    font-family: 'Helvetica World';
+    font-weight: 700;
+    font-style: normal;
+    src: local('Helvetica World Bold'), local('HelveticaWorld-Bold'), local('Helvetica Neue Bold'), local('Arial Bold');
+  }
+  /* Universal font override */
+  *, *::before, *::after {
+    font-family: 'Helvetica World', 'Helvetica Neue', 'Arial', system-ui, sans-serif !important;
+  }
+  /* Display/heading weight */
+  h1, h2, h3, h4, h5, h6,
+  [style*="font-family:'Syne'"],
+  [style*='font-family:"Syne"'] {
+    font-family: 'Helvetica World', 'Helvetica Neue', 'Arial', sans-serif !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.01em;
+  }
+  /* Body weight */
+  p, span, div, a, td, th, input, textarea, select, button {
+    font-family: 'Helvetica World', 'Helvetica Neue', 'Arial', system-ui, sans-serif !important;
+  }
+  /* Mono / tabular figures — exception */
+  code, pre, .tabular, .price-val, .invoice-amount,
+  .kpi-value, [class*="order-id"], .mono {
+    font-family: 'Courier New', monospace !important;
+  }
+</style>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;background:#F4F7F9;color:#2D2D2D;-webkit-font-smoothing:antialiased}
+#spbar{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,#FF8C00,#0E9E99);z-index:9999;width:0%;transition:width .08s}
+.reveal{opacity:0;transform:translateY(22px);transition:opacity .55s cubic-bezier(.22,1,.36,1),transform .55s cubic-bezier(.22,1,.36,1)}
+.reveal.d1{transition-delay:.08s}.reveal.d2{transition-delay:.16s}.reveal.d3{transition-delay:.24s}
+.reveal.visible{opacity:1;transform:none}
+.pulse-dot{width:7px;height:7px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block;flex-shrink:0}
+@keyframes pdot{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* Reuse v3 flow styles */
+.flow-box{display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;border-radius:99px;padding:12px 28px;border:1px solid;min-width:180px;text-align:center;transition:all .2s}
+.flow-arrow{width:1px;height:32px;background:linear-gradient(180deg,#D5DFE8,#D5DFE8);margin:0 auto;position:relative}
+.flow-arrow::after{content:"";position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid #D5DFE8}
+.ai-node{background:linear-gradient(135deg,#0E9E99,#003366)!important;color:#fff!important;border-color:transparent!important}
+.actor-box{display:flex;flex-direction:column;align-items:center;font-size:12px;font-weight:700;border:1px solid;border-radius:16px;padding:12px 8px;text-align:center}
+</style>
+</head>
+<body>
+<div id="spbar"></div>
+<div id="topbar" class="hidden md:flex items-center justify-between px-8 py-2 gap-4">
+
+  <!-- Social -->
+  <div class="flex items-center gap-3">
+    <a href="https://facebook.com" target="_blank" class="text-white/40 hover:text-white transition" title="Facebook"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></a>
+    <a href="https://instagram.com" target="_blank" class="text-white/40 hover:text-white transition" title="Instagram"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>
+    <a href="https://youtube.com" target="_blank" class="text-white/40 hover:text-white transition" title="YouTube"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a>
+    <a href="https://linkedin.com" target="_blank" class="text-white/40 hover:text-white transition" title="LinkedIn"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
+    <a href="https://x.com" target="_blank" class="text-white/40 hover:text-white transition" title="X"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+    <a href="https://tiktok.com" target="_blank" class="text-white/40 hover:text-white transition" title="TikTok"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.75a8.18 8.18 0 004.78 1.52V6.79a4.85 4.85 0 01-1.01-.1z"/></svg></a>
+    <a href="https://wa.me/40721234567" target="_blank" class="text-white/40 hover:text-white transition" title="WhatsApp"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>
+  </div>
+
+  <!-- AI status center -->
+  <div class="flex items-center gap-2 text-white/50 text-xs">
+    <span class="pulse-dot"></span>
+    <span>Darrin AI activ — deviz inteligent în 60 secunde</span>
+  </div>
+
+  <!-- Dreapta: locatie activa + limba -->
+  <div class="flex items-center gap-5">
+
+    <!-- LOCATIE ACTIVA — detectata din IP -->
+    <div id="loc-btn" class="loc-chip text-white/55" onclick="openLocModal()">
+      <i data-lucide="map-pin" class="w-3 h-3 text-[#FF8C00]"></i>
+      <span>Adresă: <span class="text-white font-semibold" id="loc-display">București, Sector 6</span></span>
+      <i data-lucide="chevron-down" class="w-3 h-3 text-white/40"></i>
+    </div>
+
+    <!-- SELECTOR LIMBA -->
+    <div class="lang-dd" id="langDd">
+      <div class="lang-chip text-white/55" onclick="toggleLang()">
+        <span id="lang-flag">🇷🇴</span>
+        <span id="lang-label" class="text-white/75 font-medium">Română</span>
+        <i data-lucide="chevron-down" class="w-3 h-3 text-white/40"></i>
+      </div>
+      <div class="lang-panel">
+        <div class="lang-opt active" onclick="setLang('ro','🇷🇴','Română')"><span>🇷🇴</span> Română</div>
+        <div class="lang-opt" onclick="setLang('en','🇬🇧','English')"><span>🇬🇧</span> English</div>
+        <div class="lang-opt" onclick="setLang('de','🇩🇪','Deutsch')"><span>🇩🇪</span> Deutsch</div>
+        <div class="lang-opt" onclick="setLang('fr','🇫🇷','Français')"><span>🇫🇷</span> Français</div>
+        <div class="lang-opt" onclick="setLang('hu','🇭🇺','Magyar')"><span>🇭🇺</span> Magyar</div>
+        <div class="lang-opt" onclick="setLang('pl','🇵🇱','Polski')"><span>🇵🇱</span> Polski</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- LOCATION MODAL -->
+<div id="loc-modal" class="hidden fixed inset-0 z-[400] flex items-center justify-center p-6">
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeLocModal()"></div>
+  <div class="relative bg-white rounded-2xl shadow-2xl p-7 w-full max-w-sm z-10">
+    <h3 class="font-bold text-[#2D2D2D] mb-1" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Schimbă locația</h3>
+    <p class="text-xs text-gray-400 mb-5">Platforma detectează automat locația din IP-ul tău. O poți schimba oricând.</p>
+    <div class="relative mb-4">
+      <i data-lucide="map-pin" class="absolute left-3 top-3 w-4 h-4 text-[#FF8C00]"></i>
+      <input id="loc-input" type="text" value="București, Sector 6"
+             class="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm font-medium focus:outline-none focus:border-[#003366] focus:ring-2 focus:ring-[#003366]/10 transition"/>
+    </div>
+    <div class="flex gap-2 text-[11px] text-gray-400 mb-5">
+      <span class="cursor-pointer hover:text-[#003366] transition px-3 py-1.5 bg-gray-50 rounded-lg" onclick="setLoc('Cluj-Napoca')">📍 Cluj-Napoca</span>
+      <span class="cursor-pointer hover:text-[#003366] transition px-3 py-1.5 bg-gray-50 rounded-lg" onclick="setLoc('Timișoara')">📍 Timișoara</span>
+      <span class="cursor-pointer hover:text-[#003366] transition px-3 py-1.5 bg-gray-50 rounded-lg" onclick="setLoc('Iași')">📍 Iași</span>
+    </div>
+    <button onclick="saveLocation()" class="w-full bg-[#003366] text-white py-3 rounded-xl font-semibold text-sm hover:bg-[#003366] transition">Salvează locația</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     HEADER PRINCIPAL
+════════════════════════════════════════════ -->
+<header id="hdr" class="sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto px-5 py-3 flex items-center gap-3">
+
+    <!-- ① LOGO — primul -->
+    <a href="#" class="flex items-center gap-2.5 flex-shrink-0">
+      <div class="w-9 h-9 bg-[#FF8C00] rounded-xl flex items-center justify-center text-white font-bold text-base" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">D</div>
+      <div class="hidden sm:block">
+        <div class="font-bold text-[#2D2D2D] leading-tight" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif;font-size:16px">My Darrin</div>
+        <div class="text-[9px] text-gray-400 tracking-widest uppercase leading-none">Servicii la cerere</div>
+      </div>
+    </a>
+
+    <!-- ② BURGER — doar iconița, fără text -->
+    <button onclick="openSidebar()"
+            class="p-2 text-[#2D2D2D] hover:text-[#FF8C00] transition flex-shrink-0 rounded-xl hover:bg-[#EBF4FB]">
+      <i data-lucide="menu" class="w-5 h-5"></i>
+    </button>
+
+    <!-- ③ NAV CENTRAL -->
+    <nav class="hidden lg:flex items-center gap-5 ml-4 flex-1 justify-start">
+
+
+
+      <!-- Servicii cu dropdown -->
+      <div class="mega-wrap">
+        <a href="#catalog" class="nav-lnk flex items-center gap-1">
+          Servicii <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200"></i>
+        </a>
+        <div class="mega-panel" style="width:520px">
+          <div class="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-l border-t border-gray-100 rotate-45 z-10"></div>
+          <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 p-5">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">Catalog servicii</p>
+            <div class="grid grid-cols-2 gap-1.5 mb-3">
+              <a href="#" class="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-[#F4F7F9] transition group/d"><span class="text-lg">🔧</span><div><div class="font-semibold text-sm text-[#2D2D2D] group-hover/d:text-[#FF8C00] transition">Instalații sanitare</div><div class="text-[11px] text-gray-400">Montaj, reparații</div></div></a>
+              <a href="#" class="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-[#F4F7F9] transition group/d"><span class="text-lg">⚡</span><div><div class="font-semibold text-sm text-[#2D2D2D] group-hover/d:text-[#FF8C00] transition">Instalații electrice</div><div class="text-[11px] text-gray-400">Tablouri, smart home</div></div></a>
+              <a href="#" class="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-[#F4F7F9] transition group/d"><span class="text-lg">🏗</span><div><div class="font-semibold text-sm text-[#2D2D2D] group-hover/d:text-[#FF8C00] transition">Construcții & Renovări</div><div class="text-[11px] text-gray-400">Zidărie, finisaje</div></div></a>
+              <a href="#" class="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-[#F4F7F9] transition group/d"><span class="text-lg">❄️</span><div><div class="font-semibold text-sm text-[#2D2D2D] group-hover/d:text-[#FF8C00] transition">HVAC & Climatizare</div><div class="text-[11px] text-gray-400">Centrale, AC</div></div></a>
+              <a href="#" class="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-[#F4F7F9] transition group/d"><span class="text-lg">🖌</span><div><div class="font-semibold text-sm text-[#2D2D2D] group-hover/d:text-[#FF8C00] transition">Zugrăveli & Finisaje</div><div class="text-[11px] text-gray-400">Vopsit, decorațiuni</div></div></a>
+              <a href="#" class="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-[#F4F7F9] transition group/d"><span class="text-lg">🌿</span><div><div class="font-semibold text-sm text-[#2D2D2D] group-hover/d:text-[#FF8C00] transition">Grădinărit & Agri</div><div class="text-[11px] text-gray-400">Amenajare, irigații</div></div></a>
+            </div>
+            <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+              <span class="text-xs text-gray-400"><span class="w-1.5 h-1.5 rounded-full bg-[#FF8C00] inline-block mr-1.5"></span>2.340 servicii active</span>
+              <a href="#catalog" class="text-xs font-bold text-[#FF8C00] flex items-center gap-1 hover:underline">Toate <i data-lucide="arrow-right" class="w-3 h-3"></i></a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <a href="#" class="nav-lnk">Acasă</a>
+
+      <!-- DEVINO PARTENER — mega dropdown -->
+      <div class="mega-wrap">
+        <a href="#devino-partener" class="nav-lnk flex items-center gap-1 select-none">
+          Devino Partener <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200"></i>
+        </a>
+        <div class="mega-panel" style="width:560px">
+          <div class="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-l border-t border-gray-100 rotate-45 z-10"></div>
+          <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 p-5">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-4">Alege tipul de parteneriat</p>
+            <div class="flex flex-col gap-2 mb-4">
+
+              <!-- Furnizor servicii -->
+              <a href="#devino-partener" onclick="openPartnerModal('servicii')"
+                 class="flex items-center gap-4 p-3.5 rounded-xl hover:bg-[#F4F7F9] transition group/dp border border-transparent hover:border-[#D5DFE8] cursor-pointer" style="text-decoration:none">
+                <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style="background:linear-gradient(135deg,#FFF0D6,#FDE8C4)">🔧</div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-bold text-sm text-[#2D2D2D] group-hover/dp:text-[#FF8C00] transition">Furnizor de Servicii</div>
+                  <div class="text-xs text-gray-400 mt-0.5 leading-relaxed">Electrician, instalator, constructor, zugrav, grădinar — oferă servicii profesionale clienților platformei</div>
+                </div>
+                <i data-lucide="arrow-right" class="w-4 h-4 text-gray-300 group-hover/dp:text-[#FF8C00] transition flex-shrink-0"></i>
+              </a>
+
+              <!-- Furnizor materiale -->
+              <a href="#devino-partener" onclick="openPartnerModal('materiale')"
+                 class="flex items-center gap-4 p-3.5 rounded-xl hover:bg-[#F4F7F9] transition group/dp border border-transparent hover:border-[#D5DFE8] cursor-pointer" style="text-decoration:none">
+                <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style="background:linear-gradient(135deg,#EBF4FB,#DDE6F5)">📦</div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-bold text-sm text-[#2D2D2D] group-hover/dp:text-[#FF8C00] transition">Furnizor de Materiale</div>
+                  <div class="text-xs text-gray-400 mt-0.5 leading-relaxed">Listează produse în marketplace — materiale de construcții, electrice, sanitare, finisaje și altele</div>
+                </div>
+                <i data-lucide="arrow-right" class="w-4 h-4 text-gray-300 group-hover/dp:text-[#FF8C00] transition flex-shrink-0"></i>
+              </a>
+
+              <!-- Furnizor inchirieri -->
+              <a href="#devino-partener" onclick="openPartnerModal('inchirieri')"
+                 class="flex items-center gap-4 p-3.5 rounded-xl hover:bg-[#F4F7F9] transition group/dp border border-transparent hover:border-[#D5DFE8] cursor-pointer" style="text-decoration:none">
+                <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style="background:linear-gradient(135deg,#E0F5F4,#C5EEEC)">🏗</div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-bold text-sm text-[#2D2D2D] group-hover/dp:text-[#FF8C00] transition">Furnizor de Închirieri</div>
+                  <div class="text-xs text-gray-400 mt-0.5 leading-relaxed">Oferă spre închiriere utilaje, vehicule, echipamente sau personal calificat — integrat în devizul AI</div>
+                </div>
+                <i data-lucide="arrow-right" class="w-4 h-4 text-gray-300 group-hover/dp:text-[#FF8C00] transition flex-shrink-0"></i>
+              </a>
+
+            </div>
+            <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+              <span class="text-xs text-gray-400">1.840+ parteneri activi pe platformă</span>
+              <a href="#devino-partener" class="text-xs font-bold text-[#FF8C00] flex items-center gap-1 hover:underline" style="text-decoration:none">
+                Toate tipurile <i data-lucide="arrow-right" class="w-3 h-3"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <a href="#" class="nav-lnk">Contact</a>
+
+      <!-- INVESTITORI — mega dropdown -->
+      <div class="mega-wrap">
+        <a href="#" class="nav-lnk flex items-center gap-1 select-none" onclick="openInvestorModal(); return false;">
+          Investitori <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200"></i>
+        </a>
+        <div class="mega-panel" style="width:320px">
+          <div class="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-l border-t border-gray-100 rotate-45 z-10"></div>
+          <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 p-5">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">Oportunități</p>
+            <a href="#" onclick="openInvestorModal(); return false;"
+               class="flex items-center gap-3 p-3 rounded-xl hover:bg-[#F4F7F9] transition group/inv border border-transparent hover:border-[#D5DFE8] mb-2" style="text-decoration:none">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style="background:linear-gradient(135deg,#002855,#003366)">📈</div>
+              <div>
+                <div class="font-bold text-sm text-[#2D2D2D] group-hover/inv:text-[#FF8C00] transition">Devino Investitor</div>
+                <div class="text-xs text-gray-400 mt-0.5">Finanțează expansiunea platformei. Rapoarte KPI, ROI și acces VIP.</div>
+              </div>
+            </a>
+            <a href="#" class="flex items-center gap-3 p-3 rounded-xl hover:bg-[#F4F7F9] transition group/inv border border-transparent hover:border-[#D5DFE8]" style="text-decoration:none">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style="background:linear-gradient(135deg,#EBF4FB,#DDE6F5)">📊</div>
+              <div>
+                <div class="font-bold text-sm text-[#2D2D2D] group-hover/inv:text-[#003366] transition">Rapoarte & KPIs</div>
+                <div class="text-xs text-gray-400 mt-0.5">Performanță platformă, volum tranzacții, expansiune geografică.</div>
+              </div>
+            </a>
+            <div class="pt-3 mt-2 border-t border-gray-100">
+              <p class="text-xs text-gray-400 leading-relaxed">Runde de finanțare actuale disponibile pentru investitori calificați.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </nav>
+
+    <!-- ④ DREAPTA: search + cos + cont + AI -->
+    <div class="flex items-center gap-2 ml-auto">
+
+      <!-- Search -->
+      <div class="search-bar hidden md:flex">
+        <i data-lucide="search" class="w-4 h-4 flex-shrink-0 text-gray-400"></i>
+        <span class="text-[13px]">Caută servicii...</span>
+      </div>
+
+      <!-- Cos cumparaturi -->
+      <button onclick="toggleBasket()" class="relative p-2.5 rounded-xl hover:bg-[#EBF4FB] transition">
+        <i data-lucide="shopping-cart" class="w-5 h-5 text-[#2D2D2D]"></i>
+        <span id="basket-count" class="absolute -top-0.5 -right-0.5 w-5 h-5 bg-[#FF8C00] text-white text-[10px] font-bold rounded-full flex items-center justify-center">3</span>
+      </button>
+
+      <!-- Creare/logare cont -->
+      <button onclick="toggleAuthModal()"
+              class="hidden sm:flex items-center gap-2 border border-[#D5DFE8] text-[#2D2D2D] px-4 py-2.5 rounded-xl text-xs font-semibold hover:border-[#003366] hover:text-[#003366] transition">
+        <i data-lucide="user" class="w-4 h-4"></i>
+        <span class="hidden md:inline">Cont</span>
+      </button>
+
+      <!-- AI CTA principal -->
+      <button onclick="document.getElementById('flux').scrollIntoView({behavior:'smooth'})"
+              class="flex items-center gap-2 bg-[#FF8C00] text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-[#CC7000] transition shadow-md shadow-orange-200">
+        <i data-lucide="sparkles" class="w-4 h-4"></i>
+        <span class="hidden sm:inline">Darrin AI</span>
+      </button>
+
+      <!-- Burger mobil -->
+      <button class="lg:hidden p-2.5 rounded-xl hover:bg-[#EBF4FB] transition" onclick="openSidebar()">
+        <i data-lucide="menu" class="w-5 h-5"></i>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ════ CUM FUNCȚIONEAZĂ — bandă sub navbar ════ -->
+<div style="background:#fff;border-bottom:1px solid #D5DFE8;padding:0 24px">
+  <div style="max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:0">
+    <!-- Tab activ "Cum funcționează" -->
+    <a href="mydarrin-cum-functioneaza.html"
+       style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;font-size:13.5px;font-weight:700;color:#003366;text-decoration:none;border-bottom:3px solid #FF8C00;transition:all .18s;white-space:nowrap"
+       onmouseover="this.style.color='#FF8C00'"
+       onmouseout="this.style.color='#003366'">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Cum funcționează
+    </a>
+    <!-- Separator -->
+    <div style="width:1px;height:20px;background:#D5DFE8;margin:0 4px"></div>
+    <!-- Link catalog -->
+    <a href="mydarrin-catalog.html"
+       style="display:inline-flex;align-items:center;gap:7px;padding:12px 18px;font-size:13px;font-weight:600;color:#6B7A8D;text-decoration:none;border-bottom:3px solid transparent;transition:all .18s"
+       onmouseover="this.style.color='#003366';this.style.borderBottomColor='#D5DFE8'"
+       onmouseout="this.style.color='#6B7A8D';this.style.borderBottomColor='transparent'">
+      📦 Catalog
+    </a>
+    <a href="mydarrin-marketplace.html"
+       style="display:inline-flex;align-items:center;gap:7px;padding:12px 18px;font-size:13px;font-weight:600;color:#6B7A8D;text-decoration:none;border-bottom:3px solid transparent;transition:all .18s"
+       onmouseover="this.style.color='#003366';this.style.borderBottomColor='#D5DFE8'"
+       onmouseout="this.style.color='#6B7A8D';this.style.borderBottomColor='transparent'">
+      🏪 Marketplace
+    </a>
+    <a href="mydarrin-devino-partener.html"
+       style="display:inline-flex;align-items:center;gap:7px;padding:12px 18px;font-size:13px;font-weight:600;color:#6B7A8D;text-decoration:none;border-bottom:3px solid transparent;transition:all .18s"
+       onmouseover="this.style.color='#003366';this.style.borderBottomColor='#D5DFE8'"
+       onmouseout="this.style.color='#6B7A8D';this.style.borderBottomColor='transparent'">
+      👷 Devino Partener
+    </a>
+  </div>
+</div>
+
+<div id="sidebar-overlay" onclick="closeSidebar()"></div>
+<div id="sidebar">
+
+  <!-- Header sidebar -->
+  <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+    <div class="flex items-center gap-2.5">
+      <div class="w-8 h-8 bg-[#FF8C00] rounded-lg flex items-center justify-center text-white font-bold text-sm" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">D</div>
+      <div>
+        <div class="font-bold text-[#2D2D2D] text-sm" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">My Darrin</div>
+        <div class="text-[9px] text-gray-400 uppercase tracking-widest">Servicii la cerere</div>
+      </div>
+    </div>
+    <button onclick="closeSidebar()" class="p-1.5 rounded-lg hover:bg-gray-100 transition text-gray-400 hover:text-gray-600">
+      <i data-lucide="x" class="w-4 h-4"></i>
+    </button>
+  </div>
+
+  <div class="py-2">
+
+    <!-- NAVIGARE — exact structura din captura #4 -->
+    <span class="sb-label">Navigare</span>
+    <a href="#" class="sb-item" onclick="closeSidebar()">
+      <div class="sb-ico">🏠</div> Acasă
+    </a>
+    <a href="mydarrin-cum-functioneaza.html" class="sb-item" onclick="closeSidebar()">
+      <div class="sb-ico">⚙️</div> Cum funcționează
+    </a>
+    <a href="#catalog" class="sb-item" onclick="closeSidebar()">
+      <div class="sb-ico">🔧</div> Servicii
+    </a>
+
+    <!-- DEVINO PARTENER — cu sub-ramuri expandabile -->
+    <div>
+      <div class="sb-item" onclick="toggleSbSection('sb-partner')" style="cursor:pointer">
+        <div class="sb-ico">🤝</div>
+        <span class="flex-1 font-semibold" style="color:#2D2D2D">Devino Partener</span>
+        <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-gray-400 transition-transform flex-shrink-0" id="ico-sb-partner"></i>
+      </div>
+      <div id="sb-partner" class="hidden pb-2">
+        <!-- Servicii -->
+        <div class="mx-3 mb-1.5 rounded-xl overflow-hidden border border-gray-100">
+          <a href="#devino-partener" onclick="closeSidebar(); setTimeout(()=>openPartnerModal('servicii'),300)"
+             class="flex items-center gap-3 px-4 py-3 hover:bg-[#FFF0D6] transition group/sp" style="text-decoration:none">
+            <div class="w-9 h-9 rounded-lg flex items-center justify-center text-base flex-shrink-0" style="background:linear-gradient(135deg,#FFF0D6,#FDE8C4)">🔧</div>
+            <div class="flex-1 min-w-0">
+              <div class="font-bold text-[13px] text-[#2D2D2D] group-hover/sp:text-[#FF8C00] transition leading-tight">Furnizor Servicii</div>
+              <div class="text-[10px] text-gray-400 mt-0.5 leading-snug">Oferă servicii profesionale clienților</div>
+            </div>
+            <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-gray-300 flex-shrink-0 group-hover/sp:text-[#FF8C00] transition"></i>
+          </a>
+        </div>
+        <!-- Materiale -->
+        <div class="mx-3 mb-1.5 rounded-xl overflow-hidden border border-gray-100">
+          <a href="#devino-partener" onclick="closeSidebar(); setTimeout(()=>openPartnerModal('materiale'),300)"
+             class="flex items-center gap-3 px-4 py-3 hover:bg-[#EBF4FB] transition group/sp" style="text-decoration:none">
+            <div class="w-9 h-9 rounded-lg flex items-center justify-center text-base flex-shrink-0" style="background:linear-gradient(135deg,#EBF4FB,#DDE6F5)">📦</div>
+            <div class="flex-1 min-w-0">
+              <div class="font-bold text-[13px] text-[#2D2D2D] group-hover/sp:text-[#FF8C00] transition leading-tight">Furnizor Materiale</div>
+              <div class="text-[10px] text-gray-400 mt-0.5 leading-snug">Listează produse în marketplace</div>
+            </div>
+            <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-gray-300 flex-shrink-0 group-hover/sp:text-[#FF8C00] transition"></i>
+          </a>
+        </div>
+        <!-- Inchirieri -->
+        <div class="mx-3 rounded-xl overflow-hidden border border-gray-100">
+          <a href="#devino-partener" onclick="closeSidebar(); setTimeout(()=>openPartnerModal('inchirieri'),300)"
+             class="flex items-center gap-3 px-4 py-3 hover:bg-[#E0F5F4] transition group/sp" style="text-decoration:none">
+            <div class="w-9 h-9 rounded-lg flex items-center justify-center text-base flex-shrink-0" style="background:linear-gradient(135deg,#E0F5F4,#C5EEEC)">🏗</div>
+            <div class="flex-1 min-w-0">
+              <div class="font-bold text-[13px] text-[#2D2D2D] group-hover/sp:text-[#FF8C00] transition leading-tight">Furnizor Închirieri</div>
+              <div class="text-[10px] text-gray-400 mt-0.5 leading-snug">Utilaje, vehicule, personal calificat</div>
+            </div>
+            <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-gray-300 flex-shrink-0 group-hover/sp:text-[#FF8C00] transition"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <a href="#" class="sb-item" onclick="closeSidebar()">
+      <div class="sb-ico">👥</div> Parteneri
+    </a>
+
+    <!-- Investitori cu sub-toggle -->
+    <div>
+      <div class="sb-item" onclick="toggleSbSection('sb-inv')">
+        <div class="sb-ico">📈</div>
+        <span class="flex-1">Investitori</span>
+        <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-gray-400 transition-transform" id="ico-sb-inv"></i>
+      </div>
+      <div id="sb-inv" class="hidden pl-14 pb-1 space-y-0.5">
+        <a href="#" class="flex items-center gap-2 py-2 px-3 rounded-lg text-[13px] font-semibold text-[#FF8C00] hover:bg-[#FFF0D6] transition"
+           onclick="closeSidebar(); setTimeout(()=>openInvestorModal(),300); return false;">
+          <span>📈</span> Devino Investitor
+        </a>
+        <a href="#" class="flex items-center gap-2 py-2 px-3 rounded-lg text-[13px] font-medium text-gray-500 hover:text-[#003366] hover:bg-[#EBF4FB] transition">
+          <span>📊</span> Rapoarte & KPIs
+        </a>
+        <a href="#" class="flex items-center gap-2 py-2 px-3 rounded-lg text-[13px] font-medium text-gray-500 hover:text-[#003366] hover:bg-[#EBF4FB] transition">
+          <span>💼</span> Runde finanțare
+        </a>
+      </div>
+    </div>
+    <a href="#" class="sb-item" onclick="closeSidebar()">
+      <div class="sb-ico">✉️</div> Contact
+    </a>
+
+    <div class="sb-divider"></div>
+
+    <!-- CATALOG — exact captura #3 cu icoane dedicate -->
+    <span class="sb-label">Catalog</span>
+    <!-- Servicii cu sub-toggle -->
+    <div>
+      <div class="sb-item" onclick="toggleSbSection('sb-svc')">
+        <div class="sb-ico">🔧</div>
+        <span class="flex-1">Servicii</span>
+        <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-gray-400 transition-transform" id="ico-sb-svc"></i>
+      </div>
+      <div id="sb-svc" class="hidden pl-14 pb-1 space-y-0.5">
+        <a href="#" class="block py-2 px-3 rounded-lg text-[13px] font-medium text-gray-500 hover:text-[#FF8C00] hover:bg-[#FFF0D6] transition flex items-center gap-2"><span>🔧</span> Instalații sanitare</a>
+        <a href="#" class="block py-2 px-3 rounded-lg text-[13px] font-medium text-gray-500 hover:text-[#FF8C00] hover:bg-[#FFF0D6] transition flex items-center gap-2"><span>⚡</span> Instalații electrice</a>
+        <a href="#" class="block py-2 px-3 rounded-lg text-[13px] font-medium text-gray-500 hover:text-[#FF8C00] hover:bg-[#FFF0D6] transition flex items-center gap-2"><span>🏗</span> Construcții & Renovări</a>
+        <a href="#" class="block py-2 px-3 rounded-lg text-[13px] font-medium text-gray-500 hover:text-[#FF8C00] hover:bg-[#FFF0D6] transition flex items-center gap-2"><span>❄️</span> HVAC & Climatizare</a>
+        <a href="#" class="block py-2 px-3 rounded-lg text-[13px] font-medium text-gray-500 hover:text-[#FF8C00] hover:bg-[#FFF0D6] transition flex items-center gap-2"><span>🖌</span> Zugrăveli & Finisaje</a>
+        <a href="#" class="block py-2 px-3 rounded-lg text-[13px] font-medium text-gray-500 hover:text-[#FF8C00] hover:bg-[#FFF0D6] transition flex items-center gap-2"><span>🌿</span> Grădinărit & Agri</a>
+        <a href="#" class="block py-2 px-3 rounded-lg text-[13px] font-medium text-gray-500 hover:text-[#FF8C00] hover:bg-[#FFF0D6] transition flex items-center gap-2"><span>🪟</span> Tâmplărie & Geamuri</a>
+      </div>
+    </div>
+    <!-- Materiale cu sub-toggle -->
+    <div>
+      <div class="sb-item" onclick="toggleSbSection('sb-mat')">
+        <div class="sb-ico">📦</div>
+        <span class="flex-1">Materiale</span>
+        <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-gray-400 transition-transform" id="ico-sb-mat"></i>
+      </div>
+      <div id="sb-mat" class="hidden pl-14 pb-1 space-y-0.5">
+        <a href="#" class="block py-2 px-3 rounded-lg text-[13px] font-medium text-gray-500 hover:text-[#FF8C00] hover:bg-[#FFF0D6] transition flex items-center gap-2"><span>🪵</span> Lemn & Cherestea</a>
+        <a href="#" class="block py-2 px-3 rounded-lg text-[13px] font-medium text-gray-500 hover:text-[#FF8C00] hover:bg-[#FFF0D6] transition flex items-center gap-2"><span>🧱</span> Zidărie & Beton</a>
+        <a href="#" class="block py-2 px-3 rounded-lg text-[13px] font-medium text-gray-500 hover:text-[#FF8C00] hover:bg-[#FFF0D6] transition flex items-center gap-2"><span>🔩</span> Metalurgie & Profile</a>
+        <a href="#" class="block py-2 px-3 rounded-lg text-[13px] font-medium text-gray-500 hover:text-[#FF8C00] hover:bg-[#FFF0D6] transition flex items-center gap-2"><span>🎨</span> Vopsele & Finisaje</a>
+        <a href="#" class="block py-2 px-3 rounded-lg text-[13px] font-medium text-gray-500 hover:text-[#FF8C00] hover:bg-[#FFF0D6] transition flex items-center gap-2"><span>💡</span> Electrice & Cabluri</a>
+      </div>
+    </div>
+    <!-- Inchirieri cu sub-toggle -->
+    <div>
+      <div class="sb-item" onclick="toggleSbSection('sb-inc')">
+        <div class="sb-ico">🏗</div>
+        <span class="flex-1">Închirieri</span>
+        <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-gray-400 transition-transform" id="ico-sb-inc"></i>
+      </div>
+      <div id="sb-inc" class="hidden pl-14 pb-1 space-y-0.5">
+        <a href="#" class="block py-2 px-3 rounded-lg text-[13px] font-medium text-gray-500 hover:text-[#FF8C00] hover:bg-[#FFF0D6] transition flex items-center gap-2"><span>🏗</span> Utilaje grele</a>
+        <a href="#" class="block py-2 px-3 rounded-lg text-[13px] font-medium text-gray-500 hover:text-[#FF8C00] hover:bg-[#FFF0D6] transition flex items-center gap-2"><span>🔩</span> Scule & echipamente</a>
+        <a href="#" class="block py-2 px-3 rounded-lg text-[13px] font-medium text-gray-500 hover:text-[#FF8C00] hover:bg-[#FFF0D6] transition flex items-center gap-2"><span>🚚</span> Vehicule & Transport</a>
+        <a href="#" class="block py-2 px-3 rounded-lg text-[13px] font-medium text-gray-500 hover:text-[#FF8C00] hover:bg-[#FFF0D6] transition flex items-center gap-2"><span>👷</span> Personal calificat</a>
+        <a href="#" class="block py-2 px-3 rounded-lg text-[13px] font-medium text-gray-500 hover:text-[#FF8C00] hover:bg-[#FFF0D6] transition flex items-center gap-2"><span>🏖</span> Vacanță & Drumeție</a>
+      </div>
+    </div>
+
+    <div class="sb-divider"></div>
+
+    <!-- CONT — captura #2, fara Cos meu, fara inreg furnizor/utilizator -->
+    <span class="sb-label">Cont</span>
+    <a href="#" class="sb-item" onclick="closeSidebar(); toggleAuthModal()">
+      <div class="sb-ico" style="background:#EBF4FB">
+        <i data-lucide="user-plus" class="w-4 h-4 text-[#003366]"></i>
+      </div>
+      Creare cont
+    </a>
+    <a href="#" class="sb-item" onclick="closeSidebar(); toggleAuthModal()">
+      <div class="sb-ico" style="background:#EBF4FB">
+        <i data-lucide="log-in" class="w-4 h-4 text-[#003366]"></i>
+      </div>
+      Intră în cont
+    </a>
+    <a href="#" class="sb-item" onclick="closeSidebar(); checkAuth()">
+      <div class="sb-ico" style="background:#EBF4FB">
+        <i data-lucide="clipboard-list" class="w-4 h-4 text-[#003366]"></i>
+      </div>
+      Comenzile mele
+    </a>
+
+  </div>
+
+  <!-- AI badge bottom -->
+  <div class="mx-4 mb-6 mt-3 p-4 rounded-2xl" style="background:linear-gradient(135deg,#0B2D2B,#0B1E38);border:1px solid rgba(14,165,160,.25)">
+    <div class="flex items-center gap-2 mb-2">
+      <span class="pulse-dot"></span>
+      <span class="text-[#0E9E99] text-[10px] font-bold uppercase tracking-wider">Darrin AI</span>
+    </div>
+    <p class="text-white/50 text-xs leading-relaxed">Devize automate, prețuri în timp real, asistență completă.</p>
+    <button onclick="closeSidebar(); document.getElementById('flux').scrollIntoView({behavior:'smooth'})"
+            class="mt-3 w-full bg-[#FF8C00] text-white text-xs font-bold py-2.5 rounded-xl hover:bg-[#CC7000] transition">
+      Generează Deviz Gratuit →
+    </button>
+  </div>
+</div>
+
+
+<div style="background:#fff;border-bottom:1px solid #D5DFE8;padding:9px 24px">
+  <div style="max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:6px;font-size:12px;color:#8C9BAD;flex-wrap:wrap">
+    <a href="mydarrin-v3.html" style="color:#6B7A8D;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='#6B7A8D'">Acasă</a>
+    <span style="color:#D5DFE8">/</span>
+    <span style="font-weight:600;color:#2D2D2D">Cum funcționează</span>
+  </div>
+</div>
+
+<div style="background:linear-gradient(135deg,#001629,#002855);padding:48px 24px 40px;position:relative;overflow:hidden">
+  <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:48px 48px;pointer-events:none"></div>
+  <div style="max-width:1280px;margin:0 auto;position:relative;text-align:center">
+    <div class="reveal" style="display:inline-flex;align-items:center;gap:8px;background:rgba(14,158,153,.15);border:1px solid rgba(14,158,153,.3);color:#0E9E99;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:6px 16px;border-radius:99px;margin-bottom:18px">
+      <span class="pulse-dot" style="width:5px;height:5px"></span>
+      Flux operațional · Darrin AI · Escrow
+    </div>
+    <h1 class="reveal d1" style="font-size:clamp(28px,4vw,52px);font-weight:800;color:#fff;line-height:1.1;letter-spacing:-.02em;margin-bottom:14px">
+      Cum funcționează<br>
+      <span style="color:#FF8C00">My Darrin</span>
+    </h1>
+    <p class="reveal d2" style="font-size:15px;color:rgba(255,255,255,.55);line-height:1.75;max-width:560px;margin:0 auto 28px">
+      De la cererea ta la decontarea partenerilor — totul orchestrat automat de <strong style="color:#fff">Darrin AI</strong>. Escrow securizat, garanție digitală, vizibilitate completă pentru toți actorii.
+    </p>
+    <div class="reveal d3" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <a href="mydarrin-catalog.html" style="display:inline-flex;align-items:center;gap:8px;background:#FF8C00;color:#fff;border:none;border-radius:14px;padding:13px 26px;font-size:14px;font-weight:800;text-decoration:none;box-shadow:0 5px 18px rgba(255,140,0,.3);transition:all .2s" onmouseover="this.style.background='#CC7000'" onmouseout="this.style.background='#FF8C00'">
+        Explorează catalogul →
+      </a>
+      <a href="mydarrin-devino-partener.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:13px 22px;font-size:13.5px;font-weight:700;text-decoration:none;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.16)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">
+        Devino partener
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- FLUX SECTION — conținut original din v3 -->
+<div style="background:#fff">
+
+<section id="flux" class="py-24 bg-white overflow-hidden">
+  <div class="max-w-4xl mx-auto px-6">
+    <div class="text-center mb-14">
+      <div class="reveal inline-flex items-center gap-2 bg-[#E0F5F4] text-[#0E9E99] text-[11px] font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-4"><i data-lucide="route" class="w-3.5 h-3.5"></i> Flux operațional</div>
+      <h2 class="reveal d1 text-4xl font-bold text-[#2D2D2D] mb-3" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">De la cerere la decontare</h2>
+      <p class="reveal d2 text-gray-400 text-sm max-w-md mx-auto">Alocare simultană sarcini + sume, escrow securizat, decontare automată max 5 zile.</p>
+    </div>
+
+    <div class="reveal flex flex-col items-center select-none">
+      <div class="flex flex-col items-center"><div class="flow-box bg-white border-gray-200 text-[#2D2D2D] px-10 shadow-sm"><span class="mr-1.5">👤</span>Cerere Client</div><div class="flow-arrow"></div></div>
+      <div class="flex flex-col items-center"><div class="flow-box ai-node px-10"><div class="font-bold">🧠 Deviz Inteligent Generat de AI</div></div><div class="flow-arrow"></div></div>
+      <div class="flex flex-col items-center"><div class="flow-box bg-[#FFF0D6] border-orange-200 text-[#CC7000]"><span class="mr-1.5">⚡</span>Descompunere Componente</div><div class="flow-arrow"></div></div>
+      <div class="flex flex-col items-center w-full max-w-md"><div class="flow-box bg-[#003366] border-[#003366] text-white w-full" style="border-radius:99px"><span class="mr-1.5">⚙️</span>Alocare Simultană Sarcini + Sume</div></div>
+
+      <div class="w-full max-w-2xl my-6 px-4">
+        <div class="relative mb-3"><div class="absolute left-[12.5%] right-[12.5%] top-1/2 h-px bg-gray-200"></div>
+          <div class="grid grid-cols-4 gap-3 relative z-10 pt-4">
+            <div class="actor-box bg-orange-50 border-orange-200 text-orange-700"><div class="text-lg mb-1">🔧</div><div>Partener A</div><div class="text-[10px] font-normal text-orange-400 mt-0.5">Manoperă</div></div>
+            <div class="actor-box bg-blue-50 border-blue-200 text-blue-700"><div class="text-lg mb-1">📦</div><div>Furnizor B</div><div class="text-[10px] font-normal text-blue-400 mt-0.5">Materiale</div></div>
+            <div class="actor-box bg-purple-50 border-purple-200 text-purple-700"><div class="text-lg mb-1">🏗</div><div>Furnizor C</div><div class="text-[10px] font-normal text-purple-400 mt-0.5">Închirieri</div></div>
+            <div class="actor-box bg-yellow-50 border-yellow-200 text-yellow-700"><div class="text-lg mb-1">🚚</div><div>Curier D</div><div class="text-[10px] font-normal text-yellow-500 mt-0.5">Transport</div></div>
+          </div>
+          <div class="flex justify-center mt-0 relative"><div class="absolute left-[12.5%] right-[12.5%] top-0 h-px bg-gray-200"></div><div class="mt-0 w-px h-6 bg-gray-200 relative z-10"></div></div>
+        </div>
+      </div>
+
+      <div class="flex flex-col items-center"><div class="flow-box bg-[#E0F5F4] border-[#0E9E99]/40 text-[#0E9E99] px-12"><span class="mr-1.5">⚙️</span>Execuție</div><div class="flow-arrow"></div></div>
+      <div class="flex flex-col items-center"><div class="flow-box bg-white border-gray-200 text-[#2D2D2D] shadow-sm text-center" style="max-width:280px"><div class="text-base mb-1">📸</div><div class="font-bold">Confirmare Finalizare</div><div class="text-[11px] text-gray-400 font-normal mt-0.5">Client + Prestator + Dovezi Foto/Video</div></div><div class="flow-arrow"></div></div>
+      <div class="flex flex-col items-center"><div class="flow-box bg-[#E0F5F4] border-[#0E9E99]/30 text-[#0E9E99] px-10"><span class="mr-1.5">✅</span>Validare Automată</div><div class="flow-arrow"></div></div>
+      <div class="flex flex-col items-center"><div class="flow-box text-white font-bold px-10 shadow-md" style="background:#003366;border-color:#003366"><span class="mr-1.5">🔒</span>Eliberare Sume din Escrow</div><div class="flow-arrow"></div></div>
+      <div class="flex flex-col items-center"><div class="flow-box bg-green-50 border-green-200 text-green-700 text-center" style="max-width:280px"><div class="text-base mb-1">💰</div><div class="font-bold">Decontare în Conturile Actorilor</div><div class="text-[11px] text-green-500 font-normal mt-0.5">max 5 zile lucrătoare</div></div></div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ════ JS ════ -->
+<script>
+lucide.createIcons();
+
+// Reveal
+const obs=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('visible');}),{threshold:.1});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+// Scroll progress + header shadow
+window.addEventListener('scroll',()=>{
+  const s=document.documentElement;
+  document.getElementById('spbar').style.width=(s.scrollTop/(s.scrollHeight-s.clientHeight)*100)+'%';
+  document.getElementById('hdr').style.boxShadow=window.scrollY>8?'0 4px 28px rgba(26,38,64,.1)':'';
+});
+
+// Sidebar
+function openSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebar-overlay').classList.add('show');document.body.style.overflow='hidden';}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('show');document.body.style.overflow='';}
+
+// Sidebar sub-sections
+function toggleSbSection(id){
+  const el=document.getElementById(id);
+  const ico=document.getElementById('ico-'+id);
+  el.classList.toggle('hidden');
+  if(ico) ico.style.transform=el.classList.contains('hidden')?'':'rotate(180deg)';
+}
+
+// Language
+function toggleLang(){document.getElementById('langDd').classList.toggle('open');}
+function setLang(code,flag,label){
+  document.getElementById('lang-flag').textContent=flag;
+  document.getElementById('lang-label').textContent=label;
+  document.querySelectorAll('.lang-opt').forEach(o=>o.classList.remove('active'));
+  event.target.closest('.lang-opt').classList.add('active');
+  document.getElementById('langDd').classList.remove('open');
+  // In real app: reload page with locale
+}
+document.addEventListener('click',e=>{
+  if(!document.getElementById('langDd').contains(e.target))
+    document.getElementById('langDd').classList.remove('open');
+});
+
+// Location modal
+function openLocModal(){document.getElementById('loc-modal').classList.remove('hidden');document.body.style.overflow='hidden';}
+function closeLocModal(){document.getElementById('loc-modal').classList.add('hidden');document.body.style.overflow='';}
+function setLoc(city){document.getElementById('loc-input').value=city;}
+function saveLocation(){
+  document.getElementById('loc-display').textContent=document.getElementById('loc-input').value;
+  closeLocModal();
+}
+
+// Auth modal
+function toggleAuthModal(){
+  const m=document.getElementById('auth-modal');
+  m.classList.toggle('hidden');
+  document.body.style.overflow=m.classList.contains('hidden')?'':'hidden';
+}
+function switchAuthTab(tab){
+  document.getElementById('auth-login').classList.toggle('hidden', tab!=='login');
+  document.getElementById('auth-register').classList.toggle('hidden', tab!=='register');
+  document.getElementById('tab-login-btn').classList.toggle('text-[#003366]', tab==='login');
+  document.getElementById('tab-login-btn').classList.toggle('border-b-2', tab==='login');
+  document.getElementById('tab-login-btn').classList.toggle('border-[#003366]', tab==='login');
+  document.getElementById('tab-login-btn').classList.toggle('text-gray-400', tab!=='login');
+  document.getElementById('tab-register-btn').classList.toggle('text-[#003366]', tab==='register');
+  document.getElementById('tab-register-btn').classList.toggle('border-b-2', tab==='register');
+  document.getElementById('tab-register-btn').classList.toggle('border-[#003366]', tab==='register');
+  document.getElementById('tab-register-btn').classList.toggle('text-gray-400', tab!=='register');
+}
+function checkAuth(){alert('Trebuie să fii autentificat pentru a vedea comenzile. Te rugăm să te loghezi.');}
+
+// Basket
+function toggleBasket(){
+  const p=document.getElementById('basket-panel');
+  p.classList.toggle('hidden');
+  document.body.style.overflow=p.classList.contains('hidden')?'':'hidden';
+}
+function changeQty(btn,delta){
+  const item=btn.closest('.basket-item');
+  const qEl=item.querySelector('.basket-qty');
+  const pEl=item.querySelector('.basket-price');
+  const unit=parseInt(pEl.dataset.unit);
+  let q=parseInt(qEl.textContent)+delta;
+  if(q<1)q=1;
+  qEl.textContent=q;
+  pEl.textContent=(unit*q)+' Lei';
+  recalcBasket();
+}
+function removeItem(btn){
+  btn.closest('.basket-item').remove();
+  const cnt=document.querySelectorAll('#basket-panel .basket-item').length;
+  document.getElementById('basket-count').textContent=cnt;
+  recalcBasket();
+}
+function recalcBasket(){
+  let t=0;
+  document.querySelectorAll('#basket-panel .basket-price').forEach(el=>{t+=parseInt(el.textContent);});
+  document.getElementById('basket-subtotal').textContent=t+' Lei';
+  document.getElementById('basket-total').textContent=Math.round(t*1.12)+' Lei';
+}
+
+// Catalog tabs
+// ── CATALOG SYNC SIMULATION ──
+function initCatalogSync(){
+  // Simulate IP geo-detection
+  const zones = ['Zona 1 · Centru','Zona 1 · Centru','Zona 2 · Periurban','Zona 1 · Centru'];
+  const vmcByCountry = {RON:'100 Lei',EUR:'25 EUR',MDL:'400 MDL'};
+  const currLabel = document.getElementById('currency-label');
+  const zoneLabel = document.getElementById('zone-label');
+  const vmcLabel = document.getElementById('vmc-label');
+  const syncStatus = document.getElementById('sync-status');
+  const cvEl = document.getElementById('content-version');
+
+  // Simulate sync check
+  setTimeout(()=>{
+    if(syncStatus) syncStatus.textContent = 'Sincronizat · v2026.06.11';
+    if(cvEl) cvEl.textContent = 'content_version: v2026.06.11';
+  }, 800);
+
+  // Zone detection simulation  
+  const zoneData = ['Zona 1 · +5%','Zona 1 · +5%','Zona 2 · +10%','Zona 1 · +5%'];
+  if(zoneLabel) zoneLabel.textContent = zoneData[Math.floor(Math.random()*2)];
+
+  // Currency detection
+  const cur = document.querySelector('.dyn-currency');
+  if(cur && vmcLabel){
+    const curTxt = cur.textContent.trim();
+    const key = curTxt === 'Lei' ? 'RON' : curTxt;
+    vmcLabel.textContent = vmcByCountry[key] || '100 Lei min.';
+  }
+
+  // VMC check on price cards - add note if dyn-price < VMC
+  document.querySelectorAll('.dyn-price').forEach(el => {
+    const ron = parseFloat(el.dataset.ron) || 0;
+    const vmc = 100;
+    if(ron > 0 && ron < vmc){
+      const parent = el.closest('.card-price');
+      if(parent && !parent.querySelector('.vmc-note')){
+        const note = document.createElement('div');
+        note.className = 'vmc-note';
+        note.style.cssText = 'font-size:9px;color:#CC7000;font-weight:600;margin-top:2px';
+        note.textContent = '⚖ Min. '+vmc+' Lei comandă';
+        parent.appendChild(note);
+      }
+    }
+  });
+}
+
+// Live price refresh simulation (Hybrid Sync catalog-price API)
+function refreshCatalogPrices(){
+  const syncDot = document.getElementById('sync-dot');
+  if(syncDot){ syncDot.style.background='#FF8C00'; }
+  setTimeout(()=>{
+    // Simulate price update from API
+    document.querySelectorAll('.dyn-price').forEach(el => {
+      const base = parseFloat(el.dataset.ron) || 0;
+      if(base > 0) el.textContent = base.toLocaleString('ro-RO');
+    });
+    if(syncDot){ syncDot.style.background='#0E9E99'; }
+    const status = document.getElementById('sync-status');
+    if(status){ status.textContent = 'Prețuri actualizate · ' + new Date().toLocaleTimeString('ro-RO'); }
+  }, 600);
+}
+
+// Auto-refresh every 30 seconds (simulates SSE)
+setInterval(refreshCatalogPrices, 30000);
+
+// Run on load
+document.addEventListener('DOMContentLoaded', ()=>{
+  initCatalogSync();
+});
+
+function switchTab(name,btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.add('hidden'));
+  document.querySelectorAll('.cat-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.remove('hidden');
+  btn.classList.add('active');
+  document.querySelectorAll('#tab-'+name+' .reveal').forEach(el=>{el.classList.remove('visible');setTimeout(()=>el.classList.add('visible'),60);});
+}
+
+// ── CURRENCY & ZONE DETECTION (simulat din IP / locatie) ──
+const CURRENCIES = {
+  RO: { code:'RON', symbol:'Lei',  rate:1,       label:'RON (Lei)',   flag:'🇷🇴' },
+  DE: { code:'EUR', symbol:'€',    rate:0.2,     label:'EUR (€)',     flag:'🇩🇪' },
+  FR: { code:'EUR', symbol:'€',    rate:0.2,     label:'EUR (€)',     flag:'🇫🇷' },
+  GB: { code:'GBP', symbol:'£',    rate:0.175,   label:'GBP (£)',     flag:'🇬🇧' },
+  HU: { code:'HUF', symbol:'Ft',   rate:80,      label:'HUF (Ft)',    flag:'🇭🇺' },
+  PL: { code:'PLN', symbol:'zł',   rate:0.92,    label:'PLN (zł)',    flag:'🇵🇱' },
+  MD: { code:'MDL', symbol:'L',    rate:3.9,     label:'MDL (L)',     flag:'🇲🇩' },
+  BG: { code:'BGN', symbol:'лв',   rate:0.39,    label:'BGN (лв)',    flag:'🇧🇬' },
+  DEFAULT: { code:'EUR', symbol:'€', rate:0.2,   label:'EUR (€)',     flag:'🌍' },
+};
+
+// Zones where platform is ACTIVE
+const ACTIVE_ZONES = ['RO', 'MD'];
+
+function detectAndApplyCurrency() {
+  // Try to get country from IP via free API
+  fetch('https://ipapi.co/json/')
+    .then(r => r.json())
+    .then(data => {
+      const country = data.country_code || 'RO';
+      const city = data.city || '';
+      const region = data.region || '';
+      const isActive = ACTIVE_ZONES.includes(country);
+
+      // Update location display
+      if (city) {
+        document.getElementById('loc-display').textContent = city + (region ? ', ' + region : '');
+        document.getElementById('loc-input').value = city + (region ? ', ' + region : '');
+      }
+
+      // Apply currency
+      const cur = CURRENCIES[country] || CURRENCIES.DEFAULT;
+      applyCurrency(cur);
+
+      // Show unavailable zone banner if needed
+      if (!isActive) {
+        const zoneName = data.country_name || country;
+        document.getElementById('unavail-zone').textContent = zoneName;
+        setTimeout(() => {
+          document.getElementById('zone-unavailable').classList.remove('hidden');
+        }, 2000);
+      }
+    })
+    .catch(() => {
+      // Fallback: RO
+      applyCurrency(CURRENCIES.RO);
+    });
+}
+
+function applyCurrency(cur) {
+  // Update label in catalog header
+  const lbl = document.getElementById('currency-label');
+  if (lbl) lbl.textContent = cur.flag + ' ' + cur.label;
+
+  // Update all prices
+  document.querySelectorAll('.dyn-price').forEach(el => {
+    const ron = parseFloat(el.dataset.ron);
+    const converted = Math.round(ron * cur.rate);
+    el.textContent = converted.toLocaleString();
+  });
+  document.querySelectorAll('.dyn-currency').forEach(el => {
+    el.textContent = cur.symbol;
+  });
+}
+
+// Zone unavailable tabs
+function switchUnavailTab(tab) {
+  document.getElementById('unavail-tab-client').classList.toggle('active', tab==='client');
+  document.getElementById('unavail-tab-furnizor').classList.toggle('active', tab==='furnizor');
+}
+
+function submitUnavail() {
+  const subscribed = document.getElementById('unavail-subscribe').checked;
+  const modal = document.getElementById('zone-unavailable');
+  modal.querySelector('.bg-white').innerHTML = `
+    <div class="p-8 text-center">
+      <div class="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4 text-3xl">✅</div>
+      <h3 class="font-bold text-xl text-[#2D2D2D] mb-2" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Înregistrat cu succes!</h3>
+      <p class="text-gray-400 text-sm leading-relaxed mb-6">Vei fi printre primii care află când My Darrin lansează în zona ta${subscribed ? ' — vei primi notificări pe email' : ''}.</p>
+      <button onclick="document.getElementById('zone-unavailable').classList.add('hidden')" class="bg-[#FF8C00] text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition">Închide</button>
+    </div>
+  `;
+}
+
+// Init currency detection on page load
+detectAndApplyCurrency();
+
+// ── PARTNER MODAL ──
+const PARTNER_META = {
+  servicii:   { icon:'🔧', title:'Furnizor de Servicii',   color:'#FF8C00', bg:'linear-gradient(135deg,#FFF0D6,#FDE8C4)' },
+  materiale:  { icon:'📦', title:'Furnizor de Materiale',  color:'#003366', bg:'linear-gradient(135deg,#EBF4FB,#DDE6F5)' },
+  inchirieri: { icon:'🏗', title:'Furnizor de Închirieri', color:'#0E9E99', bg:'linear-gradient(135deg,#E0F5F4,#C5EEEC)' },
+};
+
+function openPartnerModal(type) {
+  document.getElementById('partner-modal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  if (type) {
+    setTimeout(() => selectPartnerType(type), 80);
+  } else {
+    resetPartnerType();
+  }
+}
+
+function closePartnerModal() {
+  document.getElementById('partner-modal').classList.add('hidden');
+  document.body.style.overflow = '';
+  resetPartnerType();
+}
+
+function selectPartnerType(type) {
+  const meta = PARTNER_META[type];
+  if (!meta) return;
+  // Hide cards, show form
+  document.getElementById('partner-cards').classList.add('hidden');
+  document.getElementById('partner-form').classList.remove('hidden');
+  document.getElementById('pf-icon').textContent = meta.icon;
+  document.getElementById('pf-icon').style.background = meta.bg;
+  document.getElementById('pf-title').textContent = meta.title;
+  document.getElementById('pf-title').style.color = meta.color;
+}
+
+function resetPartnerType() {
+  document.getElementById('partner-cards').classList.remove('hidden');
+  document.getElementById('partner-form').classList.add('hidden');
+}
+
+function submitPartnerForm() {
+  const modal = document.getElementById('partner-modal');
+  const inner = modal.querySelector('.relative.bg-white');
+  inner.innerHTML = `
+    <div class="p-10 text-center">
+      <div class="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4 text-3xl">✅</div>
+      <h3 class="font-bold text-xl text-[#2D2D2D] mb-2" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Cerere trimisă!</h3>
+      <p class="text-gray-400 text-sm leading-relaxed mb-6 max-w-xs mx-auto">Îți mulțumim! Echipa My Darrin va verifica documentele și te va contacta în maxim <strong class="text-[#2D2D2D]">48 de ore</strong>.</p>
+      <button onclick="closePartnerModal()" class="bg-[#FF8C00] text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition">Închide</button>
+    </div>`;
+}
+
+// ── INVESTOR MODAL ──
+function openInvestorModal() {
+  document.getElementById('investor-modal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeInvestorModal() {
+  document.getElementById('investor-modal').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function submitInvestorForm() {
+  const modal = document.getElementById('investor-modal');
+  const inner = modal.querySelector('.relative.bg-white');
+  inner.innerHTML = `
+    <div class="p-10 text-center">
+      <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl" style="background:linear-gradient(135deg,#EBF4FB,#DDE6F5)">📈</div>
+      <h3 class="font-bold text-xl text-[#2D2D2D] mb-2" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Solicitare primită!</h3>
+      <p class="text-gray-400 text-sm leading-relaxed mb-6 max-w-xs mx-auto">Echipa My Darrin te va contacta în curând cu pachetul complet pentru investitori și detaliile rundei de finanțare.</p>
+      <button onclick="closeInvestorModal()" class="bg-[#003366] text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-[#002855] transition">Închide</button>
+    </div>`;
+}
+
+// ── COUNTERS
+function animateCounter(el){
+  const target=parseInt(el.dataset.target);
+  const isDecimal=el.dataset.decimal==='true';
+  const start=performance.now();
+  (function tick(now){
+    const t=Math.min((now-start)/1800,1);
+    const ease=1-Math.pow(1-t,3);
+    const val=target*ease;
+    el.textContent=isDecimal?(val/100).toFixed(2):Math.floor(val).toLocaleString('ro-RO');
+    if(t<1)requestAnimationFrame(tick);
+  })(performance.now());
+}
+const cobs=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting&&!x.target.dataset.done){x.target.dataset.done='1';animateCounter(x.target);}}),{threshold:.5});
+document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
+</script>
+</body>
+</html>
+</div>
+
+<!-- ACTORI IMPLICAȚI -->
+<section style="background:#F4F7F9;padding:64px 24px">
+  <div style="max-width:1280px;margin:0 auto">
+    <div style="text-align:center;margin-bottom:40px">
+      <div class="reveal" style="display:inline-flex;align-items:center;gap:7px;background:#EBF4FB;color:#003366;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:5px 14px;border-radius:99px;margin-bottom:12px">10 actori · Multi-rol</div>
+      <h2 class="reveal d1" style="font-size:30px;font-weight:800;color:#003366;margin-bottom:8px">Cine participă în platformă</h2>
+      <p class="reveal d2" style="font-size:14px;color:#6B7A8D;max-width:500px;margin:0 auto;line-height:1.7">My Darrin conectează 10 tipuri de actori — fiecare cu rol clar, vizibilitate și dashboard dedicat.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px" class="actors-grid">
+      <div class="reveal" style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;padding:18px 12px;text-align:center;transition:all .22s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 10px 30px rgba(0,51,102,.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+        <div style="font-size:28px;margin-bottom:8px">👤</div>
+        <div style="font-weight:700;color:#003366;font-size:12.5px;margin-bottom:4px">Client</div>
+        <div style="font-size:10.5px;color:#8C9BAD;line-height:1.5">Comandă, urmărește, confirmă</div>
+      </div>
+      <div class="reveal d1" style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;padding:18px 12px;text-align:center;transition:all .22s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 10px 30px rgba(0,51,102,.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+        <div style="font-size:28px;margin-bottom:8px">🔧</div>
+        <div style="font-weight:700;color:#003366;font-size:12.5px;margin-bottom:4px">Partener Servicii</div>
+        <div style="font-size:10.5px;color:#8C9BAD;line-height:1.5">Execută · Claim automat</div>
+      </div>
+      <div class="reveal d2" style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;padding:18px 12px;text-align:center;transition:all .22s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 10px 30px rgba(0,51,102,.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+        <div style="font-size:28px;margin-bottom:8px">📦</div>
+        <div style="font-weight:700;color:#003366;font-size:12.5px;margin-bottom:4px">Furnizor Materiale</div>
+        <div style="font-size:10.5px;color:#8C9BAD;line-height:1.5">Livrează · Marketplace</div>
+      </div>
+      <div class="reveal d3" style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;padding:18px 12px;text-align:center;transition:all .22s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 10px 30px rgba(0,51,102,.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+        <div style="font-size:28px;margin-bottom:8px">🏗</div>
+        <div style="font-weight:700;color:#003366;font-size:12.5px;margin-bottom:4px">Furnizor Rental</div>
+        <div style="font-size:10.5px;color:#8C9BAD;line-height:1.5">Echipamente închiriere</div>
+      </div>
+      <div class="reveal d1" style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;padding:18px 12px;text-align:center;transition:all .22s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 10px 30px rgba(0,51,102,.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+        <div style="font-size:28px;margin-bottom:8px">🚚</div>
+        <div style="font-weight:700;color:#003366;font-size:12.5px;margin-bottom:4px">Curier Cartier</div>
+        <div style="font-size:10.5px;color:#8C9BAD;line-height:1.5">Transport · Ultimul km</div>
+      </div>
+      <div class="reveal d2" style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;padding:18px 12px;text-align:center;transition:all .22s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 10px 30px rgba(0,51,102,.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+        <div style="font-size:28px;margin-bottom:8px">🛡</div>
+        <div style="font-weight:700;color:#003366;font-size:12.5px;margin-bottom:4px">Asigurător</div>
+        <div style="font-size:10.5px;color:#8C9BAD;line-height:1.5">Polițe integrate · API</div>
+      </div>
+      <div class="reveal d3" style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;padding:18px 12px;text-align:center;transition:all .22s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 10px 30px rgba(0,51,102,.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+        <div style="font-size:28px;margin-bottom:8px">💼</div>
+        <div style="font-weight:700;color:#003366;font-size:12.5px;margin-bottom:4px">Investitor</div>
+        <div style="font-size:10.5px;color:#8C9BAD;line-height:1.5">KPIs · Rundă finanțare</div>
+      </div>
+      <div class="reveal d1" style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;padding:18px 12px;text-align:center;transition:all .22s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 10px 30px rgba(0,51,102,.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+        <div style="font-size:28px;margin-bottom:8px">⚙️</div>
+        <div style="font-weight:700;color:#003366;font-size:12.5px;margin-bottom:4px">Admin Țară</div>
+        <div style="font-size:10.5px;color:#8C9BAD;line-height:1.5">Backoffice · Geo-fiscal</div>
+      </div>
+      <div class="reveal d2" style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;padding:18px 12px;text-align:center;transition:all .22s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 10px 30px rgba(0,51,102,.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+        <div style="font-size:28px;margin-bottom:8px">🌐</div>
+        <div style="font-weight:700;color:#003366;font-size:12.5px;margin-bottom:4px">Super Admin</div>
+        <div style="font-size:10.5px;color:#8C9BAD;line-height:1.5">RBAC global · 5+ țări</div>
+      </div>
+      <div class="reveal d3" style="background:linear-gradient(135deg,#E0F5F4,#EBF4FB);border-radius:16px;border:1.5px solid rgba(14,158,153,.3);padding:18px 12px;text-align:center;transition:all .22s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 10px 30px rgba(14,158,153,.15)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+        <div style="font-size:28px;margin-bottom:8px">🤖</div>
+        <div style="font-weight:700;color:#0B7A76;font-size:12.5px;margin-bottom:4px">Darrin AI</div>
+        <div style="font-size:10.5px;color:#0E9E99;line-height:1.5">Orchestrare totală</div>
+      </div>
+    </div>
+    <style>@media(max-width:1280px){.actors-grid{grid-template-columns:repeat(2,1fr)!important}}</style>
+  </div>
+</section>
+
+<!-- KEY PRINCIPLES -->
+<section style="background:#fff;padding:64px 24px">
+  <div style="max-width:1280px;margin:0 auto">
+    <div style="text-align:center;margin-bottom:40px">
+      <h2 class="reveal" style="font-size:28px;font-weight:800;color:#003366;margin-bottom:8px">Principii fundamentale</h2>
+      <p class="reveal d1" style="font-size:14px;color:#6B7A8D">Ce diferențiază My Darrin de orice altă platformă de servicii</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px" class="principles-grid">
+      <div class="reveal" style="background:#F4F7F9;border-radius:18px;padding:24px;border:1px solid #D5DFE8">
+        <div style="font-size:32px;margin-bottom:12px">🔒</div>
+        <div style="font-weight:700;color:#003366;font-size:14px;margin-bottom:8px">Escrow securizat</div>
+        <p style="font-size:12.5px;color:#6B7A8D;line-height:1.7">Suma totală blocată la plasarea comenzii. Eliberată partenerilor DOAR după ce clientul confirmă execuția. Bani în siguranță pentru toți.</p>
+      </div>
+      <div class="reveal d1" style="background:#F4F7F9;border-radius:18px;padding:24px;border:1px solid #D5DFE8">
+        <div style="font-size:32px;margin-bottom:12px">🤖</div>
+        <div style="font-weight:700;color:#003366;font-size:14px;margin-bottom:8px">Alocare AI gen Uber/Bolt</div>
+        <p style="font-size:12.5px;color:#6B7A8D;line-height:1.7">Darrin AI notifică simultan toți partenerii eligibili. Primul care acceptă preia sarcina (claimPartnerLiveJob). Zero intervenție umană.</p>
+      </div>
+      <div class="reveal d2" style="background:#F4F7F9;border-radius:18px;padding:24px;border:1px solid #D5DFE8">
+        <div style="font-size:32px;margin-bottom:12px">👁</div>
+        <div style="font-weight:700;color:#003366;font-size:14px;margin-bottom:8px">Vizibilitate completă</div>
+        <p style="font-size:12.5px;color:#6B7A8D;line-height:1.7">Fiecare actor vede exact ce îl privește din dashboard-ul propriu — statusuri live, escrow, alocări — în timp real.</p>
+      </div>
+      <div class="reveal d1" style="background:#F4F7F9;border-radius:18px;padding:24px;border:1px solid #D5DFE8">
+        <div style="font-size:32px;margin-bottom:12px">🔐</div>
+        <div style="font-weight:700;color:#003366;font-size:14px;margin-bottom:8px">Confidențialitate parteneri</div>
+        <p style="font-size:12.5px;color:#6B7A8D;line-height:1.7">Clienții nu văd identitățile reale ale partenerilor. Aceștia operează sub pseudonim + cod unic. Modelul BOLT aplicat.</p>
+      </div>
+      <div class="reveal d2" style="background:#F4F7F9;border-radius:18px;padding:24px;border:1px solid #D5DFE8">
+        <div style="font-size:32px;margin-bottom:12px">🌍</div>
+        <div style="font-weight:700;color:#003366;font-size:14px;margin-bottom:8px">Multi-țară & Multi-monedă</div>
+        <p style="font-size:12.5px;color:#6B7A8D;line-height:1.7">RO · MD · DE · FR · BG. TVA auto-detectat din IP. VMC per țară. Rate Card ESCO per meserie per zonă.</p>
+      </div>
+      <div class="reveal d3" style="background:linear-gradient(135deg,#EBF4FB,#F4F7F9);border-radius:18px;padding:24px;border:1.5px solid rgba(0,51,102,.15)">
+        <div style="font-size:32px;margin-bottom:12px">🛡</div>
+        <div style="font-weight:700;color:#003366;font-size:14px;margin-bottom:8px">Garanție digitală</div>
+        <p style="font-size:12.5px;color:#6B7A8D;line-height:1.7">Cod unic de garanție emis automat după finalizare. Descărcabil din dashboard. Transferabil. Valabil 6–36 luni după nivel.</p>
+      </div>
+    </div>
+    <style>@media(max-width:1280px){.principles-grid{grid-template-columns:1fr!important}}</style>
+  </div>
+</section>
+
+<!-- CTA -->
+<section style="background:linear-gradient(135deg,#001E3C,#003366);padding:48px 24px;text-align:center">
+  <div style="max-width:600px;margin:0 auto">
+    <h2 class="reveal" style="font-size:28px;font-weight:800;color:#fff;margin-bottom:12px">Gata să comanzi?</h2>
+    <p class="reveal d1" style="font-size:14px;color:rgba(255,255,255,.5);margin-bottom:28px;line-height:1.7">Explorează catalogul de servicii, materiale și echipamente. Darrin AI alocă echipa automat.</p>
+    <div class="reveal d2" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a href="mydarrin-catalog.html" style="display:inline-flex;align-items:center;gap:8px;background:#FF8C00;color:#fff;border-radius:14px;padding:14px 28px;font-size:14px;font-weight:800;text-decoration:none;box-shadow:0 5px 18px rgba(255,140,0,.3);transition:all .2s" onmouseover="this.style.background='#CC7000'" onmouseout="this.style.background='#FF8C00'">
+        Explorează catalogul →
+      </a>
+      <a href="mydarrin-devino-partener.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:14px 24px;font-size:13.5px;font-weight:700;text-decoration:none;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.16)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">
+        Devino partener
+      </a>
+      <a href="mydarrin-marketplace.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:14px 20px;font-size:13px;font-weight:700;text-decoration:none;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.12)'" onmouseout="this.style.background='rgba(255,255,255,.06)'">
+        Marketplace →
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer style="background:#003366" class="pt-14 pb-8">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-10">
+      <div>
+        <div class="flex items-center gap-2.5 mb-4">
+          <div class="w-9 h-9 bg-[#FF8C00] rounded-lg flex items-center justify-center text-white font-bold text-sm" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">D</div>
+          <span class="text-white font-bold" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">My Darrin</span>
+        </div>
+        <p class="text-white/35 text-xs leading-relaxed mb-5">Platformă hibrid clasic & AI pentru servicii integrate la cerere. Multi-țară, multi-actor.</p>
+
+        <!-- SOCIAL NETWORKS — toate 7 -->
+        <div class="mb-2">
+          <div class="text-white/25 text-[10px] uppercase tracking-widest mb-3">Urmărește-ne</div>
+          <div class="flex flex-wrap gap-2">
+
+            <!-- Facebook -->
+            <a href="https://facebook.com" target="_blank" title="Facebook"
+               class="social-btn group" style="--sc:#1877F2">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            </a>
+
+            <!-- Instagram -->
+            <a href="https://instagram.com" target="_blank" title="Instagram"
+               class="social-btn group" style="--sc:#E1306C">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            </a>
+
+            <!-- YouTube -->
+            <a href="https://youtube.com" target="_blank" title="YouTube"
+               class="social-btn group" style="--sc:#FF0000">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+            </a>
+
+            <!-- LinkedIn -->
+            <a href="https://linkedin.com" target="_blank" title="LinkedIn"
+               class="social-btn group" style="--sc:#0A66C2">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            </a>
+
+            <!-- X (Twitter) -->
+            <a href="https://x.com" target="_blank" title="X (Twitter)"
+               class="social-btn group" style="--sc:#000000">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            </a>
+
+            <!-- TikTok -->
+            <a href="https://tiktok.com" target="_blank" title="TikTok"
+               class="social-btn group" style="--sc:#010101">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.75a8.18 8.18 0 004.78 1.52V6.79a4.85 4.85 0 01-1.01-.1z"/></svg>
+            </a>
+
+            <!-- WhatsApp -->
+            <a href="https://wa.me/40721234567" target="_blank" title="WhatsApp"
+               class="social-btn group" style="--sc:#25D366">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            </a>
+
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="text-white font-bold text-[11px] uppercase tracking-widest mb-4">Informații utile</div>
+        <div class="space-y-2"><a href="#" class="block hover:text-[#FF8C00] transition text-white/40 text-xs">Termeni și condiții</a><a href="#" class="block hover:text-[#FF8C00] transition text-white/40 text-xs">Politică confidențialitate</a><a href="#" class="block hover:text-[#FF8C00] transition text-white/40 text-xs">ANPC</a><a href="#" class="block hover:text-[#FF8C00] transition text-white/40 text-xs">Cum să comanzi</a><a href="#" class="block hover:text-[#FF8C00] transition text-white/40 text-xs">Livrare comenzi</a></div>
+      </div>
+      <div>
+        <div class="text-white font-bold text-[11px] uppercase tracking-widest mb-4">Platformă</div>
+        <div class="space-y-2">
+          <a href="mydarrin-catalog.html" class="block hover:text-[#FF8C00] transition text-white/40 text-xs">Catalog Servicii</a>
+          <a href="mydarrin-catalog.html" class="block hover:text-[#FF8C00] transition text-white/40 text-xs">Catalog Materiale</a>
+          <a href="mydarrin-catalog.html" class="block hover:text-[#FF8C00] transition text-white/40 text-xs">Catalog Închirieri</a>
+          <a href="#flux" class="block hover:text-[#FF8C00] transition text-white/40 text-xs">Deviz Inteligent AI</a>
+          <a href="#" onclick="openPartnerModal('servicii'); return false;" class="block hover:text-[#FF8C00] transition text-white/40 text-xs">↳ Partener Servicii</a>
+          <a href="#" onclick="openPartnerModal('materiale'); return false;" class="block hover:text-[#FF8C00] transition text-white/40 text-xs">↳ Furnizor Materiale</a>
+          <a href="#" onclick="openPartnerModal('inchirieri'); return false;" class="block hover:text-[#FF8C00] transition text-white/40 text-xs">↳ Furnizor Închirieri</a>
+        </div>
+      </div>
+      <div>
+        <div class="text-white font-bold text-[11px] uppercase tracking-widest mb-4">Pagini utile</div>
+        <div class="space-y-2">
+          <a href="#" class="block hover:text-[#FF8C00] transition text-white/40 text-xs">Despre noi</a>
+          <a href="#" class="block hover:text-[#FF8C00] transition text-white/40 text-xs">Parteneri</a>
+          <a href="#" onclick="openInvestorModal(); return false;" class="block hover:text-[#FF8C00] transition text-white/40 text-xs font-semibold" style="color:rgba(232,135,26,.6)">📈 Devino Investitor</a>
+          <a href="#" class="block hover:text-[#FF8C00] transition text-white/40 text-xs">Contact</a>
+          <a href="#" class="block hover:text-[#FF8C00] transition text-white/40 text-xs">Suport parteneri</a>
+        </div>
+      </div>
+    </div>
+    <!-- ── APP DOWNLOAD ── -->
+    <div class="border-t border-white/10 pt-10 pb-10">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-8">
+
+        <!-- LEFT: text -->
+        <div class="text-center md:text-left">
+          <div class="inline-flex items-center gap-2 bg-[#FF8C00]/15 border border-[#FF8C00]/25 text-[#FF8C00] text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-3">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#FF8C00] inline-block"></span>
+            Aplicații mobile
+          </div>
+          <h3 class="text-white font-bold text-xl mb-2" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">
+            My Darrin în palma ta
+          </h3>
+          <p class="text-white/40 text-sm leading-relaxed max-w-sm">
+            Comandă servicii, urmărește execuția în timp real, aprobă plăți din Escrow și primești garanția digitală — direct din aplicație.
+          </p>
+          <div class="flex flex-wrap gap-3 mt-4 justify-center md:justify-start">
+            <span class="flex items-center gap-1.5 text-white/40 text-xs"><svg class="w-3.5 h-3.5 text-[#0E9E99]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Deviz AI în 60 sec</span>
+            <span class="flex items-center gap-1.5 text-white/40 text-xs"><svg class="w-3.5 h-3.5 text-[#0E9E99]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Notificări în timp real</span>
+            <span class="flex items-center gap-1.5 text-white/40 text-xs"><svg class="w-3.5 h-3.5 text-[#0E9E99]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Garanție digitală</span>
+          </div>
+        </div>
+
+        <!-- RIGHT: butoane store -->
+        <div class="flex flex-col sm:flex-row gap-4 flex-shrink-0">
+
+          <!-- Google Play -->
+          <a href="https://play.google.com/store" target="_blank"
+             class="flex items-center gap-3 bg-white/10 hover:bg-white/18 border border-white/15 hover:border-white/30 rounded-2xl px-5 py-4 transition group" style="text-decoration:none">
+            <svg class="w-8 h-8 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor" style="color:#FF8C00">
+              <path d="M3.18 23.76c.3.17.64.24.98.24.36 0 .72-.1 1.04-.28l13.5-7.78-2.98-2.98-12.54 10.8zM.5 1.54A2 2 0 000 2.93v18.14c0 .5.18.97.5 1.39L13.1 10 .5 1.54zM20.22 9.58l-2.44-1.41-3.32 3.33 3.32 3.32 2.46-1.42a2 2 0 000-3.82zM4.2.28L17.7 8.06l-2.98 2.98L2.2.28A2.07 2.07 0 014.2.28z"/>
+            </svg>
+            <div>
+              <div class="text-white/45 text-[10px] uppercase tracking-widest leading-none mb-1">Descarcă pe</div>
+              <div class="text-white font-bold text-base leading-none group-hover:text-[#FF8C00] transition" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Google Play</div>
+              <div class="text-white/30 text-[10px] mt-1">Android 8+</div>
+            </div>
+          </a>
+
+          <!-- App Store -->
+          <a href="https://apps.apple.com" target="_blank"
+             class="flex items-center gap-3 bg-white/10 hover:bg-white/18 border border-white/15 hover:border-white/30 rounded-2xl px-5 py-4 transition group" style="text-decoration:none">
+            <svg class="w-8 h-8 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor" style="color:white">
+              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+            </svg>
+            <div>
+              <div class="text-white/45 text-[10px] uppercase tracking-widest leading-none mb-1">Descarcă pe</div>
+              <div class="text-white font-bold text-base leading-none group-hover:text-white/80 transition" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">App Store</div>
+              <div class="text-white/30 text-[10px] mt-1">iOS 14+</div>
+            </div>
+          </a>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ── COPYRIGHT BAR ── -->
+    <div class="border-t border-white/10 pt-6 flex flex-col sm:flex-row justify-between items-center gap-3">
+      <div class="text-white/25 text-xs">© 2026 My Darrin · Toate drepturile rezervate</div>
+      <div class="flex items-center gap-2 text-white/25 text-xs"><span class="pulse-dot w-1.5 h-1.5"></span>Darrin AI · v5.2 · Online</div>
+    </div>
+  </div>
+</footer><div id="partner-modal" class="hidden fixed inset-0 z-[400] flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" onclick="closePartnerModal()"></div>
+  <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl z-10 overflow-hidden">
+
+    <!-- Header -->
+    <div class="px-7 pt-7 pb-5 border-b border-gray-100" style="background:linear-gradient(135deg,#F4F7F9,#EBF4FB)">
+      <button onclick="closePartnerModal()" class="absolute top-5 right-5 p-1.5 rounded-lg hover:bg-gray-200 transition text-gray-400">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div class="inline-flex items-center gap-2 bg-[#FFF0D6] border border-[#FFB866] text-[#CC7000] text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-3">🤝 Devino Partener</div>
+      <h2 class="font-bold text-2xl text-[#2D2D2D] mb-1" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Alege tipul de parteneriat</h2>
+      <p class="text-sm text-gray-400">Înregistrarea este gratuită. Vei fi verificat și activat în maxim 48h.</p>
+    </div>
+
+    <!-- 3 ramuri -->
+    <div class="p-6 grid md:grid-cols-3 gap-4" id="partner-cards">
+
+      <!-- Furnizor Servicii -->
+      <div id="pc-servicii" class="partner-type-card rounded-2xl border-2 border-gray-100 p-5 cursor-pointer transition hover:border-[#FF8C00] hover:shadow-lg group" onclick="selectPartnerType('servicii')">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl mb-4 transition" style="background:linear-gradient(135deg,#FFF0D6,#FDE8C4)">🔧</div>
+        <div class="font-bold text-[#2D2D2D] mb-1 group-hover:text-[#FF8C00] transition" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Furnizor de Servicii</div>
+        <div class="text-xs text-gray-400 leading-relaxed mb-4">Electrician, instalator, constructor, zugrav, grădinar, meșteșugar. Primești comenzi direct și lucrezi cu clienți verificați.</div>
+        <div class="space-y-1.5">
+          <div class="flex items-center gap-2 text-xs text-gray-500"><svg class="w-3.5 h-3.5 text-[#0E9E99]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Comenzi automate din devizul AI</div>
+          <div class="flex items-center gap-2 text-xs text-gray-500"><svg class="w-3.5 h-3.5 text-[#0E9E99]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Plată garantată prin Escrow</div>
+          <div class="flex items-center gap-2 text-xs text-gray-500"><svg class="w-3.5 h-3.5 text-[#0E9E99]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Rating & recenzii verificate</div>
+        </div>
+        <button class="mt-4 w-full py-2.5 rounded-xl text-xs font-bold transition border border-gray-200 group-hover:bg-[#FF8C00] group-hover:text-white group-hover:border-[#FF8C00]">Înregistrează-te →</button>
+      </div>
+
+      <!-- Furnizor Materiale -->
+      <div id="pc-materiale" class="partner-type-card rounded-2xl border-2 border-gray-100 p-5 cursor-pointer transition hover:border-[#003366] hover:shadow-lg group" onclick="selectPartnerType('materiale')">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl mb-4" style="background:linear-gradient(135deg,#EBF4FB,#DDE6F5)">📦</div>
+        <div class="font-bold text-[#2D2D2D] mb-1 group-hover:text-[#003366] transition" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Furnizor de Materiale</div>
+        <div class="text-xs text-gray-400 leading-relaxed mb-4">Listează produse în marketplace — materiale construcții, electrice, sanitare, finisaje, agri. Integrare automată în devize.</div>
+        <div class="space-y-1.5">
+          <div class="flex items-center gap-2 text-xs text-gray-500"><svg class="w-3.5 h-3.5 text-[#0E9E99]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Produse incluse automat în devize AI</div>
+          <div class="flex items-center gap-2 text-xs text-gray-500"><svg class="w-3.5 h-3.5 text-[#0E9E99]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Gestionare stoc & prețuri live</div>
+          <div class="flex items-center gap-2 text-xs text-gray-500"><svg class="w-3.5 h-3.5 text-[#0E9E99]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Livrare prin Curieri de Cartier</div>
+        </div>
+        <button class="mt-4 w-full py-2.5 rounded-xl text-xs font-bold transition border border-gray-200 group-hover:bg-[#003366] group-hover:text-white group-hover:border-[#003366]">Înregistrează-te →</button>
+      </div>
+
+      <!-- Furnizor Inchirieri -->
+      <div id="pc-inchirieri" class="partner-type-card rounded-2xl border-2 border-gray-100 p-5 cursor-pointer transition hover:border-[#0E9E99] hover:shadow-lg group" onclick="selectPartnerType('inchirieri')">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl mb-4" style="background:linear-gradient(135deg,#E0F5F4,#C5EEEC)">🏗</div>
+        <div class="font-bold text-[#2D2D2D] mb-1 group-hover:text-[#0E9E99] transition" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Furnizor de Închirieri</div>
+        <div class="text-xs text-gray-400 leading-relaxed mb-4">Utilaje grele, scule, vehicule, echipamente, personal calificat. Rezervări integrate direct în devizele generate de AI.</div>
+        <div class="space-y-1.5">
+          <div class="flex items-center gap-2 text-xs text-gray-500"><svg class="w-3.5 h-3.5 text-[#0E9E99]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Calendar disponibilitate live</div>
+          <div class="flex items-center gap-2 text-xs text-gray-500"><svg class="w-3.5 h-3.5 text-[#0E9E99]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Combo pachete cu transport</div>
+          <div class="flex items-center gap-2 text-xs text-gray-500"><svg class="w-3.5 h-3.5 text-[#0E9E99]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Plată escrow garantată</div>
+        </div>
+        <button class="mt-4 w-full py-2.5 rounded-xl text-xs font-bold transition border border-gray-200 group-hover:bg-[#0E9E99] group-hover:text-white group-hover:border-[#0E9E99]">Înregistrează-te →</button>
+      </div>
+
+    </div>
+
+    <!-- Formular înregistrare (apare după selectare tip) -->
+    <div id="partner-form" class="hidden px-6 pb-6">
+      <div class="rounded-2xl p-5 border border-gray-100 bg-[#F4F7F9]">
+        <div class="flex items-center gap-3 mb-4">
+          <div id="pf-icon" class="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style="background:linear-gradient(135deg,#FFF0D6,#FDE8C4)">🔧</div>
+          <div>
+            <div id="pf-title" class="font-bold text-sm text-[#2D2D2D]" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Furnizor de Servicii</div>
+            <button onclick="resetPartnerType()" class="text-xs text-[#FF8C00] hover:underline">← Schimbă tipul</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div><label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Prenume</label><input type="text" placeholder="Ion" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition"/></div>
+          <div><label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Nume</label><input type="text" placeholder="Popescu" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition"/></div>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div><label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Email</label><input type="email" placeholder="email@exemplu.ro" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition"/></div>
+          <div><label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Telefon</label><input type="tel" placeholder="+40 7XX XXX XXX" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition"/></div>
+        </div>
+        <div class="mb-3"><label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Locație / Județ</label><input type="text" placeholder="ex: București, Ilfov" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition"/></div>
+        <label class="flex items-start gap-2.5 cursor-pointer mb-4">
+          <input type="checkbox" checked class="mt-0.5 w-4 h-4 accent-[#FF8C00] flex-shrink-0"/>
+          <span class="text-xs text-gray-400 leading-relaxed">Accept <a href="#" class="text-[#003366] hover:underline">Termenii și Condițiile</a> platformei My Darrin și sunt de acord cu verificarea documentelor.</span>
+        </label>
+        <button onclick="submitPartnerForm()" class="w-full bg-[#FF8C00] text-white py-3.5 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          Trimite cererea de înregistrare
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     MODAL: DEVINO INVESTITOR
+══════════════════════════════════════════ -->
+<div id="investor-modal" class="hidden fixed inset-0 z-[400] flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" onclick="closeInvestorModal()"></div>
+  <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-xl z-10 overflow-hidden">
+
+    <!-- Header dark -->
+    <div class="px-7 pt-7 pb-6 relative" style="background:linear-gradient(135deg,#002855,#003366)">
+      <button onclick="closeInvestorModal()" class="absolute top-5 right-5 p-1.5 rounded-lg hover:bg-white/10 transition text-white/40">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div class="inline-flex items-center gap-2 bg-[#FF8C00]/15 border border-[#FF8C00]/30 text-[#FF8C00] text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-3">📈 Devino Investitor</div>
+      <h2 class="font-bold text-2xl text-white mb-1" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Investește în My Darrin</h2>
+      <p class="text-sm text-white/50">Platformă hibrid clasic & AI · Multi-țară · Servicii integrate la cerere</p>
+      <!-- KPIs mini -->
+      <div class="grid grid-cols-3 gap-3 mt-5">
+        <div class="bg-white/08 rounded-xl p-3 border border-white/10 text-center">
+          <div class="font-bold text-lg text-white" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">12.4K</div>
+          <div class="text-[10px] text-white/40 mt-0.5">Clienți activi</div>
+        </div>
+        <div class="bg-white/08 rounded-xl p-3 border border-white/10 text-center">
+          <div class="font-bold text-lg text-[#FF8C00]" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">1.840</div>
+          <div class="text-[10px] text-white/40 mt-0.5">Parteneri</div>
+        </div>
+        <div class="bg-white/08 rounded-xl p-3 border border-white/10 text-center">
+          <div class="font-bold text-lg text-[#0E9E99]" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">384K</div>
+          <div class="text-[10px] text-white/40 mt-0.5">Lei în Escrow</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="p-6">
+      <!-- Avantaje investitor -->
+      <div class="grid grid-cols-2 gap-3 mb-5">
+        <div class="rounded-xl p-4 border border-gray-100 bg-[#F4F7F9]">
+          <div class="text-xl mb-2">📊</div>
+          <div class="font-bold text-xs text-[#2D2D2D] mb-1">Monitorizare KPIs</div>
+          <div class="text-[11px] text-gray-400 leading-relaxed">Acces la rapoarte detaliate de performanță în timp real.</div>
+        </div>
+        <div class="rounded-xl p-4 border border-gray-100 bg-[#F4F7F9]">
+          <div class="text-xl mb-2">🌍</div>
+          <div class="font-bold text-xs text-[#2D2D2D] mb-1">Expansiune multi-țară</div>
+          <div class="text-[11px] text-gray-400 leading-relaxed">Platforma se extinde activ în RO, MD și alte piețe europene.</div>
+        </div>
+        <div class="rounded-xl p-4 border border-gray-100 bg-[#F4F7F9]">
+          <div class="text-xl mb-2">🤖</div>
+          <div class="font-bold text-xs text-[#2D2D2D] mb-1">AI Proprietary</div>
+          <div class="text-[11px] text-gray-400 leading-relaxed">Darrin AI — devize automate, prețuri dinamice, alocare multi-actor.</div>
+        </div>
+        <div class="rounded-xl p-4 border border-gray-100 bg-[#F4F7F9]">
+          <div class="text-xl mb-2">💰</div>
+          <div class="font-bold text-xs text-[#2D2D2D] mb-1">Model Escrow + Comision</div>
+          <div class="text-[11px] text-gray-400 leading-relaxed">Comision 12% per tranzacție. Revenue recurent, predictibil.</div>
+        </div>
+      </div>
+
+      <!-- Formular contact investitor -->
+      <div class="rounded-2xl p-5 border border-[#003366]/20" style="background:linear-gradient(135deg,#F4F7F9,#EBF4FB)">
+        <div class="font-bold text-sm text-[#2D2D2D] mb-3" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Solicită pachetul pentru investitori</div>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div><label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Nume complet</label><input type="text" placeholder="Nume Prenume" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
+          <div><label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Companie</label><input type="text" placeholder="Compania ta" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
+        </div>
+        <div class="mb-3"><label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Email</label><input type="email" placeholder="email@companie.com" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
+        <div class="mb-4"><label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Sumă de investiție estimată</label>
+          <select class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white">
+            <option value="">Selectează intervalul</option>
+            <option>€ 10.000 – € 50.000</option>
+            <option>€ 50.000 – € 150.000</option>
+            <option>€ 150.000 – € 500.000</option>
+            <option>€ 500.000+</option>
+          </select>
+        </div>
+        <button onclick="submitInvestorForm()" class="w-full py-3.5 rounded-xl font-bold text-sm text-white transition flex items-center justify-center gap-2" style="background:linear-gradient(135deg,#003366,#003366)">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.18 1.22 2 2 0 012.18 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.91 7.91A16 16 0 0014.09 15l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+          Solicită pachetul de investitor
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div><script>
+lucide.createIcons();
+
+// Reveal
+const obs=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('visible');}),{threshold:.1});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+// Scroll progress + header shadow
+window.addEventListener('scroll',()=>{
+  const s=document.documentElement;
+  document.getElementById('spbar').style.width=(s.scrollTop/(s.scrollHeight-s.clientHeight)*100)+'%';
+  document.getElementById('hdr').style.boxShadow=window.scrollY>8?'0 4px 28px rgba(26,38,64,.1)':'';
+});
+
+// Sidebar
+function openSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebar-overlay').classList.add('show');document.body.style.overflow='hidden';}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('show');document.body.style.overflow='';}
+
+// Sidebar sub-sections
+function toggleSbSection(id){
+  const el=document.getElementById(id);
+  const ico=document.getElementById('ico-'+id);
+  el.classList.toggle('hidden');
+  if(ico) ico.style.transform=el.classList.contains('hidden')?'':'rotate(180deg)';
+}
+
+// Language
+function toggleLang(){document.getElementById('langDd').classList.toggle('open');}
+function setLang(code,flag,label){
+  document.getElementById('lang-flag').textContent=flag;
+  document.getElementById('lang-label').textContent=label;
+  document.querySelectorAll('.lang-opt').forEach(o=>o.classList.remove('active'));
+  event.target.closest('.lang-opt').classList.add('active');
+  document.getElementById('langDd').classList.remove('open');
+  // In real app: reload page with locale
+}
+document.addEventListener('click',e=>{
+  if(!document.getElementById('langDd').contains(e.target))
+    document.getElementById('langDd').classList.remove('open');
+});
+
+// Location modal
+function openLocModal(){document.getElementById('loc-modal').classList.remove('hidden');document.body.style.overflow='hidden';}
+function closeLocModal(){document.getElementById('loc-modal').classList.add('hidden');document.body.style.overflow='';}
+function setLoc(city){document.getElementById('loc-input').value=city;}
+function saveLocation(){
+  document.getElementById('loc-display').textContent=document.getElementById('loc-input').value;
+  closeLocModal();
+}
+
+// Auth modal
+function toggleAuthModal(){
+  const m=document.getElementById('auth-modal');
+  m.classList.toggle('hidden');
+  document.body.style.overflow=m.classList.contains('hidden')?'':'hidden';
+}
+function switchAuthTab(tab){
+  document.getElementById('auth-login').classList.toggle('hidden', tab!=='login');
+  document.getElementById('auth-register').classList.toggle('hidden', tab!=='register');
+  document.getElementById('tab-login-btn').classList.toggle('text-[#003366]', tab==='login');
+  document.getElementById('tab-login-btn').classList.toggle('border-b-2', tab==='login');
+  document.getElementById('tab-login-btn').classList.toggle('border-[#003366]', tab==='login');
+  document.getElementById('tab-login-btn').classList.toggle('text-gray-400', tab!=='login');
+  document.getElementById('tab-register-btn').classList.toggle('text-[#003366]', tab==='register');
+  document.getElementById('tab-register-btn').classList.toggle('border-b-2', tab==='register');
+  document.getElementById('tab-register-btn').classList.toggle('border-[#003366]', tab==='register');
+  document.getElementById('tab-register-btn').classList.toggle('text-gray-400', tab!=='register');
+}
+function checkAuth(){alert('Trebuie să fii autentificat pentru a vedea comenzile. Te rugăm să te loghezi.');}
+
+// Basket
+function toggleBasket(){
+  const p=document.getElementById('basket-panel');
+  p.classList.toggle('hidden');
+  document.body.style.overflow=p.classList.contains('hidden')?'':'hidden';
+}
+function changeQty(btn,delta){
+  const item=btn.closest('.basket-item');
+  const qEl=item.querySelector('.basket-qty');
+  const pEl=item.querySelector('.basket-price');
+  const unit=parseInt(pEl.dataset.unit);
+  let q=parseInt(qEl.textContent)+delta;
+  if(q<1)q=1;
+  qEl.textContent=q;
+  pEl.textContent=(unit*q)+' Lei';
+  recalcBasket();
+}
+function removeItem(btn){
+  btn.closest('.basket-item').remove();
+  const cnt=document.querySelectorAll('#basket-panel .basket-item').length;
+  document.getElementById('basket-count').textContent=cnt;
+  recalcBasket();
+}
+function recalcBasket(){
+  let t=0;
+  document.querySelectorAll('#basket-panel .basket-price').forEach(el=>{t+=parseInt(el.textContent);});
+  document.getElementById('basket-subtotal').textContent=t+' Lei';
+  document.getElementById('basket-total').textContent=Math.round(t*1.12)+' Lei';
+}
+
+// Catalog tabs
+function switchTab(name,btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.add('hidden'));
+  document.querySelectorAll('.cat-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.remove('hidden');
+  btn.classList.add('active');
+  document.querySelectorAll('#tab-'+name+' .reveal').forEach(el=>{el.classList.remove('visible');setTimeout(()=>el.classList.add('visible'),60);});
+}
+
+// ── CURRENCY & ZONE DETECTION (simulat din IP / locatie) ──
+const CURRENCIES = {
+  RO: { code:'RON', symbol:'Lei',  rate:1,       label:'RON (Lei)',   flag:'🇷🇴' },
+  DE: { code:'EUR', symbol:'€',    rate:0.2,     label:'EUR (€)',     flag:'🇩🇪' },
+  FR: { code:'EUR', symbol:'€',    rate:0.2,     label:'EUR (€)',     flag:'🇫🇷' },
+  GB: { code:'GBP', symbol:'£',    rate:0.175,   label:'GBP (£)',     flag:'🇬🇧' },
+  HU: { code:'HUF', symbol:'Ft',   rate:80,      label:'HUF (Ft)',    flag:'🇭🇺' },
+  PL: { code:'PLN', symbol:'zł',   rate:0.92,    label:'PLN (zł)',    flag:'🇵🇱' },
+  MD: { code:'MDL', symbol:'L',    rate:3.9,     label:'MDL (L)',     flag:'🇲🇩' },
+  BG: { code:'BGN', symbol:'лв',   rate:0.39,    label:'BGN (лв)',    flag:'🇧🇬' },
+  DEFAULT: { code:'EUR', symbol:'€', rate:0.2,   label:'EUR (€)',     flag:'🌍' },
+};
+
+// Zones where platform is ACTIVE
+const ACTIVE_ZONES = ['RO', 'MD'];
+
+function detectAndApplyCurrency() {
+  // Try to get country from IP via free API
+  fetch('https://ipapi.co/json/')
+    .then(r => r.json())
+    .then(data => {
+      const country = data.country_code || 'RO';
+      const city = data.city || '';
+      const region = data.region || '';
+      const isActive = ACTIVE_ZONES.includes(country);
+
+      // Update location display
+      if (city) {
+        document.getElementById('loc-display').textContent = city + (region ? ', ' + region : '');
+        document.getElementById('loc-input').value = city + (region ? ', ' + region : '');
+      }
+
+      // Apply currency
+      const cur = CURRENCIES[country] || CURRENCIES.DEFAULT;
+      applyCurrency(cur);
+
+      // Show unavailable zone banner if needed
+      if (!isActive) {
+        const zoneName = data.country_name || country;
+        document.getElementById('unavail-zone').textContent = zoneName;
+        setTimeout(() => {
+          document.getElementById('zone-unavailable').classList.remove('hidden');
+        }, 2000);
+      }
+    })
+    .catch(() => {
+      // Fallback: RO
+      applyCurrency(CURRENCIES.RO);
+    });
+}
+
+function applyCurrency(cur) {
+  // Update label in catalog header
+  const lbl = document.getElementById('currency-label');
+  if (lbl) lbl.textContent = cur.flag + ' ' + cur.label;
+
+  // Update all prices
+  document.querySelectorAll('.dyn-price').forEach(el => {
+    const ron = parseFloat(el.dataset.ron);
+    const converted = Math.round(ron * cur.rate);
+    el.textContent = converted.toLocaleString();
+  });
+  document.querySelectorAll('.dyn-currency').forEach(el => {
+    el.textContent = cur.symbol;
+  });
+}
+
+// Zone unavailable tabs
+function switchUnavailTab(tab) {
+  document.getElementById('unavail-tab-client').classList.toggle('active', tab==='client');
+  document.getElementById('unavail-tab-furnizor').classList.toggle('active', tab==='furnizor');
+}
+
+function submitUnavail() {
+  const subscribed = document.getElementById('unavail-subscribe').checked;
+  const modal = document.getElementById('zone-unavailable');
+  modal.querySelector('.bg-white').innerHTML = `
+    <div class="p-8 text-center">
+      <div class="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4 text-3xl">✅</div>
+      <h3 class="font-bold text-xl text-[#2D2D2D] mb-2" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Înregistrat cu succes!</h3>
+      <p class="text-gray-400 text-sm leading-relaxed mb-6">Vei fi printre primii care află când My Darrin lansează în zona ta${subscribed ? ' — vei primi notificări pe email' : ''}.</p>
+      <button onclick="document.getElementById('zone-unavailable').classList.add('hidden')" class="bg-[#FF8C00] text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition">Închide</button>
+    </div>
+  `;
+}
+
+// Init currency detection on page load
+detectAndApplyCurrency();
+
+// ── PARTNER MODAL ──
+const PARTNER_META = {
+  servicii:   { icon:'🔧', title:'Furnizor de Servicii',   color:'#FF8C00', bg:'linear-gradient(135deg,#FFF0D6,#FDE8C4)' },
+  materiale:  { icon:'📦', title:'Furnizor de Materiale',  color:'#003366', bg:'linear-gradient(135deg,#EBF4FB,#DDE6F5)' },
+  inchirieri: { icon:'🏗', title:'Furnizor de Închirieri', color:'#0E9E99', bg:'linear-gradient(135deg,#E0F5F4,#C5EEEC)' },
+};
+
+function openPartnerModal(type) {
+  document.getElementById('partner-modal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  if (type) {
+    setTimeout(() => selectPartnerType(type), 80);
+  } else {
+    resetPartnerType();
+  }
+}
+
+function closePartnerModal() {
+  document.getElementById('partner-modal').classList.add('hidden');
+  document.body.style.overflow = '';
+  resetPartnerType();
+}
+
+function selectPartnerType(type) {
+  const meta = PARTNER_META[type];
+  if (!meta) return;
+  // Hide cards, show form
+  document.getElementById('partner-cards').classList.add('hidden');
+  document.getElementById('partner-form').classList.remove('hidden');
+  document.getElementById('pf-icon').textContent = meta.icon;
+  document.getElementById('pf-icon').style.background = meta.bg;
+  document.getElementById('pf-title').textContent = meta.title;
+  document.getElementById('pf-title').style.color = meta.color;
+}
+
+function resetPartnerType() {
+  document.getElementById('partner-cards').classList.remove('hidden');
+  document.getElementById('partner-form').classList.add('hidden');
+}
+
+function submitPartnerForm() {
+  const modal = document.getElementById('partner-modal');
+  const inner = modal.querySelector('.relative.bg-white');
+  inner.innerHTML = `
+    <div class="p-10 text-center">
+      <div class="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4 text-3xl">✅</div>
+      <h3 class="font-bold text-xl text-[#2D2D2D] mb-2" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Cerere trimisă!</h3>
+      <p class="text-gray-400 text-sm leading-relaxed mb-6 max-w-xs mx-auto">Îți mulțumim! Echipa My Darrin va verifica documentele și te va contacta în maxim <strong class="text-[#2D2D2D]">48 de ore</strong>.</p>
+      <button onclick="closePartnerModal()" class="bg-[#FF8C00] text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition">Închide</button>
+    </div>`;
+}
+
+// ── INVESTOR MODAL ──
+function openInvestorModal() {
+  document.getElementById('investor-modal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeInvestorModal() {
+  document.getElementById('investor-modal').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function submitInvestorForm() {
+  const modal = document.getElementById('investor-modal');
+  const inner = modal.querySelector('.relative.bg-white');
+  inner.innerHTML = `
+    <div class="p-10 text-center">
+      <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl" style="background:linear-gradient(135deg,#EBF4FB,#DDE6F5)">📈</div>
+      <h3 class="font-bold text-xl text-[#2D2D2D] mb-2" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Solicitare primită!</h3>
+      <p class="text-gray-400 text-sm leading-relaxed mb-6 max-w-xs mx-auto">Echipa My Darrin te va contacta în curând cu pachetul complet pentru investitori și detaliile rundei de finanțare.</p>
+      <button onclick="closeInvestorModal()" class="bg-[#003366] text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-[#002855] transition">Închide</button>
+    </div>`;
+}
+
+// ── COUNTERS
+function animateCounter(el){
+  const target=parseInt(el.dataset.target);
+  const isDecimal=el.dataset.decimal==='true';
+  const start=performance.now();
+  (function tick(now){
+    const t=Math.min((now-start)/1800,1);
+    const ease=1-Math.pow(1-t,3);
+    const val=target*ease;
+    el.textContent=isDecimal?(val/100).toFixed(2):Math.floor(val).toLocaleString('ro-RO');
+    if(t<1)requestAnimationFrame(tick);
+  })(performance.now());
+}
+const cobs=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting&&!x.target.dataset.done){x.target.dataset.done='1';animateCounter(x.target);}}),{threshold:.5});
+document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
+</script>
+</body>
+</html>
+
+<script>
+function initReveal(){const ro=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting)x.target.classList.add("visible");}),{threshold:.06});document.querySelectorAll(".reveal").forEach(el=>ro.observe(el));}
+document.addEventListener("DOMContentLoaded",initReveal);
+window.addEventListener("scroll",()=>{const s=document.documentElement;document.getElementById("spbar").style.width=(s.scrollTop/(s.scrollHeight-s.clientHeight)*100)+"%";});
+function openSidebar(){document.getElementById("sidebar")?.classList.add("open");document.getElementById("sidebar-overlay")?.classList.add("show");document.body.style.overflow="hidden";}
+function closeSidebar(){document.getElementById("sidebar")?.classList.remove("open");document.getElementById("sidebar-overlay")?.classList.remove("show");document.body.style.overflow="";}
+function toggleSbSection(id){const el=document.getElementById(id);const ico=document.getElementById("ico-"+id);if(el)el.classList.toggle("hidden");if(ico)ico.style.transform=el.classList.contains("hidden")?"":"rotate(180deg)";}
+function openPartnerModal(){document.getElementById("partner-modal")?.classList.remove("hidden");document.body.style.overflow="hidden";}
+function closePartnerModal(){document.getElementById("partner-modal")?.classList.add("hidden");document.body.style.overflow="";}
+function openInvestorModal(){document.getElementById("investor-modal")?.classList.remove("hidden");document.body.style.overflow="hidden";}
+function closeInvestorModal(){document.getElementById("investor-modal")?.classList.add("hidden");document.body.style.overflow="";}
+function selectPartnerType(){}function resetPartnerType(){}function submitPartnerForm(){}function submitInvestorForm(){}function switchTab(){}function toggleBasket(){}
+if(typeof lucide!=="undefined")lucide.createIcons();
+</script>
+</body>
+</html>

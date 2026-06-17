@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Investitori · My Darrin Platform</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;background:#F0F4F8;color:#1A2332;-webkit-font-smoothing:antialiased}
+#spbar{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,#FF8C00,#0E9E99,#003366);z-index:9999;width:0%;transition:width .08s}
+
+/* ── NAV ── */
+.inv-nav{background:#003366;padding:0 32px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,51,102,.3)}
+.inv-nav-logo{display:flex;align-items:center;gap:10px}
+.inv-nav-icon{width:34px;height:34px;background:#FF8C00;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#fff}
+.inv-nav-links{display:flex;gap:4px}
+.inv-nav-link{padding:8px 16px;border-radius:9px;font-size:13px;font-weight:600;color:rgba(255,255,255,.65);cursor:pointer;transition:all .15s;text-decoration:none;border:none;background:transparent;font-family:inherit}
+.inv-nav-link:hover,.inv-nav-link.active{background:rgba(255,255,255,.1);color:#fff}
+.inv-nav-link.active{border-bottom:2px solid #FF8C00;border-radius:0}
+
+/* ── HERO ── */
+.inv-hero{background:linear-gradient(145deg,#001629 0%,#002855 55%,#003D7A 100%);padding:64px 32px 56px;position:relative;overflow:hidden}
+.inv-hero::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:48px 48px;pointer-events:none}
+.inv-hero-glow{position:absolute;border-radius:50%;pointer-events:none}
+
+/* ── SECTIONS ── */
+.inv-section{padding:56px 32px}
+.inv-section-alt{background:#fff}
+.inv-max{max-width:1200px;margin:0 auto}
+
+/* ── CARDS ── */
+.inv-card{background:#fff;border-radius:20px;border:1px solid #D5DFE8;overflow:hidden;box-shadow:0 2px 8px rgba(0,51,102,.06);transition:all .22s}
+.inv-card:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(0,51,102,.12)}
+.inv-card-hdr{padding:16px 22px;border-bottom:1px solid #D5DFE8;background:#F8FAFC;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.inv-card-body{padding:22px}
+
+/* ── KPI ── */
+.kpi-big{background:#fff;border-radius:18px;border:1px solid #D5DFE8;padding:24px;position:relative;overflow:hidden;box-shadow:0 2px 8px rgba(0,51,102,.06);transition:all .22s}
+.kpi-big:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,51,102,.1)}
+.kpi-big::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;border-radius:18px 18px 0 0}
+.kpi-big.kpi-or::before{background:linear-gradient(90deg,#FF8C00,#FFA033)}
+.kpi-big.kpi-te::before{background:linear-gradient(90deg,#0E9E99,#1DBDB8)}
+.kpi-big.kpi-bl::before{background:linear-gradient(90deg,#003366,#1A5FAD)}
+.kpi-big.kpi-gr::before{background:linear-gradient(90deg,#1A7A3A,#22A84A)}
+.kpi-big.kpi-pu::before{background:linear-gradient(90deg,#7C3AED,#9F5EF5)}
+
+/* ── CHART BAR ── */
+.chart-bar-wrap{display:flex;flex-direction:column;gap:10px}
+.chart-bar-item{display:flex;align-items:center;gap:12px}
+.chart-bar-label{font-size:12px;color:#5A6B7D;min-width:40px;text-align:right}
+.chart-bar-track{flex:1;height:10px;background:#E8EEF5;border-radius:99px;overflow:hidden}
+.chart-bar-fill{height:100%;border-radius:99px;transition:width .8s cubic-bezier(.22,1,.36,1)}
+.chart-bar-val{font-size:12px;font-weight:700;color:#1A2332;min-width:60px}
+
+/* ── TIMELINE ── */
+.timeline-item{display:flex;gap:16px;padding-bottom:24px;position:relative}
+.timeline-item:not(:last-child)::before{content:"";position:absolute;left:15px;top:34px;width:2px;bottom:0;background:linear-gradient(180deg,#D5DFE8,transparent)}
+.timeline-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:800}
+.timeline-dot.done{background:#0E9E99;color:#fff}
+.timeline-dot.active{background:#FF8C00;color:#fff;box-shadow:0 0 0 6px rgba(255,140,0,.15);animation:tpulse 2s infinite}
+.timeline-dot.future{background:#E8EEF5;color:#8C9BAD;border:2px solid #D5DFE8}
+@keyframes tpulse{0%,100%{box-shadow:0 0 0 6px rgba(255,140,0,.15)}50%{box-shadow:0 0 0 10px rgba(255,140,0,.05)}}
+
+/* ── PROGRESS RING ── */
+.progress-ring{position:relative;display:inline-flex;align-items:center;justify-content:center}
+
+/* ── CHIPS ── */
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:99px;white-space:nowrap}
+.ch-g{background:rgba(26,122,58,.1);color:#1A7A3A;border:1px solid rgba(26,122,58,.2)}
+.ch-o{background:rgba(255,140,0,.1);color:#CC7000;border:1px solid rgba(255,140,0,.2)}
+.ch-b{background:rgba(0,51,102,.1);color:#003366;border:1px solid rgba(0,51,102,.15)}
+.ch-t{background:rgba(14,158,153,.1);color:#0B7A76;border:1px solid rgba(14,158,153,.2)}
+.ch-p{background:rgba(124,58,237,.1);color:#7C3AED;border:1px solid rgba(124,58,237,.2)}
+
+/* ── REVEAL ── */
+.reveal{opacity:0;transform:translateY(22px);transition:opacity .55s cubic-bezier(.22,1,.36,1),transform .55s cubic-bezier(.22,1,.36,1)}
+.reveal.d1{transition-delay:.08s}.reveal.d2{transition-delay:.16s}.reveal.d3{transition-delay:.24s}.reveal.d4{transition-delay:.32s}
+.reveal.visible{opacity:1;transform:none}
+
+/* ── TABS ── */
+.inv-tab{padding:9px 20px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .18s;background:transparent;color:#5A6B7D}
+.inv-tab.active{background:#003366;color:#fff}
+.inv-tab:not(.active):hover{background:#EBF4FB;color:#003366}
+
+/* ── BTNS ── */
+.btn-p{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:13px;font-size:14px;font-weight:800;border:none;cursor:pointer;font-family:inherit;background:#FF8C00;color:#fff;box-shadow:0 5px 18px rgba(255,140,0,.3);transition:all .2s;text-decoration:none}
+.btn-p:hover{background:#CC7000;transform:translateY(-1px)}
+.btn-s{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:13px;font-size:13.5px;font-weight:700;border:1.5px solid #D5DFE8;cursor:pointer;font-family:inherit;background:#fff;color:#5A6B7D;transition:all .2s;text-decoration:none}
+.btn-s:hover{border-color:#003366;color:#003366;background:#EBF4FB}
+
+/* ── TABLE ── */
+.inv-table{width:100%;border-collapse:collapse}
+.inv-table th{padding:10px 14px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;border-bottom:1px solid #D5DFE8;text-align:left;background:#F8FAFC;white-space:nowrap}
+.inv-table td{padding:12px 14px;font-size:13px;border-bottom:1px solid #EEF2F7;vertical-align:middle;color:#1A2332}
+.inv-table tr:last-child td{border-bottom:none}
+.inv-table tr:hover td{background:#F8FBFF}
+
+/* ── MISC ── */
+.pulse-dot{width:7px;height:7px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block;flex-shrink:0}
+@keyframes pdot{0%,100%{opacity:1}50%{opacity:.25}}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:#CBD5E0;border-radius:3px}
+
+@media(max-width:900px){
+  .inv-hero{padding:48px 20px 40px}
+  .inv-section{padding:40px 20px}
+  .kpi-grid-5{grid-template-columns:repeat(2,1fr)!important}
+  .kpi-grid-4{grid-template-columns:repeat(2,1fr)!important}
+  .inv-2col{grid-template-columns:1fr!important}
+  .inv-3col{grid-template-columns:1fr!important}
+}
+</style>
+</head>
+<body>
+
+<script>
+// Polyfill scrollTo pentru sectiuni (nu overrideam window.scrollTo)
+function scrollTo(id){
+  if(typeof id === 'string'){
+    const el = document.getElementById(id);
+    if(el) el.scrollIntoView({behavior:'smooth'});
+  }
+}
+</script>
+
+<div id="spbar"></div>
+
+<!-- ════ NAV ════ -->
+<nav class="inv-nav">
+  <div class="inv-nav-logo">
+    <div class="inv-nav-icon">D</div>
+    <div>
+      <div style="font-weight:800;color:#fff;font-size:14px">My Darrin</div>
+      <div style="font-size:9.5px;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.08em">Investor Relations</div>
+    </div>
+  </div>
+  <div class="inv-nav-links" id="inv-nav-links">
+    <a class="inv-nav-link active" id="nav-overview" onclick="navTo('hero')">Overview</a>
+    <a class="inv-nav-link" id="nav-kpis" onclick="navTo('kpis')">KPIs Live</a>
+    <a class="inv-nav-link" id="nav-proiectii" onclick="navTo('proiectii')">Proiecții</a>
+    <a class="inv-nav-link" id="nav-runda" onclick="navTo('runda')">Rundă</a>
+    <a class="inv-nav-link" id="nav-exit" onclick="navTo('exit')">Exit</a>
+    <a class="inv-nav-link" id="nav-contact" onclick="navTo('contact')">Contact</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#0E9E99">
+      <span class="pulse-dot" style="width:5px;height:5px"></span>
+      Live · v2026.06.16
+    </div>
+    <a href="mydarrin-v3.html" class="btn-s" style="font-size:11.5px;padding:7px 14px">← Platformă</a>
+  </div>
+</nav>
+
+<!-- ════ HERO ════ -->
+<section class="inv-hero" id="hero">
+  <div class="inv-hero-glow" style="top:-15%;right:-8%;width:600px;height:600px;background:radial-gradient(circle,rgba(14,158,153,.18) 0%,transparent 70%)"></div>
+  <div class="inv-hero-glow" style="bottom:-20%;left:-5%;width:500px;height:500px;background:radial-gradient(circle,rgba(255,140,0,.1) 0%,transparent 70%)"></div>
+  <div class="inv-max" style="position:relative;z-index:2">
+    <div style="display:grid;grid-template-columns:1fr auto;gap:48px;align-items:center" class="inv-2col">
+      <div>
+        <div class="reveal" style="display:inline-flex;align-items:center;gap:8px;background:rgba(14,158,153,.15);border:1px solid rgba(14,158,153,.3);color:#0E9E99;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:5px 14px;border-radius:99px;margin-bottom:20px">
+          <span class="pulse-dot" style="width:5px;height:5px"></span>
+          Rundă Pre-Seed · 2026 · Deschisă investitorilor
+        </div>
+        <h1 class="reveal d1" style="font-size:clamp(28px,4vw,54px);font-weight:800;color:#fff;line-height:1.1;letter-spacing:-.03em;margin-bottom:16px">
+          My Darrin Platform<br>
+          <span style="color:#FF8C00">Investor Relations</span>
+        </h1>
+        <p class="reveal d2" style="font-size:15px;color:rgba(255,255,255,.55);line-height:1.8;max-width:560px;margin-bottom:28px">
+          Platformă hibrid clasic & AI pentru servicii integrate la cerere. Multi-țară, multi-actor, Escrow securizat. Administrat de <strong style="color:#fff">Home Best Pal SRL</strong> · Bacău, România.
+        </p>
+        <div class="reveal d3" style="display:flex;gap:12px;flex-wrap:wrap">
+          <button class="btn-p" onclick="scrollTo('runda')">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Intră în rundă
+          </button>
+          <button class="btn-s" onclick="scrollTo('kpis')" style="color:rgba(255,255,255,.75);border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.08)" onmouseover="this.style.background='rgba(255,255,255,.16)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">
+            KPIs Live →
+          </button>
+        </div>
+      </div>
+      <!-- Hero stats grid -->
+      <div class="reveal d2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:280px">
+        <div style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:20px;text-align:center;backdrop-filter:blur(8px)">
+          <div style="font-size:11px;color:rgba(255,255,255,.35);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em">Valoare targetată</div>
+          <div style="font-size:26px;font-weight:800;color:#FF8C00">500K</div>
+          <div style="font-size:10.5px;color:rgba(255,255,255,.35);margin-top:3px">EUR · Pre-Seed</div>
+        </div>
+        <div style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:20px;text-align:center;backdrop-filter:blur(8px)">
+          <div style="font-size:11px;color:rgba(255,255,255,.35);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em">Valoare platformă</div>
+          <div style="font-size:26px;font-weight:800;color:#0E9E99">2M</div>
+          <div style="font-size:10.5px;color:rgba(255,255,255,.35);margin-top:3px">EUR · estimat 2026</div>
+        </div>
+        <div style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:20px;text-align:center;backdrop-filter:blur(8px)">
+          <div style="font-size:11px;color:rgba(255,255,255,.35);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em">Țări active</div>
+          <div style="font-size:26px;font-weight:800;color:#fff">5</div>
+          <div style="font-size:10.5px;color:rgba(255,255,255,.35);margin-top:3px">RO·MD·DE·FR·BG</div>
+        </div>
+        <div style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:20px;text-align:center;backdrop-filter:blur(8px)">
+          <div style="font-size:11px;color:rgba(255,255,255,.35);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em">Equity oferit</div>
+          <div style="font-size:26px;font-weight:800;color:#7AB3E0">20%</div>
+          <div style="font-size:10.5px;color:rgba(255,255,255,.35);margin-top:3px">Pre-Seed round</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ KPIs LIVE ════ -->
+<section class="inv-section" id="kpis">
+  <div class="inv-max">
+    <div style="text-align:center;margin-bottom:40px">
+      <div class="reveal" style="display:inline-flex;align-items:center;gap:7px;background:#E0F5F4;color:#0B7A76;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:5px 14px;border-radius:99px;margin-bottom:12px">
+        <span class="pulse-dot" style="width:5px;height:5px"></span>
+        KPIs în timp real · content_version: v2026.06.16
+      </div>
+      <h2 class="reveal d1" style="font-size:32px;font-weight:800;color:#1A2332;margin-bottom:8px">Indicatori cheie de performanță</h2>
+      <p class="reveal d2" style="font-size:14px;color:#5A6B7D;max-width:540px;margin:0 auto">Toate datele sunt actualizate în timp real. Platforma operează live în 5 țări.</p>
+    </div>
+
+    <!-- KPI Grid 5 -->
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:24px" class="kpi-grid-5 reveal">
+      <div class="kpi-big kpi-or">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:10px">Comenzi totale</div>
+        <div style="font-size:36px;font-weight:800;color:#FF8C00;line-height:1" id="kpi-comenzi-total">1.247</div>
+        <div style="font-size:11px;color:#5A6B7D;margin-top:5px">↑ +247 luna aceasta</div>
+        <div style="font-size:10px;color:#0E9E99;margin-top:3px;font-weight:600">+24.7% vs luna precedentă</div>
+      </div>
+      <div class="kpi-big kpi-te">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:10px">GMV lunar</div>
+        <div style="font-size:36px;font-weight:800;color:#0E9E99;line-height:1">480K</div>
+        <div style="font-size:11px;color:#5A6B7D;margin-top:5px">Lei · Gross Merchandise Value</div>
+        <div style="font-size:10px;color:#0E9E99;margin-top:3px;font-weight:600">+31% MoM</div>
+      </div>
+      <div class="kpi-big kpi-bl">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:10px">Revenue lunar</div>
+        <div style="font-size:36px;font-weight:800;color:#1A5FAD;line-height:1">48.2K</div>
+        <div style="font-size:11px;color:#5A6B7D;margin-top:5px">Lei · comisioane HBP</div>
+        <div style="font-size:10px;color:#0E9E99;margin-top:3px;font-weight:600">Take rate: ~10%</div>
+      </div>
+      <div class="kpi-big kpi-gr">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:10px">Parteneri activi</div>
+        <div style="font-size:36px;font-weight:800;color:#1A7A3A;line-height:1">1.834</div>
+        <div style="font-size:11px;color:#5A6B7D;margin-top:5px">Verificați KYC · 5 țări</div>
+        <div style="font-size:10px;color:#0E9E99;margin-top:3px;font-weight:600">+18% față de T1</div>
+      </div>
+      <div class="kpi-big kpi-pu">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:10px">Rating mediu</div>
+        <div style="font-size:36px;font-weight:800;color:#7C3AED;line-height:1">4.87</div>
+        <div style="font-size:11px;color:#5A6B7D;margin-top:5px">⭐ din 3.240 recenzii</div>
+        <div style="font-size:10px;color:#0E9E99;margin-top:3px;font-weight:600">NPS estimat: +68</div>
+      </div>
+    </div>
+
+    <!-- KPI Grid 4 + Chart -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px" class="inv-2col">
+
+      <!-- Unit economics -->
+      <div class="inv-card reveal">
+        <div class="inv-card-hdr">
+          <div style="font-weight:700;color:#1A2332;font-size:14px">📊 Unit Economics</div>
+          <span class="chip ch-g">Sănătos</span>
+        </div>
+        <div class="inv-card-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+            <div style="background:#F0F4F8;border-radius:12px;padding:14px;text-align:center">
+              <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:6px">CAC</div>
+              <div style="font-size:24px;font-weight:800;color:#1A2332">~12</div>
+              <div style="font-size:10.5px;color:#5A6B7D">EUR/client nou</div>
+            </div>
+            <div style="background:#F0F4F8;border-radius:12px;padding:14px;text-align:center">
+              <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:6px">LTV</div>
+              <div style="font-size:24px;font-weight:800;color:#1A2332">~180</div>
+              <div style="font-size:10.5px;color:#5A6B7D">EUR/client/an</div>
+            </div>
+            <div style="background:#F0F4F8;border-radius:12px;padding:14px;text-align:center">
+              <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:6px">LTV/CAC</div>
+              <div style="font-size:24px;font-weight:800;color:#0E9E99">15×</div>
+              <div style="font-size:10.5px;color:#5A6B7D">Benchmark: >3×</div>
+            </div>
+            <div style="background:#F0F4F8;border-radius:12px;padding:14px;text-align:center">
+              <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:6px">Payback</div>
+              <div style="font-size:24px;font-weight:800;color:#FF8C00">~8</div>
+              <div style="font-size:10.5px;color:#5A6B7D">luni</div>
+            </div>
+          </div>
+          <!-- Revenue per tara -->
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:12px">Revenue split per țară</div>
+          <div class="chart-bar-wrap">
+            <div class="chart-bar-item"><div class="chart-bar-label">🇷🇴 RO</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:74%;background:#003366"></div></div><div class="chart-bar-val">35.7K Lei</div></div>
+            <div class="chart-bar-item"><div class="chart-bar-label">🇲🇩 MD</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:16%;background:#0E9E99"></div></div><div class="chart-bar-val">7.7K Lei</div></div>
+            <div class="chart-bar-item"><div class="chart-bar-label">🇩🇪 DE</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:6%;background:#1A5FAD"></div></div><div class="chart-bar-val">2.9K Lei</div></div>
+            <div class="chart-bar-item"><div class="chart-bar-label">🇫🇷 FR</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:3%;background:#7C3AED"></div></div><div class="chart-bar-val">1.4K Lei</div></div>
+            <div class="chart-bar-item"><div class="chart-bar-label">🇧🇬 BG</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:1%;background:#FF8C00"></div></div><div class="chart-bar-val">0.4K Lei</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPIs per categorie -->
+      <div class="inv-card reveal d1">
+        <div class="inv-card-hdr">
+          <div style="font-weight:700;color:#1A2332;font-size:14px">📈 Creștere lunară (MoM)</div>
+          <button class="btn-s" style="font-size:11px;padding:6px 12px" onclick="toggleGrowthView()">Alternat</button>
+        </div>
+        <div class="inv-card-body">
+          <div id="growth-view-1">
+            <div class="chart-bar-wrap" style="margin-bottom:20px">
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:10px">Comenzi · ultimele 6 luni</div>
+              <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">Ian</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:28%;background:#D5DFE8"></div></div><div class="chart-bar-val">312</div></div>
+              <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">Feb</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:36%;background:#CBD5E8"></div></div><div class="chart-bar-val">401</div></div>
+              <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">Mar</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:46%;background:#1A5FAD"></div></div><div class="chart-bar-val">518</div></div>
+              <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">Apr</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:57%;background:#1A5FAD"></div></div><div class="chart-bar-val">634</div></div>
+              <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">Mai</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:72%;background:#0E9E99"></div></div><div class="chart-bar-val">800</div></div>
+              <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">Iun</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:90%;background:#FF8C00"></div></div><div class="chart-bar-val">1.000+</div></div>
+            </div>
+          </div>
+          <div id="growth-view-2" style="display:none">
+            <div class="chart-bar-wrap">
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:10px">Revenue (Lei) · ultimele 6 luni</div>
+              <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">Ian</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:18%;background:#D5DFE8"></div></div><div class="chart-bar-val">8.6K</div></div>
+              <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">Feb</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:24%;background:#CBD5E8"></div></div><div class="chart-bar-val">11.5K</div></div>
+              <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">Mar</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:33%;background:#1A5FAD"></div></div><div class="chart-bar-val">15.8K</div></div>
+              <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">Apr</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:46%;background:#1A5FAD"></div></div><div class="chart-bar-val">22.1K</div></div>
+              <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">Mai</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:65%;background:#0E9E99"></div></div><div class="chart-bar-val">31.4K</div></div>
+              <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">Iun</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:100%;background:#FF8C00"></div></div><div class="chart-bar-val">48.2K</div></div>
+            </div>
+          </div>
+          <!-- Cohort retention -->
+          <div style="margin-top:18px;padding-top:18px;border-top:1px solid #EEF2F7">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:10px">Retenție clienți (cohorte)</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+              <div style="text-align:center;background:#F0F4F8;border-radius:10px;padding:10px">
+                <div style="font-size:18px;font-weight:800;color:#1A2332">76%</div>
+                <div style="font-size:9.5px;color:#5A6B7D">Luna 1</div>
+              </div>
+              <div style="text-align:center;background:#F0F4F8;border-radius:10px;padding:10px">
+                <div style="font-size:18px;font-weight:800;color:#003366">64%</div>
+                <div style="font-size:9.5px;color:#5A6B7D">Luna 3</div>
+              </div>
+              <div style="text-align:center;background:#F0F4F8;border-radius:10px;padding:10px">
+                <div style="font-size:18px;font-weight:800;color:#0E9E99">51%</div>
+                <div style="font-size:9.5px;color:#5A6B7D">Luna 6</div>
+              </div>
+              <div style="text-align:center;background:#EBF4FB;border-radius:10px;padding:10px;border:1px solid #D5DFE8">
+                <div style="font-size:18px;font-weight:800;color:#FF8C00">Best</div>
+                <div style="font-size:9.5px;color:#5A6B7D">în sector</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ PROIECȚII VENITURI ════ -->
+<section class="inv-section inv-section-alt" id="proiectii">
+  <div class="inv-max">
+    <div style="text-align:center;margin-bottom:40px">
+      <h2 class="reveal" style="font-size:32px;font-weight:800;color:#1A2332;margin-bottom:8px">Venituri proiectate</h2>
+      <p class="reveal d1" style="font-size:14px;color:#5A6B7D">Scenarii pesimist / realist / optimist · 3 ani</p>
+    </div>
+
+    <!-- Tabs scenarii -->
+    <div class="reveal" style="display:flex;gap:6px;padding:5px;background:#F0F4F8;border-radius:13px;border:1px solid #D5DFE8;margin-bottom:24px;width:fit-content;margin-left:auto;margin-right:auto">
+      <button class="inv-tab active" id="sc-tab-p" onclick="switchScenariu('pesimist',this)">😕 Pesimist</button>
+      <button class="inv-tab" id="sc-tab-r" onclick="switchScenariu('realist',this)">🎯 Realist</button>
+      <button class="inv-tab" id="sc-tab-o" onclick="switchScenariu('optimist',this)">🚀 Optimist</button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px" class="inv-2col">
+
+      <!-- Tabel proiecții -->
+      <div class="inv-card reveal">
+        <div class="inv-card-hdr">
+          <div style="font-weight:700;color:#1A2332;font-size:14px">Proiecții financiare · <span id="sc-label">Pesimist</span></div>
+          <span class="chip ch-o" id="sc-chip">Conservator</span>
+        </div>
+        <div class="inv-card-body" style="padding:0">
+          <table class="inv-table">
+            <thead><tr><th>Metric</th><th>2026 (H2)</th><th>2027</th><th>2028</th></tr></thead>
+            <tbody id="proiectii-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Runway & Burn -->
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="inv-card reveal d1">
+          <div class="inv-card-hdr">
+            <div style="font-weight:700;color:#1A2332;font-size:14px">⛽ Runway & Burn Rate</div>
+            <span class="chip ch-g">Sănătos</span>
+          </div>
+          <div class="inv-card-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+              <div style="text-align:center;background:#F0F4F8;border-radius:12px;padding:14px">
+                <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Burn lunar</div>
+                <div style="font-size:22px;font-weight:800;color:#1A2332">~18K</div>
+                <div style="font-size:10px;color:#5A6B7D">EUR</div>
+              </div>
+              <div style="text-align:center;background:#F0F4F8;border-radius:12px;padding:14px">
+                <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Runway</div>
+                <div style="font-size:22px;font-weight:800;color:#0E9E99">18+</div>
+                <div style="font-size:10px;color:#5A6B7D">luni după rundă</div>
+              </div>
+              <div style="text-align:center;background:#FFF8EE;border-radius:12px;padding:14px;border:1px solid rgba(255,140,0,.2)">
+                <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Break-even</div>
+                <div style="font-size:22px;font-weight:800;color:#FF8C00">Q2</div>
+                <div style="font-size:10px;color:#5A6B7D">2027 · realist</div>
+              </div>
+            </div>
+            <div style="background:#F0F4F8;border-radius:12px;padding:14px;border-left:3px solid #0E9E99">
+              <div style="font-size:12.5px;color:#1A2332;line-height:1.6"><strong>Alocarea investiției (500K EUR):</strong><br>
+              40% Produs & Tehnologie · 25% Expansiune geografică · 20% Marketing & Sales · 15% Operațional</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Piata adresabila -->
+        <div class="inv-card reveal d2">
+          <div class="inv-card-hdr">
+            <div style="font-weight:700;color:#1A2332;font-size:14px">🌍 Piața adresabilă</div>
+          </div>
+          <div class="inv-card-body">
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:center;gap:12px;padding:10px;background:#F0F4F8;border-radius:10px">
+                <div style="width:14px;height:14px;border-radius:50%;background:#003366;flex-shrink:0"></div>
+                <div style="flex:1"><div style="font-size:12.5px;font-weight:600;color:#1A2332">TAM — Total Addressable Market</div><div style="font-size:11px;color:#5A6B7D">Servicii la domiciliu EU · 5 țări</div></div>
+                <div style="font-weight:800;color:#003366;font-size:14px">€180B</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:10px;background:#F0F4F8;border-radius:10px">
+                <div style="width:14px;height:14px;border-radius:50%;background:#0E9E99;flex-shrink:0"></div>
+                <div style="flex:1"><div style="font-size:12.5px;font-weight:600;color:#1A2332">SAM — Serviceable Addressable</div><div style="font-size:11px;color:#5A6B7D">Piețe active: RO+MD+DE+FR+BG</div></div>
+                <div style="font-weight:800;color:#0E9E99;font-size:14px">€12B</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:10px;background:#FFF8EE;border-radius:10px;border:1px solid rgba(255,140,0,.2)">
+                <div style="width:14px;height:14px;border-radius:50%;background:#FF8C00;flex-shrink:0"></div>
+                <div style="flex:1"><div style="font-size:12.5px;font-weight:600;color:#1A2332">SOM — Target 2028</div><div style="font-size:11px;color:#5A6B7D">Cotă realistă 3 ani</div></div>
+                <div style="font-weight:800;color:#FF8C00;font-size:14px">€120M</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ STRUCTURA RUNDEI ════ -->
+<section class="inv-section" id="runda">
+  <div class="inv-max">
+    <div style="text-align:center;margin-bottom:40px">
+      <h2 class="reveal" style="font-size:32px;font-weight:800;color:#1A2332;margin-bottom:8px">Structura rundei Pre-Seed</h2>
+      <p class="reveal d1" style="font-size:14px;color:#5A6B7D">500.000 EUR · 20% equity · Valoare companie: 2.5M EUR pre-money</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:28px" class="inv-3col">
+      <!-- Detalii rundă -->
+      <div class="inv-card reveal" style="grid-column:span 2">
+        <div class="inv-card-hdr">
+          <div style="font-weight:700;color:#1A2332;font-size:14px">📋 Termeni rundă · Pre-Seed 2026</div>
+          <span class="chip ch-t">Deschisă</span>
+        </div>
+        <div class="inv-card-body">
+          <table class="inv-table">
+            <thead><tr><th>Termen</th><th>Valoare</th><th>Detalii</th></tr></thead>
+            <tbody>
+              <tr><td style="font-weight:600">Valoare rundă</td><td style="color:#FF8C00;font-weight:800;font-size:15px">500.000 EUR</td><td style="color:#5A6B7D">Convertible note / SAFE</td></tr>
+              <tr><td style="font-weight:600">Valoare pre-money</td><td style="color:#003366;font-weight:700">2.500.000 EUR</td><td style="color:#5A6B7D">Estimat Q4 2026</td></tr>
+              <tr><td style="font-weight:600">Equity oferit</td><td style="color:#0E9E99;font-weight:700">20%</td><td style="color:#5A6B7D">Post-money dilution</td></tr>
+              <tr><td style="font-weight:600">Ticket minim</td><td style="font-weight:700">25.000 EUR</td><td style="color:#5A6B7D">Investitor individual</td></tr>
+              <tr><td style="font-weight:600">Ticket lead investor</td><td style="font-weight:700">100.000+ EUR</td><td style="color:#5A6B7D">+ Loc în Advisory Board</td></tr>
+              <tr><td style="font-weight:600">Instrument</td><td style="font-weight:700">SAFE / Equity</td><td style="color:#5A6B7D">Negociabil per caz</td></tr>
+              <tr><td style="font-weight:600">Closing target</td><td style="font-weight:700;color:#FF8C00">Q4 2026</td><td style="color:#5A6B7D">12 luni runway garantat</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Progress rundă -->
+      <div class="inv-card reveal d1">
+        <div class="inv-card-hdr">
+          <div style="font-weight:700;color:#1A2332;font-size:14px">💰 Progress rundă</div>
+        </div>
+        <div class="inv-card-body">
+          <div style="text-align:center;margin-bottom:20px">
+            <svg width="140" height="140" viewBox="0 0 140 140" style="transform:rotate(-90deg)">
+              <circle cx="70" cy="70" r="58" fill="none" stroke="#EEF2F7" stroke-width="14"/>
+              <circle cx="70" cy="70" r="58" fill="none" stroke="#FF8C00" stroke-width="14"
+                stroke-dasharray="364" stroke-dashoffset="218" stroke-linecap="round"/>
+            </svg>
+            <div style="margin-top:-105px;text-align:center;position:relative;z-index:1">
+              <div style="font-size:28px;font-weight:800;color:#1A2332">40%</div>
+              <div style="font-size:11px;color:#5A6B7D">angajat</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;font-size:12.5px">
+            <div style="display:flex;justify-content:space-between;padding:8px 10px;background:#F0F4F8;border-radius:8px">
+              <span style="color:#5A6B7D">Angajat</span>
+              <span style="font-weight:700;color:#FF8C00">200.000 EUR</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:8px 10px;background:#F0F4F8;border-radius:8px">
+              <span style="color:#5A6B7D">Disponibil</span>
+              <span style="font-weight:700;color:#0E9E99">300.000 EUR</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:8px 10px;background:#FFF8EE;border-radius:8px;border:1px solid rgba(255,140,0,.2)">
+              <span style="color:#5A6B7D">Total target</span>
+              <span style="font-weight:700;color:#1A2332">500.000 EUR</span>
+            </div>
+          </div>
+          <button class="btn-p" style="width:100%;justify-content:center;margin-top:16px" onclick="openRunda()">
+            Intru în rundă →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alocare fonduri -->
+    <div class="inv-card reveal">
+      <div class="inv-card-hdr">
+        <div style="font-weight:700;color:#1A2332;font-size:14px">🎯 Alocarea fondurilor investite</div>
+      </div>
+      <div class="inv-card-body">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px" class="kpi-grid-4">
+          <div style="text-align:center;padding:20px;background:#EBF4FB;border-radius:14px;border:1px solid #D6E8F5">
+            <div style="font-size:36px;margin-bottom:8px">💻</div>
+            <div style="font-weight:800;color:#003366;font-size:22px">40%</div>
+            <div style="font-size:11px;font-weight:700;color:#003366;margin-bottom:4px">200.000 EUR</div>
+            <div style="font-size:12px;color:#5A6B7D">Produs & Tehnologie<br>AI · Mobile App · DevOps</div>
+          </div>
+          <div style="text-align:center;padding:20px;background:#E0F5F4;border-radius:14px;border:1px solid rgba(14,158,153,.2)">
+            <div style="font-size:36px;margin-bottom:8px">🌍</div>
+            <div style="font-weight:800;color:#0B7A76;font-size:22px">25%</div>
+            <div style="font-size:11px;font-weight:700;color:#0B7A76;margin-bottom:4px">125.000 EUR</div>
+            <div style="font-size:12px;color:#5A6B7D">Expansiune geografică<br>DE · FR · BG · ES</div>
+          </div>
+          <div style="text-align:center;padding:20px;background:#FFF8EE;border-radius:14px;border:1px solid rgba(255,140,0,.2)">
+            <div style="font-size:36px;margin-bottom:8px">📣</div>
+            <div style="font-weight:800;color:#CC7000;font-size:22px">20%</div>
+            <div style="font-size:11px;font-weight:700;color:#CC7000;margin-bottom:4px">100.000 EUR</div>
+            <div style="font-size:12px;color:#5A6B7D">Marketing & Sales<br>Brand · Parteneriate</div>
+          </div>
+          <div style="text-align:center;padding:20px;background:#F4F0FF;border-radius:14px;border:1px solid rgba(124,58,237,.15)">
+            <div style="font-size:36px;margin-bottom:8px">⚙️</div>
+            <div style="font-weight:800;color:#7C3AED;font-size:22px">15%</div>
+            <div style="font-size:11px;font-weight:700;color:#7C3AED;margin-bottom:4px">75.000 EUR</div>
+            <div style="font-size:12px;color:#5A6B7D">Operațional<br>Legal · HR · Compliance</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ ROADMAP & EXIT ════ -->
+<section class="inv-section inv-section-alt" id="exit">
+  <div class="inv-max">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px" class="inv-2col">
+
+      <!-- Roadmap -->
+      <div>
+        <h2 class="reveal" style="font-size:26px;font-weight:800;color:#1A2332;margin-bottom:6px">Roadmap 2026–2029</h2>
+        <p class="reveal d1" style="font-size:13px;color:#5A6B7D;margin-bottom:28px">Jaloane cheie și milestones operaționale</p>
+        <div class="timeline-item reveal">
+          <div class="timeline-dot done">✓</div>
+          <div>
+            <div style="font-weight:700;color:#1A2332;font-size:14px;margin-bottom:3px">Q1–Q2 2026 · MVP + Launch</div>
+            <div style="font-size:12.5px;color:#5A6B7D;line-height:1.6">Platformă live în România și Moldova. 1.800+ parteneri verificați. 1.200+ comenzi procesate. Deviz Engine AI operațional.</div>
+            <span class="chip ch-g" style="margin-top:8px">✓ Realizat</span>
+          </div>
+        </div>
+        <div class="timeline-item reveal d1">
+          <div class="timeline-dot active">→</div>
+          <div>
+            <div style="font-weight:700;color:#1A2332;font-size:14px;margin-bottom:3px">Q3–Q4 2026 · Rundă Pre-Seed + Scale</div>
+            <div style="font-size:12.5px;color:#5A6B7D;line-height:1.6">Închidere rundă 500K EUR. App Mobile iOS/Android. Expansiune Germania pilot. 5.000+ comenzi/lună target.</div>
+            <span class="chip ch-o" style="margin-top:8px">⟳ În curs</span>
+          </div>
+        </div>
+        <div class="timeline-item reveal d2">
+          <div class="timeline-dot future">1</div>
+          <div>
+            <div style="font-weight:700;color:#1A2332;font-size:14px;margin-bottom:3px">2027 · Series A + Break-even</div>
+            <div style="font-size:12.5px;color:#5A6B7D;line-height:1.6">Rundă Series A 2–5M EUR. Break-even operațional Q2. Extindere Franța + Bulgaria full. 15K+ comenzi/lună.</div>
+            <span class="chip ch-b" style="margin-top:8px">Planificat</span>
+          </div>
+        </div>
+        <div class="timeline-item reveal d3">
+          <div class="timeline-dot future">2</div>
+          <div>
+            <div style="font-weight:700;color:#1A2332;font-size:14px;margin-bottom:3px">2028 · Profitabilitate + Noi piețe</div>
+            <div style="font-size:12.5px;color:#5A6B7D;line-height:1.6">EBITDA pozitiv. Extindere Spania + Italia. Marketplace B2B. 50K+ comenzi/lună. Pregătire exit.</div>
+            <span class="chip ch-b" style="margin-top:8px">Planificat</span>
+          </div>
+        </div>
+        <div class="timeline-item reveal d4" style="padding-bottom:0">
+          <div class="timeline-dot future">3</div>
+          <div>
+            <div style="font-weight:700;color:#1A2332;font-size:14px;margin-bottom:3px">2029 · Exit / IPO</div>
+            <div style="font-size:12.5px;color:#5A6B7D;line-height:1.6">Strategic acquisition sau IPO regional. Target valoare: 50–120M EUR. ROI investitori Pre-Seed: 20–48×.</div>
+            <span class="chip ch-p" style="margin-top:8px">Target exit</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Exit strategy + avantaje competitive -->
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="inv-card reveal">
+          <div class="inv-card-hdr">
+            <div style="font-weight:700;color:#1A2332;font-size:14px">🚪 Strategii de exit</div>
+          </div>
+          <div class="inv-card-body">
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="padding:14px;background:#F0F4F8;border-radius:12px;border-left:3px solid #003366">
+                <div style="font-weight:700;color:#003366;font-size:13px;margin-bottom:4px">Strategic Acquisition</div>
+                <div style="font-size:12px;color:#5A6B7D;line-height:1.6">Achiziție de un grup de servicii pan-european (TaskRabbit, Angi, Helpling, Homly) sau platformă marketplace regională. Target: 50–80M EUR.</div>
+              </div>
+              <div style="padding:14px;background:#F0F4F8;border-radius:12px;border-left:3px solid #0E9E99">
+                <div style="font-weight:700;color:#0B7A76;font-size:13px;margin-bottom:4px">IPO Regional (BVB / Warsaw SE)</div>
+                <div style="font-size:12px;color:#5A6B7D;line-height:1.6">Listare la Bursa de Valori București sau Warsaw Stock Exchange după atingerea profitabilității. Target: 80–120M EUR.</div>
+              </div>
+              <div style="padding:14px;background:#F0F4F8;border-radius:12px;border-left:3px solid #7C3AED">
+                <div style="font-weight:700;color:#7C3AED;font-size:13px;margin-bottom:4px">Secondary Sale / Buy-back</div>
+                <div style="font-size:12px;color:#5A6B7D;line-height:1.6">Vânzare participații investitori early la Series B/C sau buy-back din fluxuri operaționale.</div>
+              </div>
+            </div>
+            <div style="margin-top:16px;padding:12px 16px;background:linear-gradient(135deg,#EBF4FB,#E0F5F4);border-radius:12px;border:1px solid #D5DFE8">
+              <div style="font-size:12.5px;color:#1A2332;font-weight:600;line-height:1.6">ROI estimat Pre-Seed investors:<br>
+                <span style="color:#FF8C00;font-size:18px;font-weight:800">20–48× </span>
+                <span style="color:#5A6B7D;font-size:12px">în 3–5 ani · scenariul realist-optimist</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Avantaje competitive -->
+        <div class="inv-card reveal d1">
+          <div class="inv-card-hdr">
+            <div style="font-weight:700;color:#1A2332;font-size:14px">⚡ Avantaje competitive (moat)</div>
+          </div>
+          <div class="inv-card-body">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;gap:10px;align-items:flex-start;padding:9px 10px;background:#F0F4F8;border-radius:9px">
+                <div style="width:28px;height:28px;border-radius:8px;background:#003366;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">🤖</div>
+                <div><div style="font-size:12.5px;font-weight:700;color:#1A2332">Darrin AI — Dispatch proprietar</div><div style="font-size:11px;color:#5A6B7D">Alocare automată gen Uber/Bolt. Niciun competitor regional nu are AI dispatch cu Escrow integrat.</div></div>
+              </div>
+              <div style="display:flex;gap:10px;align-items:flex-start;padding:9px 10px;background:#F0F4F8;border-radius:9px">
+                <div style="width:28px;height:28px;border-radius:8px;background:#0E9E99;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">🔒</div>
+                <div><div style="font-size:12.5px;font-weight:700;color:#1A2332">Escrow + Garanție digitală</div><div style="font-size:11px;color:#5A6B7D">Unic în piața de servicii la domiciliu din Europa de Est. Trust ridicat.</div></div>
+              </div>
+              <div style="display:flex;gap:10px;align-items:flex-start;padding:9px 10px;background:#F0F4F8;border-radius:9px">
+                <div style="width:28px;height:28px;border-radius:8px;background:#FF8C00;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">🌍</div>
+                <div><div style="font-size:12.5px;font-weight:700;color:#1A2332">Multi-țară native</div><div style="font-size:11px;color:#5A6B7D">Geo-fiscal automat, multi-monedă, VMC adaptat. Scalare rapidă fără reconfigurare.</div></div>
+              </div>
+              <div style="display:flex;gap:10px;align-items:flex-start;padding:9px 10px;background:#F0F4F8;border-radius:9px">
+                <div style="width:28px;height:28px;border-radius:8px;background:#7C3AED;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">⚙️</div>
+                <div><div style="font-size:12.5px;font-weight:700;color:#1A2332">Deviz Engine proprietar</div><div style="font-size:11px;color:#5A6B7D">Deviz în 60 secunde cu AI. NACE/ESCO/Uniclass integrat. Patent-able.</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ CONTACT ════ -->
+<section class="inv-section" id="contact">
+  <div class="inv-max">
+    <div style="background:linear-gradient(135deg,#001E3C,#003366);border-radius:24px;padding:48px 40px;text-align:center;position:relative;overflow:hidden">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:40px 40px;pointer-events:none"></div>
+      <div style="position:relative">
+        <div class="reveal" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,140,0,.15);border:1px solid rgba(255,140,0,.3);color:#FF8C00;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:5px 14px;border-radius:99px;margin-bottom:20px">
+          💼 Investitor Relations · Disponibil acum
+        </div>
+        <h2 class="reveal d1" style="font-size:32px;font-weight:800;color:#fff;margin-bottom:12px">Interesat să investești?</h2>
+        <p class="reveal d2" style="font-size:14px;color:rgba(255,255,255,.55);max-width:520px;margin:0 auto 28px;line-height:1.75">
+          Rundă Pre-Seed deschisă · 300.000 EUR disponibili · Ticket minim 25K EUR · Due diligence complet la cerere
+        </p>
+        <div class="reveal d3" style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+          <a href="mailto:invest@mydarrin.ro" class="btn-p" style="font-size:15px;padding:15px 32px">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            invest@mydarrin.ro
+          </a>
+          <a onclick="openKpis()" class="btn-s" style="cursor:pointer" style="color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.08);font-size:14px;padding:14px 24px" onmouseover="this.style.background='rgba(255,255,255,.16)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">
+            📊 Super Admin · KPIs live
+          </a>
+          <a href="mydarrin-v3.html" class="btn-s" style="color:rgba(255,255,255,.6);border-color:rgba(255,255,255,.12);background:rgba(255,255,255,.05);font-size:13px;padding:14px 20px" onmouseover="this.style.background='rgba(255,255,255,.1)'" onmouseout="this.style.background='rgba(255,255,255,.05)'">
+            ← Platformă
+          </a>
+        </div>
+        <div class="reveal d4" style="margin-top:28px;display:flex;justify-content:center;gap:24px;flex-wrap:wrap;font-size:12px;color:rgba(255,255,255,.4)">
+          <span>🏢 Home Best Pal SRL · Bacău, România</span>
+          <span>·</span>
+          <span>📞 Due diligence la cerere</span>
+          <span>·</span>
+          <span>🔒 NDA disponibil</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<div style="background:#003366;padding:20px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+  <div style="font-size:12px;color:rgba(255,255,255,.35)">© 2026 Home Best Pal SRL · My Darrin · Toate drepturile rezervate</div>
+  <div style="display:flex;gap:14px;font-size:12px;flex-wrap:wrap">
+    <a href="mydarrin-v3.html" style="color:rgba(255,255,255,.45);text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.45)'">🏠 Platformă</a>
+    <a href="mydarrin-cum-functioneaza.html" style="color:rgba(255,255,255,.45);text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.45)'">⏱ Cum funcționează</a>
+    <a href="mydarrin-app-mobile.html" style="color:rgba(255,255,255,.45);text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.45)'">📱 App Mobile</a>
+    <a href="mydarrin-superadmin.html" style="color:rgba(255,255,255,.45);text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.45)'">🔐 Super Admin</a>
+    <a href="mydarrin-catalog.html" style="color:rgba(255,255,255,.45);text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.45)'">📦 Catalog</a>
+  </div>
+</div>
+
+<script>
+// ── SCROLL NAV ──
+// ── NAVIGARE NAVBAR ──
+function navTo(id){
+  // Scroll la secțiunea corespunzătoare
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.scrollIntoView({behavior:'smooth'});
+}
+
+// Override window.scrollTo pentru compatibilitate
+const _origScrollTo = window.scrollTo.bind(window);
+
+window.addEventListener('scroll',()=>{
+  const s=document.documentElement;
+  const bar=document.getElementById('spbar');
+  if(bar) bar.style.width=(s.scrollTop/(s.scrollHeight-s.clientHeight)*100)+'%';
+
+  // ── ACTIVE NAV la scroll ──
+  const sections=['hero','kpis','proiectii','runda','exit','contact'];
+  const navIds=['nav-overview','nav-kpis','nav-proiectii','nav-runda','nav-exit','nav-contact'];
+  let activeIdx=0;
+  sections.forEach((sec,i)=>{
+    const el=document.getElementById(sec);
+    if(!el) return;
+    const rect=el.getBoundingClientRect();
+    if(rect.top<=90) activeIdx=i;
+  });
+  navIds.forEach((nid,i)=>{
+    const link=document.getElementById(nid);
+    if(!link) return;
+    if(i===activeIdx){
+      link.classList.add('active');
+    } else {
+      link.classList.remove('active');
+    }
+  });
+});
+
+// ── REVEAL ──
+const ro=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('visible');}),{threshold:.06});
+document.querySelectorAll('.reveal').forEach(el=>ro.observe(el));
+
+// ── PROIECȚII ──
+const PROIECTII = {
+  pesimist:{
+    label:'Pesimist',chip:'Conservator',chipCls:'ch-o',
+    rows:[
+      ['GMV lunar','90K Lei','320K Lei','800K Lei'],
+      ['Revenue','9K Lei','32K Lei','80K Lei'],
+      ['Comenzi/lună','600','2.200','5.500'],
+      ['Parteneri','2.500','6.000','12.000'],
+      ['Țări active','2','3','4'],
+      ['EBITDA','−18K EUR','−8K EUR','+12K EUR'],
+    ]
+  },
+  realist:{
+    label:'Realist',chip:'Recomandat',chipCls:'ch-t',
+    rows:[
+      ['GMV lunar','200K Lei','750K Lei','2.1M Lei'],
+      ['Revenue','20K Lei','75K Lei','210K Lei'],
+      ['Comenzi/lună','1.200','5.000','14.000'],
+      ['Parteneri','4.000','12.000','28.000'],
+      ['Țări active','3','5','7'],
+      ['EBITDA','−12K EUR','+5K EUR','+48K EUR'],
+    ]
+  },
+  optimist:{
+    label:'Optimist',chip:'Upside',chipCls:'ch-g',
+    rows:[
+      ['GMV lunar','380K Lei','1.4M Lei','4.5M Lei'],
+      ['Revenue','38K Lei','140K Lei','450K Lei'],
+      ['Comenzi/lună','2.500','10.000','32.000'],
+      ['Parteneri','7.000','22.000','60.000'],
+      ['Țări active','4','7','10'],
+      ['EBITDA','−5K EUR','+22K EUR','+120K EUR'],
+    ]
+  },
+};
+
+function switchScenariu(sc,btn){
+  document.querySelectorAll('#sc-tab-p,#sc-tab-r,#sc-tab-o').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const d=PROIECTII[sc];
+  document.getElementById('sc-label').textContent=d.label;
+  const chip=document.getElementById('sc-chip');
+  chip.textContent=d.chip;
+  chip.className='chip '+d.chipCls;
+  const tb=document.getElementById('proiectii-table-body');
+  if(tb) tb.innerHTML=d.rows.map(r=>`<tr>
+    <td style="font-weight:600">${r[0]}</td>
+    <td style="font-weight:700;color:#003366">${r[1]}</td>
+    <td style="font-weight:700;color:#0E9E99">${r[2]}</td>
+    <td style="font-weight:700;color:#FF8C00">${r[3]}</td>
+  </tr>`).join('');
+}
+
+// ── GROWTH TOGGLE ──
+function toggleGrowthView(){
+  const v1=document.getElementById('growth-view-1');
+  const v2=document.getElementById('growth-view-2');
+  if(v1.style.display==='none'){v1.style.display='';v2.style.display='none';}
+  else{v1.style.display='none';v2.style.display='';}
+}
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded',()=>{
+  switchScenariu('pesimist',document.getElementById('sc-tab-p'));
+  if(typeof lucide!=='undefined') lucide.createIcons();
+});
+</script>
+
+<!-- ════ MODAL INTRĂ ÎN RUNDĂ ════ -->
+<div id="modal-runda-overlay" onclick="closeRunda()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);z-index:900"></div>
+
+<div id="modal-runda" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:901;width:560px;max-width:95vw;max-height:92vh;overflow-y:auto;background:#fff;border-radius:24px;box-shadow:0 24px 80px rgba(0,0,0,.3)">
+
+  <!-- Header -->
+  <div style="background:linear-gradient(135deg,#001E3C,#003366);padding:28px 28px 24px;border-radius:24px 24px 0 0;position:sticky;top:0;z-index:1">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:42px;height:42px;background:#FF8C00;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px">🚀</div>
+        <div>
+          <div style="font-weight:800;color:#fff;font-size:17px;font-family:'Syne',sans-serif">Intră în rundă</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:2px">My Darrin Pre-Seed · 2026</div>
+        </div>
+      </div>
+      <button onclick="closeRunda()" style="width:34px;height:34px;border-radius:9px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);cursor:pointer;font-size:18px;color:rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">×</button>
+    </div>
+    <!-- Progress bar rundă -->
+    <div style="background:rgba(255,255,255,.1);border-radius:99px;height:8px;overflow:hidden;margin-bottom:6px">
+      <div style="width:40%;height:100%;background:#FF8C00;border-radius:99px;transition:width 1s ease"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.5)">
+      <span>200.000 EUR angajat</span>
+      <span style="font-weight:700;color:#FF8C00">40% completat</span>
+      <span>Target: 500.000 EUR</span>
+    </div>
+  </div>
+
+  <!-- Steps indicator -->
+  <div style="display:flex;padding:16px 28px;background:#F8FAFC;border-bottom:1px solid #EEF2F7;gap:0" id="runda-steps">
+    <div class="rstep active" id="rs1" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer" onclick="goStep(1)">
+      <div style="width:28px;height:28px;border-radius:50%;background:#FF8C00;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center">1</div>
+      <div style="font-size:9.5px;font-weight:700;color:#FF8C00;text-align:center">Date personale</div>
+    </div>
+    <div style="flex:1;height:2px;background:#EEF2F7;align-self:flex-start;margin-top:13px"></div>
+    <div class="rstep" id="rs2" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer" onclick="goStep(2)">
+      <div style="width:28px;height:28px;border-radius:50%;background:#EEF2F7;color:#8C9BAD;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center" id="rs2-dot">2</div>
+      <div style="font-size:9.5px;font-weight:600;color:#8C9BAD;text-align:center" id="rs2-label">Ticket & Tip</div>
+    </div>
+    <div style="flex:1;height:2px;background:#EEF2F7;align-self:flex-start;margin-top:13px"></div>
+    <div class="rstep" id="rs3" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer" onclick="goStep(3)">
+      <div style="width:28px;height:28px;border-radius:50%;background:#EEF2F7;color:#8C9BAD;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center" id="rs3-dot">3</div>
+      <div style="font-size:9.5px;font-weight:600;color:#8C9BAD;text-align:center" id="rs3-label">Due diligence</div>
+    </div>
+    <div style="flex:1;height:2px;background:#EEF2F7;align-self:flex-start;margin-top:13px"></div>
+    <div class="rstep" id="rs4" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer" onclick="goStep(4)">
+      <div style="width:28px;height:28px;border-radius:50%;background:#EEF2F7;color:#8C9BAD;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center" id="rs4-dot">4</div>
+      <div style="font-size:9.5px;font-weight:600;color:#8C9BAD;text-align:center" id="rs4-label">Confirmare</div>
+    </div>
+  </div>
+
+  <!-- Content steps -->
+  <div style="padding:24px 28px">
+
+    <!-- STEP 1: Date personale -->
+    <div id="step-1">
+      <div style="font-size:16px;font-weight:800;color:#1A2332;margin-bottom:6px;font-family:'Syne',sans-serif">Date investitor</div>
+      <div style="font-size:13px;color:#5A6B7D;margin-bottom:20px">Informații necesare pentru procesul de onboarding investitor.</div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <label style="display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:6px">Prenume *</label>
+            <input type="text" id="r-prenume" placeholder="Ion" style="width:100%;border:1.5px solid #D5DFE8;border-radius:12px;padding:11px 14px;font-size:13.5px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
+          </div>
+          <div>
+            <label style="display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:6px">Nume *</label>
+            <input type="text" id="r-nume" placeholder="Popescu" style="width:100%;border:1.5px solid #D5DFE8;border-radius:12px;padding:11px 14px;font-size:13.5px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
+          </div>
+        </div>
+        <div>
+          <label style="display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:6px">Email *</label>
+          <input type="email" id="r-email" placeholder="ion.popescu@company.ro" style="width:100%;border:1.5px solid #D5DFE8;border-radius:12px;padding:11px 14px;font-size:13.5px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
+        </div>
+        <div>
+          <label style="display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:6px">Telefon *</label>
+          <input type="tel" id="r-tel" placeholder="+40 721 234 567" style="width:100%;border:1.5px solid #D5DFE8;border-radius:12px;padding:11px 14px;font-size:13.5px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
+        </div>
+        <div>
+          <label style="display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:6px">Companie / Fond de investiții</label>
+          <input type="text" id="r-companie" placeholder="SC Exemplu SRL / Angel Investor" style="width:100%;border:1.5px solid #D5DFE8;border-radius:12px;padding:11px 14px;font-size:13.5px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
+        </div>
+        <div>
+          <label style="display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:6px">Țară</label>
+          <select id="r-tara" style="width:100%;border:1.5px solid #D5DFE8;border-radius:12px;padding:11px 14px;font-size:13.5px;font-family:inherit;outline:none;appearance:none;background:#fff url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%236B7A8D%22 stroke-width=%222%22%3E%3Cpolyline points=%226 9 12 15 18 9%22/%3E%3C/svg%3E') no-repeat right 14px center;cursor:pointer" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'">
+            <option value="">Selectează țara...</option>
+            <option value="ro">🇷🇴 România</option>
+            <option value="md">🇲🇩 Moldova</option>
+            <option value="de">🇩🇪 Germania</option>
+            <option value="fr">🇫🇷 Franța</option>
+            <option value="other">🌍 Altă țară</option>
+          </select>
+        </div>
+      </div>
+      <button onclick="goStep(2)" style="width:100%;margin-top:20px;padding:14px;border-radius:14px;border:none;background:#FF8C00;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 5px 18px rgba(255,140,0,.3);transition:all .2s" onmouseover="this.style.background='#CC7000'" onmouseout="this.style.background='#FF8C00'">
+        Continuă → Ticket & Tip investiție
+      </button>
+    </div>
+
+    <!-- STEP 2: Ticket & Tip -->
+    <div id="step-2" style="display:none">
+      <div style="font-size:16px;font-weight:800;color:#1A2332;margin-bottom:6px;font-family:'Syne',sans-serif">Ticket & Tip investiție</div>
+      <div style="font-size:13px;color:#5A6B7D;margin-bottom:20px">Selectează suma și instrumentul de investiție preferat.</div>
+      
+      <!-- Ticket selector -->
+      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:10px">Valoarea investiției *</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px">
+        <div class="ticket-opt" onclick="selectTicket(this,'25K')" style="border:1.5px solid #D5DFE8;border-radius:14px;padding:14px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all .18s" onmouseover="this.style.borderColor='#FF8C00'" onmouseout="if(!this.classList.contains('selected'))this.style.borderColor='#D5DFE8'">
+          <div><div style="font-weight:700;color:#1A2332;font-size:14px">25.000 EUR</div><div style="font-size:11.5px;color:#5A6B7D">Ticket minim · 2% equity</div></div>
+          <div style="font-size:11px;font-weight:700;color:#5A6B7D">Investitor individual</div>
+        </div>
+        <div class="ticket-opt" onclick="selectTicket(this,'50K')" style="border:1.5px solid #D5DFE8;border-radius:14px;padding:14px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all .18s" onmouseover="this.style.borderColor='#FF8C00'" onmouseout="if(!this.classList.contains('selected'))this.style.borderColor='#D5DFE8'">
+          <div><div style="font-weight:700;color:#1A2332;font-size:14px">50.000 EUR</div><div style="font-size:11.5px;color:#5A6B7D">4% equity · Advisory access</div></div>
+          <div style="font-size:11px;font-weight:700;color:#0E9E99">Recomandat</div>
+        </div>
+        <div class="ticket-opt" onclick="selectTicket(this,'100K')" style="border:1.5px solid #FF8C00;border-radius:14px;padding:14px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;background:#FFFBF5;transition:all .18s">
+          <div><div style="font-weight:700;color:#1A2332;font-size:14px">100.000+ EUR</div><div style="font-size:11.5px;color:#5A6B7D">8%+ equity · Lead investor · Advisory Board</div></div>
+          <div style="font-size:11px;font-weight:700;color:#FF8C00">⭐ Lead</div>
+        </div>
+        <div class="ticket-opt" onclick="selectTicket(this,'custom')" style="border:1.5px dashed #D5DFE8;border-radius:14px;padding:12px 16px;cursor:pointer;transition:all .18s">
+          <input type="number" id="custom-ticket" placeholder="Sumă personalizată (min. 25.000 EUR)" style="border:none;outline:none;font-size:13.5px;font-family:inherit;color:#1A2332;width:100%;background:transparent" onclick="event.stopPropagation()" onfocus="this.parentElement.style.borderColor='#003366'" onblur="this.parentElement.style.borderColor='#D5DFE8'"/>
+        </div>
+      </div>
+
+      <!-- Instrument -->
+      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:10px">Instrument investiție *</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px">
+        <div onclick="selectInstrument(this,'SAFE')" style="border:1.5px solid #D5DFE8;border-radius:12px;padding:14px;cursor:pointer;text-align:center;transition:all .18s" onmouseover="this.style.borderColor='#003366'" onmouseout="if(!this.classList.contains('sel-instr'))this.style.borderColor='#D5DFE8'">
+          <div style="font-size:22px;margin-bottom:6px">📄</div>
+          <div style="font-weight:700;color:#1A2332;font-size:13px">SAFE</div>
+          <div style="font-size:10.5px;color:#5A6B7D;margin-top:3px">Simple Agreement Future Equity</div>
+        </div>
+        <div onclick="selectInstrument(this,'Equity')" style="border:1.5px solid #D5DFE8;border-radius:12px;padding:14px;cursor:pointer;text-align:center;transition:all .18s" onmouseover="this.style.borderColor='#003366'" onmouseout="if(!this.classList.contains('sel-instr'))this.style.borderColor='#D5DFE8'">
+          <div style="font-size:22px;margin-bottom:6px">📊</div>
+          <div style="font-weight:700;color:#1A2332;font-size:13px">Equity direct</div>
+          <div style="font-size:10.5px;color:#5A6B7D;margin-top:3px">Participare directă capital</div>
+        </div>
+        <div onclick="selectInstrument(this,'Convertible')" style="border:1.5px solid #D5DFE8;border-radius:12px;padding:14px;cursor:pointer;text-align:center;transition:all .18s" onmouseover="this.style.borderColor='#003366'" onmouseout="if(!this.classList.contains('sel-instr'))this.style.borderColor='#D5DFE8'">
+          <div style="font-size:22px;margin-bottom:6px">🔄</div>
+          <div style="font-weight:700;color:#1A2332;font-size:13px">Convertible Note</div>
+          <div style="font-size:10.5px;color:#5A6B7D;margin-top:3px">Datorie convertibilă în equity</div>
+        </div>
+        <div onclick="selectInstrument(this,'Negociabil')" style="border:1.5px solid #D5DFE8;border-radius:12px;padding:14px;cursor:pointer;text-align:center;transition:all .18s" onmouseover="this.style.borderColor='#003366'" onmouseout="if(!this.classList.contains('sel-instr'))this.style.borderColor='#D5DFE8'">
+          <div style="font-size:22px;margin-bottom:6px">🤝</div>
+          <div style="font-weight:700;color:#1A2332;font-size:13px">Negociabil</div>
+          <div style="font-size:10.5px;color:#5A6B7D;margin-top:3px">Discutăm structura optimă</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px">
+        <button onclick="goStep(1)" style="flex:1;padding:13px;border-radius:13px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">← Înapoi</button>
+        <button onclick="goStep(3)" style="flex:2;padding:13px;border-radius:13px;border:none;background:#FF8C00;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 5px 18px rgba(255,140,0,.3);transition:all .2s" onmouseover="this.style.background='#CC7000'" onmouseout="this.style.background='#FF8C00'">
+          Continuă → Due Diligence
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 3: Due diligence -->
+    <div id="step-3" style="display:none">
+      <div style="font-size:16px;font-weight:800;color:#1A2332;margin-bottom:6px;font-family:'Syne',sans-serif">Due Diligence</div>
+      <div style="font-size:13px;color:#5A6B7D;margin-bottom:20px">Documente și informații pentru procesul de due diligence.</div>
+      
+      <!-- Documente disponibile -->
+      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:10px">Documente disponibile la cerere</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px">
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#F0F4F8;border-radius:12px">
+          <div style="width:36px;height:36px;border-radius:10px;background:#EBF4FB;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📊</div>
+          <div style="flex:1"><div style="font-weight:700;color:#1A2332;font-size:13px">Pitch Deck complet</div><div style="font-size:11px;color:#5A6B7D">32 slide-uri · Strategie · Financiar · Team</div></div>
+          <span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;background:rgba(26,122,58,.1);color:#1A7A3A;border:1px solid rgba(26,122,58,.2)">Disponibil</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#F0F4F8;border-radius:12px">
+          <div style="width:36px;height:36px;border-radius:10px;background:#EBF4FB;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📈</div>
+          <div style="flex:1"><div style="font-weight:700;color:#1A2332;font-size:13px">Model financiar 3 ani</div><div style="font-size:11px;color:#5A6B7D">Scenarii · P&L · Cash flow · Cap table</div></div>
+          <span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;background:rgba(26,122,58,.1);color:#1A7A3A;border:1px solid rgba(26,122,58,.2)">Disponibil</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#F0F4F8;border-radius:12px">
+          <div style="width:36px;height:36px;border-radius:10px;background:#EBF4FB;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📋</div>
+          <div style="flex:1"><div style="font-weight:700;color:#1A2332;font-size:13px">Acte constitutive & Structura</div><div style="font-size:11px;color:#5A6B7D">Home Best Pal SRL · CUI · Acționariat</div></div>
+          <span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;background:rgba(26,122,58,.1);color:#1A7A3A;border:1px solid rgba(26,122,58,.2)">Sub NDA</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#F0F4F8;border-radius:12px">
+          <div style="width:36px;height:36px;border-radius:10px;background:#EBF4FB;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🔐</div>
+          <div style="flex:1"><div style="font-weight:700;color:#1A2332;font-size:13px">Acord NDA</div><div style="font-size:11px;color:#5A6B7D">Necesar pentru accesul la date confidențiale</div></div>
+          <span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;background:rgba(255,140,0,.1);color:#CC7000;border:1px solid rgba(255,140,0,.2)">Semnează</span>
+        </div>
+      </div>
+
+      <!-- NDA checkbox -->
+      <div style="background:#FFF8EE;border-radius:14px;border:1.5px solid rgba(255,140,0,.25);padding:14px 16px;margin-bottom:16px">
+        <label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer">
+          <input type="checkbox" id="nda-check" style="margin-top:2px;width:18px;height:18px;accent-color:#FF8C00;flex-shrink:0"/>
+          <div style="font-size:13px;color:#1A2332;line-height:1.6">Accept <strong>Acordul de Confidențialitate (NDA)</strong> și înțeleg că informațiile primite sunt strict confidențiale și nu pot fi distribuite terților fără acordul scris al Home Best Pal SRL.</div>
+        </label>
+      </div>
+
+      <!-- Întrebări -->
+      <div style="margin-bottom:16px">
+        <label style="display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:6px">Întrebări specifice / Mesaj</label>
+        <textarea id="r-mesaj" rows="3" placeholder="Sunt interesat de prezentare video, model financiar detaliat..." style="width:100%;border:1.5px solid #D5DFE8;border-radius:12px;padding:11px 14px;font-size:13.5px;font-family:inherit;outline:none;resize:vertical;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"></textarea>
+      </div>
+
+      <div style="display:flex;gap:10px">
+        <button onclick="goStep(2)" style="flex:1;padding:13px;border-radius:13px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">← Înapoi</button>
+        <button onclick="goStep(4)" style="flex:2;padding:13px;border-radius:13px;border:none;background:#FF8C00;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 5px 18px rgba(255,140,0,.3);transition:all .2s" onmouseover="this.style.background='#CC7000'" onmouseout="this.style.background='#FF8C00'">
+          Continuă → Confirmare finală
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 4: Confirmare -->
+    <div id="step-4" style="display:none">
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:56px;margin-bottom:12px">🎉</div>
+        <div style="font-size:20px;font-weight:800;color:#1A2332;font-family:'Syne',sans-serif;margin-bottom:8px">Cererea ta a fost înregistrată!</div>
+        <div style="font-size:13.5px;color:#5A6B7D;line-height:1.7;max-width:380px;margin:0 auto">Echipa My Darrin va contacta în maxim <strong style="color:#1A2332">48 de ore</strong> pentru a confirma participarea și a trimite documentele solicitate.</div>
+      </div>
+      <!-- Summary -->
+      <div style="background:#F0F4F8;border-radius:16px;padding:18px;margin-bottom:20px">
+        <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:12px">Rezumat cerere</div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+          <div style="display:flex;justify-content:space-between"><span style="color:#5A6B7D">Investitor</span><span style="font-weight:700;color:#1A2332" id="confirm-name">—</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:#5A6B7D">Email</span><span style="font-weight:700;color:#1A2332" id="confirm-email">—</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:#5A6B7D">Ticket</span><span style="font-weight:700;color:#FF8C00" id="confirm-ticket">—</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:#5A6B7D">Instrument</span><span style="font-weight:700;color:#1A2332" id="confirm-instrument">—</span></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="closeRunda()" style="flex:1;padding:13px;border-radius:13px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Închide</button>
+        <a href="mailto:invest@mydarrin.ro" style="flex:2;padding:13px;border-radius:13px;background:#003366;color:#fff;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          invest@mydarrin.ro
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════ MODAL KPIs LIVE ════ -->
+<div id="modal-kpis-overlay" onclick="closeKpis()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);z-index:900"></div>
+
+<div id="modal-kpis" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:901;width:700px;max-width:96vw;max-height:92vh;overflow-y:auto;background:#0F1923;border-radius:24px;box-shadow:0 24px 80px rgba(0,0,0,.5)">
+
+  <!-- Header dark -->
+  <div style="padding:24px 28px 20px;border-bottom:1px solid #2D3F55;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#0F1923;z-index:1">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="width:38px;height:38px;background:linear-gradient(135deg,#0E9E99,#0B7A76);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px">📊</div>
+      <div>
+        <div style="font-weight:800;color:#fff;font-size:16px;font-family:'Syne',sans-serif">KPIs Live · My Darrin</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#0E9E99;font-weight:700;margin-top:2px">
+          <span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span>
+          Actualizat în timp real · content_version: v2026.06.16
+        </div>
+      </div>
+    </div>
+    <button onclick="closeKpis()" style="width:34px;height:34px;border-radius:9px;border:1px solid #2D3F55;background:#1E2A3B;cursor:pointer;font-size:18px;color:#8BA3C0;display:flex;align-items:center;justify-content:center;transition:all .15s" onmouseover="this.style.background='#2D3F55'" onmouseout="this.style.background='#1E2A3B'">×</button>
+  </div>
+
+  <div style="padding:22px 28px">
+
+    <!-- KPI Grid 5 -->
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px">
+      <div style="background:#1E2A3B;border-radius:14px;border:1px solid #2D3F55;padding:14px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#FF8C00;border-radius:14px 14px 0 0"></div>
+        <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">Comenzi totale</div>
+        <div style="font-size:28px;font-weight:800;color:#FF8C00;line-height:1" id="kl-comenzi">1.247</div>
+        <div style="font-size:10px;color:#4ADE80;margin-top:4px;font-weight:600">↑ +24.7% MoM</div>
+      </div>
+      <div style="background:#1E2A3B;border-radius:14px;border:1px solid #2D3F55;padding:14px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#0E9E99;border-radius:14px 14px 0 0"></div>
+        <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">GMV lunar</div>
+        <div style="font-size:28px;font-weight:800;color:#0E9E99;line-height:1">480K</div>
+        <div style="font-size:10px;color:#4ADE80;margin-top:4px;font-weight:600">↑ +31% MoM</div>
+      </div>
+      <div style="background:#1E2A3B;border-radius:14px;border:1px solid #2D3F55;padding:14px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#1A5FAD;border-radius:14px 14px 0 0"></div>
+        <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">Revenue</div>
+        <div style="font-size:28px;font-weight:800;color:#7AB3E0;line-height:1">48.2K</div>
+        <div style="font-size:10px;color:#4ADE80;margin-top:4px;font-weight:600">Take rate: ~10%</div>
+      </div>
+      <div style="background:#1E2A3B;border-radius:14px;border:1px solid #2D3F55;padding:14px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#1A7A3A;border-radius:14px 14px 0 0"></div>
+        <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">Parteneri</div>
+        <div style="font-size:28px;font-weight:800;color:#4ADE80;line-height:1">1.834</div>
+        <div style="font-size:10px;color:#4ADE80;margin-top:4px;font-weight:600">+18% vs T1</div>
+      </div>
+      <div style="background:#1E2A3B;border-radius:14px;border:1px solid #2D3F55;padding:14px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#7C3AED;border-radius:14px 14px 0 0"></div>
+        <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">Rating</div>
+        <div style="font-size:28px;font-weight:800;color:#A78BFA;line-height:1">4.87</div>
+        <div style="font-size:10px;color:#4ADE80;margin-top:4px;font-weight:600">NPS: +68</div>
+      </div>
+    </div>
+
+    <!-- Grafice simulare -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+
+      <!-- Comenzi per luna -->
+      <div style="background:#1E2A3B;border-radius:16px;border:1px solid #2D3F55;padding:16px">
+        <div style="font-size:11px;font-weight:700;color:#fff;margin-bottom:14px">📈 Comenzi · Ian–Iun 2026</div>
+        <div style="display:flex;align-items:flex-end;gap:8px;height:90px;padding-bottom:4px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+            <div style="background:#2D3F55;border-radius:5px 5px 0 0;width:100%;transition:height .6s" style="height:30%"></div>
+            <div style="font-size:9px;color:#4A6080">Ian</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+            <div style="border-radius:5px 5px 0 0;width:100%" id="bar-feb"></div>
+            <div style="font-size:9px;color:#4A6080">Feb</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+            <div style="border-radius:5px 5px 0 0;width:100%" id="bar-mar"></div>
+            <div style="font-size:9px;color:#4A6080">Mar</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+            <div style="border-radius:5px 5px 0 0;width:100%" id="bar-apr"></div>
+            <div style="font-size:9px;color:#4A6080">Apr</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+            <div style="border-radius:5px 5px 0 0;width:100%" id="bar-mai"></div>
+            <div style="font-size:9px;color:#4A6080">Mai</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+            <div style="border-radius:5px 5px 0 0;width:100%;background:#FF8C00" id="bar-iun"></div>
+            <div style="font-size:9px;color:#FF8C00;font-weight:700">Iun</div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:9.5px;color:#4A6080;margin-top:4px;padding:0 2px">
+          <span>312</span><span>401</span><span>518</span><span>634</span><span>800</span><span style="color:#FF8C00;font-weight:700">1.000+</span>
+        </div>
+      </div>
+
+      <!-- Per tara -->
+      <div style="background:#1E2A3B;border-radius:16px;border:1px solid #2D3F55;padding:16px">
+        <div style="font-size:11px;font-weight:700;color:#fff;margin-bottom:14px">🌍 Revenue split per țară</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:12px;min-width:20px">🇷🇴</span>
+            <div style="flex:1;height:8px;background:#2D3F55;border-radius:99px;overflow:hidden"><div style="width:74%;height:100%;background:#003366;border-radius:99px"></div></div>
+            <span style="font-size:10.5px;color:#7AB3E0;font-weight:700;min-width:36px;text-align:right">35.7K</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:12px;min-width:20px">🇲🇩</span>
+            <div style="flex:1;height:8px;background:#2D3F55;border-radius:99px;overflow:hidden"><div style="width:16%;height:100%;background:#0E9E99;border-radius:99px"></div></div>
+            <span style="font-size:10.5px;color:#7AB3E0;font-weight:700;min-width:36px;text-align:right">7.7K</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:12px;min-width:20px">🇩🇪</span>
+            <div style="flex:1;height:8px;background:#2D3F55;border-radius:99px;overflow:hidden"><div style="width:6%;height:100%;background:#1A5FAD;border-radius:99px"></div></div>
+            <span style="font-size:10.5px;color:#7AB3E0;font-weight:700;min-width:36px;text-align:right">2.9K</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:12px;min-width:20px">🇫🇷</span>
+            <div style="flex:1;height:8px;background:#2D3F55;border-radius:99px;overflow:hidden"><div style="width:3%;height:100%;background:#7C3AED;border-radius:99px"></div></div>
+            <span style="font-size:10.5px;color:#7AB3E0;font-weight:700;min-width:36px;text-align:right">1.4K</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:12px;min-width:20px">🇧🇬</span>
+            <div style="flex:1;height:8px;background:#2D3F55;border-radius:99px;overflow:hidden"><div style="width:1%;height:100%;background:#FF8C00;border-radius:99px"></div></div>
+            <span style="font-size:10.5px;color:#7AB3E0;font-weight:700;min-width:36px;text-align:right">0.4K</span>
+          </div>
+        </div>
+        <div style="margin-top:12px;padding-top:10px;border-top:1px solid #2D3F55;display:flex;justify-content:space-between;font-size:11px">
+          <span style="color:#4A6080">Total revenue lunar</span>
+          <span style="font-weight:800;color:#FF8C00">48.2K Lei</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live comenzi + unit economics -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <!-- Comenzi live counter -->
+      <div style="background:#1E2A3B;border-radius:16px;border:1px solid #2D3F55;padding:16px">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:14px">
+          <span style="width:6px;height:6px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span>
+          <div style="font-size:11px;font-weight:700;color:#fff">Comenzi active acum</div>
+        </div>
+        <div style="font-size:48px;font-weight:800;color:#FF8C00;line-height:1;margin-bottom:8px" id="live-counter">247</div>
+        <div style="font-size:11px;color:#4A6080;margin-bottom:12px">Escrow blocat: <strong style="color:#7AB3E0">284.000 Lei</strong></div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;justify-content:space-between;font-size:11.5px">
+            <span style="color:#4A6080">🇷🇴 România</span><span style="color:#E2E8F0;font-weight:700">187</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11.5px">
+            <span style="color:#4A6080">🇲🇩 Moldova</span><span style="color:#E2E8F0;font-weight:700">31</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11.5px">
+            <span style="color:#4A6080">🇩🇪 Germania</span><span style="color:#E2E8F0;font-weight:700">18</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11.5px">
+            <span style="color:#4A6080">🇫🇷 Franța + 🇧🇬 BG</span><span style="color:#E2E8F0;font-weight:700">11</span>
+          </div>
+        </div>
+      </div>
+      <!-- Unit economics -->
+      <div style="background:#1E2A3B;border-radius:16px;border:1px solid #2D3F55;padding:16px">
+        <div style="font-size:11px;font-weight:700;color:#fff;margin-bottom:14px">💡 Unit Economics</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:#192433;border-radius:9px">
+            <span style="font-size:12px;color:#8BA3C0">CAC</span>
+            <span style="font-size:14px;font-weight:800;color:#E2E8F0">~12 EUR</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:#192433;border-radius:9px">
+            <span style="font-size:12px;color:#8BA3C0">LTV</span>
+            <span style="font-size:14px;font-weight:800;color:#E2E8F0">~180 EUR/an</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:rgba(14,158,153,.1);border-radius:9px;border:1px solid rgba(14,158,153,.2)">
+            <span style="font-size:12px;color:#8BA3C0">LTV/CAC</span>
+            <span style="font-size:16px;font-weight:800;color:#0E9E99">15×</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:#192433;border-radius:9px">
+            <span style="font-size:12px;color:#8BA3C0">Payback</span>
+            <span style="font-size:14px;font-weight:800;color:#FF8C00">~8 luni</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:#192433;border-radius:9px">
+            <span style="font-size:12px;color:#8BA3C0">Retenție L6</span>
+            <span style="font-size:14px;font-weight:800;color:#4ADE80">51%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div style="display:flex;gap:12px">
+      <button onclick="closeKpis();openRunda()" style="flex:1;padding:13px;border-radius:13px;border:none;background:#FF8C00;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 5px 18px rgba(255,140,0,.3)">
+        🚀 Intru în rundă →
+      </button>
+      <button onclick="closeKpis()" style="padding:13px 20px;border-radius:13px;border:1px solid #2D3F55;background:#1E2A3B;color:#8BA3C0;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">
+        Închide
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// ── MODAL RUNDA ──
+function openRunda(){
+  document.getElementById('modal-runda-overlay').style.display='block';
+  const m = document.getElementById('modal-runda');
+  m.style.display='block';
+  document.body.style.overflow='hidden';
+  goStep(1);
+}
+function closeRunda(){
+  document.getElementById('modal-runda-overlay').style.display='none';
+  document.getElementById('modal-runda').style.display='none';
+  document.body.style.overflow='';
+}
+
+// ── STEPS ──
+let selectedTicket = '', selectedInstrument = '';
+function goStep(n){
+  [1,2,3,4].forEach(i=>{
+    const el = document.getElementById('step-'+i);
+    if(el) el.style.display = i===n?'block':'none';
+  });
+  // Update step dots
+  [1,2,3,4].forEach(i=>{
+    const dot = document.getElementById('rs'+i+'-dot');
+    const lbl = document.getElementById('rs'+i+'-label');
+    if(!dot) return;
+    if(i<n){
+      dot.style.background='#0E9E99';dot.style.color='#fff';dot.textContent='✓';
+    } else if(i===n){
+      dot.style.background='#FF8C00';dot.style.color='#fff';dot.textContent=String(i);
+    } else {
+      dot.style.background='#EEF2F7';dot.style.color='#8C9BAD';dot.textContent=String(i);
+    }
+  });
+  // On step 4 — fill summary
+  if(n===4){
+    const p = document.getElementById('r-prenume')?.value||'';
+    const nm = document.getElementById('r-nume')?.value||'';
+    const em = document.getElementById('r-email')?.value||'';
+    document.getElementById('confirm-name').textContent = (p+' '+nm).trim()||'—';
+    document.getElementById('confirm-email').textContent = em||'—';
+    document.getElementById('confirm-ticket').textContent = selectedTicket||'—';
+    document.getElementById('confirm-instrument').textContent = selectedInstrument||'—';
+  }
+}
+
+function selectTicket(el, val){
+  document.querySelectorAll('.ticket-opt').forEach(e=>{
+    e.classList.remove('selected');
+    e.style.borderColor='#D5DFE8';
+    e.style.background='';
+  });
+  el.classList.add('selected');
+  el.style.borderColor='#FF8C00';
+  el.style.background='#FFFBF5';
+  selectedTicket = val==='custom'
+    ? (document.getElementById('custom-ticket')?.value||'') + ' EUR'
+    : val + ' EUR';
+}
+
+function selectInstrument(el, val){
+  document.querySelectorAll('[onclick*="selectInstrument"]').forEach(e=>{
+    e.classList.remove('sel-instr');
+    e.style.borderColor='#D5DFE8';
+    e.style.background='';
+  });
+  el.classList.add('sel-instr');
+  el.style.borderColor='#003366';
+  el.style.background='#EBF4FB';
+  selectedInstrument = val;
+}
+
+// ── MODAL KPIs ──
+function openKpis(){
+  document.getElementById('modal-kpis-overlay').style.display='block';
+  const m = document.getElementById('modal-kpis');
+  m.style.display='block';
+  document.body.style.overflow='hidden';
+  animateBars();
+  startLiveCounter();
+}
+function closeKpis(){
+  document.getElementById('modal-kpis-overlay').style.display='none';
+  document.getElementById('modal-kpis').style.display='none';
+  document.body.style.overflow='';
+  if(liveCounterInterval) clearInterval(liveCounterInterval);
+}
+
+// Animate bar chart
+function animateBars(){
+  const bars = [
+    {id:'bar-feb', h:'39%', bg:'#2D3F55'},
+    {id:'bar-mar', h:'50%', bg:'#1A5FAD'},
+    {id:'bar-apr', h:'62%', bg:'#1A5FAD'},
+    {id:'bar-mai', h:'78%', bg:'#0E9E99'},
+    {id:'bar-iun', h:'100%', bg:'#FF8C00'},
+  ];
+  bars.forEach((b,i)=>{
+    const el = document.getElementById(b.id);
+    if(!el) return;
+    el.style.height='0';
+    el.style.background=b.bg;
+    el.style.transition='height 0.6s ease '+(i*0.12)+'s';
+    setTimeout(()=>{ el.style.height=b.h; },50);
+  });
+  // first bar (Ian)
+  const ian = document.querySelector('#modal-kpis .chart-first');
+  // Ian bar is inline, skip
+}
+
+// Live counter animation
+let liveCounterInterval;
+function startLiveCounter(){
+  let base = 247;
+  const el = document.getElementById('live-counter');
+  liveCounterInterval = setInterval(()=>{
+    const delta = Math.floor(Math.random()*3)-1;
+    base = Math.max(240, Math.min(255, base+delta));
+    if(el) el.textContent = base;
+  }, 2800);
+}
+
+// ── ESC key ──
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closeRunda();closeKpis();}
+});
+
+// ── REPLACE ALL "Intru/Intră în rundă" / "KPIs Live" calls ──
+// These are handled by the onclick attributes below (patched)
+</script>
+
+</body>
+</html>

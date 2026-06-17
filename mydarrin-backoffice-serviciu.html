@@ -1,0 +1,1942 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backoffice — Serviciu: Înlocuire calorifer | My Darrin Admin</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── RESET ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;background:#F0F4F8;color:#E2E8F0;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-thumb{background:#2D3F55;border-radius:3px}
+
+/* ── SIDEBAR ── */
+.bo-sidebar{background:#16202E;width:260px;min-height:100vh;flex-shrink:0;border-right:1px solid #2D3F55;display:flex;flex-direction:column}
+.bo-logo{padding:20px;border-bottom:1px solid #2D3F55;display:flex;align-items:center;gap:12px}
+.bo-logo-d{width:36px;height:36px;background:#FF8C00;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#fff;flex-shrink:0}
+.bo-nav-sec{padding:14px 12px 4px;font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#4A6080}
+.bo-nav{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:10px;font-size:13px;font-weight:500;color:#8BA3C0;cursor:pointer;transition:all .15s;margin:1px 8px;text-decoration:none}
+.bo-nav:hover{background:#1E2D40;color:#E2E8F0}
+.bo-nav.active{background:#003366;color:#fff;font-weight:700}
+.bo-nav.active svg{color:#FF8C00}
+
+/* ── TOPBAR ── */
+.bo-top{background:#16202E;border-bottom:1px solid #2D3F55;padding:12px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:50}
+
+/* ── TABS ── */
+.bo-tab{padding:8px 18px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;color:#8BA3C0;transition:all .18s;white-space:nowrap;border:none;background:transparent;font-family:inherit}
+.bo-tab:hover{color:#E2E8F0;background:#263447}
+.bo-tab.active{background:#003366;color:#fff}
+
+/* ── CARDS ── */
+.bo-card{background:#FFFFFF;border-radius:16px;border:1px solid #D5DFE8;overflow:hidden}
+.bo-card-hdr{padding:14px 20px;border-bottom:1px solid #2D3F55;display:flex;align-items:center;justify-content:space-between;gap:12px;background:#192433}
+.bo-card-body{padding:20px}
+
+/* ── FORM FIELDS ── */
+.bo-label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#4A6080;margin-bottom:6px}
+.bo-input{width:100%;background:#0F1923;border:1.5px solid #2D3F55;border-radius:10px;padding:10px 14px;font-size:13.5px;color:#E2E8F0;font-family:inherit;outline:none;transition:border-color .18s}
+.bo-input:focus{border-color:#1A5FAD;box-shadow:0 0 0 3px rgba(26,95,173,.15)}
+.bo-input::placeholder{color:#4A6080}
+.bo-select{width:100%;background:#0F1923;border:1.5px solid #2D3F55;border-radius:10px;padding:10px 14px;font-size:13.5px;color:#E2E8F0;font-family:inherit;outline:none;cursor:pointer;appearance:none;transition:border-color .18s}
+.bo-select:focus{border-color:#1A5FAD}
+.bo-textarea{width:100%;background:#0F1923;border:1.5px solid #2D3F55;border-radius:10px;padding:10px 14px;font-size:13.5px;color:#E2E8F0;font-family:inherit;outline:none;resize:vertical;transition:border-color .18s;min-height:80px}
+.bo-textarea:focus{border-color:#1A5FAD}
+.bo-textarea::placeholder{color:#4A6080}
+
+/* ── TOGGLE ── */
+.toggle{width:44px;height:24px;background:#2D3F55;border-radius:99px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;border:none;outline:none}
+.toggle.on{background:#0E9E99}
+.toggle::after{content:"";position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;left:3px;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.toggle.on::after{left:23px}
+
+/* ── STATUS CHIPS ── */
+.sc{font-size:10px;font-weight:800;padding:3px 10px;border-radius:99px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.sc-green{background:rgba(14,158,153,.2);color:#0E9E99}
+.sc-orange{background:rgba(255,140,0,.2);color:#FF8C00}
+.sc-red{background:rgba(220,38,38,.2);color:#F87171}
+.sc-blue{background:rgba(26,95,173,.25);color:#7AB3E0}
+.sc-gray{background:rgba(45,63,85,.6);color:#8BA3C0}
+.sc-yellow{background:rgba(234,179,8,.2);color:#EAB308}
+
+/* ── BUTTONS ── */
+.bo-btn{display:inline-flex;align-items:center;gap:7px;border:none;border-radius:10px;padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .18s}
+.bo-btn-save{background:#FF8C00;color:#fff}
+.bo-btn-save:hover{background:#CC7000;transform:translateY(-1px)}
+.bo-btn-sec{background:#263447;color:#CBD5E0;border:1px solid #2D3F55}
+.bo-btn-sec:hover{background:#1E2D40;border-color:#3D5570}
+.bo-btn-ai{background:rgba(14,158,153,.15);color:#0E9E99;border:1px solid rgba(14,158,153,.3)}
+.bo-btn-ai:hover{background:rgba(14,158,153,.25)}
+.bo-btn-danger{background:rgba(220,38,38,.1);color:#F87171;border:1px solid rgba(220,38,38,.2)}
+.bo-btn-danger:hover{background:rgba(220,38,38,.2)}
+
+/* ── TABLE ── */
+.bo-table{width:100%;border-collapse:collapse}
+.bo-table th{padding:10px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;text-align:left;border-bottom:1px solid #2D3F55}
+.bo-table td{padding:12px 14px;font-size:13px;color:#CBD5E0;border-bottom:1px solid rgba(45,63,85,.5);vertical-align:middle}
+.bo-table tr:hover td{background:#192433}
+.bo-table tr:last-child td{border-bottom:none}
+
+/* ── TIER CARD ── */
+.tier-card{border-radius:14px;border:1.5px solid #2D3F55;overflow:hidden;transition:border-color .18s}
+.tier-card:hover{border-color:#3D5570}
+.tier-card-hdr{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.tier-card-body{padding:16px;background:#F0F4F8}
+
+/* ── PROGRESS ── */
+.prog{height:6px;background:#263447;border-radius:99px;overflow:hidden}
+.prog-fill{height:100%;border-radius:99px;transition:width .4s}
+
+/* ── UPLOAD ZONE ── */
+.upload-zone{border:2px dashed #2D3F55;border-radius:14px;padding:28px;text-align:center;cursor:pointer;transition:all .2s}
+.upload-zone:hover{border-color:#1A5FAD;background:#192433}
+
+/* ── CHANNEL ITEM ── */
+.ch-item{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;border:1px solid #2D3F55;background:#FFFFFF;transition:all .18s}
+.ch-item:hover{border-color:#2D4F70}
+.ch-ico{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* ── DISPATCH ROW ── */
+.dp-row{display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:12px;border:1px solid #2D3F55;background:#FFFFFF;transition:all .18s}
+.dp-row:hover{background:#1E2D40;border-color:#2D4F70}
+.dp-av{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0}
+.dp-code{font-family:"Courier New",monospace;font-size:10px;color:#4A6080;letter-spacing:.07em}
+
+/* ── PARTNER REAL ── */
+.pr-card{background:#0F1923;border:1.5px solid #2D3F55;border-radius:12px;padding:16px;transition:border-color .18s}
+.pr-card:hover{border-color:#FF8C00}
+
+/* ── LOG ROW ── */
+.log-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid rgba(45,63,85,.4);font-size:12.5px}
+.log-row:last-child{border-bottom:none}
+
+/* ── MULT INPUT ── */
+.mult-input{background:#0F1923;border:1.5px solid #2D3F55;border-radius:8px;padding:7px 12px;font-size:13px;color:#E2E8F0;font-family:inherit;outline:none;width:80px;text-align:center;transition:border-color .18s}
+.mult-input:focus{border-color:#FF8C00}
+
+/* ── SYNC BADGE ── */
+.sync-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;font-size:9.5px;font-weight:700;background:rgba(14,158,153,.12);border:1px solid rgba(14,158,153,.25);color:#0E9E99}
+
+/* ── PULSE ── */
+.pulse-dot{width:7px;height:7px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block;flex-shrink:0}
+@keyframes pdot{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── ORDER STATUS FLOW ── */
+.status-flow{display:flex;align-items:center;gap:0;overflow-x:auto;padding:4px 0}
+.sf-step{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:80px}
+.sf-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;border:2px solid;transition:all .2s;flex-shrink:0}
+.sf-dot.done{background:#0E9E99;border-color:#0E9E99;color:#fff}
+.sf-dot.active{background:#FF8C00;border-color:#FF8C00;color:#fff;box-shadow:0 0 0 4px rgba(255,140,0,.2)}
+.sf-dot.pending{background:transparent;border-color:#2D3F55;color:#4A6080}
+.sf-line{flex:1;height:2px;background:#2D3F55;min-width:20px;margin-top:-18px}
+.sf-line.done{background:#0E9E99}
+.sf-label{font-size:8.5px;color:#4A6080;text-align:center;font-weight:600;letter-spacing:.03em;line-height:1.2;max-width:70px}
+
+/* ── RESOURCE TYPE BADGE ── */
+.rt-badge{font-size:9.5px;font-weight:800;padding:2px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:.05em}
+.rt-MATERIAL{background:rgba(14,158,153,.15);color:#0E9E99}
+.rt-EQUIPMENT{background:rgba(124,58,237,.15);color:#A78BFA}
+.rt-TRANSPORT{background:rgba(217,119,6,.15);color:#FCD34D}
+.rt-LABOR{background:rgba(255,140,0,.15);color:#FF8C00}
+
+/* ACA banner */
+.aca-banner{background:linear-gradient(135deg,rgba(0,51,102,.4),rgba(26,95,173,.2));border:1px solid rgba(26,95,173,.3);border-radius:14px;padding:14px 18px}
+</style>
+
+<style>
+/* ── LIGHT CONTENT OVERRIDE ── */
+.bo-main, .bo-content { background: #F0F4F8 !important; }
+.bo-card { background: #FFFFFF !important; border-color: #D5DFE8 !important; color: #1A2332 !important; }
+.bo-card-hdr { background: #F8FAFC !important; border-color: #D5DFE8 !important; }
+.bo-table th { background: #F8FAFC !important; color: #5A6B7D !important; border-color: #D5DFE8 !important; }
+.bo-table td { border-color: #D5DFE8 !important; color: #1A2332 !important; }
+.bo-table tr:hover td { background: #F8FBFF !important; }
+.kpi-card { background: #FFFFFF !important; border-color: #D5DFE8 !important; }
+</style>
+</head>
+<body>
+<!-- ════ MINI NAV BAR — My Darrin Standard ════ -->
+<div style="background:#003366;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;box-shadow:0 2px 12px rgba(0,51,102,.25);position:sticky;top:0;z-index:300;flex-shrink:0">
+  <a href="mydarrin-v3.html" style="display:flex;align-items:center;gap:9px;text-decoration:none;flex-shrink:0">
+    <div style="width:30px;height:30px;background:#FF8C00;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff">D</div>
+    <div style="font-weight:800;color:#fff;font-size:14px;font-family:'Helvetica Neue',Arial,sans-serif">My Darrin · Backoffice</div>
+  </a>
+  <div style="display:flex;gap:4px;flex-wrap:wrap">
+    <a href="mydarrin-v3.html" style="color:rgba(255,255,255,.65);font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border-radius:7px;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='#fff'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.65)'">🏠 Acasă</a>
+    <a href="mydarrin-catalog.html" style="color:rgba(255,255,255,.65);font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border-radius:7px;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='#fff'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.65)'">📦 Catalog</a>
+    <a href="mydarrin-superadmin.html" style="color:rgba(255,255,255,.65);font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border-radius:7px;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='#fff'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.65)'">🔐 Super Admin</a>
+    <a href="mydarrin-deviz-engine.html" style="color:rgba(255,255,255,.65);font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border-radius:7px;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='#fff'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.65)'">🧮 Deviz Engine</a>
+  </div>
+</div>
+
+<div class="flex min-h-screen">
+
+<!-- ════════════════════════ SIDEBAR ════════════════════════ -->
+<aside class="bo-sidebar hidden lg:flex flex-col">
+  <div class="bo-logo">
+    <div class="bo-logo-d">D</div>
+    <div class="flex-1">
+      <div class="font-bold text-white text-sm">My Darrin</div>
+      <div class="text-[9.5px] text-[#4A6080] uppercase tracking-widest">Backoffice Admin</div>
+    </div>
+    <div class="sync-badge"><span class="pulse-dot" style="width:5px;height:5px"></span>Online</div>
+  </div>
+  <div class="flex-1 py-2 overflow-y-auto">
+    <div class="bo-nav-sec">Principal</div>
+    <a class="bo-nav" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard</a>
+    <a class="bo-nav" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>Comenzi</a>
+    <a class="bo-nav" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Dispatch Live</a>
+
+    <div class="bo-nav-sec">Catalog</div>
+    <a class="bo-nav active" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M2 12h2M20 12h2M4.93 19.07l1.41-1.41M19.07 19.07l-1.41-1.41"/></svg>Servicii</a>
+    <a class="bo-nav" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>Resurse & ACA</a>
+    <a class="bo-nav" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/></svg>ESCO Browser</a>
+    <a class="bo-nav" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Domenii & Categorii</a>
+    <a class="bo-nav" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>Deviz Inteligent</a>
+
+    <div class="bo-nav-sec">Parteneri</div>
+    <a class="bo-nav" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Parteneri & KYC</a>
+    <a class="bo-nav" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Live Jobs</a>
+
+    <div class="bo-nav-sec">Configurare</div>
+    <a class="bo-nav" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>Notificări</a>
+    <a class="bo-nav" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Tarife & Prețuri</a>
+    <a class="bo-nav" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Setări Sistem</a>
+
+    <div class="bo-nav-sec">Rapoarte</div>
+    <a class="bo-nav" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics & BI</a>
+    <a class="bo-nav" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Rapoarte CSV</a>
+  </div>
+  <div class="p-4 border-t border-[#2D3F55]">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-[#003366] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">A</div>
+      <div><div class="text-sm font-semibold text-[#CBD5E0]">Admin Principal</div><div class="text-[10px] text-[#4A6080]">SuperAdmin · RO · HBP SRL</div></div>
+      <button class="ml-auto p-1.5 rounded-lg hover:bg-[#263447] transition text-[#4A6080]" onclick="alert('Logout')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </div>
+</aside>
+
+<!-- ════════════════════════ MAIN ════════════════════════ -->
+<div class="flex-1 flex flex-col min-w-0">
+
+  <!-- TOPBAR -->
+  <div class="bo-top">
+    <div class="flex items-center gap-3">
+      <button class="lg:hidden p-2 rounded-lg hover:bg-[#263447] transition text-[#8BA3C0]" onclick="alert('Menu')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div>
+        <div class="flex items-center gap-2 text-xs text-[#4A6080]">
+          <a href="#" class="hover:text-[#8BA3C0]">Catalog</a><span>/</span>
+          <a href="#" class="hover:text-[#8BA3C0]">Servicii</a><span>/</span>
+          <span class="text-[#8BA3C0]">Înlocuire calorifer</span>
+        </div>
+        <div class="font-bold text-white text-base mt-0.5 flex items-center gap-2">
+          Editare serviciu — Înlocuire calorifer
+          <span class="sc sc-green">Publicat</span>
+        </div>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <!-- Sync status -->
+      <div class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs" style="background:rgba(14,158,153,.08);border:1px solid rgba(14,158,153,.2)">
+        <span class="pulse-dot" style="width:5px;height:5px"></span>
+        <span class="text-[#0E9E99] font-semibold">content_version: v2026.06.11</span>
+      </div>
+      <a href="mydarrin-serviciu.html" target="_blank" class="bo-btn bo-btn-sec text-xs py-2 px-3">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Preview public
+      </a>
+      <button onclick="saveAll(event)" class="bo-btn bo-btn-save text-xs py-2 px-4">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Salvează tot
+      </button>
+    </div>
+  </div>
+
+  <!-- TAB BAR -->
+  <div class="px-7 pt-5 pb-0 border-b border-[#2D3F55] overflow-x-auto" style="background:#16202E">
+    <div class="flex gap-1 min-w-max">
+      <button class="bo-tab active" onclick="showTab('serviciu',this)">📋 Serviciu & Media</button>
+      <button class="bo-tab" onclick="showTab('tiers',this)">🥇 Tier-uri serviciu</button>
+      <button class="bo-tab" onclick="showTab('tarife',this)">💲 Tarife speciale</button>
+      <button class="bo-tab" onclick="showTab('canale',this)">📡 Canale notificare</button>
+      <button class="bo-tab" onclick="showTab('dispatch',this)">⚡ Dispatch live</button>
+      <button class="bo-tab" onclick="showTab('rapoarte',this)">📊 Rapoarte notificări</button>
+      <button class="bo-tab" onclick="showTab('deviz',this)">🧮 Deviz Engine</button>
+      <button class="bo-tab" onclick="showTab('resurse',this)">📦 Resurse & ACA</button>
+      <button class="bo-tab" onclick="showTab('parteneri',this)">🔒 Parteneri (Admin)</button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="p-7 flex-1 overflow-y-auto">
+
+    <!-- ══════════ TAB: SERVICIU & MEDIA ══════════ -->
+    <div id="tab-serviciu" class="space-y-6">
+
+      <!-- Info generale -->
+      <div class="bo-card">
+        <div class="bo-card-hdr">
+          <div class="flex items-center gap-2.5 text-white font-bold text-sm">📋 Informații serviciu</div>
+          <div class="flex items-center gap-3">
+            <span class="sc sc-green">✓ Publicat</span>
+            <button class="toggle on" id="tog-pub" onclick="toggleEl('tog-pub')"></button>
+          </div>
+        </div>
+        <div class="bo-card-body grid md:grid-cols-2 gap-5">
+          <div>
+            <label class="bo-label">Denumire serviciu (name_ro)</label>
+            <input type="text" value="Înlocuire calorifer" class="bo-input"/>
+          </div>
+          <div>
+            <label class="bo-label">Slug URL</label>
+            <input type="text" value="inlocuire-calorifer" class="bo-input" style="font-family:'Courier New',monospace"/>
+          </div>
+          <div>
+            <label class="bo-label">Categorie</label>
+            <select class="bo-select">
+              <option selected>Instalații termice</option>
+              <option>Instalații electrice</option>
+              <option>Instalații sanitare</option>
+              <option>Construcții & Renovări</option>
+            </select>
+          </div>
+          <div>
+            <label class="bo-label">ID-uri subcategorii (separate prin virgulă)</label>
+            <input type="text" value="12, 14" class="bo-input" style="font-family:'Courier New',monospace" placeholder="12, 14"/>
+          </div>
+          <div class="md:col-span-2">
+            <label class="bo-label">Descriere scurtă (description)</label>
+            <textarea class="bo-textarea" rows="2">My Darrin oferă serviciul complet de înlocuire calorifer pentru apartamente, case și spații comerciale. Platformă coordonează automat echipa: instalator autorizat ISCIR, furnizor materiale și curier.</textarea>
+          </div>
+          <div class="md:col-span-2">
+            <label class="bo-label">Descriere extinsă (description_extended) — afișată public</label>
+            <textarea class="bo-textarea" rows="4">Serviciul include demontarea caloriferului vechi, montarea celui nou, probe de presiune și etanșeitate, purjare sistem și verificarea funcționării. La pachetele Aur și Platina, furnizorul de materiale este alocat automat de Darrin AI.</textarea>
+          </div>
+          <div class="md:col-span-2">
+            <label class="bo-label">Ce trebuie să aibă clientul la adresă (safety_note) — afișat public</label>
+            <textarea class="bo-textarea" rows="3">La pachetele Bronz și Argint: caloriferul nou trebuie să fie prezent la adresă la data programată. Robineții de izolare trebuie să fie funcționali. La Aur/Platina: My Darrin furnizează și livrează totul.</textarea>
+          </div>
+          <div>
+            <label class="bo-label">Hero headline (hero_headline)</label>
+            <input type="text" value="Înlocuire calorifer — rezidențial & comercial" class="bo-input"/>
+          </div>
+          <div>
+            <label class="bo-label">Hero subheadline (hero_subheadline)</label>
+            <input type="text" value="Instalații termice · Autorizat ISCIR · Darrin AI alocă echipa" class="bo-input"/>
+          </div>
+          <div>
+            <label class="bo-label">Notă prețuri (pricing_note)</label>
+            <textarea class="bo-textarea" rows="2">Tariful aplicabil se calculează automat la plasarea comenzii, în funcție de ziua și ora selectate. Multiplicatori urgente/weekend/sărbători configurați în tab-ul Tarife speciale.</textarea>
+          </div>
+          <div>
+            <label class="bo-label">Autorizații & certificări afișate</label>
+            <input type="text" value="ISCIR, Autorizat termic" class="bo-input"/>
+          </div>
+          <div>
+            <label class="bo-label">Durată estimată execuție</label>
+            <input type="text" value="2–5 ore" class="bo-input"/>
+          </div>
+          <div>
+            <label class="bo-label">Zone acoperire</label>
+            <input type="text" value="București, Ilfov, Brașov, Cluj" class="bo-input"/>
+          </div>
+          <div>
+            <label class="bo-label">Urgențe 24/7 activate</label>
+            <div class="flex items-center gap-3 mt-1.5">
+              <button class="toggle on" id="tog-urg" onclick="toggleEl('tog-urg')"></button>
+              <span class="text-sm text-[#8BA3C0]">Disponibil urgent</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MEDIA & DOCS -->
+      <div class="bo-card">
+        <div class="bo-card-hdr">
+          <div class="text-white font-bold text-sm flex items-center gap-2">🖼 Media & Docs</div>
+          <span class="text-xs text-[#4A6080]">JPG/PNG · MP4 · PDF/Word/Excel · Link extern YouTube/Drive</span>
+        </div>
+        <div class="bo-card-body space-y-5">
+
+          <!-- Link-uri externe per linie -->
+          <div>
+            <label class="bo-label">Link-uri externe (external_links) — câte unul pe linie</label>
+            <textarea class="bo-textarea" rows="3" placeholder="https://www.youtube.com/watch?v=...&#10;https://drive.google.com/file/...">https://www.youtube.com/watch?v=demo-inlocuire-calorifer</textarea>
+            <p class="text-xs text-[#4A6080] mt-1.5">YouTube, Vimeo, Google Drive, link extern — toate formatele acceptate.</p>
+          </div>
+
+          <!-- Upload zone imagini -->
+          <div>
+            <label class="bo-label">Galerie foto (max 12 imagini)</label>
+            <div class="upload-zone mb-3" onclick="alert('Upload foto')">
+              <div class="text-3xl mb-2">📁</div>
+              <div class="font-bold text-[#8BA3C0] text-sm mb-1">Drag & drop sau click pentru upload</div>
+              <div class="text-xs text-[#4A6080]">JPG, PNG, WebP · Max 5MB · Recomand: 1280×720px</div>
+            </div>
+            <div class="grid grid-cols-4 gap-2">
+              <div class="rounded-xl bg-gradient-to-br from-[#1E2A3B] to-[#263447] h-20 flex flex-col items-center justify-center border border-[#2D3F55] relative group cursor-pointer">
+                <span class="text-2xl">🔧</span><span class="text-[9px] text-[#4A6080] mt-1">foto-1.jpg</span>
+                <div class="absolute top-1 right-1 hidden group-hover:flex gap-0.5">
+                  <button class="w-5 h-5 rounded bg-[#003366] flex items-center justify-center text-white text-[9px]">★</button>
+                  <button class="w-5 h-5 rounded bg-red-700 flex items-center justify-center text-white text-[9px]">✕</button>
+                </div>
+              </div>
+              <div class="rounded-xl bg-gradient-to-br from-[#1E2A3B] to-[#263447] h-20 flex flex-col items-center justify-center border border-[#2D3F55] relative group cursor-pointer">
+                <span class="text-2xl">🏠</span><span class="text-[9px] text-[#4A6080] mt-1">foto-2.jpg</span>
+                <div class="absolute top-1 right-1 hidden group-hover:flex gap-0.5">
+                  <button class="w-5 h-5 rounded bg-[#003366] flex items-center justify-center text-white text-[9px]">★</button>
+                  <button class="w-5 h-5 rounded bg-red-700 flex items-center justify-center text-white text-[9px]">✕</button>
+                </div>
+              </div>
+              <div class="rounded-xl border-2 border-dashed border-[#2D3F55] h-20 flex items-center justify-center cursor-pointer hover:border-[#1A5FAD] transition text-[#4A6080] text-center">
+                <div><div class="text-xl mb-0.5">+</div><div class="text-[9px]">Adaugă</div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Upload document/video per nivel -->
+          <div class="rounded-xl p-4 border border-[#2D3F55]" style="background:#192433">
+            <label class="bo-label mb-3">Upload atașament per nivel (IMAGE / DOCUMENT / VIDEO)</label>
+            <div class="grid md:grid-cols-4 gap-3">
+              <div><label class="bo-label">Fișier</label><input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.mp4" class="bo-input text-xs py-2"/></div>
+              <div>
+                <label class="bo-label">Tip (attachment_type)</label>
+                <select class="bo-select"><option value="IMAGE">IMAGE</option><option value="DOCUMENT">DOCUMENT</option><option value="VIDEO">VIDEO</option></select>
+              </div>
+              <div>
+                <label class="bo-label">Nivel (level_name)</label>
+                <select class="bo-select"><option value="">Fără nivel</option><option value="BRONZ">BRONZ</option><option value="ARGINT">ARGINT</option><option value="AUR">AUR</option><option value="PLATINUM">PLATINUM</option></select>
+              </div>
+              <div class="flex items-end"><button onclick="alert('Upload..')" class="bo-btn bo-btn-sec w-full justify-center">Upload</button></div>
+            </div>
+          </div>
+
+          <!-- Sync API info -->
+          <div class="rounded-xl p-4 border border-[#2D3F55]" style="background:#0F1923">
+            <div class="text-[10px] font-bold uppercase tracking-widest text-[#4A6080] mb-2">Hybrid Sync — Content API</div>
+            <div class="space-y-1.5">
+              <div class="flex items-center gap-2 text-xs"><span class="sc sc-blue">GET</span><code class="text-[#0E9E99] font-mono">/api/v1/public/pages/{slug}</code><span class="text-[#4A6080]">→ pagina publică</span></div>
+              <div class="flex items-center gap-2 text-xs"><span class="sc sc-orange">PUT</span><code class="text-[#FF8C00] font-mono">/api/v1/backoffice/site-content/{slug}</code><span class="text-[#4A6080]">→ salvare + invalidare cache</span></div>
+              <div class="flex items-center gap-2 text-xs"><span class="sc sc-green">GET</span><code class="text-[#0E9E99] font-mono">/api/v1/public/sync/catalog-price/{slug}</code><span class="text-[#4A6080]">→ preț live din deviz engine</span></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div><!-- /tab-serviciu -->
+
+    <!-- ══════════ TAB: TIER-URI ══════════ -->
+    <div id="tab-tiers" class="hidden space-y-6">
+      <div class="bo-card">
+        <div class="bo-card-hdr">
+          <div class="text-white font-bold text-sm flex items-center gap-2">🥇 Tier-uri serviciu (service_tiers)</div>
+          <span class="text-xs text-[#4A6080]">Costul nivelului = Σ costurilor resurselor reale incluse (cumulative, nu procent)</span>
+        </div>
+        <div class="bo-card-body space-y-5">
+
+          <!-- Info -->
+          <div class="rounded-xl p-3.5 text-sm text-[#8BA3C0] flex items-start gap-2.5" style="background:rgba(14,158,153,.08);border:1px solid rgba(14,158,153,.2)">
+            <span class="flex-shrink-0 mt-0.5">ℹ️</span>
+            <span>Tier-urile sunt stocate în <code class="text-[#0E9E99] text-xs font-mono">level_attachments.service_tiers[]</code>. <strong class="text-white">cost_nivel_lei</strong> este un procent (%) adăugat la costul de bază calculat de Deviz Engine — nu un preț fix. Beneficiile sunt în format Markdown (linie separată per feature).</span>
+          </div>
+
+          <!-- Tier Bronz -->
+          <div class="tier-card" style="border-color:#CD7F32">
+            <div class="tier-card-hdr" style="background:rgba(205,127,50,.08)">
+              <div class="flex items-center gap-3"><span class="text-xl">🥉</span><div><div class="font-bold text-white">Bronz</div><code class="text-[10px] text-[#4A6080] font-mono">tierKey: "bronze"</code></div></div>
+              <div class="flex items-center gap-2"><span class="sc sc-green">Publicat</span><button class="toggle on" id="tog-bronz" onclick="toggleEl('tog-bronz')"></button></div>
+            </div>
+            <div class="tier-card-body grid md:grid-cols-2 gap-4">
+              <div><label class="bo-label">Titlu (title)</label><input type="text" value="Bronz — Manoperă pură" class="bo-input"/></div>
+              <div><label class="bo-label">Multiplicator marjă % (cost_nivel_lei)</label><input type="number" value="0" step="1" min="0" class="bo-input" style="border-color:#CD7F32"/></div>
+              <div class="md:col-span-2"><label class="bo-label">Beneficii Markdown (benefitsMarkdown)</label>
+                <textarea class="bo-textarea" rows="5">- Manoperă instalator autorizat ISCIR
+- Scule profesionale + trusă urgență
+- Probe etanșeitate + purjare sistem
+- Garanție digitală 6 luni
+- ~~Calorifer nou — furnizat de client~~
+- ~~Fitinguri și racorduri speciale~~
+- ~~Curățenie post-lucrare~~</textarea>
+              </div>
+              <div class="md:col-span-2">
+                <div class="text-[10px] font-bold uppercase tracking-widest text-[#4A6080] mb-2">Preview tabel ✓/✕ (din benefitsMarkdown)</div>
+                <div class="rounded-xl overflow-hidden border border-[#2D3F55]">
+                  <table class="bo-table text-xs">
+                    <thead><tr><th>Feature</th><th class="text-center" style="color:#CD7F32">Bronz</th><th class="text-center text-[#6B7A8D]">Argint</th><th class="text-center text-[#FF8C00]">Aur</th><th class="text-center text-[#1A5FAD]">Platina</th></tr></thead>
+                    <tbody>
+                      <tr><td>Manoperă instalator ISCIR</td><td class="text-center text-[#0E9E99]">✓</td><td class="text-center text-[#0E9E99]">✓</td><td class="text-center text-[#0E9E99]">✓</td><td class="text-center text-[#0E9E99]">✓</td></tr>
+                      <tr><td>Consumabile & fitinguri</td><td class="text-center text-red-400">✕</td><td class="text-center text-[#0E9E99]">✓</td><td class="text-center text-[#0E9E99]">✓</td><td class="text-center text-[#0E9E99]">✓</td></tr>
+                      <tr><td>Calorifer + livrare (ACA)</td><td class="text-center text-red-400">✕</td><td class="text-center text-red-400">✕</td><td class="text-center text-[#0E9E99]">✓</td><td class="text-center text-[#0E9E99]">✓</td></tr>
+                      <tr><td>Poliță asigurare lucrare</td><td class="text-center text-red-400">✕</td><td class="text-center text-red-400">✕</td><td class="text-center text-[#0E9E99]">✓</td><td class="text-center text-[#0E9E99]">✓</td></tr>
+                      <tr><td>Curățenie finală</td><td class="text-center text-red-400">✕</td><td class="text-center text-red-400">✕</td><td class="text-center text-red-400">✕</td><td class="text-center text-[#0E9E99]">✓</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tier Argint -->
+          <div class="tier-card" style="border-color:#6B7A8D">
+            <div class="tier-card-hdr" style="background:rgba(107,122,141,.08)">
+              <div class="flex items-center gap-3"><span class="text-xl">🥈</span><div><div class="font-bold text-white">Argint</div><code class="text-[10px] text-[#4A6080] font-mono">tierKey: "silver"</code></div></div>
+              <div class="flex items-center gap-2"><span class="sc sc-green">Publicat</span><button class="toggle on" id="tog-argint" onclick="toggleEl('tog-argint')"></button></div>
+            </div>
+            <div class="tier-card-body grid md:grid-cols-2 gap-4">
+              <div><label class="bo-label">Titlu (title)</label><input type="text" value="Argint — Manoperă + Consumabile" class="bo-input"/></div>
+              <div><label class="bo-label">Multiplicator marjă % (marginMultiplier)</label><input type="number" value="6" step="1" min="0" class="bo-input" style="border-color:#6B7A8D"/></div>
+              <div class="md:col-span-2"><label class="bo-label">Beneficii Markdown</label>
+                <textarea class="bo-textarea" rows="4">- Bronz + Fitinguri & teflon & robineți
+- Probe etanșeitate + purjare + dezaerisire
+- Garanție digitală 12 luni
+- ~~Calorifer nou — furnizat de client~~</textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tier Aur -->
+          <div class="tier-card" style="border-color:#FF8C00;box-shadow:0 4px 20px rgba(255,140,0,.1)">
+            <div class="tier-card-hdr" style="background:rgba(255,140,0,.08)">
+              <div class="flex items-center gap-3"><span class="text-xl">🥇</span><div><div class="font-bold text-white flex items-center gap-2">Aur <span class="sc sc-orange text-[9px]">AI Recomandă</span></div><code class="text-[10px] text-[#4A6080] font-mono">tierKey: "gold"</code></div></div>
+              <div class="flex items-center gap-2"><span class="sc sc-green">Publicat</span><button class="toggle on" id="tog-aur" onclick="toggleEl('tog-aur')"></button></div>
+            </div>
+            <div class="tier-card-body grid md:grid-cols-2 gap-4">
+              <div><label class="bo-label">Titlu (title)</label><input type="text" value="Aur — Pachet complet materiale" class="bo-input"/></div>
+              <div><label class="bo-label">Multiplicator marjă % (marginMultiplier)</label><input type="number" value="12" step="1" min="0" class="bo-input" style="border-color:#FF8C00"/></div>
+              <div class="md:col-span-2"><label class="bo-label">Beneficii Markdown</label>
+                <textarea class="bo-textarea" rows="6">- Argint + Calorifer Purmo/Radox (furnizat ACA)
+- Transport materiale prin Curier de Cartier
+- Poliță asigurare lucrare inclusă
+- Garanție digitală 24 luni
+- ~~Curățenie finală~~</textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tier Platina -->
+          <div class="tier-card" style="border-color:#1A5FAD">
+            <div class="tier-card-hdr" style="background:rgba(26,95,173,.08)">
+              <div class="flex items-center gap-3"><span class="text-xl">💎</span><div><div class="font-bold text-white">Platina</div><code class="text-[10px] text-[#4A6080] font-mono">tierKey: "platinum"</code></div></div>
+              <div class="flex items-center gap-2"><span class="sc sc-green">Publicat</span><button class="toggle on" id="tog-plat" onclick="toggleEl('tog-plat')"></button></div>
+            </div>
+            <div class="tier-card-body grid md:grid-cols-2 gap-4">
+              <div><label class="bo-label">Titlu (title)</label><input type="text" value="Platina — Tot inclus + Curățenie" class="bo-input"/></div>
+              <div><label class="bo-label">Multiplicator marjă % (marginMultiplier)</label><input type="number" value="20" step="1" min="0" class="bo-input" style="border-color:#1A5FAD"/></div>
+              <div class="md:col-span-2"><label class="bo-label">Beneficii Markdown</label>
+                <textarea class="bo-textarea" rows="5">- Aur + Calorifer premium Vogel&amp;Noot / Buderus
+- Protecție pardoseală și mobilier
+- Curățenie finală post-lucrare
+- Priority support 24/7 post-instalare
+- Garanție digitală 36 luni</textarea>
+              </div>
+            </div>
+          </div>
+
+          <button onclick="saveAll(event)" class="bo-btn bo-btn-save"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Salvează tier-uri</button>
+        </div>
+      </div>
+    </div><!-- /tab-tiers -->
+
+    <!-- ══════════ TAB: TARIFE ══════════ -->
+    <div id="tab-tarife" class="hidden space-y-6">
+      <div class="bo-card">
+        <div class="bo-card-hdr">
+          <div class="text-white font-bold text-sm flex items-center gap-2">💲 Multiplicatori tarife speciale</div>
+          <span class="text-xs text-[#4A6080]">Aplicați automat de Darrin AI la calculul devizului</span>
+        </div>
+        <div class="bo-card-body space-y-4">
+          <div class="rounded-xl p-3.5 text-sm text-[#8BA3C0] flex items-start gap-2.5" style="background:rgba(14,158,153,.08);border:1px solid rgba(14,158,153,.2)">
+            <span class="flex-shrink-0">ℹ️</span>
+            <span>Multiplicatorii se aplică automat în funcție de tipul comenzii, ziua săptămânii și intervalul orar selectat de client. Darrin AI calculează tariful final înainte de confirmare. Valorile sunt configurabile per serviciu sau global din Setări Sistem.</span>
+          </div>
+          <div class="overflow-x-auto rounded-xl border border-[#2D3F55]">
+            <table class="bo-table">
+              <thead><tr><th>Tip tarif</th><th>Condiție aplicare</th><th>Mult. manoperă</th><th>Mult. transport</th><th>Activ</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><span class="text-[#1A7A3A] font-bold">🌤 Standard</span></td>
+                  <td class="text-[#8BA3C0]">Luni–Vineri · 08:00–18:00 · Programat</td>
+                  <td><input type="number" value="1.0" step="0.1" min="1" class="mult-input"/></td>
+                  <td><input type="number" value="1.0" step="0.1" min="1" class="mult-input"/></td>
+                  <td><button class="toggle on" id="t1" onclick="toggleEl('t1')"></button></td>
+                </tr>
+                <tr>
+                  <td><span class="text-[#CC7000] font-bold">⚡ Urgent zi</span></td>
+                  <td class="text-[#8BA3C0]">Luni–Vineri · 08:00–18:00 · Urgent (&lt;3h)</td>
+                  <td><input type="number" value="1.3" step="0.1" min="1" class="mult-input" style="border-color:#CC7000"/></td>
+                  <td><input type="number" value="1.0" step="0.1" min="1" class="mult-input"/></td>
+                  <td><button class="toggle on" id="t2" onclick="toggleEl('t2')"></button></td>
+                </tr>
+                <tr>
+                  <td><span class="text-[#7AB3E0] font-bold">🌙 Noapte</span></td>
+                  <td class="text-[#8BA3C0]">Luni–Vineri · 20:00–08:00 · Orice tip</td>
+                  <td><input type="number" value="1.5" step="0.1" min="1" class="mult-input" style="border-color:#CC7000"/></td>
+                  <td><input type="number" value="1.5" step="0.1" min="1" class="mult-input" style="border-color:#CC7000"/></td>
+                  <td><button class="toggle on" id="t3" onclick="toggleEl('t3')"></button></td>
+                </tr>
+                <tr>
+                  <td><span class="text-[#CC7000] font-bold">📅 Sâmbătă</span></td>
+                  <td class="text-[#8BA3C0]">Sâmbătă · Orice interval</td>
+                  <td><input type="number" value="1.5" step="0.1" min="1" class="mult-input" style="border-color:#CC7000"/></td>
+                  <td><input type="number" value="1.5" step="0.1" min="1" class="mult-input" style="border-color:#CC7000"/></td>
+                  <td><button class="toggle on" id="t4" onclick="toggleEl('t4')"></button></td>
+                </tr>
+                <tr>
+                  <td><span class="text-red-400 font-bold">🎉 Duminică</span></td>
+                  <td class="text-[#8BA3C0]">Duminică · Orice interval</td>
+                  <td><input type="number" value="2.0" step="0.1" min="1" class="mult-input" style="border-color:#F87171"/></td>
+                  <td><input type="number" value="2.0" step="0.1" min="1" class="mult-input" style="border-color:#F87171"/></td>
+                  <td><button class="toggle on" id="t5" onclick="toggleEl('t5')"></button></td>
+                </tr>
+                <tr>
+                  <td><span class="text-red-400 font-bold">🎊 Sărbători legale</span></td>
+                  <td class="text-[#8BA3C0]">Zile configurate în calendar</td>
+                  <td><input type="number" value="2.0" step="0.1" min="1" class="mult-input" style="border-color:#F87171"/></td>
+                  <td><input type="number" value="2.0" step="0.1" min="1" class="mult-input" style="border-color:#F87171"/></td>
+                  <td><button class="toggle on" id="t6" onclick="toggleEl('t6')"></button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <label class="bo-label mb-2">Sărbători legale configurate (auto ×2.0)</label>
+            <div class="flex flex-wrap gap-2">
+              <span class="text-xs px-2.5 py-1.5 rounded-lg border border-red-700/40 text-red-400 bg-red-900/20">1 Ian</span>
+              <span class="text-xs px-2.5 py-1.5 rounded-lg border border-red-700/40 text-red-400 bg-red-900/20">2 Ian</span>
+              <span class="text-xs px-2.5 py-1.5 rounded-lg border border-red-700/40 text-red-400 bg-red-900/20">24 Ian</span>
+              <span class="text-xs px-2.5 py-1.5 rounded-lg border border-red-700/40 text-red-400 bg-red-900/20">1 Mai</span>
+              <span class="text-xs px-2.5 py-1.5 rounded-lg border border-red-700/40 text-red-400 bg-red-900/20">1 Dec</span>
+              <span class="text-xs px-2.5 py-1.5 rounded-lg border border-red-700/40 text-red-400 bg-red-900/20">25–26 Dec</span>
+              <span class="text-xs px-2.5 py-1.5 rounded-lg border border-[#2D3F55] text-[#4A6080]">Paști (variabil)</span>
+              <button class="text-xs px-2.5 py-1.5 rounded-lg border border-dashed border-[#2D3F55] text-[#4A6080] hover:border-[#1A5FAD] transition">+ adaugă</button>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <button onclick="saveAll(event)" class="bo-btn bo-btn-save"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Salvează tarife</button>
+            <button class="bo-btn bo-btn-sec">↺ Resetează la default</button>
+          </div>
+        </div>
+      </div>
+    </div><!-- /tab-tarife -->
+
+    <!-- ══════════ TAB: CANALE NOTIFICARE ══════════ -->
+    <div id="tab-canale" class="hidden space-y-6">
+      <div class="bo-card">
+        <div class="bo-card-hdr">
+          <div class="text-white font-bold text-sm flex items-center gap-2">📡 Canale notificare parteneri</div>
+          <span class="text-xs text-[#4A6080]">Darrin AI notifică simultan pe toate canalele active</span>
+        </div>
+        <div class="bo-card-body space-y-4">
+          <p class="text-sm text-[#8BA3C0] leading-relaxed">Fiecare partener selectează canalele preferate la înregistrare. Darrin AI trimite <strong class="text-white">simultan</strong> la toți partenerii eligibili din zonă. <strong class="text-[#FF8C00]">Primul care face claim (acceptă)</strong> preia sarcina — sistem identic cu BOLT/Uber.</p>
+
+          <div class="space-y-3">
+            <div class="ch-item">
+              <div class="ch-ico" style="background:rgba(37,211,102,.15)">
+                <svg class="w-5 h-5" fill="#25D366" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a9.879 9.879 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
+              </div>
+              <div class="flex-1">
+                <div class="font-bold text-sm text-white flex items-center gap-2">WhatsApp Business API <span class="sc sc-green">Activ</span><span class="text-[10px] px-2 py-0.5 rounded-full" style="background:rgba(255,140,0,.2);color:#FF8C00">Prioritate 1</span></div>
+                <div class="text-xs text-[#4A6080] mt-0.5">Mesaj structurat cu butoane Acceptă/Refuză · Timer 5 min · Template Meta aprobat</div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button class="toggle on" id="ch-wa" onclick="toggleEl('ch-wa')"></button>
+                <button class="bo-btn bo-btn-sec text-xs py-1.5 px-3">⚙ Config</button>
+              </div>
+            </div>
+            <div class="ch-item">
+              <div class="ch-ico" style="background:rgba(33,150,243,.15)"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
+              <div class="flex-1">
+                <div class="font-bold text-sm text-white flex items-center gap-2">SMS <span class="sc sc-green">Activ</span><span class="text-[10px] px-2 py-0.5 rounded-full" style="background:rgba(255,140,0,.2);color:#FF8C00">Prioritate 2</span></div>
+                <div class="text-xs text-[#4A6080] mt-0.5">RoSMS API · Max 160 caractere · Link claim în mesaj</div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button class="toggle on" id="ch-sms" onclick="toggleEl('ch-sms')"></button>
+                <button class="bo-btn bo-btn-sec text-xs py-1.5 px-3">⚙ Config</button>
+              </div>
+            </div>
+            <div class="ch-item">
+              <div class="ch-ico" style="background:rgba(255,152,0,.15)"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FB923C" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+              <div class="flex-1">
+                <div class="font-bold text-sm text-white flex items-center gap-2">Email <span class="sc sc-green">Activ</span><span class="text-[10px] px-2 py-0.5 rounded-full bg-[#263447] text-[#4A6080]">Prioritate 3</span></div>
+                <div class="text-xs text-[#4A6080] mt-0.5">SendGrid · Template HTML · Butoane Accept/Refuz</div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button class="toggle on" id="ch-email" onclick="toggleEl('ch-email')"></button>
+                <button class="bo-btn bo-btn-sec text-xs py-1.5 px-3">⚙ Config</button>
+              </div>
+            </div>
+            <div class="ch-item">
+              <div class="ch-ico" style="background:rgba(156,39,176,.15)"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C084FC" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg></div>
+              <div class="flex-1">
+                <div class="font-bold text-sm text-white flex items-center gap-2">Push App mobilă <span class="sc sc-green">Activ</span></div>
+                <div class="text-xs text-[#4A6080] mt-0.5">Firebase FCM · iOS + Android · Acțiuni rapide + sunet</div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button class="toggle on" id="ch-push" onclick="toggleEl('ch-push')"></button>
+                <button class="bo-btn bo-btn-sec text-xs py-1.5 px-3">⚙ Config</button>
+              </div>
+            </div>
+            <div class="ch-item">
+              <div class="ch-ico" style="background:rgba(63,81,181,.15)"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#818CF8" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+              <div class="flex-1">
+                <div class="font-bold text-sm text-white flex items-center gap-2">Web App (Dashboard partener) <span class="sc sc-green">Activ</span></div>
+                <div class="text-xs text-[#4A6080] mt-0.5">SSE stream · WebSocket real-time · Notificare browser</div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button class="toggle on" id="ch-web" onclick="toggleEl('ch-web')"></button>
+                <button class="bo-btn bo-btn-sec text-xs py-1.5 px-3">⚙ Config</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Setări dispatch -->
+          <div class="grid md:grid-cols-3 gap-4 p-4 rounded-xl border border-[#2D3F55]" style="background:#192433">
+            <div><label class="bo-label">Timer expirare (min)</label><input type="number" value="5" class="bo-input"/></div>
+            <div><label class="bo-label">Rază inițială căutare (km)</label><input type="number" value="1" class="bo-input"/></div>
+            <div><label class="bo-label">Rază extinsă după expirare (km)</label><input type="number" value="10" class="bo-input"/></div>
+            <div><label class="bo-label">Renotificare automată</label><div class="flex items-center gap-3 mt-1.5"><button class="toggle on" id="tog-renot" onclick="toggleEl('tog-renot')"></button><span class="text-sm text-[#8BA3C0]">Activată</span></div></div>
+            <div><label class="bo-label">Notify client la alocare</label><div class="flex items-center gap-3 mt-1.5"><button class="toggle on" id="tog-notcl" onclick="toggleEl('tog-notcl')"></button><span class="text-sm text-[#8BA3C0]">Email + SMS + Push</span></div></div>
+            <div><label class="bo-label">Full Package Priority (60s)</label><div class="flex items-center gap-3 mt-1.5"><button class="toggle on" id="tog-fpp" onclick="toggleEl('tog-fpp')"></button><span class="text-sm text-[#8BA3C0]">Claim rate monitorizat</span></div></div>
+          </div>
+
+          <!-- Order status SSE -->
+          <div class="rounded-xl p-4 border border-[#2D3F55]" style="background:#0F1923">
+            <div class="text-[10px] font-bold uppercase tracking-widest text-[#4A6080] mb-2">Allocation Status Sync — Hybrid Sync Phase 1</div>
+            <div class="space-y-1.5">
+              <div class="flex items-center gap-2 text-xs"><span class="sc sc-green">GET</span><code class="text-[#0E9E99] font-mono">/api/v1/public/sync/order-status/{order_ref}</code></div>
+              <div class="flex items-center gap-2 text-xs"><span class="sc sc-green">GET</span><code class="text-[#0E9E99] font-mono">/api/v1/public/sync/order-status/stream/{order_ref}</code><span class="text-[#4A6080]">SSE live</span></div>
+              <div class="flex items-center gap-2 text-xs"><span class="sc sc-orange">POST</span><code class="text-[#FF8C00] font-mono">/api/v1/backoffice/sync/order-status/{order_ref}</code></div>
+            </div>
+          </div>
+
+          <div class="flex gap-3">
+            <button onclick="saveAll(event)" class="bo-btn bo-btn-save"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Salvează canale</button>
+            <button class="bo-btn bo-btn-ai" onclick="testNotif()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              Testează notificare
+            </button>
+          </div>
+        </div>
+      </div>
+    </div><!-- /tab-canale -->
+
+    <!-- ══════════ TAB: DISPATCH LIVE ══════════ -->
+    <div id="tab-dispatch" class="hidden space-y-6">
+
+      <!-- KPIs -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bo-card p-5"><div class="text-3xl font-bold text-[#FF8C00]">7</div><div class="text-xs text-[#4A6080] mt-1">Comenzi active</div><div class="prog mt-2"><div class="prog-fill" style="width:70%;background:#FF8C00"></div></div></div>
+        <div class="bo-card p-5"><div class="text-3xl font-bold text-[#0E9E99]">2:43</div><div class="text-xs text-[#4A6080] mt-1">Timp mediu claim (min)</div><div class="prog mt-2"><div class="prog-fill" style="width:30%;background:#0E9E99"></div></div></div>
+        <div class="bo-card p-5"><div class="text-3xl font-bold" style="color:#1A7A3A">94%</div><div class="text-xs text-[#4A6080] mt-1">Rată claim (azi)</div><div class="prog mt-2"><div class="prog-fill" style="width:94%;background:#0E9E99"></div></div></div>
+        <div class="bo-card p-5"><div class="text-3xl font-bold text-red-400">1</div><div class="text-xs text-[#4A6080] mt-1">Joburi expirate</div><div class="prog mt-2"><div class="prog-fill" style="width:10%;background:#F87171"></div></div></div>
+      </div>
+
+      <!-- Full Package Priority -->
+      <div class="bo-card">
+        <div class="bo-card-hdr">
+          <div class="text-white font-bold text-sm flex items-center gap-2"><span class="pulse-dot"></span>Full Package Priority — Claim Rate</div>
+          <span class="sc sc-orange">Live Monitor</span>
+        </div>
+        <div class="bo-card-body">
+          <div class="grid md:grid-cols-3 gap-4 mb-4">
+            <div class="rounded-xl p-4 border border-[#2D3F55]" style="background:#192433">
+              <div class="text-xs text-[#4A6080] mb-1">% claim în primele 60s</div>
+              <div class="text-3xl font-bold text-[#FF8C00]">87.4%</div>
+              <div class="prog mt-2"><div class="prog-fill" style="width:87%;background:#FF8C00"></div></div>
+            </div>
+            <div class="rounded-xl p-4 border border-[#2D3F55]" style="background:#192433">
+              <div class="text-xs text-[#4A6080] mb-1">Venituri proiectate</div>
+              <div class="text-3xl font-bold text-white">38.420 Lei</div>
+              <div class="text-xs text-[#4A6080] mt-1">7 comenzi active incluse</div>
+            </div>
+            <div class="rounded-xl p-4 border border-[#2D3F55]" style="background:#192433">
+              <div class="text-xs text-[#4A6080] mb-1">Joburi expirate recente</div>
+              <div class="text-3xl font-bold text-red-400">1</div>
+              <div class="text-xs text-[#4A6080] mt-1">Niciun partener în zonă</div>
+            </div>
+          </div>
+
+          <!-- Order status flow vizual -->
+          <div class="rounded-xl p-4 border border-[#2D3F55] mb-4" style="background:#192433">
+            <div class="text-[10px] font-bold uppercase tracking-widest text-[#4A6080] mb-4">Flux statusuri comenzi (statusuri reale API)</div>
+            <div class="status-flow">
+              <div class="sf-step"><div class="sf-dot done">✓</div><div class="sf-label">PENDING PROVIDER SELECTION</div></div>
+              <div class="sf-line done"></div>
+              <div class="sf-step"><div class="sf-dot done">✓</div><div class="sf-label">SEARCHING PROVIDER</div></div>
+              <div class="sf-line done"></div>
+              <div class="sf-step"><div class="sf-dot active">3</div><div class="sf-label">ASSIGNED</div></div>
+              <div class="sf-line"></div>
+              <div class="sf-step"><div class="sf-dot pending">4</div><div class="sf-label">IN PROGRESS</div></div>
+              <div class="sf-line"></div>
+              <div class="sf-step"><div class="sf-dot pending">5</div><div class="sf-label">PAID</div></div>
+              <div class="sf-line"></div>
+              <div class="sf-step"><div class="sf-dot pending">6</div><div class="sf-label">COMPLETED</div></div>
+            </div>
+            <div class="text-xs text-[#4A6080] mt-3 text-center">Statusuri: PENDING_PROVIDER_SELECTION → SEARCHING_PROVIDER → ASSIGNED → IN_PROGRESS → PAID → COMPLETED | CANCELLED</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comenzi dispatch live -->
+      <div class="bo-card">
+        <div class="bo-card-hdr">
+          <div class="flex items-center gap-2 text-white font-bold text-sm"><span class="pulse-dot"></span>Comenzi în curs — claimPartnerLiveJob(broadcast_id)</div>
+          <div class="flex gap-2">
+            <button class="bo-btn bo-btn-sec text-xs py-1.5 px-3">↺ Refresh</button>
+            <button class="bo-btn bo-btn-sec text-xs py-1.5 px-3">⚙ Filtrează</button>
+          </div>
+        </div>
+        <div class="bo-card-body space-y-4">
+
+          <!-- Comanda 1 ASSIGNED -->
+          <div class="rounded-xl border border-[#FF8C00]/30 overflow-hidden" style="background:#1A1F2E">
+            <div class="flex items-center gap-3 px-4 py-3" style="background:rgba(255,140,0,.08)">
+              <div class="w-2 h-2 rounded-full bg-[#FF8C00] animate-pulse flex-shrink-0"></div>
+              <div class="flex-1">
+                <span class="font-bold text-white text-sm">#MD-20260611-0247</span>
+                <span class="ml-3 text-xs text-[#8BA3C0]">Înlocuire calorifer · Pachet Aur · București S1</span>
+              </div>
+              <span class="sc sc-orange">ASSIGNED</span>
+              <code class="text-[10px] text-[#4A6080] font-mono">broadcast_id: bc_447x</code>
+              <span class="text-xs text-[#4A6080]">⏱ 1:32</span>
+            </div>
+            <div class="p-4 space-y-2">
+              <div class="dp-row">
+                <div class="dp-av" style="background:linear-gradient(135deg,#FF8C00,#CC7000)">D</div>
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-bold text-sm text-white">Darius Mihai Ionescu</span>
+                    <span class="dp-code">#448D2</span>
+                    <span class="sc sc-green">✓ Claim acceptat</span>
+                    <span class="text-[10px] text-[#4A6080]">ISCO: 7412 · ISCIR</span>
+                  </div>
+                  <div class="text-xs text-[#4A6080] mt-0.5">Instalator termic · 1.2km · ETA 35 min · Skill: Instalare calorifer</div>
+                </div>
+                <div class="text-right flex-shrink-0"><div class="font-bold text-sm text-white">520 Lei</div><div class="text-[10px] text-[#4A6080]">net</div></div>
+                <button class="bo-btn bo-btn-sec text-xs py-1 px-2">👁</button>
+              </div>
+              <div class="dp-row">
+                <div class="dp-av" style="background:linear-gradient(135deg,#1A5FAD,#003366)">R</div>
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-bold text-sm text-white">Roxana Maria Popa</span>
+                    <span class="dp-code">#772R9</span>
+                    <span class="sc sc-orange">SEARCHING</span>
+                  </div>
+                  <div class="text-xs text-[#4A6080] mt-0.5">Furnizor materiale · Purmo 600/8 în stoc · ACA BUSINESS GROUP · Bacău</div>
+                </div>
+                <div class="text-right flex-shrink-0"><div class="font-bold text-sm text-white">310 Lei</div></div>
+                <button class="bo-btn bo-btn-sec text-xs py-1 px-2">👁</button>
+              </div>
+              <div class="dp-row">
+                <div class="dp-av" style="background:linear-gradient(135deg,#D97706,#B45309)">G</div>
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-bold text-sm text-white">George Andrei Stanciu</span>
+                    <span class="dp-code">#119G5</span>
+                    <span class="sc sc-blue">IN_PROGRESS</span>
+                  </div>
+                  <div class="text-xs text-[#4A6080] mt-0.5">Curier cartier · Moto · ETA 12 min · Transport materiale ACA</div>
+                </div>
+                <div class="text-right flex-shrink-0"><div class="font-bold text-sm text-white">85 Lei</div></div>
+                <button class="bo-btn bo-btn-sec text-xs py-1 px-2">📍 Live</button>
+              </div>
+              <div class="dp-row" style="opacity:.55">
+                <div class="dp-av" style="background:rgba(14,158,153,.4)">L</div>
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-bold text-sm text-white">Laura Constantin</span>
+                    <span class="dp-code">#335L1</span>
+                    <span class="sc sc-gray">PENDING</span>
+                  </div>
+                  <div class="text-xs text-[#4A6080] mt-0.5">Furnizor asigurări · Poliță garanție lucrare</div>
+                </div>
+                <div class="text-right flex-shrink-0"><div class="font-bold text-sm" style="color:rgba(255,255,255,.5)">65 Lei</div></div>
+              </div>
+            </div>
+            <div class="flex gap-2 px-4 pb-4">
+              <button class="bo-btn bo-btn-sec text-xs py-1.5 px-3">👤 Alocare manuală</button>
+              <button class="bo-btn bo-btn-danger text-xs py-1.5 px-3">✕ CANCELLED</button>
+              <button class="bo-btn bo-btn-sec text-xs py-1.5 px-3">💬 Contact client</button>
+              <div class="ml-auto">
+                <select class="bo-select text-xs py-1.5" style="width:auto" onchange="updateStatus(this.value)">
+                  <option value="">Schimbă status...</option>
+                  <option value="PENDING_PROVIDER_SELECTION">PENDING_PROVIDER_SELECTION</option>
+                  <option value="SEARCHING_PROVIDER">SEARCHING_PROVIDER</option>
+                  <option value="ASSIGNED">ASSIGNED</option>
+                  <option value="IN_PROGRESS">IN_PROGRESS</option>
+                  <option value="PAID">PAID</option>
+                  <option value="COMPLETED">COMPLETED</option>
+                  <option value="CANCELLED">CANCELLED</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Comanda 2 EXPIRED -->
+          <div class="rounded-xl border border-red-700/40 overflow-hidden" style="background:#1A1F2E">
+            <div class="flex items-center gap-3 px-4 py-3" style="background:rgba(220,38,38,.08)">
+              <div class="w-2 h-2 rounded-full bg-red-400 animate-pulse flex-shrink-0"></div>
+              <div class="flex-1">
+                <span class="font-bold text-white text-sm">#MD-20260611-0251</span>
+                <span class="ml-3 text-xs text-[#8BA3C0]">Înlocuire calorifer · Bronz · ⚡ URGENT · București S5</span>
+              </div>
+              <span class="sc sc-red">EXPIRED — Rază extinsă 10km</span>
+            </div>
+            <div class="p-4">
+              <div class="flex items-start gap-3 p-3 rounded-xl mb-3" style="background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F87171" stroke-width="2" class="flex-shrink-0 mt-0.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <p class="text-xs text-red-300">Niciun partener nu a dat claim în 5 minute. Darrin AI a extins raza la 10km și renotifică. <strong class="text-white">missing_skill_label: Instalator ISCIR · București S5</strong>. Dacă nu se alocă în 10 min, necesită alocare manuală urgentă.</p>
+              </div>
+              <div class="flex gap-2">
+                <button class="bo-btn bo-btn-save text-xs py-2 px-4">👤 Alocare manuală urgentă</button>
+                <button class="bo-btn bo-btn-sec text-xs py-2 px-3">📞 Contactează client</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div><!-- /tab-dispatch -->
+
+    <!-- ══════════ TAB: RAPOARTE ══════════ -->
+    <div id="tab-rapoarte" class="hidden space-y-6">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bo-card p-5"><div class="text-2xl font-bold text-white">1.247</div><div class="text-xs text-[#4A6080] mt-1">Notificări trimise (7 zile)</div></div>
+        <div class="bo-card p-5"><div class="text-2xl font-bold text-[#0E9E99]">87.4%</div><div class="text-xs text-[#4A6080] mt-1">Rată livrare</div></div>
+        <div class="bo-card p-5"><div class="text-2xl font-bold text-[#FF8C00]">64.2%</div><div class="text-xs text-[#4A6080] mt-1">Rată claim</div></div>
+        <div class="bo-card p-5"><div class="text-2xl font-bold text-red-400">12.6%</div><div class="text-xs text-[#4A6080] mt-1">Rată expirare</div></div>
+      </div>
+      <div class="bo-card">
+        <div class="bo-card-hdr">
+          <div class="text-white font-bold text-sm flex items-center gap-2">📊 Performanță per canal (7 zile)</div>
+          <button class="bo-btn bo-btn-sec text-xs py-1.5 px-3">⬇ Export CSV</button>
+        </div>
+        <div class="bo-card-body overflow-x-auto">
+          <table class="bo-table">
+            <thead><tr><th>Canal</th><th>Trimise</th><th>Livrate</th><th>Claim</th><th>Refuzate</th><th>Expirate</th><th>Rată livrare</th></tr></thead>
+            <tbody>
+              <tr><td class="flex items-center gap-2"><svg class="w-4 h-4 flex-shrink-0" fill="#25D366" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a9.879 9.879 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>WhatsApp</td><td>847</td><td class="text-[#0E9E99]">831 (98%)</td><td class="text-[#0E9E99] font-bold">542</td><td class="text-red-400">89</td><td class="text-[#8BA3C0]">200</td><td><div class="flex items-center gap-2"><div class="prog" style="width:80px"><div class="prog-fill" style="width:98%;background:#0E9E99"></div></div><span class="text-xs text-[#0E9E99]">98%</span></div></td></tr>
+              <tr><td>📱 SMS</td><td>623</td><td class="text-[#0E9E99]">589 (94%)</td><td class="text-[#0E9E99] font-bold">312</td><td class="text-red-400">71</td><td class="text-[#8BA3C0]">206</td><td><div class="flex items-center gap-2"><div class="prog" style="width:80px"><div class="prog-fill" style="width:94%;background:#0E9E99"></div></div><span class="text-xs text-[#0E9E99]">94%</span></div></td></tr>
+              <tr><td>✉️ Email</td><td>598</td><td class="text-yellow-400">521 (87%)</td><td class="text-[#0E9E99] font-bold">198</td><td class="text-red-400">45</td><td class="text-[#8BA3C0]">278</td><td><div class="flex items-center gap-2"><div class="prog" style="width:80px"><div class="prog-fill" style="width:87%;background:#FF8C00"></div></div><span class="text-xs text-yellow-400">87%</span></div></td></tr>
+              <tr><td>🔔 Push App</td><td>712</td><td class="text-[#0E9E99]">698 (98%)</td><td class="text-[#0E9E99] font-bold">487</td><td class="text-red-400">67</td><td class="text-[#8BA3C0]">144</td><td><div class="flex items-center gap-2"><div class="prog" style="width:80px"><div class="prog-fill" style="width:98%;background:#0E9E99"></div></div><span class="text-xs text-[#0E9E99]">98%</span></div></td></tr>
+              <tr><td>🖥 Web App</td><td>445</td><td class="text-[#0E9E99]">445 (100%)</td><td class="text-[#0E9E99] font-bold">287</td><td class="text-red-400">42</td><td class="text-[#8BA3C0]">116</td><td><div class="flex items-center gap-2"><div class="prog" style="width:80px"><div class="prog-fill" style="width:100%;background:#0E9E99"></div></div><span class="text-xs text-[#0E9E99]">100%</span></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="bo-card">
+        <div class="bo-card-hdr">
+          <div class="text-white font-bold text-sm">📜 Log notificări recente</div>
+          <button class="bo-btn bo-btn-sec text-xs py-1.5 px-3">⬇ Export CSV</button>
+        </div>
+        <div class="bo-card-body">
+          <div class="rounded-xl overflow-hidden border border-[#2D3F55]">
+            <div class="log-row" style="background:#192433"><span class="text-[#4A6080] w-20 text-xs flex-shrink-0">14:23:07</span><span class="sc sc-green flex-shrink-0">✓ Claim</span><span class="flex-1 text-xs">WhatsApp → <strong class="text-white">Darius #448D2</strong> — Comanda #MD-0247 · ASSIGNED în 42 sec · <code class="text-[#0E9E99] font-mono text-[10px]">broadcast_id: bc_447x</code></span></div>
+            <div class="log-row"><span class="text-[#4A6080] w-20 text-xs flex-shrink-0">14:22:51</span><span class="sc sc-orange flex-shrink-0">⏳ SEARCHING</span><span class="flex-1 text-xs">WhatsApp → <strong class="text-white">Roxana #772R9</strong> — Comanda #MD-0247 · În așteptare claim</span></div>
+            <div class="log-row"><span class="text-[#4A6080] w-20 text-xs flex-shrink-0">14:22:51</span><span class="sc sc-blue flex-shrink-0">📱 Push</span><span class="flex-1 text-xs">App Push → <strong class="text-white">George #119G5</strong> — Comanda #MD-0247 · IN_PROGRESS transport</span></div>
+            <div class="log-row"><span class="text-[#4A6080] w-20 text-xs flex-shrink-0">14:18:33</span><span class="sc sc-red flex-shrink-0">✗ Expirat</span><span class="flex-1 text-xs">5 canale → <strong class="text-white">niciun claim</strong> — Comanda #MD-0251 · URGENT · missing_skill: Instalator ISCIR · S5 · Rază extinsă 10km</span></div>
+            <div class="log-row"><span class="text-[#4A6080] w-20 text-xs flex-shrink-0">14:10:22</span><span class="sc sc-green flex-shrink-0">✓ Livrat</span><span class="flex-1 text-xs">Email → <strong class="text-white">Laura #335L1</strong> — Comanda #MD-0247 · Poliță asigurare PENDING</span></div>
+            <div class="log-row"><span class="text-[#4A6080] w-20 text-xs flex-shrink-0">13:55:14</span><span class="sc sc-gray flex-shrink-0">✗ Refuz</span><span class="flex-1 text-xs">WhatsApp → <strong class="text-white">Mihai #661M0</strong> — Comanda #MD-0239 · Partener ocupat</span></div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /tab-rapoarte -->
+
+    
+    <!-- ══════════ TAB: DEVIZ ENGINE ══════════ -->
+    <div id="tab-deviz" class="hidden space-y-6">
+
+      <!-- FORMULA VIZUALĂ -->
+      <div class="bo-card">
+        <div class="bo-card-hdr">
+          <div class="text-white font-bold text-sm flex items-center gap-2">🧮 Formula de calcul preț final (PriceConfigRecord)</div>
+          <span class="sync-badge">Cost Engine Live</span>
+        </div>
+        <div class="bo-card-body">
+          <!-- Formula vizuală -->
+          <div class="rounded-2xl p-5 mb-5 font-mono text-sm leading-relaxed" style="background:#0A1628;border:1px solid #2D3F55">
+            <div class="text-[#4A6080] text-[10px] font-bold uppercase tracking-widest mb-3">Formula completă — calculată automat de Deviz Engine</div>
+            <div class="space-y-2">
+              <div class="flex items-start gap-3"><span class="text-[#4A6080] w-6 flex-shrink-0">1.</span><div><span class="text-[#FF8C00]">COST_BAZĂ</span> <span class="text-[#4A6080]">=</span> <span class="text-[#0E9E99]">Σ(resurse_MATERIAL + resurse_LABOR + resurse_EQUIPMENT + resurse_TRANSPORT)</span></div></div>
+              <div class="flex items-start gap-3"><span class="text-[#4A6080] w-6 flex-shrink-0">2.</span><div><span class="text-[#FF8C00]">COST_NIVEL</span> <span class="text-[#4A6080]">=</span> COST_BAZĂ <span class="text-[#4A6080]">×</span> <span class="text-[#7AB3E0]">DevizRule.multiplier</span> <span class="text-[#4A6080]">(BRONZ=1.0 / ARGINT=1.15 / AUR=1.3 / PLATINUM=1.5)</span></div></div>
+              <div class="flex items-start gap-3"><span class="text-[#4A6080] w-6 flex-shrink-0">3.</span><div><span class="text-[#FF8C00]">+ COSTURI_INDIRECTE</span> <span class="text-[#4A6080]">+=</span> COST_NIVEL <span class="text-[#4A6080]">×</span> <span class="text-[#A78BFA]">indirect_cost_percentage</span> <span class="text-[#4A6080]">(default 10%)</span></div></div>
+              <div class="flex items-start gap-3"><span class="text-[#4A6080] w-6 flex-shrink-0">4.</span><div><span class="text-[#FF8C00]">+ MARKETING</span> <span class="text-[#4A6080]">+=</span> <span class="text-[#A78BFA]">marketing_percentage</span> <span class="text-[#4A6080]">(configurat BO)</span></div></div>
+              <div class="flex items-start gap-3"><span class="text-[#4A6080] w-6 flex-shrink-0">5.</span><div><span class="text-[#FF8C00]">+ MENTENANȚĂ</span> <span class="text-[#4A6080]">+=</span> <span class="text-[#A78BFA]">platform_maintenance_percentage</span> <span class="text-[#4A6080]">(default 3%)</span></div></div>
+              <div class="flex items-start gap-3"><span class="text-[#4A6080] w-6 flex-shrink-0">6.</span><div><span class="text-[#FF8C00]">+ COMISION HBP</span> <span class="text-[#4A6080]">+=</span> <span class="text-[#A78BFA]">mydarrin_platform_percentage</span> <span class="text-[#4A6080]">(7–20% configurabil)</span></div></div>
+              <div class="flex items-start gap-3"><span class="text-[#4A6080] w-6 flex-shrink-0">7.</span><div><span class="text-[#FF8C00]">× COEF_ZONĂ</span> <span class="text-[#4A6080]">=</span> <span class="text-[#FCD34D]">zone_coefficient_override</span> <span class="text-[#4A6080]">(detectat din IP → localitate → zonă)</span></div></div>
+              <div class="flex items-start gap-3"><span class="text-[#4A6080] w-6 flex-shrink-0">8.</span><div><span class="text-[#FF8C00]">× COEF_LEGISLAȚIE</span> <span class="text-[#4A6080]">=</span> <span class="text-[#FCD34D]">legislation_coefficient</span> <span class="text-[#4A6080]">(RO-STD=1.0 / EU-STD / MD-STD)</span></div></div>
+              <div class="flex items-start gap-3"><span class="text-[#4A6080] w-6 flex-shrink-0">9.</span><div><span class="text-[#FF8C00]">× URGENȚĂ</span> <span class="text-[#4A6080]">=</span> <span class="text-[#FCD34D]">urgency_coefficient</span> <span class="text-[#4A6080]">(Normal=1.0 / Urgent=1.3 / Noapte=1.5 / Duminică=2.0)</span></div></div>
+              <div class="flex items-start gap-3 pt-3 border-t border-[#2D3F55]"><span class="text-[#4A6080] w-6 flex-shrink-0">10.</span><div><span class="text-[#0E9E99] font-bold">PREȚ FINAL</span> <span class="text-[#4A6080]">=</span> <span class="text-white">toate cele de sus</span> <span class="text-[#4A6080]">×</span> <span class="text-[#F87171]">(1 + vat_percentage)</span> <span class="text-[#4A6080]">(TVA detectat automat per IP/țară)</span></div></div>
+            </div>
+          </div>
+
+          <!-- Exemplu calcul numeric -->
+          <div class="rounded-xl p-4 border border-[#2D3F55] mb-5" style="background:#192433">
+            <div class="text-[10px] font-bold uppercase tracking-widest text-[#4A6080] mb-3">Exemplu calcul — Înlocuire calorifer · Pachet Aur · București · Normal</div>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between"><span class="text-[#8BA3C0]">Manoperă (LABOR · Instalator ISCIR)</span><span class="text-white font-mono">520 Lei</span></div>
+              <div class="flex justify-between"><span class="text-[#8BA3C0]">Materiale (MATERIAL · Purmo 600/8 · ACA)</span><span class="text-white font-mono">310 Lei</span></div>
+              <div class="flex justify-between"><span class="text-[#8BA3C0]">Transport (TRANSPORT · 3.5 Lei/km · 25km)</span><span class="text-white font-mono">87 Lei</span></div>
+              <div class="flex justify-between"><span class="text-[#8BA3C0]">Asigurare (opțională client)</span><span class="text-white font-mono">65 Lei</span></div>
+              <div class="flex justify-between border-t border-[#2D3F55] pt-2"><span class="text-[#8BA3C0]">Cost bază Σ resurse</span><span class="text-[#FF8C00] font-bold font-mono">982 Lei</span></div>
+              <div class="flex justify-between"><span class="text-[#8BA3C0]">× DevizRule.multiplier AUR (1.30)</span><span class="font-mono text-[#8BA3C0]">× 1.30 = 1.277 Lei</span></div>
+              <div class="flex justify-between"><span class="text-[#8BA3C0]">+ Costuri indirecte (10%)</span><span class="font-mono text-[#8BA3C0]">+ 128 Lei</span></div>
+              <div class="flex justify-between"><span class="text-[#8BA3C0]">+ Mentenanță platformă (3%)</span><span class="font-mono text-[#8BA3C0]">+ 38 Lei</span></div>
+              <div class="flex justify-between"><span class="text-[#8BA3C0]">+ Comision HBP My Darrin (15%)</span><span class="font-mono text-[#8BA3C0]">+ 192 Lei</span></div>
+              <div class="flex justify-between"><span class="text-[#8BA3C0]">× Zone București S1 (1.0)</span><span class="font-mono text-[#8BA3C0]">× 1.0</span></div>
+              <div class="flex justify-between"><span class="text-[#8BA3C0]">× Legislație RO-STD (1.0)</span><span class="font-mono text-[#8BA3C0]">× 1.0</span></div>
+              <div class="flex justify-between"><span class="text-[#8BA3C0]">× Urgență Normal (1.0)</span><span class="font-mono text-[#8BA3C0]">× 1.0</span></div>
+              <div class="flex justify-between"><span class="text-[#8BA3C0]">Subtotal pre-TVA</span><span class="font-bold font-mono text-white">1.635 Lei</span></div>
+              <div class="flex justify-between"><span class="text-[#F87171]">+ TVA România (21%)</span><span class="font-mono text-[#F87171]">+ 343 Lei</span></div>
+              <div class="flex justify-between border-t-2 border-[#FF8C00] pt-2"><span class="font-bold text-white">PREȚ FINAL CLIENT</span><span class="font-bold text-[#FF8C00] font-mono text-lg">1.978 Lei</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRICE CONFIG MANUAL -->
+      <div class="bo-card">
+        <div class="bo-card-hdr">
+          <div class="text-white font-bold text-sm flex items-center gap-2">💲 Configurare preț manual (PriceConfigRecord)</div>
+          <button class="bo-btn bo-btn-save text-xs py-1.5 px-3">+ Adaugă config</button>
+        </div>
+        <div class="bo-card-body">
+          <div class="rounded-xl p-3.5 text-sm text-[#8BA3C0] flex items-start gap-2.5 mb-5" style="background:rgba(14,158,153,.08);border:1px solid rgba(14,158,153,.2)">
+            <span class="flex-shrink-0">ℹ️</span>
+            <span>PriceConfigRecord se stochează în <code class="text-[#0E9E99] text-xs font-mono">admin_resource_price_configs</code>. Fiecare config este per <strong class="text-white">serviciu + țară + zonă</strong>. Coeficienții procentuali se aplică în cascadă conform formulei de mai sus. Dacă nu există config pentru zonă, se folosește config global al țării.</span>
+          </div>
+          <div class="grid md:grid-cols-3 gap-4 mb-5">
+            <div>
+              <label class="bo-label">Serviciu</label>
+              <select class="bo-select"><option>Înlocuire calorifer</option><option>Instalare tablou electric</option><option>Zugrăveli</option><option>Montare AC split</option></select>
+            </div>
+            <div>
+              <label class="bo-label">Țară (country_id)</label>
+              <select class="bo-select" onchange="updateVAT(this.value)">
+                <option value="RO">🇷🇴 România</option>
+                <option value="MD">🇲🇩 Moldova</option>
+                <option value="DE">🇩🇪 Germania</option>
+                <option value="FR">🇫🇷 Franța</option>
+              </select>
+            </div>
+            <div>
+              <label class="bo-label">Zonă (zone_id)</label>
+              <select class="bo-select">
+                <option value="">Global (toate zonele)</option>
+                <option value="1">București + Ilfov</option>
+                <option value="2">Moldova (Bacău, Iași, Suceava)</option>
+                <option value="3">Transilvania (Cluj, Brașov, Sibiu)</option>
+                <option value="4">Muntenia (fără București)</option>
+              </select>
+            </div>
+            <div>
+              <label class="bo-label">Monedă (currency)</label>
+              <select class="bo-select" id="currency-sel">
+                <option>RON</option><option>EUR</option><option>MDL</option><option>GBP</option>
+              </select>
+            </div>
+            <div>
+              <label class="bo-label">Cod legislație</label>
+              <select class="bo-select">
+                <option value="RO-STD">RO-STD (România standard)</option>
+                <option value="EU-STD">EU-STD (Europa standard)</option>
+                <option value="MD-STD">MD-STD (Moldova standard)</option>
+              </select>
+            </div>
+            <div>
+              <label class="bo-label">Preț bază manual (base_price)</label>
+              <input type="number" value="980" class="bo-input" placeholder="Lei"/>
+            </div>
+          </div>
+          <!-- Coeficienți pe niveluri -->
+          <div class="mb-5">
+            <div class="text-[10px] font-bold uppercase tracking-widest text-[#4A6080] mb-3">Cost Σ resurse per nivel (cumulative — Lei reali, nu procente)</div>
+            <div class="grid grid-cols-4 gap-3">
+              <div class="rounded-xl p-3 border border-[#CD7F32]/30" style="background:rgba(205,127,50,.06)">
+                <div class="text-xs text-[#CD7F32] font-bold mb-1">🥉 BRONZ</div>
+                <div class="text-[9px] text-[#4A6080] mb-2">LABOR manoperă</div>
+                <input type="number" value="520" step="1" class="mult-input" style="width:100%;border-color:#CD7F32"/>
+                <div class="text-[10px] text-[#4A6080] mt-1">Lei · cost nivel</div>
+              </div>
+              <div class="rounded-xl p-3 border border-[#6B7A8D]/30" style="background:rgba(107,122,141,.06)">
+                <div class="text-xs text-[#8BA3C0] font-bold mb-1">🥈 ARGINT</div>
+                <div class="text-[9px] text-[#4A6080] mb-2">Bronz + consumabile</div>
+                <input type="number" value="605" step="1" class="mult-input" style="width:100%;border-color:#6B7A8D"/>
+                <div class="text-[10px] text-[#4A6080] mt-1">Lei · cost nivel</div>
+              </div>
+              <div class="rounded-xl p-3 border border-[#FF8C00]/30" style="background:rgba(255,140,0,.06)">
+                <div class="text-xs text-[#FF8C00] font-bold mb-1">🥇 AUR</div>
+                <div class="text-[9px] text-[#4A6080] mb-2">Argint + material + transport</div>
+                <input type="number" value="1063" step="1" class="mult-input" style="width:100%;border-color:#FF8C00"/>
+                <div class="text-[10px] text-[#4A6080] mt-1">Lei · cost nivel</div>
+              </div>
+              <div class="rounded-xl p-3 border border-[#1A5FAD]/30" style="background:rgba(26,95,173,.06)">
+                <div class="text-xs text-[#7AB3E0] font-bold mb-1">💎 PLATINUM</div>
+                <div class="text-[9px] text-[#4A6080] mb-2">Aur + curățenie + premium</div>
+                <input type="number" value="1383" step="1" class="mult-input" style="width:100%;border-color:#1A5FAD"/>
+                <div class="text-[10px] text-[#4A6080] mt-1">Lei · cost nivel</div>
+              </div>
+            </div>
+            <div class="mt-2 p-2.5 rounded-xl text-[10.5px] text-[#8BA3C0]" style="background:rgba(14,158,153,.08);border:1px solid rgba(14,158,153,.2)">
+              ⚡ <strong class="text-white">Logică corectă:</strong> Costul nivelului = suma reală a resurselor incluse din catalog. Diferența de preț între niveluri = costul resurselor adăugate (nu un procent). Calculul se face automat din rețeta tab-ului Deviz Engine.
+            </div>
+          </div>
+          <!-- Costuri procentuale -->
+          <div class="mb-5">
+            <div class="text-[10px] font-bold uppercase tracking-widest text-[#4A6080] mb-3">Costuri procentuale adăugate la costul de bază (configurabile în BO)</div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div class="space-y-3">
+                <div class="flex items-center gap-3 p-3 rounded-xl border border-[#2D3F55]" style="background:#192433">
+                  <div class="flex-1"><div class="text-sm font-bold text-white">Costuri indirecte</div><div class="text-xs text-[#4A6080]">indirect_cost_percentage — overhead, asigurări firmă, contabilitate</div></div>
+                  <div class="flex items-center gap-1"><input type="number" value="10" step="1" min="0" max="30" class="mult-input"/><span class="text-[#8BA3C0] text-sm">%</span></div>
+                </div>
+                <div class="flex items-center gap-3 p-3 rounded-xl border border-[#2D3F55]" style="background:#192433">
+                  <div class="flex-1"><div class="text-sm font-bold text-white">Marketing platformă</div><div class="text-xs text-[#4A6080]">marketing_percentage — publicitate, SEO, campanii</div></div>
+                  <div class="flex items-center gap-1"><input type="number" value="3" step="1" min="0" max="15" class="mult-input"/><span class="text-[#8BA3C0] text-sm">%</span></div>
+                </div>
+                <div class="flex items-center gap-3 p-3 rounded-xl border border-[#2D3F55]" style="background:#192433">
+                  <div class="flex-1"><div class="text-sm font-bold text-white">Mentenanță platformă</div><div class="text-xs text-[#4A6080]">platform_maintenance_percentage — hosting, Cloud Run, GCS</div></div>
+                  <div class="flex items-center gap-1"><input type="number" value="3" step="1" min="0" max="10" class="mult-input"/><span class="text-[#8BA3C0] text-sm">%</span></div>
+                </div>
+              </div>
+              <div class="space-y-3">
+                <div class="flex items-center gap-3 p-3 rounded-xl" style="background:rgba(255,140,0,.08);border:1px solid rgba(255,140,0,.3)">
+                  <div class="flex-1"><div class="text-sm font-bold text-[#FF8C00]">Comision HBP — My Darrin</div><div class="text-xs text-[#4A6080]">mydarrin_platform_percentage — antreprenor general (7–20%)</div></div>
+                  <div class="flex items-center gap-1"><input type="number" value="15" step="1" min="7" max="20" class="mult-input" style="border-color:#FF8C00"/><span class="text-[#FF8C00] text-sm">%</span></div>
+                </div>
+                <div class="flex items-center gap-3 p-3 rounded-xl" style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.3)">
+                  <div class="flex-1"><div class="text-sm font-bold text-red-400">TVA (vat_percentage)</div><div class="text-xs text-[#4A6080]">Auto-detectat din IP → țară. Configurat în Geo-Fiscal</div></div>
+                  <div class="flex items-center gap-1"><input type="number" id="vat-input" value="21" step="1" min="0" max="27" class="mult-input" style="border-color:#F87171"/><span class="text-red-400 text-sm">%</span></div>
+                </div>
+                <div class="flex items-center gap-3 p-3 rounded-xl border border-[#2D3F55]" style="background:#192433">
+                  <div class="flex-1"><div class="text-sm font-bold text-white">Coeficient zonă</div><div class="text-xs text-[#4A6080]">zone_coefficient_override — multiplicator per zonă geografică</div></div>
+                  <div class="flex items-center gap-1"><input type="number" value="1.00" step="0.05" min="0.5" max="2.0" class="mult-input"/><span class="text-[#8BA3C0] text-sm">×</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- VMC CONFIGURARE în Deviz Engine -->
+          <div class="bo-card mt-4">
+            <div class="bo-card-hdr">
+              <div class="text-white font-bold text-sm flex items-center gap-2">⚖ Valoare Minimă Comandă (VMC) — per țară · LIVE</div>
+              <span class="sync-badge">SuperAdmin · Admin Țară</span>
+            </div>
+            <div class="bo-card-body space-y-4">
+              <div class="rounded-xl p-3.5 text-sm text-[#8BA3C0] flex items-start gap-2.5" style="background:rgba(14,158,153,.08);border:1px solid rgba(14,158,153,.2)">
+                <span class="flex-shrink-0">⚖</span>
+                <span>VMC este pragul minim acceptat pentru o comandă în acea țară. 
+                Formula aplică automat <code class="text-[#0E9E99] text-xs font-mono">max(cost_brut, VMC_tara)</code> ca bază de calcul.
+                Modificările sunt LIVE — se aplică imediat la devizele noi, fără restart.</span>
+              </div>
+
+              <!-- Tabel VMC editabil -->
+              <div class="overflow-x-auto rounded-xl border border-[#2D3F55]">
+                <table class="bo-table">
+                  <thead><tr>
+                    <th>Țară</th><th>Monedă</th>
+                    <th>VMC (local)</th><th>VMC (EUR echiv.)</th>
+                    <th>Aplică TVA pe VMC</th><th>Status</th><th>Permis de</th><th>Acțiuni</th>
+                  </tr></thead>
+                  <tbody>
+                    <tr>
+                      <td><span class="text-base">🇷🇴</span> <strong class="text-white">România</strong></td>
+                      <td><code class="text-xs font-mono text-[#0E9E99]">RON</code></td>
+                      <td>
+                        <div class="flex items-center gap-2">
+                          <input type="number" value="100" step="10" min="0" class="mult-input" style="width:80px;border-color:#FF8C00"/>
+                          <span class="text-[#8BA3C0] text-sm">Lei</span>
+                        </div>
+                      </td>
+                      <td class="text-[#8BA3C0] text-xs">≈ 20 EUR</td>
+                      <td><div class="flex items-center gap-2"><button class="toggle" id="vmc-tva-ro" onclick="toggleEl('vmc-tva-ro')"></button><span class="text-xs text-[#8BA3C0]">Nu — pre-TVA</span></div></td>
+                      <td><span class="sc sc-green flex items-center gap-1.5"><span class="pulse-dot" style="width:5px;height:5px"></span>LIVE</span></td>
+                      <td class="text-xs text-[#4A6080]">SuperAdmin · Admin RO</td>
+                      <td><button onclick="saveAll(event)" class="bo-btn bo-btn-save text-xs py-1 px-3">Salvează</button></td>
+                    </tr>
+                    <tr>
+                      <td><span class="text-base">🇲🇩</span> <strong class="text-white">Moldova</strong></td>
+                      <td><code class="text-xs font-mono text-[#0E9E99]">MDL</code></td>
+                      <td>
+                        <div class="flex items-center gap-2">
+                          <input type="number" value="400" step="50" min="0" class="mult-input" style="width:80px;border-color:#FF8C00"/>
+                          <span class="text-[#8BA3C0] text-sm">MDL</span>
+                        </div>
+                      </td>
+                      <td class="text-[#8BA3C0] text-xs">≈ 20 EUR</td>
+                      <td><div class="flex items-center gap-2"><button class="toggle" id="vmc-tva-md" onclick="toggleEl('vmc-tva-md')"></button><span class="text-xs text-[#8BA3C0]">Nu — pre-TVA</span></div></td>
+                      <td><span class="sc sc-green flex items-center gap-1.5"><span class="pulse-dot" style="width:5px;height:5px"></span>LIVE</span></td>
+                      <td class="text-xs text-[#4A6080]">SuperAdmin · Admin MD</td>
+                      <td><button onclick="saveAll(event)" class="bo-btn bo-btn-save text-xs py-1 px-3">Salvează</button></td>
+                    </tr>
+                    <tr>
+                      <td><span class="text-base">🇩🇪</span> <strong class="text-white">Germania</strong></td>
+                      <td><code class="text-xs font-mono text-[#0E9E99]">EUR</code></td>
+                      <td>
+                        <div class="flex items-center gap-2">
+                          <input type="number" value="25" step="5" min="0" class="mult-input" style="width:80px"/>
+                          <span class="text-[#8BA3C0] text-sm">EUR</span>
+                        </div>
+                      </td>
+                      <td class="text-[#8BA3C0] text-xs">25 EUR</td>
+                      <td><div class="flex items-center gap-2"><button class="toggle" id="vmc-tva-de" onclick="toggleEl('vmc-tva-de')"></button><span class="text-xs text-[#8BA3C0]">Nu — pre-TVA</span></div></td>
+                      <td><span class="sc sc-yellow">În configurare</span></td>
+                      <td class="text-xs text-[#4A6080]">SuperAdmin only</td>
+                      <td><button onclick="saveAll(event)" class="bo-btn bo-btn-save text-xs py-1 px-3">Salvează</button></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Formula VMC vizuală -->
+              <div class="rounded-xl p-4 border border-[#2D3F55]" style="background:#0F1923;font-family:'Courier New',monospace;font-size:12.5px;line-height:2">
+                <div class="text-[10px] font-sans font-bold uppercase tracking-widest text-[#4A6080] mb-3">Formula integrată VMC în Cost Engine</div>
+                <div><span class="text-[#0E9E99]">COST_BRUT</span> <span class="text-[#4A6080]">=</span> <span class="text-[#E2E8F0]">cantitate × preț_unitar_resursă</span></div>
+                <div><span class="text-[#FCD34D]">COST_BAZĂ</span> <span class="text-[#4A6080]">=</span> <span class="text-[#F87171] font-bold">max</span>(<span class="text-[#0E9E99]">COST_BRUT</span>, <span class="text-[#FF8C00]">VMC_țară</span>) <span class="text-[#4A6080] font-sans text-[10px]">← reglare automată</span></div>
+                <div><span class="text-[#A78BFA]">COST_NIVEL</span> <span class="text-[#4A6080]">=</span> <span class="text-[#FCD34D]">COST_BAZĂ</span> <span class="text-[#4A6080]">+</span> Σ(resurse_adăugate_nivel)</div>
+                <div class="text-[#4A6080]">... + indirecte% + marketing% + mentenanță% + HBP% × zonă × legislație × urgență × TVA</div>
+                <div class="border-t border-[#2D3F55] mt-2 pt-2"><span class="text-white font-bold">= PREȚ FINAL CLIENT</span></div>
+              </div>
+
+              <!-- Exemplu vizual în BO -->
+              <div class="grid md:grid-cols-2 gap-4">
+                <div class="rounded-xl p-4 border border-red-700/30" style="background:rgba(220,38,38,.06)">
+                  <div class="text-xs font-bold text-red-400 mb-3 uppercase tracking-widest">✗ Sub VMC — Reglare automată</div>
+                  <div class="space-y-1.5 text-xs font-mono">
+                    <div class="flex justify-between text-[#8BA3C0]"><span>Montaj gresie · 2 m² × 45 Lei</span><span>= 90 Lei</span></div>
+                    <div class="flex justify-between text-red-400 font-bold"><span>⚠ Sub VMC RO (100 Lei)</span><span>→ 100 Lei</span></div>
+                    <div class="flex justify-between text-[#8BA3C0]"><span>+ costuri platformă + TVA 19%</span><span></span></div>
+                    <div class="flex justify-between text-white font-bold border-t border-[#2D3F55] pt-1.5"><span>PREȚ FINAL</span><span class="text-[#FF8C00]">~145 Lei</span></div>
+                  </div>
+                </div>
+                <div class="rounded-xl p-4 border border-[#0E9E99]/30" style="background:rgba(14,158,153,.06)">
+                  <div class="text-xs font-bold text-[#0E9E99] mb-3 uppercase tracking-widest">✓ Peste VMC — Calcul normal</div>
+                  <div class="space-y-1.5 text-xs font-mono">
+                    <div class="flex justify-between text-[#8BA3C0]"><span>Montaj gresie · 5 m² × 45 Lei</span><span>= 225 Lei</span></div>
+                    <div class="flex justify-between text-[#0E9E99] font-bold"><span>✓ Peste VMC RO (100 Lei)</span><span>= 225 Lei</span></div>
+                    <div class="flex justify-between text-[#8BA3C0]"><span>+ costuri platformă + TVA 19%</span><span></span></div>
+                    <div class="flex justify-between text-white font-bold border-t border-[#2D3F55] pt-1.5"><span>PREȚ FINAL</span><span class="text-[#FF8C00]">~365 Lei</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- API endpoints -->
+              <div class="rounded-xl p-4 border border-[#2D3F55]" style="background:#0F1923">
+                <div class="text-[10px] font-bold uppercase tracking-widest text-[#4A6080] mb-2">API Sync VMC — LIVE</div>
+                <div class="space-y-1.5 text-xs font-mono">
+                  <div><span class="sc sc-green text-[9px] mr-2">GET</span><span class="text-[#0E9E99]">/api/v1/public/vmc/{country_code}</span> <span class="text-[#4A6080]">→ VMC curent per țară</span></div>
+                  <div><span class="sc sc-orange text-[9px] mr-2">PUT</span><span class="text-[#FF8C00]">/api/v1/backoffice/vmc/{country_code}</span> <span class="text-[#4A6080]">→ actualizare + invalidare cache</span></div>
+                  <div><span class="sc sc-orange text-[9px] mr-2">POST</span><span class="text-[#FF8C00]">/api/v1/backoffice/vmc/validate</span> <span class="text-[#4A6080]">→ simulare calcul VMC pentru test</span></div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Calculator live -->
+          <div class="rounded-xl p-4 border border-[#FF8C00]/20" style="background:rgba(255,140,0,.05)">
+            <div class="flex items-center justify-between mb-3">
+              <div class="text-[10px] font-bold uppercase tracking-widest text-[#4A6080]">Calculator preț live</div>
+              <button onclick="calcPrice()" class="bo-btn bo-btn-ai text-xs py-1.5 px-3">🧮 Calculează</button>
+            </div>
+            <div id="price-result" class="text-center py-4 text-[#4A6080] text-sm">Apasă Calculează pentru a vedea defalcarea completă</div>
+          </div>
+          <div class="flex gap-3 mt-4">
+            <button onclick="saveAll(event)" class="bo-btn bo-btn-save"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Salvează PriceConfig</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- NACE/CAEN + ESCO + UNICLASS MAPPING -->
+      <div class="bo-card">
+        <div class="bo-card-hdr">
+          <div class="text-white font-bold text-sm flex items-center gap-2">📋 Nomenclatoare & Standarde — NACE/CAEN · ESCO · Uniclass</div>
+        </div>
+        <div class="bo-card-body">
+          <div class="grid md:grid-cols-3 gap-4 mb-5">
+            <!-- NACE/CAEN -->
+            <div class="rounded-xl p-4 border border-[#2D3F55]" style="background:#192433">
+              <div class="text-[10px] font-bold uppercase tracking-widest text-[#4A6080] mb-3">NACE Rev 2.1 / CAEN Rev 3</div>
+              <div class="space-y-1.5">
+                <div class="flex items-center gap-2 text-xs"><span class="sc sc-blue font-mono">F 43.21</span><span class="text-[#8BA3C0]">Instalații electrice</span></div>
+                <div class="flex items-center gap-2 text-xs"><span class="sc sc-blue font-mono">F 43.22</span><span class="text-[#8BA3C0]">Sanitare, termice, gaze</span></div>
+                <div class="flex items-center gap-2 text-xs"><span class="sc sc-blue font-mono">F 43.29</span><span class="text-[#8BA3C0]">Alte instalații</span></div>
+                <div class="flex items-center gap-2 text-xs"><span class="sc sc-blue font-mono">F 43.31</span><span class="text-[#8BA3C0]">Ipsoserie & gips-carton</span></div>
+                <div class="flex items-center gap-2 text-xs"><span class="sc sc-blue font-mono">F 43.32</span><span class="text-[#8BA3C0]">Tâmplărie & dulgherie</span></div>
+                <div class="flex items-center gap-2 text-xs"><span class="sc sc-blue font-mono">F 43.33</span><span class="text-[#8BA3C0]">Pardosire & placare</span></div>
+                <div class="flex items-center gap-2 text-xs"><span class="sc sc-blue font-mono">F 43.34</span><span class="text-[#8BA3C0]">Vopsitorie & geamuri</span></div>
+                <div class="flex items-center gap-2 text-xs"><span class="sc sc-blue font-mono">F 43.91</span><span class="text-[#8BA3C0]">Învelitori & șarpante</span></div>
+                <div class="flex items-center gap-2 text-xs"><span class="sc sc-blue font-mono">N 77.32</span><span class="text-[#8BA3C0]">Închirieri utilaje</span></div>
+                <div class="flex items-center gap-2 text-xs"><span class="sc sc-blue font-mono">N 81.21</span><span class="text-[#8BA3C0]">Curățenie generală</span></div>
+                <div class="flex items-center gap-2 text-xs"><span class="sc sc-blue font-mono">A 01.61</span><span class="text-[#8BA3C0]">Grădinărit & agricol</span></div>
+              </div>
+              <div>
+                <label class="bo-label mt-3">CAEN serviciu curent</label>
+                <input type="text" value="F 43.22" class="bo-input font-mono text-sm"/>
+              </div>
+            </div>
+            <!-- ESCO -->
+            <div class="rounded-xl p-4 border border-[#2D3F55]" style="background:#192433">
+              <div class="text-[10px] font-bold uppercase tracking-widest text-[#4A6080] mb-3">ESCO + ISCO-08</div>
+              <div class="space-y-1.5 mb-3">
+                <div class="text-xs text-[#8BA3C0] mb-2">Ocupații necesare pentru acest serviciu:</div>
+                <div class="flex items-center gap-2 text-xs p-2 rounded-lg" style="background:#0F1923">
+                  <span class="sc sc-orange font-mono text-[9px]">ISCO 7412</span>
+                  <span class="text-[#8BA3C0]">Instalatori termici</span>
+                  <button class="ml-auto text-red-400 text-[9px]">✕</button>
+                </div>
+                <div class="flex items-center gap-2 text-xs p-2 rounded-lg" style="background:#0F1923">
+                  <span class="sc sc-orange font-mono text-[9px]">ISCO 7411</span>
+                  <span class="text-[#8BA3C0]">Electricieni clădiri</span>
+                  <button class="ml-auto text-red-400 text-[9px]">✕</button>
+                </div>
+                <div class="flex items-center gap-2 text-xs p-2 rounded-lg" style="background:#0F1923">
+                  <span class="sc sc-green font-mono text-[9px]">CERT: ISCIR</span>
+                  <span class="text-[#8BA3C0]">Autorizație termică obligatorie</span>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <div>
+                  <label class="bo-label">Adaugă ESCO/ISCO code</label>
+                  <div class="flex gap-2"><input type="text" placeholder="7412.1" class="bo-input font-mono text-sm flex-1"/><button class="bo-btn bo-btn-sec text-xs py-2 px-3">+</button></div>
+                </div>
+                <div>
+                  <label class="bo-label">Certificări obligatorii</label>
+                  <input type="text" placeholder="ISCIR_TI, ANRE_1..." class="bo-input font-mono text-sm"/>
+                </div>
+              </div>
+            </div>
+            <!-- UNICLASS + Indicatori -->
+            <div class="rounded-xl p-4 border border-[#2D3F55]" style="background:#192433">
+              <div class="text-[10px] font-bold uppercase tracking-widest text-[#4A6080] mb-3">Uniclass 2015 + Indicatori deviz</div>
+              <div class="space-y-1.5 mb-3">
+                <div class="text-xs text-[#8BA3C0] mb-2">Clasificare elemente:</div>
+                <div class="flex items-center gap-2 text-xs p-2 rounded-lg" style="background:#0F1923">
+                  <span class="sc sc-blue font-mono text-[9px]">Ss_60</span>
+                  <span class="text-[#8BA3C0]">Heating systems</span>
+                </div>
+                <div class="flex items-center gap-2 text-xs p-2 rounded-lg" style="background:#0F1923">
+                  <span class="sc sc-blue font-mono text-[9px]">Pr_65_61</span>
+                  <span class="text-[#8BA3C0]">Radiators (calorifer)</span>
+                </div>
+                <div class="flex items-center gap-2 text-xs p-2 rounded-lg" style="background:#0F1923">
+                  <span class="sc sc-blue font-mono text-[9px]">Pr_65_56</span>
+                  <span class="text-[#8BA3C0]">Pipework systems</span>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <div>
+                  <label class="bo-label">Indicator deviz principal</label>
+                  <select class="bo-select text-sm">
+                    <option>buc (bucată/calorifer)</option>
+                    <option>ml (metri liniari)</option>
+                    <option>m² (suprafață)</option>
+                    <option>m³ (volum)</option>
+                    <option>ore (ore manoperă)</option>
+                    <option>kg (greutate)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="bo-label">Cantitate standard per unitate</label>
+                  <input type="number" value="1" class="bo-input text-sm" placeholder="1 buc calorifer"/>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- REȚETA SERVICIULUI — resurse care compun devizul -->
+          <div>
+            <div class="text-[10px] font-bold uppercase tracking-widest text-[#4A6080] mb-3">Rețeta serviciului — Resurse care compun devizul (catalog_resources)</div>
+            <div class="overflow-x-auto rounded-xl border border-[#2D3F55]">
+              <table class="bo-table">
+                <thead>
+                  <tr>
+                    <th>Resursă</th>
+                    <th>Tip</th>
+                    <th>ESCO/ISCO</th>
+                    <th>Furnizor / Origine</th>
+                    <th>Cantitate</th>
+                    <th>UM</th>
+                    <th>Preț unitar RON</th>
+                    <th>Nivel minim</th>
+                    <th>Opțional</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><div class="font-semibold text-white text-sm">Instalator termic ISCIR</div></td>
+                    <td><span class="rt-badge rt-LABOR">LABOR</span></td>
+                    <td class="font-mono text-xs text-[#0E9E99]">ISCO 7412</td>
+                    <td class="text-xs text-[#8BA3C0]">Pool parteneri · Darrin AI alocă</td>
+                    <td><input type="number" value="1" class="mult-input" style="width:60px"/></td>
+                    <td class="text-[#8BA3C0]">ore</td>
+                    <td><input type="number" value="520" class="mult-input" style="width:80px"/></td>
+                    <td><span class="sc sc-gray text-[9px]">BRONZ</span></td>
+                    <td class="text-center"><input type="checkbox"/></td>
+                    <td><button class="text-red-400 text-xs hover:text-red-300">✕</button></td>
+                  </tr>
+                  <tr>
+                    <td><div class="font-semibold text-white text-sm">Calorifer Purmo C11 600</div></td>
+                    <td><span class="rt-badge rt-MATERIAL">MATERIAL</span></td>
+                    <td class="font-mono text-xs text-[#4A6080]">—</td>
+                    <td class="text-xs text-[#8BA3C0]">ACA BUSINESS GROUP · Bacău</td>
+                    <td><input type="number" value="1" class="mult-input" style="width:60px"/></td>
+                    <td class="text-[#8BA3C0]">buc</td>
+                    <td><input type="number" value="310" class="mult-input" style="width:80px"/></td>
+                    <td><span class="sc sc-orange text-[9px]">AUR</span></td>
+                    <td class="text-center"><input type="checkbox"/></td>
+                    <td><button class="text-red-400 text-xs hover:text-red-300">✕</button></td>
+                  </tr>
+                  <tr>
+                    <td><div class="font-semibold text-white text-sm">Fitinguri + teflon + robineți</div></td>
+                    <td><span class="rt-badge rt-MATERIAL">MATERIAL</span></td>
+                    <td class="font-mono text-xs text-[#4A6080]">—</td>
+                    <td class="text-xs text-[#8BA3C0]">ACA BUSINESS GROUP · Bacău</td>
+                    <td><input type="number" value="1" class="mult-input" style="width:60px"/></td>
+                    <td class="text-[#8BA3C0]">set</td>
+                    <td><input type="number" value="85" class="mult-input" style="width:80px"/></td>
+                    <td><span class="sc sc-gray text-[9px]">ARGINT</span></td>
+                    <td class="text-center"><input type="checkbox"/></td>
+                    <td><button class="text-red-400 text-xs hover:text-red-300">✕</button></td>
+                  </tr>
+                  <tr>
+                    <td><div class="font-semibold text-white text-sm">Transport materiale</div></td>
+                    <td><span class="rt-badge rt-TRANSPORT">TRANSPORT</span></td>
+                    <td class="font-mono text-xs text-[#4A6080]">—</td>
+                    <td class="text-xs text-[#8BA3C0]">Curier cartier · Darrin AI alocă</td>
+                    <td><input type="number" value="25" class="mult-input" style="width:60px"/></td>
+                    <td class="text-[#8BA3C0]">km</td>
+                    <td><input type="number" value="3.5" step="0.5" class="mult-input" style="width:80px"/></td>
+                    <td><span class="sc sc-orange text-[9px]">AUR</span></td>
+                    <td class="text-center"><input type="checkbox"/></td>
+                    <td><button class="text-red-400 text-xs hover:text-red-300">✕</button></td>
+                  </tr>
+                  <tr>
+                    <td><div class="font-semibold text-white text-sm">Poliță asigurare lucrare</div></td>
+                    <td><span class="rt-badge rt-MATERIAL">ASIGURARE</span></td>
+                    <td class="font-mono text-xs text-[#4A6080]">—</td>
+                    <td class="text-xs text-[#8BA3C0]">Furnizor asigurări · Darrin AI alocă</td>
+                    <td><input type="number" value="1" class="mult-input" style="width:60px"/></td>
+                    <td class="text-[#8BA3C0]">buc</td>
+                    <td><input type="number" value="65" class="mult-input" style="width:80px"/></td>
+                    <td><span class="sc sc-orange text-[9px]">AUR</span></td>
+                    <td class="text-center"><input type="checkbox" checked/></td>
+                    <td><button class="text-red-400 text-xs hover:text-red-300">✕</button></td>
+                  </tr>
+                  <tr>
+                    <td><div class="font-semibold text-white text-sm">Curățenie post-lucrare</div></td>
+                    <td><span class="rt-badge rt-LABOR">LABOR</span></td>
+                    <td class="font-mono text-xs text-[#0E9E99]">NACE N81.21</td>
+                    <td class="text-xs text-[#8BA3C0]">Echipă curățenie · Darrin AI alocă</td>
+                    <td><input type="number" value="2" class="mult-input" style="width:60px"/></td>
+                    <td class="text-[#8BA3C0]">ore</td>
+                    <td><input type="number" value="80" class="mult-input" style="width:80px"/></td>
+                    <td><span class="sc sc-blue text-[9px]">PLATINUM</span></td>
+                    <td class="text-center"><input type="checkbox"/></td>
+                    <td><button class="text-red-400 text-xs hover:text-red-300">✕</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <button class="bo-btn bo-btn-sec mt-3 text-xs py-2 px-3">+ Adaugă resursă din catalog</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- GEO-FISCAL AUTO-DETECT -->
+      <div class="bo-card">
+        <div class="bo-card-hdr">
+          <div class="text-white font-bold text-sm flex items-center gap-2">🌍 Geo-Fiscal — Localizare automată per IP</div>
+          <span class="sync-badge">Auto-detect activ</span>
+        </div>
+        <div class="bo-card-body">
+          <div class="grid md:grid-cols-2 gap-6">
+            <div>
+              <div class="text-[10px] font-bold uppercase tracking-widest text-[#4A6080] mb-3">Flux detectare automată</div>
+              <div class="space-y-2 text-sm">
+                <div class="flex items-center gap-3 p-3 rounded-xl border border-[#2D3F55]" style="background:#192433">
+                  <div class="w-7 h-7 rounded-full bg-[#FF8C00] flex items-center justify-center text-xs font-bold text-white flex-shrink-0">1</div>
+                  <div><div class="font-semibold text-white">IP Client → GeoIP lookup</div><div class="text-xs text-[#4A6080]">MaxMind / ipapi.co → Țară + Regiune</div></div>
+                </div>
+                <div class="flex items-center gap-3 p-3 rounded-xl border border-[#2D3F55]" style="background:#192433">
+                  <div class="w-7 h-7 rounded-full bg-[#FF8C00] flex items-center justify-center text-xs font-bold text-white flex-shrink-0">2</div>
+                  <div><div class="font-semibold text-white">CountryRecord → Currency + Legislation</div><div class="text-xs text-[#4A6080]">RO → RON / RO-STD / TVA 19%</div></div>
+                </div>
+                <div class="flex items-center gap-3 p-3 rounded-xl border border-[#2D3F55]" style="background:#192433">
+                  <div class="w-7 h-7 rounded-full bg-[#FF8C00] flex items-center justify-center text-xs font-bold text-white flex-shrink-0">3</div>
+                  <div><div class="font-semibold text-white">ZoneRecord → zone_multiplier</div><div class="text-xs text-[#4A6080]">București=1.0 / Rural=0.85 / Izolat=1.25</div></div>
+                </div>
+                <div class="flex items-center gap-3 p-3 rounded-xl border border-[#2D3F55]" style="background:#192433">
+                  <div class="w-7 h-7 rounded-full bg-[#FF8C00] flex items-center justify-center text-xs font-bold text-white flex-shrink-0">4</div>
+                  <div><div class="font-semibold text-white">TaxRuleRecord → TVA automat</div><div class="text-xs text-[#4A6080]">RO=19% / MD=20% / DE=19% / FR=20%</div></div>
+                </div>
+                <div class="flex items-center gap-3 p-3 rounded-xl border border-[#2D3F55]" style="background:#192433">
+                  <div class="w-7 h-7 rounded-full bg-[#0E9E99] flex items-center justify-center text-xs font-bold text-white flex-shrink-0">5</div>
+                  <div><div class="font-semibold text-white">LaborRateRecord → tarif manoperă zonă</div><div class="text-xs text-[#4A6080]">București=35 Lei/h / Cluj=30 / Bacău=25</div></div>
+                </div>
+                <div class="flex items-center gap-3 p-3 rounded-xl border border-[#2D3F55]" style="background:#192433">
+                  <div class="w-7 h-7 rounded-full bg-[#0E9E99] flex items-center justify-center text-xs font-bold text-white flex-shrink-0">6</div>
+                  <div><div class="font-semibold text-white">FinancialConfigRecord → config complet</div><div class="text-xs text-[#4A6080]">GDPR / ANPC / Codul Muncii / Securitate EU</div></div>
+                </div>
+              </div>
+            </div>
+            <!-- Tabel TVA per țară -->
+            <div>
+              <div class="text-[10px] font-bold uppercase tracking-widest text-[#4A6080] mb-3">TVA configurate per țară (TaxRuleRecord)</div>
+              <div class="overflow-hidden rounded-xl border border-[#2D3F55]">
+                <table class="bo-table">
+                  <thead><tr><th>Țară</th><th>Cod</th><th>Monedă</th><th>TVA %</th><th>Legislație</th><th>Activ</th></tr></thead>
+                  <tbody>
+                    <tr><td class="flex items-center gap-2">🇷🇴 <span>România</span></td><td class="font-mono text-xs">RO</td><td class="font-mono text-xs">RON</td><td class="font-bold text-[#FF8C00]">19%</td><td class="text-xs text-[#4A6080]">RO-STD · ANPC · GDPR</td><td><button class="toggle on" id="c-ro" onclick="toggleEl('c-ro')"></button></td></tr>
+                    <tr><td class="flex items-center gap-2">🇲🇩 <span>Moldova</span></td><td class="font-mono text-xs">MD</td><td class="font-mono text-xs">MDL</td><td class="font-bold text-[#FF8C00]">20%</td><td class="text-xs text-[#4A6080]">MD-STD</td><td><button class="toggle on" id="c-md" onclick="toggleEl('c-md')"></button></td></tr>
+                    <tr><td class="flex items-center gap-2">🇩🇪 <span>Germania</span></td><td class="font-mono text-xs">DE</td><td class="font-mono text-xs">EUR</td><td class="font-bold text-[#FF8C00]">19%</td><td class="text-xs text-[#4A6080]">EU-STD · DSGVO</td><td><button class="toggle" id="c-de" onclick="toggleEl('c-de')"></button></td></tr>
+                    <tr><td class="flex items-center gap-2">🇫🇷 <span>Franța</span></td><td class="font-mono text-xs">FR</td><td class="font-mono text-xs">EUR</td><td class="font-bold text-[#FF8C00]">20%</td><td class="text-xs text-[#4A6080]">EU-STD · RGPD</td><td><button class="toggle" id="c-fr" onclick="toggleEl('c-fr')"></button></td></tr>
+                    <tr><td class="flex items-center gap-2">🇧🇬 <span>Bulgaria</span></td><td class="font-mono text-xs">BG</td><td class="font-mono text-xs">BGN</td><td class="font-bold text-[#FF8C00]">20%</td><td class="text-xs text-[#4A6080]">EU-STD</td><td><button class="toggle" id="c-bg" onclick="toggleEl('c-bg')"></button></td></tr>
+                    <tr style="background:#192433">
+                      <td colspan="6" class="text-center py-2">
+                        <button class="bo-btn bo-btn-sec text-xs py-1.5 px-3">+ Adaugă țară</button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <!-- Conformitate legală -->
+              <div class="mt-4 p-3.5 rounded-xl" style="background:rgba(26,95,173,.08);border:1px solid rgba(26,95,173,.25)">
+                <div class="text-[10px] font-bold uppercase tracking-widest text-[#7AB3E0] mb-2">Conformitate legală auto-aplicată per țară</div>
+                <div class="grid grid-cols-2 gap-1.5 text-xs text-[#4A6080]">
+                  <div class="flex items-center gap-1.5"><span class="text-[#0E9E99]">✓</span>GDPR / RGPD (EU)</div>
+                  <div class="flex items-center gap-1.5"><span class="text-[#0E9E99]">✓</span>Codul Muncii RO</div>
+                  <div class="flex items-center gap-1.5"><span class="text-[#0E9E99]">✓</span>ANPC (consumatori RO)</div>
+                  <div class="flex items-center gap-1.5"><span class="text-[#0E9E99]">✓</span>Securitate & sănătate EU</div>
+                  <div class="flex items-center gap-1.5"><span class="text-[#0E9E99]">✓</span>E-commerce Directive EU</div>
+                  <div class="flex items-center gap-1.5"><span class="text-[#0E9E99]">✓</span>Directiva servicii 2006/123</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /tab-deviz -->
+
+    <!-- ══════════ TAB: RESURSE & ACA ══════════ -->
+    <div id="tab-resurse" class="hidden space-y-6">
+
+      <!-- ACA BUSINESS GROUP banner -->
+      <div class="aca-banner flex items-start gap-4">
+        <div class="w-12 h-12 rounded-xl bg-[#003366] flex items-center justify-center text-xl flex-shrink-0">🏭</div>
+        <div class="flex-1">
+          <div class="font-bold text-white text-base flex items-center gap-2">ACA BUSINESS GROUP <span class="sc sc-blue">CUI 32667674</span><span class="sc sc-green">Furnizor principal</span></div>
+          <div class="text-sm text-[#8BA3C0] mt-1">Depozit logistic: <strong class="text-white">Bacău, Str. Calea Moinești nr. 24</strong> — Punct de referință pentru toate rutele de transport și calculul lead-time.</div>
+          <div class="flex flex-wrap gap-2 mt-3">
+            <span class="text-xs px-2.5 py-1.5 rounded-lg bg-[#192433] border border-[#2D3F55] text-[#8BA3C0]">Utilaje grele & compacte</span>
+            <span class="text-xs px-2.5 py-1.5 rounded-lg bg-[#192433] border border-[#2D3F55] text-[#8BA3C0]">Echipamente & scule industriale</span>
+            <span class="text-xs px-2.5 py-1.5 rounded-lg bg-[#192433] border border-[#2D3F55] text-[#8BA3C0]">Sisteme robotică & smart</span>
+            <span class="text-xs px-2.5 py-1.5 rounded-lg bg-[#192433] border border-[#2D3F55] text-[#8BA3C0]">Materiale construcții & chimice</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Schema import resurse -->
+      <div class="bo-card">
+        <div class="bo-card-hdr">
+          <div class="text-white font-bold text-sm flex items-center gap-2">📦 Resurse catalog (catalog_resources)</div>
+          <button class="bo-btn bo-btn-save text-xs py-1.5 px-3">+ Adaugă resursă</button>
+        </div>
+        <div class="bo-card-body space-y-5">
+
+          <div class="rounded-xl p-3.5 text-sm text-[#8BA3C0] flex items-start gap-2.5" style="background:rgba(14,158,153,.08);border:1px solid rgba(14,158,153,.2)">
+            <span class="flex-shrink-0">ℹ️</span>
+            <span>Schema: <code class="text-[#0E9E99] text-xs font-mono">catalog_resources</code> + <code class="text-[#0E9E99] text-xs font-mono">entity_attachments</code>. Tipuri: <strong class="text-white">MATERIAL / EQUIPMENT / TRANSPORT / LABOR</strong>. Prețurile locale se configurează în <code class="text-[#0E9E99] text-xs font-mono">admin_resource_price_configs</code>.</span>
+          </div>
+
+          <!-- Formular adăugare resursă nouă -->
+          <div class="rounded-xl border border-[#2D3F55] overflow-hidden">
+            <div class="px-4 py-3 border-b border-[#2D3F55] flex items-center gap-2" style="background:#192433">
+              <span class="font-bold text-sm text-white">Adaugă resursă nouă — ACA BUSINESS GROUP</span>
+            </div>
+            <div class="p-5 grid md:grid-cols-2 gap-4">
+              <div><label class="bo-label">Denumire (name_ro / name_en)</label><input type="text" placeholder="Rigips RF 12.5 mm" class="bo-input"/></div>
+              <div>
+                <label class="bo-label">Tip resursă (resource_type)</label>
+                <select class="bo-select" id="res-type-sel">
+                  <option value="MATERIAL">MATERIAL</option>
+                  <option value="EQUIPMENT">EQUIPMENT</option>
+                  <option value="TRANSPORT">TRANSPORT</option>
+                  <option value="LABOR">LABOR</option>
+                </select>
+              </div>
+              <div><label class="bo-label">Unitate măsură (unit)</label><input type="text" value="buc" class="bo-input"/></div>
+              <div><label class="bo-label">Preț de bază RON (base_price)</label><input type="number" value="0" step="0.01" class="bo-input"/></div>
+              <div><label class="bo-label">Cod ESCO (esco_code — opțional)</label><input type="text" placeholder="7412.1" class="bo-input" style="font-family:'Courier New',monospace"/></div>
+              <div><label class="bo-label">Lead time zile (lead_time_days)</label><input type="number" value="1" class="bo-input"/></div>
+              <div><label class="bo-label">Stoc (stock_qty)</label><input type="number" value="100" class="bo-input"/></div>
+              <div>
+                <label class="bo-label">Status disponibilitate</label>
+                <select class="bo-select"><option>IN_STOCK</option><option>LOW_STOCK</option><option>OUT_OF_STOCK</option><option>ON_ORDER</option></select>
+              </div>
+              <div class="md:col-span-2">
+                <label class="bo-label">technical_specs (JSON) — identitate ACA BUSINESS GROUP</label>
+                <textarea class="bo-textarea" rows="8" style="font-family:'Courier New',monospace;font-size:12px">{
+  "commercial_supplier": "ACA BUSINESS GROUP",
+  "supplier_cui": "32667674",
+  "warehouse_origin": "Bacau, Str. Calea Moinesti nr. 24",
+  "original_brand": "",
+  "main_specification": "",
+  "secondary_specs": {},
+  "rate_card_currency": ["RON", "EUR"],
+  "source_document": "",
+  "logistics_notes": ""
+}</textarea>
+              </div>
+              <div class="md:col-span-2">
+                <label class="bo-label">Upload PDF / Imagine (entity_attachments)</label>
+                <div class="grid md:grid-cols-3 gap-3">
+                  <input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp4" class="bo-input text-xs py-2"/>
+                  <select class="bo-select"><option value="DOCUMENT">DOCUMENT</option><option value="IMAGE">IMAGE</option><option value="VIDEO">VIDEO</option></select>
+                  <button class="bo-btn bo-btn-sec justify-center">Upload PDF</button>
+                </div>
+              </div>
+              <div class="md:col-span-2 flex gap-3">
+                <button onclick="saveAll(event)" class="bo-btn bo-btn-save"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Salvează resursă</button>
+                <button class="bo-btn bo-btn-sec">↺ Resetează</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabel resurse existente -->
+          <div class="overflow-x-auto rounded-xl border border-[#2D3F55]">
+            <table class="bo-table">
+              <thead><tr><th>Resursă (name_ro)</th><th>Tip</th><th>Furnizor</th><th>Preț RON</th><th>Stoc</th><th>Lead time</th><th>PDF</th><th>Acțiuni</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><div class="font-semibold text-white text-sm">Calorifer Purmo C11 600/600</div><div class="text-xs text-[#4A6080] font-mono">esco: —</div></td>
+                  <td><span class="rt-badge rt-MATERIAL">MATERIAL</span></td>
+                  <td class="text-xs"><div class="text-[#8BA3C0]">ACA BUSINESS GROUP</div><div class="text-[#4A6080]">Bacău</div></td>
+                  <td class="font-bold text-white">245 Lei</td>
+                  <td><span class="sc sc-green">IN_STOCK · 48</span></td>
+                  <td class="text-[#8BA3C0]">2 zile</td>
+                  <td><a href="#" class="text-[#0E9E99] text-xs hover:underline">Purmo-C11.pdf</a></td>
+                  <td class="flex gap-1.5"><button class="bo-btn bo-btn-sec text-xs py-1 px-2">✏</button><button class="bo-btn bo-btn-danger text-xs py-1 px-2">✕</button></td>
+                </tr>
+                <tr>
+                  <td><div class="font-semibold text-white text-sm">Excavator mini JCB 8025</div><div class="text-xs text-[#4A6080] font-mono">spec: 2.5T · 0.04m³ cupă</div></td>
+                  <td><span class="rt-badge rt-EQUIPMENT">EQUIPMENT</span></td>
+                  <td class="text-xs"><div class="text-[#8BA3C0]">ACA BUSINESS GROUP</div><div class="text-[#4A6080]">Bacău</div></td>
+                  <td class="font-bold text-white">850 Lei/zi</td>
+                  <td><span class="sc sc-green">IN_STOCK · 3</span></td>
+                  <td class="text-[#8BA3C0]">1 zi</td>
+                  <td><a href="#" class="text-[#0E9E99] text-xs hover:underline">JCB-8025.pdf</a></td>
+                  <td class="flex gap-1.5"><button class="bo-btn bo-btn-sec text-xs py-1 px-2">✏</button><button class="bo-btn bo-btn-danger text-xs py-1 px-2">✕</button></td>
+                </tr>
+                <tr>
+                  <td><div class="font-semibold text-white text-sm">Transport local Bacău → client</div><div class="text-xs text-[#4A6080] font-mono">origine: Calea Moinești 24</div></td>
+                  <td><span class="rt-badge rt-TRANSPORT">TRANSPORT</span></td>
+                  <td class="text-xs"><div class="text-[#8BA3C0]">ACA BUSINESS GROUP</div><div class="text-[#4A6080]">Bacău</div></td>
+                  <td class="font-bold text-white">3.5 Lei/km</td>
+                  <td><span class="sc sc-green">Disponibil</span></td>
+                  <td class="text-[#8BA3C0]">—</td>
+                  <td><span class="text-[#4A6080] text-xs">—</span></td>
+                  <td class="flex gap-1.5"><button class="bo-btn bo-btn-sec text-xs py-1 px-2">✏</button><button class="bo-btn bo-btn-danger text-xs py-1 px-2">✕</button></td>
+                </tr>
+                <tr>
+                  <td><div class="font-semibold text-white text-sm">Instalator termic ISCIR</div><div class="text-xs text-[#4A6080] font-mono">esco: 7412.1</div></td>
+                  <td><span class="rt-badge rt-LABOR">LABOR</span></td>
+                  <td class="text-xs"><div class="text-[#8BA3C0]">Pool parteneri verificați</div><div class="text-[#4A6080]">Darrin AI alocă</div></td>
+                  <td class="font-bold text-white">Calculat AI</td>
+                  <td><span class="sc sc-blue">23 activi</span></td>
+                  <td class="text-[#8BA3C0]">&lt;3h</td>
+                  <td><span class="text-[#4A6080] text-xs">—</span></td>
+                  <td class="flex gap-1.5"><button class="bo-btn bo-btn-sec text-xs py-1 px-2">✏</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Import CSV -->
+          <div class="rounded-xl p-4 border border-[#2D3F55]" style="background:#192433">
+            <div class="text-[10px] font-bold uppercase tracking-widest text-[#4A6080] mb-3">Import CSV — Rate Card ACA BUSINESS GROUP</div>
+            <div class="grid md:grid-cols-2 gap-4 text-xs text-[#8BA3C0] mb-4">
+              <div><div class="font-bold text-white mb-1">Coloane CSV obligatorii:</div>
+                <div class="space-y-0.5 font-mono text-[#4A6080]">
+                  <div>furnizor_comercial → technical_specs.commercial_supplier</div>
+                  <div>cui_furnizor → technical_specs.supplier_cui</div>
+                  <div>depozit_referinta → technical_specs.warehouse_origin</div>
+                  <div>producator_original → technical_specs.original_brand</div>
+                  <div>nume_model → name_ro, name_en</div>
+                  <div>pret_unitar_ron → base_price</div>
+                  <div>lead_time_zile → lead_time_days</div>
+                </div>
+              </div>
+              <div>
+                <div class="font-bold text-white mb-1">Mapping categorii → resource_type:</div>
+                <div class="space-y-1">
+                  <div class="flex gap-2 items-center">Materiale construcții → <span class="rt-badge rt-MATERIAL">MATERIAL</span></div>
+                  <div class="flex gap-2 items-center">Scule & echipamente → <span class="rt-badge rt-EQUIPMENT">EQUIPMENT</span></div>
+                  <div class="flex gap-2 items-center">Utilaje grele → <span class="rt-badge rt-EQUIPMENT">EQUIPMENT</span></div>
+                  <div class="flex gap-2 items-center">Transport/logistică → <span class="rt-badge rt-TRANSPORT">TRANSPORT</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="flex gap-3">
+              <input type="file" accept=".csv" class="bo-input text-xs py-2 flex-1"/>
+              <button class="bo-btn bo-btn-ai">⬆ Import CSV</button>
+              <button class="bo-btn bo-btn-sec">⬇ Template CSV</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div><!-- /tab-resurse -->
+
+    <!-- ══════════ TAB: PARTENERI (ADMIN ONLY) ══════════ -->
+    <div id="tab-parteneri" class="hidden space-y-6">
+      <div class="flex items-center gap-3 p-4 rounded-2xl" style="background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F87171" stroke-width="2" class="flex-shrink-0"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        <div><div class="font-bold text-sm text-red-300">Acces restricționat — Administratori HBP SRL</div><div class="text-xs text-red-400 mt-0.5">Identitățile reale sunt confidențiale față de clienți. Vizibile exclusiv în această secțiune. Log-uri de acces înregistrate.</div></div>
+        <span class="ml-auto sc sc-red flex-shrink-0">Admin Only</span>
+      </div>
+
+      <div class="bo-card">
+        <div class="bo-card-hdr">
+          <div class="text-white font-bold text-sm flex items-center gap-2">👥 Parteneri alocați — Identitate reală + KYC</div>
+          <div class="flex gap-2">
+            <input type="text" placeholder="Caută #cod sau nume..." class="bo-input text-xs py-1.5 px-3" style="width:200px"/>
+            <button class="bo-btn bo-btn-sec text-xs py-1.5 px-3">⚙ Filtrează</button>
+          </div>
+        </div>
+        <div class="bo-card-body space-y-3">
+
+          <div class="pr-card">
+            <div class="flex items-start gap-4 flex-wrap">
+              <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[#FF8C00] to-[#CC7000] flex items-center justify-center text-white font-bold text-lg flex-shrink-0">D</div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap mb-2">
+                  <span class="font-bold text-white">Darius Mihai Ionescu</span>
+                  <span class="sc sc-orange text-[9px]">Pseudonim public: Darius #448D2</span>
+                  <span class="sc sc-green">✓ KYC Verificat</span>
+                  <span class="sc sc-blue">ASSIGNED activ</span>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-1.5 text-xs text-[#4A6080]">
+                  <div><span class="text-[#8BA3C0]">CUI/CNP:</span> RO44123456</div>
+                  <div><span class="text-[#8BA3C0]">Firmă:</span> Electro DM SRL</div>
+                  <div><span class="text-[#8BA3C0]">☎:</span> +40721 234 567</div>
+                  <div><span class="text-[#8BA3C0]">✉:</span> darius@electrodm.ro</div>
+                  <div><span class="text-[#8BA3C0]">IBAN:</span> RO49AAAA1B31XXXX</div>
+                  <div><span class="text-[#8BA3C0]">Bancă:</span> Banca Transilvania</div>
+                  <div><span class="text-[#8BA3C0]">Rating:</span> ⭐ 4.97 (184 rec.)</div>
+                  <div><span class="text-[#8BA3C0]">ESCO:</span> 7412 · ISCIR cl.I</div>
+                  <div><span class="text-[#8BA3C0]">Rol API:</span> <code class="font-mono text-[#0E9E99]">PARTNER</code></div>
+                  <div><span class="text-[#8BA3C0]">required_people:</span> 1</div>
+                  <div class="col-span-2"><span class="text-[#8BA3C0]">required_certification_codes:</span> <code class="font-mono text-[#0E9E99]">ISCIR_TI, ANRE_1</code></div>
+                </div>
+              </div>
+              <div class="flex gap-2 flex-shrink-0">
+                <button class="bo-btn bo-btn-sec text-xs py-1.5 px-3">📂 Dosar KYC</button>
+                <button class="bo-btn bo-btn-sec text-xs py-1.5 px-3">📞 Contact</button>
+                <button class="bo-btn bo-btn-danger text-xs py-1.5 px-3">⏸ Suspendă</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="pr-card">
+            <div class="flex items-start gap-4 flex-wrap">
+              <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[#1A5FAD] to-[#003366] flex items-center justify-center text-white font-bold text-lg flex-shrink-0">R</div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap mb-2">
+                  <span class="font-bold text-white">Roxana Maria Popa</span>
+                  <span class="sc sc-orange text-[9px]">Pseudonim public: Roxana #772R9</span>
+                  <span class="sc sc-green">✓ KYC Verificat</span>
+                  <span class="sc sc-orange">SEARCHING</span>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-1.5 text-xs text-[#4A6080]">
+                  <div><span class="text-[#8BA3C0]">CUI:</span> RO33987654</div>
+                  <div><span class="text-[#8BA3C0]">Firmă:</span> TermoCasa SRL</div>
+                  <div><span class="text-[#8BA3C0]">☎:</span> +40744 567 890</div>
+                  <div><span class="text-[#8BA3C0]">✉:</span> roxana@termocasa.ro</div>
+                  <div><span class="text-[#8BA3C0]">IBAN:</span> RO22BCIT0000XXXXXX</div>
+                  <div><span class="text-[#8BA3C0]">Bancă:</span> BCR</div>
+                  <div><span class="text-[#8BA3C0]">Rating:</span> ⭐ 4.89 (97 rec.)</div>
+                  <div><span class="text-[#8BA3C0]">Tip:</span> Furnizor materiale · ACA</div>
+                  <div><span class="text-[#8BA3C0]">Rol API:</span> <code class="font-mono text-[#0E9E99]">PARTNER</code></div>
+                  <div class="col-span-2"><span class="text-[#8BA3C0]">Stoc referință:</span> Purmo 600/6-8-10 · Rigips RF</div>
+                </div>
+              </div>
+              <div class="flex gap-2 flex-shrink-0">
+                <button class="bo-btn bo-btn-sec text-xs py-1.5 px-3">📂 Dosar KYC</button>
+                <button class="bo-btn bo-btn-sec text-xs py-1.5 px-3">📞 Contact</button>
+                <button class="bo-btn bo-btn-danger text-xs py-1.5 px-3">⏸ Suspendă</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="pr-card">
+            <div class="flex items-start gap-4 flex-wrap">
+              <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[#D97706] to-[#B45309] flex items-center justify-center text-white font-bold text-lg flex-shrink-0">G</div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap mb-2">
+                  <span class="font-bold text-white">George Andrei Stanciu</span>
+                  <span class="sc sc-orange text-[9px]">Pseudonim public: Geo #119G5</span>
+                  <span class="sc sc-green">✓ KYC Verificat</span>
+                  <span class="sc sc-blue">IN_PROGRESS</span>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-1.5 text-xs text-[#4A6080]">
+                  <div><span class="text-[#8BA3C0]">PFA:</span> 1234567890123</div>
+                  <div><span class="text-[#8BA3C0]">Vehicul:</span> Moto · B-12-ABC</div>
+                  <div><span class="text-[#8BA3C0]">☎:</span> +40722 111 222</div>
+                  <div><span class="text-[#8BA3C0]">Zone:</span> S1,S2,S3 · 5km</div>
+                  <div><span class="text-[#8BA3C0]">IBAN:</span> RO49RNCB0000XXXXXX</div>
+                  <div><span class="text-[#8BA3C0]">Bancă:</span> Raiffeisen</div>
+                  <div><span class="text-[#8BA3C0]">Rating:</span> ⭐ 4.95 (203 curse)</div>
+                  <div><span class="text-[#8BA3C0]">Rol API:</span> <code class="font-mono text-[#0E9E99]">PARTNER</code></div>
+                </div>
+              </div>
+              <div class="flex gap-2 flex-shrink-0">
+                <button class="bo-btn bo-btn-sec text-xs py-1.5 px-3">📂 Dosar KYC</button>
+                <button class="bo-btn bo-btn-sec text-xs py-1.5 px-3">📍 Live loc.</button>
+                <button class="bo-btn bo-btn-danger text-xs py-1.5 px-3">⏸ Suspendă</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div><!-- /tab-parteneri -->
+
+  </div><!-- /bo-content -->
+</div><!-- /bo-main -->
+</div><!-- /flex -->
+
+<script>
+// Tab switch
+function showTab(tab, btn){
+  ["serviciu","tiers","tarife","canale","dispatch","rapoarte","deviz","resurse","parteneri"].forEach(t=>{
+    const el=document.getElementById("tab-"+t);
+    if(el)el.classList.add("hidden");
+  });
+  document.querySelectorAll(".bo-tab").forEach(b=>b.classList.remove("active"));
+  const active=document.getElementById("tab-"+tab);
+  if(active)active.classList.remove("hidden");
+  if(btn)btn.classList.add("active");
+  if(typeof lucide!=="undefined")lucide.createIcons();
+}
+
+// Toggle
+function toggleEl(id){
+  const el=document.getElementById(id);
+  if(el)el.classList.toggle("on");
+}
+
+// Save with animation
+function saveAll(event){
+  const btn=event.target.closest("button");
+  const orig=btn.innerHTML;
+  btn.innerHTML='<span style="display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;margin-right:6px"></span>Salvând...';
+  setTimeout(()=>{
+    btn.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:6px"><polyline points="20 6 9 17 4 12"/></svg>Salvat!';
+    btn.style.background="#0E9E99";
+    setTimeout(()=>{btn.innerHTML=orig;btn.style.background="";},2500);
+  },1200);
+}
+
+// Status update
+function updateStatus(val){
+  if(!val)return;
+  if(confirm("Schimbi statusul comenzii la: "+val+"?")){
+    alert("✅ Status actualizat la: "+val+"\nPOST /api/v1/backoffice/sync/order-status/{order_ref}");
+  }
+}
+
+// Test notif
+function testNotif(){
+  alert("✅ Notificare de test trimisă!\n\nWhatsApp → Darius #448D2\nSMS → Darius #448D2\nPush App → Darius #448D2\nEmail → Darius #448D2\nWeb App → Darius #448D2\n\nVerifică dispozitivul partenerului de test.");
+}
+
+
+// Price calculator
+function calcPrice(){
+  // Logică corectă: costul nivelului = Σ resurse reale cumulative
+  const costNivel = {
+    bronz: 520,    // LABOR manoperă instalator
+    argint: 605,   // + consumabile (85 Lei)
+    aur: 1063,     // + calorifer (310) + transport (88) + asigurare (65) → +458 Lei
+    platinum: 1383 // + curățenie 2h (160) + protecție (60) → +320 Lei — calorifer premium diferență
+  };
+  const nivel = costNivel.aur; // AUR selectat implicit
+  const indirect = 0.10;
+  const marketing = 0.03;
+  const maint = 0.03;
+  const hbp = 0.15;
+  const vat = 0.19;
+  
+  const c2 = nivel * (1 + indirect);
+  const c3 = c2 * (1 + marketing);
+  const c4 = c3 * (1 + maint);
+  const c5 = c4 * (1 + hbp);
+  const final = c5 * (1 + vat);
+  
+  document.getElementById('price-result').innerHTML = `
+    <div class="text-left space-y-1.5 text-xs">
+      <div class="flex justify-between" style="color:#0E9E99"><span>Σ Resurse nivel AUR (real · cumulativ)</span><span class="font-mono font-bold">1.063 Lei</span></div>
+      <div class="flex justify-between text-[#8BA3C0]" style="font-size:10px;padding-left:8px"><span>↳ LABOR manoperă ISCIR (520) + consumabile (85) + calorifer (310) + transport (88) + asigurare (65) — Bronz: 520 Lei · diff AUR: +543 Lei</span></div>
+      <div class="flex justify-between"><span class="text-[#8BA3C0]">+ Costuri indirecte (10%)</span><span class="font-mono text-white">${c2.toFixed(0)} Lei</span></div>
+      <div class="flex justify-between"><span class="text-[#8BA3C0]">+ Marketing (3%)</span><span class="font-mono text-white">${c3.toFixed(0)} Lei</span></div>
+      <div class="flex justify-between"><span class="text-[#8BA3C0]">+ Mentenanță platformă (3%)</span><span class="font-mono text-white">${c4.toFixed(0)} Lei</span></div>
+      <div class="flex justify-between" style="color:#FF8C00"><span>+ Comision HBP · My Darrin (15%)</span><span class="font-mono font-bold">${c5.toFixed(0)} Lei</span></div>
+      <div class="flex justify-between border-t border-[#2D3F55] pt-1.5"><span class="text-white font-bold">Subtotal pre-TVA</span><span class="font-mono font-bold text-white">${c5.toFixed(0)} Lei</span></div>
+      <div class="flex justify-between"><span class="text-red-400">+ TVA (19%)</span><span class="font-mono text-red-400">+${(c5*vat).toFixed(0)} Lei</span></div>
+      <div class="flex justify-between border-t-2 border-[#FF8C00] pt-2 mt-1"><span class="font-bold text-white text-sm">PREȚ FINAL CLIENT</span><span class="font-mono font-bold text-[#FF8C00] text-lg">${final.toFixed(0)} Lei</span></div>
+    </div>`;
+}
+
+// Update VAT by country
+function updateVAT(country){
+  const vatMap = {RO:'19',MD:'20',DE:'19',FR:'20',BG:'20'};
+  const v = document.getElementById('vat-input');
+  if(v && vatMap[country]) v.value = vatMap[country];
+}
+
+// Init
+if(typeof lucide!=="undefined")lucide.createIcons();
+</script>
+
+<!-- ════ CUM FUNCȚIONEAZĂ — link discret global ════ -->
+<div style="background:#F4F7F9;border-top:1px solid #D5DFE8;padding:14px 24px;display:flex;justify-content:center;align-items:center;gap:12px">
+  <span style="font-size:12px;color:#8C9BAD">Vrei să înțelegi cum funcționează My Darrin?</span>
+  <a href="mydarrin-cum-functioneaza.html"
+     style="display:inline-flex;align-items:center;gap:7px;color:#003366;font-size:12.5px;font-weight:700;text-decoration:none;padding:7px 16px;border-radius:99px;border:1.5px solid #D5DFE8;background:#fff;transition:all .18s"
+     onmouseover="this.style.background='#FF8C00';this.style.color='#fff';this.style.borderColor='#FF8C00'"
+     onmouseout="this.style.background='#fff';this.style.color='#003366';this.style.borderColor='#D5DFE8'">
+    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    Cum funcționează
+  </a>
+</div>
+
+<!-- ════ FOOTER STANDARD My Darrin ════ -->
+<div style="background:#003366;padding:20px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div style="width:30px;height:30px;background:#FF8C00;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff">D</div>
+    <div style="font-size:11px;color:rgba(255,255,255,.4)">© 2026 Home Best Pal SRL · My Darrin</div>
+  </div>
+  <div style="display:flex;gap:14px;flex-wrap:wrap">
+    <a href="mydarrin-v3.html" style="font-size:11.5px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">🏠 Acasă</a>
+    <a href="mydarrin-catalog.html" style="font-size:11.5px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">📦 Catalog</a>
+    <a href="mydarrin-marketplace.html" style="font-size:11.5px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">🏪 Marketplace</a>
+    <a href="mydarrin-investitori.html" style="font-size:11.5px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">💼 Investitori</a>
+    <a href="mydarrin-superadmin.html" style="font-size:11.5px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">🔐 Admin</a>
+  </div>
+</div>
+
+</body>
+</html>
