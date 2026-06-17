@@ -2,112 +2,71 @@
 <html lang="ro">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Dashboard Furnizor · My Darrin</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;background:#F0F4F8;color:#1A2332;overflow-x:hidden;-webkit-font-smoothing:antialiased}
-
-/* ── LAYOUT ── */
+body{font-family:"Inter",system-ui,sans-serif;background:#F0F4F8;color:#1A2332;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 .f-layout{display:flex;min-height:100vh}
-.f-sidebar{width:232px;background:#16202E;border-right:1px solid #2D3F55;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100}
-.f-main{margin-left:232px;flex:1;display:flex;flex-direction:column;background:#F0F4F8}
-.f-topbar{background:#1E2A3B;border-bottom:1px solid #2D3F55;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.f-sidebar{width:240px;background:#16202E;border-right:1px solid #2D3F55;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100}
+.f-main{margin-left:240px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+.f-topbar{background:#1E2A3B;border-bottom:1px solid #2D3F55;padding:0 22px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;gap:12px}
 .f-content{padding:22px;flex:1;background:#F0F4F8}
-
-/* ── SIDEBAR ── */
-.f-logo{padding:16px 18px 14px;border-bottom:1px solid #2D3F55;display:flex;align-items:center;gap:10px}
-.f-logo-icon{width:34px;height:34px;background:linear-gradient(135deg,#FF8C00,#CC7000);border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;flex-shrink:0}
+.f-logo{padding:16px 18px;border-bottom:1px solid #2D3F55;display:flex;align-items:center;gap:10px}
+.f-logo-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#fff;flex-shrink:0}
 .f-nav{padding:10px 0;flex:1;overflow-y:auto}
-.f-nav-section{padding:8px 16px 4px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#4A6080}
-.f-nav-item{display:flex;align-items:center;gap:9px;padding:9px 16px;font-size:12.5px;font-weight:500;color:#8BA3C0;cursor:pointer;transition:all .15s;border-left:3px solid transparent;text-decoration:none}
+.f-nav-section{padding:8px 16px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#4A6080}
+.f-nav-item{display:flex;align-items:center;gap:9px;padding:9px 16px;font-size:12.5px;font-weight:500;color:#8BA3C0;cursor:pointer;transition:all .15s;border-left:3px solid transparent;text-decoration:none;border-bottom:none;background:transparent;font-family:inherit;width:100%;text-align:left}
 .f-nav-item:hover{background:rgba(255,255,255,.04);color:#E2E8F0}
-.f-nav-item.active{background:rgba(255,140,0,.1);color:#FF8C00;border-left-color:#FF8C00;font-weight:700}
-.f-nav-item svg{width:14px;height:14px;flex-shrink:0}
-.f-badge{margin-left:auto;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px}
-
-/* ── TYPE SWITCHER ── */
-.type-btn{flex:1;padding:8px;border-radius:9px;border:none;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .18s;text-align:center}
-.type-btn.active{background:#FF8C00;color:#fff}
-.type-btn:not(.active){background:transparent;color:#4A6080}
-.type-btn:not(.active):hover{color:#E2E8F0}
-
-/* ── CARDS ── */
-.f-card{background:#FFFFFF;border-radius:16px;border:1px solid #D5DFE8;overflow:hidden;transition:all .2s;box-shadow:0 1px 4px rgba(0,51,102,.06)}
-.f-card-hdr{padding:14px 20px;border-bottom:1px solid #D5DFE8;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#F8FAFC}
-.f-card-body{padding:20px}
-
-/* ── KPI ── */
-.kpi{background:#FFFFFF;border-radius:14px;border:1px solid #D5DFE8;padding:16px 18px;position:relative;overflow:hidden;box-shadow:0 1px 4px rgba(0,51,102,.06)}
-.kpi::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;border-radius:14px 14px 0 0}
-.kpi.k-or::before{background:#FF8C00}
-.kpi.k-te::before{background:#0E9E99}
-.kpi.k-bl::before{background:#1A5FAD}
-.kpi.k-gr::before{background:#1A7A3A}
-
-/* ── TABLE ── */
+.f-nav-item.active{border-left-color:var(--accent,#003366);color:var(--accent,#003366);font-weight:700;background:rgba(0,51,102,.08)}
+.type-btn{flex:1;padding:7px 6px;border-radius:8px;border:none;font-size:10.5px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .18s;text-align:center;color:#4A6080;background:transparent}
+.type-btn.active{color:#fff}
+.f-card{background:#fff;border-radius:16px;border:1px solid #D5DFE8;overflow:hidden;box-shadow:0 1px 4px rgba(0,51,102,.06);transition:all .2s}
+.f-card:hover{box-shadow:0 4px 16px rgba(0,51,102,.1)}
+.f-card-hdr{padding:14px 18px;border-bottom:1px solid #EEF2F7;background:#F8FAFC;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.f-card-body{padding:18px}
+.kpi{background:#fff;border-radius:14px;border:1px solid #D5DFE8;padding:16px;position:relative;overflow:hidden;box-shadow:0 1px 4px rgba(0,51,102,.06)}
+.kpi::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;border-radius:14px 14px 0 0;background:var(--accent,#003366)}
 .f-table{width:100%;border-collapse:collapse}
-.f-table th{padding:9px 13px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;border-bottom:1px solid #D5DFE8;text-align:left;white-space:nowrap;background:#F8FAFC}
-.f-table td{padding:11px 13px;font-size:12.5px;border-bottom:1px solid #D5DFE8;vertical-align:middle;color:#1A2332}
+.f-table th{padding:9px 13px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;border-bottom:1px solid #D5DFE8;text-align:left;background:#F8FAFC;white-space:nowrap}
+.f-table td{padding:11px 13px;font-size:12.5px;border-bottom:1px solid #EEF2F7;color:#1A2332;vertical-align:middle}
 .f-table tr:last-child td{border-bottom:none}
 .f-table tr:hover td{background:#F8FBFF}
-
-/* ── CHIPS ── */
 .chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap}
-.ch-g{background:rgba(26,122,58,.18);color:#4ADE80;border:1px solid rgba(26,122,58,.3)}
-.ch-o{background:rgba(255,140,0,.15);color:#FF8C00;border:1px solid rgba(255,140,0,.25)}
-.ch-r{background:rgba(192,57,43,.18);color:#F87171;border:1px solid rgba(192,57,43,.3)}
-.ch-b{background:rgba(26,95,173,.18);color:#7AB3E0;border:1px solid rgba(26,95,173,.3)}
-.ch-t{background:rgba(14,158,153,.15);color:#0E9E99;border:1px solid rgba(14,158,153,.25)}
-.ch-gr{background:rgba(74,96,128,.18);color:#8BA3C0;border:1px solid rgba(74,96,128,.3)}
-
-/* ── CALENDAR ── */
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
-.cal-day{aspect-ratio:1;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600;cursor:pointer;transition:all .15s;min-width:28px;user-select:none}
-.cal-day.av{background:#D4EDDA;color:#1A7A3A;border:1px solid rgba(26,122,58,.25)}
-.cal-day.res{background:rgba(255,140,0,.15);color:#FF8C00;border:1px solid rgba(255,140,0,.3)}
-.cal-day.na{background:#E8EDF4;color:#8C9BAD;border:1px solid #D5DFE8}
-.cal-day.today{outline:2px solid #FF8C00;outline-offset:1px}
-.cal-day:hover{transform:scale(1.08)}
-
-/* ── STOCK BAR ── */
-.stock-bar{height:6px;border-radius:99px;background:#E0E8F0;overflow:hidden;margin-top:4px}
-.stock-fill{height:100%;border-radius:99px;transition:width .4s}
-
-/* ── TOGGLE ── */
-.f-toggle{width:36px;height:18px;border-radius:99px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
-.f-toggle.on{background:#0E9E99}
-.f-toggle.off{background:#CBD5E0}
-.f-toggle::after{content:"";position:absolute;top:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left .2s}
-.f-toggle.on::after{left:20px}
-.f-toggle.off::after{left:2px}
-
-/* ── UPLOAD ── */
-.upload-dz{border:2px dashed #D5DFE8;border-radius:14px;padding:24px;text-align:center;cursor:pointer;transition:all .2s;background:#F0F4F8}
-.upload-dz:hover{border-color:#FF8C00;background:rgba(255,140,0,.04)}
-
-/* ── PULSE ── */
+.ch-g{background:rgba(26,122,58,.1);color:#1A7A3A;border:1px solid rgba(26,122,58,.2)}
+.ch-o{background:rgba(255,140,0,.1);color:#CC7000;border:1px solid rgba(255,140,0,.2)}
+.ch-r{background:rgba(192,57,43,.1);color:#C0392B;border:1px solid rgba(192,57,43,.2)}
+.ch-b{background:rgba(0,51,102,.1);color:#003366;border:1px solid rgba(0,51,102,.15)}
+.ch-t{background:rgba(14,158,153,.1);color:#0B7A76;border:1px solid rgba(14,158,153,.2)}
+.ch-gr{background:rgba(74,96,128,.1);color:#4A6080;border:1px solid rgba(74,96,128,.2)}
+.btn-p{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:10px;font-size:12.5px;font-weight:700;border:none;cursor:pointer;font-family:inherit;background:var(--accent,#003366);color:#fff;transition:all .18s}
+.btn-p:hover{opacity:.88;transform:translateY(-1px)}
+.btn-s{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:600;border:1.5px solid #D5DFE8;cursor:pointer;font-family:inherit;background:#fff;color:#5A6B7D;transition:all .18s}
+.btn-s:hover{border-color:#003366;color:#003366}
 .pdot{width:6px;height:6px;border-radius:50%;background:#0E9E99;animation:pd 2s infinite;display:inline-block;flex-shrink:0}
 @keyframes pd{0%,100%{opacity:1}50%{opacity:.25}}
-@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
-
-/* ── BTNS ── */
-.btn-p{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:10px;font-size:12.5px;font-weight:700;border:none;cursor:pointer;font-family:inherit;background:#FF8C00;color:#fff;transition:all .18s;text-decoration:none}
-.btn-p:hover{background:#CC7000;transform:translateY(-1px)}
-.btn-s{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:600;border:1px solid #2D3F55;cursor:pointer;font-family:inherit;background:#192433;color:#8BA3C0;transition:all .18s;text-decoration:none}
-.btn-s:hover{border-color:#2D4F70;color:#E2E8F0}
-
-/* ── TABS ── */
-.f-tab{padding:7px 16px;border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s;background:transparent;color:#4A6080}
-.f-tab.active{background:#FF8C00;color:#fff}
-.f-tab:not(.active):hover{background:rgba(255,255,255,.05);color:#E2E8F0}
-
-::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-thumb{background:#2D3F55;border-radius:2px}
-
+.alerta{background:#FFF0F0;border-radius:12px;border:1.5px solid rgba(192,57,43,.3);padding:12px 15px;margin-bottom:8px}
+.alerta.medium{background:#FFF8EE;border-color:rgba(255,140,0,.3)}
+.stoc-bar{height:6px;border-radius:99px;background:#EEF2F7;overflow:hidden;margin-top:4px}
+.stoc-fill{height:100%;border-radius:99px;transition:width .5s}
+.cal-day{aspect-ratio:1;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600;cursor:pointer;transition:all .15s;min-height:30px;user-select:none}
+.cal-av{background:#D4EDDA;color:#1A7A3A;border:1px solid rgba(26,122,58,.2)}
+.cal-res{background:rgba(14,158,153,.1);color:#0B7A76;border:1px solid rgba(14,158,153,.2)}
+.cal-na{background:#E8EDF4;color:#8C9BAD}
+.cal-today{background:var(--accent,#003366)!important;color:#fff!important;border:none!important}
+.dp-toggle{width:36px;height:18px;border-radius:99px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.dp-toggle.on{background:#0E9E99}
+.dp-toggle.off{background:#CBD5E0}
+.dp-toggle::after{content:"";position:absolute;top:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left .2s}
+.dp-toggle.on::after{left:20px}
+.dp-toggle.off::after{left:2px}
+.dp-tab{padding:7px 14px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s;background:transparent;color:#8C9BAD}
+.dp-tab.active{background:var(--accent,#003366);color:#fff}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#D5DFE8;border-radius:2px}
 @media(max-width:768px){.f-sidebar{display:none}.f-main{margin-left:0}}
 </style>
 </head>
@@ -117,87 +76,29 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 <!-- ════ SIDEBAR ════ -->
 <aside class="f-sidebar">
   <div class="f-logo">
-    <div class="f-logo-icon">F</div>
+    <div class="f-logo-icon" id="fb-icon" style="background:#003366">📦</div>
     <div>
-      <div style="font-weight:800;color:#fff;font-size:13.5px">ACA Business Group</div>
-      <div style="font-size:9.5px;color:#4A6080;text-transform:uppercase;letter-spacing:.07em">Furnizor My Darrin</div>
+      <div style="font-weight:800;color:#fff;font-size:13px;font-family:'Syne',sans-serif" id="fb-title">ACA Business Group</div>
+      <div style="font-size:9px;color:#4A6080;text-transform:uppercase;letter-spacing:.07em" id="fb-sub">Furnizor Materiale</div>
     </div>
   </div>
 
-  <!-- Tip furnizor switcher -->
+  <!-- Type switcher -->
   <div style="padding:10px 12px;border-bottom:1px solid #2D3F55">
     <div style="display:flex;gap:2px;background:#0F1923;border-radius:10px;padding:3px">
-      <button class="type-btn active" id="tb-mat" onclick="switchType('materiale',this)">📦 Materiale</button>
-      <button class="type-btn" id="tb-ren" onclick="switchType('rental',this)">🏗 Rental</button>
+      <button class="type-btn active" id="tb-mat" onclick="switchType('materiale',this)" style="background:#003366;color:#fff">📦 Materiale</button>
+      <button class="type-btn" id="tb-inch" onclick="switchType('inchirieri',this)">🏗 Închirieri</button>
     </div>
   </div>
 
-  <nav class="f-nav">
-    <div class="f-nav-section">Principal</div>
-    <a class="f-nav-item active" onclick="showPanel('overview')">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-      Prezentare generală
-    </a>
-    <a class="f-nav-item" onclick="showPanel('comenzi')">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-      Comenzi primite
-      <span class="f-badge ch-o" id="badge-comenzi">12</span>
-    </a>
-    <a class="f-nav-item" onclick="showPanel('stocuri')">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
-      <span id="nav-stoc-label">Stocuri live</span>
-    </a>
-    <a class="f-nav-item" onclick="showPanel('calendar')">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      <span id="nav-cal-label">Calendar disponibilitate</span>
-    </a>
-
-    <div class="f-nav-section" style="margin-top:6px">Financiar</div>
-    <a class="f-nav-item" onclick="showPanel('venituri')">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-      Venituri & Comisioane
-    </a>
-    <a class="f-nav-item" onclick="showPanel('plati')">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-      Plăți Escrow
-    </a>
-
-    <div class="f-nav-section" style="margin-top:6px">Catalog</div>
-    <a class="f-nav-item" onclick="showPanel('produse')">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-      <span id="nav-prod-label">Produse active</span>
-      <span class="f-badge ch-t" id="badge-produse">248</span>
-    </a>
-    <a class="f-nav-item" onclick="showPanel('import')">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
-      Import CSV / API
-    </a>
-
-    <div class="f-nav-section" style="margin-top:6px">Cont</div>
-    <a class="f-nav-item" href="mydarrin-marketplace.html">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      Profil Marketplace
-    </a>
-    <a class="f-nav-item" href="mydarrin-superadmin.html">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
-      Super Admin
-    </a>
-  </nav>
-
-<!-- ════ BREADCRUMB ════ -->
-<div style="background:#fff;border-bottom:1px solid #EEF2F7;padding:9px 24px">
-  <div style="max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-    <a href="mydarrin-v3.html" style="color:#5A6B7D;text-decoration:none;font-size:12.5px;font-weight:600;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='#5A6B7D'">🏠 Acasă</a> <span style="color:#D5DFE8">›</span> <a href="mydarrin-marketplace.html" style="color:#5A6B7D;text-decoration:none;font-size:12.5px;font-weight:600;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='#5A6B7D'">Marketplace</a> <span style="color:#D5DFE8">›</span> <span style="color:#1A2332;font-size:12.5px;font-weight:700">Dashboard Furnizor</span>
-  </div>
-</div>
-
+  <nav class="f-nav" id="fb-nav"><!-- JS --></nav>
 
   <div style="padding:12px 14px;border-top:1px solid #2D3F55">
     <div style="display:flex;align-items:center;gap:9px">
-      <div style="width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#003366,#1A5FAD);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;color:#fff;flex-shrink:0">ACA</div>
+      <div id="fb-avatar" style="width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#003366,#1A5FAD);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#fff">ACA</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:11.5px;font-weight:700;color:#E2E8F0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">ACA Business Group</div>
-        <div style="font-size:9.5px;color:#4A6080">CUI 32667674 · Bacău</div>
+        <div style="font-size:11px;font-weight:700;color:#E2E8F0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="fb-partner">ACA Business Group</div>
+        <div style="font-size:9px;color:#4A6080">CUI 32667674 · Bacău</div>
       </div>
       <div class="pdot"></div>
     </div>
@@ -206,736 +107,1207 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 
 <!-- ════ MAIN ════ -->
 <main class="f-main">
-
-  <!-- TOPBAR -->
   <div class="f-topbar">
-    <div style="display:flex;align-items:center;gap:12px">
-      <div style="font-weight:700;color:#1A2332;font-size:14px" id="f-page-title">Prezentare generală</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="font-weight:700;color:#fff;font-size:14px" id="fb-page-title">Overview</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#0E9E99">
-        <span class="pdot"></span>
-        Live · <span id="topbar-type">Materiale & Rental</span>
+        <span class="pdot" style="width:5px;height:5px"></span>
+        <span id="fb-live">Live · sync activ</span>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:10px">
+    <div style="display:flex;align-items:center;gap:8px">
       <div style="text-align:right">
-        <div style="font-size:11px;color:#4A6080">Comision negociat</div>
-        <div style="font-size:13px;font-weight:700;color:#FF8C00">0% promo → 13.09.2026</div>
+        <div style="font-size:10px;color:#4A6080">Promo comision</div>
+        <div style="font-size:12px;font-weight:700;color:#4ADE80" id="fb-promo">0% → 13.09.2026</div>
       </div>
-      <a href="mydarrin-v3.html" class="btn-s" style="font-size:11px">← Platformă</a>
+      <a href="mydarrin-v3.html" class="btn-s" style="font-size:11px;padding:6px 12px;color:#8BA3C0;border-color:#2D3F55;background:#192433">← Platformă</a>
     </div>
   </div>
-
-  <div class="f-content">
-
-    <!-- ══ PANEL: OVERVIEW ══ -->
-    <div id="panel-overview">
-      <!-- KPIs -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px">
-        <div class="kpi k-or">
-          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">Comenzi azi</div>
-          <div style="font-size:28px;font-weight:800;color:#FF8C00;line-height:1" id="kpi-comenzi">12</div>
-          <div style="font-size:10.5px;color:#4A6080;margin-top:3px">↑ +3 față de ieri</div>
-        </div>
-        <div class="kpi k-te">
-          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">Venituri luna</div>
-          <div style="font-size:28px;font-weight:800;color:#0E9E99;line-height:1" id="kpi-venituri">18.4K</div>
-          <div style="font-size:10.5px;color:#4A6080;margin-top:3px">Lei net după comision</div>
-        </div>
-        <div class="kpi k-bl">
-          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">Produse active</div>
-          <div style="font-size:28px;font-weight:800;color:#7AB3E0;line-height:1" id="kpi-produse">248</div>
-          <div style="font-size:10.5px;color:#4A6080;margin-top:3px" id="kpi-produse-sub">3 cu stoc critic</div>
-        </div>
-        <div class="kpi k-gr">
-          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px" id="kpi4-label">Rating furnizor</div>
-          <div style="font-size:28px;font-weight:800;color:#4ADE80;line-height:1" id="kpi4-val">4.93</div>
-          <div style="font-size:10.5px;color:#4A6080;margin-top:3px" id="kpi4-sub">⭐ din 312 comenzi</div>
-        </div>
-      </div>
-
-      <!-- Grid 2 col -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
-
-        <!-- Comenzi recente -->
-        <div class="f-card">
-          <div class="f-card-hdr">
-            <div style="display:flex;align-items:center;gap:8px">
-              <span class="pdot"></span>
-              <div style="font-weight:700;color:#1A2332;font-size:13px">Comenzi recente</div>
-            </div>
-            <button class="btn-s" style="font-size:11px;padding:5px 10px" onclick="showPanel('comenzi')">Vezi toate</button>
-          </div>
-          <div style="padding:0">
-            <table class="f-table" id="overview-orders-table"></table>
-          </div>
-        </div>
-
-        <!-- Stoc critic + calendar mini -->
-        <div style="display:flex;flex-direction:column;gap:14px">
-          <!-- Stoc critic -->
-          <div class="f-card">
-            <div class="f-card-hdr">
-              <div style="font-weight:700;color:#1A2332;font-size:13px" id="stock-panel-title">Stocuri critice</div>
-              <span class="chip ch-r">3 alerte</span>
-            </div>
-            <div class="f-card-body" id="stock-critical-list"></div>
-          </div>
-          <!-- Disponibilitate next 7 zile -->
-          <div class="f-card">
-            <div class="f-card-hdr">
-              <div style="font-weight:700;color:#1A2332;font-size:13px" id="cal-mini-title">Disponibilitate · Iun 2026</div>
-              <button class="btn-s" style="font-size:11px;padding:5px 10px" onclick="showPanel('calendar')">Calendar complet</button>
-            </div>
-            <div class="f-card-body">
-              <div class="cal-grid" style="margin-bottom:8px">
-                <div style="text-align:center;font-size:10px;font-weight:700;color:#4A6080;padding:2px">Lu</div>
-                <div style="text-align:center;font-size:10px;font-weight:700;color:#4A6080;padding:2px">Ma</div>
-                <div style="text-align:center;font-size:10px;font-weight:700;color:#4A6080;padding:2px">Mi</div>
-                <div style="text-align:center;font-size:10px;font-weight:700;color:#4A6080;padding:2px">Jo</div>
-                <div style="text-align:center;font-size:10px;font-weight:700;color:#4A6080;padding:2px">Vi</div>
-                <div style="text-align:center;font-size:10px;font-weight:700;color:#C0392B;padding:2px">Sâ</div>
-                <div style="text-align:center;font-size:10px;font-weight:700;color:#C0392B;padding:2px">Du</div>
-              </div>
-              <div class="cal-grid" id="cal-mini-grid"></div>
-              <div style="display:flex;gap:12px;margin-top:10px;font-size:10.5px">
-                <div style="display:flex;align-items:center;gap:5px;color:#4A6080"><div style="width:10px;height:10px;border-radius:3px;background:#D4EDDA;border:1px solid rgba(26,122,58,.25)"></div>Disponibil</div>
-                <div style="display:flex;align-items:center;gap:5px;color:#4A6080"><div style="width:10px;height:10px;border-radius:3px;background:rgba(255,140,0,.15);border:1px solid rgba(255,140,0,.3)"></div>Rezervat</div>
-                <div style="display:flex;align-items:center;gap:5px;color:#4A6080"><div style="width:10px;height:10px;border-radius:3px;background:#192433;border:1px solid #2D3F55"></div>N/A</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Comision banner -->
-      <div class="f-card" style="border-color:rgba(14,158,153,.3);background:linear-gradient(135deg,#E0F5F4,#F0F8FF)">
-        <div class="f-card-body" style="padding:16px 20px">
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-            <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-              <div style="font-size:24px">💰</div>
-              <div>
-                <div style="font-weight:700;color:#1A2332;font-size:14px">Structura comisioanelor tale · ACA Business Group</div>
-                <div style="font-size:12px;color:#4A6080;margin-top:3px">Negociat individual · Configurat din Backoffice · Valabil contractual</div>
-              </div>
-            </div>
-            <div style="display:flex;gap:10px;flex-wrap:wrap">
-              <div style="text-align:center;padding:10px 16px;background:#192433;border-radius:10px;border:1px solid #2D3F55">
-                <div style="font-size:9.5px;color:#4A6080;margin-bottom:3px;text-transform:uppercase;letter-spacing:.06em">Materiale</div>
-                <div style="font-weight:800;color:#FF8C00;font-size:18px">7.5%</div>
-              </div>
-              <div style="text-align:center;padding:10px 16px;background:#192433;border-radius:10px;border:1px solid #2D3F55">
-                <div style="font-size:9.5px;color:#4A6080;margin-bottom:3px;text-transform:uppercase;letter-spacing:.06em">Rental</div>
-                <div style="font-weight:800;color:#FF8C00;font-size:18px">10%</div>
-              </div>
-              <div style="text-align:center;padding:10px 16px;background:rgba(26,122,58,.1);border-radius:10px;border:1px solid rgba(26,122,58,.25)">
-                <div style="font-size:9.5px;color:#4A6080;margin-bottom:3px;text-transform:uppercase;letter-spacing:.06em">Promo activ</div>
-                <div style="font-weight:800;color:#4ADE80;font-size:18px">0%</div>
-                <div style="font-size:9px;color:#4A6080;margin-top:1px">→ 13.09.2026</div>
-              </div>
-              <div style="text-align:center;padding:10px 16px;background:#192433;border-radius:10px;border:1px solid #2D3F55">
-                <div style="font-size:9.5px;color:#4A6080;margin-bottom:3px;text-transform:uppercase;letter-spacing:.06em">Escrow</div>
-                <div style="font-weight:800;color:#7AB3E0;font-size:18px">24–48h</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══ PANEL: COMENZI ══ -->
-    <div id="panel-comenzi" style="display:none">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px">
-        <div>
-          <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:3px">Comenzi primite</h2>
-          <p style="font-size:12px;color:#4A6080">Toate comenzile alocate de Darrin AI · Confirmare livrare</p>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <div style="display:flex;gap:4px;padding:4px;background:#192433;border-radius:10px;border:1px solid #2D3F55">
-            <button class="f-tab active" onclick="filterOrders('toate',this)">Toate</button>
-            <button class="f-tab" onclick="filterOrders('noi',this)">Noi</button>
-            <button class="f-tab" onclick="filterOrders('procesare',this)">În procesare</button>
-            <button class="f-tab" onclick="filterOrders('livrate',this)">Livrate</button>
-          </div>
-          <button class="btn-s" style="font-size:11.5px">Export CSV</button>
-        </div>
-      </div>
-      <div class="f-card">
-        <div>
-          <table class="f-table" id="full-orders-table"></table>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══ PANEL: STOCURI ══ -->
-    <div id="panel-stocuri" style="display:none">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px">
-        <div>
-          <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:3px" id="stoc-page-title">Stocuri live</h2>
-          <p style="font-size:12px;color:#4A6080">Gestiune inventar · Alerte stoc critic · Actualizare rapidă</p>
-        </div>
-        <div style="display:flex;gap:8px">
-          <input type="text" placeholder="Caută produs..." style="background:#FFFFFF;border:1px solid #D5DFE8;border-radius:9px;padding:8px 14px;color:#1A2332;font-size:12.5px;font-family:inherit;outline:none;width:220px" oninput="filterProducts(this.value)"/>
-          <button class="btn-p" onclick="showPanel('import')">+ Import stoc</button>
-        </div>
-      </div>
-      <div class="f-card">
-        <table class="f-table" id="stoc-table"></table>
-      </div>
-    </div>
-
-    <!-- ══ PANEL: CALENDAR ══ -->
-    <div id="panel-calendar" style="display:none">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px">
-        <div>
-          <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:3px" id="cal-page-title">Calendar disponibilitate</h2>
-          <p style="font-size:12px;color:#4A6080">Setează disponibilitatea · Darrin AI alocă comenzi automat</p>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button onclick="calPrev()" class="btn-s" style="padding:8px 12px">‹</button>
-          <div style="font-weight:700;color:#fff;font-size:14px;min-width:140px;text-align:center" id="cal-month-label">Iunie 2026</div>
-          <button onclick="calNext()" class="btn-s" style="padding:8px 12px">›</button>
-          <button class="btn-p" onclick="saveAvail()">Salvează disponibilitate</button>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr auto;gap:18px;align-items:start" id="cal-main-layout">
-        <div class="f-card">
-          <div class="f-card-hdr">
-            <div style="font-weight:700;color:#1A2332;font-size:13px" id="cal-card-title">Excavator JCB 8025 · 2.5T</div>
-            <div style="display:flex;gap:8px">
-              <span class="chip ch-g">3 buc disponibile</span>
-              <select id="cal-equipment-select" style="background:#192433;border:1px solid #2D3F55;border-radius:8px;padding:5px 10px;color:#E2E8F0;font-size:11.5px;font-family:inherit" onchange="changeEquipment(this.value)">
-                <option value="jcb">Excavator JCB 8025</option>
-                <option value="cioc">Ciocan demolator</option>
-                <option value="lift">Lift telescopic</option>
-                <option value="beton">Betonieră 250L</option>
-              </select>
-            </div>
-          </div>
-          <div class="f-card-body">
-            <div class="cal-grid" style="margin-bottom:8px">
-              <div style="text-align:center;font-size:10px;font-weight:700;color:#4A6080;padding:3px">Lu</div>
-              <div style="text-align:center;font-size:10px;font-weight:700;color:#4A6080;padding:3px">Ma</div>
-              <div style="text-align:center;font-size:10px;font-weight:700;color:#4A6080;padding:3px">Mi</div>
-              <div style="text-align:center;font-size:10px;font-weight:700;color:#4A6080;padding:3px">Jo</div>
-              <div style="text-align:center;font-size:10px;font-weight:700;color:#4A6080;padding:3px">Vi</div>
-              <div style="text-align:center;font-size:10px;font-weight:700;color:#C0392B;padding:3px">Sâ</div>
-              <div style="text-align:center;font-size:10px;font-weight:700;color:#C0392B;padding:3px">Du</div>
-            </div>
-            <div class="cal-grid" id="cal-full-grid"></div>
-            <div style="display:flex;gap:16px;margin-top:14px;flex-wrap:wrap">
-              <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:#4A6080;cursor:pointer" onclick="setCalMode('av')">
-                <div style="width:16px;height:16px;border-radius:4px;background:#D4EDDA;border:1px solid rgba(26,122,58,.25)"></div>Disponibil — click pentru a seta
-              </div>
-              <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:#4A6080;cursor:pointer" onclick="setCalMode('res')">
-                <div style="width:16px;height:16px;border-radius:4px;background:rgba(255,140,0,.15);border:1px solid rgba(255,140,0,.3)"></div>Rezervat (Darrin AI)
-              </div>
-              <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:#4A6080;cursor:pointer" onclick="setCalMode('na')">
-                <div style="width:16px;height:16px;border-radius:4px;background:#192433;border:1px solid #2D3F55"></div>Indisponibil — click pentru a seta
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Calendar sidebar -->
-        <div style="display:flex;flex-direction:column;gap:14px;min-width:220px">
-          <div class="f-card">
-            <div class="f-card-hdr"><div style="font-weight:700;color:#fff;font-size:12.5px">Rezervări luna aceasta</div></div>
-            <div class="f-card-body" id="cal-reservations"></div>
-          </div>
-          <div class="f-card">
-            <div class="f-card-hdr"><div style="font-weight:700;color:#fff;font-size:12.5px">Tarife active</div></div>
-            <div class="f-card-body">
-              <div style="display:flex;flex-direction:column;gap:8px;font-size:12.5px">
-                <div style="display:flex;justify-content:space-between"><span style="color:#4A6080">Per zi</span><span style="font-weight:700;color:#FF8C00">800 Lei</span></div>
-                <div style="display:flex;justify-content:space-between"><span style="color:#4A6080">Per săptămână</span><span style="font-weight:700;color:#FF8C00">4.500 Lei</span></div>
-                <div style="display:flex;justify-content:space-between"><span style="color:#4A6080">Per lună</span><span style="font-weight:700;color:#FF8C00">16.000 Lei</span></div>
-                <div style="height:1px;background:#2D3F55"></div>
-                <div style="display:flex;justify-content:space-between"><span style="color:#4A6080">Cu operator</span><span style="font-weight:700;color:#7AB3E0">+350 Lei/zi</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══ PANEL: VENITURI ══ -->
-    <div id="panel-venituri" style="display:none">
-      <div style="margin-bottom:18px">
-        <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:3px">Venituri & Comisioane</h2>
-        <p style="font-size:12px;color:#4A6080">Detaliu financiar · Escrow · Plăți nete</p>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
-        <div class="kpi k-or"><div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">Venituri brute luna</div><div style="font-size:26px;font-weight:800;color:#FF8C00">19.840</div><div style="font-size:10.5px;color:#4A6080;margin-top:3px">Lei</div></div>
-        <div class="kpi k-gr"><div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">Comision platformă</div><div style="font-size:26px;font-weight:800;color:#4ADE80">0 Lei</div><div style="font-size:10.5px;color:#4A6080;margin-top:3px">Promo 0% activ</div></div>
-        <div class="kpi k-te"><div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">Venituri nete</div><div style="font-size:26px;font-weight:800;color:#0E9E99">18.440</div><div style="font-size:10.5px;color:#4A6080;margin-top:3px">Lei · în cont</div></div>
-        <div class="kpi k-bl"><div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">În Escrow acum</div><div style="font-size:26px;font-weight:800;color:#7AB3E0">4.210</div><div style="font-size:10.5px;color:#4A6080;margin-top:3px">Lei · 3 comenzi</div></div>
-      </div>
-      <div style="display:grid;grid-template-columns:2fr 1fr;gap:18px">
-        <div class="f-card">
-          <div class="f-card-hdr"><div style="font-weight:700;color:#1A2332;font-size:13px">Istoricul plăților</div></div>
-          <table class="f-table">
-            <thead><tr><th>Comandă</th><th>Produs</th><th>Brut</th><th>Comision</th><th>Net</th><th>Data</th><th>Status</th></tr></thead>
-            <tbody>
-              <tr><td style="font-family:monospace;color:#7AB3E0">#CMD-4821</td><td>Calorifer Purmo ×4</td><td style="color:#E2E8F0">1.240 Lei</td><td><span style="color:#4ADE80;font-weight:700">0%</span></td><td style="font-weight:700;color:#FF8C00">1.240 Lei</td><td style="color:#4A6080">16.06.2026</td><td><span class="chip ch-g">Virat</span></td></tr>
-              <tr><td style="font-family:monospace;color:#7AB3E0">#CMD-4819</td><td>Excavator JCB 3 zile</td><td style="color:#E2E8F0">2.400 Lei</td><td><span style="color:#4ADE80;font-weight:700">0%</span></td><td style="font-weight:700;color:#FF8C00">2.400 Lei</td><td style="color:#4A6080">15.06.2026</td><td><span class="chip ch-g">Virat</span></td></tr>
-              <tr><td style="font-family:monospace;color:#7AB3E0">#CMD-4815</td><td>Parchet stratificat ×80m²</td><td style="color:#E2E8F0">3.600 Lei</td><td><span style="color:#4ADE80;font-weight:700">0%</span></td><td style="font-weight:700;color:#FF8C00">3.600 Lei</td><td style="color:#4A6080">14.06.2026</td><td><span class="chip ch-t">Escrow</span></td></tr>
-              <tr><td style="font-family:monospace;color:#7AB3E0">#CMD-4808</td><td>Ciocan demolator 2 zile</td><td style="color:#E2E8F0">610 Lei</td><td><span style="color:#4ADE80;font-weight:700">0%</span></td><td style="font-weight:700;color:#FF8C00">610 Lei</td><td style="color:#4A6080">13.06.2026</td><td><span class="chip ch-g">Virat</span></td></tr>
-              <tr><td style="font-family:monospace;color:#7AB3E0">#CMD-4802</td><td>Vopsea Caparol ×12</td><td style="color:#E2E8F0">780 Lei</td><td><span style="color:#4ADE80;font-weight:700">0%</span></td><td style="font-weight:700;color:#FF8C00">780 Lei</td><td style="color:#4A6080">12.06.2026</td><td><span class="chip ch-t">Escrow</span></td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="f-card">
-          <div class="f-card-hdr"><div style="font-weight:700;color:#1A2332;font-size:13px">Simulator comision</div></div>
-          <div class="f-card-body">
-            <div style="display:flex;flex-direction:column;gap:12px">
-              <div><label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">Valoare comandă (Lei)</label><input type="number" id="sim-val" value="1000" oninput="calcSim()" style="width:100%;background:#FFFFFF;border:1px solid #D5DFE8;border-radius:9px;padding:9px 12px;color:#1A2332;font-size:14px;font-family:inherit;outline:none"/></div>
-              <div><label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">Tip</label>
-                <select id="sim-tip" oninput="calcSim()" style="width:100%;background:#FFFFFF;border:1px solid #D5DFE8;border-radius:9px;padding:9px 12px;color:#1A2332;font-size:13px;font-family:inherit;outline:none">
-                  <option value="mat">Material (7.5%)</option>
-                  <option value="ren">Rental (10%)</option>
-                </select>
-              </div>
-              <div style="background:#F0F4F8;border-radius:12px;padding:14px;border:1px solid #D5DFE8">
-                <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:8px"><span style="color:#4A6080">Brut</span><span style="font-weight:700;color:#E2E8F0" id="sim-brut">1.000 Lei</span></div>
-                <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:8px"><span style="color:#4A6080">Comision platformă</span><span style="font-weight:700;color:#4ADE80" id="sim-com">0 Lei (promo)</span></div>
-                <div style="height:1px;background:#2D3F55;margin-bottom:8px"></div>
-                <div style="display:flex;justify-content:space-between;font-size:14px"><span style="color:#fff;font-weight:700">Net furnizor</span><span style="font-weight:800;color:#FF8C00;font-size:18px" id="sim-net">1.000 Lei</span></div>
-              </div>
-              <div style="font-size:10.5px;color:#4A6080;background:#192433;border-radius:9px;padding:10px 12px;border:1px solid #2D3F55">
-                ⚠️ La finalul perioadei promo (13.09.2026) comisionul va fi <strong style="color:#FF8C00">7.5% materiale / 10% rental</strong>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══ PANEL: PLĂȚI ══ -->
-    <div id="panel-plati" style="display:none;text-align:center;padding:60px 20px">
-      <div style="font-size:48px;margin-bottom:14px">🔒</div>
-      <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:8px">Plăți Escrow</div>
-      <p style="color:#4A6080;margin-bottom:20px">4.210 Lei în Escrow · Eliberare 24–48h după confirmarea clientului</p>
-      <button class="btn-p" onclick="showPanel('venituri')">→ Vezi istoricul plăților</button>
-    </div>
-
-    <!-- ══ PANEL: PRODUSE ══ -->
-    <div id="panel-produse" style="display:none">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px">
-        <div>
-          <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:3px" id="prod-page-title">Produse active în marketplace</h2>
-          <p style="font-size:12px;color:#4A6080">Catalog My Darrin · Sincronizat cu ACA Business Group</p>
-        </div>
-        <div style="display:flex;gap:8px">
-          <button class="btn-s" onclick="showPanel('import')">⬆ Import CSV</button>
-          <button class="btn-p">+ Adaugă produs</button>
-        </div>
-      </div>
-      <div class="f-card">
-        <table class="f-table" id="produse-table"></table>
-      </div>
-    </div>
-
-    <!-- ══ PANEL: IMPORT ══ -->
-    <div id="panel-import" style="display:none">
-      <div style="margin-bottom:18px">
-        <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:3px">Import CSV / API</h2>
-        <p style="font-size:12px;color:#4A6080">Sincronizare catalog · Actualizare stocuri · Integrare magazin online</p>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
-        <!-- CSV -->
-        <div class="f-card">
-          <div class="f-card-hdr"><div style="font-weight:700;color:#1A2332;font-size:13px">📊 Import CSV / Excel</div></div>
-          <div class="f-card-body">
-            <div style="background:#0F1923;border-radius:12px;padding:14px;margin-bottom:14px;font-family:monospace;font-size:11.5px;line-height:2;color:#E2E8F0">
-              <div style="color:#4A6080;margin-bottom:6px">// Schema CSV My Darrin</div>
-              <div><span style="color:#0E9E99">denumire_produs</span> <span style="color:#4A6080">· text · obligatoriu</span></div>
-              <div><span style="color:#0E9E99">categorie</span> <span style="color:#4A6080">· text</span></div>
-              <div><span style="color:#FF8C00">pret_fara_tva</span> <span style="color:#4A6080">· număr · obligatoriu</span></div>
-              <div><span style="color:#FF8C00">moneda</span> <span style="color:#4A6080">· RON/EUR/MDL</span></div>
-              <div><span style="color:#7AB3E0">stoc_disponibil</span> <span style="color:#4A6080">· număr</span></div>
-              <div><span style="color:#7AB3E0">lead_time_zile</span> <span style="color:#4A6080">· număr</span></div>
-              <div><span style="color:#A78BFA">tip</span> <span style="color:#4A6080">· material/rental</span></div>
-            </div>
-            <div class="upload-dz" onclick="this.querySelector('input').click()">
-              <input type="file" accept=".csv,.xlsx" style="display:none" onchange="handleImport(this)"/>
-              <div style="font-size:28px;margin-bottom:8px">📎</div>
-              <div style="font-size:13px;font-weight:600;color:#8BA3C0">Drag & drop sau click</div>
-              <div style="font-size:11px;color:#4A6080;margin-top:4px">.csv · .xlsx · Max 10MB · 10.000 produse</div>
-            </div>
-            <div style="display:flex;gap:10px;margin-top:12px">
-              <button class="btn-s" style="flex:1;justify-content:center" onclick="dlTemplate()">⬇ Template CSV</button>
-              <button class="btn-p" style="flex:1;justify-content:center" onclick="showToast('⬆ Procesăm CSV-ul... Notificare în 30 min.','ok')">⬆ Importă</button>
-            </div>
-          </div>
-        </div>
-        <!-- API / Integrări -->
-        <div class="f-card">
-          <div class="f-card-hdr"><div style="font-weight:700;color:#1A2332;font-size:13px">🔗 Integrare magazin online</div></div>
-          <div class="f-card-body">
-            <div style="display:flex;flex-direction:column;gap:10px">
-              <div style="padding:12px 14px;background:#192433;border-radius:11px;border:1px solid #2D3F55;cursor:pointer;transition:all .18s" onclick="selectInteg(this,'WooCommerce')" onmouseover="this.style.borderColor='#FF8C00'" onmouseout="this.style.borderColor='#2D3F55'">
-                <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-                  <span style="font-size:20px">🛒</span>
-                  <div style="font-weight:700;color:#1A2332;font-size:13px">WooCommerce</div>
-                  <span class="chip ch-g" style="margin-left:auto;font-size:9px">✓ Verificat</span>
-                </div>
-                <div style="font-size:11px;color:#4A6080">Plugin My Darrin · Sync timp real · Stocuri automate</div>
-              </div>
-              <div style="padding:12px 14px;background:#192433;border-radius:11px;border:1px solid #2D3F55;cursor:pointer;transition:all .18s" onclick="selectInteg(this,'Shopify')" onmouseover="this.style.borderColor='#FF8C00'" onmouseout="this.style.borderColor='#2D3F55'">
-                <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-                  <span style="font-size:20px">🏪</span>
-                  <div style="font-weight:700;color:#1A2332;font-size:13px">Shopify</div>
-                  <span class="chip ch-g" style="margin-left:auto;font-size:9px">✓ Verificat</span>
-                </div>
-                <div style="font-size:11px;color:#4A6080">App Store · Webhooks automate · Comenzi externe</div>
-              </div>
-              <div style="padding:12px 14px;background:#192433;border-radius:11px;border:1px solid #2D3F55;cursor:pointer;transition:all .18s" onclick="selectInteg(this,'REST API')" onmouseover="this.style.borderColor='#0E9E99'" onmouseout="this.style.borderColor='#2D3F55'">
-                <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-                  <span style="font-size:20px">🔗</span>
-                  <div style="font-weight:700;color:#1A2332;font-size:13px">REST API Custom / ERP</div>
-                  <span class="chip ch-t" style="margin-left:auto;font-size:9px">API Key</span>
-                </div>
-                <div style="font-size:11px;color:#4A6080">Token Bearer · Webhook comenzi · Export CSV cron</div>
-              </div>
-            </div>
-            <!-- API Key -->
-            <div style="margin-top:14px;background:#0F1923;border-radius:11px;padding:12px 14px;border:1px solid #2D3F55">
-              <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:8px">API Key furnizor</div>
-              <div style="display:flex;gap:8px">
-                <div style="flex:1;background:#192433;border:1px solid #2D3F55;border-radius:8px;padding:8px 12px;font-family:monospace;font-size:11.5px;color:#7AB3E0;letter-spacing:.04em;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">myd_furn_aca_••••••••••••••••••••••••</div>
-                <button class="btn-s" style="font-size:11px;padding:8px 12px;white-space:nowrap" onclick="showToast('API Key copiat în clipboard','ok')">📋 Copiază</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div><!-- /f-content -->
+  <div class="f-content" id="fb-content"><!-- JS --></div>
 </main>
 </div>
 
 <script>
-// ── PANELS ──
-const PANELS = ['overview','comenzi','stocuri','calendar','venituri','plati','produse','import'];
-const TITLES = {overview:'Prezentare generală',comenzi:'Comenzi primite',stocuri:'Stocuri live',
-  calendar:'Calendar disponibilitate',venituri:'Venituri & Comisioane',plati:'Plăți Escrow',
-  produse:'Produse active',import:'Import CSV / API'};
+// ════════════════════════════════════════════════════════════════
+// DASHBOARD FURNIZOR — DINAMIC (Materiale | Închirieri)
+// ════════════════════════════════════════════════════════════════
+
+const FTYPES = {
+  materiale:{
+    icon:'📦',title:'ACA Business Group',sub:'Furnizor Materiale · Bacău',
+    color:'#003366', promo:'0% materiale → 13.09.2026',
+    live:'Live · 248 produse sync',
+    nav:[
+      {section:'Principal'},
+      {id:'overview',icon:'▦',label:'Overview'},
+      {id:'comenzi',icon:'📋',label:'Comenzi primite',badge:'8',badgeCls:'ch-o'},
+      {id:'stocuri',icon:'📦',label:'Stocuri live',badge:'3⚠',badgeCls:'ch-r'},
+      {section:'Catalog'},
+      {id:'produse',icon:'🏷',label:'Produse active'},
+      {id:'import',icon:'⬆',label:'Import CSV / API'},
+      {section:'Financiar'},
+      {id:'venituri',icon:'💰',label:'Venituri & Comisioane'},
+      {id:'garantii',icon:'🛡',label:'Garanții materiale'},
+      {section:'Cont'},
+      {id:'documente',icon:'📋',label:'Documentele mele'},
+      {href:'mydarrin-superadmin.html',icon:'🔐',label:'Super Admin'},
+      {href:'mydarrin-v3.html',icon:'🏠',label:'Platformă'},
+    ],
+  },
+  inchirieri:{
+    icon:'🏗',title:'Rental Pro SRL',sub:'Furnizor Echipamente · București',
+    color:'#0E9E99', promo:'0% rental → 13.09.2026',
+    live:'Live · 12 echipamente',
+    nav:[
+      {section:'Principal'},
+      {id:'overview',icon:'▦',label:'Overview'},
+      {id:'rezervari',icon:'📅',label:'Rezervări active',badge:'5',badgeCls:'ch-t'},
+      {id:'echipamente',icon:'🏗',label:'Echipamente & Stoc'},
+      {id:'calendar',icon:'📆',label:'Calendar disponibilitate'},
+      {section:'Alerte'},
+      {id:'alerte',icon:'🔴',label:'Alerte siguranță',badge:'2',badgeCls:'ch-r'},
+      {section:'Financiar'},
+      {id:'venituri',icon:'💰',label:'Venituri & Tarife'},
+      {id:'garantii',icon:'🛡',label:'Garanții echipamente'},
+      {section:'Cont'},
+      {id:'documente',icon:'📋',label:'Documentele mele'},
+      {href:'mydarrin-v3.html',icon:'🏠',label:'Platformă'},
+    ],
+  },
+};
+
+let currentType  = 'materiale';
+let currentPanel = 'overview';
+
+function switchType(type, btn) {
+  currentType = type;
+  const t = FTYPES[type];
+  document.querySelectorAll('.type-btn').forEach(b=>{b.classList.remove('active');b.style.background='';b.style.color='';});
+  btn.classList.add('active');
+  btn.style.background=t.color; btn.style.color='#fff';
+  document.documentElement.style.setProperty('--accent',t.color);
+  document.getElementById('fb-icon').textContent=t.icon;
+  document.getElementById('fb-icon').style.background=t.color;
+  document.getElementById('fb-title').textContent=t.title;
+  document.getElementById('fb-sub').textContent=t.sub;
+  document.getElementById('fb-promo').textContent=t.promo;
+  document.getElementById('fb-live').textContent=t.live;
+  renderNav(type);
+  showPanel('overview');
+}
+
+function renderNav(type){
+  const nav=document.getElementById('fb-nav'); if(!nav)return;
+  nav.innerHTML=FTYPES[type].nav.map(item=>{
+    if(item.section) return `<div class="f-nav-section">${item.section}</div>`;
+    if(item.href) return `<a class="f-nav-item" href="${item.href}" style="opacity:.7">${item.icon} ${item.label}</a>`;
+    const badge=item.badge?`<span class="chip ${item.badgeCls}" style="margin-left:auto;font-size:9px">${item.badge}</span>`:'';
+    return `<button class="f-nav-item${item.id===currentPanel?' active':''}" onclick="showPanel('${item.id}')">${item.icon} ${item.label}${badge}</button>`;
+  }).join('');
+}
 
 function showPanel(id){
-  PANELS.forEach(p=>{
-    const el=document.getElementById('panel-'+p);
-    if(el) el.style.display=p===id?'block':'none';
-  });
-  document.getElementById('f-page-title').textContent=TITLES[id]||id;
-  document.querySelectorAll('.f-nav-item').forEach(el=>{
-    el.classList.remove('active');
-    if(el.getAttribute('onclick')==="showPanel('"+id+"')") el.classList.add('active');
-  });
-  if(id==='calendar') renderFullCal();
+  currentPanel=id;
+  const titles={overview:'Overview',comenzi:'Comenzi primite',stocuri:'Stocuri live',produse:'Produse active',import:'Import CSV / API',venituri:'Venituri & Comisioane',garantii:'Garanții',documente:'Documentele mele',rezervari:'Rezervări active',echipamente:'Echipamente & Stoc',calendar:'Calendar disponibilitate',alerte:'Alerte siguranță'};
+  document.getElementById('fb-page-title').textContent=titles[id]||id;
+  renderNav(currentType);
+  const c=document.getElementById('fb-content'); if(!c)return;
+  const panels={
+    overview:    ()=>currentType==='materiale'?renderOverviewMat():renderOverviewInch(),
+    comenzi:     renderComenzi,
+    stocuri:     renderStocuri,
+    produse:     renderProduse,
+    import:      renderImport,
+    venituri:    renderVenituri,
+    garantii:    ()=>currentType==='materiale'?renderGarantiiMat():renderGarantiiInch(),
+    documente:   renderDocumente,
+    rezervari:   renderRezervari,
+    echipamente: renderEchipamente,
+    calendar:    renderCalendar,
+    alerte:      renderAlerte,
+  };
+  c.innerHTML = (panels[id]||(()=>'<div class="f-card"><div class="f-card-body">Coming soon</div></div>'))();
 }
 
-// ── TYPE SWITCHER ──
-let currentType = 'materiale';
-function switchType(type, btn){
-  currentType = type;
-  document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  const isMat = type==='materiale';
-  // Update labels
-  setEl('nav-stoc-label', isMat?'Stocuri live':'Disponibilitate');
-  setEl('nav-cal-label', isMat?'Calendar livrare':'Calendar disponibilitate');
-  setEl('nav-prod-label', isMat?'Produse active':'Echipamente active');
-  setEl('kpi-venituri', isMat?'18.4K':'6.2K');
-  setEl('kpi-produse', isMat?'248':'12');
-  setEl('kpi-produse-sub', isMat?'3 cu stoc critic':'2 rezervate azi');
-  setEl('kpi4-label', isMat?'Rating furnizor':'Utilizare echipamente');
-  setEl('kpi4-val', isMat?'4.93':'87%');
-  setEl('kpi4-sub', isMat?'⭐ din 312 comenzi':'din capacitate lunară');
-  setEl('stock-panel-title', isMat?'Stocuri critice':'Echipamente critice');
-  setEl('stoc-page-title', isMat?'Stocuri live':'Echipamente disponibilitate');
-  setEl('cal-page-title', isMat?'Calendar livrare':'Calendar disponibilitate echipamente');
-  setEl('cal-card-title', isMat?'Produse cu livrare programată':'Excavator JCB 8025 · 2.5T');
-  setEl('prod-page-title', isMat?'Produse active în marketplace':'Echipamente active în marketplace');
-  setEl('badge-produse', isMat?'248':'12');
-  setEl('kpi-comenzi', isMat?'12':'7');
-  setEl('badge-comenzi', isMat?'12':'7');
-  setEl('topbar-type', isMat?'Materiale':'Rental');
-  renderStocTable();
-  renderProducts();
-  renderCriticalStock();
-  renderOverviewOrders();
-}
+// ═══════════════════════════════════════════════════════════════
+// MATERIALE PANELS
+// ═══════════════════════════════════════════════════════════════
 
-// ── DATA ──
-const MAT_STOC = [
-  {name:'Calorifer Purmo C11 600/10',cat:'Termice',stoc:48,min:10,pret:'310 RON/buc',status:'ok'},
-  {name:'Parchet stratificat 8mm AC3',cat:'Finisaje',stoc:240,min:50,pret:'45 RON/m²',status:'ok'},
-  {name:'Vopsea lavabilă Caparol 15L',cat:'Finisaje',stoc:3,min:10,pret:'65 RON/găl.',status:'critic'},
-  {name:'Țeavă PP-R 20mm',cat:'Sanitare',stoc:12,min:20,pret:'8 RON/ml',status:'atentie'},
-  {name:'Cablu NYY 3×2.5mm²',cat:'Electrice',stoc:85,min:30,pret:'12 RON/ml',status:'ok'},
-  {name:'Gresie Rectificată 60×60',cat:'Finisaje',stoc:7,min:15,pret:'62 RON/m²',status:'atentie'},
-  {name:'Ciment CEM II 42.5R',cat:'Construcții',stoc:150,min:40,pret:'28 RON/sac',status:'ok'},
-  {name:'OSB 18mm 122×244',cat:'Construcții',stoc:44,min:10,pret:'86 RON/pl.',status:'ok'},
-];
-const REN_STOC = [
-  {name:'Excavator JCB 8025 · 2.5T',cat:'Utilaje grele',stoc:3,min:1,pret:'800 Lei/zi',status:'ok'},
-  {name:'Ciocan demolator Hilti TE',cat:'Scule electrice',stoc:5,min:2,pret:'150 Lei/zi',status:'ok'},
-  {name:'Lift telescopic 12m',cat:'Acces',stoc:1,min:1,pret:'500 Lei/zi',status:'atentie'},
-  {name:'Betonieră 250L',cat:'Construcții',stoc:4,min:1,pret:'120 Lei/zi',status:'ok'},
-  {name:'Vibrator beton 45mm',cat:'Construcții',stoc:0,min:1,pret:'80 Lei/zi',status:'critic'},
-  {name:'Generator 5.5kVA',cat:'Electrice',stoc:2,min:1,pret:'180 Lei/zi',status:'ok'},
-];
-
-const ORDERS_DATA = [
-  {id:'#CMD-4821',prod:'Calorifer Purmo C11 ×4',client:'Maria P. · Iași',val:'1.240 Lei',data:'16.06',status:'noi'},
-  {id:'#CMD-4820',prod:'Cablu NYY 3×2.5 · 50ml',client:'Andrei M. · Bcău',val:'600 Lei',data:'16.06',status:'procesare'},
-  {id:'#CMD-4819',prod:'Excavator JCB · 3 zile',client:'SC Construct SRL',val:'2.400 Lei',data:'15.06',status:'livrate'},
-  {id:'#CMD-4818',prod:'Parchet 8mm · 40m²',client:'Elena I. · Buc.',val:'1.800 Lei',data:'15.06',status:'procesare'},
-  {id:'#CMD-4817',prod:'Betonieră 250L · 2 zile',client:'Ion V. · Bac.',val:'240 Lei',data:'14.06',status:'livrate'},
-  {id:'#CMD-4816',prod:'Gresie 60×60 · 35m²',client:'Mirela T. · Pne.',val:'2.170 Lei',data:'14.06',status:'noi'},
-  {id:'#CMD-4815',prod:'Parchet stratificat 80m²',client:'George D. · Cluj',val:'3.600 Lei',data:'14.06',status:'livrate'},
-];
-
-// ── RENDER FUNCTIONS ──
-function renderOverviewOrders(){
-  const t=document.getElementById('overview-orders-table');
-  if(!t) return;
-  const statusCls={noi:'ch-o',procesare:'ch-b',livrate:'ch-g'};
-  const statusLbl={noi:'Nouă',procesare:'Procesare',livrate:'Livrată'};
-  const data = ORDERS_DATA.slice(0,5);
-  t.innerHTML=`<thead><tr><th>Comandă</th><th>Produs</th><th>Valoare</th><th>Status</th></tr></thead><tbody>${
-    data.map(o=>`<tr>
-      <td style="font-family:monospace;color:#7AB3E0;font-size:11.5px">${o.id}</td>
-      <td style="color:#1A2332;font-size:12px">${o.prod}</td>
-      <td style="font-weight:700;color:#FF8C00">${o.val}</td>
-      <td><span class="chip ${statusCls[o.status]}">${statusLbl[o.status]}</span></td>
-    </tr>`).join('')
-  }</tbody>`;
-}
-
-function renderFullOrders(filter='toate'){
-  const t=document.getElementById('full-orders-table');
-  if(!t) return;
-  const statusCls={noi:'ch-o',procesare:'ch-b',livrate:'ch-g'};
-  const statusLbl={noi:'Nouă',procesare:'În procesare',livrate:'Livrată'};
-  const data = filter==='toate'?ORDERS_DATA:ORDERS_DATA.filter(o=>o.status===filter);
-  t.innerHTML=`<thead><tr><th>Comandă</th><th>Produs / serviciu</th><th>Client</th><th>Valoare</th><th>Data</th><th>Status</th><th>Acțiune</th></tr></thead><tbody>${
-    data.map(o=>`<tr>
-      <td style="font-family:monospace;color:#7AB3E0">${o.id}</td>
-      <td style="color:#CBD5E0">${o.prod}</td>
-      <td style="color:#8BA3C0;font-size:11.5px">${o.client}</td>
-      <td style="font-weight:700;color:#FF8C00">${o.val}</td>
-      <td style="color:#4A6080">${o.data}</td>
-      <td><span class="chip ${statusCls[o.status]}">${statusLbl[o.status]}</span></td>
-      <td><div style="display:flex;gap:6px">
-        <button class="btn-s" style="font-size:10.5px;padding:4px 10px" onclick="showToast('Comandă ${o.id} confirmată','ok')">Confirmă</button>
-        ${o.status==='livrate'?'<button class="btn-s" style="font-size:10.5px;padding:4px 10px">Factură</button>':''}
-      </div></td>
-    </tr>`).join('')
-  }</tbody>`;
-}
-
-function filterOrders(f,btn){
-  document.querySelectorAll('#panel-comenzi .f-tab').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  renderFullOrders(f);
-}
-
-function renderStocTable(){
-  const t=document.getElementById('stoc-table');
-  if(!t) return;
-  const data = currentType==='materiale'?MAT_STOC:REN_STOC;
-  const statusCls={ok:'ch-g',atentie:'ch-o',critic:'ch-r'};
-  const statusLbl={ok:'OK',atentie:'Atenție',critic:'Critic'};
-  t.innerHTML=`<thead><tr><th>Produs / echipament</th><th>Categorie</th><th>${currentType==='materiale'?'Stoc':'Buc disponibile'}</th><th>Minim</th><th>Preț</th><th>Status</th><th>Acțiune</th></tr></thead><tbody>${
-    data.map(p=>{
-      const pct=Math.min(100,Math.round(p.stoc/(p.min*3)*100));
-      const col=p.status==='ok'?'#4ADE80':p.status==='atentie'?'#FF8C00':'#F87171';
-      return `<tr>
-        <td><div style="font-weight:600;color:#E2E8F0">${p.name}</div>
-        <div class="stock-bar"><div class="stock-fill" style="width:${pct}%;background:${col}"></div></div></td>
-        <td style="color:#4A6080">${p.cat}</td>
-        <td style="font-weight:700;color:${col};font-size:14px">${p.stoc}</td>
-        <td style="color:#4A6080">${p.min}</td>
-        <td style="color:#8BA3C0">${p.pret}</td>
-        <td><span class="chip ${statusCls[p.status]}">${statusLbl[p.status]}</span></td>
-        <td><div style="display:flex;gap:6px">
-          <button class="btn-s" style="font-size:10.5px;padding:4px 10px" onclick="showToast('Stoc actualizat: ${p.name}','ok')">Actualizează</button>
-        </div></td>
-      </tr>`;}).join('')
-  }</tbody>`;
-}
-
-function filterProducts(q){
-  const data=(currentType==='materiale'?MAT_STOC:REN_STOC).filter(p=>p.name.toLowerCase().includes(q.toLowerCase()));
-  const t=document.getElementById('stoc-table');if(!t)return;
-  // Re-render with filter
-  renderStocTable();
-}
-
-function renderCriticalStock(){
-  const c=document.getElementById('stock-critical-list');if(!c)return;
-  const data=currentType==='materiale'?MAT_STOC:REN_STOC;
-  const criticals=data.filter(p=>p.status!=='ok');
-  c.innerHTML=criticals.length?criticals.map(p=>`
-    <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(45,63,85,.3)">
-      <div style="width:8px;height:8px;border-radius:50%;background:${p.status==='critic'?'#F87171':'#FF8C00'};flex-shrink:0"></div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:600;color:#E2E8F0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
-        <div style="font-size:10.5px;color:#4A6080">Stoc: ${p.stoc} · Min: ${p.min}</div>
+function renderOverviewMat(){
+  return `
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
+    ${kpi('Comenzi azi','8','↑ +3 vs ieri','#003366','📦')}
+    ${kpi('GMV luna','19.840 Lei','248 produse','#003366','💰')}
+    ${kpi('Stoc critic','3','produse sub minim','#C0392B','⚠')}
+    ${kpi('Rating','4.93 ⭐','312 livrări','#0E9E99','⭐')}
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+    <div class="f-card">
+      <div class="f-card-hdr">
+        <div style="display:flex;align-items:center;gap:7px"><span class="pdot"></span><strong>Comenzi LIVE · Marketplace</strong></div>
+        <button class="btn-p" onclick="showPanel('comenzi')" style="font-size:11px;padding:6px 12px">Vezi toate →</button>
       </div>
-      <span class="chip ${p.status==='critic'?'ch-r':'ch-o'}" style="font-size:9.5px">${p.status==='critic'?'Critic':'Atenție'}</span>
-    </div>`).join(''):'<div style="color:#4A6080;font-size:12.5px;text-align:center;padding:10px">✓ Toate stocurile OK</div>';
-}
-
-function renderProducts(){
-  const t=document.getElementById('produse-table');if(!t)return;
-  const data=currentType==='materiale'?MAT_STOC:REN_STOC;
-  const statusCls={ok:'ch-g',atentie:'ch-o',critic:'ch-r'};
-  t.innerHTML=`<thead><tr><th>Produs</th><th>Categorie</th><th>Preț</th><th>Stoc</th><th>Status</th><th>Vizibilitate</th><th>Acțiuni</th></tr></thead><tbody>${
-    data.map(p=>`<tr>
-      <td style="font-weight:600;color:#E2E8F0">${p.name}</td>
-      <td style="color:#4A6080">${p.cat}</td>
-      <td style="color:#FF8C00;font-weight:700">${p.pret}</td>
-      <td style="color:${p.status==='ok'?'#4ADE80':p.status==='atentie'?'#FF8C00':'#F87171'};font-weight:700">${p.stoc}</td>
-      <td><span class="chip ${statusCls[p.status]}">${p.status==='ok'?'OK':p.status==='atentie'?'Atenție':'Critic'}</span></td>
-      <td><div class="f-toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></td>
-      <td><div style="display:flex;gap:6px">
-        <button class="btn-s" style="font-size:10.5px;padding:4px 10px">Editează</button>
-        <button class="btn-s" style="font-size:10.5px;padding:4px 10px;color:#F87171;border-color:rgba(192,57,43,.3)">Retrage</button>
-      </div></td>
-    </tr>`).join('')
-  }</tbody>`;
-}
-
-// ── CALENDAR ──
-let calYear=2026,calMonth=5,calMode='av';
-let dayStates={};
-const MONTHS=['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie'];
-
-function initCalStates(){
-  for(let d=1;d<=30;d++){
-    const k=calYear+'_'+calMonth+'_'+d;
-    const dow=(new Date(calYear,calMonth,d).getDay()+6)%7;
-    if(!dayStates[k]) dayStates[k]=dow<5?'av':'na';
-  }
-  ['4','5','11','12','18','19','25','26'].forEach(d=>{dayStates[calYear+'_'+calMonth+'_'+d]='na';});
-  ['10','11','17','18'].forEach(d=>{dayStates[calYear+'_'+calMonth+'_'+d]='res';});
-}
-
-function renderCalGrid(gridId,mini){
-  const grid=document.getElementById(gridId);if(!grid)return;
-  grid.innerHTML='';
-  const firstDay=(new Date(calYear,calMonth,1).getDay()+6)%7;
-  const days=new Date(calYear,calMonth+1,0).getDate();
-  const today=new Date().getDate();
-  for(let i=0;i<firstDay;i++){const e=document.createElement('div');e.style.minHeight='32px';grid.appendChild(e);}
-  for(let d=1;d<=days;d++){
-    const k=calYear+'_'+calMonth+'_'+d;
-    const st=dayStates[k]||'av';
-    const div=document.createElement('div');
-    div.className='cal-day '+st+(d===today?' today':'');
-    div.textContent=d;
-    if(!mini) div.onclick=()=>{dayStates[k]=calMode;div.className='cal-day '+calMode+(d===today?' today':'');};
-    grid.appendChild(div);
-    if(mini&&d>=16) break;
-  }
-}
-
-function renderFullCal(){
-  initCalStates();
-  setEl('cal-month-label',MONTHS[calMonth]+' '+calYear);
-  renderCalGrid('cal-full-grid',false);
-  renderCalGrid('cal-mini-grid',true);
-  renderReservations();
-}
-function renderMiniCal(){
-  initCalStates();
-  renderCalGrid('cal-mini-grid',true);
-}
-function calPrev(){if(calMonth===0){calMonth=11;calYear--;}else calMonth--;renderFullCal();}
-function calNext(){if(calMonth===11){calMonth=0;calYear++;}else calMonth++;renderFullCal();}
-function setCalMode(m){calMode=m;}
-function saveAvail(){showToast('✓ Disponibilitate salvată · Darrin AI alocă conform calendarului','ok');}
-function changeEquipment(v){setEl('cal-card-title',{jcb:'Excavator JCB 8025 · 2.5T',cioc:'Ciocan demolator Hilti TE',lift:'Lift telescopic 12m',beton:'Betonieră 250L'}[v]||v);}
-
-function renderReservations(){
-  const c=document.getElementById('cal-reservations');if(!c)return;
-  c.innerHTML=`
-    <div style="display:flex;flex-direction:column;gap:8px;font-size:12px">
-      <div style="padding:8px 10px;background:#FFFFFF;border-radius:8px;border-left:3px solid #FF8C00">
-        <div style="font-weight:700;color:#E2E8F0">10–12 Iun</div>
-        <div style="color:#4A6080">SC Construct SRL · 3 zile</div>
-        <div style="color:#FF8C00;font-weight:700">2.400 Lei</div>
+      <div style="padding:14px">
+        ${cmdCard('#MAT-4821','Calorifer Purmo C11 ×4','Valentin · Iași','1.240 Lei','pending','Nou')}
+        ${cmdCard('#MAT-4820','Țeavă PPR 20mm · 50m','SC Construct','600 Lei','procesare','Procesare')}
+        ${cmdCard('#MAT-4819','Parchet stratificat 80m²','George D. · Cluj','3.600 Lei','expediție','Expediat')}
       </div>
-      <div style="padding:8px 10px;background:#FFFFFF;border-radius:8px;border-left:3px solid #FF8C00">
-        <div style="font-weight:700;color:#E2E8F0">17–18 Iun</div>
-        <div style="color:#4A6080">Ion Vasile · 2 zile</div>
-        <div style="color:#FF8C00;font-weight:700">1.600 Lei</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="f-card">
+        <div class="f-card-hdr"><strong>⚠ Stocuri critice</strong><span class="chip ch-r">3 alerte</span></div>
+        <div class="f-card-body" style="display:flex;flex-direction:column;gap:8px">
+          ${stocCritic('Vopsea Caparol 15L','3','10','critic')}
+          ${stocCritic('Gresie Rectificată 60×60','7','15','atentie')}
+          ${stocCritic('Țeavă PP-R 20mm','12','20','atentie')}
+        </div>
       </div>
-      <div style="padding:8px 10px;background:#FFFFFF;border-radius:8px;border-left:3px solid rgba(14,158,153,.5)">
-        <div style="font-weight:700;color:#E2E8F0">23–27 Iun</div>
-        <div style="color:#4A6080">SC Build Pro SRL</div>
-        <div style="color:#0E9E99;font-weight:700">Negociere în curs</div>
+      <div class="f-card">
+        <div class="f-card-hdr"><strong>🔗 Sync integrări</strong><span class="chip ch-g">Live</span></div>
+        <div class="f-card-body" style="font-size:12px;display:flex;flex-direction:column;gap:6px">
+          ${integRow('WooCommerce','248 produse sync','ok')}
+          ${integRow('API REST / ERP','SAGA sync · acum 15min','ok')}
+          ${integRow('Import CSV','Ultimul import: 14.06','ok')}
+          ${integRow('Shopify','Neconectat','inactive')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderComenzi(){
+  return `
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px">
+    <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Syne',sans-serif">Comenzi primite · Marketplace</h2>
+    <div style="display:flex;gap:4px;padding:4px;background:#fff;border-radius:10px;border:1px solid #D5DFE8">
+      <button class="dp-tab active" onclick="tabActive(this)">Toate</button>
+      <button class="dp-tab" onclick="tabActive(this)">Noi</button>
+      <button class="dp-tab" onclick="tabActive(this)">Procesare</button>
+      <button class="dp-tab" onclick="tabActive(this)">Expediate</button>
+      <button class="dp-tab" onclick="tabActive(this)">Livrate</button>
+    </div>
+  </div>
+  <div class="f-card">
+    <table class="f-table">
+      <thead><tr><th>Comandă</th><th>Produs</th><th>Client</th><th>Cantitate</th><th>Valoare</th><th>Data</th><th>Status</th><th>Acțiuni</th></tr></thead>
+      <tbody>
+        ${cmdRow('#MAT-4821','Calorifer Purmo C11','Valentin · Iași','4 buc','1.240 Lei','16.06','pending')}
+        ${cmdRow('#MAT-4820','Țeavă PPR 20mm','SC Construct','50 ml','600 Lei','16.06','procesare')}
+        ${cmdRow('#MAT-4819','Parchet stratificat 80m²','George D.','80 m²','3.600 Lei','15.06','expediție')}
+        ${cmdRow('#MAT-4818','Ciment CEM II 42.5','Ion V.','20 saci','560 Lei','15.06','livrat')}
+        ${cmdRow('#MAT-4817','OSB 18mm 122×244','Elena I.','12 plăci','1.032 Lei','14.06','livrat')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function renderStocuri(){
+  const prods=[
+    {n:'Calorifer Purmo C11 600/10',cat:'Termice',stoc:48,min:10,pret:'310 Lei/buc',st:'ok'},
+    {n:'Parchet stratificat 8mm AC3',cat:'Finisaje',stoc:240,min:50,pret:'45 Lei/m²',st:'ok'},
+    {n:'Vopsea lavabilă Caparol 15L',cat:'Finisaje',stoc:3,min:10,pret:'65 Lei/găl.',st:'critic'},
+    {n:'Țeavă PP-R 20mm',cat:'Sanitare',stoc:12,min:20,pret:'8 Lei/ml',st:'atentie'},
+    {n:'Cablu NYY 3×2.5mm²',cat:'Electrice',stoc:85,min:30,pret:'12 Lei/ml',st:'ok'},
+    {n:'Gresie Rectificată 60×60',cat:'Finisaje',stoc:7,min:15,pret:'62 Lei/m²',st:'atentie'},
+    {n:'Ciment CEM II 42.5R',cat:'Construcții',stoc:150,min:40,pret:'28 Lei/sac',st:'ok'},
+    {n:'OSB 18mm 122×244',cat:'Construcții',stoc:44,min:10,pret:'86 Lei/pl.',st:'ok'},
+  ];
+  return `
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px">
+    <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Syne',sans-serif">Stocuri live · 248 produse</h2>
+    <div style="display:flex;gap:8px">
+      <input type="text" placeholder="Caută produs..." style="border:1.5px solid #D5DFE8;border-radius:10px;padding:8px 14px;font-size:12.5px;font-family:inherit;outline:none;width:220px"/>
+      <button class="btn-p" onclick="showPanel('import')">+ Import stoc</button>
+    </div>
+  </div>
+  <div class="f-card">
+    <table class="f-table">
+      <thead><tr><th>Produs</th><th>Categorie</th><th>Stoc</th><th>Minim</th><th>Preț</th><th>Status</th><th>Acțiuni</th></tr></thead>
+      <tbody>
+        ${prods.map(p=>{
+          const col=p.st==='ok'?'#1A7A3A':p.st==='atentie'?'#CC7000':'#C0392B';
+          const pct=Math.min(100,Math.round(p.stoc/(p.min*3)*100));
+          const sc=p.st==='ok'?'ch-g':p.st==='atentie'?'ch-o':'ch-r';
+          const sl=p.st==='ok'?'OK':p.st==='atentie'?'Atenție':'Critic';
+          return `<tr><td><div style="font-weight:600">${p.n}</div><div class="stoc-bar"><div class="stoc-fill" style="width:${pct}%;background:${col}"></div></div></td><td style="color:#5A6B7D">${p.cat}</td><td style="font-weight:700;color:${col};font-size:15px">${p.stoc}</td><td style="color:#5A6B7D">${p.min}</td><td style="color:#8C9BAD">${p.pret}</td><td><span class="chip ${sc}">${sl}</span></td><td><button class="btn-s" style="font-size:10.5px;padding:4px 10px">Actualizează</button></td></tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function renderProduse(){
+  return `
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+    <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Syne',sans-serif">Produse active în Marketplace</h2>
+    <div style="display:flex;gap:8px"><button class="btn-s" onclick="showPanel('import')">⬆ Import CSV</button><button class="btn-p">+ Adaugă produs</button></div>
+  </div>
+  <div class="f-card">
+    <table class="f-table">
+      <thead><tr><th>Produs</th><th>Categorie</th><th>Preț</th><th>Stoc</th><th>Vizibilitate</th><th>Rating</th><th>Acțiuni</th></tr></thead>
+      <tbody>
+        ${prodRow('Calorifer Purmo C11','Termice','310 Lei/buc',48,'active','4.9')}
+        ${prodRow('Parchet stratificat 8mm','Finisaje','45 Lei/m²',240,'active','4.8')}
+        ${prodRow('Vopsea Caparol 15L','Finisaje','65 Lei','3','alert','4.7')}
+        ${prodRow('Cablu NYY 3×2.5mm²','Electrice','12 Lei/ml',85,'active','4.8')}
+        ${prodRow('Ciment CEM II 42.5R','Construcții','28 Lei/sac',150,'active','4.9')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function renderImport(){
+  return `
+  <div style="margin-bottom:18px"><h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Syne',sans-serif">Import CSV / Integrare API</h2></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+    <div class="f-card">
+      <div class="f-card-hdr"><strong>📊 Import CSV / Excel</strong></div>
+      <div class="f-card-body">
+        <div style="background:#F0F4F8;border-radius:12px;padding:14px;margin-bottom:14px;font-family:monospace;font-size:11.5px;line-height:1.9;color:#1A2332;border:1px solid #D5DFE8">
+          <div style="color:#5A6B7D;margin-bottom:5px">// Schema CSV My Darrin</div>
+          <div><span style="color:#0E9E99">denumire_produs</span> · text · obligatoriu</div>
+          <div><span style="color:#0E9E99">categorie</span> · text</div>
+          <div><span style="color:#FF8C00">pret_fara_tva</span> · număr · obligatoriu</div>
+          <div><span style="color:#FF8C00">moneda</span> · RON/EUR/MDL</div>
+          <div><span style="color:#1A5FAD">stoc_disponibil</span> · număr</div>
+          <div><span style="color:#1A5FAD">lead_time_zile</span> · număr</div>
+          <div><span style="color:#7C3AED">tip</span> · material/rental</div>
+        </div>
+        <div style="border:2px dashed #D5DFE8;border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:all .2s" onclick="this.querySelector('input').click()" onmouseover="this.style.borderColor='#003366'" onmouseout="this.style.borderColor='#D5DFE8'">
+          <input type="file" accept=".csv,.xlsx" style="display:none" onchange="handleImport(this)"/>
+          <div style="font-size:28px;margin-bottom:8px">📎</div>
+          <div style="font-size:13px;font-weight:600;color:#5A6B7D">Drag & drop sau click</div>
+          <div style="font-size:11px;color:#8C9BAD;margin-top:4px">.csv · .xlsx · Max 10MB · 10.000 produse</div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:12px">
+          <button class="btn-s" style="flex:1;justify-content:center" onclick="showToast('⬇ Template CSV descărcat')">⬇ Template CSV</button>
+          <button class="btn-p" style="flex:1;justify-content:center" onclick="showToast('⬆ CSV procesat · Notificare în 30 min')">⬆ Importă</button>
+        </div>
+      </div>
+    </div>
+    <div class="f-card">
+      <div class="f-card-hdr"><strong>🔗 Integrări active</strong></div>
+      <div class="f-card-body" style="display:flex;flex-direction:column;gap:10px">
+        ${integCard('🛒','WooCommerce','Plugin My Darrin · 248 produse sync','active')}
+        ${integCard('🏪','Shopify','Neconectat','inactive')}
+        ${integCard('🔗','API REST / ERP','SAGA/WinMentor · Token Bearer','active')}
+        ${integCard('📊','Import CSV Manual','Cron zilnic 06:00','ok')}
+        <div style="background:#F0F4F8;border-radius:11px;padding:12px 14px;margin-top:4px">
+          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:7px">API Key furnizor</div>
+          <div style="display:flex;gap:8px">
+            <div style="flex:1;background:#fff;border:1px solid #D5DFE8;border-radius:8px;padding:8px 12px;font-family:monospace;font-size:11.5px;color:#1A5FAD;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">myd_furn_aca_••••••••••••••</div>
+            <button class="btn-s" style="font-size:11px;padding:8px 12px;white-space:nowrap" onclick="showToast('✓ API Key copiat')">📋 Copiază</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+
+
+function renderDocumente(){
+  const com=currentType==='inchirieri'?'10%':'7.5%';
+  return `
+  <div style="margin-bottom:18px"><h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Syne',sans-serif">Documentele mele</h2><p style="font-size:12.5px;color:#5A6B7D">Arhivă securizată · AWS S3 / Supabase Storage · Alertă expirare automată</p></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+    <div class="f-card">
+      <div class="f-card-hdr"><strong>📋 Contracte & Legal</strong></div>
+      <div class="f-card-body" style="display:flex;flex-direction:column;gap:8px">
+        ${docItem('📄','Contract parteneriat My Darrin','Comision '+com+' · Semnat 16.06.2026','ok','Descarcă')}
+        ${docItem('🔒','Acord GDPR','Semnat 16.06.2026','ok','Descarcă')}
+        ${docItem('📑','Termeni specifici furnizor','v2026.1 · Acceptat','ok','Descarcă')}
+      </div>
+    </div>
+    <div class="f-card">
+      <div class="f-card-hdr"><strong>🪪 Autorizații & Certificate</strong><span class="chip ch-o" id="doc-alert-badge">1 expiră curând</span></div>
+      <div class="f-card-body" style="display:flex;flex-direction:column;gap:8px">
+        ${docItem('📋','Certificat înregistrare J40/...','CUI 32667674 · Valabil','ok','Descarcă')}
+        ${docItem('🏭','Certificat calitate ISO 9001','Valabil → 15.12.2026','ok','Descarcă')}
+        ${docItem('🪪','CI administrator','Valabil → 20.08.2026','warning','Reînnoire')}
+      </div>
+    </div>
+    <div class="f-card" style="grid-column:1/-1">
+      <div class="f-card-hdr"><strong>💰 Facturi & Financiar</strong><button class="btn-s" style="font-size:11px">Export XML ANAF</button></div>
+      <table class="f-table">
+        <thead><tr><th>Document</th><th>Data</th><th>Valoare</th><th>Tip</th><th>Status</th></tr></thead>
+        <tbody>
+          ${docRow2('Factură #F2026-001','16.06.2026','1.240 Lei','Factură client','platit')}
+          ${docRow2('Extras Escrow','16.06.2026','4.210 Lei','Escrow activ','escrow')}
+          ${docRow2('Factură #F2026-002','15.06.2026','3.600 Lei','Factură client','platit')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ÎNCHIRIERI PANELS
+// ═══════════════════════════════════════════════════════════════
+
+function renderOverviewInch(){
+  return `
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
+    ${kpi('Rezervări active','5','3 azi','#0E9E99','📅')}
+    ${kpi('Utilizare','87%','din capacitate','#0E9E99','📊')}
+    ${kpi('Alerte ITP/CASCO','2','expirare curând','#C0392B','🔴')}
+    ${kpi('Venituri luna','6.240 Lei','5 echipamente','#0E9E99','💰')}
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+    <div class="f-card">
+      <div class="f-card-hdr">
+        <div style="display:flex;align-items:center;gap:7px"><span class="pdot"></span><strong>Rezervări active LIVE</strong></div>
+        <button class="btn-p" onclick="showPanel('rezervari')" style="font-size:11px;padding:6px 12px;background:#0E9E99">Vezi toate →</button>
+      </div>
+      <div style="padding:14px">
+        ${rezervCard('REZ-001','Excavator JCB 8025','SC Construct SRL','10-12 Iun','2.400 Lei','active')}
+        ${rezervCard('REZ-002','Ciocan demolator Hilti','Ion V.','15-16 Iun','300 Lei','pending')}
+        ${rezervCard('REZ-003','Lift telescopic 12m','Andrei M.','17 Iun','500 Lei','pending')}
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="f-card" style="border-color:rgba(192,57,43,.3)">
+        <div class="f-card-hdr"><strong style="color:#C0392B">🔴 Alerte siguranță obligatorii</strong><span class="chip ch-r">2</span></div>
+        <div class="f-card-body" style="display:flex;flex-direction:column;gap:8px">
+          <div class="alerta"><div style="font-size:12.5px;font-weight:700;color:#C0392B">🔴 ITP EXPIRAT · Excavator JCB 8025</div><div style="font-size:11px;color:#5A6B7D;margin-top:3px">Inspecție tehnică expirată 01.06.2026 · Echipament blocat automat din dispatch</div><button class="btn-s" style="margin-top:8px;font-size:11px;color:#C0392B;border-color:rgba(192,57,43,.3)">Actualizează ITP</button></div>
+          <div class="alerta medium"><div style="font-size:12.5px;font-weight:700;color:#CC7000">⚠ CASCO expiră în 14 zile · Lift telescopic</div><div style="font-size:11px;color:#5A6B7D;margin-top:3px">Poliță CASCO expiră 30.06.2026 · Reînnoire necesară pentru dispatch</div><button class="btn-s" style="margin-top:8px;font-size:11px">Reînnoire CASCO</button></div>
+        </div>
+      </div>
+      <div class="f-card">
+        <div class="f-card-hdr"><strong>🚚 Logistică transport</strong></div>
+        <div class="f-card-body" style="font-size:12.5px;color:#5A6B7D;line-height:1.7">
+          Când un echipament este închiriat, sistemul generează automat o sarcină pentru <strong style="color:#1A2332">Curierii de Cartier</strong> cu utilitare/camioane pentru transport la șantier.
+          <button class="btn-p" style="margin-top:10px;width:100%;justify-content:center;font-size:12px;background:#0E9E99" onclick="solicitaTransport()">🚐 Solicită transport Curier</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderRezervari(){
+  return `
+  <div style="margin-bottom:18px;display:flex;align-items:center;justify-content:space-between">
+    <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Syne',sans-serif">Rezervări active</h2>
+    <div style="display:flex;gap:4px;padding:4px;background:#fff;border-radius:10px;border:1px solid #D5DFE8">
+      <button class="dp-tab active" onclick="tabActive(this)">Toate</button>
+      <button class="dp-tab" onclick="tabActive(this)">Confirmate</button>
+      <button class="dp-tab" onclick="tabActive(this)">În curs</button>
+      <button class="dp-tab" onclick="tabActive(this)">Finalizate</button>
+    </div>
+  </div>
+  <div class="f-card">
+    <table class="f-table">
+      <thead><tr><th>Rezervare</th><th>Echipament</th><th>Client</th><th>Perioadă</th><th>Tarif</th><th>Transport</th><th>Status</th><th>Acțiuni</th></tr></thead>
+      <tbody>
+        ${rezRow('REZ-001','Excavator JCB 8025','SC Construct SRL','10-12 Iun · 3 zile','2.400 Lei','Solicitat','active')}
+        ${rezRow('REZ-002','Ciocan demolator Hilti','Ion V.','15-16 Iun · 2 zile','300 Lei','Nu','pending')}
+        ${rezRow('REZ-003','Lift telescopic 12m','Andrei M.','17 Iun · 1 zi','500 Lei','Solicitat','pending')}
+        ${rezRow('REZ-004','Betonieră 250L','Maria P.','08-09 Iun · 2 zile','240 Lei','Nu','finalizat')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function renderEchipamente(){
+  const echip=[
+    {n:'Excavator JCB 8025 · 2.5T',cat:'Utilaje grele',buc:3,dispo:1,pret:'800 Lei/zi',st:'alert'},
+    {n:'Ciocan demolator Hilti TE',cat:'Scule electrice',buc:5,dispo:4,pret:'150 Lei/zi',st:'ok'},
+    {n:'Lift telescopic 12m',cat:'Acces',buc:1,dispo:0,pret:'500 Lei/zi',st:'ocupat'},
+    {n:'Betonieră 250L',cat:'Construcții',buc:4,dispo:4,pret:'120 Lei/zi',st:'ok'},
+    {n:'Vibrator beton 45mm',cat:'Construcții',buc:0,dispo:0,pret:'80 Lei/zi',st:'critic'},
+    {n:'Generator 5.5kVA',cat:'Electrice',buc:2,dispo:2,pret:'180 Lei/zi',st:'ok'},
+  ];
+  return `
+  <div style="margin-bottom:18px;display:flex;align-items:center;justify-content:space-between">
+    <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Syne',sans-serif">Echipamente & Disponibilitate</h2>
+    <button class="btn-p" style="background:#0E9E99">+ Adaugă echipament</button>
+  </div>
+  <div class="f-card">
+    <table class="f-table">
+      <thead><tr><th>Echipament</th><th>Categorie</th><th>Total</th><th>Disponibil</th><th>Tarif/zi</th><th>ITP/CASCO</th><th>Status</th><th>Acțiuni</th></tr></thead>
+      <tbody>
+        ${echip.map(e=>{
+          const col=e.st==='ok'?'#1A7A3A':e.st==='alert'||e.st==='critic'?'#C0392B':'#CC7000';
+          const sc=e.st==='ok'?'ch-g':e.st==='alert'||e.st==='critic'?'ch-r':'ch-o';
+          const sl={ok:'Disponibil',alert:'⚠ ITP expirat',ocupat:'Închiriat',critic:'Indisponibil'}[e.st]||e.st;
+          const itpSt=e.st==='alert'?'<span class="chip ch-r" style="font-size:9px">ITP Exp.</span>':'<span class="chip ch-g" style="font-size:9px">OK</span>';
+          return `<tr><td><strong>${e.n}</strong></td><td style="color:#5A6B7D">${e.cat}</td><td style="font-weight:700;font-size:15px">${e.buc}</td><td style="font-weight:700;color:${col};font-size:15px">${e.dispo}</td><td style="color:#FF8C00;font-weight:700">${e.pret}</td><td>${itpSt}</td><td><span class="chip ${sc}">${sl}</span></td><td><div style="display:flex;gap:5px"><button class="btn-s" style="font-size:10.5px;padding:4px 9px">Edit</button><button class="btn-s" style="font-size:10.5px;padding:4px 9px">Calendar</button></div></td></tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function renderCalendar(){
+  const days=['Lu','Ma','Mi','Jo','Vi','Sâ','Du'];
+  const cal=['av','av','res','av','av','na','na','av','res','res','av','av','na','na','today','av','av','av','av','na','na','av','av','av','res','av','na','na'];
+  const calHtml=cal.slice(0,28).map((st,i)=>{
+    const cls={av:'cal-av',res:'cal-res',na:'cal-na',today:'cal-today cal-av'}[st]||'cal-na';
+    return `<div class="${cls} cal-day" onclick="toggleCalDay(this)">${i+1}</div>`;
+  }).join('');
+  return `
+  <div style="display:grid;grid-template-columns:1fr auto;gap:18px;align-items:start">
+    <div class="f-card">
+      <div class="f-card-hdr">
+        <div style="display:flex;align-items:center;gap:10px"><strong>Disponibilitate · Excavator JCB 8025</strong><select onchange="changeEchip(this.value)" style="border:1px solid #D5DFE8;border-radius:8px;padding:5px 10px;font-size:12px;font-family:inherit;outline:none;background:#fff"><option>Excavator JCB 8025</option><option>Ciocan demolator</option><option>Lift telescopic</option><option>Betonieră 250L</option></select></div>
+        <button class="btn-p" style="background:#0E9E99;font-size:11px" onclick="showToast('✅ Calendar salvat · Dispatch AI actualizat')">Salvează</button>
+      </div>
+      <div class="f-card-body">
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:6px">
+          ${days.map(d=>`<div style="text-align:center;font-size:9.5px;font-weight:700;color:#5A6B7D;padding:2px">${d}</div>`).join('')}
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">${calHtml}</div>
+        <div style="display:flex;gap:14px;margin-top:12px;flex-wrap:wrap;font-size:11px">
+          <span style="display:flex;align-items:center;gap:5px;color:#5A6B7D"><span style="width:12px;height:12px;border-radius:3px;display:inline-block" class="cal-av"></span>Disponibil</span>
+          <span style="display:flex;align-items:center;gap:5px;color:#5A6B7D"><span style="width:12px;height:12px;border-radius:3px;display:inline-block" class="cal-res"></span>Rezervat</span>
+          <span style="display:flex;align-items:center;gap:5px;color:#5A6B7D"><span style="width:12px;height:12px;border-radius:3px;display:inline-block" class="cal-na"></span>Indisponibil</span>
+        </div>
+      </div>
+    </div>
+    <div style="min-width:210px;display:flex;flex-direction:column;gap:12px">
+      <div class="f-card">
+        <div class="f-card-hdr"><strong>Tarife active</strong></div>
+        <div class="f-card-body" style="font-size:12.5px;display:flex;flex-direction:column;gap:7px">
+          <div style="display:flex;justify-content:space-between;padding:7px;background:#F0F4F8;border-radius:8px"><span style="color:#5A6B7D">Per zi</span><strong style="color:#0E9E99">800 Lei</strong></div>
+          <div style="display:flex;justify-content:space-between;padding:7px;background:#F0F4F8;border-radius:8px"><span style="color:#5A6B7D">Per săptămână</span><strong style="color:#0E9E99">4.500 Lei</strong></div>
+          <div style="display:flex;justify-content:space-between;padding:7px;background:#F0F4F8;border-radius:8px"><span style="color:#5A6B7D">Per lună</span><strong style="color:#0E9E99">16.000 Lei</strong></div>
+          <div style="display:flex;justify-content:space-between;padding:7px;background:#FFF8EE;border-radius:8px;border:1px solid rgba(255,140,0,.2)"><span style="color:#5A6B7D">Garanție</span><strong>500 Lei</strong></div>
+        </div>
+      </div>
+      <div class="f-card">
+        <div class="f-card-hdr"><strong>Rezervări luna</strong></div>
+        <div class="f-card-body" style="display:flex;flex-direction:column;gap:7px;font-size:12px">
+          <div style="padding:8px;background:#F0F4F8;border-radius:9px;border-left:3px solid #0E9E99"><div style="font-weight:700;color:#1A2332">10–12 Iun</div><div style="color:#5A6B7D">SC Construct · 2.400 Lei</div></div>
+          <div style="padding:8px;background:#F0F4F8;border-radius:9px;border-left:3px solid #FF8C00"><div style="font-weight:700;color:#1A2332">17 Iun</div><div style="color:#5A6B7D">Andrei M. · Negociere</div></div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderAlerte(){
+  return `
+  <div style="margin-bottom:18px;display:flex;align-items:center;justify-content:space-between">
+    <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Syne',sans-serif">Alerte siguranță obligatorii</h2>
+    <span class="chip ch-r" style="font-size:11px">2 alerte active</span>
+  </div>
+  <div style="background:#FFF0F0;border-radius:14px;border:1.5px solid rgba(192,57,43,.25);padding:14px 18px;margin-bottom:18px">
+    <div style="font-size:12.5px;font-weight:700;color:#C0392B;margin-bottom:5px">🔴 Atenție · Echipamente blocate automat</div>
+    <div style="font-size:12px;color:#5A6B7D;line-height:1.7">Echipamentele cu ITP, CASCO sau autorizații ISCIR expirate sunt <strong>blocate automat din sistemul de dispatch Darrin AI</strong> până la actualizarea documentelor. Comenzile active pe echipamentele blocate sunt suspendate automat.</div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <div class="f-card" style="border-color:rgba(192,57,43,.3)">
+      <div class="f-card-hdr"><strong style="color:#C0392B">🔴 CRITIC · ITP EXPIRAT</strong><span class="chip ch-r">Blocat din dispatch</span></div>
+      <div class="f-card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12.5px;margin-bottom:14px">
+          <div><div style="color:#5A6B7D;margin-bottom:3px">Echipament</div><strong>Excavator JCB 8025 · 2.5T</strong></div>
+          <div><div style="color:#5A6B7D;margin-bottom:3px">ITP expirat la</div><strong style="color:#C0392B">01.06.2026</strong></div>
+          <div><div style="color:#5A6B7D;margin-bottom:3px">Zile expirat</div><strong style="color:#C0392B">16 zile</strong></div>
+          <div><div style="color:#5A6B7D;margin-bottom:3px">Impact</div><strong>Rezervări blocate: 2</strong></div>
+        </div>
+        <div style="display:flex;gap:10px"><button class="btn-p" style="background:#C0392B;font-size:12px">🔧 Actualizează ITP</button><button class="btn-s" style="font-size:12px">📋 Detalii</button></div>
+      </div>
+    </div>
+    <div class="f-card" style="border-color:rgba(255,140,0,.3)">
+      <div class="f-card-hdr"><strong style="color:#CC7000">⚠ ATENȚIE · CASCO expiră în 14 zile</strong><span class="chip ch-o">Reînnoire urgentă</span></div>
+      <div class="f-card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12.5px;margin-bottom:14px">
+          <div><div style="color:#5A6B7D;margin-bottom:3px">Echipament</div><strong>Lift telescopic 12m</strong></div>
+          <div><div style="color:#5A6B7D;margin-bottom:3px">CASCO expiră la</div><strong style="color:#CC7000">30.06.2026</strong></div>
+          <div><div style="color:#5A6B7D;margin-bottom:3px">Zile rămase</div><strong style="color:#CC7000">14 zile</strong></div>
+          <div><div style="color:#5A6B7D;margin-bottom:3px">Asigurător</div><strong>Allianz Tiriac</strong></div>
+        </div>
+        <div style="display:flex;gap:10px"><button class="btn-p" style="font-size:12px;background:#CC7000">🛡 Reînnoire CASCO</button><button class="btn-s" style="font-size:12px">Contactează asigurătorul</button></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+
+function kpi(label,val,sub,color,icon){
+  return `<div class="kpi"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D">${label}</div><span style="font-size:18px">${icon}</span></div><div style="font-size:28px;font-weight:800;color:${color};line-height:1">${val}</div><div style="font-size:10.5px;color:#5A6B7D;margin-top:4px">${sub}</div></div>`;
+}
+
+function cmdCard(id,prod,client,val,cls,badge){
+  const bc={pending:'ch-o',procesare:'ch-b',expediție:'ch-t'}[cls]||'ch-gr';
+  return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#F8FAFC;border-radius:11px;border:1px solid #EEF2F7;margin-bottom:7px;cursor:pointer" onclick="showPanel('comenzi')"><div style="flex:1"><div style="font-size:12.5px;font-weight:700;color:#1A2332">${prod}</div><div style="font-size:10.5px;color:#5A6B7D">${client} · <span style="font-family:monospace">${id}</span></div></div><div style="text-align:right"><div style="font-weight:700;color:#003366">${val}</div><span class="chip ${bc}" style="font-size:9.5px">${badge}</span></div></div>`;
+}
+
+function cmdRow(id,prod,client,qty,val,data,status){
+  const sc={pending:'ch-o',procesare:'ch-b',expediție:'ch-t',livrat:'ch-g'}[status];
+  const sl={pending:'Nou',procesare:'Procesare',expediție:'Expediat',livrat:'Livrat'}[status];
+  const valNum = parseInt((val||'0').replace(/[^\d]/g,''))||0;
+  const isLivrat = status==='livrat';
+  const valBadge = isLivrat
+    ? `<span class="chip ch-g" style="font-size:9px;margin-left:5px">✓ +${valNum} Lei facturat</span>`
+    : status==='expediție'
+      ? `<span class="chip ch-o" style="font-size:9px;margin-left:5px">${valNum} Lei → facturare</span>`
+      : '';
+  const actionBtn = isLivrat
+    ? `<span style="font-size:11.5px;color:#1A7A3A;font-weight:700">✓ Livrat</span>`
+    : `<button class="btn-p" style="font-size:10.5px;padding:5px 11px;white-space:nowrap" onclick="marchezaExpediatCuFinanciar('${id}',${valNum})">✅ Pregătit → Curier</button>`;
+  return `<tr>
+    <td style="font-family:monospace;color:#1A5FAD;font-size:11px">${id}</td>
+    <td><strong>${prod}</strong>${valBadge}</td>
+    <td style="color:#5A6B7D;font-size:12px">${client}</td>
+    <td>${qty}</td>
+    <td style="font-weight:700;color:#003366">${val}</td>
+    <td style="color:#5A6B7D">${data}</td>
+    <td><span class="chip ${sc}">${sl}</span></td>
+    <td><div style="display:flex;gap:6px;align-items:center">${actionBtn}<button class="btn-s" style="font-size:10.5px;padding:5px 10px">Factură</button></div></td>
+  </tr>`;
+}
+
+function stocCritic(label,stoc,min,st){
+  const col=st==='critic'?'#C0392B':'#CC7000';
+  const pct=Math.min(100,Math.round(parseInt(stoc)/(parseInt(min)*3)*100));
+  return `<div style="padding:9px 12px;background:#F8FAFC;border-radius:10px;border:1px solid #EEF2F7;border-left:3px solid ${col}"><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px"><span style="font-weight:600;color:#1A2332">${label}</span><span style="font-weight:700;color:${col}">${stoc} / ${min} min</span></div><div class="stoc-bar"><div class="stoc-fill" style="width:${pct}%;background:${col}"></div></div></div>`;
+}
+
+function integRow(label,note,st){
+  const c={ok:'ch-g',inactive:'ch-gr'}[st];const l={ok:'✓ Activ',inactive:'Inactiv'}[st];
+  return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:#F0F4F8;border-radius:9px"><div><div style="font-weight:600;color:#1A2332">${label}</div><div style="font-size:10.5px;color:#5A6B7D">${note}</div></div><span class="chip ${c}">${l}</span></div>`;
+}
+
+function integCard(icon,label,note,st){
+  const c={active:'ch-g',inactive:'ch-gr',ok:'ch-b'}[st];
+  const l={active:'✓ Conectat',inactive:'Neconectat',ok:'✓ OK'}[st];
+  return `<div style="padding:10px 12px;background:#F8FAFC;border-radius:11px;border:1.5px solid #D5DFE8;display:flex;align-items:center;gap:10px"><span style="font-size:20px">${icon}</span><div style="flex:1"><div style="font-size:12.5px;font-weight:700;color:#1A2332">${label}</div><div style="font-size:10.5px;color:#5A6B7D">${note}</div></div><span class="chip ${c}">${l}</span></div>`;
+}
+
+function prodRow(label,cat,pret,stoc,st,rating){
+  const sc={active:'ch-g',alert:'ch-r',inactive:'ch-gr'}[st];
+  const sl={active:'Activ',alert:'⚠ Stoc critic',inactive:'Inactiv'}[st];
+  return `<tr><td><strong>${label}</strong></td><td style="color:#5A6B7D">${cat}</td><td style="font-weight:700;color:#003366">${pret}</td><td style="font-weight:700;color:${stoc<5?'#C0392B':stoc<15?'#CC7000':'#1A7A3A'}">${stoc}</td><td><span class="chip ${sc}">${sl}</span></td><td>${rating}</td><td><div style="display:flex;gap:5px"><button class="btn-s" style="font-size:10.5px;padding:4px 9px">Editează</button><button class="btn-s" style="font-size:10.5px;padding:4px 9px;color:#C0392B;border-color:rgba(192,57,43,.3)">Retrage</button></div></td></tr>`;
+}
+
+function rezervCard(id,echip,client,per,val,st){
+  const c={active:'ch-t',pending:'ch-o'}[st];
+  const l={active:'În curs',pending:'Confirmat'}[st];
+  return `<div style="padding:10px 12px;background:#F8FAFC;border-radius:11px;border:1px solid #EEF2F7;margin-bottom:7px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><strong style="font-size:12.5px;color:#1A2332">${echip}</strong><span class="chip ${c}">${l}</span></div><div style="font-size:11px;color:#5A6B7D">${client} · ${per}</div><div style="font-size:12.5px;font-weight:700;color:#0E9E99">${val}</div></div>`;
+}
+
+function rezRow(id,echip,client,per,val,transport,st){
+  const sc={active:'ch-t',pending:'ch-o',finalizat:'ch-g'}[st];
+  const sl={active:'În curs',pending:'Confirmat',finalizat:'Finalizat'}[st];
+  const trc=transport==='Solicitat'?'ch-b':'ch-gr';
+  return `<tr><td style="font-family:monospace;color:#1A5FAD;font-size:11px">${id}</td><td><strong>${echip}</strong></td><td style="color:#5A6B7D">${client}</td><td style="color:#5A6B7D">${per}</td><td style="font-weight:700;color:#0E9E99">${val}</td><td><span class="chip ${trc}" style="font-size:9px">${transport}</span></td><td><span class="chip ${sc}">${sl}</span></td><td><div style="display:flex;gap:5px"><button class="btn-s" style="font-size:10px;padding:4px 8px">Detalii</button>${transport==='Nu'?`<button class="btn-s" style="font-size:10px;padding:4px 8px;color:#0E9E99" onclick="solicitaTransport()">🚐</button>`:''}</div></td></tr>`;
+}
+
+function garantieProd(cod,label,per,st,val){
+  const c=st==='ok'?'ch-g':'ch-o';
+  return `<div style="padding:10px 13px;background:#F8FAFC;border-radius:11px;border:1px solid #EEF2F7"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><strong style="font-size:12px;color:#1A2332">${label}</strong><span class="chip ${c}">${st==='ok'?'Activă':'⚠ Atenție'}</span></div><div style="font-size:10.5px;color:#5A6B7D">${cod} · ${per}</div><div style="font-size:11.5px;font-weight:700;color:#003366;margin-top:3px">Valoare: ${val}</div></div>`;
+}
+
+function docItem(icon,label,note,status,btn){
+  const bc=status==='ok'?'ch-g':'ch-o';
+  return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#F8FAFC;border-radius:10px;border:1px solid #EEF2F7"><span style="font-size:18px">${icon}</span><div style="flex:1"><div style="font-size:12.5px;font-weight:600;color:#1A2332">${label}</div><div style="font-size:10.5px;color:#5A6B7D">${note}</div></div><span class="chip ${bc}" style="font-size:9.5px">${status==='ok'?'✓':'⚠'}</span><button class="btn-s" style="font-size:10.5px;padding:5px 10px">${btn}</button></div>`;
+}
+
+function docRow2(label,data,val,tip,status){
+  const sc={platit:'ch-g',escrow:'ch-t',pending:'ch-o'}[status];
+  const sl={platit:'Plătit',escrow:'Escrow',pending:'Pending'}[status];
+  return `<tr><td><strong>${label}</strong></td><td style="color:#5A6B7D">${data}</td><td style="font-weight:700;color:#003366">${val}</td><td style="color:#5A6B7D">${tip}</td><td><span class="chip ${sc}">${sl}</span></td></tr>`;
+}
+
+function payRow(id,svc,brut,com,net,data,status){
+  const sc={virat:'ch-g',escrow:'ch-t'}[status];
+  const sl={virat:'Virat',escrow:'Escrow'}[status];
+  return `<tr><td style="font-family:monospace;color:#1A5FAD;font-size:11px">${id}</td><td>${svc}</td><td>${brut}</td><td style="color:#1A7A3A;font-weight:700">${com}</td><td style="font-weight:700;color:${FTYPES[currentType].color}">${net}</td><td style="color:#5A6B7D">${data}</td><td><span class="chip ${sc}">${sl}</span></td></tr>`;
+}
+
+// ── UTILS ──
+function calcSim(){
+  const v=parseFloat(document.getElementById('sim-val')?.value||0);
+  const com=currentType==='inchirieri'?0.10:0.075;
+  document.getElementById('sim-brut').textContent=v.toLocaleString('ro-RO')+' Lei';
+  document.getElementById('sim-com').textContent='0 Lei (promo 0%)';
+  document.getElementById('sim-net').textContent=v.toLocaleString('ro-RO')+' Lei';
+}
+function marchezaExpediat(id){
+  showToast('✅ Comandă '+id+' marcată pregătit → Alertă Curier Cartier trimisă');
+}
+function solicitaTransport(){
+  showToast('🚐 Sarcină transport generată automat pentru Curieri Cartier din zonă');
+}
+function handleImport(inp){if(inp.files[0])showToast('📊 '+inp.files[0].name+' · Procesare în curs...');}
+function toggleCalDay(el){
+  const states=['cal-av','cal-res','cal-na'];
+  const cur=states.find(s=>el.classList.contains(s))||'cal-av';
+  const next=states[(states.indexOf(cur)+1)%states.length];
+  states.forEach(s=>el.classList.remove(s));
+  el.classList.add(next);
+}
+function changeEchip(v){showToast('Calendar: '+v);}
+function tabActive(el){document.querySelectorAll('.dp-tab').forEach(b=>b.classList.remove('active'));el.classList.add('active');}
+
+// ════════════════════════════════════════════════════════════════
+// MODUL FINANCIAR AVANSAT — My Darrin
+// Logică: Datorie Legală · Facturare · Garanții · Compensare
+// ════════════════════════════════════════════════════════════════
+
+// ── STATE FINANCIAR ──
+const TVA_BACKOFFICE = { RO:19, MD:20, DE:20, FR:20, BG:20 };
+const TARA_CURENTA = 'RO';   // setat din backoffice per cont
+
+const FINANCIAL_STATE = {
+  servicii: {
+    comenzi_nefacturate: [
+      {id:'#CMD-4821', cmd_id:'CMD-4821', desc:'Montaj calorifer Purmo C11 600/10', qty:4,   um:'buc',  pret_u:80,   brut:320,  com_pct:0, com:0, net:320,  tva_pct:19, garantie_pct:5, garantie:16,  de_facturat:304,  status:'finalizat_nefacturat'},
+      {id:'#CMD-4818', cmd_id:'CMD-4818', desc:'Montaj robinet bucătărie Grohe',    qty:1,   um:'manoperă', pret_u:180, brut:180, com_pct:0, com:0, net:180, tva_pct:19, garantie_pct:5, garantie:9,   de_facturat:171,  status:'finalizat_nefacturat'},
+      {id:'#CMD-4815', cmd_id:'CMD-4815', desc:'Instalație sanitară completă PPR',  qty:1,   um:'proiect', pret_u:540, brut:540, com_pct:0, com:0, net:540, tva_pct:19, garantie_pct:5, garantie:27,  de_facturat:513,  status:'facturat'},
+      {id:'#CMD-4810', cmd_id:'CMD-4810', desc:'Centrală Ariston + racorduri',      qty:1,   um:'proiect', pret_u:620, brut:620, com_pct:0, com:0, net:620, tva_pct:19, garantie_pct:5, garantie:31,  de_facturat:589,  status:'facturat'},
+    ],
+    garantie_totala: 83, garantie_eligibila: 31,
+    com_label:'15% (0% promo)', garantie_label:'5% Garanție Bună Execuție',
+    emitent:{firma:'Construct Val SRL',cui:'RO32145678',adresa:'Str. Mihai Eminescu 12, Iași 700123',iban:'RO49RZBR0000060001234567',banca:'Raiffeisen Bank'},
+  },
+  curier: {
+    comenzi_nefacturate: [
+      {id:'#CUR-001', cmd_id:'CUR-001', desc:'Livrare materiale sanitare · ACA→Păcurari', qty:1, um:'cursă',  pret_u:35, brut:35,  com_pct:0, com:0, net:35,  tva_pct:19, garantie_pct:0, garantie:0, de_facturat:35,  status:'finalizat_nefacturat'},
+      {id:'#CUR-002', cmd_id:'CUR-002', desc:'Transport echipament Hilti · Rental→Unirii', qty:1, um:'cursă', pret_u:45, brut:45, com_pct:0, com:0, net:45, tva_pct:19, garantie_pct:0, garantie:0, de_facturat:45,  status:'finalizat_nefacturat'},
+      {id:'#CUR-003', cmd_id:'CUR-003', desc:'Livrare urgentă robinet · Sector 2',          qty:1, um:'cursă', pret_u:28, brut:28, com_pct:0, com:0, net:28, tva_pct:19, garantie_pct:0, garantie:0, de_facturat:28,  status:'facturat'},
+      {id:'#CUR-004', cmd_id:'CUR-004', desc:'Transport motor pompă · Pipa→Nicolina',       qty:1, um:'cursă', pret_u:65, brut:65, com_pct:0, com:0, net:65, tva_pct:19, garantie_pct:0, garantie:0, de_facturat:65,  status:'facturat'},
+    ],
+    garantie_totala: 0, garantie_eligibila: 0,
+    com_label:'12% (0% promo)', garantie_label:'Fără reținere garanție',
+    emitent:{firma:'George Ionescu PFA',cui:'RO45123456',adresa:'Str. Republicii 8, București Sector 2',iban:'RO24BCR0000000B00000001',banca:'BCR'},
+  },
+  asigurari: {
+    comenzi_nefacturate: [
+      {id:'#POL-001', cmd_id:'POL-001', desc:'Poliță Work Guarantee · CMD-4821 · Valentin', qty:1, um:'poliță', pret_u:16,  brut:16,  com_pct:15, com:2.4,  net:13.6, tva_pct:19, garantie_pct:0, garantie:0, de_facturat:13.6, status:'finalizat_nefacturat'},
+      {id:'#POL-002', cmd_id:'POL-002', desc:'Poliță RC Profesional · Darius #448D2',        qty:1, um:'lună',   pret_u:90,  brut:90,  com_pct:15, com:13.5, net:13.5, tva_pct:19, garantie_pct:0, garantie:0, de_facturat:13.5, status:'finalizat_nefacturat'},
+      {id:'#POL-003', cmd_id:'POL-003', desc:'Poliță All Risk · Maria P. · CMD-4815',        qty:1, um:'poliță', pret_u:9,   brut:9,   com_pct:15, com:1.35, net:1.35, tva_pct:19, garantie_pct:0, garantie:0, de_facturat:1.35, status:'facturat'},
+    ],
+    garantie_totala: 0, garantie_eligibila: 0,
+    com_label:'15% din primă (comision intermediar)', garantie_label:'Fără reținere garanție',
+    emitent:{firma:'Asig Pro SRL',cui:'RO55123456',adresa:'Bd. Unirii 78, București Sector 4',iban:'RO09BRDE410SV12345678',banca:'BRD'},
+  },
+  materiale: {
+    comenzi_nefacturate: [
+      {id:'#MAT-4821', cmd_id:'MAT-4821', desc:'Calorifer Purmo C11 600/10',     qty:4,  um:'buc',    pret_u:310,   brut:1240, com_pct:0, com:0, net:1240, tva_pct:19, garantie_pct:0, garantie:0, de_facturat:1240, status:'finalizat_nefacturat'},
+      {id:'#MAT-4820', cmd_id:'MAT-4820', desc:'Țeavă PP-R 20mm PN20',           qty:50, um:'ml',     pret_u:8,     brut:400,  com_pct:0, com:0, net:400,  tva_pct:19, garantie_pct:0, garantie:0, de_facturat:400,  status:'finalizat_nefacturat'},
+      {id:'#MAT-4819', cmd_id:'MAT-4819', desc:'Parchet stratificat 8mm AC3',    qty:80, um:'m²',     pret_u:45,    brut:3600, com_pct:0, com:0, net:3600, tva_pct:19, garantie_pct:0, garantie:0, de_facturat:3600, status:'facturat'},
+      {id:'#MAT-4818', cmd_id:'MAT-4818', desc:'Ciment CEM II 42.5R',            qty:20, um:'sac',    pret_u:28,    brut:560,  com_pct:0, com:0, net:560,  tva_pct:19, garantie_pct:0, garantie:0, de_facturat:560,  status:'facturat'},
+    ],
+    garantie_totala: 0, garantie_eligibila: 0,
+    com_label:'7.5% (0% promo)', garantie_label:'Garanție materiale per fișă tehnică',
+    imputari:[{id:'IMP-001',desc:'Viciu țeavă PPR · CMD-4810',val:850,status:'in_analiza'}],
+    emitent:{firma:'ACA Business Group SRL',cui:'RO32667674',adresa:'Str. Industriilor 5, Bacău 600115',iban:'RO61BUCU1012012345678901',banca:'Banca Transilvania'},
+  },
+  inchirieri: {
+    comenzi_nefacturate: [
+      {id:'#REZ-001', cmd_id:'REZ-001', desc:'Închiriere Excavator JCB 8025 · 2.5T', qty:3,  um:'zile',   pret_u:800, brut:2400, com_pct:0, com:0, net:2400, tva_pct:19, garantie_pct:0, garantie:0, transport:0,  de_facturat:2400, status:'finalizat_nefacturat'},
+      {id:'#REZ-002', cmd_id:'REZ-002', desc:'Închiriere Ciocan demolator Hilti TE', qty:2,  um:'zile',   pret_u:150, brut:300,  com_pct:0, com:0, net:300,  tva_pct:19, garantie_pct:0, garantie:0, transport:35, de_facturat:265,  status:'finalizat_nefacturat'},
+      {id:'#REZ-004', cmd_id:'REZ-004', desc:'Închiriere Betonieră 250L',            qty:2,  um:'zile',   pret_u:120, brut:240,  com_pct:0, com:0, net:240,  tva_pct:19, garantie_pct:0, garantie:0, transport:0,  de_facturat:240,  status:'facturat'},
+    ],
+    garantie_totala: 0, garantie_eligibila: 0,
+    com_label:'10% (0% promo)', garantie_label:'Garanție echipament conform contract',
+    emitent:{firma:'Rental Pro SRL',cui:'RO44123456',adresa:'Bd. Metalurgiei 12, București Sector 4',iban:'RO35INGB0000999900000001',banca:'ING Bank'},
+  },
+};
+
+// ── CALCULE ──
+function getFinState(type) {
+  return FINANCIAL_STATE[type] || FINANCIAL_STATE['servicii'];
+}
+
+function calcDatorie(type) {
+  const fs = getFinState(type);
+  const nefacturate = fs.comenzi_nefacturate.filter(c=>c.status==='finalizat_nefacturat');
+  return {
+    total_brut:     nefacturate.reduce((s,c)=>s+c.brut,0),
+    total_com:      nefacturate.reduce((s,c)=>s+c.com,0),
+    total_garantie: nefacturate.reduce((s,c)=>s+c.garantie,0),
+    total_net:      nefacturate.reduce((s,c)=>s+c.de_facturat,0),
+    count:          nefacturate.length,
+    rows:           nefacturate,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER FINANCIAR COMPLET
+// ═══════════════════════════════════════════════════════════════
+
+function renderVenituri() {
+  const type = (typeof currentType !== 'undefined') ? currentType : 'servicii';
+  const fs   = getFinState(type);
+  const dat  = calcDatorie(type);
+  const color = '#FF8C00'; // accent default
+
+  // Toate comenzile
+  const all = fs.comenzi_nefacturate;
+  const facturate   = all.filter(c=>c.status==='facturat');
+  const nefacturate = all.filter(c=>c.status==='finalizat_nefacturat');
+  const totalFacturat = facturate.reduce((s,c)=>s+c.de_facturat,0);
+
+  const isInch = type === 'inchirieri';
+
+  return `
+  <!-- KPI DATORIE NETĂ -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
+    ${kpi('Datorie My Darrin',''+dat.total_net.toLocaleString('ro-RO')+' Lei',''+dat.count+' comenzi nefacturate','#FF8C00','💳')}
+    ${kpi('Garanții reținute',''+(fs.garantie_totala||0)+' Lei','fond blocat My Darrin','#1A5FAD','🔒')}
+    ${kpi('Comision promo','0 Lei','0% activ → 13.09.2026','#1A7A3A','✅')}
+    ${kpi('Total facturat',''+totalFacturat.toLocaleString('ro-RO')+' Lei','luna curentă','#0E9E99','📄')}
+  </div>
+
+  <!-- BANNER DATORIE LEGALĂ -->
+  <div style="background:linear-gradient(135deg,#001E3C,#003366);border-radius:16px;padding:18px 22px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.5);margin-bottom:5px">📋 Datoria Legală My Darrin față de tine</div>
+      <div style="font-size:32px;font-weight:800;color:#FF8C00;line-height:1">${dat.total_net.toLocaleString('ro-RO')} Lei</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px">Valoare netă datorată · ${dat.count} comenzi finalizate și nefacturate</div>
+    </div>
+    <button onclick="openInvoiceModal()" style="padding:13px 24px;border-radius:13px;border:none;background:#FF8C00;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 5px 18px rgba(255,140,0,.35);display:flex;align-items:center;gap:8px;white-space:nowrap" onmouseover="this.style.background='#CC7000'" onmouseout="this.style.background='#FF8C00'">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Generează Factură / Solicită Plată
+    </button>
+  </div>
+
+  <div style="display:grid;grid-template-columns:3fr 1fr;gap:18px;margin-bottom:20px">
+    <!-- TABEL COMENZI FACTURARE -->
+    <div class="dp-card">
+      <div class="dp-card-hdr">
+        <strong style="color:#1A2332">Comenzi finalizate · Status facturare</strong>
+        <div style="display:flex;gap:6px">
+          <span class="chip ch-o" style="font-size:10px">${dat.count} nefacturate</span>
+          <button class="btn-s" style="font-size:11px;padding:5px 10px" onclick="exportCSV()">⬇ Export CSV</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="dp-table">
+          <thead><tr>
+            <th><input type="checkbox" id="sel-all" onchange="toggleAll(this)" style="accent-color:#FF8C00"/></th>
+            <th>Comandă</th><th>Descriere</th><th>Data</th>
+            <th>Brut</th>${fs.garantie_totala>0?'<th>Garanție 5%</th>':''}
+            ${isInch?'<th>Transport</th>':''}
+            <th style="color:#FF8C00">Net facturabil</th><th>Status</th>
+          </tr></thead>
+          <tbody>
+            ${all.map(c=>{
+              const isNef = c.status==='finalizat_nefacturat';
+              const tCell = isInch && c.transport>0 ? `<td style="color:#C0392B;font-weight:600">-${c.transport} Lei</td>` : isInch ? '<td style="color:#5A6B7D">—</td>' : '';
+              const gCell = fs.garantie_totala>0 ? `<td style="color:#1A5FAD;font-weight:600">${c.garantie>0?'-'+c.garantie+' Lei':'—'}</td>` : '';
+              return `<tr style="${isNef?'':'opacity:.6'}">
+                <td><input type="checkbox" class="cmd-check" value="${c.id}" ${isNef?'':'disabled'} style="accent-color:#FF8C00"/></td>
+                <td style="font-family:monospace;color:#1A5FAD;font-size:11px;font-weight:700">${c.id}</td>
+                <td style="font-size:12px;max-width:200px">${c.desc}</td>
+                <td style="color:#5A6B7D;font-size:11.5px;white-space:nowrap">${c.data}</td>
+                <td style="font-weight:600">${c.brut} Lei</td>
+                ${gCell}${tCell}
+                <td style="font-weight:800;color:${isNef?'#FF8C00':'#5A6B7D'}">${c.de_facturat.toFixed(0)} Lei</td>
+                <td>${isNef?
+                  '<span class="chip ch-o" style="font-size:9.5px">De facturat</span>':
+                  '<span class="chip ch-g" style="font-size:9.5px">Facturat</span>'}
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+          <tfoot>
+            <tr style="background:#F8FAFC;border-top:2px solid #D5DFE8">
+              <td colspan="${isInch?'5':'4'}"></td>
+              ${fs.garantie_totala>0?`<td style="font-weight:700;color:#1A5FAD">-${nefacturate.reduce((s,c)=>s+c.garantie,0)} Lei</td>`:''}
+              ${isInch?`<td style="font-weight:700;color:#C0392B">-${nefacturate.reduce((s,c)=>s+(c.transport||0),0)} Lei</td>`:''}
+              <td style="font-weight:800;color:#FF8C00;font-size:14px">${dat.total_net.toFixed(0)} Lei</td>
+              <td><span class="chip ch-o">${dat.count} rânduri</span></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- SIDEBAR FINANCIAR -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <!-- Simulator comision -->
+      <div class="dp-card">
+        <div class="dp-card-hdr"><strong style="color:#1A2332">⚖ Structura financiară</strong></div>
+        <div class="dp-card-body" style="font-size:12.5px;display:flex;flex-direction:column;gap:7px">
+          <div style="padding:8px 10px;background:#F0F4F8;border-radius:9px;display:flex;justify-content:space-between"><span style="color:#5A6B7D">Comision platformă</span><strong style="color:#1A7A3A">0% promo</strong></div>
+          <div style="padding:8px 10px;background:#F0F4F8;border-radius:9px;display:flex;justify-content:space-between"><span style="color:#5A6B7D">Standard comision</span><strong>${fs.com_label}</strong></div>
+          ${fs.garantie_totala>0?`<div style="padding:8px 10px;background:#EBF4FB;border-radius:9px;display:flex;justify-content:space-between;border:1px solid #D6E8F5"><span style="color:#5A6B7D">${fs.garantie_label}</span><strong style="color:#1A5FAD">${fs.garantie_totala} Lei blocat</strong></div>`:''}
+          ${isInch?`<div style="padding:8px 10px;background:#FFF8EE;border-radius:9px;display:flex;justify-content:space-between;border:1px solid rgba(255,140,0,.2)"><span style="color:#5A6B7D">Transport Curier</span><strong style="color:#CC7000">dedus din net</strong></div>`:''}
+          <div style="height:1px;background:#EEF2F7"></div>
+          <div style="padding:10px;background:linear-gradient(135deg,#F0F4F8,#EBF4FB);border-radius:9px;border:1px solid #D5DFE8">
+            <div style="font-size:10px;color:#5A6B7D;margin-bottom:3px;text-transform:uppercase;letter-spacing:.07em">Datorie netă datorată</div>
+            <div style="font-size:20px;font-weight:800;color:#FF8C00">${dat.total_net.toFixed(0)} Lei</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Graf performanță -->
+      <div class="dp-card">
+        <div class="dp-card-hdr"><strong style="color:#1A2332">📈 Performanță netă</strong></div>
+        <div class="dp-card-body">
+          ${['Ian','Feb','Mar','Apr','Mai','Iun'].map((m,i)=>{
+            const vals=[420,610,890,1240,1680,dat.total_net];
+            const max=Math.max(...vals);
+            const pct=Math.round(vals[i]/max*100);
+            const isLast=i===5;
+            return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+              <div style="font-size:10.5px;color:#5A6B7D;min-width:28px">${m}</div>
+              <div style="flex:1;height:8px;background:#EEF2F7;border-radius:99px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${isLast?'#FF8C00':'#1A5FAD'};border-radius:99px;transition:width .6s"></div></div>
+              <div style="font-size:11px;font-weight:${isLast?'800':'600'};color:${isLast?'#FF8C00':'#5A6B7D'};min-width:52px;text-align:right">${vals[i].toFixed(0)}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GARANȚII PANEL -->
+  <div class="dp-card">
+    <div class="dp-card-hdr">
+      <strong style="color:#1A2332">🛡 Gestiunea garanțiilor · My Darrin Antreprenor General</strong>
+      ${fs.garantie_totala>0?`<span class="chip ch-b">${fs.garantie_totala} Lei blocat</span>`:'<span class="chip ch-g">Fără reținere</span>'}
+    </div>
+    <div class="dp-card-body">
+      ${renderGarantiiBlock(type, fs)}
+    </div>
+  </div>`;
+}
+
+function renderGarantiiBlock(type, fs) {
+  if (type==='servicii') return `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:10px">Garanții de Bună Execuție (5%)</div>
+        <div style="background:#FFF8EE;border-radius:14px;border:1.5px solid rgba(255,140,0,.25);padding:14px;margin-bottom:10px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12.5px">
+            <div style="background:#fff;border-radius:10px;padding:10px;text-align:center;border:1px solid #EEF2F7"><div style="color:#5A6B7D;font-size:9.5px;margin-bottom:4px;text-transform:uppercase">Total reținut</div><div style="font-size:20px;font-weight:800;color:#1A5FAD">${fs.garantie_totala} Lei</div></div>
+            <div style="background:#fff;border-radius:10px;padding:10px;text-align:center;border:1px solid #EEF2F7"><div style="color:#5A6B7D;font-size:9.5px;margin-bottom:4px;text-transform:uppercase">Eligibil eliberare</div><div style="font-size:20px;font-weight:800;color:#1A7A3A">${fs.garantie_eligibila} Lei</div></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px;font-size:12px">
+          <div style="display:flex;justify-content:space-between;padding:8px 10px;background:#F0F4F8;border-radius:9px"><span style="color:#5A6B7D">Blocat (lucrări active)</span><strong style="color:#1A5FAD">${fs.garantie_totala-fs.garantie_eligibila} Lei</strong></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 10px;background:#D4EDDA;border-radius:9px;border:1px solid rgba(26,122,58,.2)"><span style="color:#5A6B7D">Eligibil acum</span><strong style="color:#1A7A3A">${fs.garantie_eligibila} Lei</strong></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 10px;background:#FFF0F0;border-radius:9px;border:1px solid rgba(192,57,43,.2)"><span style="color:#5A6B7D">Contestații active</span><strong style="color:#C0392B">0</strong></div>
+        </div>
+        <button class="btn-p" style="width:100%;justify-content:center;margin-top:12px;font-size:12px" onclick="solicitaEliberareGarantie()">💰 Solicită eliberare garanție eligibilă (31 Lei)</button>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:10px">Garanții per comandă</div>
+        ${[{cod:'GD-001',cmd:'CMD-4821',val:'320 Lei',gar:'16 Lei',exp:'16.06.2028',st:'blocat'},{cod:'GD-002',cmd:'CMD-4818',val:'180 Lei',gar:'9 Lei',exp:'15.06.2027',st:'blocat'},{cod:'GD-003',cmd:'CMD-4810',val:'620 Lei',gar:'31 Lei',exp:'12.06.2028',st:'eligibil'},{cod:'GD-004',cmd:'CMD-4815',val:'540 Lei',gar:'27 Lei',exp:'14.06.2028',st:'blocat'}].map(g=>`
+          <div style="padding:10px 13px;background:#F8FAFC;border-radius:11px;border:1px solid #EEF2F7;margin-bottom:7px;display:flex;align-items:center;justify-content:space-between">
+            <div><div style="font-size:12px;font-weight:700;color:#1A2332">${g.cod} · ${g.cmd}</div><div style="font-size:10.5px;color:#5A6B7D">Valoare: ${g.val} · Retenție: ${g.gar} · Exp: ${g.exp}</div></div>
+            <span class="chip ${g.st==='eligibil'?'ch-g':'ch-b'}" style="font-size:9.5px">${g.st==='eligibil'?'✓ Eligibil':'🔒 Blocat'}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+
+  if (type==='materiale') return `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:10px">Garanții materiale emise</div>
+        ${[{cod:'GP-001',prod:'Calorifer Purmo C11',dur:'24 luni','exp':'16.06.2028',st:'ok'},{cod:'GP-002',prod:'Parchet stratificat 8mm',dur:'36 luni',exp:'15.06.2029',st:'ok'},{cod:'GP-003',prod:'Vopsea Caparol',dur:'2 ani',exp:'12.06.2028',st:'warning'}].map(g=>`
+          <div style="padding:10px 13px;background:#F8FAFC;border-radius:11px;border:1px solid #EEF2F7;margin-bottom:7px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px"><strong style="font-size:12px;color:#1A2332">${g.cod} · ${g.prod}</strong><span class="chip ${g.st==='ok'?'ch-g':'ch-o'}">${g.st==='ok'?'Activă':'⚠'}</span></div>
+            <div style="font-size:10.5px;color:#5A6B7D">Garanție ${g.dur} → Expiră ${g.exp}</div>
+          </div>`).join('')}
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C0392B;margin-bottom:10px">⚠ Imputări active · Transfer My Darrin</div>
+        ${(fs.imputari||[]).map(imp=>`
+          <div style="background:#FFF0F0;border-radius:12px;border:1.5px solid rgba(192,57,43,.25);padding:13px;margin-bottom:8px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:5px"><strong style="font-size:12.5px;color:#C0392B">${imp.id} · ${imp.desc}</strong><span class="chip ch-r">${imp.status==='in_analiza'?'În analiză':'Aprobat'}</span></div>
+            <div style="font-size:12px;color:#5A6B7D;margin-bottom:8px">Valoare imputată: <strong style="color:#C0392B">${imp.val} Lei</strong> · reținuți din datoria netă</div>
+            <div style="display:flex;gap:7px"><button class="btn-s" style="font-size:11px;color:#C0392B;border-color:rgba(192,57,43,.3)">Contestă</button><button class="btn-s" style="font-size:11px">Dosar complet</button></div>
+          </div>`).join('')||'<div style="color:#5A6B7D;font-size:12.5px;padding:12px;background:#F8FAFC;border-radius:10px">✓ Nicio imputare activă</div>'}
+        <div style="margin-top:10px;padding:12px;background:#FFF8EE;border-radius:10px;border:1px solid rgba(255,140,0,.2);font-size:11.5px;color:#5A6B7D;line-height:1.6">My Darrin transferă automat răspunderea financiară pentru vicii de material. Suma este dedusă din <strong style="color:#1A2332">datoria netă</strong> datorată ție.</div>
+      </div>
+    </div>`;
+
+  if (type==='inchirieri') return `
+    <div style="background:#F8FAFC;border-radius:12px;padding:14px;border:1px solid #EEF2F7">
+      <div style="font-size:12.5px;color:#5A6B7D;line-height:1.7;margin-bottom:12px">Garanțiile reținute la predarea echipamentelor sunt returnate în <strong style="color:#1A2332">48h</strong> după inspecția foto confirmatorie. Dacă echipamentul returnează cu daune, My Darrin transferă costul reparației din garanție și din datoria netă.
+      </div>
+      ${[{cod:'GE-001',echip:'Excavator JCB 8025',gar:'500 Lei',st:'returnat'},{cod:'GE-002',echip:'Ciocan demolator Hilti',gar:'200 Lei',st:'blocat'},{cod:'GE-003',echip:'Lift telescopic 12m',gar:'300 Lei',st:'blocat'}].map(g=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:#fff;border-radius:10px;border:1px solid #EEF2F7;margin-bottom:7px"><div><div style="font-weight:700;font-size:12px;color:#1A2332">${g.cod} · ${g.echip}</div><div style="font-size:10.5px;color:#5A6B7D">Garanție: ${g.gar}</div></div><span class="chip ${g.st==='returnat'?'ch-g':'ch-b'}">${g.st==='returnat'?'✓ Returnat':'🔒 Blocat'}</span></div>`).join('')}
+      <div style="margin-top:10px;padding:10px;background:#EBF4FB;border-radius:9px;display:flex;justify-content:space-between;font-size:12.5px;border:1px solid #D5DFE8"><span style="color:#5A6B7D">Transport Curier dedus din net (REZ-002)</span><strong style="color:#C0392B">-35 Lei</strong></div>
+    </div>`;
+
+  // curier / asigurari
+  return `
+    <div style="background:#F8FAFC;border-radius:12px;padding:16px;border:1px solid #EEF2F7;font-size:12.5px;color:#5A6B7D;line-height:1.7">
+      ${type==='curier'?'Nu se aplică retenție de garanție pentru curieri. Fiecare cursă confirmată adaugă valoarea netă direct în balanța facturabilă față de My Darrin.':'Comisioanele de intermediere (15% din primă) devin datorii ale My Darrin față de tine după confirmarea plății poliței de către client. Nu există retenție de garanție.'}
+      <div style="margin-top:12px;padding:10px;background:linear-gradient(135deg,#E0F5F4,#EBF4FB);border-radius:9px;border:1px solid #D5DFE8">
+        <div style="font-size:11px;font-weight:700;color:#0B7A76">Balanță facturabilă acumulată</div>
+        <div style="font-size:22px;font-weight:800;color:#FF8C00;margin-top:4px">${calcDatorie(type).total_net.toFixed(2)} Lei</div>
       </div>
     </div>`;
 }
 
-// ── SIMULATOR ──
-function calcSim(){
-  const val=parseFloat(document.getElementById('sim-val')?.value||0);
-  const tip=document.getElementById('sim-tip')?.value;
-  const com=0; // promo activ
-  const net=val-Math.round(val*com/100);
-  setEl('sim-brut',val.toLocaleString('ro-RO')+' Lei');
-  setEl('sim-com','0 Lei (promo 0% activ)');
-  setEl('sim-net',net.toLocaleString('ro-RO')+' Lei');
+// ═══════════════════════════════════════════════════════════════
+// MODAL FACTURĂ
+// ═══════════════════════════════════════════════════════════════
+
+function openInvoiceModal() {
+  const type = (typeof currentType !== 'undefined') ? currentType : 'servicii';
+  const fs   = getFinState(type);
+  const dat  = calcDatorie(type);
+  const now  = new Date();
+  const dataEmit = now.toLocaleDateString('ro-RO');
+  const dataScad = new Date(now.getTime()+30*86400000).toLocaleDateString('ro-RO');
+  const nr   = 'F-MD-2026-' + String(Math.floor(Math.random()*9000)+1000);
+  const isInch = type==='inchirieri';
+
+    const tva_pct = TVA_BACKOFFICE[TARA_CURENTA] || 19;
+
+  const rowsHtml = dat.rows.map((c,i)=>{
+    const pret_u     = c.pret_u || (c.qty ? c.brut/c.qty : c.brut);
+    const val_fara   = c.brut;
+    const val_tva    = parseFloat((val_fara * (c.tva_pct||tva_pct) / 100).toFixed(2));
+    const val_cu_tva = parseFloat((val_fara + val_tva).toFixed(2));
+    const garantieCell = (fs.garantie_totala > 0)
+      ? `<td style="padding:7px 10px;border-bottom:1px solid #EEF2F7;font-size:11.5px;text-align:right;color:#1A5FAD">${c.garantie>0?'-'+c.garantie.toFixed(2)+' Lei':'—'}</td>`
+      : '';
+    const transportCell = isInch
+      ? `<td style="padding:7px 10px;border-bottom:1px solid #EEF2F7;font-size:11.5px;text-align:right;color:#C0392B">${(c.transport||0)>0?'-'+(c.transport).toFixed(2)+' Lei':'—'}</td>`
+      : '';
+    return `<tr style="transition:background .15s" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background=''">
+      <td style="padding:7px 10px;border-bottom:1px solid #EEF2F7;font-size:11.5px;text-align:center;color:#5A6B7D">${i+1}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #EEF2F7">
+        <div style="font-size:12px;font-weight:700;color:#1A2332">${c.desc}</div>
+        <div style="font-size:10.5px;font-weight:700;color:#1A5FAD;font-family:monospace;margin-top:2px">Nr. comandă: ${c.cmd_id||c.id}</div>
+      </td>
+      <td style="padding:7px 10px;border-bottom:1px solid #EEF2F7;font-size:12px;text-align:right;font-weight:600">${c.qty||1}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #EEF2F7;font-size:11.5px;text-align:center;color:#5A6B7D">${c.um||'buc'}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #EEF2F7;font-size:12px;text-align:right">${pret_u.toFixed(2)} Lei</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #EEF2F7;font-size:12px;text-align:right;font-weight:600">${val_fara.toFixed(2)} Lei</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #EEF2F7;font-size:12px;text-align:center">
+        <span style="font-weight:700;color:#1A5FAD">${c.tva_pct||tva_pct}%</span>
+        <div style="font-size:10px;color:#5A6B7D">+${val_tva.toFixed(2)} Lei</div>
+      </td>
+      ${garantieCell}${transportCell}
+      <td style="padding:7px 10px;border-bottom:1px solid #EEF2F7;font-size:13px;text-align:right;font-weight:800;color:#FF8C00">${val_cu_tva.toFixed(2)} Lei</td>
+    </tr>`;
+  }).join('');
+  const modalHTML = `
+  <div id="inv-overlay" onclick="closeInvoiceModal()" style="position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(5px);z-index:900"></div>
+  <div id="inv-modal" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:901;width:720px;max-width:96vw;max-height:92vh;overflow-y:auto;background:#fff;border-radius:22px;box-shadow:0 24px 80px rgba(0,0,0,.3)">
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#001E3C,#003366);padding:20px 26px;border-radius:22px 22px 0 0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:38px;height:38px;background:#FF8C00;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px">📄</div>
+        <div><div style="font-weight:800;color:#fff;font-size:15px">Previzualizare factură · ${nr}</div><div style="font-size:11px;color:rgba(255,255,255,.5)">Factură fiscală · My Darrin</div></div>
+      </div>
+      <button onclick="closeInvoiceModal()" style="width:32px;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);cursor:pointer;font-size:18px;color:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center">×</button>
+    </div>
+
+    <!-- Factură preview -->
+    <div style="padding:28px" id="invoice-preview">
+      <!-- Header factură -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:20px;border-bottom:2px solid #003366">
+        <div>
+          <div style="font-size:28px;font-weight:800;color:#003366;font-family:'Syne',sans-serif;margin-bottom:6px">FACTURĂ FISCALĂ</div>
+          <div style="font-size:13px;color:#5A6B7D">Nr. <strong style="color:#1A2332">${nr}</strong> · Data: <strong>${dataEmit}</strong></div>
+          <div style="font-size:13px;color:#5A6B7D">Scadent: <strong>${dataScad}</strong></div>
+        </div>
+        <div style="text-align:right">
+          <div style="width:50px;height:50px;background:#FF8C00;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;color:#fff;margin-left:auto;margin-bottom:6px">D</div>
+          <div style="font-size:12px;color:#5A6B7D">My Darrin</div>
+        </div>
+      </div>
+
+      <!-- Emitent / Beneficiar -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:22px">
+        <div style="background:#F0F4F8;border-radius:12px;padding:14px">
+          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:8px">Furnizor (Emitent)</div>
+          <div style="font-size:13px;font-weight:700;color:#1A2332;margin-bottom:4px">${fs.emitent.firma}</div>
+          <div style="font-size:12px;color:#5A6B7D;line-height:1.7">CUI: ${fs.emitent.cui}<br>${fs.emitent.adresa}<br>IBAN: <span style="font-family:monospace">${fs.emitent.iban}</span><br>Bancă: ${fs.emitent.banca}</div>
+        </div>
+        <div style="background:#EBF4FB;border-radius:12px;padding:14px;border:1px solid #D6E8F5">
+          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:8px">Beneficiar (My Darrin)</div>
+          <div style="font-size:13px;font-weight:700;color:#1A2332;margin-bottom:4px">Home Best Pal SRL</div>
+          <div style="font-size:12px;color:#5A6B7D;line-height:1.7">CUI: RO45678901<br>Str. Industriilor 1, Bacău 600001<br>IBAN: <span style="font-family:monospace">RO12BTRL00001205G32156XX</span><br>Bancă: Banca Transilvania</div>
+        </div>
+      </div>
+
+      <!-- Tabel servicii -->
+      <table style="width:100%;border-collapse:collapse;margin-bottom:18px;font-family:inherit">
+              <thead>
+          <tr style="background:#003366;color:#fff">
+            <th style="padding:8px 10px;text-align:center;font-size:10.5px;font-weight:700;border-radius:8px 0 0 0;min-width:28px">#</th>
+            <th style="padding:8px 10px;text-align:left;font-size:10.5px;font-weight:700">Descriere serviciu / produs <span style="font-size:9px;opacity:.7;font-weight:500">· Nr. comandă Darrin AI</span></th>
+            <th style="padding:8px 10px;text-align:right;font-size:10.5px;font-weight:700;min-width:50px">Cant.</th>
+            <th style="padding:8px 10px;text-align:center;font-size:10.5px;font-weight:700;min-width:42px">U.M.</th>
+            <th style="padding:8px 10px;text-align:right;font-size:10.5px;font-weight:700;min-width:70px">Preț/U.M.</th>
+            <th style="padding:8px 10px;text-align:right;font-size:10.5px;font-weight:700;min-width:80px">Val. fără TVA</th>
+            <th style="padding:8px 10px;text-align:center;font-size:10.5px;font-weight:700;min-width:72px">TVA %<br><span style="font-weight:400;font-size:9px;opacity:.7">conf. Backoffice</span></th>
+            ${fs.garantie_totala>0?'<th style="padding:8px 10px;text-align:right;font-size:10.5px;font-weight:700;min-width:80px">Garanție reținută</th>':''}
+            ${isInch?'<th style="padding:8px 10px;text-align:right;font-size:10.5px;font-weight:700;min-width:70px">Transport dedus</th>':''}
+            <th style="padding:8px 10px;text-align:right;font-size:10.5px;font-weight:700;min-width:90px;border-radius:0 8px 0 0">Total cu TVA</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+      <tfoot>
+          <tr style="background:#F8FAFC;border-top:2px solid #D5DFE8">
+            <td colspan="5" style="padding:9px 10px;font-size:11.5px;color:#5A6B7D">Total ${dat.count} poziții</td>
+            <td style="padding:9px 10px;text-align:right;font-weight:700;font-size:12.5px">${dat.rows.filter(c=>c.status==='finalizat_nefacturat').reduce((s,c)=>s+c.brut,0).toFixed(2)} Lei</td>
+            <td style="padding:9px 10px;text-align:center;font-weight:700;color:#1A5FAD;font-size:12.5px">${tva_pct}%<div style="font-size:10px;font-weight:600;color:#5A6B7D">+${dat.rows.filter(c=>c.status==='finalizat_nefacturat').reduce((s,c)=>s+c.brut*(c.tva_pct||tva_pct)/100,0).toFixed(2)} Lei</div></td>
+            ${fs.garantie_totala>0?`<td style="padding:9px 10px;text-align:right;font-weight:700;color:#1A5FAD;font-size:12.5px">-${dat.rows.filter(c=>c.status==='finalizat_nefacturat').reduce((s,c)=>s+c.garantie,0).toFixed(2)} Lei</td>`:''}
+            ${isInch?`<td style="padding:9px 10px;text-align:right;font-weight:700;color:#C0392B;font-size:12.5px">-${dat.rows.filter(c=>c.status==='finalizat_nefacturat').reduce((s,c)=>s+(c.transport||0),0).toFixed(2)} Lei</td>`:''}
+            <td style="padding:9px 10px;text-align:right;font-weight:800;font-size:15px;color:#FF8C00">${(dat.total_net + dat.rows.filter(c=>c.status==='finalizat_nefacturat').reduce((s,c)=>s+c.brut*(c.tva_pct||tva_pct)/100,0)).toFixed(2)} Lei</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <!-- Total -->
+      <div style="background:linear-gradient(135deg,#001E3C,#003366);border-radius:14px;padding:18px 22px;margin-bottom:20px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px">
+          <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:9.5px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Valoare fără TVA</div>
+            <div style="font-size:16px;font-weight:800;color:#E2E8F0">${dat.rows.filter(c=>c.status==='finalizat_nefacturat').reduce((s,c)=>s+c.brut,0).toFixed(2)} Lei</div>
+          </div>
+          <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:9.5px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">TVA ${tva_pct}% (conf. Backoffice)</div>
+            <div style="font-size:16px;font-weight:800;color:#8BA3C0">+${dat.rows.filter(c=>c.status==='finalizat_nefacturat').reduce((s,c)=>s+c.brut*(c.tva_pct||tva_pct)/100,0).toFixed(2)} Lei</div>
+          </div>
+          <div style="background:rgba(255,140,0,.15);border-radius:10px;padding:12px;text-align:center;border:1px solid rgba(255,140,0,.3)">
+            <div style="font-size:9.5px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Total cu TVA de plată</div>
+            <div style="font-size:18px;font-weight:800;color:#FF8C00">${(dat.total_net + dat.rows.filter(c=>c.status==='finalizat_nefacturat').reduce((s,c)=>s+c.brut*(c.tva_pct||tva_pct)/100,0)).toFixed(2)} Lei</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid rgba(255,255,255,.1)">
+          <div>
+            <div style="font-size:10.5px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px">Datoria Legală My Darrin · Total facturat</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.35)">TVA ${tva_pct}% (România · configurat Backoffice) · Scadent în 30 zile</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:38px;font-weight:800;color:#FF8C00;line-height:1">${(dat.total_net + dat.rows.filter(c=>c.status==='finalizat_nefacturat').reduce((s,c)=>s+c.brut*(c.tva_pct||tva_pct)/100,0)).toFixed(2)}</div>
+            <div style="font-size:13px;color:rgba(255,255,255,.4);margin-top:2px">LEI (cu TVA inclus)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Note -->
+      <div style="font-size:11.5px;color:#5A6B7D;line-height:1.7;padding:12px 14px;background:#F8FAFC;border-radius:10px;border:1px solid #EEF2F7">
+        <strong>Notă:</strong> Prezenta factură reprezintă contravaloarea serviciilor/produselor/prestațiilor furnizate prin intermediul platformei My Darrin (Home Best Pal SRL) și înregistrate ca Datorie Legală a platformei față de furnizor. Plata se efectuează în termen de 30 de zile de la emitere, prin transfer bancar la IBAN-ul indicat mai sus.
+      </div>
+    </div>
+
+    <!-- Butoane acțiuni -->
+    <div style="padding:16px 26px 20px;display:flex;gap:10px;border-top:1px solid #EEF2F7;background:#F8FAFC;border-radius:0 0 22px 22px">
+      <button onclick="printInvoice()" style="flex:1;padding:12px;border-radius:12px;border:none;background:#003366;color:#fff;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">🖨️ Print / PDF</button>
+      <button onclick="confirmInvoice('${nr}')" style="flex:1;padding:12px;border-radius:12px;border:none;background:#FF8C00;color:#fff;font-size:13.5px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">✅ Confirmă și trimite</button>
+      <button onclick="closeInvoiceModal()" style="padding:12px 18px;border-radius:12px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Închide</button>
+    </div>
+  </div>`;
+
+  const wrapper = document.createElement('div');
+  wrapper.id = 'inv-wrapper';
+  wrapper.innerHTML = modalHTML;
+  document.body.appendChild(wrapper);
+  document.body.style.overflow = 'hidden';
 }
 
-// ── UTILS ──
-function setEl(id,val){const e=document.getElementById(id);if(e)e.textContent=val;}
-function showToast(msg,type='ok'){
+function closeInvoiceModal() {
+  const w = document.getElementById('inv-wrapper');
+  if (w) w.remove();
+  document.body.style.overflow = '';
+}
+
+function printInvoice() {
+  const preview = document.getElementById('invoice-preview');
+  if (!preview) return;
+  const w = window.open('','_blank');
+  w.document.write(`<html><head><title>Factură My Darrin</title><style>body{font-family:Arial,sans-serif;margin:20px;color:#1A2332}table{width:100%;border-collapse:collapse}th,td{padding:8px 10px;border:1px solid #D5DFE8;font-size:12px}th{background:#003366;color:#fff}</style></head><body>${preview.innerHTML}</body></html>`);
+  w.document.close();
+  w.print();
+}
+
+function confirmInvoice(nr) {
+  const type = (typeof currentType !== 'undefined') ? currentType : 'servicii';
+  const fs = getFinState(type);
+  // Marcăm comenzile ca facturate
+  fs.comenzi_nefacturate.forEach(c=>{ if(c.status==='finalizat_nefacturat') c.status='facturat'; });
+  closeInvoiceModal();
+  showToast('✅ Factura '+nr+' trimisă · Comenzile trec în status "Facturat - În așteptare plată"');
+  // Re-renderăm panelul
+  setTimeout(()=>{ if(typeof showPanel==='function') showPanel('venituri'); },300);
+}
+
+function toggleAll(cb) {
+  document.querySelectorAll('.cmd-check:not([disabled])').forEach(c=>c.checked=cb.checked);
+}
+
+function exportCSV() { showToast('⬇ Export CSV · date financiare lunare'); }
+function solicitaEliberareGarantie() { showToast('📤 Cerere eliberare garanție trimisă · My Darrin procesează în 48h'); }
+function renderGarantii() { return renderGarantiiBlock((typeof currentType!=='undefined'?currentType:'servicii'), getFinState(typeof currentType!=='undefined'?currentType:'servicii')); }
+
+
+
+// ════ PATCH FINANCIAR — Deblocare valoare la finalizare task ════
+
+function finalizaTask(id, valoare_bruta, garantie_pct) {
+  const type = (typeof currentType !== 'undefined') ? currentType : 'servicii';
+  const fs   = (typeof FINANCIAL_STATE !== 'undefined') ? FINANCIAL_STATE[type] : null;
+  if (!fs) { showToast('✅ Task ' + id + ' finalizat'); return; }
+
+  const garantie = Math.round(valoare_bruta * (garantie_pct||0) / 100);
+  const net      = valoare_bruta - garantie;
+
+  // Adăugăm în comenzi nefacturate
+  const existing = fs.comenzi_nefacturate.find(c => c.id === id);
+  if (!existing) {
+    fs.comenzi_nefacturate.unshift({
+      id: id,
+      desc: 'Lucrare finalizată · Task ' + id,
+      data: new Date().toLocaleDateString('ro-RO'),
+      brut: valoare_bruta,
+      com_pct: 0, com: 0,
+      net: net,
+      garantie_pct: garantie_pct || 0,
+      garantie: garantie,
+      de_facturat: net,
+      status: 'finalizat_nefacturat',
+    });
+    fs.garantie_totala = (fs.garantie_totala || 0) + garantie;
+  }
+
+  showToast(
+    '✅ Task ' + id + ' finalizat · ' +
+    net + ' Lei deblocați pentru facturare' +
+    (garantie > 0 ? ' · ' + garantie + ' Lei garanție reținută' : '')
+  );
+
+  // Actualizăm panelul dacă suntem pe venituri
+  if ((typeof currentPanel !== 'undefined') && currentPanel === 'venituri') {
+    setTimeout(() => { if (typeof showPanel === 'function') showPanel('venituri'); }, 200);
+  }
+}
+
+function marchezaExpediatCuFinanciar(id, valoare_neta) {
+  const type = (typeof currentType !== 'undefined') ? currentType : 'materiale';
+  const fs   = (typeof FINANCIAL_STATE !== 'undefined') ? FINANCIAL_STATE[type] : null;
+  if (fs) {
+    const existing = fs.comenzi_nefacturate.find(c => c.id === id);
+    if (!existing) {
+      fs.comenzi_nefacturate.unshift({
+        id: id, desc: 'Comandă expediată ' + id,
+        data: new Date().toLocaleDateString('ro-RO'),
+        brut: valoare_neta, com_pct: 0, com: 0,
+        net: valoare_neta, garantie_pct: 0, garantie: 0,
+        de_facturat: valoare_neta, status: 'finalizat_nefacturat',
+      });
+    }
+  }
+  showToast('✅ ' + id + ' pregătit · ' + valoare_neta + ' Lei adăugați în balanța facturabilă → Alertă Curier trimisă');
+}
+
+
+function showToast(msg){
   const t=document.createElement('div');
-  t.style.cssText='position:fixed;bottom:20px;right:20px;z-index:9999;padding:12px 18px;border-radius:11px;font-size:12.5px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.3);animation:slideUp .3s ease;max-width:320px;line-height:1.5;font-family:inherit;border:1px solid;'+(type==='ok'?'background:#1E2A3B;color:#E2E8F0;border-color:#2D3F55':'background:#1E3B2E;color:#4ADE80;border-color:rgba(26,122,58,.3)');
-  t.textContent=msg;
-  document.body.appendChild(t);
-  setTimeout(()=>t.remove(),2800);
-}
-function handleImport(inp){if(inp.files[0])showToast('📊 '+inp.files[0].name+' · Validare structură...','ok');}
-function dlTemplate(){showToast('⬇ Template CSV descărcat · Completează și reimportă','ok');}
-function selectInteg(el,name){
-  document.querySelectorAll('#panel-import .f-card:last-child [style*="border-radius:11px"]').forEach(e=>e.style.borderColor='#2D3F55');
-  el.style.borderColor='#FF8C00';
-  showToast('🔗 '+name+' selectat · Instrucțiuni disponibile după activare','ok');
+  t.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;background:#1A2332;color:#fff;padding:11px 20px;border-radius:12px;font-size:12.5px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.2);white-space:nowrap;max-width:90vw;text-align:center;font-family:inherit';
+  t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2800);
 }
 
-// ── INIT ──
 document.addEventListener('DOMContentLoaded',()=>{
-  initCalStates();
-  renderOverviewOrders();
-  renderStocTable();
-  renderCriticalStock();
-  renderProducts();
-  renderMiniCal();
-  renderFullOrders();
-  calcSim();
+  document.documentElement.style.setProperty('--accent','#003366');
+  renderNav('materiale');
+  showPanel('overview');
   if(typeof lucide!=='undefined') lucide.createIcons();
 });
 </script>
-<!-- ════ FOOTER STANDARD My Darrin ════ -->
-<div style="background:#003366;padding:20px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px">
-  <div style="display:flex;align-items:center;gap:10px">
-    <div style="width:30px;height:30px;background:#FF8C00;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff">D</div>
-    <div style="font-size:11px;color:rgba(255,255,255,.4)">© 2026 Home Best Pal SRL · My Darrin</div>
-  </div>
-  <div style="display:flex;gap:14px;flex-wrap:wrap">
-    <a href="mydarrin-v3.html" style="font-size:11.5px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">🏠 Acasă</a>
-    <a href="mydarrin-catalog.html" style="font-size:11.5px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">📦 Catalog</a>
-    <a href="mydarrin-marketplace.html" style="font-size:11.5px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">🏪 Marketplace</a>
-    <a href="mydarrin-investitori.html" style="font-size:11.5px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">💼 Investitori</a>
-    <a href="mydarrin-superadmin.html" style="font-size:11.5px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">🔐 Admin</a>
-  </div>
-</div>
-
 </body>
 </html>
