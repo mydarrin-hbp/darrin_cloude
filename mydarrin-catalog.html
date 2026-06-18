@@ -3535,7 +3535,9 @@ function showAIResult(txt, hasFiles){
 
 function goToService(slug){
   closeConsultanta();
-  window.open('mydarrin-produs.html?slug='+slug+'&type=serviciu','_blank');
+  const base = (window.location.href.replace(/\/[^/]*$/, '') + '/').replace(/\/+$/, '/');
+  const path = base + 'mydarrin-produs.html';
+  window.location.href = path + '?slug=' + encodeURIComponent(slug) + '&type=serviciu';
 }
 
 // ── ARGINT ──
@@ -3610,6 +3612,41 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&consOpen) closeCon
     Cum funcționează
   </a>
 </div>
+
+
+<script>
+// ════ URGENT FILTER AUTO-ACTIVATE ════
+(function() {
+  document.addEventListener('DOMContentLoaded', function() {
+    const hash = window.location.hash;
+    const params = new URLSearchParams(window.location.search);
+    
+    // Dacă URL conține #urgent sau ?urgent=true
+    if (hash === '#urgent' || params.get('urgent') === 'true') {
+      // Activăm filtrul urgent
+      const urgentBtn = document.querySelector('[data-filter="urgent"], .filter-urgent, #filter-urgent');
+      if (urgentBtn) {
+        urgentBtn.click();
+        urgentBtn.classList.add('active');
+      }
+      // Scroll la catalog
+      const cat = document.querySelector('#catalog, .catalog-grid');
+      if (cat) cat.scrollIntoView({behavior:'smooth', block:'start'});
+    }
+    
+    // Sticky search pe mobil — adăugăm clasa sticky la bara de căutare
+    if (window.innerWidth <= 768) {
+      const searchBar = document.querySelector('.search-bar, [class*="search"], input[type="search"], input[placeholder*="Caută"]');
+      if (searchBar) {
+        const wrapper = searchBar.closest('div') || searchBar.parentElement;
+        if (wrapper) {
+          wrapper.style.cssText += ';position:sticky;top:56px;z-index:90;background:#fff;padding:8px 0;';
+        }
+      }
+    }
+  });
+})();
+</script>
 
 </body>
 </html>
@@ -3915,7 +3952,7 @@ function addToCart(id, title, priceRon){
   // Deschide direct pagina produsului
   if(slug){
     setTimeout(()=>{
-      window.open(`mydarrin-produs.html?slug=${slug}&type=${typeParam}`, '_blank');
+      window.location.href = `mydarrin-produs.htmlmydarrin-produs.html?slug=${slug}&type=${typeParam}`;
     }, 150);
   } else {
     // fallback: deschide coșul
@@ -4024,7 +4061,7 @@ function openService(slug, title){
   const type = card ? (card.dataset.tab || 'servicii') : 'servicii';
   const typeMap = {servicii:'serviciu', materiale:'material', inchiriere:'inchiriere'};
   const typeParam = typeMap[type] || 'serviciu';
-  window.open(`mydarrin-produs.html?slug=${slug}&type=${typeParam}`, '_blank');
+  window.location.href = `mydarrin-produs.htmlmydarrin-produs.html?slug=${slug}&type=${typeParam}`;
 }
 
 // ── CHECKOUT + DEVIZ ──
@@ -4034,7 +4071,7 @@ function proceedCheckout(){
   // Deschide pagina primului produs pentru configurare completă
   const first = cartItems[0];
   if(first && first.slug){
-    window.open(`mydarrin-produs.html?slug=${first.slug}&type=${first.type||'serviciu'}`, '_blank');
+    window.location.href = `mydarrin-produs.htmlmydarrin-produs.html?slug=${first.slug}&type=${first.type||'serviciu'}`;
   } else {
     window.open('mydarrin-checkout.html','_blank');
   }
@@ -4043,7 +4080,7 @@ function proceedCheckout(){
 function openDevizAI(){
   if(cartItems.length>0){
     const first=cartItems[0];
-    window.open(`mydarrin-produs.html?slug=${first.slug||'inlocuire-calorifer'}&type=${first.type||'serviciu'}`, '_blank');
+    window.location.href = `mydarrin-produs.htmlmydarrin-produs.html?slug=${first.slug||'inlocuire-calorifer'}&type=${first.type||'serviciu'}`;
   } else {
     window.open('mydarrin-deviz-engine.html','_blank');
   }
@@ -4080,7 +4117,7 @@ function switchTab(name,btn){}
 function configureItem(slug, type){
   closeCart();
   if(slug){
-    window.open(`mydarrin-produs.html?slug=${slug}&type=${type}`, '_blank');
+    window.location.href = `mydarrin-produs.htmlmydarrin-produs.html?slug=${slug}&type=${type}`;
   }
 }
 

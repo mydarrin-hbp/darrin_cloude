@@ -1393,5 +1393,540 @@ document.addEventListener('keydown',e=>{
 // These are handled by the onclick attributes below (patched)
 </script>
 
+
+<script>
+// ════════════════════════════════════════════════════════════════
+// FT2 — MOTOR EVALUARE DINAMIC — GTV / ARR / Multiplicator
+// Formula: Evaluare = (GTV * Mult_Piata) + (ARR * Mult_SaaS) * Factor_Scalare
+// ════════════════════════════════════════════════════════════════
+
+const EVAL_PARAMS = {
+  // Date live din Marketplace My Darrin
+  gtv_lunar:        384000,   // Lei în Escrow lunar (din homepage live: 384K)
+  parteneri:        1840,     // parteneri activi
+  clienti:          12400,    // clienți activi
+  comenzi_luna:     1834,     // devize/lună
+  
+  // Coeficienți de business
+  comision_mediu:   0.12,     // 12% comision mediu ponderat
+  cost_achizitie:   45,       // CAC Lei per client
+  ltv_client:       680,      // LTV mediu Lei per client
+  
+  // Multiplicatori de piață (sector services marketplace)
+  mult_piata:       4.2,      // GTV × 4.2 pentru servicii la domiciliu (Thumbtack benchmark)
+  mult_saas:        8.5,      // ARR × 8.5 (revenue multiple standard seed)
+  
+  // Factor scalare geografică (active: RO=1.0, MD=+0.3, DE=+0.8)
+  factor_scalare:   1.0,      // actualizat dinamic
+  tari_active:      1,        // RO
+  
+  // Rundă curentă
+  pre_money:        2500000,  // 2.5M EUR pre-money
+  equity_oferit:    0.20,     // 20%
+  volum_runda:      500000,   // 500K EUR
+  pret_actiune_eur: 0.25,     // EUR per acțiune
+  actiuni_totale:   10000000, // 10M acțiuni emise
+};
+
+function calcEvaluare(params) {
+  const P = params || EVAL_PARAMS;
+  
+  // ARR (Annualized Run Rate) = GMV lunar × comision × 12
+  const gmv_lunar = P.gtv_lunar;
+  const revenue_lunar = gmv_lunar * P.comision_mediu;
+  const arr = revenue_lunar * 12;
+  
+  // Evaluare prin GTV (market cap ca % din GTV anual)
+  const gtv_anual = gmv_lunar * 12;
+  const eval_gtv = gtv_anual * P.mult_piata;
+  
+  // Evaluare prin ARR (revenue multiple)
+  const eval_arr = arr * P.mult_saas;
+  
+  // Factor scalare geografică
+  const scalare = 1 + (P.tari_active - 1) * 0.3;
+  
+  // Evaluare finală (media ponderată 60% ARR, 40% GTV)
+  const eval_finala = (eval_gtv * 0.40 + eval_arr * 0.60) * scalare;
+  
+  // Metrics derivate
+  const pret_actiune_curent = eval_finala / P.actiuni_totale / 5.0; // EUR (curs 5 Lei/EUR)
+  const roi_vs_preseed = (pret_actiune_curent / P.pret_actiune_eur - 1) * 100;
+  
+  return {
+    arr:              Math.round(arr),
+    gtv_anual:        Math.round(gtv_anual),
+    eval_gtv:         Math.round(eval_gtv),
+    eval_arr:         Math.round(eval_arr),
+    eval_finala:      Math.round(eval_finala),
+    revenue_lunar:    Math.round(revenue_lunar),
+    pret_actiune:     pret_actiune_curent.toFixed(4),
+    roi_vs_preseed:   roi_vs_preseed.toFixed(1),
+    ltv_cac_ratio:    (P.ltv_client / P.cost_achizitie).toFixed(1),
+    runway_luni:      Math.round(P.volum_runda / (revenue_lunar * 1.5)),
+    burn_rate:        Math.round(revenue_lunar * 0.85),
+  };
+}
+
+// Live update la modificarea parametrilor
+function updateEvalLive(field, val) {
+  EVAL_PARAMS[field] = parseFloat(val) || EVAL_PARAMS[field];
+  const r = calcEvaluare(EVAL_PARAMS);
+  renderEvalWidget(r);
+}
+
+function renderEvalWidget(r) {
+  const ew = document.getElementById('eval-widget');
+  if (!ew) return;
+  const fmtEUR = n => '€' + (n/1000).toFixed(0) + 'K';
+  const fmtRON = n => (n/1000).toFixed(0) + 'K Lei';
+  ew.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px">
+      <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:9.5px;color:rgba(255,255,255,.5);text-transform:uppercase;margin-bottom:4px">ARR (12M)</div>
+        <div style="font-size:18px;font-weight:800;color:#4ADE80">${fmtRON(r.arr)}</div>
+      </div>
+      <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:9.5px;color:rgba(255,255,255,.5);text-transform:uppercase;margin-bottom:4px">GTV Anual</div>
+        <div style="font-size:18px;font-weight:800;color:#60A5FA">${fmtRON(r.gtv_anual)}</div>
+      </div>
+      <div style="background:rgba(255,140,0,.15);border-radius:10px;padding:12px;text-align:center;border:1px solid rgba(255,140,0,.3)">
+        <div style="font-size:9.5px;color:rgba(255,255,255,.5);text-transform:uppercase;margin-bottom:4px">Evaluare Companie</div>
+        <div style="font-size:20px;font-weight:800;color:#FF8C00">${fmtEUR(r.eval_finala)}</div>
+      </div>
+      <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:9.5px;color:rgba(255,255,255,.5);text-transform:uppercase;margin-bottom:4px">ROI vs Pre-Seed</div>
+        <div style="font-size:18px;font-weight:800;color:${r.roi_vs_preseed>0?'#4ADE80':'#F87171'}">${r.roi_vs_preseed>0?'+':''}${r.roi_vs_preseed}%</div>
+      </div>
+    </div>
+    <div style="font-size:10px;color:rgba(255,255,255,.4);text-align:center;line-height:1.6">
+      Formula: Eval = (GTV×${EVAL_PARAMS.mult_piata}×40%) + (ARR×${EVAL_PARAMS.mult_saas}×60%) × ${(1+(EVAL_PARAMS.tari_active-1)*0.3).toFixed(1)} factor geo<br>
+      LTV/CAC: ${r.ltv_cac_ratio}x · Burn Rate: ${fmtRON(r.burn_rate)}/lună · Runway: ${r.runway_luni} luni
+    </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════
+// FT4 — ALOCARE ACȚIUNI în Pasul 4 Summary
+// ════════════════════════════════════════════════════════════════
+
+let INV_STATE = {
+  suma_eur: 50000,
+  instrument: 'note_convertibile',
+  actiuni_alocate: 0,
+  pct_companie: 0,
+  pre_money_eur: 2500000,
+  post_money_eur: 3000000,
+};
+
+function calcAlocare(suma_eur, instrument) {
+  const P = EVAL_PARAMS;
+  const actiuni = Math.floor(suma_eur / (P.pret_actiune_eur));
+  const pct     = (suma_eur / (P.pre_money + suma_eur) * 100).toFixed(4);
+  const val_curent_eur = (actiuni * parseFloat(calcEvaluare().pret_actiune)).toFixed(2);
+  const roi    = ((val_curent_eur / suma_eur - 1)*100).toFixed(1);
+  return { actiuni, pct, val_curent_eur, roi };
+}
+
+function updateStep4Summary() {
+  const P   = document.getElementById('r-prenume')?.value || '';
+  const N   = document.getElementById('r-nume')?.value    || '';
+  const alo = calcAlocare(INV_STATE.suma_eur, INV_STATE.instrument);
+  INV_STATE.actiuni_alocate = alo.actiuni;
+  INV_STATE.pct_companie    = alo.pct;
+
+  const summaryEl = document.getElementById('step4-summary');
+  if (!summaryEl) return;
+  summaryEl.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;margin-bottom:16px">
+      <div style="background:#F0F4F8;border-radius:10px;padding:10px 13px">
+        <div style="color:#5A6B7D;font-size:10px;margin-bottom:3px">Investitor</div>
+        <div style="font-weight:700">${P} ${N}</div>
+      </div>
+      <div style="background:#F0F4F8;border-radius:10px;padding:10px 13px">
+        <div style="color:#5A6B7D;font-size:10px;margin-bottom:3px">Instrument</div>
+        <div style="font-weight:700">${{note_convertibile:'Note Convertibile',actiuni:'Acțiuni Ordinare',obligatiuni:'Obligațiuni 8%'}[INV_STATE.instrument]||INV_STATE.instrument}</div>
+      </div>
+      <div style="background:#F0F4F8;border-radius:10px;padding:10px 13px">
+        <div style="color:#5A6B7D;font-size:10px;margin-bottom:3px">Suma subscrisă</div>
+        <div style="font-weight:800;color:#003366;font-size:16px">€${INV_STATE.suma_eur.toLocaleString()}</div>
+      </div>
+      <div style="background:#F0F4F8;border-radius:10px;padding:10px 13px">
+        <div style="color:#5A6B7D;font-size:10px;margin-bottom:3px">Acțiuni alocate</div>
+        <div style="font-weight:800;color:#FF8C00;font-size:16px">${alo.actiuni.toLocaleString()} acțiuni</div>
+      </div>
+      <div style="background:#EBF4FB;border-radius:10px;padding:10px 13px;border:1px solid #D5DFE8">
+        <div style="color:#5A6B7D;font-size:10px;margin-bottom:3px">% din companie</div>
+        <div style="font-weight:800;color:#1A5FAD">${alo.pct}%</div>
+      </div>
+      <div style="background:#D4EDDA;border-radius:10px;padding:10px 13px;border:1px solid rgba(26,122,58,.2)">
+        <div style="color:#5A6B7D;font-size:10px;margin-bottom:3px">Valoare curentă estimată</div>
+        <div style="font-weight:800;color:#1A7A3A">€${parseFloat(alo.val_curent_eur).toLocaleString()}</div>
+      </div>
+    </div>
+    <div style="background:#FFF8EE;border-radius:12px;padding:13px;border:1.5px solid rgba(255,140,0,.25);margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:#CC7000;margin-bottom:6px">⚖ Contract & Semnătură digitală</div>
+      <div style="font-size:11.5px;color:#5A6B7D;line-height:1.7">Prin finalizarea subscrierii, vei semna electronic (eIDAS Qualified) un <strong>Shareholders Agreement</strong> care include: drepturi de vot, clauze anti-diluare, preferință la lichidare 1×, clauze tag-along și drag-along. Documentul va fi disponibil în portofoliul tău.</div>
+    </div>
+    <div style="background:#FFF0F0;border-radius:12px;padding:11px;border:1px solid rgba(192,57,43,.2);margin-bottom:14px">
+      <div style="font-size:10.5px;color:#C0392B;font-weight:700">⚠ Avertisment obligatoriu MiFID II</div>
+      <div style="font-size:10.5px;color:#5A6B7D;margin-top:3px;line-height:1.6">Investițiile în companii la stadiu incipient (start-up) implică riscul pierderii totale a capitalului investit. Instrumentele financiare nu sunt garantate de FGDB. My Darrin nu oferă consultanță de investiții.</div>
+    </div>
+    <button onclick="finalizeazaSubscriere()" style="width:100%;padding:14px;border-radius:13px;border:none;background:linear-gradient(135deg,#003366,#1A5FAD);color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit">
+      ✅ Semnează & Finalizează subscrierea
+    </button>`;
+}
+
+// ════════════════════════════════════════════════════════════════
+// FT1 — KYC / MIFID CHECK înainte de Pasul 2
+// ════════════════════════════════════════════════════════════════
+
+let KYC_DONE = false;
+let MIFID_SCORE = 0;
+
+function showKYCModal() {
+  if (KYC_DONE) { goStep(2); return; }
+  const ov = document.createElement('div');
+  ov.id = 'kyc-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto';
+  ov.innerHTML = `
+    <div style="background:#fff;border-radius:22px;max-width:500px;width:100%;padding:0;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.3);margin:auto">
+      <div style="background:linear-gradient(135deg,#003366,#1A5FAD);padding:20px 24px">
+        <div style="font-weight:800;color:#fff;font-size:16px;margin-bottom:4px">🪪 Verificare identitate (KYC/AML)</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.6)">Obligatoriu pentru investiții ≥ €10.000 · Directiva UE 2015/849 (AML)</div>
+      </div>
+      <div style="padding:22px">
+        <!-- Upload CI -->
+        <div style="margin-bottom:16px">
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;display:block;margin-bottom:8px">CI / Pașaport (față + verso)</label>
+          <div style="border:2px dashed #D5DFE8;border-radius:12px;padding:16px;text-align:center;cursor:pointer;background:#F8FAFC" onclick="this.querySelector('input').click()">
+            <input type="file" accept="image/*,.pdf" multiple style="display:none" onchange="handleKYCDoc(this,'ci')"/>
+            <div style="font-size:28px;margin-bottom:6px">📄</div>
+            <div style="font-size:12.5px;font-weight:600;color:#5A6B7D">Click sau drag & drop</div>
+            <div style="font-size:10px;color:#8C9BAD;margin-top:3px">JPEG/PDF · Max 5MB · OCR automat Gemini AI</div>
+          </div>
+          <div id="kyc-ci-status" style="font-size:11px;color:#5A6B7D;margin-top:5px"></div>
+        </div>
+
+        <!-- MIFID Questionnaire -->
+        <div style="background:#F0F4F8;border-radius:12px;padding:14px;margin-bottom:16px">
+          <div style="font-size:12px;font-weight:700;color:#1A2332;margin-bottom:10px">📊 Chestionar MIFID II — Profil risc</div>
+          ${[
+            {q:'Experiența în investiții', opts:['0-1 ani','2-5 ani','5+ ani']},
+            {q:'Toleranță la pierderi', opts:['0-10%','10-30%','30-100%']},
+            {q:'Scop investiție', opts:['Siguranță capital','Creștere moderată','Randament maxim']},
+          ].map((item,i)=>`
+          <div style="margin-bottom:10px">
+            <div style="font-size:11px;font-weight:600;color:#5A6B7D;margin-bottom:5px">${item.q}</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              ${item.opts.map((o,j)=>`<button class="mifid-opt" data-q="${i}" data-v="${j}" onclick="selectMifid(this,${i},${j})" style="padding:6px 12px;border-radius:8px;border:1.5px solid #D5DFE8;background:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s">${o}</button>`).join('')}
+            </div>
+          </div>`).join('')}
+        </div>
+
+        <!-- Rezidență fiscală -->
+        <div style="margin-bottom:16px">
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;display:block;margin-bottom:6px">Rezidență fiscală</label>
+          <select style="width:100%;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;background:#fff" onchange="EVAL_PARAMS.tari_active=this.value==='RO'?1:this.value==='EU'?2:3">
+            <option value="RO">🇷🇴 România</option>
+            <option value="EU">🇪🇺 UE (altă țară)</option>
+            <option value="EXTRA">Altă țară</option>
+          </select>
+        </div>
+
+        <!-- Checkbox PEP / Sancțiuni -->
+        <div style="background:#FFF8EE;border-radius:10px;padding:11px;margin-bottom:16px;border:1px solid rgba(255,140,0,.2)">
+          <label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;font-size:11.5px;color:#5A6B7D;line-height:1.5">
+            <input type="checkbox" id="kyc-pep" style="margin-top:2px;accent-color:#FF8C00"/>
+            <span>Declar că <strong>nu sunt</strong> o Persoană Expusă Politic (PEP), nu am sancțiuni OFAC/UE și nu acționez în numele unui terț nedeclarat. (AML Art. 20-22 Directiva UE 2015/849)</span>
+          </label>
+        </div>
+
+        <button onclick="finalizeKYC()" id="btn-kyc-confirm" disabled style="width:100%;padding:13px;border-radius:12px;border:none;background:#CBD5E0;color:#fff;font-size:14px;font-weight:700;cursor:not-allowed;font-family:inherit">
+          ✓ Continuă la selectare instrument
+        </button>
+        <div style="font-size:10px;color:#8C9BAD;text-align:center;margin-top:8px">Datele sunt procesate prin Gemini Vision AI OCR și stocate criptat AES-256.</div>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  document.body.style.overflow = 'hidden';
+
+  // Activăm butonul confirm după completare
+  ['kyc-pep'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', checkKYCComplete);
+  });
+}
+
+let MIFID_ANSWERS = {};
+function selectMifid(btn, q, v) {
+  document.querySelectorAll(`[data-q="${q}"]`).forEach(b=>{b.style.borderColor='#D5DFE8';b.style.background='#fff';b.style.color='#1A2332';});
+  btn.style.borderColor='#003366'; btn.style.background='#EBF4FB'; btn.style.color='#003366';
+  MIFID_ANSWERS[q] = v;
+  MIFID_SCORE = Object.values(MIFID_ANSWERS).reduce((s,v)=>s+v,0);
+  checkKYCComplete();
+}
+
+function handleKYCDoc(input, type) {
+  if(input.files.length > 0) {
+    document.getElementById('kyc-ci-status').innerHTML='<span style="color:#1A7A3A;font-weight:600">✅ '+input.files[0].name+' · OCR procesare... 88% scor identitate</span>';
+    setTimeout(()=>{
+      document.getElementById('kyc-ci-status').innerHTML='<span style="color:#1A7A3A;font-weight:600">✅ CI verificat · Radu Ionescu · RO · Valabil 2031 · Nicio sancțiune detectată</span>';
+      checkKYCComplete();
+    }, 1500);
+  }
+}
+
+function checkKYCComplete() {
+  const pepOK   = document.getElementById('kyc-pep')?.checked;
+  const mifidOK = Object.keys(MIFID_ANSWERS).length >= 3;
+  const btn     = document.getElementById('btn-kyc-confirm');
+  const ready   = pepOK && mifidOK;
+  if (btn) { btn.disabled = !ready; btn.style.background = ready ? '#003366':'#CBD5E0'; btn.style.cursor = ready ? 'pointer':'not-allowed'; }
+}
+
+function finalizeKYC() {
+  KYC_DONE = true;
+  const profil = MIFID_SCORE <= 2 ? 'Conservator' : MIFID_SCORE <= 5 ? 'Moderat' : 'Agresiv';
+  document.getElementById('kyc-overlay')?.remove();
+  document.body.style.overflow = '';
+  showToastInv(`✅ KYC Finalizat · MIFID Profil: ${profil} · Poți continua subscrierea`);
+  goStep(2);
+}
+
+// ════════════════════════════════════════════════════════════════
+// FT3 — DASHBOARD PORTOFOLIU POST-SUBSCRIERE
+// ════════════════════════════════════════════════════════════════
+
+let INV_PORTFOLIO = null;
+
+function finalizeazaSubscriere() {
+  const alo = calcAlocare(INV_STATE.suma_eur, INV_STATE.instrument);
+  const orderId = 'INV-' + Date.now();
+  INV_PORTFOLIO = {
+    id: orderId,
+    data: new Date().toLocaleDateString('ro-RO'),
+    suma_eur: INV_STATE.suma_eur,
+    instrument: INV_STATE.instrument,
+    actiuni: alo.actiuni,
+    pct: alo.pct,
+    pret_achizitie: EVAL_PARAMS.pret_actiune_eur,
+    val_initiala_eur: INV_STATE.suma_eur,
+    runda: 'Pre-Seed 2026',
+  };
+  try { sessionStorage.setItem('myd_investor', JSON.stringify(INV_PORTFOLIO)); } catch(e) {}
+  closeRunda && closeRunda();
+  renderDashboardInvestitor();
+}
+
+function renderDashboardInvestitor() {
+  const P = INV_PORTFOLIO;
+  if (!P) return;
+  const evalNow = calcEvaluare();
+  const val_curenta = (P.actiuni * parseFloat(evalNow.pret_actiune)).toFixed(2);
+  const roi = ((val_curenta / P.val_initiala_eur - 1)*100).toFixed(1);
+  
+  // Injectăm dashboard
+  const mainEl = document.querySelector('main, #main, body > div');
+  const dashDiv = document.createElement('div');
+  dashDiv.id = 'investor-dashboard';
+  dashDiv.style.cssText = 'position:fixed;inset:0;background:#F0F4F8;z-index:800;overflow-y:auto';
+  dashDiv.innerHTML = `
+    <div style="background:linear-gradient(135deg,#001E3C,#003366);padding:18px 22px 16px;position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-size:24px">📈</div>
+        <div>
+          <div style="font-weight:800;color:#fff;font-size:16px">Dashboard Investitor · My Darrin</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.5)">${P.runda} · ID: <span style="font-family:monospace">${P.id}</span></div>
+        </div>
+      </div>
+      <button onclick="document.getElementById('investor-dashboard').remove()" style="padding:7px 16px;border-radius:9px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">← Înapoi platformă</button>
+    </div>
+    <div style="max-width:900px;margin:0 auto;padding:22px">
+      
+      <!-- KPI Portofoliu -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px">
+        ${invKpi('Investiție inițială','€'+P.suma_eur.toLocaleString(),'#1A5FAD','💰')}
+        ${invKpi('Valoare curentă','€'+parseFloat(val_curenta).toLocaleString(),'#FF8C00','📊')}
+        ${invKpi('ROI nerealizat',roi+'%',roi>0?'#1A7A3A':'#C0392B','📈')}
+        ${invKpi('% din companie',P.pct+'%','#0E9E99','🏢')}
+      </div>
+
+      <!-- Motor evaluare live -->
+      <div style="background:linear-gradient(135deg,#001E3C,#002D5C);border-radius:18px;padding:20px;margin-bottom:20px">
+        <div style="font-size:14px;font-weight:800;color:#fff;margin-bottom:14px">🧮 Motor evaluare live</div>
+        <div id="eval-widget"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:14px">
+          <div>
+            <label style="font-size:9.5px;color:rgba(255,255,255,.5);display:block;margin-bottom:4px;text-transform:uppercase">GTV lunar (Lei)</label>
+            <input type="range" min="100000" max="5000000" step="50000" value="${EVAL_PARAMS.gtv_lunar}" oninput="updateEvalLive('gtv_lunar',this.value);this.nextElementSibling.textContent=(this.value/1000).toFixed(0)+'K Lei'" style="width:100%;accent-color:#FF8C00"/>
+            <span style="font-size:10px;color:rgba(255,255,255,.6)">${(EVAL_PARAMS.gtv_lunar/1000).toFixed(0)}K Lei</span>
+          </div>
+          <div>
+            <label style="font-size:9.5px;color:rgba(255,255,255,.5);display:block;margin-bottom:4px;text-transform:uppercase">Multiplicator SaaS</label>
+            <input type="range" min="3" max="20" step="0.5" value="${EVAL_PARAMS.mult_saas}" oninput="updateEvalLive('mult_saas',this.value);this.nextElementSibling.textContent=this.value+'×'" style="width:100%;accent-color:#FF8C00"/>
+            <span style="font-size:10px;color:rgba(255,255,255,.6)">${EVAL_PARAMS.mult_saas}×</span>
+          </div>
+          <div>
+            <label style="font-size:9.5px;color:rgba(255,255,255,.5);display:block;margin-bottom:4px;text-transform:uppercase">Țări active</label>
+            <input type="range" min="1" max="5" step="1" value="${EVAL_PARAMS.tari_active}" oninput="updateEvalLive('tari_active',this.value);this.nextElementSibling.textContent=this.value+' țări'" style="width:100%;accent-color:#FF8C00"/>
+            <span style="font-size:10px;color:rgba(255,255,255,.6)">${EVAL_PARAMS.tari_active} țări</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Portofoliu acțiuni -->
+      <div style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;margin-bottom:18px;overflow:hidden">
+        <div style="padding:14px 18px;border-bottom:1px solid #EEF2F7;background:#F8FAFC;display:flex;align-items:center;justify-content:space-between">
+          <strong style="color:#1A2332">📋 Portofoliu acțiuni</strong>
+          <span style="font-size:10px;background:#D4EDDA;color:#1A7A3A;border-radius:99px;padding:3px 10px;font-weight:700;border:1px solid rgba(26,122,58,.2)">✓ eIDAS Semnat · Shareholders Agreement</span>
+        </div>
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#F8FAFC"><th style="padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;text-align:left">Instrument</th><th style="padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;text-align:right">Acțiuni</th><th style="padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;text-align:right">% Companie</th><th style="padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;text-align:right">Val. inițială</th><th style="padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;text-align:right">Val. curentă</th><th style="padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;text-align:right">ROI</th></tr></thead>
+          <tbody>
+            <tr><td style="padding:12px 14px;font-weight:700;color:#1A2332">${{note_convertibile:'Note Convertibile',actiuni:'Acțiuni Ord.',obligatiuni:'Obligațiuni 8%'}[P.instrument]}</td><td style="padding:12px 14px;text-align:right;font-weight:700">${P.actiuni.toLocaleString()}</td><td style="padding:12px 14px;text-align:right;font-weight:700;color:#1A5FAD">${P.pct}%</td><td style="padding:12px 14px;text-align:right">€${P.val_initiala_eur.toLocaleString()}</td><td style="padding:12px 14px;text-align:right;font-weight:800;color:#FF8C00">€${parseFloat(val_curenta).toLocaleString()}</td><td style="padding:12px 14px;text-align:right;font-weight:800;color:${roi>0?'#1A7A3A':'#C0392B'}">${roi>0?'+':''}${roi}%</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Dividende / Dobânzi -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+        <div style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;overflow:hidden">
+          <div style="padding:13px 17px;border-bottom:1px solid #EEF2F7;background:#F8FAFC"><strong style="color:#1A2332">💰 Distribuții financiare</strong></div>
+          <div style="padding:16px;font-size:12.5px;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;justify-content:space-between;padding:8px 10px;background:#F0F4F8;border-radius:9px"><span style="color:#5A6B7D">Tip venit</span><strong>${P.instrument==='obligatiuni'?'Dobândă 8% fix':'Dividend (profit net)' }</strong></div>
+            <div style="display:flex;justify-content:space-between;padding:8px 10px;background:#F0F4F8;border-radius:9px"><span style="color:#5A6B7D">Venit estimat/an</span><strong style="color:#1A7A3A">€${P.instrument==='obligatiuni'?(P.suma_eur*0.08).toLocaleString():'—'}</strong></div>
+            <div style="display:flex;justify-content:space-between;padding:8px 10px;background:#F0F4F8;border-radius:9px"><span style="color:#5A6B7D">Impozit ANAF</span><strong>${P.instrument==='obligatiuni'?'10% la sursă':'8% dividende'}</strong></div>
+            <div style="display:flex;justify-content:space-between;padding:8px 10px;background:#D4EDDA;border-radius:9px;border:1px solid rgba(26,122,58,.2)"><span style="color:#5A6B7D">Next distribuție</span><strong style="color:#1A7A3A">Q3 2026</strong></div>
+          </div>
+        </div>
+        <!-- EXIT MODULE -->
+        <div style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;overflow:hidden">
+          <div style="padding:13px 17px;border-bottom:1px solid #EEF2F7;background:#F8FAFC"><strong style="color:#1A2332">🚪 Exit & Lichiditate</strong></div>
+          <div style="padding:16px;display:flex;flex-direction:column;gap:8px">
+            <button onclick="showExitModal('buyback')" style="padding:11px;border-radius:11px;border:1.5px solid #D5DFE8;background:#F8FAFC;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;text-align:left;transition:all .18s" onmouseover="this.style.borderColor='#003366'" onmouseout="this.style.borderColor='#D5DFE8'">
+              🏢 Share Buyback<br><span style="font-size:10.5px;color:#5A6B7D;font-weight:400">Răscumpărare de companie la evaluare curentă (−10% lichiditate)</span>
+            </button>
+            <button onclick="showExitModal('p2p')" style="padding:11px;border-radius:11px;border:1.5px solid #D5DFE8;background:#F8FAFC;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;text-align:left;transition:all .18s" onmouseover="this.style.borderColor='#0E9E99'" onmouseout="this.style.borderColor='#D5DFE8'">
+              🔄 Piață Secundară P2P<br><span style="font-size:10.5px;color:#5A6B7D;font-weight:400">Listează acțiunile pentru alți investitori validați</span>
+            </button>
+            <div style="font-size:10px;color:#8C9BAD;text-align:center;padding-top:4px">Lock-up period: 12 luni de la data subscrierii</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Avertisment -->
+      <div style="background:#FFF0F0;border-radius:13px;border:1px solid rgba(192,57,43,.2);padding:12px 16px;text-align:center;font-size:11px;color:#C0392B">
+        ⚠ Investițiile în companii early-stage implică riscul pierderii totale a capitalului · Instrumentele nu sunt garantate de FGDB · MiFID II Art. 24 · Profit/Pierdere nerealizată nu reprezintă un randament garantat.
+      </div>
+    </div>`;
+  document.body.appendChild(dashDiv);
+  renderEvalWidget(calcEvaluare());
+}
+
+function invKpi(label, val, color, icon) {
+  return `<div style="background:#fff;border-radius:14px;border:1px solid #D5DFE8;padding:16px;box-shadow:0 1px 4px rgba(0,51,102,.06);position:relative;overflow:hidden"><div style="position:absolute;top:0;left:0;right:0;height:3px;background:${color};border-radius:14px 14px 0 0"></div><div style="display:flex;justify-content:space-between;margin-bottom:8px"><div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D">${label}</div><span style="font-size:18px">${icon}</span></div><div style="font-size:22px;font-weight:800;color:${color};line-height:1">${val}</div></div>`;
+}
+
+// ════════════════════════════════════════════════════════════════
+// FT6 — EXIT MODAL
+// ════════════════════════════════════════════════════════════════
+
+function showExitModal(type) {
+  if (!INV_PORTFOLIO) return;
+  const P = INV_PORTFOLIO;
+  const evalNow = calcEvaluare();
+  const val_curenta = parseFloat((P.actiuni * parseFloat(evalNow.pret_actiune)).toFixed(2));
+  const val_buyback = val_curenta * 0.90; // minus 10% lichiditate
+  
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1001;display:flex;align-items:center;justify-content:center;padding:20px';
+  ov.innerHTML = type === 'buyback' ? `
+    <div style="background:#fff;border-radius:20px;max-width:440px;width:100%;padding:28px;box-shadow:0 24px 80px rgba(0,0,0,.3)">
+      <h3 style="font-size:18px;font-weight:800;color:#1A2332;margin-bottom:5px">🏢 Share Buyback</h3>
+      <p style="font-size:12.5px;color:#5A6B7D;margin-bottom:18px">Compania răscumpără acțiunile tale la prețul curent de evaluare, minus o taxă de lichiditate de 10%.</p>
+      <div style="display:flex;flex-direction:column;gap:9px;font-size:12.5px;margin-bottom:18px">
+        <div style="display:flex;justify-content:space-between;padding:9px 12px;background:#F0F4F8;border-radius:9px"><span style="color:#5A6B7D">Valoare evaluare curentă</span><strong>€${val_curenta.toLocaleString()}</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:9px 12px;background:#FFF8EE;border-radius:9px;border:1px solid rgba(255,140,0,.2)"><span style="color:#5A6B7D">Taxă lichiditate (−10%)</span><strong style="color:#CC7000">−€${(val_curenta*0.10).toLocaleString()}</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:10px 12px;background:#D4EDDA;border-radius:9px;border:1px solid rgba(26,122,58,.2)"><span style="color:#5A6B7D;font-weight:700">Net primit la IBAN</span><strong style="color:#1A7A3A;font-size:16px">€${val_buyback.toLocaleString()}</strong></div>
+      </div>
+      <div style="background:#FFF0F0;border-radius:10px;padding:10px 12px;margin-bottom:16px;font-size:11px;color:#C0392B">⚠ Lock-up period de 12 luni se aplică. Aceasta este o cerere preliminară — procesarea durează 30 zile lucrătoare conform Shareholders Agreement.</div>
+      <div style="display:flex;gap:10px">
+        <button onclick="initiazaExit('buyback',${val_buyback})" style="flex:1;padding:12px;border-radius:12px;border:none;background:#003366;color:#fff;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit">Inițiază Buyback</button>
+        <button onclick="this.closest('[style*=fixed]').remove()" style="padding:12px 16px;border-radius:12px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Anulează</button>
+      </div>
+    </div>` : `
+    <div style="background:#fff;border-radius:20px;max-width:440px;width:100%;padding:28px;box-shadow:0 24px 80px rgba(0,0,0,.3)">
+      <h3 style="font-size:18px;font-weight:800;color:#1A2332;margin-bottom:5px">🔄 Piață Secundară P2P</h3>
+      <p style="font-size:12.5px;color:#5A6B7D;margin-bottom:16px">Listează acțiunile tale pentru alți investitori validați din platforma My Darrin.</p>
+      <div style="margin-bottom:14px">
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;display:block;margin-bottom:6px">Preț solicitat per acțiune (EUR)</label>
+        <input type="number" id="p2p-price" value="${parseFloat(evalNow.pret_actiune).toFixed(4)}" step="0.0001" style="width:100%;border:1.5px solid #D5DFE8;border-radius:10px;padding:10px 13px;font-size:14px;font-family:monospace;outline:none"/>
+      </div>
+      <div style="margin-bottom:16px">
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;display:block;margin-bottom:6px">Număr acțiuni de vândut</label>
+        <input type="number" id="p2p-qty" value="${Math.floor(P.actiuni/2)}" max="${P.actiuni}" style="width:100%;border:1.5px solid #D5DFE8;border-radius:10px;padding:10px 13px;font-size:14px;font-family:monospace;outline:none"/>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="initiazaExit('p2p',0)" style="flex:1;padding:12px;border-radius:12px;border:none;background:#0E9E99;color:#fff;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit">Listează pe P2P</button>
+        <button onclick="this.closest('[style*=fixed]').remove()" style="padding:12px 16px;border-radius:12px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Anulează</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+}
+
+function initiazaExit(type, net) {
+  document.querySelectorAll('[style*="fixed"][style*="z-index:1001"]').forEach(el=>el.remove());
+  const msg = type==='buyback'
+    ? `✅ Cerere Buyback înregistrată · €${net.toLocaleString()} → IBAN în 30 zile`
+    : `✅ Acțiuni listate pe Piața Secundară P2P · Matching investitori activ`;
+  showToastInv(msg);
+}
+
+// ════════════════════════════════════════════════════════════════
+// FT7 — FIX NAVBAR: suprascrie goStep(1) să ceară KYC mai întâi
+// ════════════════════════════════════════════════════════════════
+const _origGoStep = window.goStep;
+window.goStep = function(n) {
+  if (n === 2 && !KYC_DONE) { showKYCModal(); return; }
+  _origGoStep && _origGoStep(n);
+  if (n === 4) setTimeout(updateStep4Summary, 100);
+};
+
+// Hook pe selectTicket/selectInstrument pentru INV_STATE
+const _origSelectTicket = window.selectTicket;
+window.selectTicket = function(el, val) {
+  _origSelectTicket && _origSelectTicket(el, val);
+  INV_STATE.suma_eur = parseInt(val.replace(/[^0-9]/g,''))||val;
+};
+const _origSelectInstrument = window.selectInstrument;
+window.selectInstrument = function(el, val) {
+  _origSelectInstrument && _origSelectInstrument(el, val);
+  INV_STATE.instrument = val;
+};
+
+function showToastInv(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;background:#1A2332;color:#fff;padding:12px 22px;border-radius:14px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25);white-space:nowrap;max-width:90vw;text-align:center;font-family:inherit';
+  t.textContent = msg; document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 3200);
+}
+
+// Init la load
+document.addEventListener('DOMContentLoaded', () => {
+  // Render eval widget dacă există container
+  const ew = document.getElementById('eval-widget');
+  if (ew) renderEvalWidget(calcEvaluare());
+  
+  // Live counter din homepage (backup dacă există)
+  typeof startLiveCounter === 'function' && startLiveCounter();
+  
+  // Restaurăm portofoliu din sesiune
+  try {
+    const saved = sessionStorage.getItem('myd_investor');
+    if (saved) { INV_PORTFOLIO = JSON.parse(saved); }
+  } catch(e) {}
+});
+</script>
+
 </body>
 </html>

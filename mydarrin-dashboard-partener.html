@@ -145,6 +145,20 @@ body{font-family:"Inter",system-ui,sans-serif;background:#F0F4F8;color:#1A2332;-
         <div style="font-size:13px;font-weight:700;color:#FF8C00" id="dp-earnings">847 Lei</div>
       </div>
       <a href="mydarrin-v3.html" class="btn-s" style="font-size:11px;padding:6px 12px;color:#8BA3C0;border-color:#2D3F55;background:#192433">← Platformă</a>
+      <!-- IO1: Buton Pauză rapidă — vizibil doar la curier -->
+      <button id="btn-pauza" onclick="showPauzaModal()" 
+              style="display:none;padding:6px 14px;border-radius:9px;border:none;background:#FF8C00;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit"
+              title="Blochează temporar primirea de noi curse">
+        ⏸ Pauză 30 min
+      </button>
+      <!-- BC1: Selector vehicul activ — vizibil doar la curier -->
+      <select id="vehicul-activ" onchange="setCurierVehicul(this.value)"
+              style="display:none;border:1px solid rgba(255,255,255,.2);border-radius:9px;background:rgba(255,255,255,.1);color:#fff;font-size:11px;padding:5px 10px;font-family:inherit;cursor:pointer">
+        <option value="bicicleta">🚴 Bicicletă</option>
+        <option value="scuter">🛵 Scuter</option>
+        <option value="auto">🚗 Auto</option>
+        <option value="utilitara" selected>🚐 Utilitară</option>
+      </select>
     </div>
   </div>
 
@@ -245,6 +259,17 @@ function switchType(type, btn) {
 
   renderNav(type);
   showPanel('overview');
+  // IO1 + BC1: afișăm/ascundem butoane curier
+  const isCurier = (type === 'curier');
+  const btnPauza   = document.getElementById('btn-pauza');
+  const selVehicul = document.getElementById('vehicul-activ');
+  if (btnPauza)   btnPauza.style.display   = isCurier ? 'block' : 'none';
+  if (selVehicul) selVehicul.style.display = isCurier ? 'block' : 'none';
+  if (isCurier) {
+    const saved = localStorage.getItem('curier_vehicul') || 'utilitara';
+    if (selVehicul) selVehicul.value = saved;
+    CURIER_VEHICUL_ACTIV = saved;
+  }
 }
 
 // ── RENDER NAV ──
@@ -617,8 +642,14 @@ function renderCursaActiva() {
     <div class="dp-card">
       <div class="dp-card-hdr"><strong style="color:#1A2332">Acțiuni</strong></div>
       <div class="dp-card-body" style="display:flex;flex-direction:column;gap:10px">
-        <button class="btn-p" style="width:100%;justify-content:center;background:#0E9E99">📸 Confirmă ridicare colet</button>
-        <button class="btn-p" style="width:100%;justify-content:center">✅ Confirmă livrare</button>
+        <!-- BC6 — Confirmare pickup cu CMR -->
+        <button class="btn-p" onclick="confirmPickupCuCMR('CUR-001','Dedeman · Depozit Theodor Pallady','Elena Cucu · Str. Gorjului 118','Calorifer Purmo C11 600/10',18,'60×80×12 cm')" style="width:100%;justify-content:center;background:#0E9E99">
+          📸 Confirmă ridicare + Generează CMR
+        </button>
+        <!-- BC2 — Finalizare cursă cu deblocare status -->
+        <button class="btn-p" onclick="finalizareCursa('CUR-001')" style="width:100%;justify-content:center">
+          ✅ Confirmă livrare + Finalizează cursa
+        </button>
         <button class="btn-s" style="width:100%;justify-content:center">📞 Sună destinatarul</button>
         <button class="btn-s" style="width:100%;justify-content:center;color:#C0392B;border-color:rgba(192,57,43,.3)">⚠ Raportează problemă</button>
       </div>
@@ -695,24 +726,26 @@ function renderPolite() {
 }
 
 function renderDaune() {
+  const isAsig = (currentType === 'asigurari');
   return `
   <div style="margin-bottom:18px;display:flex;align-items:center;justify-content:space-between">
     <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Syne',sans-serif">Dosare daune (Claims)</h2>
     <span class="chip ch-r">2 active</span>
   </div>
   <div style="background:#FFF0F0;border-radius:14px;border:1.5px solid rgba(192,57,43,.25);padding:14px 18px;margin-bottom:18px">
-    <div style="font-size:12.5px;color:#C0392B;font-weight:700;margin-bottom:5px">⚖ Logica transfer răspundere · My Darrin Antreprenor General</div>
-    <div style="font-size:12px;color:#5A6B7D;line-height:1.7">Dacă apare un viciu de material sau de execuție, My Darrin transferă automat răspunderea financiară furnizorului implicat. Tu ca broker analizezi dosarul și coordonezi indemnizarea clientului conform poliței emise.</div>
+    <div style="font-size:12.5px;color:#C0392B;font-weight:700;margin-bottom:5px">
+      ⚖ Logica transfer răspundere + 🔗 ID Eveniment Corelat (cross-reference universal)
+    </div>
+    <div style="font-size:12px;color:#5A6B7D;line-height:1.7">
+      Fiecare dosar de daună are un <strong style="color:#1A5FAD">ID Eveniment Corelat unic</strong> (CLAIM-YYYY-CMDxxxx-TIP) 
+      vizibil atât la Asigurător cât și la Furnizorul imputat — același eveniment, aceeași înregistrare, 
+      fără ID-uri diferite. My Darrin transferă automat răspunderea financiară furnizorului vinovat.
+    </div>
   </div>
-  <div style="display:flex;flex-direction:column;gap:14px">
-    ${dosarDauna('DAU-001','Viciu instalație PPR · CMD-4810','Valentin · Construct Val SRL','POL-Work-001','2.400 Lei','analiза','16.06.2026')}
-    ${dosarDauna('DAU-002','Material defect · Țeavă PPR · CMD-4802','ACA Business Group (furnizor)','POL-All-Risk-003','850 Lei','aprobare','14.06.2026')}
+  <div style="display:flex;flex-direction:column;gap:12px">
+    ${Object.keys(DAUNE_DB).map(claimId => renderDaunaCard(claimId)).join('')}
   </div>`;
 }
-
-// ═══════════════════════════════════════════════════════════════
-// COMPONENTE HELPER
-// ═══════════════════════════════════════════════════════════════
 
 function kpi(label,val,sub,color,icon){
   return `<div class="kpi"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D">${label}</div><span style="font-size:18px">${icon}</span></div><div style="font-size:28px;font-weight:800;color:${color};line-height:1">${val}</div><div style="font-size:10.5px;color:#5A6B7D;margin-top:4px">${sub}</div></div>`;
@@ -805,9 +838,9 @@ function cursaCard(title,ruta,km,price,vehicul,cls){
   return `<div class="task-card ${cls}" style="cursor:pointer"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><strong style="font-size:12.5px;color:#1A2332">${title}</strong><span class="chip ${cl}">${vehicul}</span></div><div style="font-size:11px;color:#5A6B7D;margin-bottom:4px">${ruta}</div><div style="font-size:12px;font-weight:700;color:#7C3AED">${km} · ${price}</div></div>`;
 }
 
-function cursaCardFull(id,title,pickup,dest,km,price,vehicul,cls,badge){
+function cursaCardFull(id,title,pickup,dest,km,price,vehicul,cls,badge,greutate_kg){
   const cl={pending:'ch-o',urgent:'ch-r'}[cls]||'ch-gr';
-  return `<div class="task-card ${cls}"><div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px"><div><div style="font-size:13px;font-weight:700;color:#1A2332">${title}</div><div style="font-size:10px;color:#5A6B7D;margin-top:2px;font-family:monospace">${id}</div></div><div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end"><span class="chip ${cl}">${vehicul}</span><span class="chip ch-b" style="font-size:9px">${badge}</span></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px"><div style="background:#F0F4F8;border-radius:8px;padding:7px;font-size:11px"><div style="color:#5A6B7D;margin-bottom:2px">📤 Pickup</div><div style="font-weight:600;color:#1A2332">${pickup}</div></div><div style="background:#F0F4F8;border-radius:8px;padding:7px;font-size:11px"><div style="color:#5A6B7D;margin-bottom:2px">📍 Destinație</div><div style="font-weight:600;color:#1A2332">${dest}</div></div></div><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:#5A6B7D">${km}</span><span style="font-size:13px;font-weight:800;color:#7C3AED">${price}</span><div style="display:flex;gap:8px"><button class="btn-s" style="font-size:11px;padding:6px 12px">Refuz</button><button class="btn-p" style="font-size:11px;padding:6px 12px;background:#7C3AED">Preia cursa</button></div></span></div></div>`;
+  return `<div class="task-card ${cls}"><div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px"><div><div style="font-size:13px;font-weight:700;color:#1A2332">${title}</div><div style="font-size:10px;color:#5A6B7D;margin-top:2px;font-family:monospace">${id}</div></div><div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end"><span class="chip ${cl}">${vehicul}</span><span class="chip ch-b" style="font-size:9px">${badge}</span></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px"><div style="background:#F0F4F8;border-radius:8px;padding:7px;font-size:11px"><div style="color:#5A6B7D;margin-bottom:2px">📤 Pickup</div><div style="font-weight:600;color:#1A2332">${pickup}</div></div><div style="background:#F0F4F8;border-radius:8px;padding:7px;font-size:11px"><div style="color:#5A6B7D;margin-bottom:2px">📍 Destinație</div><div style="font-weight:600;color:#1A2332">${dest}</div></div></div><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:#5A6B7D">${km}</span>${greutate_kg?`<span class="chip ${greutate_kg>10?'ch-r':'ch-g'}" style="font-size:9px">${greutate_kg}kg · ${greutate_kg>10?'🚐 Utilitară req.':'🚴 OK'}</span>`:''}${' '}<span style="font-size:13px;font-weight:800;color:#7C3AED">${price}</span><div style="display:flex;gap:8px"><button class="btn-s" style="font-size:11px;padding:6px 12px">Refuz</button><button class="btn-p" style="font-size:11px;padding:6px 12px;background:#7C3AED">Preia cursa</button></div></span></div></div>`;
 }
 
 function politaCard(cod,tip,beneficiar,status,start,end){
@@ -874,9 +907,9 @@ const FINANCIAL_STATE = {
   },
   asigurari: {
     comenzi_nefacturate: [
-      {id:'#POL-001', cmd_id:'POL-001', desc:'Poliță Work Guarantee · CMD-4821 · Valentin', qty:1, um:'poliță', pret_u:16,  brut:16,  com_pct:15, com:2.4,  net:13.6, tva_pct:19, garantie_pct:0, garantie:0, de_facturat:13.6, status:'finalizat_nefacturat'},
-      {id:'#POL-002', cmd_id:'POL-002', desc:'Poliță RC Profesional · Darius #448D2',        qty:1, um:'lună',   pret_u:90,  brut:90,  com_pct:15, com:13.5, net:13.5, tva_pct:19, garantie_pct:0, garantie:0, de_facturat:13.5, status:'finalizat_nefacturat'},
-      {id:'#POL-003', cmd_id:'POL-003', desc:'Poliță All Risk · Maria P. · CMD-4815',        qty:1, um:'poliță', pret_u:9,   brut:9,   com_pct:15, com:1.35, net:1.35, tva_pct:19, garantie_pct:0, garantie:0, de_facturat:1.35, status:'facturat'},
+      {id:'#POL-001', cmd_id:'POL-001', asf_nr:'RO-ASF-2026-00441', produs:'Work Guarantee',    perioada_start:'18.06.2026', perioada_end:'18.06.2028', desc:'Comision Work Guarantee · CMD-4821 · Valentin', qty:1, um:'poliță', pret_u:16,  brut:16,  com_pct:15, com:2.4,  net:13.6, tva_pct:19, garantie_pct:0, garantie:0, de_facturat:13.6, status:'finalizat_nefacturat'},
+      {id:'#POL-002', cmd_id:'POL-002', asf_nr:'RO-ASF-2026-00442', produs:'RC Profesional',    perioada_start:'01.06.2026', perioada_end:'01.06.2027', desc:'Comision RC Profesional · Darius #448D2',        qty:1, um:'lună',   pret_u:90,  brut:90,  com_pct:15, com:13.5, net:13.5, tva_pct:19, garantie_pct:0, garantie:0, de_facturat:13.5, status:'finalizat_nefacturat'},
+      {id:'#POL-003', cmd_id:'POL-003', asf_nr:'RO-ASF-2026-00438', produs:'All Risk Bunuri',   perioada_start:'14.06.2026', perioada_end:'14.06.2027', desc:'Poliță All Risk · Maria P. · CMD-4815',        qty:1, um:'poliță', pret_u:9,   brut:9,   com_pct:15, com:1.35, net:1.35, tva_pct:19, garantie_pct:0, garantie:0, de_facturat:1.35, status:'facturat'},
     ],
     garantie_totala: 0, garantie_eligibila: 0,
     com_label:'15% din primă (comision intermediar)', garantie_label:'Fără reținere garanție',
@@ -1168,6 +1201,8 @@ function openInvoiceModal() {
       <td style="padding:7px 10px;border-bottom:1px solid #EEF2F7">
         <div style="font-size:12px;font-weight:700;color:#1A2332">${c.desc}</div>
         <div style="font-size:10.5px;font-weight:700;color:#1A5FAD;font-family:monospace;margin-top:2px">Nr. comandă: ${c.cmd_id||c.id}</div>
+        ${c.asf_nr ? `<div style="font-size:10px;color:#1A7A3A;font-family:monospace;margin-top:2px;font-weight:700">📋 Poliță ASF: ${c.asf_nr} · ${c.produs||''}</div>` : ''}
+        ${c.perioada_start ? `<div style="font-size:10px;color:#5A6B7D;margin-top:1px">📅 Perioadă: ${c.perioada_start} → ${c.perioada_end}</div>` : ''}
       </td>
       <td style="padding:7px 10px;border-bottom:1px solid #EEF2F7;font-size:12px;text-align:right;font-weight:600">${c.qty||1}</td>
       <td style="padding:7px 10px;border-bottom:1px solid #EEF2F7;font-size:11.5px;text-align:center;color:#5A6B7D">${c.um||'buc'}</td>
@@ -1392,6 +1427,437 @@ function marchezaExpediatCuFinanciar(id, valoare_neta) {
     }
   }
   showToast('✅ ' + id + ' pregătit · ' + valoare_neta + ' Lei adăugați în balanța facturabilă → Alertă Curier trimisă');
+}
+
+
+
+// ════════════════════════════════════════════════════════════════
+// BC1 — FILTRU TEHNIC VEHICUL: >10kg sau >50L → EXCLUSIV Utilitară/Auto/Camion
+// ════════════════════════════════════════════════════════════════
+
+const VEHICLE_RULES = {
+  bicicleta:   { max_kg: 10,  max_vol_L: 30,  label:'Bicicletă/Trotinetă' },
+  scuter:      { max_kg: 25,  max_vol_L: 60,  label:'Moto/Scuter' },
+  auto:        { max_kg: 50,  max_vol_L: 200, label:'Autoturism' },
+  utilitara:   { max_kg: 500, max_vol_L: 2000,label:'Autoutilitară' },
+  camion:      { max_kg:5000, max_vol_L:20000,label:'Camion' },
+};
+
+// Vehiculul activ al curierului (setat la login/profil)
+let CURIER_VEHICUL_ACTIV = 'utilitara'; // default setat din profil
+
+function setCurierVehicul(tip) {
+  CURIER_VEHICUL_ACTIV = tip;
+  showToast('🚗 Vehicul activ: ' + (VEHICLE_RULES[tip]?.label || tip));
+}
+
+function canAcceptCursa(cursa) {
+  const regula = VEHICLE_RULES[CURIER_VEHICUL_ACTIV];
+  if (!regula) return { ok: true };
+  const kg  = cursa.greutate_kg  || 0;
+  const vol = cursa.volum_L      || 0;
+  if (kg > regula.max_kg) {
+    return { ok: false, motiv: `Greutate ${kg}kg depășește limita vehiculului tău (${regula.max_kg}kg). Ai nevoie de Autoutilitară.` };
+  }
+  if (vol > regula.max_vol_L) {
+    return { ok: false, motiv: `Volum ${vol}L depășește limita vehiculului tău (${regula.max_vol_L}L). Ai nevoie de Autoutilitară.` };
+  }
+  return { ok: true };
+}
+
+function preiaComanda(cursaId, kg, volL) {
+  const cursaData = { id: cursaId, greutate_kg: kg, volum_L: volL };
+
+  // BC1 — Verificare vehicul
+  const check = canAcceptCursa(cursaData);
+  if (!check.ok) {
+    showAlertVehicul(check.motiv, cursaId);
+    return;
+  }
+
+  // BC2 — Verificare status ocupat
+  if (CURIER_STARE.is_active_in_ride) {
+    showToast('⚠ Ești deja în cursă activă (#' + CURIER_STARE.cursa_activa_id + '). Finalizează-o înainte.');
+    return;
+  }
+
+  // Acceptăm cursa
+  CURIER_STARE.is_active_in_ride = true;
+  CURIER_STARE.cursa_activa_id   = cursaId;
+  showToast('✅ Cursă #' + cursaId + ' preluată!');
+  showPanel('activ');
+}
+
+function showAlertVehicul(motiv, cursaId) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML=`
+    <div style="background:#fff;border-radius:18px;max-width:360px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+      <div style="font-size:40px;text-align:center;margin-bottom:12px">🚫</div>
+      <h3 style="font-size:16px;font-weight:800;color:#C0392B;text-align:center;margin-bottom:10px">Vehicul incompatibil</h3>
+      <p style="font-size:12.5px;color:#5A6B7D;text-align:center;line-height:1.6;margin-bottom:16px">${motiv}</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button onclick="setCurierVehicul('utilitara');this.closest('[style*=fixed]').remove();preiaComanda('${cursaId}',0,0)" 
+                style="padding:11px;border-radius:11px;border:none;background:#7C3AED;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
+          🚐 Schimbă pe Utilitară și preia cursa
+        </button>
+        <button onclick="this.closest('[style*=fixed]').remove()"
+                style="padding:10px;border-radius:11px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
+          Refuză cursa
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+// ════════════════════════════════════════════════════════════════
+// BC2 — STATUS „OCUPAT ÎN CURSĂ" — management stare concurentă
+// ════════════════════════════════════════════════════════════════
+
+const CURIER_STARE = {
+  is_active_in_ride: false,
+  cursa_activa_id:   null,
+  coada_curse:       [], // cursele care așteaptă
+};
+
+function finalizareCursa(cursaId) {
+  if (CURIER_STARE.cursa_activa_id !== cursaId) return;
+  CURIER_STARE.is_active_in_ride = false;
+  CURIER_STARE.cursa_activa_id   = null;
+  showToast('✅ Cursă #' + cursaId + ' finalizată · Escrow eliberat');
+
+  // Procesăm coada
+  if (CURIER_STARE.coada_curse.length > 0) {
+    const urmatoarea = CURIER_STARE.coada_curse.shift();
+    setTimeout(() => {
+      showToast('📨 Cursă nouă disponibilă din coadă: #' + urmatoarea.id);
+      showPanel('curse');
+    }, 800);
+  }
+}
+
+function adaugaInCoada(cursa) {
+  CURIER_STARE.coada_curse.push(cursa);
+  showToast(`⏳ Cursă #${cursa.id} adăugată în coadă (poziția ${CURIER_STARE.coada_curse.length})`);
+}
+
+// ════════════════════════════════════════════════════════════════
+// BC3 — CROSS-REFERENCE DAUNE: ID unic comun CLAIM-YYYY-CMDxxxx-TIP
+// ════════════════════════════════════════════════════════════════
+
+const DAUNE_DB = {
+  'CLAIM-2026-CMD4821-EXE': {
+    id_asigurator: 'DAU-001',
+    id_furnizor:   null, // dauna e de la meșter
+    id_client:     'CMD-4821',
+    tip:           'Viciu instalație PPR',
+    responsabil:   'Valentin P. · Partener Servicii',
+    polita:        'RO-ASF-2026-00441',
+    valoare:       2400,
+    status:        'in_analiza',
+  },
+  'CLAIM-2026-CMD4802-MAT': {
+    id_asigurator: 'DAU-002',
+    id_furnizor:   'IMP-001',   // ← același eveniment, ID comun
+    id_client:     'CMD-4802',
+    tip:           'Material defect · Țeavă PPR',
+    responsabil:   'ACA Business Group SRL',
+    polita:        'RO-ASF-2026-00438',
+    valoare:       850,
+    status:        'aprobare',
+  },
+};
+
+function getDaunaByClaim(claimId) {
+  return DAUNE_DB[claimId] || null;
+}
+
+function renderDaunaCard(claimId) {
+  const d = DAUNE_DB[claimId];
+  if (!d) return '';
+  const sCls = d.status==='in_analiza'?'ch-o':'ch-b';
+  return `
+  <div style="background:#FFF0F0;border-radius:14px;border:1.5px solid rgba(192,57,43,.25);padding:15px;margin-bottom:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:13px;font-weight:800;color:#C0392B">${d.tip}</div>
+        <div style="font-size:10px;font-family:monospace;color:#8C9BAD;margin-top:2px">
+          🔗 ID Eveniment: <strong style="color:#1A5FAD">${claimId}</strong>
+          ${d.id_furnizor ? `<span style="margin-left:6px">· Ref furnizor: <strong>${d.id_furnizor}</strong></span>`:''}
+          ${d.id_asigurator ? `<span style="margin-left:6px">· Ref asigurator: <strong>${d.id_asigurator}</strong></span>`:''}
+        </div>
+      </div>
+      <span class="chip ${sCls}">${d.status==='in_analiza'?'În analiză':'Aprobare'}</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;margin-bottom:12px">
+      <div style="background:#F8FAFC;border-radius:8px;padding:8px 10px"><span style="color:#5A6B7D">Responsabil</span><div style="font-weight:700;margin-top:2px">${d.responsabil}</div></div>
+      <div style="background:#F8FAFC;border-radius:8px;padding:8px 10px"><span style="color:#5A6B7D">Poliță asociată</span><div style="font-weight:700;margin-top:2px;font-family:monospace;font-size:11px">${d.polita}</div></div>
+      <div style="background:#F8FAFC;border-radius:8px;padding:8px 10px"><span style="color:#5A6B7D">Comandă origine</span><div style="font-weight:700;margin-top:2px;font-family:monospace">${d.id_client}</div></div>
+      <div style="background:#FFF0F0;border-radius:8px;padding:8px 10px;border:1px solid rgba(192,57,43,.15)"><span style="color:#5A6B7D">Valoare daună</span><div style="font-weight:800;color:#C0392B;font-size:14px;margin-top:2px">${d.valoare} Lei</div></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-p" onclick="showToast('✓ Daună aprobată · Sumă imputată furnizorului')" style="background:#1A7A3A;font-size:12px">✓ Aprobă dauna</button>
+      <button class="btn-s" onclick="showToast('📋 Dosar complet: ${claimId}')" style="font-size:12px">📋 Dosar complet</button>
+      <button class="btn-s" onclick="showToast('✗ Daună respinsă')" style="font-size:12px;color:#C0392B;border-color:rgba(192,57,43,.3)">✗ Respinge</button>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════
+// BC6 — CMR DIGITAL SIMPLIFICAT la confirmare pickup
+// ════════════════════════════════════════════════════════════════
+
+function generareCMR(cursaId, furnizor, destinatar, produs, greutate_kg, dimensiuni, stareColet) {
+  const now  = new Date();
+  const ts   = now.toLocaleString('ro-RO');
+  const cmrId= 'CMR-' + cursaId + '-' + now.getFullYear();
+  
+  const cmrData = {
+    id:          cmrId,
+    cursa_id:    cursaId,
+    timestamp:   ts,
+    furnizor:    furnizor,
+    destinatar:  destinatar,
+    produs:      produs,
+    greutate_kg: greutate_kg,
+    dimensiuni:  dimensiuni,
+    stare_colet: stareColet,
+    semnat_furnizor: true,
+    semnat_curier:   true,
+    hash:        Math.random().toString(36).substring(2,10).toUpperCase(),
+  };
+
+  // Salvăm în sessionStorage
+  try {
+    sessionStorage.setItem('cmr_' + cursaId, JSON.stringify(cmrData));
+  } catch(e) {}
+
+  // Afișăm modal CMR
+  const overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML=`
+    <div style="background:#fff;border-radius:18px;max-width:440px;width:100%;padding:0;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+      <div style="background:linear-gradient(135deg,#003366,#1A5FAD);padding:16px 20px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:24px">📋</span>
+        <div>
+          <div style="font-weight:800;color:#fff;font-size:14px">CMR Digital Simplificat</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.6)">Bon de transport · ${cmrId}</div>
+        </div>
+        <button onclick="this.closest('[style*=fixed]').remove()" style="margin-left:auto;width:28px;height:28px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);cursor:pointer;color:#fff;font-size:16px">×</button>
+      </div>
+      <div style="padding:18px 20px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;margin-bottom:14px">
+          <div style="background:#F0F4F8;border-radius:9px;padding:9px 12px"><div style="color:#5A6B7D;font-size:9.5px;margin-bottom:2px">📤 EXPEDITOR</div><div style="font-weight:700">${furnizor}</div></div>
+          <div style="background:#F0F4F8;border-radius:9px;padding:9px 12px"><div style="color:#5A6B7D;font-size:9.5px;margin-bottom:2px">📍 DESTINATAR</div><div style="font-weight:700">${destinatar}</div></div>
+          <div style="background:#F0F4F8;border-radius:9px;padding:9px 12px"><div style="color:#5A6B7D;font-size:9.5px;margin-bottom:2px">📦 PRODUS</div><div style="font-weight:700">${produs}</div></div>
+          <div style="background:#F0F4F8;border-radius:9px;padding:9px 12px"><div style="color:#5A6B7D;font-size:9.5px;margin-bottom:2px">⚖ GREUTATE</div><div style="font-weight:700">${greutate_kg} kg</div></div>
+          <div style="background:#F0F4F8;border-radius:9px;padding:9px 12px"><div style="color:#5A6B7D;font-size:9.5px;margin-bottom:2px">📐 DIMENSIUNI</div><div style="font-weight:700">${dimensiuni}</div></div>
+          <div style="background:#F0F4F8;border-radius:9px;padding:9px 12px"><div style="color:#5A6B7D;font-size:9.5px;margin-bottom:2px">✅ STARE COLET</div><div style="font-weight:700;color:${stareColet==='intact'?'#1A7A3A':'#C0392B'}">${stareColet==='intact'?'Intact':'⚠ Deteriorat'}</div></div>
+        </div>
+        <div style="background:#EBF4FB;border-radius:10px;padding:10px 12px;margin-bottom:14px;border:1px solid #D5DFE8">
+          <div style="display:flex;align-items:center;justify-content:space-between;font-size:11.5px">
+            <div><div style="color:#5A6B7D;margin-bottom:2px">Timestamp confirmare</div><div style="font-weight:700">${ts}</div></div>
+            <div style="text-align:right"><div style="color:#5A6B7D;margin-bottom:2px">Hash verificare</div><div style="font-family:monospace;font-weight:700;color:#1A5FAD">${cmrData.hash}</div></div>
+          </div>
+        </div>
+        <div style="background:#D4EDDA;border-radius:10px;padding:9px 12px;margin-bottom:14px;border:1px solid rgba(26,122,58,.2);font-size:11.5px;color:#1A7A3A;font-weight:600">
+          ✅ Semnat digital de expeditor (${furnizor}) și curier (George Ionescu PFA) · eIDAS Qualified
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="printCMR('${cmrId}');this.closest('[style*=fixed]').remove()" style="flex:1;padding:10px;border-radius:10px;border:none;background:#003366;color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">🖨️ Print / PDF</button>
+          <button onclick="this.closest('[style*=fixed]').remove()" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit">Continuă cursa</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  return cmrData;
+}
+
+function printCMR(cmrId) {
+  const data = JSON.parse(sessionStorage.getItem('cmr_' + cmrId.replace('CMR-','').split('-')[0]) || '{}');
+  showToast('🖨️ CMR ' + cmrId + ' trimis la Print · Salvat în Documentele mele');
+}
+
+function confirmPickupCuCMR(cursaId, furnizor, destinatar, produs, greutateKg, dimensiuni) {
+  // Întrebăm starea coletului
+  const overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML=`
+    <div style="background:#fff;border-radius:18px;max-width:360px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+      <div style="font-size:32px;text-align:center;margin-bottom:10px">📸</div>
+      <h3 style="font-size:16px;font-weight:800;color:#1A2332;text-align:center;margin-bottom:6px">Confirmare Pickup</h3>
+      <p style="font-size:12.5px;color:#5A6B7D;text-align:center;margin-bottom:16px">Înainte de a genera CMR-ul, confirmă starea coletului la ridicare.</p>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button onclick="this.closest('[style*=fixed]').remove();generareCMR('${cursaId}','${furnizor}','${destinatar}','${produs}',${greutateKg},'${dimensiuni}','intact')" 
+                style="padding:12px;border-radius:12px;border:none;background:#1A7A3A;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
+          ✅ Colet intact — Generează CMR
+        </button>
+        <button onclick="this.closest('[style*=fixed]').remove();generareCMR('${cursaId}','${furnizor}','${destinatar}','${produs}',${greutateKg},'${dimensiuni}','deteriorat')"
+                style="padding:12px;border-radius:12px;border:none;background:#FF8C00;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
+          ⚠ Colet cu mențiuni — Generează CMR cu observații
+        </button>
+        <button onclick="this.closest('[style*=fixed]').remove()"
+                style="padding:10px;border-radius:12px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
+          Anulează
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+// ════════════════════════════════════════════════════════════════
+// IO1 — BUTON PAUZA RAPIDĂ
+// ════════════════════════════════════════════════════════════════
+
+let CURIER_IN_PAUZA = false;
+let PAUZA_DURATA_MIN = 30;
+
+function togglePauzaRapida() {
+  CURIER_IN_PAUZA = !CURIER_IN_PAUZA;
+  const btn = document.getElementById('btn-pauza');
+  if (btn) {
+    if (CURIER_IN_PAUZA) {
+      btn.style.background = '#C0392B';
+      btn.textContent = '▶ Reluare activitate';
+      btn.title = 'Ești în pauză. Dispatch-ul este blocat temporar.';
+    } else {
+      btn.style.background = '#FF8C00';
+      btn.textContent = '⏸ Pauză ' + PAUZA_DURATA_MIN + ' min';
+      btn.title = 'Blochează temporar primirea de noi curse.';
+    }
+  }
+  showToast(CURIER_IN_PAUZA
+    ? '⏸ Pauză activă · Nicio cursă nouă nu va fi primită'
+    : '▶ Activitate reluată · Ești din nou disponibil pentru curse'
+  );
+}
+
+function showPauzaModal() {
+  const opts = [15, 30, 45, 60, 90];
+  const overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML=`
+    <div style="background:#fff;border-radius:18px;max-width:340px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+      <div style="font-size:32px;text-align:center;margin-bottom:10px">⏸</div>
+      <h3 style="font-size:16px;font-weight:800;color:#1A2332;text-align:center;margin-bottom:6px">Pauză temporară</h3>
+      <p style="font-size:12.5px;color:#5A6B7D;text-align:center;margin-bottom:16px">Selectează durata. Dispatch-ul este blocat în acest interval.</p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">
+        ${opts.map(m=>`<button onclick="selectPauza(${m},this)" style="padding:10px;border-radius:10px;border:1.5px solid #D5DFE8;background:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.borderColor='#FF8C00'" onmouseout="this.style.borderColor='#D5DFE8'">${m} min</button>`).join('')}
+      </div>
+      <button id="confirm-pauza" disabled onclick="confirmPauza();this.closest('[style*=fixed]').remove()" 
+              style="width:100%;padding:12px;border-radius:12px;border:none;background:#CBD5E0;color:#fff;font-size:14px;font-weight:700;cursor:not-allowed;font-family:inherit">
+        Activează pauza
+      </button>
+      <button onclick="this.closest('[style*=fixed]').remove()" style="width:100%;margin-top:8px;padding:10px;border-radius:12px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
+        Anulează
+      </button>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function selectPauza(min, btn) {
+  PAUZA_DURATA_MIN = min;
+  document.querySelectorAll('[onclick*="selectPauza"]').forEach(b=>{b.style.background='#fff';b.style.borderColor='#D5DFE8';b.style.color='#1A2332';});
+  btn.style.background='#FF8C00'; btn.style.borderColor='#FF8C00'; btn.style.color='#fff';
+  const confirmBtn = document.getElementById('confirm-pauza');
+  if (confirmBtn) { confirmBtn.disabled=false; confirmBtn.style.background='#FF8C00'; confirmBtn.style.cursor='pointer'; }
+}
+
+function confirmPauza() {
+  CURIER_IN_PAUZA = true;
+  showToast('⏸ Pauză de ' + PAUZA_DURATA_MIN + ' min activată · Reluare automată la ' +
+    new Date(Date.now()+PAUZA_DURATA_MIN*60000).toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'}));
+  setTimeout(()=>{CURIER_IN_PAUZA=false; showToast('▶ Pauza a expirat · Ești disponibil pentru curse');}, PAUZA_DURATA_MIN*60000);
+}
+
+// ════════════════════════════════════════════════════════════════
+// IO4 — NR. CONTRACT în factura generată (patch openInvoiceModal)
+// ════════════════════════════════════════════════════════════════
+
+// Suprascriem openInvoiceModal să adauge nr. contract în antet emitent
+const _origOpenInvoice = window.openInvoiceModal;
+window.openInvoiceModal = function() {
+  _origOpenInvoice && _origOpenInvoice();
+  // Adăugăm nr. contract în secțiunea emitent după render
+  setTimeout(() => {
+    const emitentDivs = document.querySelectorAll('#inv-modal [style*="border-radius:12px"]');
+    const partnerId = {
+      servicii:'MP-BCU-2026-SRV-448D2', curier:'MP-BCU-2026-CUR-119G5',
+      asigurari:'MP-BCU-2026-INS-004', materiale:'MP-BCU-2026-MAT-001',
+      inchirieri:'MP-BCU-2026-EQU-001',
+    }[(typeof currentType!=='undefined'?currentType:'servicii')];
+    
+    emitentDivs.forEach(div => {
+      if (div.textContent.includes('Furnizor (Emitent)') && !div.querySelector('.contract-nr')) {
+        const tag = document.createElement('div');
+        tag.className = 'contract-nr';
+        tag.style.cssText='font-size:10px;color:#8C9BAD;margin-top:5px;font-family:monospace;border-top:1px solid #EEF2F7;padding-top:5px';
+        tag.innerHTML=`Nr. Contract My Darrin: <strong style="color:#1A5FAD">${partnerId}</strong>`;
+        div.appendChild(tag);
+      }
+    });
+  }, 200);
+};
+
+// ════════════════════════════════════════════════════════════════
+// BC7 — NR. POLIȚĂ ASF + PERIOADĂ în rândurile facturii asigurări
+// Patch rowsHtml pentru type=asigurari: adaugă asf_nr + perioada
+// ════════════════════════════════════════════════════════════════
+
+const _origRenderVenituri = window.renderVenituri;
+window.renderVenituri = function() {
+  const html = _origRenderVenituri ? _origRenderVenituri() : '';
+  // rowsHtml e generat în renderVenituri — patch-ul de asf_nr 
+  // e deja în FINANCIAL_STATE (asf_nr, produs, perioada_start/end)
+  // Deci nu mai trebuie suprascriere — datele sunt în state
+  return html;
+};
+
+// Patch rowsHtml pentru asigurări să afișeze asf_nr + perioadă
+const _origCalcDatorie = window.calcDatorie;
+window.calcDatorie = function(type) {
+  const result = _origCalcDatorie ? _origCalcDatorie(type) : { total_brut:0, total_com:0, total_garantie:0, total_net:0, count:0, rows:[] };
+  // Dacă type=asigurari, adăugăm descriere extinsă cu asf_nr și perioadă
+  if (type === 'asigurari' && result.rows) {
+    result.rows = result.rows.map(c => ({
+      ...c,
+      desc_ext: `${c.desc}${c.asf_nr ? ' · <span style="font-family:monospace;font-size:10px;color:#1A5FAD">'+c.asf_nr+'</span>' : ''}${c.perioada_start ? '<br><span style="font-size:10px;color:#5A6B7D">Perioadă: '+c.perioada_start+' → '+c.perioada_end+'</span>' : ''}`,
+    }));
+  }
+  return result;
+};
+
+// ════════════════════════════════════════════════════════════════
+// SANDBOX MODE pentru asigurări (BC4)
+// ════════════════════════════════════════════════════════════════
+
+const ASIG_API_CONFIG = {
+  mode:       'sandbox',  // 'sandbox' | 'live'
+  endpoint:   '',
+  last_test:  null,
+  test_results: [],
+};
+
+function toggleSandboxMode(btn) {
+  ASIG_API_CONFIG.mode = ASIG_API_CONFIG.mode === 'sandbox' ? 'live' : 'sandbox';
+  const isSandbox = ASIG_API_CONFIG.mode === 'sandbox';
+  if (btn) {
+    btn.textContent = isSandbox ? '🧪 Sandbox (Test)' : '🟢 Live (Producție)';
+    btn.style.background = isSandbox ? '#7C3AED' : '#1A7A3A';
+  }
+  showToast(isSandbox
+    ? '🧪 Mod Sandbox activ · Polițele emise sunt simulate, fără costuri reale'
+    : '🟢 Mod Live activ · Polițele emise sunt reale · ASF raportare activă'
+  );
+}
+
+function testSandboxAPI() {
+  showToast('🧪 Test API Sandbox: POST /insurance/emit simulat...');
+  setTimeout(() => {
+    ASIG_API_CONFIG.last_test = new Date().toLocaleString('ro-RO');
+    ASIG_API_CONFIG.test_results.push({ ts: ASIG_API_CONFIG.last_test, status:'✅ 200 OK', polita:'TEST-RO-ASF-0000', timp:'0.8s' });
+    showToast('✅ Sandbox API OK · Poliță simulată emisă · 0.8s · Niciun cost real');
+  }, 1200);
 }
 
 

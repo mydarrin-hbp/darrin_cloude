@@ -1980,6 +1980,127 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
   </a>
 </div>
 
+
+<script>
+// ════ GUEST ORDER TRACKING — My Darrin ════
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const orderId  = params.get('order');
+  const isGuest  = params.get('guest') === 'true';
+
+  if (!orderId && !isGuest) return;
+
+  // Citim din sessionStorage
+  let order = null;
+  try {
+    const stored = sessionStorage.getItem('myd_guest_order');
+    if (stored) order = JSON.parse(stored);
+  } catch(e) {}
+
+  // Dacă nu avem în storage, construim date din URL
+  if (!order) {
+    order = {
+      id:      orderId || 'CMD-GUEST',
+      service: 'Înlocuire calorifer',
+      address: 'Str. Gorjului 118, Sector 6, București',
+      price:   333.20,
+      status:  'alocat',
+      partener:{ name:'Valentin P.', rating:4.97, phone:'+40 721 XXX XXX' },
+      eta:     new Date(Date.now() + 20*60000).toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'}),
+      isGuest: true
+    };
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    // Injectăm banner guest cu detalii comandă
+    const body = document.body;
+    const guestBanner = document.createElement('div');
+    guestBanner.id = 'guest-order-banner';
+    guestBanner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999;background:linear-gradient(135deg,#003366,#1A5FAD);padding:0';
+    guestBanner.innerHTML = `
+      <div style="max-width:900px;margin:0 auto;padding:14px 20px">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="flex:1;min-width:200px">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.5);margin-bottom:3px">
+              📦 Comanda ta · Sesiune guest
+            </div>
+            <div style="font-size:14px;font-weight:800;color:#fff;font-family:monospace">${order.id}</div>
+          </div>
+          <div style="text-align:center;padding:8px 16px;background:rgba(255,255,255,.1);border-radius:10px">
+            <div style="font-size:10px;color:rgba(255,255,255,.6)">Serviciu</div>
+            <div style="font-size:12.5px;font-weight:700;color:#fff">${order.service}</div>
+          </div>
+          <div style="text-align:center;padding:8px 16px;background:rgba(14,158,153,.2);border-radius:10px;border:1px solid rgba(14,158,153,.4)">
+            <div style="font-size:10px;color:rgba(255,255,255,.6)">Status</div>
+            <div style="font-size:12.5px;font-weight:700;color:#4ADE80">✅ Alocat</div>
+          </div>
+          <div style="text-align:center;padding:8px 16px;background:rgba(255,140,0,.15);border-radius:10px;border:1px solid rgba(255,140,0,.3)">
+            <div style="font-size:10px;color:rgba(255,255,255,.6)">Meșter alocat</div>
+            <div style="font-size:12.5px;font-weight:700;color:#FF8C00">${order.partener.name} ⭐${order.partener.rating}</div>
+          </div>
+          <div style="text-align:center;padding:8px 16px;background:rgba(255,255,255,.08);border-radius:10px">
+            <div style="font-size:10px;color:rgba(255,255,255,.6)">ETA sosire</div>
+            <div style="font-size:14px;font-weight:800;color:#fff">${order.eta || '~25 min'}</div>
+          </div>
+          <button onclick="document.getElementById('create-account-prompt').style.display='flex'" 
+                  style="padding:8px 16px;border-radius:10px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">
+            💾 Salvează comanda
+          </button>
+        </div>
+      </div>`;
+    body.insertBefore(guestBanner, body.firstChild);
+
+    // Prompt creare cont pentru a salva comanda
+    const accountPrompt = document.createElement('div');
+    accountPrompt.id = 'create-account-prompt';
+    accountPrompt.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:20px';
+    accountPrompt.innerHTML = `
+      <div style="background:#fff;border-radius:20px;max-width:380px;width:100%;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+        <div style="text-align:center;margin-bottom:18px">
+          <div style="font-size:36px;margin-bottom:8px">📱</div>
+          <h3 style="font-size:17px;font-weight:800;color:#1A2332;margin-bottom:5px">Salvează comanda</h3>
+          <p style="font-size:12.5px;color:#5A6B7D">Creează un cont gratuit pentru a urmări comanda, chatul cu meșterul și garanția digitală.</p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <input type="email" placeholder="Email (cel de la checkout)" 
+                 style="border:1.5px solid #D5DFE8;border-radius:11px;padding:11px 14px;font-size:13px;font-family:inherit;outline:none"
+                 onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
+          <button onclick="linkGuestOrder(this)" 
+                  style="padding:12px;border-radius:12px;border:none;background:#FF8C00;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit">
+            Creează cont & salvează comanda
+          </button>
+          <button onclick="document.getElementById('create-account-prompt').style.display='none'"
+                  style="padding:10px;border-radius:12px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
+            Continuă fără cont
+          </button>
+        </div>
+        <p style="font-size:10.5px;color:#8C9BAD;text-align:center;margin-top:12px">Comanda ta este salvată în această sesiune. Dacă închizi browser-ul, folosește ID-ul comenzii: <strong>${order.id}</strong></p>
+      </div>`;
+    body.appendChild(accountPrompt);
+
+    // Padding top pentru banner
+    const mainContent = body.querySelector('main, #main, .main') || body.children[1];
+    if (mainContent) mainContent.style.paddingTop = '80px';
+  });
+})();
+
+function linkGuestOrder(btn) {
+  const emailInput = btn.closest('div').querySelector('input[type="email"]');
+  const email = emailInput ? emailInput.value : '';
+  if (!email) { emailInput.style.borderColor='#C0392B'; return; }
+  
+  const prompt = document.getElementById('create-account-prompt');
+  if (prompt) {
+    prompt.innerHTML = `<div style="background:#fff;border-radius:20px;max-width:380px;width:100%;padding:32px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+      <div style="font-size:48px;margin-bottom:12px">✅</div>
+      <h3 style="font-size:17px;font-weight:800;color:#1A2332;margin-bottom:6px">Cont creat!</h3>
+      <p style="font-size:12.5px;color:#5A6B7D;margin-bottom:16px">Comanda a fost asociată contului tău. Verifică email-ul pentru activare.</p>
+      <button onclick="this.closest('[id]').style.display='none'" style="padding:12px 24px;border-radius:12px;border:none;background:#003366;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Continuă</button>
+    </div>`;
+  }
+}
+</script>
+
 </body>
 </html>
 

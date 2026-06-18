@@ -447,6 +447,37 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
   .sticky-sum{position:static!important}
 }
 </style>
+
+<script>
+// ════ SAFARI iOS NAV FIX — My Darrin ════
+// Calculează base URL corect indiferent de query string
+window.__myd_base = (function() {
+  const href = window.location.href;
+  const base = href.split('?')[0].replace(/[^/]*$/, '');
+  return base;
+})();
+
+function navTo(page) {
+  // Funcționează corect pe Safari iOS cu query string params
+  try {
+    const url = window.__myd_base + page;
+    window.location.replace(url);
+  } catch(e) {
+    window.location.href = page;
+  }
+}
+
+// Suprascriem nextStep pasul 5 → checkout
+const _origNextStep = window.nextStep;
+window.nextStep = function(n) {
+  if (n === 5) {
+    navTo('mydarrin-checkout.html');
+    return;
+  }
+  if (typeof _origNextStep === 'function') _origNextStep(n);
+};
+</script>
+
 </head>
 <body>
 <div id="spbar"></div>
@@ -2109,6 +2140,38 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
     <a href="mydarrin-v3.html" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">🏠 Acasă</a> <span style="color:rgba(255,255,255,.15)">·</span> <a href="mydarrin-catalog.html" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">📦 Catalog</a> <span style="color:rgba(255,255,255,.15)">·</span> <a href="mydarrin-checkout.html" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">🛒 Checkout</a> <span style="color:rgba(255,255,255,.15)">·</span> <a href="mydarrin-dashboard-client.html" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">📊 Dashboard</a>
   </div>
 </div>
+
+<!-- ════ EXPLICAȚIE NIVELURI SERVICE ════ -->
+<div id="nivel-explain" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:500;background:#fff;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.25);padding:28px 30px;max-width:480px;width:95vw">
+  <button onclick="document.getElementById('nivel-explain').style.display='none'" style="position:absolute;top:14px;right:16px;font-size:20px;border:none;background:none;cursor:pointer;color:#8C9BAD">×</button>
+  <h3 style="font-size:16px;font-weight:800;color:#1A2332;margin-bottom:16px;font-family:'Syne',sans-serif">🏅 Diferențele dintre niveluri</h3>
+  <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+    <thead>
+      <tr style="background:#F0F4F8">
+        <th style="padding:9px 12px;text-align:left;border-radius:8px 0 0 8px;color:#5A6B7D">Element</th>
+        <th style="padding:9px 12px;text-align:center;color:#CD7F32;font-weight:800">🥉 Bronz</th>
+        <th style="padding:9px 12px;text-align:center;color:#999;font-weight:800">🥈 Argint</th>
+        <th style="padding:9px 12px;text-align:center;border-radius:0 8px 8px 0;color:#FF8C00;font-weight:800">🥇 Aur</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:8px 12px;border-bottom:1px solid #EEF2F7;color:#5A6B7D">Garanție lucrare</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7">12 luni</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7">24 luni</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7;font-weight:700;color:#FF8C00">36 luni</td></tr>
+      <tr><td style="padding:8px 12px;border-bottom:1px solid #EEF2F7;color:#5A6B7D">Materiale incluse</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7">De bază</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7">Premium</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7;font-weight:700;color:#FF8C00">Top brand</td></tr>
+      <tr><td style="padding:8px 12px;border-bottom:1px solid #EEF2F7;color:#5A6B7D">Prioritate alocare</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7">Standard</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7">Ridicată</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7;font-weight:700;color:#FF8C00">⚡ Urgentă</td></tr>
+      <tr><td style="padding:8px 12px;border-bottom:1px solid #EEF2F7;color:#5A6B7D">Partener alocat</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7">Disponibil</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7">Senior</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7;font-weight:700;color:#FF8C00">Expert</td></tr>
+      <tr><td style="padding:8px 12px;color:#5A6B7D">Preț manoperă</td><td style="padding:8px 12px;text-align:center;font-weight:600">280 Lei</td><td style="padding:8px 12px;text-align:center;font-weight:600">380 Lei</td><td style="padding:8px 12px;text-align:center;font-weight:700;color:#FF8C00">520 Lei</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:11px;color:#8C9BAD;margin-top:12px;text-align:center">Prețuri pentru Înlocuire calorifer · Zona A · București · TVA 19% inclus</p>
+</div>
+<div id="nivel-overlay" onclick="document.getElementById('nivel-explain').style.display='none';this.style.display='none'" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:499"></div>
+<script>
+function showNivelExplain(){
+  document.getElementById('nivel-explain').style.display='block';
+  document.getElementById('nivel-overlay').style.display='block';
+}
+</script>
+
 </body>
 </html>
 

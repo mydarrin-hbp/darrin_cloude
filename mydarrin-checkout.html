@@ -1782,6 +1782,158 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
   </div>
 </div>
 
+
+<script>
+// ════ CHECKOUT FIXES — My Darrin ════
+
+// ── P15: EDITARE ADRESĂ ──
+function editAddress() {
+  const fields = ['addr-street','addr-nr','addr-ap','addr-sector','addr-city','addr-note'];
+  const readonlyEls = document.querySelectorAll('[data-addr-readonly], .addr-summary');
+  const editEls     = document.querySelectorAll('[data-addr-edit], .addr-form');
+  
+  // Toggle vizibilitate
+  readonlyEls.forEach(el => el.style.display = el.style.display==='none' ? '' : 'none');
+  editEls.forEach(el     => el.style.display = el.style.display==='none' ? '' : 'none');
+  
+  // Dacă nu există formular dedicat, facem câmpurile editabile direct
+  const addrEl = document.getElementById('checkout-address') || document.querySelector('[class*="address-summary"]');
+  if (addrEl) {
+    if (addrEl.contentEditable === 'true') {
+      addrEl.contentEditable = 'false';
+      addrEl.style.border = '';
+      addrEl.style.borderRadius = '';
+      addrEl.style.padding = '';
+      showToastCheckout('✅ Adresă actualizată');
+    } else {
+      addrEl.contentEditable = 'true';
+      addrEl.style.border = '2px solid #FF8C00';
+      addrEl.style.borderRadius = '8px';
+      addrEl.style.padding = '8px';
+      addrEl.focus();
+    }
+  }
+}
+
+// Adăugăm buton edit la fiecare element de adresă din checkout
+document.addEventListener('DOMContentLoaded', function() {
+  // Găsim zona de adresă
+  const addrSections = document.querySelectorAll('[class*="address"], [id*="addr"], [id*="address"]');
+  addrSections.forEach(el => {
+    if (!el.querySelector('.edit-addr-btn') && el.textContent.includes('Str.') || el.textContent.includes('București')) {
+      const btn = document.createElement('button');
+      btn.className = 'edit-addr-btn';
+      btn.style.cssText = 'font-size:11px;color:#FF8C00;border:1px solid rgba(255,140,0,.3);background:rgba(255,140,0,.08);border-radius:7px;padding:3px 10px;cursor:pointer;font-family:inherit;font-weight:600;margin-left:8px;transition:all .15s';
+      btn.textContent = '✏️ Editează';
+      btn.onclick = function(e) { e.stopPropagation(); editAddress(); };
+      el.style.position = 'relative';
+      el.appendChild(btn);
+    }
+  });
+});
+
+// ── B4: GUEST ORDER SAVE ──
+function saveGuestOrder(orderData) {
+  const order = {
+    id:       orderData.id || 'CMD-' + Date.now(),
+    email:    orderData.email || '',
+    service:  orderData.service || 'Înlocuire calorifer',
+    address:  orderData.address || 'Str. Gorjului 118, Sector 6',
+    price:    orderData.price || 0,
+    status:   'alocat',
+    partener: { name:'Valentin P.', rating:4.97, eta: new Date(Date.now()+25*60000).toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'}) },
+    timestamp: new Date().toISOString(),
+    isGuest:  true
+  };
+  try {
+    sessionStorage.setItem('myd_guest_order', JSON.stringify(order));
+    sessionStorage.setItem('myd_last_order_id', order.id);
+  } catch(e) { console.warn('sessionStorage unavailable:', e); }
+  return order;
+}
+
+// ── ETA MEȘTER ── 
+function showETAScreen(orderId, partener, etaMin) {
+  const eta = new Date(Date.now() + etaMin*60000);
+  const etaStr = eta.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'});
+  
+  const overlay = document.createElement('div');
+  overlay.id = 'eta-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:800;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:24px;max-width:420px;width:100%;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.3)">
+      <div style="background:linear-gradient(135deg,#1A7A3A,#0E9E99);padding:24px;text-align:center">
+        <div style="font-size:48px;margin-bottom:8px">✅</div>
+        <div style="font-size:18px;font-weight:800;color:#fff">Comandă înregistrată!</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:4px">${orderId}</div>
+      </div>
+      <div style="padding:22px">
+        <div style="background:#F0F4F8;border-radius:14px;padding:16px;text-align:center;margin-bottom:16px;border:1px solid #D5DFE8">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:6px">🚀 Meșter alocat de Darrin AI</div>
+          <div style="font-size:22px;font-weight:800;color:#1A2332;margin-bottom:4px">${partener}</div>
+          <div style="font-size:13px;color:#5A6B7D">Sosire estimată: <strong style="color:#FF8C00">${etaStr}</strong> (~${etaMin} min)</div>
+          <div style="margin-top:8px;height:6px;background:#EEF2F7;border-radius:99px;overflow:hidden">
+            <div id="eta-progress" style="height:100%;width:0%;background:linear-gradient(90deg,#FF8C00,#0E9E99);border-radius:99px;transition:width 1.5s ease"></div>
+          </div>
+        </div>
+        <div style="background:#E8F5E9;border-radius:12px;padding:12px 14px;margin-bottom:14px;border:1px solid rgba(26,122,58,.2)">
+          <div style="font-size:11.5px;color:#1A7A3A;font-weight:700;margin-bottom:4px">📱 Confirmare trimisă</div>
+          <div style="font-size:11px;color:#5A6B7D">✉ Email confirmare trimis · 📱 SMS cu detalii meșter trimis</div>
+        </div>
+        <div style="font-size:11.5px;color:#5A6B7D;text-align:center;margin-bottom:14px">
+          Urmărești comanda cu: <strong style="color:#003366;font-family:monospace">${orderId}</strong>
+        </div>
+        <div style="display:flex;gap:10px">
+          <a href="mydarrin-dashboard-client.html?order=${orderId}&guest=true" 
+             style="flex:1;padding:12px;border-radius:12px;background:#003366;color:#fff;font-weight:700;font-size:13px;text-decoration:none;text-align:center;display:block">
+            📊 Dashboard comandă
+          </a>
+          <button onclick="document.getElementById('eta-overlay').remove()" 
+                  style="padding:12px 16px;border-radius:12px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-weight:600;font-size:12px;cursor:pointer;font-family:inherit">
+            Închide
+          </button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  
+  // Animăm progress bar
+  setTimeout(() => {
+    const bar = document.getElementById('eta-progress');
+    if (bar) bar.style.width = '35%';
+  }, 100);
+}
+
+// ── HOOK PE SUBMIT CHECKOUT ──
+document.addEventListener('DOMContentLoaded', function() {
+  const submitBtns = document.querySelectorAll('[class*="submit"],[id*="submit"],[onclick*="submit"],[onclick*="plat"],[onclick*="confirm"]');
+  submitBtns.forEach(btn => {
+    const orig = btn.onclick;
+    btn.addEventListener('click', function(e) {
+      const emailEl  = document.querySelector('input[type="email"]');
+      const addrEl   = document.querySelector('[id*="addr"], [class*="addr"]');
+      const email    = emailEl ? emailEl.value : 'elena.cucu@email.ro';
+      const addr     = addrEl  ? addrEl.textContent : 'Str. Gorjului 118, Sector 6';
+      const orderId  = 'CMD-' + Math.floor(Date.now()/1000);
+      
+      // Salvăm guest order
+      saveGuestOrder({ id:orderId, email, address:addr });
+      
+      // Arătăm ETA după 1.5s (simulând procesare)
+      setTimeout(() => showETAScreen(orderId, 'Valentin P. ⭐ 4.97', 25), 1500);
+    });
+  });
+});
+
+function showToastCheckout(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;background:#1A2332;color:#fff;padding:11px 20px;border-radius:12px;font-size:12.5px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.2);font-family:inherit';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2800);
+}
+</script>
+
 </body>
 </html>
 
