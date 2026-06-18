@@ -1499,5 +1499,225 @@ window.addEventListener('scroll',()=>{});
   </div>
 </div>
 
+
+<script id="partner-router">
+/* ═══════════════════════════════════════════════════════════════════
+   MY DARRIN — PARTNER NAVIGATION ROUTER v2026.06
+   Unified router for all "Devino Partener" entry points across pages.
+
+   Handles:
+   1. Same-page modal trigger (pages WITH partner-modal)
+   2. Cross-page deep link (?type=xxx) with auto-open on landing
+   3. devino-partener.html internal type switching without reload
+   4. Sidebar/hamburger menu entries
+   5. CTA buttons in hero sections
+   ═══════════════════════════════════════════════════════════════════ */
+
+(function () {
+  'use strict';
+
+  // ── CONSTANTS ──────────────────────────────────────────────────
+  const PARTNER_PAGE = 'mydarrin-devino-partener.html';
+  const VALID_TYPES  = ['servicii', 'materiale', 'inchirieri',
+                        'curier',   'asigurari'];
+  const IS_PARTNER_PAGE = window.location.pathname
+    .split('/').pop().replace(/\?.*$/, '') === PARTNER_PAGE;
+
+  // ─────────────────────────────────────────────────────────────
+  // 1. CORE ROUTER — handlePartnerNavigation(type)
+  //    Called from every entry point (navbar, sidebar, CTA, footer)
+  // ─────────────────────────────────────────────────────────────
+  window.handlePartnerNavigation = function (type) {
+    const t = (VALID_TYPES.includes(type) ? type : 'servicii');
+
+    // A. Already on devino-partener.html → switch type in-place
+    if (IS_PARTNER_PAGE) {
+      _switchTypeOnWizardPage(t);
+      return;
+    }
+
+    // B. Has an embedded partner-modal on THIS page → open it
+    const modal = document.getElementById('partner-modal');
+    if (modal) {
+      if (typeof openPartnerModal === 'function') {
+        openPartnerModal(t);
+      } else {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        if (typeof selectPartnerType === 'function') {
+          setTimeout(() => selectPartnerType(t), 80);
+        }
+      }
+      return;
+    }
+
+    // C. No modal on this page → navigate with deep-link param
+    _navigateToPartnerPage(t);
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // 2. ALIAS — openPartnerWizard(type)
+  //    Architectural requirement alias
+  // ─────────────────────────────────────────────────────────────
+  window.openPartnerWizard = window.handlePartnerNavigation;
+
+  // ─────────────────────────────────────────────────────────────
+  // 3. INTERNAL: switch type on devino-partener.html without reload
+  // ─────────────────────────────────────────────────────────────
+  function _switchTypeOnWizardPage(type) {
+    // Try full wizard openPartnerModal first
+    if (typeof openPartnerModal === 'function') {
+      openPartnerModal(type);
+      return;
+    }
+    // Fallback: directly manipulate WIZARD_DATA selectedPartnerType
+    if (typeof selectType === 'function') {
+      selectType(type, null);
+      return;
+    }
+    // Last resort: set global and re-render
+    if (typeof selectedPartnerType !== 'undefined') {
+      // eslint-disable-next-line no-global-assign
+      selectedPartnerType = type;
+    }
+    if (typeof renderStep === 'function') renderStep(0);
+    // Update URL without reload (history API)
+    const url = new URL(window.location.href);
+    url.searchParams.set('type', type);
+    window.history.replaceState({}, '', url.toString());
+    _scrollToWizard();
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 4. INTERNAL: cross-page navigation with ?type= deep link
+  // ─────────────────────────────────────────────────────────────
+  function _navigateToPartnerPage(type) {
+    const base = _resolveBase();
+    window.location.href = base + PARTNER_PAGE + '?type=' + type;
+  }
+
+  function _resolveBase() {
+    const href  = window.location.href;
+    const parts = href.split('?')[0].split('/');
+    parts.pop(); // remove current filename
+    return parts.join('/') + '/';
+  }
+
+  function _scrollToWizard() {
+    const el = document.getElementById('partner-wizard') ||
+               document.getElementById('partner-modal')  ||
+               document.querySelector('[data-wizard="partner"]');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 5. AUTO-OPEN on devino-partener.html: read ?type= from URL
+  // ─────────────────────────────────────────────────────────────
+  function _autoOpenFromURLParam() {
+    if (!IS_PARTNER_PAGE) return;
+    const params = new URLSearchParams(window.location.search);
+    const type   = params.get('type');
+    if (!type || !VALID_TYPES.includes(type)) return;
+
+    // Wait for wizard init then open
+    const _tryOpen = (attempts) => {
+      if (attempts <= 0) return;
+      if (typeof openPartnerModal === 'function') {
+        openPartnerModal(type);
+        // Clean URL
+        const url = new URL(window.location.href);
+        url.searchParams.delete('type');
+        window.history.replaceState({}, '', url.toString());
+      } else {
+        setTimeout(() => _tryOpen(attempts - 1), 150);
+      }
+    };
+    setTimeout(() => _tryOpen(10), 200);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 6. INTERCEPT all <a> tags pointing to devino-partener.html
+  //    that have onclick="openPartnerModal(...)" —
+  //    prevent default href navigation, use router instead
+  // ─────────────────────────────────────────────────────────────
+  function _interceptPartnerLinks() {
+    document.querySelectorAll('a[href*="devino-partener"]').forEach(el => {
+      // Already has router handler attached?
+      if (el.dataset.routerAttached) return;
+      el.dataset.routerAttached = 'true';
+
+      // Extract type from existing onclick attr or data attr
+      let type = el.dataset.partnerType || null;
+      const onclickStr = el.getAttribute('onclick') || '';
+      const typeMatch  = onclickStr.match(/openPartnerModal\(['"](\w+)['"]\)/) ||
+                         onclickStr.match(/handlePartnerNavigation\(['"](\w+)['"]\)/) ||
+                         onclickStr.match(/openPartnerWizard\(['"](\w+)['"]\)/);
+      if (typeMatch) type = typeMatch[1];
+
+      // Check href for ?type=
+      const href = el.getAttribute('href') || '';
+      const hrefType = href.match(/[?&]type=(\w+)/);
+      if (!type && hrefType) type = hrefType[1];
+
+      el.addEventListener('click', function (e) {
+        // Only intercept same-domain devino-partener links
+        if (href.includes('devino-partener')) {
+          e.preventDefault();
+          // Close sidebar/mobile menu if open
+          if (typeof closeSidebar  === 'function') closeSidebar();
+          if (typeof closeNavMenu  === 'function') closeNavMenu();
+          handlePartnerNavigation(type || 'servicii');
+        }
+      });
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 7. SIDEBAR HELPER — sb-item with data-partner-type
+  //    <div class="sb-item" data-partner-type="servicii" …>
+  // ─────────────────────────────────────────────────────────────
+  function _bindSidebarItems() {
+    document.querySelectorAll('[data-partner-type]').forEach(el => {
+      if (el.dataset.routerAttached) return;
+      el.dataset.routerAttached = 'true';
+      el.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof closeSidebar === 'function') closeSidebar();
+        handlePartnerNavigation(this.dataset.partnerType);
+      });
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 8. MutationObserver — catch dynamically injected partner links
+  // ─────────────────────────────────────────────────────────────
+  function _observeDynamicLinks() {
+    const observer = new MutationObserver(() => {
+      _interceptPartnerLinks();
+      _bindSidebarItems();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 9. INIT
+  // ─────────────────────────────────────────────────────────────
+  function _init() {
+    _interceptPartnerLinks();
+    _bindSidebarItems();
+    _autoOpenFromURLParam();
+    _observeDynamicLinks();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _init);
+  } else {
+    _init();
+  }
+
+})();
+
+</script>
 </body>
 </html>

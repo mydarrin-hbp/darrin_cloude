@@ -753,7 +753,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
             <div class="flex flex-col gap-2 mb-4">
 
               <!-- Furnizor servicii -->
-              <a href="#devino-partener" onclick="openPartnerModal('servicii')"
+              <a href="mydarrin-devino-partener.html?type=servicii" onclick="event.preventDefault();handlePartnerNavigation('servicii')"
                  class="flex items-center gap-4 p-3.5 rounded-xl hover:bg-[#F4F7F9] transition group/dp border border-transparent hover:border-[#D5DFE8] cursor-pointer" style="text-decoration:none">
                 <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style="background:linear-gradient(135deg,#FFF0D6,#FDE8C4)">🔧</div>
                 <div class="flex-1 min-w-0">
@@ -764,7 +764,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
               </a>
 
               <!-- Furnizor materiale -->
-              <a href="#devino-partener" onclick="openPartnerModal('materiale')"
+              <a href="mydarrin-devino-partener.html?type=materiale" onclick="event.preventDefault();handlePartnerNavigation('materiale')"
                  class="flex items-center gap-4 p-3.5 rounded-xl hover:bg-[#F4F7F9] transition group/dp border border-transparent hover:border-[#D5DFE8] cursor-pointer" style="text-decoration:none">
                 <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style="background:linear-gradient(135deg,#EBF4FB,#DDE6F5)">📦</div>
                 <div class="flex-1 min-w-0">
@@ -775,7 +775,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
               </a>
 
               <!-- Furnizor inchirieri -->
-              <a href="#devino-partener" onclick="openPartnerModal('inchirieri')"
+              <a href="mydarrin-devino-partener.html?type=inchirieri" onclick="event.preventDefault();handlePartnerNavigation('inchirieri')"
                  class="flex items-center gap-4 p-3.5 rounded-xl hover:bg-[#F4F7F9] transition group/dp border border-transparent hover:border-[#D5DFE8] cursor-pointer" style="text-decoration:none">
                 <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style="background:linear-gradient(135deg,#E0F5F4,#C5EEEC)">🏗</div>
                 <div class="flex-1 min-w-0">
@@ -944,7 +944,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       <div id="sb-partner" class="hidden pb-2">
         <!-- Servicii -->
         <div class="mx-3 mb-1.5 rounded-xl overflow-hidden border border-gray-100">
-          <a href="#devino-partener" onclick="closeSidebar(); setTimeout(()=>openPartnerModal('servicii'),300)"
+          <a href="#devino-partener" onclick="event.preventDefault();handlePartnerNavigation('servicii')"
              class="flex items-center gap-3 px-4 py-3 hover:bg-[#FFF0D6] transition group/sp" style="text-decoration:none">
             <div class="w-9 h-9 rounded-lg flex items-center justify-center text-base flex-shrink-0" style="background:linear-gradient(135deg,#FFF0D6,#FDE8C4)">🔧</div>
             <div class="flex-1 min-w-0">
@@ -956,7 +956,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
         </div>
         <!-- Materiale -->
         <div class="mx-3 mb-1.5 rounded-xl overflow-hidden border border-gray-100">
-          <a href="#devino-partener" onclick="closeSidebar(); setTimeout(()=>openPartnerModal('materiale'),300)"
+          <a href="#devino-partener" onclick="event.preventDefault();handlePartnerNavigation('materiale')"
              class="flex items-center gap-3 px-4 py-3 hover:bg-[#EBF4FB] transition group/sp" style="text-decoration:none">
             <div class="w-9 h-9 rounded-lg flex items-center justify-center text-base flex-shrink-0" style="background:linear-gradient(135deg,#EBF4FB,#DDE6F5)">📦</div>
             <div class="flex-1 min-w-0">
@@ -968,7 +968,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
         </div>
         <!-- Inchirieri -->
         <div class="mx-3 rounded-xl overflow-hidden border border-gray-100">
-          <a href="#devino-partener" onclick="closeSidebar(); setTimeout(()=>openPartnerModal('inchirieri'),300)"
+          <a href="#devino-partener" onclick="event.preventDefault();handlePartnerNavigation('inchirieri')"
              class="flex items-center gap-3 px-4 py-3 hover:bg-[#E0F5F4] transition group/sp" style="text-decoration:none">
             <div class="w-9 h-9 rounded-lg flex items-center justify-center text-base flex-shrink-0" style="background:linear-gradient(135deg,#E0F5F4,#C5EEEC)">🏗</div>
             <div class="flex-1 min-w-0">
@@ -1533,6 +1533,226 @@ function animateCounter(el){
 }
 const cobs=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting&&!x.target.dataset.done){x.target.dataset.done='1';animateCounter(x.target);}}),{threshold:.5});
 document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
+</script>
+
+<script id="partner-router">
+/* ═══════════════════════════════════════════════════════════════════
+   MY DARRIN — PARTNER NAVIGATION ROUTER v2026.06
+   Unified router for all "Devino Partener" entry points across pages.
+
+   Handles:
+   1. Same-page modal trigger (pages WITH partner-modal)
+   2. Cross-page deep link (?type=xxx) with auto-open on landing
+   3. devino-partener.html internal type switching without reload
+   4. Sidebar/hamburger menu entries
+   5. CTA buttons in hero sections
+   ═══════════════════════════════════════════════════════════════════ */
+
+(function () {
+  'use strict';
+
+  // ── CONSTANTS ──────────────────────────────────────────────────
+  const PARTNER_PAGE = 'mydarrin-devino-partener.html';
+  const VALID_TYPES  = ['servicii', 'materiale', 'inchirieri',
+                        'curier',   'asigurari'];
+  const IS_PARTNER_PAGE = window.location.pathname
+    .split('/').pop().replace(/\?.*$/, '') === PARTNER_PAGE;
+
+  // ─────────────────────────────────────────────────────────────
+  // 1. CORE ROUTER — handlePartnerNavigation(type)
+  //    Called from every entry point (navbar, sidebar, CTA, footer)
+  // ─────────────────────────────────────────────────────────────
+  window.handlePartnerNavigation = function (type) {
+    const t = (VALID_TYPES.includes(type) ? type : 'servicii');
+
+    // A. Already on devino-partener.html → switch type in-place
+    if (IS_PARTNER_PAGE) {
+      _switchTypeOnWizardPage(t);
+      return;
+    }
+
+    // B. Has an embedded partner-modal on THIS page → open it
+    const modal = document.getElementById('partner-modal');
+    if (modal) {
+      if (typeof openPartnerModal === 'function') {
+        openPartnerModal(t);
+      } else {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        if (typeof selectPartnerType === 'function') {
+          setTimeout(() => selectPartnerType(t), 80);
+        }
+      }
+      return;
+    }
+
+    // C. No modal on this page → navigate with deep-link param
+    _navigateToPartnerPage(t);
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // 2. ALIAS — openPartnerWizard(type)
+  //    Architectural requirement alias
+  // ─────────────────────────────────────────────────────────────
+  window.openPartnerWizard = window.handlePartnerNavigation;
+
+  // ─────────────────────────────────────────────────────────────
+  // 3. INTERNAL: switch type on devino-partener.html without reload
+  // ─────────────────────────────────────────────────────────────
+  function _switchTypeOnWizardPage(type) {
+    // Try full wizard openPartnerModal first
+    if (typeof openPartnerModal === 'function') {
+      openPartnerModal(type);
+      return;
+    }
+    // Fallback: directly manipulate WIZARD_DATA selectedPartnerType
+    if (typeof selectType === 'function') {
+      selectType(type, null);
+      return;
+    }
+    // Last resort: set global and re-render
+    if (typeof selectedPartnerType !== 'undefined') {
+      // eslint-disable-next-line no-global-assign
+      selectedPartnerType = type;
+    }
+    if (typeof renderStep === 'function') renderStep(0);
+    // Update URL without reload (history API)
+    const url = new URL(window.location.href);
+    url.searchParams.set('type', type);
+    window.history.replaceState({}, '', url.toString());
+    _scrollToWizard();
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 4. INTERNAL: cross-page navigation with ?type= deep link
+  // ─────────────────────────────────────────────────────────────
+  function _navigateToPartnerPage(type) {
+    const base = _resolveBase();
+    window.location.href = base + PARTNER_PAGE + '?type=' + type;
+  }
+
+  function _resolveBase() {
+    const href  = window.location.href;
+    const parts = href.split('?')[0].split('/');
+    parts.pop(); // remove current filename
+    return parts.join('/') + '/';
+  }
+
+  function _scrollToWizard() {
+    const el = document.getElementById('partner-wizard') ||
+               document.getElementById('partner-modal')  ||
+               document.querySelector('[data-wizard="partner"]');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 5. AUTO-OPEN on devino-partener.html: read ?type= from URL
+  // ─────────────────────────────────────────────────────────────
+  function _autoOpenFromURLParam() {
+    if (!IS_PARTNER_PAGE) return;
+    const params = new URLSearchParams(window.location.search);
+    const type   = params.get('type');
+    if (!type || !VALID_TYPES.includes(type)) return;
+
+    // Wait for wizard init then open
+    const _tryOpen = (attempts) => {
+      if (attempts <= 0) return;
+      if (typeof openPartnerModal === 'function') {
+        openPartnerModal(type);
+        // Clean URL
+        const url = new URL(window.location.href);
+        url.searchParams.delete('type');
+        window.history.replaceState({}, '', url.toString());
+      } else {
+        setTimeout(() => _tryOpen(attempts - 1), 150);
+      }
+    };
+    setTimeout(() => _tryOpen(10), 200);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 6. INTERCEPT all <a> tags pointing to devino-partener.html
+  //    that have onclick="openPartnerModal(...)" —
+  //    prevent default href navigation, use router instead
+  // ─────────────────────────────────────────────────────────────
+  function _interceptPartnerLinks() {
+    document.querySelectorAll('a[href*="devino-partener"]').forEach(el => {
+      // Already has router handler attached?
+      if (el.dataset.routerAttached) return;
+      el.dataset.routerAttached = 'true';
+
+      // Extract type from existing onclick attr or data attr
+      let type = el.dataset.partnerType || null;
+      const onclickStr = el.getAttribute('onclick') || '';
+      const typeMatch  = onclickStr.match(/openPartnerModal\(['"](\w+)['"]\)/) ||
+                         onclickStr.match(/handlePartnerNavigation\(['"](\w+)['"]\)/) ||
+                         onclickStr.match(/openPartnerWizard\(['"](\w+)['"]\)/);
+      if (typeMatch) type = typeMatch[1];
+
+      // Check href for ?type=
+      const href = el.getAttribute('href') || '';
+      const hrefType = href.match(/[?&]type=(\w+)/);
+      if (!type && hrefType) type = hrefType[1];
+
+      el.addEventListener('click', function (e) {
+        // Only intercept same-domain devino-partener links
+        if (href.includes('devino-partener')) {
+          e.preventDefault();
+          // Close sidebar/mobile menu if open
+          if (typeof closeSidebar  === 'function') closeSidebar();
+          if (typeof closeNavMenu  === 'function') closeNavMenu();
+          handlePartnerNavigation(type || 'servicii');
+        }
+      });
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 7. SIDEBAR HELPER — sb-item with data-partner-type
+  //    <div class="sb-item" data-partner-type="servicii" …>
+  // ─────────────────────────────────────────────────────────────
+  function _bindSidebarItems() {
+    document.querySelectorAll('[data-partner-type]').forEach(el => {
+      if (el.dataset.routerAttached) return;
+      el.dataset.routerAttached = 'true';
+      el.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof closeSidebar === 'function') closeSidebar();
+        handlePartnerNavigation(this.dataset.partnerType);
+      });
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 8. MutationObserver — catch dynamically injected partner links
+  // ─────────────────────────────────────────────────────────────
+  function _observeDynamicLinks() {
+    const observer = new MutationObserver(() => {
+      _interceptPartnerLinks();
+      _bindSidebarItems();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 9. INIT
+  // ─────────────────────────────────────────────────────────────
+  function _init() {
+    _interceptPartnerLinks();
+    _bindSidebarItems();
+    _autoOpenFromURLParam();
+    _observeDynamicLinks();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _init);
+  } else {
+    _init();
+  }
+
+})();
+
 </script>
 </body>
 </html>

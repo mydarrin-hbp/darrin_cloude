@@ -2,6 +2,259 @@
 <html lang="ro">
 <head>
 
+
+<style id="dp-critical-css">
+/* ── CRITICAL CSS FALLBACK — devino-partener.html ─────────────
+   Funcționează și offline / file:/// fără Tailwind CDN
+   ─────────────────────────────────────────────────────────── */
+
+/* Reset & Base */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; scroll-padding-top: 70px; }
+body { 
+  font-family: 'Inter', 'Helvetica Neue', Arial, system-ui, sans-serif;
+  background: #fff; 
+  color: #2D2D2D;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Container */
+.max-w-7xl { max-width: 80rem; width: 100%; }
+.max-w-4xl { max-width: 56rem; width: 100%; }
+.max-w-6xl { max-width: 72rem; width: 100%; }
+.max-w-2xl { max-width: 42rem; width: 100%; }
+.mx-auto    { margin-left: auto; margin-right: auto; }
+.px-6       { padding-left: 1.5rem; padding-right: 1.5rem; }
+.py-20      { padding-top: 5rem; padding-bottom: 5rem; }
+.w-full     { width: 100%; }
+
+/* Flex */
+.flex                { display: flex; }
+.flex-col            { flex-direction: column; }
+.flex-wrap           { flex-wrap: wrap; }
+.items-center        { align-items: center; }
+.items-start         { align-items: flex-start; }
+.justify-center      { justify-content: center; }
+.justify-between     { justify-content: space-between; }
+.gap-2               { gap: 0.5rem; }
+.gap-3               { gap: 0.75rem; }
+.gap-4               { gap: 1rem; }
+.gap-5               { gap: 1.25rem; }
+.gap-6               { gap: 1.5rem; }
+.gap-8               { gap: 2rem; }
+.gap-10              { gap: 2.5rem; }
+.gap-12              { gap: 3rem; }
+.gap-14              { gap: 3.5rem; }
+.inline-flex         { display: inline-flex; }
+.flex-1              { flex: 1; }
+.flex-shrink-0       { flex-shrink: 0; }
+
+/* Grid */
+.grid                { display: grid; }
+.grid-cols-1         { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+.grid-cols-2         { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-cols-3         { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+@media (min-width: 768px) {
+  .md\:grid-cols-3  { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .md\:grid-cols-2  { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .md\:flex         { display: flex; }
+}
+@media (min-width: 1024px) {
+  .lg\:grid-cols-2  { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lg\:grid-cols-3  { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .lg\:flex         { display: flex; }
+  .lg\:hidden       { display: none; }
+}
+
+/* Spacing */
+.mb-1  { margin-bottom: 0.25rem; }
+.mb-2  { margin-bottom: 0.5rem; }
+.mb-3  { margin-bottom: 0.75rem; }
+.mb-4  { margin-bottom: 1rem; }
+.mb-5  { margin-bottom: 1.25rem; }
+.mb-6  { margin-bottom: 1.5rem; }
+.mb-8  { margin-bottom: 2rem; }
+.mb-10 { margin-bottom: 2.5rem; }
+.mb-12 { margin-bottom: 3rem; }
+.mb-14 { margin-bottom: 3.5rem; }
+.mt-2  { margin-top: 0.5rem; }
+.mt-4  { margin-top: 1rem; }
+.mt-6  { margin-top: 1.5rem; }
+.mt-8  { margin-top: 2rem; }
+.ml-auto { margin-left: auto; }
+.p-3   { padding: 0.75rem; }
+.p-4   { padding: 1rem; }
+.p-5   { padding: 1.25rem; }
+.p-6   { padding: 1.5rem; }
+.px-4  { padding-left: 1rem; padding-right: 1rem; }
+.px-8  { padding-left: 2rem; padding-right: 2rem; }
+.py-2  { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+.py-3  { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+.py-4  { padding-top: 1rem; padding-bottom: 1rem; }
+.py-5  { padding-top: 1.25rem; padding-bottom: 1.25rem; }
+
+/* Typography */
+.text-xs   { font-size: 0.75rem; line-height: 1rem; }
+.text-sm   { font-size: 0.875rem; line-height: 1.25rem; }
+.text-base { font-size: 1rem; line-height: 1.5rem; }
+.text-lg   { font-size: 1.125rem; line-height: 1.75rem; }
+.text-xl   { font-size: 1.25rem; line-height: 1.75rem; }
+.text-2xl  { font-size: 1.5rem; line-height: 2rem; }
+.text-3xl  { font-size: 1.875rem; line-height: 2.25rem; }
+.text-4xl  { font-size: 2.25rem; line-height: 2.5rem; }
+.text-5xl  { font-size: 3rem; line-height: 1; }
+.text-6xl  { font-size: 3.75rem; line-height: 1; }
+.font-medium  { font-weight: 500; }
+.font-semibold{ font-weight: 600; }
+.font-bold    { font-weight: 700; }
+.font-extrabold{ font-weight: 800; }
+.leading-tight { line-height: 1.25; }
+.leading-relaxed { line-height: 1.625; }
+.tracking-widest { letter-spacing: .1em; }
+.uppercase { text-transform: uppercase; }
+.text-center { text-align: center; }
+.text-left   { text-align: left; }
+
+/* Colors */
+.text-white       { color: #fff; }
+.bg-white         { background: #fff; }
+.bg-gray-50       { background: #F9FAFB; }
+.bg-\[\#F4F7F9\] { background: #F4F7F9; }
+
+/* Border radius */
+.rounded          { border-radius: 0.25rem; }
+.rounded-md       { border-radius: 0.375rem; }
+.rounded-lg       { border-radius: 0.5rem; }
+.rounded-xl       { border-radius: 0.75rem; }
+.rounded-2xl      { border-radius: 1rem; }
+.rounded-full     { border-radius: 9999px; }
+
+/* Visibility */
+.hidden    { display: none !important; }
+.block     { display: block; }
+.relative  { position: relative; }
+.absolute  { position: absolute; }
+.fixed     { position: fixed; }
+.sticky    { position: sticky; }
+.inset-0   { top:0;right:0;bottom:0;left:0; }
+.top-0     { top: 0; }
+.z-10      { z-index: 10; }
+.z-50      { z-index: 50; }
+.z-\[400\]{ z-index: 400; }
+.overflow-hidden { overflow: hidden; }
+.overflow-y-auto { overflow-y: auto; }
+
+/* Cursor */
+.cursor-pointer { cursor: pointer; }
+.select-none    { user-select: none; }
+
+/* Transitions */
+.transition { transition: all 0.15s ease; }
+.transition-all { transition: all 0.15s ease; }
+.duration-300 { transition-duration: 300ms; }
+
+/* Width / Height helpers */
+.w-4  { width: 1rem; }
+.w-5  { width: 1.25rem; }
+.w-6  { width: 1.5rem; }
+.w-8  { width: 2rem; }
+.w-10 { width: 2.5rem; }
+.w-11 { width: 2.75rem; }
+.w-12 { width: 3rem; }
+.w-16 { width: 4rem; }
+.h-4  { height: 1rem; }
+.h-5  { height: 1.25rem; }
+.h-6  { height: 1.5rem; }
+.h-8  { height: 2rem; }
+.h-10 { height: 2.5rem; }
+.h-11 { height: 2.75rem; }
+.h-12 { height: 3rem; }
+.h-16 { height: 4rem; }
+.min-h-\[580px\] { min-height: 580px; }
+.max-h-\[90vh\]  { max-height: 90vh; }
+
+/* Shadows */
+.shadow     { box-shadow: 0 1px 3px rgba(0,0,0,.1), 0 1px 2px rgba(0,0,0,.06); }
+.shadow-lg  { box-shadow: 0 10px 15px rgba(0,0,0,.1), 0 4px 6px rgba(0,0,0,.05); }
+.shadow-xl  { box-shadow: 0 20px 25px rgba(0,0,0,.1), 0 10px 10px rgba(0,0,0,.04); }
+
+/* Border */
+.border        { border: 1px solid #D5DFE8; }
+.border-2      { border: 2px solid; }
+.border-gray-100 { border-color: #F3F4F6; }
+.border-transparent { border-color: transparent; }
+
+/* Backdrop */
+.backdrop-blur-sm { backdrop-filter: blur(4px); }
+
+/* Group hover (simplificat) */
+.group:hover .group-hover\:text-\[\#FF8C00\] { color: #FF8C00; }
+.group:hover .group-hover\:border-\[\#FF8C00\] { border-color: #FF8C00; }
+.group:hover .group-hover\:opacity-100 { opacity: 1; }
+
+/* Responsive mobile */
+@media (max-width: 640px) {
+  .sm\:hidden { display: none; }
+  .px-6 { padding-left: 1rem; padding-right: 1rem; }
+  .py-20 { padding-top: 3rem; padding-bottom: 3rem; }
+  .text-6xl { font-size: 2.5rem; }
+  .text-5xl { font-size: 2rem; }
+  .text-4xl { font-size: 1.875rem; }
+  .grid-cols-2 { grid-template-columns: 1fr; }
+  .grid-cols-3 { grid-template-columns: 1fr; }
+}
+
+/* NAVBAR CUSTOM */
+.navbar-dp {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #fff;
+  border-bottom: 1px solid #EEF2F7;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  height: 64px;
+  box-shadow: 0 1px 8px rgba(0,51,102,.06);
+}
+
+/* PARTNER TYPE CARD */
+.partner-type-card {
+  background: #fff;
+  border: 2px solid #E5E7EB;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: border-color .2s, box-shadow .2s, transform .15s;
+}
+.partner-type-card:hover {
+  border-color: #FF8C00;
+  box-shadow: 0 8px 24px rgba(255,140,0,.12);
+  transform: translateY(-2px);
+}
+.partner-type-card.active {
+  border-color: #FF8C00;
+  background: #FFFBF5;
+  box-shadow: 0 8px 24px rgba(255,140,0,.15);
+}
+
+/* TYPE OPT (wizard step 1) */
+.type-opt {
+  border: 1.5px solid #D5DFE8;
+  border-radius: 13px;
+  padding: 12px 10px;
+  cursor: pointer;
+  text-align: center;
+  transition: all .18s;
+  background: #fff;
+}
+.type-opt:hover { border-color: #FF8C00; background: #FFF9F0; }
+.type-opt.sel   { border-color: #FF8C00; background: #FFF0D6; }
+</style>
+
 <style>
 /* ════════════════════════════════════════════════════════════
    MY DARRIN — UI/UX GLOBAL FIX PATCH v2026.06
@@ -154,7 +407,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 /* ── UV9: SMOOTH SCROLLING & ANIMATION ── */
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; scroll-padding-top: 70px; }
 * { -webkit-tap-highlight-color: rgba(255,140,0,.15); }
 
 /* ── UV10: CARD IMAGE ASPECT RATIO FIX ── */
@@ -470,9 +723,23 @@ body { font-family:'Helvetica World','Helvetica Neue',Arial,system-ui,sans-serif
 .actor-box:hover { transform:translateY(-3px); box-shadow:0 8px 22px rgba(0,0,0,.09); }
 
 /* ── REVEAL ── */
-.reveal { opacity:0; transform:translateY(32px); transition:opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1); }
+.reveal { 
+  opacity:1 !important; 
+  transform:translateY(0) !important; 
+}
+.reveal.animate-on-scroll { 
+  opacity:0; 
+  transform:translateY(24px); 
+  transition:opacity .6s ease, transform .6s ease; 
+}
+.reveal.animate-on-scroll.revealed { 
+  opacity:1 !important; 
+  transform:translateY(0) !important; 
+}
 .reveal.d1{transition-delay:.1s} .reveal.d2{transition-delay:.2s}
 .reveal.d3{transition-delay:.3s} .reveal.d4{transition-delay:.45s}
+.reveal.revealed { opacity:1 !important; transform:translateY(0) !important; }
+
 .reveal.visible { opacity:1; transform:none; }
 
 /* ── PULSE ── */
@@ -624,57 +891,86 @@ footer a:hover { color:#FF8C00; }
 .faq-item.open .faq-ans{max-height:180px}
 .faq-text{padding:0 22px 18px;font-size:13px;color:#6B7A8D;line-height:1.7;border-top:1px solid #F0F2F7}
 </style>
+
+<script>
+// ── DEVINO PARTENER — URL Param Auto-Open ──
+// Citim ?type= la încărcare și deschidem wizard-ul pe tipul corect
+(function() {
+  function initFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    const type   = params.get('type');
+    const validTypes = ['servicii','materiale','inchirieri','curier','asigurari'];
+    if (!type || !validTypes.includes(type)) return;
+
+    // Curățăm URL-ul
+    const cleanUrl = window.location.pathname;
+    window.history.replaceState({}, document.title, cleanUrl);
+
+    // Deschidem wizard cu tipul specificat
+    const _try = (n) => {
+      if (n <= 0) return;
+      if (typeof openPartnerModal === 'function') {
+        openPartnerModal(type);
+      } else if (typeof selectType === 'function') {
+        selectType(type, null);
+        // Scroll la wizard
+        const wiz = document.getElementById('partner-wizard') ||
+                    document.getElementById('partner-modal') ||
+                    document.querySelector('.wizard-container');
+        if (wiz) wiz.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        setTimeout(() => _try(n - 1), 200);
+      }
+    };
+    setTimeout(() => _try(15), 300);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initFromURL);
+  } else {
+    initFromURL();
+  }
+})();
+</script>
+
+
+<script>
+// ── REVEAL ANIMATION OBSERVER ──────────────────────────────────
+(function() {
+  function initReveal() {
+    var els = document.querySelectorAll('.reveal');
+    if (!els.length) return;
+    if ('IntersectionObserver' in window) {
+      var obs = new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) {
+          if (e.isIntersecting) {
+            e.target.classList.add('revealed');
+            obs.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+      els.forEach(function(el) { obs.observe(el); });
+    } else {
+      // Fallback: activăm imediat toate
+      els.forEach(function(el) { el.classList.add('revealed'); });
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initReveal);
+  } else {
+    initReveal();
+  }
+  // Force-reveal după 800ms ca fallback complet
+  setTimeout(function() {
+    document.querySelectorAll('.reveal:not(.revealed)').forEach(function(el) {
+      el.classList.add('revealed');
+    });
+  }, 800);
+})();
+</script>
+
 </head>
 <body>
-<div id="spbar"></div>
-<div id="topbar" class="hidden md:flex items-center justify-between px-8 py-2 gap-4">
-
-  <!-- Social -->
-  <div class="flex items-center gap-3">
-    <a href="https://facebook.com" target="_blank" class="text-white/40 hover:text-white transition" title="Facebook"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></a>
-    <a href="https://instagram.com" target="_blank" class="text-white/40 hover:text-white transition" title="Instagram"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>
-    <a href="https://youtube.com" target="_blank" class="text-white/40 hover:text-white transition" title="YouTube"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a>
-    <a href="https://linkedin.com" target="_blank" class="text-white/40 hover:text-white transition" title="LinkedIn"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
-    <a href="https://x.com" target="_blank" class="text-white/40 hover:text-white transition" title="X"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
-    <a href="https://tiktok.com" target="_blank" class="text-white/40 hover:text-white transition" title="TikTok"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.75a8.18 8.18 0 004.78 1.52V6.79a4.85 4.85 0 01-1.01-.1z"/></svg></a>
-    <a href="https://wa.me/40721234567" target="_blank" class="text-white/40 hover:text-white transition" title="WhatsApp"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>
-  </div>
-
-  <!-- AI status center -->
-  <div class="flex items-center gap-2 text-white/50 text-xs">
-    <span class="pulse-dot"></span>
-    <span>Darrin AI activ — deviz inteligent în 60 secunde</span>
-  </div>
-
-  <!-- Dreapta: locatie activa + limba -->
-  <div class="flex items-center gap-5">
-
-    <!-- LOCATIE ACTIVA — detectata din IP -->
-    <div id="loc-btn" class="loc-chip text-white/55" onclick="openLocModal()">
-      <i data-lucide="map-pin" class="w-3 h-3 text-[#FF8C00]"></i>
-      <span>Adresă: <span class="text-white font-semibold" id="loc-display">București, Sector 6</span></span>
-      <i data-lucide="chevron-down" class="w-3 h-3 text-white/40"></i>
-    </div>
-
-    <!-- SELECTOR LIMBA -->
-    <div class="lang-dd" id="langDd">
-      <div class="lang-chip text-white/55" onclick="toggleLang()">
-        <span id="lang-flag">🇷🇴</span>
-        <span id="lang-label" class="text-white/75 font-medium">Română</span>
-        <i data-lucide="chevron-down" class="w-3 h-3 text-white/40"></i>
-      </div>
-      <div class="lang-panel">
-        <div class="lang-opt active" onclick="setLang('ro','🇷🇴','Română')"><span>🇷🇴</span> Română</div>
-        <div class="lang-opt" onclick="setLang('en','🇬🇧','English')"><span>🇬🇧</span> English</div>
-        <div class="lang-opt" onclick="setLang('de','🇩🇪','Deutsch')"><span>🇩🇪</span> Deutsch</div>
-        <div class="lang-opt" onclick="setLang('fr','🇫🇷','Français')"><span>🇫🇷</span> Français</div>
-        <div class="lang-opt" onclick="setLang('hu','🇭🇺','Magyar')"><span>🇭🇺</span> Magyar</div>
-        <div class="lang-opt" onclick="setLang('pl','🇵🇱','Polski')"><span>🇵🇱</span> Polski</div>
-      </div>
-    </div>
-
-  </div>
-</div>
 
 <!-- LOCATION MODAL -->
 <div id="loc-modal" class="hidden fixed inset-0 z-[400] flex items-center justify-center p-6">
@@ -699,215 +995,188 @@ footer a:hover { color:#FF8C00; }
 <!-- ════════════════════════════════════════════
      HEADER PRINCIPAL
 ════════════════════════════════════════════ -->
-<header id="hdr" class="sticky top-0 z-50">
-  <div class="max-w-7xl mx-auto px-5 py-3 flex items-center gap-3">
+<header id="hdr" style="
+  position:sticky; top:0; z-index:200;
+  background:#fff;
+  border-bottom:1px solid #EEF2F7;
+  box-shadow:0 2px 12px rgba(0,51,102,.08);
+  font-family:'Inter','Helvetica Neue',Arial,system-ui,sans-serif;
+">
 
-    <!-- ① LOGO — primul -->
-    <a href="#" class="flex items-center gap-2.5 flex-shrink-0">
-      <div class="w-9 h-9 bg-[#FF8C00] rounded-xl flex items-center justify-center text-white font-bold text-base" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">D</div>
-      <div class="hidden sm:block">
-        <div class="font-bold text-[#2D2D2D] leading-tight" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif;font-size:16px">My Darrin</div>
-        <div class="text-[9px] text-gray-400 tracking-widest uppercase leading-none">Servicii la cerere</div>
+  <!-- ════ TOP BAR — social + locație ════ -->
+  <div style="background:#F8FAFC;border-bottom:1px solid #EEF2F7;padding:6px 24px;display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#6B7A8D">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="display:flex;align-items:center;gap:5px;color:#0E9E99;font-weight:600">
+        <span style="width:6px;height:6px;border-radius:50%;background:#0E9E99;display:inline-block;animation:pulse 2s infinite"></span>
+        Darrin AI activ — deviz inteligent în 60 secunde
+      </span>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <span style="display:flex;align-items:center;gap:4px">📍 București, Sector 6</span>
+      <span style="color:#D5DFE8">|</span>
+      <span style="font-weight:600;color:#003366">🇷🇴 Română</span>
+    </div>
+  </div>
+
+  <!-- ════ NAVBAR PRINCIPAL ════ -->
+  <div style="max-width:1280px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between;gap:16px">
+
+    <!-- LOGO -->
+    <a href="mydarrin-v3.html" style="display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0">
+      <div style="width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#FF8C00,#CC7000);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:17px;color:#fff;box-shadow:0 3px 10px rgba(255,140,0,.3)">D</div>
+      <div>
+        <div style="font-weight:800;font-size:15px;color:#1A2332;line-height:1;font-family:'Syne','Inter',sans-serif">My Darrin</div>
+        <div style="font-size:9px;color:#8C9BAD;text-transform:uppercase;letter-spacing:.1em;margin-top:1px">Servicii la cerere</div>
       </div>
     </a>
 
-    <!-- ② BURGER — doar iconița, fără text -->
-    <button onclick="openSidebar()"
-            class="p-2 text-[#2D2D2D] hover:text-[#FF8C00] transition flex-shrink-0 rounded-xl hover:bg-[#EBF4FB]">
-      <i data-lucide="menu" class="w-5 h-5"></i>
-    </button>
+    <!-- NAV LINKS — desktop -->
+    <nav id="hdr-nav" style="display:flex;align-items:center;gap:2px;flex:1;justify-content:center">
 
-    <!-- ③ NAV CENTRAL -->
-    <nav class="hidden lg:flex items-center gap-5 ml-4 flex-1 justify-start">
+      <a href="mydarrin-v3.html"
+         style="padding:8px 14px;border-radius:9px;font-size:13px;font-weight:500;color:#4A5568;text-decoration:none;transition:all .15s;white-space:nowrap;display:inline-flex;align-items:center;gap:6px"
+         onmouseover="this.style.background='#F0F4F8';this.style.color='#003366'"
+         onmouseout="this.style.background='';this.style.color='#4A5568'">
+        🏠 Acasă
+      </a>
 
-      <!-- Servicii cu dropdown -->
-      <div class="mega-wrap">
-        <a href="#catalog" class="nav-lnk flex items-center gap-1">
-          Servicii <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200"></i>
-        </a>
-        <div class="mega-panel" style="width:520px">
-          <div class="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-l border-t border-gray-100 rotate-45 z-10"></div>
-          <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 p-5">
-            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">Catalog servicii</p>
-            <div class="grid grid-cols-2 gap-1.5 mb-3">
-              <a href="#" class="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-[#F4F7F9] transition group/d"><span class="text-lg">🔧</span><div><div class="font-semibold text-sm text-[#2D2D2D] group-hover/d:text-[#FF8C00] transition">Instalații sanitare</div><div class="text-[11px] text-gray-400">Montaj, reparații</div></div></a>
-              <a href="#" class="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-[#F4F7F9] transition group/d"><span class="text-lg">⚡</span><div><div class="font-semibold text-sm text-[#2D2D2D] group-hover/d:text-[#FF8C00] transition">Instalații electrice</div><div class="text-[11px] text-gray-400">Tablouri, smart home</div></div></a>
-              <a href="#" class="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-[#F4F7F9] transition group/d"><span class="text-lg">🏗</span><div><div class="font-semibold text-sm text-[#2D2D2D] group-hover/d:text-[#FF8C00] transition">Construcții & Renovări</div><div class="text-[11px] text-gray-400">Zidărie, finisaje</div></div></a>
-              <a href="#" class="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-[#F4F7F9] transition group/d"><span class="text-lg">❄️</span><div><div class="font-semibold text-sm text-[#2D2D2D] group-hover/d:text-[#FF8C00] transition">HVAC & Climatizare</div><div class="text-[11px] text-gray-400">Centrale, AC</div></div></a>
-              <a href="#" class="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-[#F4F7F9] transition group/d"><span class="text-lg">🖌</span><div><div class="font-semibold text-sm text-[#2D2D2D] group-hover/d:text-[#FF8C00] transition">Zugrăveli & Finisaje</div><div class="text-[11px] text-gray-400">Vopsit, decorațiuni</div></div></a>
-              <a href="#" class="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-[#F4F7F9] transition group/d"><span class="text-lg">🌿</span><div><div class="font-semibold text-sm text-[#2D2D2D] group-hover/d:text-[#FF8C00] transition">Grădinărit & Agri</div><div class="text-[11px] text-gray-400">Amenajare, irigații</div></div></a>
-            </div>
-            <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-              <span class="text-xs text-gray-400"><span class="w-1.5 h-1.5 rounded-full bg-[#FF8C00] inline-block mr-1.5"></span>2.340 servicii active</span>
-              <a href="#catalog" class="text-xs font-bold text-[#FF8C00] flex items-center gap-1 hover:underline">Toate <i data-lucide="arrow-right" class="w-3 h-3"></i></a>
-            </div>
+      <!-- Servicii -->
+      <a href="mydarrin-catalog.html" style="padding:8px 14px;border-radius:9px;font-size:13px;font-weight:500;color:#4A5568;text-decoration:none;transition:all .15s;white-space:nowrap"
+         onmouseover="this.style.background='#F0F4F8';this.style.color='#003366'"
+         onmouseout="this.style.background='';this.style.color='#4A5568'">
+        Servicii
+      </a>
+
+      <!-- Devino Partener cu dropdown -->
+      <div style="position:relative" id="hdr-partner-wrap"
+           onmouseenter="document.getElementById('hdr-dropdown').style.display='block'"
+           onmouseleave="document.getElementById('hdr-dropdown').style.display='none'">
+        <button style="display:flex;align-items:center;gap:5px;padding:8px 14px;border-radius:9px;font-size:13px;font-weight:700;color:#003366;text-decoration:none;background:rgba(0,51,102,.06);border:none;cursor:pointer;font-family:inherit;white-space:nowrap"
+                onmouseover="this.style.background='rgba(0,51,102,.1)'"
+                onmouseout="this.style.background='rgba(0,51,102,.06)'">
+          🤝 Devino Partener
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+
+        <!-- Dropdown -->
+        <div id="hdr-dropdown" style="display:none;position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#fff;border:1px solid #EEF2F7;border-radius:16px;box-shadow:0 12px 40px rgba(0,51,102,.14);padding:12px;min-width:260px;z-index:500">
+          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#8C9BAD;padding:4px 10px 8px">Tip parteneriat</div>
+          <a href="mydarrin-devino-partener.html?type=servicii" onclick="event.preventDefault();handlePartnerNavigation('servicii')" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;text-decoration:none;color:#1A2332;transition:background .15s" onmouseover="this.style.background='#FFF8EE'" onmouseout="this.style.background=''">
+            <span style="width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#FFF0D6,#FDE8C4);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🔧</span>
+            <div><div style="font-weight:700;font-size:13px">Furnizor Servicii</div><div style="font-size:11px;color:#6B7A8D;margin-top:1px">Meșteri, electricieni, instalatori</div></div>
+          </a>
+          <a href="mydarrin-devino-partener.html?type=materiale" onclick="event.preventDefault();handlePartnerNavigation('materiale')" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;text-decoration:none;color:#1A2332;transition:background .15s" onmouseover="this.style.background='#EBF4FB'" onmouseout="this.style.background=''">
+            <span style="width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#EBF4FB,#D6E8F5);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📦</span>
+            <div><div style="font-weight:700;font-size:13px">Furnizor Materiale</div><div style="font-size:11px;color:#6B7A8D;margin-top:1px">Materiale construcții, marketplace</div></div>
+          </a>
+          <a href="mydarrin-devino-partener.html?type=inchirieri" onclick="event.preventDefault();handlePartnerNavigation('inchirieri')" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;text-decoration:none;color:#1A2332;transition:background .15s" onmouseover="this.style.background='#E0F5F4'" onmouseout="this.style.background=''">
+            <span style="width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#E0F5F4,#C5EEEC);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🏗</span>
+            <div><div style="font-weight:700;font-size:13px">Furnizor Închirieri</div><div style="font-size:11px;color:#6B7A8D;margin-top:1px">Utilaje, echipamente, vehicule</div></div>
+          </a>
+          <a href="mydarrin-devino-partener.html?type=curier" onclick="event.preventDefault();handlePartnerNavigation('curier')" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;text-decoration:none;color:#1A2332;transition:background .15s" onmouseover="this.style.background='#F3EEFF'" onmouseout="this.style.background=''">
+            <span style="width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#F3EEFF,#E9D8FD);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🚴</span>
+            <div><div style="font-weight:700;font-size:13px">Curier Cartier</div><div style="font-size:11px;color:#6B7A8D;margin-top:1px">Livrări locale, transport marfă</div></div>
+          </a>
+          <a href="mydarrin-devino-partener.html?type=asigurari" onclick="event.preventDefault();handlePartnerNavigation('asigurari')" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;text-decoration:none;color:#1A2332;transition:background .15s" onmouseover="this.style.background='#F0FFF4'" onmouseout="this.style.background=''">
+            <span style="width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#D4EDDA,#B8DFC5);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🛡</span>
+            <div><div style="font-weight:700;font-size:13px">Broker Asigurări</div><div style="font-size:11px;color:#6B7A8D;margin-top:1px">Polițe integrate, ASF autorizat</div></div>
+          </a>
+          <div style="border-top:1px solid #EEF2F7;margin:8px 0 4px"></div>
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;font-size:10.5px;color:#1A7A3A;font-weight:600">
+            <span>✓ Creare cont GRATUITĂ · Fără taxe · Fără abonament</span>
           </div>
         </div>
       </div>
 
-      <a href="#" class="nav-lnk">Acasă</a>
+      <a href="mydarrin-cum-functioneaza.html" style="padding:8px 14px;border-radius:9px;font-size:13px;font-weight:500;color:#4A5568;text-decoration:none;white-space:nowrap"
+         onmouseover="this.style.background='#F0F4F8';this.style.color='#003366'"
+         onmouseout="this.style.background='';this.style.color='#4A5568'">
+        Cum funcționează
+      </a>
 
-      <!-- DEVINO PARTENER — mega dropdown -->
-      <div class="mega-wrap">
-        <a href="#devino-partener" class="nav-lnk flex items-center gap-1 select-none">
-          Devino Partener <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200"></i>
-        </a>
-        <div class="mega-panel" style="width:560px">
-          <div class="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-l border-t border-gray-100 rotate-45 z-10"></div>
-          <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 p-5">
-            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-4">Alege tipul de parteneriat</p>
-            <div class="flex flex-col gap-2 mb-4">
-
-              <!-- Furnizor servicii -->
-              <a href="#devino-partener" onclick="openPartnerModal('servicii')"
-                 class="flex items-center gap-4 p-3.5 rounded-xl hover:bg-[#F4F7F9] transition group/dp border border-transparent hover:border-[#D5DFE8] cursor-pointer" style="text-decoration:none">
-                <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style="background:linear-gradient(135deg,#FFF0D6,#FDE8C4)">🔧</div>
-                <div class="flex-1 min-w-0">
-                  <div class="font-bold text-sm text-[#2D2D2D] group-hover/dp:text-[#FF8C00] transition">Furnizor de Servicii</div>
-                  <div class="text-xs text-gray-400 mt-0.5 leading-relaxed">Electrician, instalator, constructor, zugrav, grădinar — oferă servicii profesionale clienților platformei</div>
-                </div>
-                <i data-lucide="arrow-right" class="w-4 h-4 text-gray-300 group-hover/dp:text-[#FF8C00] transition flex-shrink-0"></i>
-              </a>
-
-              <!-- Furnizor materiale -->
-              <a href="#devino-partener" onclick="openPartnerModal('materiale')"
-                 class="flex items-center gap-4 p-3.5 rounded-xl hover:bg-[#F4F7F9] transition group/dp border border-transparent hover:border-[#D5DFE8] cursor-pointer" style="text-decoration:none">
-                <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style="background:linear-gradient(135deg,#EBF4FB,#DDE6F5)">📦</div>
-                <div class="flex-1 min-w-0">
-                  <div class="font-bold text-sm text-[#2D2D2D] group-hover/dp:text-[#FF8C00] transition">Furnizor de Materiale</div>
-                  <div class="text-xs text-gray-400 mt-0.5 leading-relaxed">Listează produse în marketplace — materiale de construcții, electrice, sanitare, finisaje și altele</div>
-                </div>
-                <i data-lucide="arrow-right" class="w-4 h-4 text-gray-300 group-hover/dp:text-[#FF8C00] transition flex-shrink-0"></i>
-              </a>
-
-              <!-- Furnizor inchirieri -->
-              <a href="#devino-partener" onclick="openPartnerModal('inchirieri')"
-                 class="flex items-center gap-4 p-3.5 rounded-xl hover:bg-[#F4F7F9] transition group/dp border border-transparent hover:border-[#D5DFE8] cursor-pointer" style="text-decoration:none">
-                <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style="background:linear-gradient(135deg,#E0F5F4,#C5EEEC)">🏗</div>
-                <div class="flex-1 min-w-0">
-                  <div class="font-bold text-sm text-[#2D2D2D] group-hover/dp:text-[#FF8C00] transition">Furnizor de Închirieri</div>
-                  <div class="text-xs text-gray-400 mt-0.5 leading-relaxed">Oferă spre închiriere utilaje, vehicule, echipamente sau personal calificat — integrat în devizul AI</div>
-                </div>
-                <i data-lucide="arrow-right" class="w-4 h-4 text-gray-300 group-hover/dp:text-[#FF8C00] transition flex-shrink-0"></i>
-              </a>
-
-            </div>
-            <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-              <span class="text-xs text-gray-400">1.840+ parteneri activi pe platformă</span>
-              <a href="#devino-partener" class="text-xs font-bold text-[#FF8C00] flex items-center gap-1 hover:underline" style="text-decoration:none">
-                Toate tipurile <i data-lucide="arrow-right" class="w-3 h-3"></i>
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <a href="#" class="nav-lnk">Contact</a>
-
-      <!-- INVESTITORI — mega dropdown -->
-      <div class="mega-wrap">
-        <a href="#" class="nav-lnk flex items-center gap-1 select-none" onclick="openInvestorModal(); return false;">
-          Investitori <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200"></i>
-        </a>
-        <div class="mega-panel" style="width:320px">
-          <div class="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-l border-t border-gray-100 rotate-45 z-10"></div>
-          <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 p-5">
-            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">Oportunități</p>
-            <a href="#" onclick="openInvestorModal(); return false;"
-               class="flex items-center gap-3 p-3 rounded-xl hover:bg-[#F4F7F9] transition group/inv border border-transparent hover:border-[#D5DFE8] mb-2" style="text-decoration:none">
-              <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style="background:linear-gradient(135deg,#002855,#003366)">📈</div>
-              <div>
-                <div class="font-bold text-sm text-[#2D2D2D] group-hover/inv:text-[#FF8C00] transition">Devino Investitor</div>
-                <div class="text-xs text-gray-400 mt-0.5">Finanțează expansiunea platformei. Rapoarte KPI, ROI și acces VIP.</div>
-              </div>
-            </a>
-            <a href="#" class="flex items-center gap-3 p-3 rounded-xl hover:bg-[#F4F7F9] transition group/inv border border-transparent hover:border-[#D5DFE8]" style="text-decoration:none">
-              <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style="background:linear-gradient(135deg,#EBF4FB,#DDE6F5)">📊</div>
-              <div>
-                <div class="font-bold text-sm text-[#2D2D2D] group-hover/inv:text-[#003366] transition">Rapoarte & KPIs</div>
-                <div class="text-xs text-gray-400 mt-0.5">Performanță platformă, volum tranzacții, expansiune geografică.</div>
-              </div>
-            </a>
-            <div class="pt-3 mt-2 border-t border-gray-100">
-              <p class="text-xs text-gray-400 leading-relaxed">Runde de finanțare actuale disponibile pentru investitori calificați.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
+      <a href="mydarrin-investitori.html" style="padding:8px 14px;border-radius:9px;font-size:13px;font-weight:500;color:#4A5568;text-decoration:none;white-space:nowrap"
+         onmouseover="this.style.background='#F0F4F8';this.style.color='#003366'"
+         onmouseout="this.style.background='';this.style.color='#4A5568'">
+        Investitori
+      </a>
     </nav>
 
-    <!-- ④ DREAPTA: search + cos + cont + AI -->
-    <div class="flex items-center gap-2 ml-auto">
+    <!-- RIGHT ACTIONS -->
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+      <!-- CTA principal -->
+      <a href="#partner-types" onclick="event.preventDefault();document.getElementById('partner-types').scrollIntoView({behavior:'smooth'})"
+         style="display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:11px;background:linear-gradient(135deg,#FF8C00,#CC7000);color:#fff;font-weight:700;font-size:13px;text-decoration:none;box-shadow:0 4px 14px rgba(255,140,0,.35);white-space:nowrap;transition:all .18s"
+         onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(255,140,0,.45)'"
+         onmouseout="this.style.transform='';this.style.boxShadow='0 4px 14px rgba(255,140,0,.35)'">
+        <span style="font-size:15px">🤝</span>
+        Înregistrare gratuită
+        <span style="font-size:10px;background:rgba(255,255,255,.2);border-radius:99px;padding:2px 7px;font-weight:700">0 LEI</span>
+      </a>
 
-      <!-- Search -->
-      <div class="search-bar hidden md:flex">
-        <i data-lucide="search" class="w-4 h-4 flex-shrink-0 text-gray-400"></i>
-        <span class="text-[13px]">Caută servicii...</span>
-      </div>
-
-      <!-- Cos cumparaturi -->
-      <button onclick="toggleBasket()" class="relative p-2.5 rounded-xl hover:bg-[#EBF4FB] transition">
-        <i data-lucide="shopping-cart" class="w-5 h-5 text-[#2D2D2D]"></i>
-        <span id="basket-count" class="absolute -top-0.5 -right-0.5 w-5 h-5 bg-[#FF8C00] text-white text-[10px] font-bold rounded-full flex items-center justify-center">3</span>
-      </button>
-
-      <!-- Creare/logare cont -->
-      <button onclick="toggleAuthModal()"
-              class="hidden sm:flex items-center gap-2 border border-[#D5DFE8] text-[#2D2D2D] px-4 py-2.5 rounded-xl text-xs font-semibold hover:border-[#003366] hover:text-[#003366] transition">
-        <i data-lucide="user" class="w-4 h-4"></i>
-        <span class="hidden md:inline">Cont</span>
-      </button>
-
-      <!-- AI CTA principal -->
-      <button onclick="document.getElementById('flux').scrollIntoView({behavior:'smooth'})"
-              class="flex items-center gap-2 bg-[#FF8C00] text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-[#CC7000] transition shadow-md shadow-orange-200">
-        <i data-lucide="sparkles" class="w-4 h-4"></i>
-        <span class="hidden sm:inline">Darrin AI</span>
-      </button>
-
-      <!-- Burger mobil -->
-      <button class="lg:hidden p-2.5 rounded-xl hover:bg-[#EBF4FB] transition" onclick="openSidebar()">
-        <i data-lucide="menu" class="w-5 h-5"></i>
+      <!-- Burger mobile -->
+      <button id="hdr-burger" onclick="toggleHdrMobile()"
+              style="display:none;width:42px;height:42px;border-radius:10px;border:1.5px solid #EEF2F7;background:#F8FAFC;cursor:pointer;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:10px"
+              aria-label="Meniu">
+        <span style="width:18px;height:2px;background:#1A2332;border-radius:2px;display:block;transition:all .2s"></span>
+        <span style="width:14px;height:2px;background:#1A2332;border-radius:2px;display:block;transition:all .2s"></span>
+        <span style="width:18px;height:2px;background:#1A2332;border-radius:2px;display:block;transition:all .2s"></span>
       </button>
     </div>
   </div>
+
+  <!-- ════ MOBILE MENU ════ -->
+  <div id="hdr-mobile" style="display:none;border-top:1px solid #EEF2F7;background:#fff;padding:12px 20px 16px">
+    <a href="mydarrin-v3.html" style="display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;text-decoration:none;color:#1A2332;font-size:14px;font-weight:600;margin-bottom:2px;background:#F0F4F8" onmouseover="this.style.background='#EBF4FB'" onmouseout="this.style.background='#F0F4F8'">🏠 Acasă</a>
+    <a href="mydarrin-catalog.html" style="display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;text-decoration:none;color:#1A2332;font-size:14px;font-weight:500;margin-bottom:2px" onmouseover="this.style.background='#F0F4F8'" onmouseout="this.style.background=''">📦 Catalog servicii</a>
+    <a href="mydarrin-cum-functioneaza.html" style="display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;text-decoration:none;color:#1A2332;font-size:14px;font-weight:500;margin-bottom:2px" onmouseover="this.style.background='#F0F4F8'" onmouseout="this.style.background=''">⚙️ Cum funcționează</a>
+    <div style="border-top:1px solid #EEF2F7;margin:8px 0;padding-top:8px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#8C9BAD;padding:0 12px 6px">Devino Partener · Gratuit</div>
+      <a href="mydarrin-devino-partener.html?type=servicii" onclick="event.preventDefault();toggleHdrMobile();setTimeout(()=>handlePartnerNavigation('servicii'),200)" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;text-decoration:none;color:#1A2332;font-size:13.5px;font-weight:600" onmouseover="this.style.background='#FFF8EE'" onmouseout="this.style.background=''">🔧 Furnizor Servicii</a>
+      <a href="mydarrin-devino-partener.html?type=materiale" onclick="event.preventDefault();toggleHdrMobile();setTimeout(()=>handlePartnerNavigation('materiale'),200)" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;text-decoration:none;color:#1A2332;font-size:13.5px;font-weight:600" onmouseover="this.style.background='#EBF4FB'" onmouseout="this.style.background=''">📦 Furnizor Materiale</a>
+      <a href="mydarrin-devino-partener.html?type=inchirieri" onclick="event.preventDefault();toggleHdrMobile();setTimeout(()=>handlePartnerNavigation('inchirieri'),200)" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;text-decoration:none;color:#1A2332;font-size:13.5px;font-weight:600" onmouseover="this.style.background='#E0F5F4'" onmouseout="this.style.background=''">🏗 Furnizor Închirieri</a>
+      <a href="mydarrin-devino-partener.html?type=curier" onclick="event.preventDefault();toggleHdrMobile();setTimeout(()=>handlePartnerNavigation('curier'),200)" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;text-decoration:none;color:#1A2332;font-size:13.5px;font-weight:600" onmouseover="this.style.background='#F3EEFF'" onmouseout="this.style.background=''">🚴 Curier Cartier</a>
+      <a href="mydarrin-devino-partener.html?type=asigurari" onclick="event.preventDefault();toggleHdrMobile();setTimeout(()=>handlePartnerNavigation('asigurari'),200)" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;text-decoration:none;color:#1A2332;font-size:13.5px;font-weight:600" onmouseover="this.style.background='#F0FFF4'" onmouseout="this.style.background=''">🛡 Broker Asigurări</a>
+    </div>
+    <div style="margin-top:10px">
+      <a href="#partner-types" onclick="event.preventDefault();toggleHdrMobile();setTimeout(()=>document.getElementById('partner-types').scrollIntoView({behavior:'smooth'}),200)" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;background:linear-gradient(135deg,#FF8C00,#CC7000);color:#fff;font-weight:700;font-size:14px;text-decoration:none;box-shadow:0 4px 14px rgba(255,140,0,.3)">
+        🤝 Înregistrare gratuită · 0 LEI
+      </a>
+    </div>
+  </div>
+
 </header>
 
-<!-- ════ CUM FUNCȚIONEAZĂ — bandă sub navbar ════ -->
-<div style="background:#fff;border-bottom:1px solid #D5DFE8;padding:0 24px">
-  <div style="max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:0">
-    <!-- Tab activ "Cum funcționează" -->
-    <a href="mydarrin-cum-functioneaza.html"
-       style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;font-size:13.5px;font-weight:700;color:#003366;text-decoration:none;border-bottom:3px solid #FF8C00;transition:all .18s;white-space:nowrap"
-       onmouseover="this.style.color='#FF8C00'"
-       onmouseout="this.style.color='#003366'">
-      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      Cum funcționează
-    </a>
-    <!-- Separator -->
-    <div style="width:1px;height:20px;background:#D5DFE8;margin:0 4px"></div>
-    <!-- Link catalog -->
-    <a href="mydarrin-catalog.html"
-       style="display:inline-flex;align-items:center;gap:7px;padding:12px 18px;font-size:13px;font-weight:600;color:#6B7A8D;text-decoration:none;border-bottom:3px solid transparent;transition:all .18s"
-       onmouseover="this.style.color='#003366';this.style.borderBottomColor='#D5DFE8'"
-       onmouseout="this.style.color='#6B7A8D';this.style.borderBottomColor='transparent'">
-      📦 Catalog
-    </a>
-    <a href="mydarrin-marketplace.html"
-       style="display:inline-flex;align-items:center;gap:7px;padding:12px 18px;font-size:13px;font-weight:600;color:#6B7A8D;text-decoration:none;border-bottom:3px solid transparent;transition:all .18s"
-       onmouseover="this.style.color='#003366';this.style.borderBottomColor='#D5DFE8'"
-       onmouseout="this.style.color='#6B7A8D';this.style.borderBottomColor='transparent'">
-      🏪 Marketplace
-    </a>
-    <a href="mydarrin-devino-partener.html"
-       style="display:inline-flex;align-items:center;gap:7px;padding:12px 18px;font-size:13px;font-weight:600;color:#6B7A8D;text-decoration:none;border-bottom:3px solid transparent;transition:all .18s"
-       onmouseover="this.style.color='#003366';this.style.borderBottomColor='#D5DFE8'"
-       onmouseout="this.style.color='#6B7A8D';this.style.borderBottomColor='transparent'">
-      👷 Devino Partener
-    </a>
-  </div>
-</div>
+<script>
+// ── HEADER RESPONSIVE ────────────────────────────────────────
+(function() {
+  function hdrResponsive() {
+    var nav    = document.getElementById('hdr-nav');
+    var burger = document.getElementById('hdr-burger');
+    if (!nav || !burger) return;
+    if (window.innerWidth < 900) {
+      nav.style.display    = 'none';
+      burger.style.display = 'flex';
+    } else {
+      nav.style.display    = 'flex';
+      burger.style.display = 'none';
+      document.getElementById('hdr-mobile').style.display = 'none';
+    }
+  }
+  window.toggleHdrMobile = function() {
+    var m = document.getElementById('hdr-mobile');
+    if (!m) return;
+    m.style.display = m.style.display === 'none' ? 'block' : 'none';
+  };
+  window.addEventListener('resize', hdrResponsive);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', hdrResponsive);
+  } else {
+    hdrResponsive();
+  }
+})();
+</script>
+
+
 
 <div id="sidebar-overlay" onclick="closeSidebar()"></div>
 <div id="sidebar">
@@ -930,7 +1199,7 @@ footer a:hover { color:#FF8C00; }
 
     <!-- NAVIGARE — exact structura din captura #4 -->
     <span class="sb-label">Navigare</span>
-    <a href="#" class="sb-item" onclick="closeSidebar()">
+    <a href="mydarrin-v3.html" class="sb-item" onclick="closeSidebar()">
       <div class="sb-ico">🏠</div> Acasă
     </a>
     <a href="#cum-functioneaza" class="sb-item" onclick="closeSidebar()">
@@ -950,7 +1219,7 @@ footer a:hover { color:#FF8C00; }
       <div id="sb-partner" class="hidden pb-2">
         <!-- Servicii -->
         <div class="mx-3 mb-1.5 rounded-xl overflow-hidden border border-gray-100">
-          <a href="#devino-partener" onclick="closeSidebar(); setTimeout(()=>openPartnerModal('servicii'),300)"
+          <a href="#devino-partener" onclick="event.preventDefault();handlePartnerNavigation('servicii')"
              class="flex items-center gap-3 px-4 py-3 hover:bg-[#FFF0D6] transition group/sp" style="text-decoration:none">
             <div class="w-9 h-9 rounded-lg flex items-center justify-center text-base flex-shrink-0" style="background:linear-gradient(135deg,#FFF0D6,#FDE8C4)">🔧</div>
             <div class="flex-1 min-w-0">
@@ -962,7 +1231,7 @@ footer a:hover { color:#FF8C00; }
         </div>
         <!-- Materiale -->
         <div class="mx-3 mb-1.5 rounded-xl overflow-hidden border border-gray-100">
-          <a href="#devino-partener" onclick="closeSidebar(); setTimeout(()=>openPartnerModal('materiale'),300)"
+          <a href="#devino-partener" onclick="event.preventDefault();handlePartnerNavigation('materiale')"
              class="flex items-center gap-3 px-4 py-3 hover:bg-[#EBF4FB] transition group/sp" style="text-decoration:none">
             <div class="w-9 h-9 rounded-lg flex items-center justify-center text-base flex-shrink-0" style="background:linear-gradient(135deg,#EBF4FB,#DDE6F5)">📦</div>
             <div class="flex-1 min-w-0">
@@ -974,7 +1243,7 @@ footer a:hover { color:#FF8C00; }
         </div>
         <!-- Inchirieri -->
         <div class="mx-3 rounded-xl overflow-hidden border border-gray-100">
-          <a href="#devino-partener" onclick="closeSidebar(); setTimeout(()=>openPartnerModal('inchirieri'),300)"
+          <a href="#devino-partener" onclick="event.preventDefault();handlePartnerNavigation('inchirieri')"
              class="flex items-center gap-3 px-4 py-3 hover:bg-[#E0F5F4] transition group/sp" style="text-decoration:none">
             <div class="w-9 h-9 rounded-lg flex items-center justify-center text-base flex-shrink-0" style="background:linear-gradient(135deg,#E0F5F4,#C5EEEC)">🏗</div>
             <div class="flex-1 min-w-0">
@@ -1725,9 +1994,9 @@ footer a:hover { color:#FF8C00; }
           <a href="mydarrin-catalog.html" class="block hover:text-[#FF8C00] transition text-white/40 text-xs">Catalog Materiale</a>
           <a href="mydarrin-catalog.html" class="block hover:text-[#FF8C00] transition text-white/40 text-xs">Catalog Închirieri</a>
           <a href="#flux" class="block hover:text-[#FF8C00] transition text-white/40 text-xs">Deviz Inteligent AI</a>
-          <a href="#" onclick="openPartnerModal('servicii'); return false;" class="block hover:text-[#FF8C00] transition text-white/40 text-xs">↳ Partener Servicii</a>
-          <a href="#" onclick="openPartnerModal('materiale'); return false;" class="block hover:text-[#FF8C00] transition text-white/40 text-xs">↳ Furnizor Materiale</a>
-          <a href="#" onclick="openPartnerModal('inchirieri'); return false;" class="block hover:text-[#FF8C00] transition text-white/40 text-xs">↳ Furnizor Închirieri</a>
+          <a href="mydarrin-devino-partener.html?type=servicii" onclick="event.preventDefault();handlePartnerNavigation('servicii')" class="block hover:text-[#FF8C00] transition text-white/40 text-xs">↳ Partener Servicii</a>
+          <a href="mydarrin-devino-partener.html?type=materiale" onclick="event.preventDefault();handlePartnerNavigation('materiale')" class="block hover:text-[#FF8C00] transition text-white/40 text-xs">↳ Furnizor Materiale</a>
+          <a href="mydarrin-devino-partener.html?type=inchirieri" onclick="event.preventDefault();handlePartnerNavigation('inchirieri')" class="block hover:text-[#FF8C00] transition text-white/40 text-xs">↳ Furnizor Închirieri</a>
         </div>
       </div>
       <div>
@@ -1857,27 +2126,27 @@ footer a:hover { color:#FF8C00; }
         <div style="margin-bottom:18px">
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:10px">Selectează tipul de partener *</div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px" id="type-selector">
-            <div onclick="selectType('servicii',this)" class="type-opt" style="border:1.5px solid #D5DFE8;border-radius:13px;padding:12px 10px;cursor:pointer;text-align:center;transition:all .18s" onmouseover="if(!this.classList.contains('sel'))this.style.borderColor='#FF8C00'" onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='#D5DFE8'">
+            <div onclick="selectType('servicii',this)" data-partner-type="servicii" class="type-opt" style="border:1.5px solid #D5DFE8;border-radius:13px;padding:12px 10px;cursor:pointer;text-align:center;transition:all .18s" onmouseover="if(!this.classList.contains('sel'))this.style.borderColor='#FF8C00'" onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='#D5DFE8'">
               <div style="font-size:22px;margin-bottom:6px">🔧</div>
               <div style="font-size:11.5px;font-weight:700;color:#1A2332">Servicii</div>
               <div style="font-size:10px;color:#5A6B7D;margin-top:3px">Instalatori, electricieni...</div>
             </div>
-            <div onclick="selectType('materiale',this)" class="type-opt" style="border:1.5px solid #D5DFE8;border-radius:13px;padding:12px 10px;cursor:pointer;text-align:center;transition:all .18s" onmouseover="if(!this.classList.contains('sel'))this.style.borderColor='#003366'" onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='#D5DFE8'">
+            <div onclick="selectType('materiale',this)" data-partner-type="materiale" class="type-opt" style="border:1.5px solid #D5DFE8;border-radius:13px;padding:12px 10px;cursor:pointer;text-align:center;transition:all .18s" onmouseover="if(!this.classList.contains('sel'))this.style.borderColor='#003366'" onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='#D5DFE8'">
               <div style="font-size:22px;margin-bottom:6px">📦</div>
               <div style="font-size:11.5px;font-weight:700;color:#1A2332">Materiale</div>
               <div style="font-size:10px;color:#5A6B7D;margin-top:3px">Construcții, finisaje...</div>
             </div>
-            <div onclick="selectType('inchirieri',this)" class="type-opt" style="border:1.5px solid #D5DFE8;border-radius:13px;padding:12px 10px;cursor:pointer;text-align:center;transition:all .18s" onmouseover="if(!this.classList.contains('sel'))this.style.borderColor='#0E9E99'" onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='#D5DFE8'">
+            <div onclick="selectType('inchirieri',this)" data-partner-type="inchirieri" class="type-opt" style="border:1.5px solid #D5DFE8;border-radius:13px;padding:12px 10px;cursor:pointer;text-align:center;transition:all .18s" onmouseover="if(!this.classList.contains('sel'))this.style.borderColor='#0E9E99'" onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='#D5DFE8'">
               <div style="font-size:22px;margin-bottom:6px">🏗</div>
               <div style="font-size:11.5px;font-weight:700;color:#1A2332">Închirieri</div>
               <div style="font-size:10px;color:#5A6B7D;margin-top:3px">Utilaje, echipamente...</div>
             </div>
-            <div onclick="selectType('curier',this)" class="type-opt" style="border:1.5px solid #D5DFE8;border-radius:13px;padding:12px 10px;cursor:pointer;text-align:center;transition:all .18s" onmouseover="if(!this.classList.contains('sel'))this.style.borderColor='#7C3AED'" onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='#D5DFE8'">
+            <div onclick="selectType('curier',this)" data-partner-type="curier" class="type-opt" style="border:1.5px solid #D5DFE8;border-radius:13px;padding:12px 10px;cursor:pointer;text-align:center;transition:all .18s" onmouseover="if(!this.classList.contains('sel'))this.style.borderColor='#7C3AED'" onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='#D5DFE8'">
               <div style="font-size:22px;margin-bottom:6px">🚴</div>
               <div style="font-size:11.5px;font-weight:700;color:#1A2332">Curier cartier</div>
               <div style="font-size:10px;color:#5A6B7D;margin-top:3px">Livrare ultimul km</div>
             </div>
-            <div onclick="selectType('asigurari',this)" class="type-opt" style="border:1.5px solid #D5DFE8;border-radius:13px;padding:12px 10px;cursor:pointer;text-align:center;transition:all .18s" onmouseover="if(!this.classList.contains('sel'))this.style.borderColor='#1A7A3A'" onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='#D5DFE8'">
+            <div onclick="selectType('asigurari',this)" data-partner-type="asigurari" class="type-opt" style="border:1.5px solid #D5DFE8;border-radius:13px;padding:12px 10px;cursor:pointer;text-align:center;transition:all .18s" onmouseover="if(!this.classList.contains('sel'))this.style.borderColor='#1A7A3A'" onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='#D5DFE8'">
               <div style="font-size:22px;margin-bottom:6px">🛡</div>
               <div style="font-size:11.5px;font-weight:700;color:#1A2332">Asigurări</div>
               <div style="font-size:10px;color:#5A6B7D;margin-top:3px">Polițe, atestate ASF</div>
@@ -2342,12 +2611,22 @@ let memberCount         = 2;
 // OPEN / CLOSE
 // ══════════════════════════════════════════════════════════════
 function openPartnerModal(type) {
-  document.getElementById('partner-modal').classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
+  const modal = document.getElementById('partner-modal'); // modal guard
+  if (modal) {
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
   selectedPartnerType = type || 'servicii';
   ocrScore = 0; uploadedDocs = 0;
   renderStep(0);
-  // Preselect type
+  // Scroll wizard into view
+  setTimeout(() => {
+    const wiz = document.getElementById('partner-modal') ||
+                document.getElementById('partner-wizard') ||
+                document.querySelector('.wizard-wrap');
+    if (wiz) wiz.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 50);
+  // Preselect type visually
   setTimeout(() => {
     if (type) {
       const opts = document.querySelectorAll('.type-opt');
@@ -2909,6 +3188,260 @@ document.addEventListener('DOMContentLoaded', () => {
   if (window.location.hash.includes('materiale')) openPartnerModal('materiale');
   if (window.location.hash.includes('inchirieri')) openPartnerModal('inchirieri');
 });
+</script>
+
+
+<script id="partner-router">
+/* ═══════════════════════════════════════════════════════════════════
+   MY DARRIN — PARTNER NAVIGATION ROUTER v2026.06
+   Unified router for all "Devino Partener" entry points across pages.
+
+   Handles:
+   1. Same-page modal trigger (pages WITH partner-modal)
+   2. Cross-page deep link (?type=xxx) with auto-open on landing
+   3. devino-partener.html internal type switching without reload
+   4. Sidebar/hamburger menu entries
+   5. CTA buttons in hero sections
+   ═══════════════════════════════════════════════════════════════════ */
+
+(function () {
+  'use strict';
+
+  // ── CONSTANTS ──────────────────────────────────────────────────
+  const PARTNER_PAGE = 'mydarrin-devino-partener.html';
+  const VALID_TYPES  = ['servicii', 'materiale', 'inchirieri',
+                        'curier',   'asigurari'];
+  const IS_PARTNER_PAGE = window.location.pathname
+    .split('/').pop().replace(/\?.*$/, '') === PARTNER_PAGE;
+
+  // ─────────────────────────────────────────────────────────────
+  // 1. CORE ROUTER — handlePartnerNavigation(type)
+  //    Called from every entry point (navbar, sidebar, CTA, footer)
+  // ─────────────────────────────────────────────────────────────
+  window.handlePartnerNavigation = function (type) {
+    const t = (VALID_TYPES.includes(type) ? type : 'servicii');
+
+    // A. Already on devino-partener.html → switch type in-place
+    if (IS_PARTNER_PAGE) {
+      _switchTypeOnWizardPage(t);
+      return;
+    }
+
+    // B. Has an embedded partner-modal on THIS page → open it
+    const modal = document.getElementById('partner-modal'); // modal guard
+    if (modal) {
+      if (typeof openPartnerModal === 'function') {
+        openPartnerModal(t);
+      } else {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        if (typeof selectPartnerType === 'function') {
+          setTimeout(() => selectPartnerType(t), 80);
+        }
+      }
+      return;
+    }
+
+    // C. No modal on this page → navigate with deep-link param
+    _navigateToPartnerPage(t);
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // 2. ALIAS — openPartnerWizard(type)
+  //    Architectural requirement alias
+  // ─────────────────────────────────────────────────────────────
+  window.openPartnerWizard = window.handlePartnerNavigation;
+
+  // ─────────────────────────────────────────────────────────────
+  // 3. INTERNAL: switch type on devino-partener.html without reload
+  // ─────────────────────────────────────────────────────────────
+  function _switchTypeOnWizardPage(type) {
+    // Try full wizard openPartnerModal first
+    if (typeof openPartnerModal === 'function') {
+      openPartnerModal(type);
+      return;
+    }
+    // Fallback: directly manipulate WIZARD_DATA selectedPartnerType
+    if (typeof selectType === 'function') {
+      selectType(type, null);
+      return;
+    }
+    // Last resort: set global and re-render
+    if (typeof selectedPartnerType !== 'undefined') {
+      // eslint-disable-next-line no-global-assign
+      selectedPartnerType = type;
+    }
+    if (typeof renderStep === 'function') renderStep(0);
+    // Update URL without reload (history API)
+    const url = new URL(window.location.href);
+    url.searchParams.set('type', type);
+    window.history.replaceState({}, '', url.toString());
+    _scrollToWizard();
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 4. INTERNAL: cross-page navigation with ?type= deep link
+  // ─────────────────────────────────────────────────────────────
+  function _navigateToPartnerPage(type) {
+    const base = _resolveBase();
+    window.location.href = base + PARTNER_PAGE + '?type=' + type;
+  }
+
+  function _resolveBase() {
+    const href  = window.location.href;
+    const parts = href.split('?')[0].split('/');
+    parts.pop(); // remove current filename
+    return parts.join('/') + '/';
+  }
+
+  function _scrollToWizard() {
+    const el = document.getElementById('partner-wizard') ||
+               document.getElementById('partner-modal')  ||
+               document.querySelector('[data-wizard="partner"]');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 5. AUTO-OPEN on devino-partener.html: read ?type= from URL
+  // ─────────────────────────────────────────────────────────────
+  function _autoOpenFromURLParam() {
+    if (!IS_PARTNER_PAGE) return;
+    const params = new URLSearchParams(window.location.search);
+    const type   = params.get('type');
+    if (!type || !VALID_TYPES.includes(type)) return;
+
+    // Wait for wizard init then open
+    const _tryOpen = (attempts) => {
+      if (attempts <= 0) return;
+      if (typeof openPartnerModal === 'function') {
+        openPartnerModal(type);
+        // Clean URL
+        const url = new URL(window.location.href);
+        url.searchParams.delete('type');
+        window.history.replaceState({}, '', url.toString());
+      } else {
+        setTimeout(() => _tryOpen(attempts - 1), 150);
+      }
+    };
+    setTimeout(() => _tryOpen(10), 200);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 6. INTERCEPT all <a> tags pointing to devino-partener.html
+  //    that have onclick="openPartnerModal(...)" —
+  //    prevent default href navigation, use router instead
+  // ─────────────────────────────────────────────────────────────
+  function _interceptPartnerLinks() {
+    document.querySelectorAll('a[href*="devino-partener"]').forEach(el => {
+      // Already has router handler attached?
+      if (el.dataset.routerAttached) return;
+      el.dataset.routerAttached = 'true';
+
+      // Extract type from existing onclick attr or data attr
+      let type = el.dataset.partnerType || null;
+      const onclickStr = el.getAttribute('onclick') || '';
+      const typeMatch  = onclickStr.match(/openPartnerModal\(['"](\w+)['"]\)/) ||
+                         onclickStr.match(/handlePartnerNavigation\(['"](\w+)['"]\)/) ||
+                         onclickStr.match(/openPartnerWizard\(['"](\w+)['"]\)/);
+      if (typeMatch) type = typeMatch[1];
+
+      // Check href for ?type=
+      const href = el.getAttribute('href') || '';
+      const hrefType = href.match(/[?&]type=(\w+)/);
+      if (!type && hrefType) type = hrefType[1];
+
+      el.addEventListener('click', function (e) {
+        // Only intercept same-domain devino-partener links
+        if (href.includes('devino-partener')) {
+          e.preventDefault();
+          // Close sidebar/mobile menu if open
+          if (typeof closeSidebar  === 'function') closeSidebar();
+          if (typeof closeNavMenu  === 'function') closeNavMenu();
+          handlePartnerNavigation(type || 'servicii');
+        }
+      });
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 7. SIDEBAR HELPER — sb-item with data-partner-type
+  //    <div class="sb-item" data-partner-type="servicii" …>
+  // ─────────────────────────────────────────────────────────────
+  function _bindSidebarItems() {
+    document.querySelectorAll('[data-partner-type]').forEach(el => {
+      if (el.dataset.routerAttached) return;
+      el.dataset.routerAttached = 'true';
+      el.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof closeSidebar === 'function') closeSidebar();
+        handlePartnerNavigation(this.dataset.partnerType);
+      });
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 8. MutationObserver — catch dynamically injected partner links
+  // ─────────────────────────────────────────────────────────────
+  function _observeDynamicLinks() {
+    const observer = new MutationObserver(() => {
+      _interceptPartnerLinks();
+      _bindSidebarItems();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 9. INIT
+  // ─────────────────────────────────────────────────────────────
+  function _init() {
+    _interceptPartnerLinks();
+    _bindSidebarItems();
+    _autoOpenFromURLParam();
+    _observeDynamicLinks();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _init);
+  } else {
+    _init();
+  }
+
+})();
+
+</script>
+
+<script>
+// ── DEVINO PARTENER — Inline wizard switch (fără modal) ──────────
+// Dacă wizard-ul e inline (fără overlay modal), handlePartnerNavigation
+// trebuie să facă selectType direct și să scroll la wizard
+(function() {
+  // Suprascriem _switchTypeOnWizardPage global pentru această pagină
+  const _originalHandler = window.handlePartnerNavigation;
+  window.handlePartnerNavigation = function(type) {
+    const validTypes = ['servicii','materiale','inchirieri','curier','asigurari'];
+    const t = validTypes.includes(type) ? type : 'servicii';
+
+    // 1. Dacă există openPartnerModal → îl folosim
+    if (typeof openPartnerModal === 'function') {
+      openPartnerModal(t);
+      return;
+    }
+    // 2. Dacă există selectType → îl folosim direct
+    if (typeof selectType === 'function') {
+      const fakeEl = document.querySelector('.type-opt[data-partner-type="'+t+'"]');
+      selectType(t, fakeEl);
+      // Scroll la wizard
+      const target = document.getElementById('partner-wizard') ||
+                     document.querySelector('.wizard-wrap') ||
+                     document.querySelector('.type-opt');
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    // 3. Fallback global
+    if (_originalHandler) _originalHandler(t);
+  };
+})();
 </script>
 
 </body>
