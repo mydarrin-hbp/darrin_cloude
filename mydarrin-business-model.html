@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Darrin — Model de Business & Arhitectură Platformă v1.0</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --p900:#002855;--c-primary:#003366;--p700:#003D7A;--p600:#003366;--p100:#EBF4FB;--p50:#F4F7F9;
+  --c-accent:#FF8C00;--a700:#CC7000;--a100:#FFF0D6;
+  --ai600:#0E9E99;--ai100:#E0F5F4;
+  --ink:#2D2D2D;--ink4:#6B7A8D;--ink2:#8C9BAD;
+  --surface:#F4F7F9;--card:#fff;--border:#D5DFE8;
+  --success:#22C55E;--warning:#F59E0B;--error:#EF4444;
+  --r:20px;--r-sm:12px;
+  --fd:'Helvetica World','Helvetica Neue',Arial,sans-serif;--fb:'Helvetica World','Helvetica Neue',Arial,system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--fb);background:#F4F7F9;color:#2D2D2D;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:#D5DFE8;border-radius:3px}
+
+/* ── LAYOUT ── */
+.page{display:flex;min-height:100vh}
+.sidenav{width:260px;background:var(--c-primary);position:fixed;top:0;left:0;height:100vh;overflow-y:auto;z-index:100;display:flex;flex-direction:column}
+.main-wrap{margin-left:260px;flex:1}
+
+/* sidenav */
+.sn-logo{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
+.sn-d{width:34px;height:34px;background:#FF8C00;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-weight:800;color:#fff;font-size:15px;flex-shrink:0}
+.sn-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.25);padding:18px 20px 6px;display:block}
+.sn-item{display:flex;align-items:center;gap:9px;padding:9px 20px;font-size:13px;font-weight:500;color:rgba(255,255,255,.55);cursor:pointer;transition:all .15s;text-decoration:none;border-left:2px solid transparent}
+.sn-item:hover,.sn-item.active{color:#fff;background:rgba(255,255,255,.06);border-left-color:#FF8C00}
+.sn-item.active{color:#fff}
+.sn-ico{font-size:15px;width:20px;flex-shrink:0}
+.sn-footer{margin-top:auto;padding:14px;border-top:1px solid rgba(255,255,255,.07)}
+.sn-ai{background:linear-gradient(135deg,rgba(14,165,160,.12),rgba(43,76,126,.1));border:1px solid rgba(14,165,160,.2);border-radius:14px;padding:13px 15px}
+.pulse{width:7px;height:7px;border-radius:50%;background:#0E9E99;animation:blink 2s infinite;display:inline-block}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ── TOP HEADER ── */
+.page-header{background:var(--p900);padding:28px 40px 24px;border-bottom:1px solid rgba(255,255,255,.06)}
+.ph-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(14,165,160,.15);border:1px solid rgba(14,165,160,.3);color:#0E9E99;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:4px 12px;border-radius:99px;margin-bottom:10px}
+.ph-title{font-family:var(--fd);font-weight:800;font-size:28px;color:#fff;line-height:1.15;margin-bottom:5px}
+.ph-sub{font-size:13.5px;color:rgba(255,255,255,.45);max-width:700px;line-height:1.6}
+.ph-meta{display:flex;gap:20px;margin-top:16px;flex-wrap:wrap}
+.ph-kpi{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 18px;text-align:center}
+.ph-kpi-v{font-family:var(--fd);font-weight:800;font-size:20px;line-height:1}
+.ph-kpi-l{font-size:10px;color:rgba(255,255,255,.35);margin-top:3px}
+
+/* ── CONTENT ── */
+.content{padding:36px 40px;max-width:1100px}
+.section{margin-bottom:52px;scroll-margin-top:20px}
+.sec-chip{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:4px 12px;border-radius:99px;margin-bottom:10px}
+.sec-title{font-family:var(--fd);font-weight:800;font-size:24px;color:#2D2D2D;margin-bottom:6px}
+.sec-desc{font-size:14px;color:var(--ink4);line-height:1.7;max-width:720px;margin-bottom:24px}
+.divider{height:1px;background:#D5DFE8;margin:40px 0}
+
+/* ── CARDS ── */
+.card{background:var(--card);border-radius:var(--r);border:1px solid #D5DFE8;overflow:hidden;transition:box-shadow .2s,transform .2s}
+.card:hover{box-shadow:0 12px 36px rgba(26,38,64,.1);transform:translateY(-2px)}
+.card-pad{padding:22px}
+
+/* ── GRID ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+
+/* ── SUPPLIER CARDS ── */
+.supplier-card{border-radius:var(--r);border:1px solid #D5DFE8;padding:22px;background:var(--card);transition:all .2s;position:relative;overflow:hidden}
+.supplier-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--sc,#FF8C00)}
+.supplier-card:hover{box-shadow:0 12px 36px rgba(26,38,64,.1);transform:translateY(-3px);border-color:transparent}
+.sc-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:14px}
+.sc-title{font-family:var(--fd);font-weight:700;font-size:15px;color:#2D2D2D;margin-bottom:6px}
+.sc-desc{font-size:12.5px;color:var(--ink4);line-height:1.6;margin-bottom:12px}
+.sc-tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px}
+
+/* ── FLOW DIAGRAM ── */
+.flow-wrap{background:var(--card);border-radius:var(--r);border:1px solid #D5DFE8;padding:28px;overflow-x:auto}
+.flow-row{display:flex;align-items:flex-start;gap:0;min-width:max-content}
+.flow-step{display:flex;flex-direction:column;align-items:center;width:130px;text-align:center}
+.flow-node{border-radius:14px;border:1.5px solid;padding:12px 16px;font-size:12px;font-weight:700;line-height:1.3;min-width:110px;text-align:center;position:relative;z-index:1;transition:box-shadow .2s}
+.flow-node:hover{box-shadow:0 6px 20px rgba(26,38,64,.15)}
+.flow-lbl{font-size:10px;color:var(--ink4);margin-top:7px;line-height:1.4;max-width:110px}
+.flow-arr{display:flex;align-items:center;padding-top:22px;flex-shrink:0}
+.flow-arr svg{color:var(--ink2)}
+.ai-glow-node{background:linear-gradient(135deg,#0B2D2B,#071830)!important;border-color:rgba(14,165,160,.5)!important;color:#0E9E99!important;box-shadow:0 0 20px rgba(14,165,160,.3)}
+
+/* ── LEVELS TABLE ── */
+.level-table{width:100%;border-collapse:collapse;font-size:13px}
+.level-table th{text-align:left;padding:10px 16px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink4);border-bottom:2px solid #D5DFE8;background:#F4F7F9}
+.level-table td{padding:12px 16px;border-bottom:1px solid #D5DFE8;vertical-align:middle}
+.level-table tr:last-child td{border-bottom:none}
+.level-table tr:hover td{background:#F4F7F9}
+.level-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:4px 11px;border-radius:99px;white-space:nowrap}
+.check{color:var(--success);font-weight:700}
+.dash{color:var(--ink2)}
+
+/* ── ROLE MATRIX ── */
+.matrix{width:100%;border-collapse:collapse;font-size:12.5px}
+.matrix th,.matrix td{padding:10px 14px;border:1px solid #D5DFE8;vertical-align:middle}
+.matrix th{background:var(--c-primary);color:#fff;font-size:11px;font-weight:700;text-align:center}
+.matrix th:first-child{text-align:left}
+.matrix td:first-child{font-weight:700;color:#2D2D2D;background:#F4F7F9}
+.matrix tr:hover td{background:var(--p50)}
+.m-yes{color:var(--success);font-weight:700;text-align:center}
+.m-no{color:var(--ink2);text-align:center}
+.m-admin{color:#FF8C00;font-weight:700;text-align:center}
+.m-ai{color:#0E9E99;font-weight:700;text-align:center}
+
+/* ── FINANCIAL FLOW ── */
+.fin-card{border-radius:var(--r);padding:20px;position:relative;overflow:hidden}
+.fin-arrow{display:flex;align-items:center;padding:0 8px;color:var(--ink2)}
+.fin-total{font-family:var(--fd);font-weight:800;font-size:22px}
+.fin-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+.alloc-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:10px;margin-bottom:6px;font-size:12.5px}
+
+/* ── CONFIG TABLE ── */
+.config-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.config-table th{text-align:left;padding:9px 16px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink4);border-bottom:1px solid #D5DFE8;background:#F4F7F9}
+.config-table td{padding:11px 16px;border-bottom:1px solid #D5DFE8}
+.config-table tr:last-child td{border-bottom:none}
+.config-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+
+/* ── ALERT ── */
+.alert{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:14px;border:1px solid;margin-bottom:12px}
+.alert-ai{background:#E0F5F4;border-color:rgba(14,165,160,.25);color:#0E9E99}
+.alert-info{background:#eff6ff;border-color:#bfdbfe;color:#1e40af}
+.alert-warn{background:#fffbeb;border-color:#fde68a;color:#92400e}
+
+/* ── REVEAL ── */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .65s cubic-bezier(.22,1,.36,1),transform .65s cubic-bezier(.22,1,.36,1)}
+.reveal.d1{transition-delay:.08s}.reveal.d2{transition-delay:.16s}.reveal.d3{transition-delay:.24s}.reveal.d4{transition-delay:.32s}
+.reveal.in{opacity:1;transform:none}
+
+/* ── ESCO CHIP ── */
+.esco{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;background:var(--p100);color:var(--p600);padding:3px 9px;border-radius:99px;font-family:'JetBrains Mono',monospace,var(--fb)}
+
+  /* ══ HELVETICA WORLD — Master Font Override ══ */
+  @font-face {
+    font-family: 'Helvetica World';
+    font-weight: 400;
+    font-style: normal;
+    src: local('Helvetica World'), local('HelveticaWorld'), local('Helvetica Neue'), local('Arial');
+  }
+  @font-face {
+    font-family: 'Helvetica World';
+    font-weight: 500;
+    font-style: normal;
+    src: local('Helvetica World Medium'), local('HelveticaWorld-Medium'), local('Helvetica Neue Medium'), local('Arial');
+  }
+  @font-face {
+    font-family: 'Helvetica World';
+    font-weight: 700;
+    font-style: normal;
+    src: local('Helvetica World Bold'), local('HelveticaWorld-Bold'), local('Helvetica Neue Bold'), local('Arial Bold');
+  }
+  /* Universal font override */
+  *, *::before, *::after {
+    font-family: 'Helvetica World', 'Helvetica Neue', 'Arial', system-ui, sans-serif !important;
+  }
+  /* Display/heading weight */
+  h1, h2, h3, h4, h5, h6,
+  [style*="font-family:'Syne'"],
+  [style*='font-family:"Syne"'] {
+    font-family: 'Helvetica World', 'Helvetica Neue', 'Arial', sans-serif !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.01em;
+  }
+  /* Body weight */
+  p, span, div, a, td, th, input, textarea, select, button {
+    font-family: 'Helvetica World', 'Helvetica Neue', 'Arial', system-ui, sans-serif !important;
+  }
+  /* Mono / tabular figures — exception */
+  code, pre, .tabular, .price-val, .invoice-amount,
+  .kpi-value, [class*="order-id"], .mono {
+    font-family: 'Courier New', monospace !important;
+  }
+</style>
+</head>
+<body>
+<!-- ════ MINI NAV BAR — My Darrin Standard ════ -->
+<div style="background:#003366;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,51,102,.25)">
+  <a href="mydarrin-v3.html" style="display:flex;align-items:center;gap:9px;text-decoration:none;flex-shrink:0">
+    <div style="width:30px;height:30px;background:#FF8C00;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff">D</div>
+    <div style="font-weight:800;color:#fff;font-size:14px;font-family:'Helvetica Neue',Arial,sans-serif">My Darrin</div>
+  </a>
+  <div style="display:flex;gap:6px;flex-wrap:wrap" id="mini-nav-links">
+    <a href="mydarrin-v3.html" style="color:rgba(255,255,255,.65);font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border-radius:7px;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='#fff'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.65)'">🏠 Acasă</a>
+    <a href="mydarrin-catalog.html" style="color:rgba(255,255,255,.65);font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border-radius:7px;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='#fff'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.65)'">📦 Catalog</a>
+    <a href="mydarrin-cum-functioneaza.html" style="color:rgba(255,255,255,.65);font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border-radius:7px;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='#fff'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.65)'">⏱ Cum funcționează</a>
+    <a href="mydarrin-investitori.html" style="color:rgba(255,255,255,.65);font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border-radius:7px;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='#fff'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.65)'">💼 Investitori</a>
+    <a href="mydarrin-superadmin.html" style="color:rgba(255,255,255,.65);font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border-radius:7px;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='#fff'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.65)'">🔐 Admin</a>
+  </div>
+</div>
+
+
+
+<div class="page">
+
+<!-- ══════ SIDENAV ══════ -->
+<nav class="sidenav">
+  <div class="sn-logo">
+    <div class="sn-d">D</div>
+    <div>
+      <div style="font-family:var(--fd);font-weight:700;font-size:14px;color:#fff">My Darrin</div>
+      <div style="font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.08em;text-transform:uppercase">Model Business v1.0</div>
+    </div>
+  </div>
+  <span class="sn-label">Arhitectură</span>
+  <a class="sn-item active" href="#overview"><span class="sn-ico">🏗</span> Overview platformă</a>
+  <a class="sn-item" href="#furnizori"><span class="sn-ico">👥</span> Structura furnizorilor</a>
+  <a class="sn-item" href="#flux"><span class="sn-ico">⚡</span> Flux tehnic & financiar</a>
+  <a class="sn-item" href="#nivele"><span class="sn-ico">🎯</span> Niveluri servicii</a>
+  <a class="sn-item" href="#executie"><span class="sn-ico">🔧</span> Monitorizare & execuție</a>
+  <a class="sn-item" href="#darrin-ai"><span class="sn-ico">🧠</span> Rolul Darrin AI</a>
+  <a class="sn-item" href="#financiar"><span class="sn-ico">💰</span> Flux financiar HBP</a>
+  <a class="sn-item" href="#backoffice"><span class="sn-ico">⚙️</span> Configurări Backoffice</a>
+  <a class="sn-item" href="#juridic"><span class="sn-ico">📋</span> Cadru juridic</a>
+  <a class="sn-item" href="#roluri"><span class="sn-ico">🔐</span> Matrice roluri & permisiuni</a>
+  <div class="sn-footer">
+    <div class="sn-ai">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+        <span class="pulse"></span>
+        <span style="color:#0E9E99;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase">Darrin AI · Online</span>
+      </div>
+      <p style="font-size:11px;color:rgba(255,255,255,.45);line-height:1.5">Document viu — integrat cu platforma My Darrin v5.2</p>
+    </div>
+  </div>
+</nav>
+
+<!-- ════ BREADCRUMB ════ -->
+<div style="background:#fff;border-bottom:1px solid #EEF2F7;padding:9px 24px">
+  <div style="max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+    <a href="mydarrin-v3.html" style="color:#5A6B7D;text-decoration:none;font-size:12.5px;font-weight:600;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='#5A6B7D'">🏠 Acasă</a> <span style="color:#D5DFE8">›</span> <a href="mydarrin-investitori.html" style="color:#5A6B7D;text-decoration:none;font-size:12.5px;font-weight:600;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='#5A6B7D'">Investitori</a> <span style="color:#D5DFE8">›</span> <span style="color:#1A2332;font-size:12.5px;font-weight:700">Business Model</span>
+  </div>
+</div>
+
+
+<!-- ══════ MAIN ══════ -->
+<div class="main-wrap">
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="ph-badge"><span class="pulse"></span> Document Arhitectură · Aprobat</div>
+    <div class="ph-title">Model de Business & Arhitectură<br>Platformă My Darrin</div>
+    <div class="ph-sub">Home Best Pal SRL · Antreprenor General · Ecosistem hibrid clasic & AI pentru servicii integrate la cerere · Multi-țară, multi-actor, multi-currency</div>
+    <div class="ph-meta">
+      <div class="ph-kpi"><div class="ph-kpi-v" style="color:#FF8C00">3</div><div class="ph-kpi-l">Categorii furnizori</div></div>
+      <div class="ph-kpi"><div class="ph-kpi-v" style="color:#0E9E99">10</div><div class="ph-kpi-l">Actori platformă</div></div>
+      <div class="ph-kpi"><div class="ph-kpi-v" style="color:#fff">4</div><div class="ph-kpi-l">Niveluri servicii</div></div>
+      <div class="ph-kpi"><div class="ph-kpi-v" style="color:#FF8C00">12%</div><div class="ph-kpi-l">Comision platformă (default)</div></div>
+      <div class="ph-kpi"><div class="ph-kpi-v" style="color:#0E9E99">Escrow</div><div class="ph-kpi-l">Model plăți</div></div>
+      <div class="ph-kpi"><div class="ph-kpi-v" style="color:#fff">ESCO</div><div class="ph-kpi-l">Nomenclator meserii</div></div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══ 1. OVERVIEW ══ -->
+    <div class="section" id="overview">
+      <div class="sec-chip reveal" style="background:#FFF0D6;color:#CC7000">🏗 Arhitectură generală</div>
+      <h2 class="sec-title reveal d1">Home Best Pal — Antreprenor General Digital</h2>
+      <p class="sec-desc reveal d2">Home Best Pal SRL administrează platforma My Darrin funcționând ca <strong>antreprenor general</strong>: încasează integral de la clientul final, apoi alocă automat sumele nete contractate fiecărui subcontractor participant. Comisioanele și marjele sunt configurate din Backoffice de administratori autorizați.</p>
+
+      <div class="alert alert-ai reveal d2">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <div><strong>Darrin AI</strong> verifică și aprobă fiecare furnizor împreună cu administratorii umani, utilizând nomenclatorul ESCO și codurile CAEN. Toate prețurile sunt generate dinamic în funcție de țară, monedă, zonă, legislație și fiscalitate locală.</div>
+      </div>
+
+      <!-- Ecosistem vizual -->
+      <div class="g3 reveal d3" style="margin-top:20px">
+        <div class="card card-pad" style="border-top:3px solid #FF8C00">
+          <div style="font-size:28px;margin-bottom:10px">🏢</div>
+          <div style="font-family:var(--fd);font-weight:700;font-size:14px;color:#2D2D2D;margin-bottom:6px">Home Best Pal SRL</div>
+          <div style="font-size:12px;color:var(--ink4);line-height:1.6">Antreprenor General · Administrator platformă · Deține relațiile contractuale cu toți actorii</div>
+          <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px">
+            <span class="tag" style="background:#FFF0D6;color:#CC7000">Facturare centralizată</span>
+            <span class="tag" style="background:#FFF0D6;color:#CC7000">Escrow</span>
+            <span class="tag" style="background:#FFF0D6;color:#CC7000">Configurare backoffice</span>
+          </div>
+        </div>
+        <div class="card card-pad" style="border-top:3px solid #0E9E99">
+          <div style="font-size:28px;margin-bottom:10px">🧠</div>
+          <div style="font-family:var(--fd);font-weight:700;font-size:14px;color:#2D2D2D;margin-bottom:6px">Darrin AI</div>
+          <div style="font-size:12px;color:var(--ink4);line-height:1.6">Motor inteligent central · Interpretare nevoi · Configurare deviz · Alocare automată sarcini & sume</div>
+          <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px">
+            <span class="tag" style="background:#E0F5F4;color:#0E9E99">ESCO</span>
+            <span class="tag" style="background:#E0F5F4;color:#0E9E99">UniClass</span>
+            <span class="tag" style="background:#E0F5F4;color:#0E9E99">Prețuri dinamice</span>
+          </div>
+        </div>
+        <div class="card card-pad" style="border-top:3px solid var(--p600)">
+          <div style="font-size:28px;margin-bottom:10px">🌍</div>
+          <div style="font-family:var(--fd);font-weight:700;font-size:14px;color:#2D2D2D;margin-bottom:6px">Infrastructură Multi-țară</div>
+          <div style="font-size:12px;color:var(--ink4);line-height:1.6">Monedă, TVA, legislație și fiscalitate configurate per țară. Detectare automată din IP utilizator.</div>
+          <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px">
+            <span class="tag" style="background:var(--p100);color:var(--p600)">RO · MD · EU</span>
+            <span class="tag" style="background:var(--p100);color:var(--p600)">Multi-currency</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ══ 2. FURNIZORI ══ -->
+    <div class="section" id="furnizori">
+      <div class="sec-chip reveal" style="background:var(--p100);color:var(--p600)">👥 Structura furnizorilor</div>
+      <h2 class="sec-title reveal d1">3 categorii principale de furnizori</h2>
+      <p class="sec-desc reveal d2">Toți furnizorii sunt verificați și aprobați de Darrin AI + administratori umani. Înregistrarea este contractuală, cu definirea clară a standardelor de calitate, responsabilităților și comisioanelor.</p>
+
+      <div class="g3 reveal d2">
+
+        <!-- CAT 1: Profesioniști -->
+        <div class="supplier-card" style="--sc:#FF8C00">
+          <div class="sc-icon" style="background:#FFF0D6">🔧</div>
+          <div class="sc-title">Profesioniști & Meseriași</div>
+          <div class="sc-desc">Meseriași, arhitecți, ingineri, designeri, grădinari, sudori, electricieni, instalatori și alte profesii conform Nomenclatorului de Meserii.</div>
+          <div class="sc-tags">
+            <span class="tag" style="background:#FFF0D6;color:#CC7000">ESCO Nomenclator</span>
+            <span class="tag" style="background:#FFF0D6;color:#CC7000">Verificat AI + Admin</span>
+          </div>
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid #D5DFE8">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink4);margin-bottom:8px">Coduri ESCO exemple</div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px">
+              <span class="esco">7131</span><span class="esco">7411</span><span class="esco">7421</span>
+              <span class="esco">7512</span><span class="esco">2142</span><span class="esco">3123</span>
+            </div>
+          </div>
+          <div style="margin-top:12px;padding:9px 12px;background:#FFF0D6;border-radius:10px;font-size:11px;color:#CC7000;font-weight:500;line-height:1.5">
+            📱 Primesc comenzi pe aplicațiile mobile dedicate. Primul care acceptă devine responsabil de execuție.
+          </div>
+        </div>
+
+        <!-- CAT 2: Furnizori Materiale -->
+        <div class="supplier-card" style="--sc:var(--p600)">
+          <div class="sc-icon" style="background:var(--p100)">📦</div>
+          <div class="sc-title">Furnizori de Materiale & Echipamente</div>
+          <div class="sc-desc">Două modalități de integrare în platformă, adaptate nivelului de digitalizare al furnizorului.</div>
+          <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+            <div style="padding:10px 12px;background:var(--p50);border-radius:10px;border:1px solid var(--p100)">
+              <div style="font-size:11px;font-weight:700;color:var(--p600);margin-bottom:3px">🛒 Marketplace Integrat</div>
+              <div style="font-size:11px;color:var(--ink4);line-height:1.5">Pentru furnizorii fără structură digitală proprie. Listare directă în platforma My Darrin.</div>
+            </div>
+            <div style="padding:10px 12px;background:#E0F5F4;border-radius:10px;border:1px solid rgba(14,165,160,.2)">
+              <div style="font-size:11px;font-weight:700;color:#0E9E99;margin-bottom:3px">🔗 Integrare API</div>
+              <div style="font-size:11px;color:var(--ink4);line-height:1.5">Pentru furnizori cu magazine online existente. Sincronizare automată stocuri, prețuri și fluxuri de date.</div>
+            </div>
+          </div>
+          <div class="sc-tags" style="margin-top:12px">
+            <span class="tag" style="background:var(--p100);color:var(--p600)">Stoc live</span>
+            <span class="tag" style="background:var(--p100);color:var(--p600)">Prețuri dinamice</span>
+            <span class="tag" style="background:var(--p100);color:var(--p600)">Livrare Curier Cartier</span>
+          </div>
+        </div>
+
+        <!-- CAT 3: Închirieri -->
+        <div class="supplier-card" style="--sc:#7C3AED">
+          <div class="sc-icon" style="background:#f3e8ff">🏗</div>
+          <div class="sc-title">Servicii de Închiriere</div>
+          <div class="sc-desc">Echipamente și unelte de construcții, articole de vacanță, transport, plajă sau drumeții. Integrate direct în devizele generate de Darrin AI.</div>
+          <div style="margin-top:12px;display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink4)"><span style="color:#7C3AED">▸</span> Utilaje & echipamente grele (cu/fără operator)</div>
+            <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink4)"><span style="color:#7C3AED">▸</span> Scule & echipamente mici (pe zi/săptămână)</div>
+            <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink4)"><span style="color:#7C3AED">▸</span> Vehicule & transport (cu/fără șofer)</div>
+            <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink4)"><span style="color:#7C3AED">▸</span> Echipamente vacanță, plajă, drumeție</div>
+            <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink4)"><span style="color:#7C3AED">▸</span> Personal calificat (pe oră/zi/proiect)</div>
+            <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink4)"><span style="color:#7C3AED">▸</span> Combo & pachete complete</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ══ 3. FLUX TEHNIC ══ -->
+    <div class="section" id="flux">
+      <div class="sec-chip reveal" style="background:#E0F5F4;color:#0E9E99">⚡ Flux tehnic & financiar</div>
+      <h2 class="sec-title reveal d1">Procesul complet — de la cerere la decontare</h2>
+      <p class="sec-desc reveal d2">Platforma funcționează <strong>hibrid</strong>: navigare clasică în catalog + asistență inteligentă Darrin AI. Ambele căi duc la același flux de execuție și plată.</p>
+
+      <div class="flow-wrap reveal d2">
+        <div class="flow-row">
+
+          <div class="flow-step">
+            <div class="flow-node" style="background:#fff;border-color:#D5DFE8;color:#2D2D2D">
+              <div style="font-size:18px;margin-bottom:4px">👤</div>
+              <div>Cerere Client</div>
+            </div>
+            <div class="flow-lbl">Catalog clasic sau Darrin AI</div>
+          </div>
+          <div class="flow-arr"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+
+          <div class="flow-step">
+            <div class="flow-node ai-glow-node">
+              <div style="font-size:18px;margin-bottom:4px">🧠</div>
+              <div>Darrin AI</div>
+              <div style="font-size:9px;font-weight:400;opacity:.7;margin-top:2px">ESCO + UniClass</div>
+            </div>
+            <div class="flow-lbl">Interpretare · agregare costuri</div>
+          </div>
+          <div class="flow-arr"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+
+          <div class="flow-step">
+            <div class="flow-node" style="background:#FFF0D6;border-color:#FF8C00;color:#CC7000">
+              <div style="font-size:18px;margin-bottom:4px">📋</div>
+              <div>Deviz + Proformă</div>
+            </div>
+            <div class="flow-lbl">Nivel serviciu ales de client</div>
+          </div>
+          <div class="flow-arr"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+
+          <div class="flow-step">
+            <div class="flow-node" style="background:var(--p100);border-color:var(--p600);color:var(--p600)">
+              <div style="font-size:18px;margin-bottom:4px">🛒</div>
+              <div>Coș + Acceptare</div>
+            </div>
+            <div class="flow-lbl">Termeni, condiții, contract auto</div>
+          </div>
+          <div class="flow-arr"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+
+          <div class="flow-step">
+            <div class="flow-node" style="background:#dbeafe;border-color:#3b82f6;color:#1e40af">
+              <div style="font-size:18px;margin-bottom:4px">🔒</div>
+              <div>Plată Escrow</div>
+            </div>
+            <div class="flow-lbl">HBP încasează integral</div>
+          </div>
+          <div class="flow-arr"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+
+          <div class="flow-step">
+            <div class="flow-node" style="background:#fef9c3;border-color:#f59e0b;color:#a16207">
+              <div style="font-size:18px;margin-bottom:4px">📱</div>
+              <div>Alocare Furnizori</div>
+            </div>
+            <div class="flow-lbl">Notificări app mobile dedicate</div>
+          </div>
+          <div class="flow-arr"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+
+          <div class="flow-step">
+            <div class="flow-node" style="background:#E0F5F4;border-color:#0E9E99;color:#0E9E99">
+              <div style="font-size:18px;margin-bottom:4px">⚙️</div>
+              <div>Execuție</div>
+            </div>
+            <div class="flow-lbl">Dovezi foto/video obligatorii</div>
+          </div>
+          <div class="flow-arr"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+
+          <div class="flow-step">
+            <div class="flow-node" style="background:#dcfce7;border-color:#22c55e;color:#166534">
+              <div style="font-size:18px;margin-bottom:4px">✅</div>
+              <div>Confirmare + Factură</div>
+            </div>
+            <div class="flow-lbl">Factură fiscală auto · HBP</div>
+          </div>
+          <div class="flow-arr"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+
+          <div class="flow-step">
+            <div class="flow-node" style="background:var(--c-primary);border-color:var(--c-primary);color:#fff">
+              <div style="font-size:18px;margin-bottom:4px">💰</div>
+              <div>Decontare</div>
+            </div>
+            <div class="flow-lbl">Sume nete → fiecare actor · max 5 zile</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Agregare costuri -->
+      <div style="margin-top:20px" class="reveal d3">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink4);margin-bottom:12px">Componente agregare automată deviz (Darrin AI)</div>
+        <div class="g4">
+          <div style="background:var(--card);border:1px solid #D5DFE8;border-radius:14px;padding:14px;text-align:center">
+            <div style="font-size:20px;margin-bottom:5px">👷</div>
+            <div style="font-size:11px;font-weight:700;color:#2D2D2D">Manoperă</div>
+            <div style="font-size:10px;color:var(--ink4);margin-top:3px">Tarife ESCO per zonă</div>
+          </div>
+          <div style="background:var(--card);border:1px solid #D5DFE8;border-radius:14px;padding:14px;text-align:center">
+            <div style="font-size:20px;margin-bottom:5px">📦</div>
+            <div style="font-size:11px;font-weight:700;color:#2D2D2D">Materiale</div>
+            <div style="font-size:10px;color:var(--ink4);margin-top:3px">Marketplace + API furnizori</div>
+          </div>
+          <div style="background:var(--card);border:1px solid #D5DFE8;border-radius:14px;padding:14px;text-align:center">
+            <div style="font-size:20px;margin-bottom:5px">🚚</div>
+            <div style="font-size:11px;font-weight:700;color:#2D2D2D">Transport</div>
+            <div style="font-size:10px;color:var(--ink4);margin-top:3px">Curier Cartier · zonă</div>
+          </div>
+          <div style="background:var(--card);border:1px solid #D5DFE8;border-radius:14px;padding:14px;text-align:center">
+            <div style="font-size:20px;margin-bottom:5px">🔩</div>
+            <div style="font-size:11px;font-weight:700;color:#2D2D2D">Consumabile</div>
+            <div style="font-size:10px;color:var(--ink4);margin-top:3px">Per nivel serviciu</div>
+          </div>
+          <div style="background:var(--card);border:1px solid #D5DFE8;border-radius:14px;padding:14px;text-align:center">
+            <div style="font-size:20px;margin-bottom:5px">🏗</div>
+            <div style="font-size:11px;font-weight:700;color:#2D2D2D">Închirieri</div>
+            <div style="font-size:10px;color:var(--ink4);margin-top:3px">Utilaje + personal calificat</div>
+          </div>
+          <div style="background:var(--card);border:1px solid #D5DFE8;border-radius:14px;padding:14px;text-align:center">
+            <div style="font-size:20px;margin-bottom:5px">📊</div>
+            <div style="font-size:11px;font-weight:700;color:#2D2D2D">Taxe & TVA</div>
+            <div style="font-size:10px;color:var(--ink4);margin-top:3px">Configurat per țară/backoffice</div>
+          </div>
+          <div style="background:var(--card);border:1px solid #D5DFE8;border-radius:14px;padding:14px;text-align:center">
+            <div style="font-size:20px;margin-bottom:5px">📢</div>
+            <div style="font-size:11px;font-weight:700;color:#2D2D2D">Marketing</div>
+            <div style="font-size:10px;color:var(--ink4);margin-top:3px">Cost achiziție client</div>
+          </div>
+          <div style="background:linear-gradient(135deg,#FFF0D6,#FDE8C4);border:1px solid #FF8C00;border-radius:14px;padding:14px;text-align:center">
+            <div style="font-size:20px;margin-bottom:5px">💼</div>
+            <div style="font-size:11px;font-weight:700;color:#CC7000">Comision HBP</div>
+            <div style="font-size:10px;color:#CC7000;margin-top:3px">Configurat backoffice</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ══ 4. NIVELURI SERVICII ══ -->
+    <div class="section" id="nivele">
+      <div class="sec-chip reveal" style="background:#fef9c3;color:#a16207">🎯 Niveluri servicii</div>
+      <h2 class="sec-title reveal d1">4 niveluri de serviciu — exemplu: Înlocuire gresie</h2>
+      <p class="sec-desc reveal d2">Fiecare serviciu are 4 niveluri configurabile din Backoffice. Clientul alege nivelul dorit, Darrin AI agregă automat costurile componente corespunzătoare.</p>
+
+      <div class="card reveal d2" style="overflow:hidden">
+        <table class="level-table">
+          <thead>
+            <tr>
+              <th>Nivel</th>
+              <th>Manoperă</th>
+              <th>Consumabile platformă</th>
+              <th>Materiale platformă</th>
+              <th>Curățenie & moloz</th>
+              <th>Garanție digitală</th>
+              <th>Indicat pentru</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="level-badge" style="background:#e5e7eb;color:#374151">🥉 Bronz</span></td>
+              <td><span class="check">✓ Inclusă</span></td>
+              <td><span class="dash">— Client asigură</span></td>
+              <td><span class="dash">— Client asigură</span></td>
+              <td><span class="dash">—</span></td>
+              <td><span class="check">✓</span></td>
+              <td style="font-size:11.5px;color:var(--ink4)">Client cu materiale proprii</td>
+            </tr>
+            <tr>
+              <td><span class="level-badge" style="background:#dbeafe;color:#1e40af">🥈 Argint</span></td>
+              <td><span class="check">✓ Inclusă</span></td>
+              <td><span class="check">✓ Inclusă</span></td>
+              <td><span class="dash">— Client asigură</span></td>
+              <td><span class="dash">—</span></td>
+              <td><span class="check">✓</span></td>
+              <td style="font-size:11.5px;color:var(--ink4)">Materiale parțiale proprii</td>
+            </tr>
+            <tr>
+              <td><span class="level-badge" style="background:#fef9c3;color:#a16207">🥇 Aur</span></td>
+              <td><span class="check">✓ Inclusă</span></td>
+              <td><span class="check">✓ Inclusă</span></td>
+              <td><span class="check">✓ Inclusă</span></td>
+              <td><span class="dash">—</span></td>
+              <td><span class="check">✓</span></td>
+              <td style="font-size:11.5px;color:var(--ink4)">Pachet complet fără finisaj</td>
+            </tr>
+            <tr style="background:linear-gradient(90deg,rgba(14,165,160,.04),transparent)">
+              <td><span class="level-badge" style="background:linear-gradient(135deg,#0B2D2B,#071830);color:#0E9E99">✨ Platinum</span></td>
+              <td><span class="check">✓ Inclusă</span></td>
+              <td><span class="check">✓ Inclusă</span></td>
+              <td><span class="check">✓ Inclusă</span></td>
+              <td><span class="check">✓ Inclusă</span></td>
+              <td><span class="check">✓ Extinsă</span></td>
+              <td style="font-size:11.5px;color:var(--ink4)">Serviciu complet la cheie</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="alert alert-info reveal d3" style="margin-top:16px">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div>Nivelurile, componentele incluse și prețurile lor sunt <strong>configurabile per serviciu și per țară din Backoffice</strong> de administratorii cu rol dedicat, aprobat de SuperAdmin (Owner).</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ══ 5. MONITORIZARE & EXECUTIE ══ -->
+    <div class="section" id="executie">
+      <div class="sec-chip reveal" style="background:var(--p100);color:var(--p600)">🔧 Monitorizare & execuție</div>
+      <h2 class="sec-title reveal d1">Alocarea, acceptarea și monitorizarea execuției</h2>
+      <p class="sec-desc reveal d2">Indiferent de metoda de selecție (clasică sau AI), procesul de execuție urmează același flux standardizat, supravegheat de platformă de la alocare până la încasare.</p>
+
+      <div class="g3 reveal d2">
+        <div class="card card-pad">
+          <div style="width:40px;height:40px;border-radius:12px;background:#FFF0D6;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:12px">📱</div>
+          <div style="font-family:var(--fd);font-weight:700;font-size:14px;color:#2D2D2D;margin-bottom:6px">Alocare cerere</div>
+          <div style="font-size:12.5px;color:var(--ink4);line-height:1.6">Notificări push transmise simultan tuturor furnizorilor competenți din zonă, pe aplicațiile mobile dedicate fiecărei categorii (prestatori / furnizori materiale / rental).</div>
+        </div>
+        <div class="card card-pad">
+          <div style="width:40px;height:40px;border-radius:12px;background:#E0F5F4;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:12px">⚡</div>
+          <div style="font-family:var(--fd);font-weight:700;font-size:14px;color:#2D2D2D;margin-bottom:6px">Acceptare — primul câștigă</div>
+          <div style="font-size:12.5px;color:var(--ink4);line-height:1.6">Primul furnizor care acceptă sarcina devine responsabilul de execuție. Ceilalți sunt notificați că sarcina a fost atribuită. Excepție: comenzi cu alocare fixă din deviz.</div>
+        </div>
+        <div class="card card-pad">
+          <div style="width:40px;height:40px;border-radius:12px;background:var(--p100);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:12px">👁</div>
+          <div style="font-family:var(--fd);font-weight:700;font-size:14px;color:#2D2D2D;margin-bottom:6px">Monitorizare completă</div>
+          <div style="font-size:12.5px;color:var(--ink4);line-height:1.6">Platforma supraveghează întregul proces — execuție, upload dovezi foto/video, confirmare client, validare automată, eliberare Escrow, decontare subcontractori.</div>
+        </div>
+      </div>
+
+      <div class="alert alert-warn reveal d3" style="margin-top:16px">
+        <svg width="16" height="16" fill="none" stroke="#92400e" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg>
+        <div>Factura fiscală a subcontractorului (prestator de servicii cu statut juridic) se emite <strong>exclusiv după confirmarea execuției fără obiecțiuni</strong> din partea clientului — și se adresează întotdeauna <strong>Home Best Pal SRL</strong> (antreprenorul general), nu clientului final.</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ══ 6. DARRIN AI ══ -->
+    <div class="section" id="darrin-ai">
+      <div class="sec-chip reveal" style="background:#E0F5F4;color:#0E9E99">🧠 Rolul Darrin AI</div>
+      <h2 class="sec-title reveal d1">Darrin AI — motorul inteligent central</h2>
+      <p class="sec-desc reveal d2">Darrin AI simplifică experiența utilizatorului și automatizează întregul flux operațional, de la interpretarea nevoii până la distribuirea automată a sumelor.</p>
+
+      <div class="g4 reveal d2">
+        <div class="card card-pad" style="border-top:3px solid #0E9E99">
+          <div style="font-size:24px;margin-bottom:10px">👁</div>
+          <div style="font-family:var(--fd);font-weight:700;font-size:13px;color:#2D2D2D;margin-bottom:6px">Interpretare</div>
+          <div style="font-size:12px;color:var(--ink4);line-height:1.6">Preia nevoile clientului din descrieri text, imagini, video și documente. Înțelege contextul și extrage cerințele tehnice.</div>
+        </div>
+        <div class="card card-pad" style="border-top:3px solid #0E9E99">
+          <div style="font-size:24px;margin-bottom:10px">📋</div>
+          <div style="font-family:var(--fd);font-weight:700;font-size:13px;color:#2D2D2D;margin-bottom:6px">Propunere structurată</div>
+          <div style="font-size:12px;color:var(--ink4);line-height:1.6">Recomandă servicii structurate pe niveluri de complexitate (Bronz→Platinum), cu deviz detaliat per componentă.</div>
+        </div>
+        <div class="card card-pad" style="border-top:3px solid #0E9E99">
+          <div style="font-size:24px;margin-bottom:10px">⚡</div>
+          <div style="font-family:var(--fd);font-weight:700;font-size:13px;color:#2D2D2D;margin-bottom:6px">Automatizare flux</div>
+          <div style="font-size:12px;color:var(--ink4);line-height:1.6">Ghidează clientul prin coș → condiții → plată. Distribuie automat sarcinile și sumele nete fiecărui subcontractor.</div>
+        </div>
+        <div class="card card-pad" style="border-top:3px solid #0E9E99">
+          <div style="font-size:24px;margin-bottom:10px">🔍</div>
+          <div style="font-family:var(--fd);font-weight:700;font-size:13px;color:#2D2D2D;margin-bottom:6px">Verificare furnizori</div>
+          <div style="font-size:12px;color:var(--ink4);line-height:1.6">Aprobă furnizorii împreună cu adminii umani folosind ESCO, CAEN, documente juridice și istoricul de execuție.</div>
+        </div>
+      </div>
+
+      <!-- ESCO + UniClass integration note -->
+      <div style="margin-top:16px;background:linear-gradient(135deg,var(--p900),var(--c-primary));border-radius:var(--r);padding:20px 24px;display:flex;align-items:center;gap:20px;flex-wrap:wrap" class="reveal d3">
+        <div style="flex:1;min-width:240px">
+          <div style="font-family:var(--fd);font-weight:700;font-size:15px;color:#fff;margin-bottom:5px">Standarde tehnice integrate</div>
+          <div style="font-size:12.5px;color:rgba(255,255,255,.5);line-height:1.6">Darrin AI utilizează nomenclatoarele internaționale pentru clasificarea precisă a serviciilor, meseriilor și materialelor.</div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <div style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px 16px;text-align:center">
+            <div style="font-family:var(--fd);font-weight:800;font-size:16px;color:#0E9E99">ESCO</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">Meserii & competențe</div>
+          </div>
+          <div style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px 16px;text-align:center">
+            <div style="font-family:var(--fd);font-weight:800;font-size:16px;color:#FF8C00">UniClass</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">Clasificare construcții</div>
+          </div>
+          <div style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px 16px;text-align:center">
+            <div style="font-family:var(--fd);font-weight:800;font-size:16px;color:#fff">CAEN</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">Activitate economică</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ══ 7. FLUX FINANCIAR ══ -->
+    <div class="section" id="financiar">
+      <div class="sec-chip reveal" style="background:#FFF0D6;color:#CC7000">💰 Flux financiar HBP</div>
+      <h2 class="sec-title reveal d1">Home Best Pal — Antreprenor General · Alocare sume nete</h2>
+      <p class="sec-desc reveal d2">HBP încasează integral de la clientul final, reține marja configurată din Backoffice, și alocă automat sumele nete contractate fiecărui subcontractor participant la proiect.</p>
+
+      <!-- Exemplu vizual alocare -->
+      <div class="card reveal d2" style="overflow:hidden;margin-bottom:20px">
+        <div style="background:var(--p900);padding:16px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Exemplu: Montaj gard metalic 25ml</div>
+            <div style="font-family:var(--fd);font-weight:800;font-size:22px;color:#fff">6.759 Lei <span style="font-size:13px;font-weight:400;color:rgba(255,255,255,.4)">plătit de client</span></div>
+          </div>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+            <span style="font-size:12px;color:rgba(255,255,255,.5)">Escrow HBP</span>
+            <svg width="16" height="16" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            <span style="font-size:12px;color:rgba(255,255,255,.5)">Alocare automată</span>
+          </div>
+        </div>
+        <div style="padding:18px 22px">
+          <div class="alloc-row" style="background:#FFF0D6;border:1px solid #FFB866">
+            <div style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:#FF8C00;display:inline-block"></span><span style="font-weight:700;font-size:13px">Partener A — Manoperă montaj</span></div>
+            <div style="text-align:right"><div style="font-family:var(--fd);font-weight:800;font-size:15px;color:#CC7000">1.870 Lei net</div><div style="font-size:10px;color:var(--ink4)">Factură emisă de Partener A → HBP</div></div>
+          </div>
+          <div class="alloc-row" style="background:var(--p50);border:1px solid var(--p100)">
+            <div style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:var(--p600);display:inline-block"></span><span style="font-weight:700;font-size:13px">Furnizor B — Materiale gard</span></div>
+            <div style="text-align:right"><div style="font-family:var(--fd);font-weight:800;font-size:15px;color:var(--p600)">3.105 Lei net</div><div style="font-size:10px;color:var(--ink4)">Factură emisă de Furnizor B → HBP</div></div>
+          </div>
+          <div class="alloc-row" style="background:#E0F5F4;border:1px solid rgba(14,165,160,.25)">
+            <div style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:#0E9E99;display:inline-block"></span><span style="font-weight:700;font-size:13px">Furnizor C — Rental sudură + sudor</span></div>
+            <div style="text-align:right"><div style="font-family:var(--fd);font-weight:800;font-size:15px;color:#0E9E99">245 Lei net</div><div style="font-size:10px;color:var(--ink4)">Factură emisă de Furnizor C → HBP</div></div>
+          </div>
+          <div class="alloc-row" style="background:#fef9c3;border:1px solid #fde68a">
+            <div style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;display:inline-block"></span><span style="font-weight:700;font-size:13px">Curier D — Transport materiale</span></div>
+            <div style="text-align:right"><div style="font-family:var(--fd);font-weight:800;font-size:15px;color:#a16207">158 Lei net</div><div style="font-size:10px;color:var(--ink4)">Factură emisă de Curier D → HBP</div></div>
+          </div>
+          <div class="alloc-row" style="background:linear-gradient(90deg,var(--p100),var(--p50));border:2px solid var(--p600);margin-top:8px">
+            <div style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:var(--p600);display:inline-block"></span><span style="font-weight:800;font-size:13px;color:var(--p600)">Home Best Pal — Marjă antreprenor general</span><span style="font-size:10px;font-weight:700;background:var(--p600);color:#fff;padding:2px 7px;border-radius:99px">Backoffice config</span></div>
+            <div style="text-align:right"><div style="font-family:var(--fd);font-weight:800;font-size:15px;color:var(--p600)">1.381 Lei</div><div style="font-size:10px;color:var(--ink4)">12% comision platformă + alte costuri config</div></div>
+          </div>
+        </div>
+        <div style="background:#F4F7F9;padding:12px 22px;border-top:1px solid #D5DFE8;display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:12px;color:var(--ink4)">Verificare: 1.870 + 3.105 + 245 + 158 + 1.381 = <strong>6.759 Lei ✓</strong></div>
+          <div style="font-size:11px;color:var(--ink4)">Decontare automată · max 5 zile lucrătoare</div>
+        </div>
+      </div>
+
+      <div class="alert alert-ai reveal d3">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div><strong>Regulă fiscală fundamentală:</strong> HBP emite o singură factură client → total 6.759 Lei. Fiecare subcontractor emite factură proprie → HBP, pentru suma sa netă alocată. TVA, cota de marjă și structura alocărilor sunt configurate din Backoffice.</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ══ 8. BACKOFFICE CONFIG ══ -->
+    <div class="section" id="backoffice">
+      <div class="sec-chip reveal" style="background:var(--p100);color:var(--p600)">⚙️ Configurări Backoffice</div>
+      <h2 class="sec-title reveal d1">Parametri configurabili — administrați cu control strict de rol</h2>
+      <p class="sec-desc reveal d2">Toți parametrii financiari, fiscali și operaționali sunt configurabili din Backoffice exclusiv de administratori cu rol dedicat, aprobat de Owner (SuperAdmin). Nimeni nu poate modifica configurările fără autorizare explicită.</p>
+
+      <div class="card reveal d2" style="overflow:hidden;margin-bottom:16px">
+        <table class="config-table">
+          <thead>
+            <tr>
+              <th>Parametru</th>
+              <th>Descriere</th>
+              <th>Configurat per</th>
+              <th>Rol minim necesar</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="config-dot" style="background:#FF8C00"></span><strong>Comision platformă (%)</strong></td><td style="color:var(--ink4)">Procentul reținut de HBP din valoarea totală a comenzii</td><td style="color:var(--ink4)">Țară · Categorie serviciu · Nivel</td><td><span class="tag" style="background:#FFF0D6;color:#CC7000">Admin Financiar</span></td></tr>
+            <tr><td><span class="config-dot" style="background:#0E9E99"></span><strong>Cota TVA (%)</strong></td><td style="color:var(--ink4)">0% / 5% / 9% / 19% — conform legislației locale</td><td style="color:var(--ink4)">Țară · Tip serviciu/produs</td><td><span class="tag" style="background:#E0F5F4;color:#0E9E99">Admin Fiscal</span></td></tr>
+            <tr><td><span class="config-dot" style="background:var(--p600)"></span><strong>Componente per nivel</strong></td><td style="color:var(--ink4)">Ce include fiecare nivel (Bronz/Argint/Aur/Platinum)</td><td style="color:var(--ink4)">Serviciu · Regiune</td><td><span class="tag" style="background:var(--p100);color:var(--p600)">Admin Catalog</span></td></tr>
+            <tr><td><span class="config-dot" style="background:#f59e0b"></span><strong>Tarife ESCO manoperă</strong></td><td style="color:var(--ink4)">Prețuri manoperă per cod ESCO, zonă și nivel calificare</td><td style="color:var(--ink4)">Zonă · Cod ESCO</td><td><span class="tag" style="background:#fef9c3;color:#a16207">Admin Catalog</span></td></tr>
+            <tr><td><span class="config-dot" style="background:#22c55e"></span><strong>Termen plată (zile)</strong></td><td style="color:var(--ink4)">Numărul de zile pentru eliberare Escrow și decontare</td><td style="color:var(--ink4)">Platformă · Tipuri comenzi</td><td><span class="tag" style="background:#dcfce7;color:#166534">Admin Financiar</span></td></tr>
+            <tr><td><span class="config-dot" style="background:#7c3aed"></span><strong>Alocare sume nete</strong></td><td style="color:var(--ink4)">Formula de calcul a sumei nete per tip subcontractor</td><td style="color:var(--ink4)">Deviz template · Nivel</td><td><span class="tag" style="background:#f3e8ff;color:#7c3aed">Admin Deviz</span></td></tr>
+            <tr><td><span class="config-dot" style="background:var(--error)"></span><strong>Costuri ascunse HBP</strong></td><td style="color:var(--ink4)">Marketing, mentenanță platformă, asigurări, alte cheltuieli</td><td style="color:var(--ink4)">Global · Per categorie</td><td><span class="tag" style="background:#fee2e2;color:#991b1b">SuperAdmin / Owner</span></td></tr>
+            <tr><td><span class="config-dot" style="background:var(--p900)"></span><strong>Zonă activă / inactivă</strong></td><td style="color:var(--ink4)">Activare/dezactivare platformă per țară sau regiune</td><td style="color:var(--ink4)">Țară · Regiune · Oraș</td><td><span class="tag" style="background:var(--p100);color:var(--p900)">Admin per Țară</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ══ 9. CADRU JURIDIC ══ -->
+    <div class="section" id="juridic">
+      <div class="sec-chip reveal" style="background:#fce7f3;color:#9d174d">📋 Cadru juridic</div>
+      <h2 class="sec-title reveal d1">Relații contractuale & responsabilități</h2>
+      <p class="sec-desc reveal d2">Fiecare relație între platformă și actori este guvernată de contracte comerciale distincte, generate și gestionate automat de platformă.</p>
+
+      <div class="g2 reveal d2">
+        <div class="card card-pad">
+          <div style="font-family:var(--fd);font-weight:700;font-size:14px;color:#2D2D2D;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+            <span style="font-size:20px">📜</span> Contract Client — HBP
+          </div>
+          <div style="font-size:12.5px;color:var(--ink4);line-height:1.8">
+            <div style="display:flex;gap:6px;margin-bottom:5px"><span style="color:#FF8C00;flex-shrink:0">▸</span> Acceptare termeni și condiții la plasare comandă</div>
+            <div style="display:flex;gap:6px;margin-bottom:5px"><span style="color:#FF8C00;flex-shrink:0">▸</span> Generare automată deviz + factură proformă</div>
+            <div style="display:flex;gap:6px;margin-bottom:5px"><span style="color:#FF8C00;flex-shrink:0">▸</span> Plată prin Escrow — protecție ambele părți</div>
+            <div style="display:flex;gap:6px;margin-bottom:5px"><span style="color:#FF8C00;flex-shrink:0">▸</span> Garanție digitală cu cod unic, stocată 2 ani</div>
+            <div style="display:flex;gap:6px"><span style="color:#FF8C00;flex-shrink:0">▸</span> HBP emite factură fiscală finală → Client</div>
+          </div>
+        </div>
+        <div class="card card-pad">
+          <div style="font-family:var(--fd);font-weight:700;font-size:14px;color:#2D2D2D;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+            <span style="font-size:20px">📜</span> Contract Subcontractor — HBP
+          </div>
+          <div style="font-size:12.5px;color:var(--ink4);line-height:1.8">
+            <div style="display:flex;gap:6px;margin-bottom:5px"><span style="color:var(--p600);flex-shrink:0">▸</span> Definește standarde de calitate și responsabilități</div>
+            <div style="display:flex;gap:6px;margin-bottom:5px"><span style="color:var(--p600);flex-shrink:0">▸</span> Comisioane și marje configurate în Backoffice</div>
+            <div style="display:flex;gap:6px;margin-bottom:5px"><span style="color:var(--p600);flex-shrink:0">▸</span> Subcontractorul emite factură proprie → HBP</div>
+            <div style="display:flex;gap:6px;margin-bottom:5px"><span style="color:var(--p600);flex-shrink:0">▸</span> Plata netă alocată, eliberată din Escrow</div>
+            <div style="display:flex;gap:6px"><span style="color:var(--p600);flex-shrink:0">▸</span> Doar statut juridic (SRL/PFA) poate emite factură</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ══ 10. MATRICE ROLURI ══ -->
+    <div class="section" id="roluri">
+      <div class="sec-chip reveal" style="background:var(--p100);color:var(--p600)">🔐 Matrice roluri & permisiuni</div>
+      <h2 class="sec-title reveal d1">10 actori — responsabilități clare</h2>
+      <p class="sec-desc reveal d2">Fiecare actor al platformei are un rol clar definit cu permisiuni specifice. Rolurile administrative sunt acordate de SuperAdmin (Owner) și configurate în Backoffice.</p>
+
+      <div class="card reveal d2" style="overflow-x:auto">
+        <table class="matrix">
+          <thead>
+            <tr>
+              <th style="width:180px">Actor / Rol</th>
+              <th>Catalog</th>
+              <th>Deviz AI</th>
+              <th>Comenzi</th>
+              <th>Escrow</th>
+              <th>Facturare</th>
+              <th>Backoffice</th>
+              <th>Multi-țară</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>👤 Client / Utilizator</td><td class="m-yes">Citire</td><td class="m-yes">Solicită</td><td class="m-yes">Propriu</td><td class="m-yes">Plătește</td><td class="m-no">—</td><td class="m-no">—</td><td class="m-no">—</td></tr>
+            <tr><td>🔧 Partener Servicii</td><td class="m-yes">Propriu</td><td class="m-yes">Primește</td><td class="m-yes">Acceptă</td><td class="m-yes">Primește net</td><td class="m-yes">Emite → HBP</td><td class="m-no">—</td><td class="m-no">—</td></tr>
+            <tr><td>📦 Furnizor Materiale</td><td class="m-yes">Listează</td><td class="m-ai">AI include</td><td class="m-yes">Livrează</td><td class="m-yes">Primește net</td><td class="m-yes">Emite → HBP</td><td class="m-no">—</td><td class="m-no">—</td></tr>
+            <tr><td>🏗 Furnizor Rental</td><td class="m-yes">Listează</td><td class="m-ai">AI include</td><td class="m-yes">Rezervări</td><td class="m-yes">Primește net</td><td class="m-yes">Emite → HBP</td><td class="m-no">—</td><td class="m-no">—</td></tr>
+            <tr><td>🚚 Curier Cartier</td><td class="m-no">—</td><td class="m-ai">AI include</td><td class="m-yes">Livrări</td><td class="m-yes">Primește net</td><td class="m-yes">Emite → HBP</td><td class="m-no">—</td><td class="m-no">—</td></tr>
+            <tr><td>🛡 Asigurător</td><td class="m-no">—</td><td class="m-ai">AI include</td><td class="m-no">—</td><td class="m-no">—</td><td class="m-yes">Emite polițe</td><td class="m-no">—</td><td class="m-no">—</td></tr>
+            <tr><td>💼 Investitor</td><td class="m-no">—</td><td class="m-no">—</td><td class="m-no">—</td><td class="m-no">—</td><td class="m-no">—</td><td class="m-yes">Rapoarte only</td><td class="m-no">—</td></tr>
+            <tr><td>🌍 Admin per Țară</td><td class="m-admin">Config locală</td><td class="m-admin">Config locală</td><td class="m-admin">Monitorizare</td><td class="m-admin">Rapoarte</td><td class="m-admin">Fiscalitate</td><td class="m-admin">Țara sa</td><td class="m-yes">Țara sa</td></tr>
+            <tr><td>⚡ Super Admin</td><td class="m-admin">Total</td><td class="m-admin">Total</td><td class="m-admin">Total</td><td class="m-admin">Total</td><td class="m-admin">Total</td><td class="m-admin">Total</td><td class="m-admin">Global</td></tr>
+            <tr><td>🧠 Darrin AI</td><td class="m-ai">Generează</td><td class="m-ai">Motor central</td><td class="m-ai">Alocă auto</td><td class="m-ai">Validează</td><td class="m-ai">Trigger auto</td><td class="m-ai">Citire config</td><td class="m-ai">Detectează IP</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px" class="reveal d3">
+        <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink4)"><span class="m-yes" style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#22c55e"></span>Permisiune directă</span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink4)"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#FF8C00"></span>Configurare admin</span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink4)"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#0E9E99"></span>Acțiune automată AI</span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink4)"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--ink2)"></span>Fără acces</span>
+      </div>
+    </div>
+
+    <!-- FOOTER DOC -->
+    <div style="padding-top:24px;border-top:1px solid #D5DFE8;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:40px">
+      <div style="font-size:12px;color:var(--ink4)">My Darrin · Model de Business v1.0 · Iunie 2026 · Home Best Pal SRL</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="pulse"></span>
+        <span style="font-size:12px;color:var(--ink4)">Darrin AI · v5.2 · Integrat</span>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main-wrap -->
+</div><!-- /page -->
+
+<script>
+// Reveal on scroll
+const obs = new IntersectionObserver(e => e.forEach(x => { if (x.isIntersecting) x.target.classList.add('in'); }), { threshold: 0.08 });
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+// Sidenav active highlight on scroll
+const sections = document.querySelectorAll('.section[id]');
+const navItems = document.querySelectorAll('.sn-item');
+const secObs = new IntersectionObserver(e => {
+  e.forEach(entry => {
+    if (entry.isIntersecting) {
+      navItems.forEach(n => n.classList.remove('active'));
+      const a = document.querySelector(`.sn-item[href="#${entry.target.id}"]`);
+      if (a) a.classList.add('active');
+    }
+  });
+}, { threshold: 0.3, rootMargin: '-80px 0px -40% 0px' });
+sections.forEach(s => secObs.observe(s));
+</script>
+
+<!-- ════ QUICK NAV ════ -->
+<div style="background:#002855;border-top:1px solid rgba(255,255,255,.08);padding:10px 24px">
+  <div style="max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap">
+    <a href="mydarrin-v3.html" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">🏠 Acasă</a> <span style="color:rgba(255,255,255,.15)">·</span> <a href="mydarrin-investitori.html" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">💼 Investitori</a> <span style="color:rgba(255,255,255,.15)">·</span> <a href="mydarrin-superadmin.html" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">🔐 Super Admin</a> <span style="color:rgba(255,255,255,.15)">·</span> <a href="mydarrin-sync-architecture.html" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">🔄 Arhitectură</a> <span style="color:rgba(255,255,255,.15)">·</span> <a href="mydarrin-design-system.html" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">🎨 Design System</a>
+  </div>
+</div>
+
+<!-- ════ FOOTER STANDARD My Darrin ════ -->
+<div style="background:#003366;padding:24px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-top:40px">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div style="width:32px;height:32px;background:#FF8C00;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff">D</div>
+    <div>
+      <div style="font-weight:800;color:#fff;font-size:14px">My Darrin</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.4)">© 2026 Home Best Pal SRL · Bacău, România</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:16px;flex-wrap:wrap">
+    <a href="mydarrin-v3.html" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">🏠 Acasă</a>
+    <a href="mydarrin-catalog.html" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">📦 Catalog</a>
+    <a href="mydarrin-marketplace.html" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">🏪 Marketplace</a>
+    <a href="mydarrin-devino-partener.html" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">👷 Parteneri</a>
+    <a href="mydarrin-investitori.html" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">💼 Investitori</a>
+    <a href="mydarrin-app-mobile.html" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">📱 App Mobile</a>
+    <a href="mydarrin-superadmin.html" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">🔐 Admin</a>
+  </div>
+</div>
+
+
+<script id="partner-router">
+/* ═══════════════════════════════════════════════════════════════════
+   MY DARRIN — PARTNER NAVIGATION ROUTER v2026.06
+   Unified router for all "Devino Partener" entry points across pages.
+
+   Handles:
+   1. Same-page modal trigger (pages WITH partner-modal)
+   2. Cross-page deep link (?type=xxx) with auto-open on landing
+   3. devino-partener.html internal type switching without reload
+   4. Sidebar/hamburger menu entries
+   5. CTA buttons in hero sections
+   ═══════════════════════════════════════════════════════════════════ */
+
+(function () {
+  'use strict';
+
+  // ── CONSTANTS ──────────────────────────────────────────────────
+  const PARTNER_PAGE = 'mydarrin-devino-partener.html';
+  const VALID_TYPES  = ['servicii', 'materiale', 'inchirieri',
+                        'curier',   'asigurari'];
+  const IS_PARTNER_PAGE = window.location.pathname
+    .split('/').pop().replace(/\?.*$/, '') === PARTNER_PAGE;
+
+  // ─────────────────────────────────────────────────────────────
+  // 1. CORE ROUTER — handlePartnerNavigation(type)
+  //    Called from every entry point (navbar, sidebar, CTA, footer)
+  // ─────────────────────────────────────────────────────────────
+  window.handlePartnerNavigation = function (type) {
+    const t = (VALID_TYPES.includes(type) ? type : 'servicii');
+
+    // A. Already on devino-partener.html → switch type in-place
+    if (IS_PARTNER_PAGE) {
+      _switchTypeOnWizardPage(t);
+      return;
+    }
+
+    // B. Has an embedded partner-modal on THIS page → open it
+    const modal = document.getElementById('partner-modal');
+    if (modal) {
+      if (typeof openPartnerModal === 'function') {
+        openPartnerModal(t);
+      } else {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        if (typeof selectPartnerType === 'function') {
+          setTimeout(() => selectPartnerType(t), 80);
+        }
+      }
+      return;
+    }
+
+    // C. No modal on this page → navigate with deep-link param
+    _navigateToPartnerPage(t);
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // 2. ALIAS — openPartnerWizard(type)
+  //    Architectural requirement alias
+  // ─────────────────────────────────────────────────────────────
+  window.openPartnerWizard = window.handlePartnerNavigation;
+
+  // ─────────────────────────────────────────────────────────────
+  // 3. INTERNAL: switch type on devino-partener.html without reload
+  // ─────────────────────────────────────────────────────────────
+  function _switchTypeOnWizardPage(type) {
+    // Try full wizard openPartnerModal first
+    if (typeof openPartnerModal === 'function') {
+      openPartnerModal(type);
+      return;
+    }
+    // Fallback: directly manipulate WIZARD_DATA selectedPartnerType
+    if (typeof selectType === 'function') {
+      selectType(type, null);
+      return;
+    }
+    // Last resort: set global and re-render
+    if (typeof selectedPartnerType !== 'undefined') {
+      // eslint-disable-next-line no-global-assign
+      selectedPartnerType = type;
+    }
+    if (typeof renderStep === 'function') renderStep(0);
+    // Update URL without reload (history API)
+    const url = new URL(window.location.href);
+    url.searchParams.set('type', type);
+    window.history.replaceState({}, '', url.toString());
+    _scrollToWizard();
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 4. INTERNAL: cross-page navigation with ?type= deep link
+  // ─────────────────────────────────────────────────────────────
+  function _navigateToPartnerPage(type) {
+    const base = _resolveBase();
+    window.location.href = base + PARTNER_PAGE + '?type=' + type;
+  }
+
+  function _resolveBase() {
+    const href  = window.location.href;
+    const parts = href.split('?')[0].split('/');
+    parts.pop(); // remove current filename
+    return parts.join('/') + '/';
+  }
+
+  function _scrollToWizard() {
+    const el = document.getElementById('partner-wizard') ||
+               document.getElementById('partner-modal')  ||
+               document.querySelector('[data-wizard="partner"]');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 5. AUTO-OPEN on devino-partener.html: read ?type= from URL
+  // ─────────────────────────────────────────────────────────────
+  function _autoOpenFromURLParam() {
+    if (!IS_PARTNER_PAGE) return;
+    const params = new URLSearchParams(window.location.search);
+    const type   = params.get('type');
+    if (!type || !VALID_TYPES.includes(type)) return;
+
+    // Wait for wizard init then open
+    const _tryOpen = (attempts) => {
+      if (attempts <= 0) return;
+      if (typeof openPartnerModal === 'function') {
+        openPartnerModal(type);
+        // Clean URL
+        const url = new URL(window.location.href);
+        url.searchParams.delete('type');
+        window.history.replaceState({}, '', url.toString());
+      } else {
+        setTimeout(() => _tryOpen(attempts - 1), 150);
+      }
+    };
+    setTimeout(() => _tryOpen(10), 200);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 6. INTERCEPT all <a> tags pointing to devino-partener.html
+  //    that have onclick="openPartnerModal(...)" —
+  //    prevent default href navigation, use router instead
+  // ─────────────────────────────────────────────────────────────
+  function _interceptPartnerLinks() {
+    document.querySelectorAll('a[href*="devino-partener"]').forEach(el => {
+      // Already has router handler attached?
+      if (el.dataset.routerAttached) return;
+      el.dataset.routerAttached = 'true';
+
+      // Extract type from existing onclick attr or data attr
+      let type = el.dataset.partnerType || null;
+      const onclickStr = el.getAttribute('onclick') || '';
+      const typeMatch  = onclickStr.match(/openPartnerModal\(['"](\w+)['"]\)/) ||
+                         onclickStr.match(/handlePartnerNavigation\(['"](\w+)['"]\)/) ||
+                         onclickStr.match(/openPartnerWizard\(['"](\w+)['"]\)/);
+      if (typeMatch) type = typeMatch[1];
+
+      // Check href for ?type=
+      const href = el.getAttribute('href') || '';
+      const hrefType = href.match(/[?&]type=(\w+)/);
+      if (!type && hrefType) type = hrefType[1];
+
+      el.addEventListener('click', function (e) {
+        // Only intercept same-domain devino-partener links
+        if (href.includes('devino-partener')) {
+          e.preventDefault();
+          // Close sidebar/mobile menu if open
+          if (typeof closeSidebar  === 'function') closeSidebar();
+          if (typeof closeNavMenu  === 'function') closeNavMenu();
+          handlePartnerNavigation(type || 'servicii');
+        }
+      });
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 7. SIDEBAR HELPER — sb-item with data-partner-type
+  //    <div class="sb-item" data-partner-type="servicii" …>
+  // ─────────────────────────────────────────────────────────────
+  function _bindSidebarItems() {
+    document.querySelectorAll('[data-partner-type]').forEach(el => {
+      if (el.dataset.routerAttached) return;
+      el.dataset.routerAttached = 'true';
+      el.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof closeSidebar === 'function') closeSidebar();
+        handlePartnerNavigation(this.dataset.partnerType);
+      });
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 8. MutationObserver — catch dynamically injected partner links
+  // ─────────────────────────────────────────────────────────────
+  function _observeDynamicLinks() {
+    const observer = new MutationObserver(() => {
+      _interceptPartnerLinks();
+      _bindSidebarItems();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 9. INIT
+  // ─────────────────────────────────────────────────────────────
+  function _init() {
+    _interceptPartnerLinks();
+    _bindSidebarItems();
+    _autoOpenFromURLParam();
+    _observeDynamicLinks();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _init);
+  } else {
+    _init();
+  }
+
+})();
+
+</script>
+</body>
+</html>
