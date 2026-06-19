@@ -1132,7 +1132,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
         </a>
       </div>
     </div>
-    <a href="#" class="sb-item" onclick="closeSidebar()">
+    <a href="mailto:contact@mydarrin.ro" class="sb-item" onclick="closeSidebar()">
       <div class="sb-ico">✉️</div> Contact
     </a>
 
@@ -4169,6 +4169,70 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&consOpen) closeCon
 })();
 
 </script>
+
+<script>
+// ── URL ?cat= HANDLER — citește parametrul și aplică filtrul corect ──
+(function() {
+  var CAT_MAP = {"instalatii-sanitare": ("servicii", "Instalații"), "instalatii-electrice": ("servicii", "Instalații"), "constructii-renovari": ("servicii", "Construcții"), "hvac-climatizare": ("servicii", "Climatizare"), "zugraveli-finisaje": ("servicii", "Finisaje"), "gradinarit-agri": ("servicii", "Exterior"), "tamplarie-geamuri": ("servicii", "Tâmplărie"), "lemn-cherestea": ("materiale", "all"), "zidarie-beton": ("materiale", "all"), "metalurgie-profile": ("materiale", "all"), "vopsele-finisaje": ("materiale", "Finisaje"), "electrice-cabluri": ("materiale", "Instalații"), "utilaje-grele": ("inchirieri", "Utilaje"), "scule-echipamente": ("inchirieri", "Scule"), "vehicule-transport": ("inchirieri", "Transport"), "personal-calificat": ("inchirieri", "Personal"), "vacanta-drumetie": ("inchirieri", "all")};
+  function applyCatFromURL() {
+    var params = new URLSearchParams(window.location.search);
+    var slug = params.get('cat');
+    if (!slug || !CAT_MAP[slug]) return;
+    var mapping = CAT_MAP[slug];
+    var tab = mapping[0], catVal = mapping[1];
+
+    var tryApply = function(attempts) {
+      if (attempts <= 0) return;
+      if (typeof filterCat === 'function' && typeof switchTab === 'function') {
+        switchTab(tab);
+        setTimeout(function() {
+          var el = document.querySelector('#sidebar-' + tab + ' .cat-sidebar-item[onclick*="' + catVal + '"]');
+          filterCat(tab, catVal, el);
+          var grid = document.getElementById('catalog-grid-section') || document.getElementById('grid-' + tab);
+          if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 150);
+      } else {
+        setTimeout(function() { tryApply(attempts - 1); }, 200);
+      }
+    };
+    tryApply(15);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyCatFromURL);
+  } else {
+    applyCatFromURL();
+  }
+})();
+</script>
+
+
+<script>
+// ── URL ?openAI=true HANDLER — auto-deschide modalul Darrin AI ──
+(function() {
+  function checkOpenAI() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('openAI') !== 'true') return;
+    var tryOpen = function(attempts) {
+      if (attempts <= 0) return;
+      if (typeof openConsultanta === 'function') {
+        openConsultanta();
+        var url = new URL(window.location.href);
+        url.searchParams.delete('openAI');
+        window.history.replaceState({}, '', url.toString());
+      } else {
+        setTimeout(function() { tryOpen(attempts - 1); }, 200);
+      }
+    };
+    setTimeout(function() { tryOpen(15); }, 300);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', checkOpenAI);
+  } else {
+    checkOpenAI();
+  }
+})();
+</script>
+
 </body>
 </html>
 
