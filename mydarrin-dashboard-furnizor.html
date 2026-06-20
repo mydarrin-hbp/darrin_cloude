@@ -311,7 +311,7 @@ input:valid:not(:placeholder-shown):not([type="checkbox"]) {
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:"Inter",system-ui,sans-serif;background:#F0F4F8;color:#1A2332;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;background:#F0F4F8;color:#1A2332;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 .f-layout{display:flex;min-height:100vh}
 .f-sidebar{width:240px;background:#16202E;border-right:1px solid #2D3F55;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100}
 .f-main{margin-left:240px;flex:1;display:flex;flex-direction:column;min-height:100vh}
@@ -1512,7 +1512,12 @@ function printInvoice() {
   const preview = document.getElementById('invoice-preview');
   if (!preview) return;
   const w = window.open('','_blank');
-  w.document.write(`<html><head><title>Factură My Darrin</title><style>body{font-family:Arial,sans-serif;margin:20px;color:#1A2332}table{width:100%;border-collapse:collapse}th,td{padding:8px 10px;border:1px solid #D5DFE8;font-size:12px}th{background:#003366;color:#fff}</style></head><body>${preview.innerHTML}
+  w.document.write(`<html><head><title>Factură My Darrin</title><style>body{font-family:Arial,sans-serif;margin:20px;color:#1A2332}table{width:100%;border-collapse:collapse}th,td{padding:8px 10px;border:1px solid #D5DFE8;font-size:12px}th{background:#003366;color:#fff}</style></head><body>${preview.innerHTML}</body></html>`);
+  w.document.close();
+  setTimeout(() => w.print(), 300);
+}
+</script>
+
 <script id="partner-router">
 /* ═══════════════════════════════════════════════════════════════════
    MY DARRIN — PARTNER NAVIGATION ROUTER v2026.06
@@ -1730,13 +1735,9 @@ function printInvoice() {
   }
 
 })();
-
 </script>
-</body></html>`);
-  w.document.close();
-  w.print();
-}
 
+<script>
 function confirmInvoice(nr) {
   const type = (typeof currentType !== 'undefined') ? currentType : 'servicii';
   const fs = getFinState(type);
