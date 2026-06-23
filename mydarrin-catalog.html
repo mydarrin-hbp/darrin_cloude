@@ -3274,6 +3274,13 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
         <div id="ai-analysis-text" style="font-size:12.5px;color:#6B7A8D;line-height:1.65"></div>
       </div>
 
+      <!-- AI Clarify — întrebare de precizare cu opțiuni multiple -->
+      <div id="ai-clarify" style="display:none;background:linear-gradient(135deg,#FFF8EE,#FFF0D6);border-radius:16px;border:1px solid #FFD980;padding:16px;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#CC7000;margin-bottom:10px">🤖 Darrin AI — O precizare</div>
+        <div id="ai-clarify-question" style="font-size:13.5px;color:#2D2D2D;line-height:1.7;margin-bottom:14px"></div>
+        <div id="ai-clarify-options" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+
       <!-- AI Result — recommendations -->
       <div id="ai-result" style="display:none">
         <div style="background:linear-gradient(135deg,#E0F5F4,#EBF4FB);border-radius:16px;border:1px solid rgba(14,158,153,.25);padding:16px;margin-bottom:14px">
@@ -3601,6 +3608,94 @@ function sendToAI(){
   },800);
 }
 
+// ── CLARIFICARE CALORIFER — 3 variante de diagnostic ──
+function showClarifyCalorifer(hasFiles){
+  const thinking=document.getElementById('ai-thinking');
+  if(thinking) thinking.style.display='none';
+  document.getElementById('cp-2').style.background='#FF8C00';
+
+  const clarify=document.getElementById('ai-clarify');
+  clarify.style.display='block';
+  document.getElementById('ai-clarify-question').innerHTML=
+    `Am identificat o problemă de scurgere la calorifer${hasFiles?' (confirmat și din imaginile încărcate)':''}. Pentru a recomanda soluția corectă, te rog precizează exact de unde curge apa:`;
+
+  const opts=[
+    {key:'perete', icon:'🧱', label:'Curge din perete', desc:'Scurgere la nivelul țevii din zid, în spatele caloriferului'},
+    {key:'sub', icon:'⬇️', label:'Curge de sub calorifer', desc:'Apa se adună sub corpul caloriferului, posibil radiator fisurat'},
+    {key:'robinet', icon:'🔧', label:'Curge la robinet', desc:'Scurgere vizibilă la robinetul/ventilul de reglare al caloriferului'},
+  ];
+  const container=document.getElementById('ai-clarify-options');
+  container.innerHTML='';
+  opts.forEach(o=>{
+    const btn=document.createElement('button');
+    btn.style.cssText='display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;border:1.5px solid #D5DFE8;border-radius:12px;cursor:pointer;text-align:left;font-family:inherit;transition:all .18s;width:100%';
+    btn.innerHTML=`<span style="font-size:22px">${o.icon}</span><div style="flex:1"><div style="font-weight:700;font-size:13px;color:#2D2D2D">${o.label}</div><div style="font-size:11px;color:#8C9BAD;margin-top:2px">${o.desc}</div></div><svg width="14" height="14" fill="none" stroke="#8C9BAD" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>`;
+    btn.onmouseover=()=>{btn.style.borderColor='#FF8C00';btn.style.background='#FFF8EE';};
+    btn.onmouseout=()=>{btn.style.borderColor='#D5DFE8';btn.style.background='#fff';};
+    btn.onclick=()=>selectCaloriferClarify(o.key, hasFiles);
+    container.appendChild(btn);
+  });
+
+  setTimeout(()=>{ clarify.scrollIntoView({behavior:'smooth',block:'start'}); },100);
+}
+
+function selectCaloriferClarify(option, hasFiles){
+  // Adăugăm răspunsul utilizatorului ca mesaj în chat
+  const msgs=document.getElementById('chat-messages');
+  const labels={perete:'Curge din perete',sub:'Curge de sub calorifer',robinet:'Curge la robinet'};
+  const userMsg=document.createElement('div');
+  userMsg.style.cssText='display:flex;justify-content:flex-end';
+  userMsg.innerHTML=`<div style="background:#003366;border-radius:14px 0 14px 14px;padding:10px 14px;color:#fff;font-size:13px">${labels[option]}</div>`;
+  msgs.appendChild(userMsg);
+
+  document.getElementById('ai-clarify').style.display='none';
+  document.getElementById('cp-2').style.background='#0E9E99';
+  document.getElementById('cp-3').style.background='#0E9E99';
+
+  const result=document.getElementById('ai-result');
+  result.style.display='block';
+
+  let recommendation='', services=[], needsEscalation=false;
+
+  if(option==='robinet'){
+    recommendation='Am identificat sursa: <strong>scurgere la robinetul caloriferului</strong>. Aceasta se rezolvă de obicei prin înlocuirea garniturilor și o probă de presiune pentru a confirma etanșeitatea întregului circuit. Recomand serviciul dedicat de mai jos, disponibil în 4 niveluri.';
+    services=[{slug:'reparatie-garnituri-calorifer',title:'Reparație garnituri & probă presiune calorifer',price:'150 Lei',icon:'💧'}];
+  } else if(option==='sub'){
+    recommendation='Scurgerea de sub calorifer poate indica o <strong>fisură în corpul radiatorului</strong> — în multe cazuri necesită înlocuirea caloriferului. Recomand o evaluare la fața locului înainte de a comanda un serviciu fix.';
+    services=[{slug:'inlocuire-calorifer',title:'Înlocuire calorifer',price:'280 Lei',icon:'🔥'}];
+    needsEscalation=true;
+  } else { // perete
+    recommendation='Scurgerea din perete sugerează o <strong>problemă la țeava de alimentare</strong>, ascunsă în zidărie. Acest tip de intervenție necesită evaluare directă a unui instalator — recomand consultanță Argint pentru diagnostic precis înainte de orice lucrare.';
+    services=[{slug:'instalatii-sanitare',title:'Instalații sanitare',price:'85 Lei/oră',icon:'🚿'}];
+    needsEscalation=true;
+  }
+
+  const recEl=document.getElementById('ai-recommendation');
+  if(recEl) recEl.innerHTML=recommendation;
+
+  const recSvc=document.getElementById('rec-services');
+  if(recSvc){
+    recSvc.innerHTML='';
+    services.forEach(svc=>{
+      const div=document.createElement('div');
+      div.style.cssText='display:flex;align-items:center;gap:12px;padding:11px 14px;background:#fff;border-radius:12px;border:1.5px solid #D5DFE8;cursor:pointer;transition:all .18s';
+      div.innerHTML=`<span style="font-size:22px">${svc.icon}</span>
+        <div style="flex:1"><div style="font-weight:700;font-size:13px;color:#2D2D2D">${svc.title}</div><div style="font-size:11px;color:#8C9BAD">De la ${svc.price} · Darrin AI alocă</div></div>
+        <button onclick="goToService('${svc.slug}')" style="background:#FF8C00;color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">Comandă →</button>`;
+      div.onmouseover=()=>div.style.borderColor='#FF8C00';
+      div.onmouseout=()=>div.style.borderColor='#D5DFE8';
+      recSvc.appendChild(div);
+    });
+  }
+
+  if(needsEscalation){
+    const esc=document.getElementById('escalate-to-argint');
+    if(esc) esc.style.display='block';
+  }
+
+  setTimeout(()=>{ result.scrollIntoView({behavior:'smooth',block:'start'}); },300);
+}
+
 function showAIResult(txt, hasFiles){
   const thinking=document.getElementById('ai-thinking');
   if(thinking) thinking.style.display='none';
@@ -3614,6 +3709,12 @@ function showAIResult(txt, hasFiles){
   let recommendation='';
   let services=[];
   let needsEscalation=false;
+
+  // ── CALORIFER + CURGE/SCURGERE → clarificare cu 3 variante ──
+  if(lower.match(/calorifer/) && lower.match(/curg|scurg|pic[ăa]|ud[ăa]/)){
+    showClarifyCalorifer(hasFiles);
+    return;
+  }
 
   if(lower.match(/central[ăa]|termic[ăa]|gaz|cazan|boiler/)){
     recommendation='Am identificat o problemă la instalația termică/gaz. Îți recomand serviciul de <strong>Reparație centrală termică</strong>. Pentru siguranță, un instalator autorizat ISCIR va face diagnosticul complet.';

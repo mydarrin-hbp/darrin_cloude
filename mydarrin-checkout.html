@@ -1372,6 +1372,10 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
             <span class="font-semibold text-sm">Reducere DARRIN10 (-10%)</span>
             <span class="font-bold text-sm">-172 Lei</span>
           </div>
+          <div class="order-summary-row" id="insurance-row" style="display:none">
+            <span class="text-sm text-[#2D2D2D]">🛡 Poliță asigurare extinsă</span>
+            <span class="font-bold text-sm" id="insurance-price-display">+89 Lei</span>
+          </div>
           <div class="order-summary-row">
             <span class="text-[#6B7A8D] text-sm">TVA (19%)</span>
             <span class="text-sm text-[#6B7A8D]">inclus</span>
@@ -1380,6 +1384,20 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
             <span class="font-bold text-[#003366]">Total Escrow</span>
             <span class="font-bold text-xl text-[#003366]" id="total-price">1.720 Lei</span>
           </div>
+        </div>
+
+        <!-- ════ POLIȚĂ ASIGURARE EXTINSĂ — OPȚIONAL ════ -->
+        <div style="background:linear-gradient(135deg,#F0FFF4,#E0F5F4);border-radius:14px;border:1.5px solid rgba(14,158,153,.3);padding:14px;margin-bottom:18px">
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+            <input type="checkbox" id="cb-insurance" onchange="toggleInsuranceOption()" style="width:18px;height:18px;accent-color:#0E9E99;margin-top:1px;flex-shrink:0">
+            <div style="flex:1">
+              <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
+                <span style="font-weight:700;font-size:13px;color:#0B7A76">🛡 Adaugă poliță de asigurare extinsă</span>
+                <span style="font-size:10px;background:rgba(14,158,153,.15);color:#0B7A76;border-radius:99px;padding:2px 8px;font-weight:700">+89 Lei</span>
+              </div>
+              <div style="font-size:11.5px;color:#5A6B7D;line-height:1.6">Acoperă daune materiale până la <strong>5.000 Lei</strong>, dincolo de garanția standard My Darrin (procent gestionat din valoarea serviciului). Emisă instant de Asig Pro, partener autorizat ASF, la finalizarea comenzii.</div>
+            </div>
+          </label>
         </div>
 
         <!-- Escrow badge -->
@@ -2307,8 +2325,29 @@ function applyPromo(){
   if(val==="DARRIN10"){
     document.getElementById("promo-msg").classList.remove("hidden");
     document.getElementById("promo-row").style.display="flex";
-    document.getElementById("total-price").textContent="1.548 Lei";
+    PROMO_ACTIVE = true;
+    recalcCheckoutTotal();
   } else { alert("Cod invalid sau expirat."); }
+}
+
+// ── ASIGURARE EXTINSĂ OPȚIONALĂ ──
+const BASE_SUBTOTAL = 1720;
+const PROMO_DISCOUNT = 172;
+const INSURANCE_PRICE = 89;
+let PROMO_ACTIVE = false;
+
+function toggleInsuranceOption(){
+  const checked = document.getElementById('cb-insurance').checked;
+  document.getElementById('insurance-row').style.display = checked ? 'flex' : 'none';
+  recalcCheckoutTotal();
+}
+
+function recalcCheckoutTotal(){
+  let total = BASE_SUBTOTAL;
+  if (PROMO_ACTIVE) total -= PROMO_DISCOUNT;
+  const insuranceChecked = document.getElementById('cb-insurance')?.checked;
+  if (insuranceChecked) total += INSURANCE_PRICE;
+  document.getElementById('total-price').textContent = total.toLocaleString('ro-RO') + ' Lei';
 }
 function selectPayment(type){
   ["card","transfer","cash"].forEach(t=>{
