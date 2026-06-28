@@ -485,6 +485,10 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
       Configurare Sistem
     </a>
+    <a class="sa-nav-item" onclick="showPanel('branding')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+      Branding & Design
+    </a>
     <a class="sa-nav-item" href="mydarrin-backoffice-serviciu.html">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
       Backoffice Servicii
@@ -1208,8 +1212,127 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       </div>
     </div>
 
+    <!-- ══ PANEL: BRANDING & DESIGN ══ -->
+    <div id="panel-branding" style="display:none">
+      <div style="margin-bottom:20px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div>
+          <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">Branding & Design Platformă</h2>
+          <p style="font-size:12.5px;color:#4A6080">Schimbă logo-urile LIVE — se propagă automat pe toate cele 10 pagini publice</p>
+        </div>
+        <div id="branding-status" style="font-size:11px;color:#8FA3BD;display:flex;align-items:center;gap:6px">
+          <span style="width:7px;height:7px;border-radius:50%;background:#4A6080" id="branding-status-dot"></span>
+          <span id="branding-status-text">Verificare conexiune...</span>
+        </div>
+      </div>
+
+      <div id="branding-api-warning" style="display:none;background:rgba(255,140,0,.1);border:1px solid rgba(255,140,0,.3);border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:12px;color:#FFB266">
+        ⚠ API de branding indisponibil (pagină deschisă local prin <code style="background:#0F1923;padding:2px 6px;border-radius:4px">file://</code> sau deploy fără Vercel KV configurat). Upload-ul nu va funcționa până nu deschizi pagina prin <code style="background:#0F1923;padding:2px 6px;border-radius:4px">https://darrin-cloude.vercel.app</code> cu KV conectat.
+      </div>
+
+      <!-- ════ SLOT: LOGO HEADER ════ -->
+      <div class="branding-slot" data-slot="header_logo" style="background:#16202E;border:1px solid #2D3F55;border-radius:14px;padding:20px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+          <div style="font-size:13px;font-weight:700;color:#fff">🏠 Logo Header — My Darrin</div>
+          <span class="branding-live-badge" style="font-size:10px;background:rgba(14,158,153,.2);color:#0E9E99;padding:3px 10px;border-radius:99px;font-weight:700">implicit (necustomizat)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+          <div class="branding-preview-box" style="background:#fff;border-radius:12px;padding:14px;width:80px;height:80px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <img class="branding-preview-img" alt="preview" style="max-width:52px;max-height:52px;object-fit:cover;border-radius:10px"/>
+          </div>
+          <div style="flex:1;min-width:220px">
+            <div style="font-size:11.5px;color:#8FA3BD;line-height:1.6;margin-bottom:8px">
+              Randat la <strong style="color:#fff">36×36px</strong> în header, pe toate paginile. Recomandat: PNG pătrat, min. 144×144px.
+            </div>
+            <input type="file" accept="image/png,image/jpeg,image/webp" class="branding-file-input" style="display:none"/>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="branding-btn-upload" style="background:#FF8C00;color:#fff;border:none;padding:9px 18px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer">⬆ Încarcă imagine nouă</button>
+              <button class="branding-btn-save" style="background:#0E9E99;color:#fff;border:none;padding:9px 18px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;display:none">💾 Salvează & propagă</button>
+              <button class="branding-btn-delete" style="background:transparent;color:#E57373;border:1px solid #E57373;padding:9px 18px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;display:none">🗑 Revino la implicit</button>
+            </div>
+            <div class="branding-msg" style="font-size:11px;margin-top:8px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════ SLOT: LOGO FOOTER ════ -->
+      <div class="branding-slot" data-slot="footer_logo" style="background:#16202E;border:1px solid #2D3F55;border-radius:14px;padding:20px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+          <div style="font-size:13px;font-weight:700;color:#fff">📄 Logo Footer — HomeBestPal</div>
+          <span class="branding-live-badge" style="font-size:10px;background:rgba(14,158,153,.2);color:#0E9E99;padding:3px 10px;border-radius:99px;font-weight:700">implicit (necustomizat)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+          <div class="branding-preview-box" style="background:#fff;border-radius:12px;padding:14px;width:140px;height:80px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <img class="branding-preview-img" alt="preview" style="max-width:120px;max-height:52px;object-fit:contain"/>
+          </div>
+          <div style="flex:1;min-width:220px">
+            <div style="font-size:11.5px;color:#8FA3BD;line-height:1.6;margin-bottom:8px">
+              Randat la <strong style="color:#fff">44px înălțime</strong> în footer, etichetat „Operat de". Recomandat: PNG cu text inclus, fundal alb sau transparent.
+            </div>
+            <input type="file" accept="image/png,image/jpeg,image/webp" class="branding-file-input" style="display:none"/>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="branding-btn-upload" style="background:#FF8C00;color:#fff;border:none;padding:9px 18px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer">⬆ Încarcă imagine nouă</button>
+              <button class="branding-btn-save" style="background:#0E9E99;color:#fff;border:none;padding:9px 18px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;display:none">💾 Salvează & propagă</button>
+              <button class="branding-btn-delete" style="background:transparent;color:#E57373;border:1px solid #E57373;padding:9px 18px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;display:none">🗑 Revino la implicit</button>
+            </div>
+            <div class="branding-msg" style="font-size:11px;margin-top:8px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════ SLOT: MASCOTĂ DARRIN AI ════ -->
+      <div class="branding-slot" data-slot="robot_mascot" style="background:#16202E;border:1px solid #2D3F55;border-radius:14px;padding:20px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+          <div style="font-size:13px;font-weight:700;color:#fff">🤖 Mascotă Darrin AI</div>
+          <span class="branding-live-badge" style="font-size:10px;background:rgba(14,158,153,.2);color:#0E9E99;padding:3px 10px;border-radius:99px;font-weight:700">implicit (necustomizat)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+          <div class="branding-preview-box" style="background:#fff;border-radius:12px;padding:14px;width:80px;height:90px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <img class="branding-preview-img" alt="preview" style="max-width:55px;max-height:65px;object-fit:cover;border-radius:8px"/>
+          </div>
+          <div style="flex:1;min-width:220px">
+            <div style="font-size:11.5px;color:#8FA3BD;line-height:1.6;margin-bottom:8px">
+              Folosit în search bar, chat consultanță, recomandări AI pe toate paginile (exceptând Devino Partener, care folosește varianta albastră dedicată, necontrolată de aici).
+            </div>
+            <input type="file" accept="image/png,image/jpeg,image/webp" class="branding-file-input" style="display:none"/>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="branding-btn-upload" style="background:#FF8C00;color:#fff;border:none;padding:9px 18px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer">⬆ Încarcă imagine nouă</button>
+              <button class="branding-btn-save" style="background:#0E9E99;color:#fff;border:none;padding:9px 18px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;display:none">💾 Salvează & propagă</button>
+              <button class="branding-btn-delete" style="background:transparent;color:#E57373;border:1px solid #E57373;padding:9px 18px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;display:none">🗑 Revino la implicit</button>
+            </div>
+            <div class="branding-msg" style="font-size:11px;margin-top:8px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TEXTE STANDARD PLATFORMĂ (rămase neschimbate, doar text static) -->
+      <div style="background:#16202E;border:1px solid #2D3F55;border-radius:14px;padding:20px">
+        <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:14px">📝 Texte standard — folosite LIVE pe platformă</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div style="background:#0F1923;border-radius:10px;padding:12px">
+            <div style="font-size:10px;color:#4A6080;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Tagline platformă</div>
+            <div style="font-size:12.5px;color:#fff">Servicii la cerere</div>
+          </div>
+          <div style="background:#0F1923;border-radius:10px;padding:12px">
+            <div style="font-size:10px;color:#4A6080;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Footer — etichetă operator</div>
+            <div style="font-size:12.5px;color:#fff">Operat de [logo HomeBestPal]</div>
+          </div>
+          <div style="background:#0F1923;border-radius:10px;padding:12px">
+            <div style="font-size:10px;color:#4A6080;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Copyright</div>
+            <div style="font-size:12.5px;color:#fff">© 2026 My Darrin · Toate drepturile rezervate</div>
+          </div>
+          <div style="background:#0F1923;border-radius:10px;padding:12px">
+            <div style="font-size:10px;color:#4A6080;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Status sistem (footer)</div>
+            <div style="font-size:12.5px;color:#fff">Darrin AI · v5.2 · Online</div>
+          </div>
+        </div>
+        <div style="margin-top:14px;padding:12px;background:rgba(255,140,0,.08);border:1px solid rgba(255,140,0,.2);border-radius:10px;font-size:11.5px;color:#FFB266">
+          ⚠ Editarea textelor necesită modificare manuală în cod (HTML static, fără CMS de text conectat).
+        </div>
+      </div>
+    </div>
+
     <!-- Alte paneluri placeholder -->
-    <div id="panel-platforme" style="display:none;text-align:center;padding:60px 20px">
+<div id="panel-platforme" style="display:none;text-align:center;padding:60px 20px">
       <div style="font-size:48px;margin-bottom:16px">🔗</div>
       <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:8px">Platforme & Integrări</div>
       <p style="color:#4A6080;margin-bottom:20px">Gestionare API keys, webhooks, conectori terți</p>
@@ -1266,12 +1389,13 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 
 <script>
 // ── NAVIGATION ──
-const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config'];
+const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding'];
 const TITLES = {
   dashboard:'Dashboard Global',tari:'Țări & Zone',utilizatori:'Utilizatori & Actori',
   rbac:'Permisiuni RBAC',platforme:'Platforme & Integrări',escrow:'Escrow Global',
   comisioane:'Comisioane & Tarifare',vmc:'VMC per Țară',parteneri:'Parteneri Globali',
-  comenzi:'Comenzi Globale',audit:'Audit Log',config:'Configurare Sistem'
+  comenzi:'Comenzi Globale',audit:'Audit Log',config:'Configurare Sistem',
+  branding:'Branding & Design Platformă'
 };
 
 function showPanel(id){
@@ -1719,5 +1843,200 @@ window.addEventListener('scroll',()=>{});
 })();
 
 </script>
+<script>
+/* ════════════════════════════════════════════════════════════════
+   BRANDING ADMIN — Upload / Salvare / Ștergere logo-uri (Vercel KV)
+   Conectat la /api/branding/get și /api/branding/upload
+   ════════════════════════════════════════════════════════════════ */
+(function () {
+  const pendingFiles = {}; // slot -> { dataUrl, fileName }
+
+  function setStatus(connected) {
+    const dot = document.getElementById('branding-status-dot');
+    const text = document.getElementById('branding-status-text');
+    const warning = document.getElementById('branding-api-warning');
+    if (!dot || !text) return;
+    if (connected) {
+      dot.style.background = '#0E9E99';
+      text.textContent = 'Conectat la Vercel KV';
+      if (warning) warning.style.display = 'none';
+    } else {
+      dot.style.background = '#E57373';
+      text.textContent = 'API indisponibil';
+      if (warning) warning.style.display = 'block';
+    }
+  }
+
+  function setSlotMessage(slotEl, text, isError) {
+    const msg = slotEl.querySelector('.branding-msg');
+    if (!msg) return;
+    msg.textContent = text;
+    msg.style.color = isError ? '#E57373' : '#0E9E99';
+  }
+
+  function setSlotLiveBadge(slotEl, isCustom, updatedAt) {
+    const badge = slotEl.querySelector('.branding-live-badge');
+    if (!badge) return;
+    if (isCustom) {
+      badge.textContent = 'customizat' + (updatedAt ? ' · ' + new Date(updatedAt).toLocaleDateString('ro-RO') : '');
+      badge.style.background = 'rgba(255,140,0,.2)';
+      badge.style.color = '#FF8C00';
+    } else {
+      badge.textContent = 'implicit (necustomizat)';
+      badge.style.background = 'rgba(14,158,153,.2)';
+      badge.style.color = '#0E9E99';
+    }
+  }
+
+  function loadCurrentBranding() {
+    fetch('/api/branding/get', { cache: 'no-store' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('status ' + r.status);
+        return r.json();
+      })
+      .then(function (data) {
+        setStatus(true);
+        document.querySelectorAll('.branding-slot').forEach(function (slotEl) {
+          const slot = slotEl.dataset.slot;
+          const record = data[slot];
+          const previewImg = slotEl.querySelector('.branding-preview-img');
+          const deleteBtn = slotEl.querySelector('.branding-btn-delete');
+          if (record && record.dataUrl) {
+            if (previewImg) previewImg.src = record.dataUrl;
+            setSlotLiveBadge(slotEl, true, record.updatedAt);
+            if (deleteBtn) deleteBtn.style.display = 'inline-block';
+          } else {
+            setSlotLiveBadge(slotEl, false, null);
+            if (deleteBtn) deleteBtn.style.display = 'none';
+          }
+        });
+      })
+      .catch(function () {
+        setStatus(false);
+      });
+  }
+
+  function fileToDataUrl(file) {
+    return new Promise(function (resolve, reject) {
+      const reader = new FileReader();
+      reader.onload = function () { resolve(reader.result); };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function handleFileSelected(slotEl, file) {
+    const slot = slotEl.dataset.slot;
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      setSlotMessage(slotEl, 'Fișier prea mare (max 2MB). Optimizează imaginea înainte de upload.', true);
+      return;
+    }
+    fileToDataUrl(file).then(function (dataUrl) {
+      pendingFiles[slot] = { dataUrl: dataUrl, fileName: file.name };
+      const previewImg = slotEl.querySelector('.branding-preview-img');
+      if (previewImg) previewImg.src = dataUrl;
+      const saveBtn = slotEl.querySelector('.branding-btn-save');
+      if (saveBtn) saveBtn.style.display = 'inline-block';
+      setSlotMessage(slotEl, 'Previzualizare „' + file.name + '" — apasă Salvează pentru a publica.', false);
+    }).catch(function () {
+      setSlotMessage(slotEl, 'Nu am putut citi fișierul selectat.', true);
+    });
+  }
+
+  function saveSlot(slotEl) {
+    const slot = slotEl.dataset.slot;
+    const pending = pendingFiles[slot];
+    if (!pending) return;
+    const saveBtn = slotEl.querySelector('.branding-btn-save');
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Se salvează...'; }
+
+    fetch('/api/branding/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slot: slot, dataUrl: pending.dataUrl }),
+    })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
+      .then(function (res) {
+        if (!res.ok) throw new Error(res.body && res.body.error ? res.body.error : 'Eroare necunoscută');
+        setSlotMessage(slotEl, '✓ Salvat — logo-ul nou e live pe toate paginile.', false);
+        setSlotLiveBadge(slotEl, true, res.body.updatedAt);
+        delete pendingFiles[slot];
+        if (saveBtn) saveBtn.style.display = 'none';
+        const deleteBtn = slotEl.querySelector('.branding-btn-delete');
+        if (deleteBtn) deleteBtn.style.display = 'inline-block';
+      })
+      .catch(function (err) {
+        setSlotMessage(slotEl, '✗ ' + err.message, true);
+      })
+      .finally(function () {
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 Salvează & propagă'; }
+      });
+  }
+
+  function deleteSlot(slotEl) {
+    const slot = slotEl.dataset.slot;
+    if (!confirm('Revii la logo-ul implicit pentru acest slot? Schimbarea se propagă imediat pe toate paginile.')) return;
+
+    fetch('/api/branding/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slot: slot, dataUrl: null }),
+    })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
+      .then(function (res) {
+        if (!res.ok) throw new Error(res.body && res.body.error ? res.body.error : 'Eroare necunoscută');
+        setSlotMessage(slotEl, '✓ Revenit la implicit.', false);
+        setSlotLiveBadge(slotEl, false, null);
+        const deleteBtn = slotEl.querySelector('.branding-btn-delete');
+        if (deleteBtn) deleteBtn.style.display = 'none';
+        loadCurrentBranding(); // re-fetch pentru a restaura preview-ul implicit dacă e cazul
+      })
+      .catch(function (err) {
+        setSlotMessage(slotEl, '✗ ' + err.message, true);
+      });
+  }
+
+  function initBrandingPanel() {
+    document.querySelectorAll('.branding-slot').forEach(function (slotEl) {
+      const fileInput = slotEl.querySelector('.branding-file-input');
+      const uploadBtn = slotEl.querySelector('.branding-btn-upload');
+      const saveBtn = slotEl.querySelector('.branding-btn-save');
+      const deleteBtn = slotEl.querySelector('.branding-btn-delete');
+
+      if (uploadBtn && fileInput) {
+        uploadBtn.addEventListener('click', function () { fileInput.click(); });
+      }
+      if (fileInput) {
+        fileInput.addEventListener('change', function (e) {
+          handleFileSelected(slotEl, e.target.files[0]);
+        });
+      }
+      if (saveBtn) {
+        saveBtn.addEventListener('click', function () { saveSlot(slotEl); });
+      }
+      if (deleteBtn) {
+        deleteBtn.addEventListener('click', function () { deleteSlot(slotEl); });
+      }
+    });
+
+    loadCurrentBranding();
+  }
+
+  // Inițializăm doar când panoul Branding devine vizibil (lazy, evită fetch inutil la load)
+  const origShowPanel = window.showPanel;
+  let brandingInitialized = false;
+  if (typeof origShowPanel === 'function') {
+    window.showPanel = function (id) {
+      origShowPanel(id);
+      if (id === 'branding' && !brandingInitialized) {
+        brandingInitialized = true;
+        initBrandingPanel();
+      }
+    };
+  }
+})();
+</script>
+
 </body>
 </html>
