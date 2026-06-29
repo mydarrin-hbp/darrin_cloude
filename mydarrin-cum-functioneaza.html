@@ -1195,8 +1195,42 @@ function saveLocation(){
 }
 
 // Auth modal
+let isLoggedIn = false;
+
+function performLogin() {
+  isLoggedIn = true;
+  const modal = document.getElementById('auth-modal');
+  if (modal) modal.classList.add('hidden');
+  document.body.style.overflow = '';
+  const link = document.getElementById('sb-comenzi-link');
+  if (link) link.style.display = 'flex';
+  try { sessionStorage.setItem('myd_logged_in', '1'); } catch(e) {}
+  showToastMsg('✅ Te-ai autentificat cu succes!');
+}
+
+function performRegister() {
+  isLoggedIn = true;
+  const modal = document.getElementById('auth-modal');
+  if (modal) modal.classList.add('hidden');
+  document.body.style.overflow = '';
+  const link = document.getElementById('sb-comenzi-link');
+  if (link) link.style.display = 'flex';
+  try { sessionStorage.setItem('myd_logged_in', '1'); } catch(e) {}
+  showToastMsg('✅ Cont creat cu succes! Bine ai venit pe My Darrin.');
+}
+
+function showToastMsg(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;background:#1A2332;color:#fff;padding:12px 22px;border-radius:14px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25);white-space:nowrap;font-family:inherit';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+
 function toggleAuthModal(){
   const m=document.getElementById('auth-modal');
+  if(!m) return;
   m.classList.toggle('hidden');
   document.body.style.overflow=m.classList.contains('hidden')?'':'hidden';
 }
@@ -2471,5 +2505,61 @@ function daiSendMessage(){
 }
 </script>
 
+
+<div id="auth-modal" class="hidden fixed inset-0 z-[400] flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" onclick="toggleAuthModal()"></div>
+  <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-md z-10 overflow-hidden">
+
+    <button onclick="toggleAuthModal()" class="absolute top-5 right-5 p-1.5 rounded-lg hover:bg-gray-100 transition text-gray-400 z-10">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+
+    <!-- Tabs -->
+    <div class="flex border-b border-gray-100 px-7 pt-7">
+      <button id="tab-login-btn" onclick="switchAuthTab('login')" class="flex-1 pb-3 text-sm font-bold text-[#003366] border-b-2 border-[#003366] transition">
+        Intră în cont
+      </button>
+      <button id="tab-register-btn" onclick="switchAuthTab('register')" class="flex-1 pb-3 text-sm font-bold text-gray-400 border-b-2 border-transparent transition">
+        Creare cont
+      </button>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="auth-login" class="p-7">
+      <h3 class="font-bold text-xl text-[#2D2D2D] mb-1" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Bine ai revenit!</h3>
+      <p class="text-gray-400 text-sm mb-5">Intră în contul tău My Darrin.</p>
+      <div class="space-y-3 mb-4">
+        <input type="email" placeholder="Adresa de email" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
+        <input type="password" placeholder="Parola" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
+      </div>
+      <a href="mailto:contact@mydarrin.ro?subject=Resetare%20parola" class="text-xs text-[#003366] hover:underline mb-5 block">Ai uitat parola?</a>
+      <button onclick="performLogin()" class="w-full bg-[#003366] text-white py-3.5 rounded-xl font-bold text-sm hover:bg-[#002855] transition">
+        Intră în cont
+      </button>
+      <p class="text-xs text-gray-400 text-center mt-4">Nu ai cont? <button onclick="switchAuthTab('register')" class="text-[#FF8C00] font-semibold hover:underline">Creează unul gratuit</button></p>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="auth-register" class="p-7 hidden">
+      <h3 class="font-bold text-xl text-[#2D2D2D] mb-1" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Creează cont gratuit</h3>
+      <p class="text-gray-400 text-sm mb-5">Comandă servicii și urmărește execuția în timp real.</p>
+      <div class="space-y-3 mb-4">
+        <input type="text" placeholder="Nume complet" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
+        <input type="email" placeholder="Adresa de email" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
+        <input type="tel" placeholder="Telefon" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
+        <input type="password" placeholder="Parola" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
+      </div>
+      <label class="flex items-start gap-2.5 mb-5 cursor-pointer">
+        <input type="checkbox" checked class="mt-0.5 w-4 h-4 accent-[#FF8C00] flex-shrink-0"/>
+        <span class="text-xs text-gray-400 leading-relaxed">Accept <a href="mydarrin-devino-partener.html#faq" class="text-[#003366] hover:underline">Termenii și Condițiile</a> platformei My Darrin.</span>
+      </label>
+      <button onclick="performRegister()" class="w-full bg-[#FF8C00] text-white py-3.5 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition">
+        Creează cont gratuit
+      </button>
+      <p class="text-xs text-gray-400 text-center mt-4">Ai deja cont? <button onclick="switchAuthTab('login')" class="text-[#003366] font-semibold hover:underline">Intră în cont</button></p>
+    </div>
+
+  </div>
+</div>
 </body>
 </html>
