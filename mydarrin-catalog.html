@@ -886,7 +886,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 ════════════════════════════════════════════ -->
 
 <header id="hdr" class="sticky top-0 z-50" style="margin:0;display:block;background:#fff">
-  <div style="max-width:1200px;margin:0 auto;padding:0 20px;box-sizing:border-box" class="py-3 flex items-center gap-3">
+  <div style="max-width:1200px;margin:0 auto;padding:0 24px;box-sizing:border-box" class="py-3 flex items-center gap-3">
 
     <!-- ① LOGO — primul -->
     <a href="mydarrin-v3.html" class="flex items-center gap-2.5 flex-shrink-0">
@@ -1127,7 +1127,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
     </div>
     Deviz Engine
   </a>
-  <a href="mydarrin-consultanta.html" class="sb-item" onclick="closeSidebar()">
+  <a href="#" class="sb-item" onclick="closeSidebar(); openConsultanta()">
     <div class="sb-ico" style="background:#E0F5F4">
       <i data-lucide="message-circle" class="w-4 h-4 text-[#0E9E99]"></i>
     </div>
@@ -1621,7 +1621,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
     </div>
 
     <!-- Consultanta CTA in sidebar -->
-    <div style="background:linear-gradient(135deg,#E0F5F4,#EBF4FB);border-radius:14px;border:1px solid rgba(14,158,153,.25);padding:14px;margin-top:14px;cursor:pointer;transition:all .2s" onclick="window.open('mydarrin-consultanta.html','_blank')" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+    <div style="background:linear-gradient(135deg,#E0F5F4,#EBF4FB);border-radius:14px;border:1px solid rgba(14,158,153,.25);padding:14px;margin-top:14px;cursor:pointer;transition:all .2s" onclick="openConsultanta()" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
         <span style="font-size:20px">🤖</span>
         <div style="font-size:12px;font-weight:700;color:#003366">Nu știi ce serviciu?</div>
@@ -3192,18 +3192,7 @@ function toggleAuthModal(){
   m.classList.toggle('hidden');
   document.body.style.overflow=m.classList.contains('hidden')?'':'hidden';
 }
-function switchAuthTab(tab){
-  document.getElementById('auth-login').classList.toggle('hidden', tab!=='login');
-  document.getElementById('auth-register').classList.toggle('hidden', tab!=='register');
-  document.getElementById('tab-login-btn').classList.toggle('text-[#003366]', tab==='login');
-  document.getElementById('tab-login-btn').classList.toggle('border-b-2', tab==='login');
-  document.getElementById('tab-login-btn').classList.toggle('border-[#003366]', tab==='login');
-  document.getElementById('tab-login-btn').classList.toggle('text-gray-400', tab!=='login');
-  document.getElementById('tab-register-btn').classList.toggle('text-[#003366]', tab==='register');
-  document.getElementById('tab-register-btn').classList.toggle('border-b-2', tab==='register');
-  document.getElementById('tab-register-btn').classList.toggle('border-[#003366]', tab==='register');
-  document.getElementById('tab-register-btn').classList.toggle('text-gray-400', tab!=='register');
-}
+
 function checkAuth(){alert('Trebuie să fii autentificat pentru a vedea comenzile. Te rugăm să te loghezi.');}
 
 // Basket
@@ -3223,12 +3212,7 @@ function changeQty(btn,delta){
   pEl.textContent=(unit*q)+' Lei';
   recalcBasket();
 }
-function removeItem(btn){
-  btn.closest('.basket-item').remove();
-  const cnt=document.querySelectorAll('#basket-panel .basket-item').length;
-  document.getElementById('basket-count').textContent=cnt;
-  recalcBasket();
-}
+
 function recalcBasket(){
   let t=0;
   document.querySelectorAll('#basket-panel .basket-price').forEach(el=>{t+=parseInt(el.textContent);});
@@ -3317,23 +3301,9 @@ function applyCurrency(cur) {
 }
 
 // Zone unavailable tabs
-function switchUnavailTab(tab) {
-  document.getElementById('unavail-tab-client').classList.toggle('active', tab==='client');
-  document.getElementById('unavail-tab-furnizor').classList.toggle('active', tab==='furnizor');
-}
 
-function submitUnavail() {
-  const subscribed = document.getElementById('unavail-subscribe').checked;
-  const modal = document.getElementById('zone-unavailable');
-  modal.querySelector('.bg-white').innerHTML = `
-    <div class="p-8 text-center">
-      <div class="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4 text-3xl">✅</div>
-      <h3 class="font-bold text-xl text-[#2D2D2D] mb-2" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Înregistrat cu succes!</h3>
-      <p class="text-gray-400 text-sm leading-relaxed mb-6">Vei fi printre primii care află când My Darrin lansează în zona ta${subscribed ? ' — vei primi notificări pe email' : ''}.</p>
-      <button onclick="document.getElementById('zone-unavailable').classList.add('hidden')" class="bg-[#FF8C00] text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition">Închide</button>
-    </div>
-  `;
-}
+
+
 
 // Init currency detection on page load
 detectAndApplyCurrency();
@@ -4537,14 +4507,7 @@ function initSync(){
   setInterval(refreshPrices, 30000);
 }
 
-function refreshPrices(){
-  setEl('sync-status','Actualizare prețuri...');
-  document.getElementById('sync-dot').style.background='#FF8C00';
-  setTimeout(()=>{
-    document.getElementById('sync-dot').style.background='#0E9E99';
-    setEl('sync-status','Prețuri actualizate · '+ new Date().toLocaleTimeString('ro-RO'));
-  }, 500);
-}
+
 
 function setEl(id, val){ const el=document.getElementById(id); if(el) el.textContent=val; }
 
@@ -4713,26 +4676,7 @@ function updatePriceRange(val){
 function updateResultCount(){ applyFilters(); }
 
 // ── CURRENCY ──
-function switchCurrencyBtn(cur, btn){
-  activeCur = cur;
-  document.querySelectorAll('.cat-tab').forEach(b=>{
-    if(b.textContent===cur||b.textContent.trim()===cur){b.classList.add('active');b.style.background='rgba(255,255,255,.15)';b.style.color='#fff';}
-    else if(['RON','EUR','MDL'].includes(b.textContent.trim())){b.classList.remove('active');b.style.background='';b.style.color='rgba(255,255,255,.6)';}
-  });
-  const rate = RATES[cur]||1;
-  document.querySelectorAll('.dyn-price').forEach(el=>{
-    const base = parseFloat(el.dataset.ron||0);
-    el.textContent = (base*rate).toLocaleString('ro-RO',{maximumFractionDigits:0});
-  });
-  document.querySelectorAll('.dyn-currency').forEach(el=>{ el.textContent=cur; });
-  const labelMap = {RON:'RON (Lei)',EUR:'EUR (€)',MDL:'MDL'};
-  setEl('currency-label-hero', labelMap[cur]||cur);
-  setEl('cart-currency', cur+' detectat');
-  // Update VMC
-  const vmc = VMC_MAP[cur]||100;
-  setEl('vmc-label', vmc+' '+cur+' min.');
-  updateCartDisplay();
-}
+
 
 // ── CART DRAWER ──
 let zoneActive = false;  // set true when IP/address validated
@@ -4834,13 +4778,7 @@ function addToCart(id, title, priceRon){
   }
 }
 
-function showCartFeedback(title){
-  const fb = document.createElement('div');
-  fb.textContent = '✓ '+title+' adăugat în coș';
-  fb.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#003366;color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,51,102,.3);animation:slideUp .3s ease';
-  document.body.appendChild(fb);
-  setTimeout(()=>fb.remove(), 2500);
-}
+
 
 function removeFromCart(cartId){
   cartItems = cartItems.filter(i=>i.cartId!==cartId);
@@ -4989,11 +4927,11 @@ function openSidebar(){document.getElementById("sidebar").classList.add("open");
 function closeSidebar(){document.getElementById("sidebar").classList.remove("open");document.getElementById("sidebar-overlay").classList.remove("show");document.body.style.overflow="";}
 function toggleSbSection(id){const el=document.getElementById(id);const ico=document.getElementById("ico-"+id);el.classList.toggle("hidden");if(ico)ico.style.transform=el.classList.contains("hidden")?"":"rotate(180deg)";}
 function openPartnerModal(t){document.getElementById("partner-modal").classList.remove("hidden");document.body.style.overflow="hidden";}
-function closePartnerModal(){document.getElementById("partner-modal").classList.add("hidden");document.body.style.overflow="";}
+
 function openInvestorModal(){document.getElementById("investor-modal").classList.remove("hidden");document.body.style.overflow="hidden";}
 function closeInvestorModal(){document.getElementById("investor-modal").classList.add("hidden");document.body.style.overflow="";}
 function selectPartnerType(){}
-function resetPartnerType(){}
+
 
 function submitInvestorForm(){}
 function switchTab(name,btn){}
@@ -5711,9 +5649,9 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&consOpen) closeCon
 <style>
 .dai-chip { background:#EBF4FB; border:1px solid #D5DFE8; border-radius:99px; padding:6px 11px; font-size:11px; font-weight:600; color:#003366; cursor:pointer; font-family:inherit; transition:all .15s; }
 .dai-chip:hover { background:#FF8C00; color:#fff; border-color:#FF8C00; }
-@media(max-width:480px){
-  #dai-chat-panel { right:12px; bottom:84px; width:calc(100vw - 24px); }
-  #dai-fab { right:16px; bottom:16px; }
+@media(max-width:768px){
+  #dai-fab { bottom:85px !important; right:16px !important; }
+  #dai-chat-panel { bottom:155px; right:12px; width:calc(100vw - 24px); }
 }
 </style>
 
