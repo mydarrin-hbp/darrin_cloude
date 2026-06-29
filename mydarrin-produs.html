@@ -794,6 +794,7 @@ window.nextStep = function(n) {
   box-sizing: border-box !important;
 }
 </style>
+<script src="account-system.js"></script>
 </head>
 <body>
 <div id="spbar"></div>
@@ -1214,6 +1215,12 @@ window.nextStep = function(n) {
         <i data-lucide="clipboard-list" class="w-4 h-4 text-[#003366]"></i>
       </div>
       Comenzile mele
+    </a>
+    <a href="#" id="sb-roluri-link" class="sb-item" onclick="closeSidebar();event.preventDefault();openRolePicker()">
+      <div class="sb-ico" style="background:#FFF0D6">
+        <i data-lucide="layers" class="w-4 h-4 text-[#FF8C00]"></i>
+      </div>
+      Rolurile mele
     </a>
 
   </div>
@@ -2085,6 +2092,11 @@ function performLogin() {
 
 function performRegister() {
   isLoggedIn = true;
+  const emailEl = document.getElementById('reg-email');
+  const numeEl  = document.getElementById('reg-nume');
+  if (typeof createBaseAccount === 'function') {
+    createBaseAccount(emailEl ? emailEl.value.trim() : '', numeEl ? numeEl.value.trim() : '');
+  }
   const modal = document.getElementById('auth-modal');
   if (modal) modal.classList.add('hidden');
   document.body.style.overflow = '';
@@ -3340,10 +3352,10 @@ function daiSendMessage(){
       <h3 class="font-bold text-xl text-[#2D2D2D] mb-1" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Creează cont gratuit</h3>
       <p class="text-gray-400 text-sm mb-5">Comandă servicii și urmărește execuția în timp real.</p>
       <div class="space-y-3 mb-4">
-        <input type="text" placeholder="Nume complet" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
-        <input type="email" placeholder="Adresa de email" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
-        <input type="tel" placeholder="Telefon" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
-        <input type="password" placeholder="Parola" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
+        <input type="text" id="reg-nume" placeholder="Nume complet" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
+        <input type="email" id="reg-email" placeholder="Adresa de email" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
+        <input type="tel" id="reg-tel" placeholder="Telefon" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
+        <input type="password" id="reg-pass" placeholder="Parola" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
       </div>
       <label class="flex items-start gap-2.5 mb-5 cursor-pointer">
         <input type="checkbox" checked class="mt-0.5 w-4 h-4 accent-[#FF8C00] flex-shrink-0"/>
