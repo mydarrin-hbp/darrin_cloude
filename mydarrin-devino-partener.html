@@ -430,6 +430,16 @@ h1,h2,h3 { font-family:'Syne','Inter',sans-serif; }
 
   <script>
   function switchHeroTab(tab) {
+    if (tab === 'wizard' && typeof isAccountCreated === 'function' && !isAccountCreated()) {
+      if (typeof toggleAuthModal === 'function') {
+        toggleAuthModal();
+        if (typeof switchAuthTab === 'function') switchAuthTab('register');
+      }
+      if (typeof showToastMsg === 'function') {
+        showToastMsg('⚠️ Creează-ți contul mai întâi — apoi continui ca partener.');
+      }
+      return;
+    }
     var tabs   = ['intro','wizard','cumfunc','benefits'];
     var panels = { wizard:'hpanel-wizard', cumfunc:'hpanel-cumfunc', benefits:'hpanel-benefits' };
 
@@ -1431,7 +1441,24 @@ let memberCount         = 2;
 // ══════════════════════════════════════════════════════════════
 // OPEN / CLOSE
 // ══════════════════════════════════════════════════════════════
+function handlePartnerNavigation(type) {
+  // Wrapper — toate navigările din mega-menu/sidebar trec prin gardă de cont, identic openPartnerModal
+  if (typeof openPartnerModal === 'function') {
+    openPartnerModal(type);
+  }
+}
+
 function openPartnerModal(type) {
+  if (typeof isAccountCreated === 'function' && !isAccountCreated()) {
+    if (typeof toggleAuthModal === 'function') {
+      toggleAuthModal();
+      if (typeof switchAuthTab === 'function') switchAuthTab('register');
+    }
+    if (typeof showToastMsg === 'function') {
+      showToastMsg('⚠️ Creează-ți contul mai întâi — apoi continui ca partener.');
+    }
+    return;
+  }
   const modal = document.getElementById('partner-modal'); // modal guard
   if (modal) {
     modal.classList.remove('hidden');
@@ -2503,6 +2530,16 @@ const PARTNER_META = {
 };
 
 function openPartnerModal(type) {
+  if (typeof isAccountCreated === 'function' && !isAccountCreated()) {
+    if (typeof toggleAuthModal === 'function') {
+      toggleAuthModal();
+      if (typeof switchAuthTab === 'function') switchAuthTab('register');
+    }
+    if (typeof showToastMsg === 'function') {
+      showToastMsg('⚠️ Creează-ți contul mai întâi — apoi continui ca partener.');
+    }
+    return;
+  }
   const modal = document.getElementById('partner-modal');
   if (modal) { modal.classList.remove('hidden'); modal.style.display = 'flex'; }
   document.body.style.overflow = 'hidden';
