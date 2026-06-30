@@ -3426,7 +3426,7 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
 <!-- ════ CART DRAWER ════ -->
 <div id="cart-overlay" onclick="closeCart()" style="position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(3px);z-index:800;opacity:0;pointer-events:none;transition:opacity .3s"></div>
 
-<div id="cart-drawer" style="position:fixed;top:0;right:0;height:100vh;width:380px;max-width:92vw;background:#fff;z-index:801;transform:translateX(100%);transition:transform .35s cubic-bezier(.22,1,.36,1);display:flex;flex-direction:column;box-shadow:-8px 0 40px rgba(0,51,102,.15)">
+<div id="cart-drawer" style="position:fixed;top:0;right:0;height:100vh;width:380px;max-width:92vw;background:#fff;z-index:801;transform:translateX(100%);transition:transform .35s cubic-bezier(.22,1,.36,1);display:flex;flex-direction:column;box-shadow:none">
 
   <!-- Drawer header -->
   <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 16px;border-bottom:1px solid #D5DFE8;flex-shrink:0">
@@ -3520,7 +3520,7 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
 ════════════════════════════════════════════════ -->
 <div id="consultanta-overlay" onclick="closeConsultanta()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(5px);z-index:850;transition:opacity .3s"></div>
 
-<div id="consultanta-modal" style="display:none;position:fixed;top:0;right:0;height:100vh;width:520px;max-width:95vw;background:#fff;z-index:851;transform:translateX(100%);transition:transform .35s cubic-bezier(.22,1,.36,1);display:flex;flex-direction:column;box-shadow:-12px 0 50px rgba(0,0,0,.2);overflow:hidden">
+<div id="consultanta-modal" style="display:none;position:fixed;top:0;right:0;height:100vh;width:520px;max-width:95vw;background:#fff;z-index:851;transform:translateX(100%);transition:transform .35s cubic-bezier(.22,1,.36,1);box-shadow:none;overflow:hidden">
 
   <!-- MODAL HEADER -->
   <div style="background:linear-gradient(135deg,#001E3C,#003366);padding:20px 22px 18px;flex-shrink:0">
@@ -3809,7 +3809,7 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
 .cons-tab{ font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif; }
 .active-cons-tab{ background:rgba(14,158,153,.25)!important; color:#0E9E99!important; border:1px solid rgba(14,158,153,.4)!important; }
 #consultanta-modal{ display:flex!important; }
-#consultanta-modal.cons-open{ transform:translateX(0)!important; }
+#consultanta-modal.cons-open{ transform:translateX(0)!important; box-shadow:-12px 0 50px rgba(0,0,0,.2)!important; }
 </style>
 
 
@@ -4789,7 +4789,7 @@ function openCart(){
   }
   const drawer = document.getElementById('cart-drawer');
   const overlay = document.getElementById('cart-overlay');
-  if(drawer){ drawer.style.transform='translateX(0)'; }
+  if(drawer){ drawer.style.transform='translateX(0)'; drawer.style.boxShadow='-8px 0 40px rgba(0,51,102,.15)'; }
   if(overlay){ overlay.style.opacity='1'; overlay.style.pointerEvents='auto'; }
   document.body.style.overflow='hidden';
 }
@@ -4797,7 +4797,7 @@ function openCart(){
 function closeCart(){
   const drawer = document.getElementById('cart-drawer');
   const overlay = document.getElementById('cart-overlay');
-  if(drawer){ drawer.style.transform='translateX(100%)'; }
+  if(drawer){ drawer.style.transform='translateX(100%)'; setTimeout(()=>{ if(drawer.style.transform==='translateX(100%)') drawer.style.boxShadow='none'; },350); }
   if(overlay){ overlay.style.opacity='0'; overlay.style.pointerEvents='none'; }
   document.body.style.overflow='';
 }
@@ -5030,77 +5030,7 @@ if(typeof lucide!=="undefined")lucide.createIcons();
 <!-- ════ CART DRAWER ════ -->
 <div id="cart-overlay" onclick="closeCart()" style="position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(3px);z-index:800;opacity:0;pointer-events:none;transition:opacity .3s"></div>
 
-<div id="cart-drawer" style="position:fixed;top:0;right:0;height:100vh;width:380px;max-width:92vw;background:#fff;z-index:801;transform:translateX(100%);transition:transform .35s cubic-bezier(.22,1,.36,1);display:flex;flex-direction:column;box-shadow:-8px 0 40px rgba(0,51,102,.15)">
 
-  <!-- Drawer header -->
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 16px;border-bottom:1px solid #D5DFE8;flex-shrink:0">
-    <div style="font-weight:800;color:#003366;font-size:16px;display:flex;align-items:center;gap:10px">
-      🛒 Coșul meu
-      <span id="cart-count" style="background:#FF8C00;color:#fff;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800">0</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px">
-      <button onclick="clearCart()" style="font-size:11.5px;color:#8C9BAD;background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:7px;transition:all .15s" onmouseover="this.style.background='#F4F7F9'" onmouseout="this.style.background='none'">Golește</button>
-      <button onclick="closeCart()" style="width:32px;height:32px;border-radius:9px;border:1px solid #D5DFE8;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;color:#6B7A8D;transition:all .15s" onmouseover="this.style.background='#F4F7F9'" onmouseout="this.style.background='#fff'">×</button>
-    </div>
-  </div>
-
-  <!-- IP / Zonă activă indicator -->
-  <div id="cart-zone-bar" style="padding:8px 20px;border-bottom:1px solid #F4F7F9;display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#F4F7F9;flex-shrink:0">
-    <div id="zone-active-indicator" style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#1A7A3A">
-      <span style="width:6px;height:6px;border-radius:50%;background:#1A7A3A;display:inline-block"></span>
-      <span id="cart-zone-text">Zona 1 · +5% · Bacău · RO</span>
-    </div>
-    <span style="font-size:10px;color:#8C9BAD;margin-left:auto" id="cart-currency-text">RON · TVA 19%</span>
-  </div>
-
-  <!-- Darrin AI notice -->
-  <div style="margin:12px 20px 0;background:#E0F5F4;border-radius:11px;border:1px solid rgba(14,158,153,.25);padding:10px 13px;font-size:11.5px;color:#0B7A76;display:flex;align-items:flex-start;gap:7px;flex-shrink:0">
-    <span style="width:6px;height:6px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block;flex-shrink:0;margin-top:4px"></span>
-    <span><strong>Darrin AI</strong> alocă automat echipa după plasarea comenzii. Tu nu contactezi niciun partener.</span>
-  </div>
-
-  <!-- Cart items — scrollabil -->
-  <div id="cart-items" style="flex:1;overflow-y:auto;padding:12px 20px">
-    <div id="cart-empty" style="text-align:center;padding:48px 16px;color:#8C9BAD">
-      <div style="font-size:44px;margin-bottom:12px;opacity:.3">🛒</div>
-      <div style="font-size:14px;font-weight:700;color:#2D2D2D;margin-bottom:6px">Coșul este gol</div>
-      <div style="font-size:12px;line-height:1.6">Adaugă servicii sau materiale<br>din catalog.</div>
-    </div>
-  </div>
-
-  <!-- Summary + CTA — fix în drawer -->
-  <div id="cart-summary" style="display:none;padding:16px 20px 20px;border-top:1px solid #D5DFE8;background:#fff;flex-shrink:0">
-    <div style="space-y:5px;margin-bottom:12px">
-      <div style="display:flex;justify-content:space-between;font-size:12px;color:#6B7A8D;margin-bottom:5px">
-        <span>Subtotal resurse</span><span id="cart-subtotal" style="font-weight:600">0 Lei</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:12px;color:#6B7A8D;margin-bottom:5px">
-        <span>Costuri platformă (HBP + overhead)</span><span id="cart-platform">0 Lei</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:12px;color:#6B7A8D;margin-bottom:5px">
-        <span>TVA (<span id="cart-tva-pct">19%</span>)</span><span id="cart-tva">0 Lei</span>
-      </div>
-      <div id="vmc-warning" style="display:none;background:#FFF0D6;border-radius:8px;border:1px solid #FFD980;padding:8px 10px;font-size:11px;color:#CC7000;margin-bottom:8px">
-        ⚖ VMC aplicat — minim <span id="vmc-amount">100 Lei</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:800;color:#003366;border-top:2px solid #FF8C00;padding-top:10px">
-        <span>Total final</span>
-        <span id="cart-total" style="color:#FF8C00">0 Lei</span>
-      </div>
-    </div>
-    <!-- Escrow -->
-    <div style="background:#EBF4FB;border-radius:10px;border:1px solid #D6E8F5;padding:9px 12px;margin-bottom:12px;font-size:11px;color:#1A5FAD;display:flex;align-items:flex-start;gap:6px">
-      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:1px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      <span><strong>Escrow securizat.</strong> Suma blocată la plasare, eliberată după confirmarea ta.</span>
-    </div>
-    <button onclick="proceedCheckout()" style="width:100%;background:#FF8C00;color:#fff;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 18px rgba(255,140,0,.3);transition:all .18s;margin-bottom:8px" onmouseover="this.style.background='#CC7000'" onmouseout="this.style.background='#FF8C00'">
-      Plasează comanda →
-    </button>
-    <button onclick="openDevizAI()" style="width:100%;background:#fff;color:#0E9E99;border:1.5px solid #0E9E99;border-radius:12px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .18s" onmouseover="this.style.background='#E0F5F4'" onmouseout="this.style.background='#fff'">
-      🧮 Deviz AI complet gratuit
-    </button>
-  </div>
-</div>
 
 <!-- ════ CART FAB (Floating Action Button) — vizibil DOAR dacă zona activă ════ -->
 
@@ -5124,283 +5054,7 @@ if(typeof lucide!=="undefined")lucide.createIcons();
 ════════════════════════════════════════════════ -->
 <div id="consultanta-overlay" onclick="closeConsultanta()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(5px);z-index:850;transition:opacity .3s"></div>
 
-<div id="consultanta-modal" style="display:none;position:fixed;top:0;right:0;height:100vh;width:520px;max-width:95vw;background:#fff;z-index:851;transform:translateX(100%);transition:transform .35s cubic-bezier(.22,1,.36,1);display:flex;flex-direction:column;box-shadow:-12px 0 50px rgba(0,0,0,.2);overflow:hidden">
 
-  <!-- MODAL HEADER -->
-  <div style="background:linear-gradient(135deg,#001E3C,#003366);padding:20px 22px 18px;flex-shrink:0">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <img src="data:image/jpeg;base64,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" alt="Darrin AI" style="width:38px;height:38px;border-radius:11px;object-fit:cover;flex-shrink:0"/>
-        <div>
-          <div style="font-weight:800;color:#fff;font-size:15px">Consultanță My Darrin</div>
-          <div style="font-size:11px;color:rgba(255,255,255,.5)">Darrin AI + Specialiști verificați</div>
-        </div>
-      </div>
-      <button onclick="closeConsultanta()" style="width:32px;height:32px;border-radius:9px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);cursor:pointer;font-size:18px;color:rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.15)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">×</button>
-    </div>
-    <!-- Nivel tabs -->
-    <div style="display:flex;gap:6px" id="cons-tabs">
-      <button class="cons-tab active-cons-tab" id="ctab-bronz" onclick="switchConsTab('bronz',this)" style="flex:1;padding:8px 6px;border-radius:10px;border:none;cursor:pointer;font-family:inherit;font-size:11.5px;font-weight:700;transition:all .18s;background:rgba(14,158,153,.25);color:#0E9E99;border:1px solid rgba(14,158,153,.4)">
-        🥉 Bronz<br><span style="font-size:9.5px;font-weight:500;opacity:.8">Darrin AI · Gratuit</span>
-      </button>
-      <button class="cons-tab" id="ctab-argint" onclick="switchConsTab('argint',this)" style="flex:1;padding:8px 6px;border-radius:10px;border:1px solid rgba(255,255,255,.12);cursor:pointer;font-family:inherit;font-size:11.5px;font-weight:700;transition:all .18s;background:rgba(255,255,255,.06);color:rgba(255,255,255,.6)">
-        🥈 Argint<br><span style="font-size:9.5px;font-weight:500">Consultant online · 50 Lei</span>
-      </button>
-      <button class="cons-tab" id="ctab-aur" onclick="switchConsTab('aur',this)" style="flex:1;padding:8px 6px;border-radius:10px;border:1px solid rgba(255,255,255,.12);cursor:pointer;font-family:inherit;font-size:11.5px;font-weight:700;transition:all .18s;background:rgba(255,255,255,.06);color:rgba(255,255,255,.6)">
-        🥇 Aur<br><span style="font-size:9.5px;font-weight:500">La adresă · 100 Lei</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- SCROLLABLE CONTENT -->
-  <div style="flex:1;overflow-y:auto;padding:20px 22px">
-
-    <!-- ══ BRONZ: DARRIN AI CHAT ══ -->
-    <div id="cons-bronz">
-      <!-- Step progress -->
-      <div style="display:flex;align-items:center;gap:4px;margin-bottom:18px">
-        <div style="flex:1;height:3px;border-radius:99px;background:#0E9E99" id="cp-1"></div>
-        <div style="flex:1;height:3px;border-radius:99px;background:#D5DFE8" id="cp-2"></div>
-        <div style="flex:1;height:3px;border-radius:99px;background:#D5DFE8" id="cp-3"></div>
-      </div>
-
-      <!-- Chat messages -->
-      <div id="chat-messages" style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px;min-height:200px">
-        <!-- Initial AI message -->
-        <div style="display:flex;align-items:flex-start;gap:10px">
-          <img src="data:image/jpeg;base64,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" alt="Darrin AI" style="width:32px;height:32px;border-radius:10px;object-fit:cover;flex-shrink:0"/>
-          <div style="background:#F4F7F9;border-radius:0 14px 14px 14px;padding:12px 15px;max-width:85%">
-            <div style="font-size:11px;font-weight:700;color:#0E9E99;margin-bottom:5px">Darrin AI</div>
-            <div style="font-size:13px;color:#2D2D2D;line-height:1.65">Bună ziua! Sunt Darrin AI, asistentul tău virtual My Darrin. 👋<br><br>Descrie-mi problema sau nevoia ta — cu cât mai multe detalii, cu atât pot recomanda mai precis serviciul potrivit. Poți încărca și imagini sau video.</div>
-          </div>
-        </div>
-        <!-- Example: Maria scenario -->
-        <div id="maria-example" style="background:linear-gradient(135deg,#FFF8EE,#FFF0D6);border-radius:14px;border:1px solid #FFD980;padding:12px 14px;font-size:12px;color:#6B7A8D;line-height:1.6">
-          <div style="font-weight:700;color:#CC7000;margin-bottom:5px">💡 Exemplu: Maria din Iași, str. Păcurari 23</div>
-          <em>„Am o problemă la centrala termică pe gaz — nu pornește și apar erori. Am dat câteva imagini dar nu știu exact ce piesă este defectă..."</em>
-          <div style="margin-top:6px;color:#0E9E99;font-weight:600">→ Darrin AI: Analizez imaginile... Dacă nu pot determina problema, te voi ghida spre Consultanță Argint cu un specialist termic.</div>
-        </div>
-      </div>
-
-      <!-- Chat input -->
-      <div style="background:#F4F7F9;border-radius:16px;border:1px solid #D5DFE8;padding:14px;margin-bottom:16px">
-        <textarea id="chat-input" placeholder="Descrie problema ta... (ex: centrala nu pornește, apare codul E3, am verificat presiunea...)" style="width:100%;border:none;background:transparent;font-size:13px;font-family:inherit;color:#2D2D2D;resize:none;outline:none;min-height:70px;line-height:1.6" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
-        <!-- Upload zone -->
-        <div id="upload-zone" style="border:2px dashed #D5DFE8;border-radius:12px;padding:14px;text-align:center;cursor:pointer;transition:all .2s;margin-top:10px;position:relative" onclick="document.getElementById('file-input').click()" ondragover="event.preventDefault();this.style.borderColor='#0E9E99';this.style.background='#E0F5F4'" ondragleave="this.style.borderColor='#D5DFE8';this.style.background=''" ondrop="handleDrop(event)">
-          <input type="file" id="file-input" multiple accept="image/*,video/*" style="display:none" onchange="handleFiles(this.files)"/>
-          <div style="font-size:24px;margin-bottom:6px" id="upload-icon">📎</div>
-          <div style="font-size:12.5px;font-weight:600;color:#6B7A8D">Drag & drop sau click · Imagini & Video</div>
-          <div style="font-size:10.5px;color:#8C9BAD;margin-top:3px">JPG, PNG, MP4, MOV · Max 50MB per fișier</div>
-        </div>
-        <!-- Preview uploaded files -->
-        <div id="file-preview" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
-        <!-- Send button -->
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
-          <div style="font-size:11px;color:#8C9BAD">Adresă prestare (opțional — îmbunătățește recomandarea)</div>
-          <button onclick="sendToAI()" style="display:inline-flex;align-items:center;gap:7px;background:#0E9E99;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .18s" onmouseover="this.style.background='#0B7A76'" onmouseout="this.style.background='#0E9E99'">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            Trimite la Darrin AI
-          </button>
-        </div>
-      </div>
-
-      <!-- Address input -->
-      <div style="margin-bottom:16px">
-        <input type="text" id="cons-addr" placeholder="Adresa ta (Oraș, Stradă nr.) — pentru detecție zonă" style="width:100%;border:1.5px solid #D5DFE8;border-radius:12px;padding:10px 14px;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'" oninput="updateConsAddr()"/>
-        <div id="cons-addr-ok" style="display:none;margin-top:5px;font-size:11.5px;color:#1A7A3A;font-weight:600">✓ Adresă validată · My Darrin activ în zona ta</div>
-      </div>
-
-      <!-- AI thinking response (hidden initially) -->
-      <div id="ai-thinking" style="display:none;background:#F4F7F9;border-radius:14px;padding:14px;margin-bottom:16px">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <img src="data:image/jpeg;base64,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" alt="Darrin AI" style="width:28px;height:28px;border-radius:8px;object-fit:cover;flex-shrink:0"/>
-          <div style="font-size:11px;font-weight:700;color:#0E9E99">Darrin AI analizează...</div>
-          <div style="margin-left:auto;width:18px;height:18px;border:2px solid rgba(14,158,153,.3);border-top-color:#0E9E99;border-radius:50%;animation:spin .7s linear infinite"></div>
-        </div>
-        <div id="ai-analysis-text" style="font-size:12.5px;color:#6B7A8D;line-height:1.65"></div>
-      </div>
-
-      <!-- AI Result — recommendations -->
-      <div id="ai-result" style="display:none">
-        <div style="background:linear-gradient(135deg,#E0F5F4,#EBF4FB);border-radius:16px;border:1px solid rgba(14,158,153,.25);padding:16px;margin-bottom:14px">
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#0E9E99;margin-bottom:10px">🤖 Darrin AI — Recomandare</div>
-          <div id="ai-recommendation" style="font-size:13.5px;color:#2D2D2D;line-height:1.7;margin-bottom:12px"></div>
-          <!-- Service recommendations -->
-          <div id="rec-services" style="display:flex;flex-direction:column;gap:8px"></div>
-        </div>
-        <!-- Escalate to Argint -->
-        <div id="escalate-to-argint" style="display:none;background:#FFF8EE;border-radius:14px;border:1px solid #FFD980;padding:14px;margin-bottom:14px">
-          <div style="font-weight:700;color:#CC7000;font-size:13px;margin-bottom:6px">🥈 Darrin AI recomandă consultanță cu specialist</div>
-          <div style="font-size:12.5px;color:#6B7A8D;line-height:1.6;margin-bottom:12px">Nu am putut determina cu certitudine problema din datele transmise. Un specialist tehnic online poate evalua situația mai precis în timp real.</div>
-          <button onclick="switchConsTab('argint',document.getElementById('ctab-argint'))" style="width:100%;padding:12px;border-radius:12px;background:#FF8C00;color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .18s" onmouseover="this.style.background='#CC7000'" onmouseout="this.style.background='#FF8C00'">
-            Comandă consultanță online cu specialist → 50 Lei
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══ ARGINT: CONSULTANT ONLINE ══ -->
-    <div id="cons-argint" style="display:none">
-      <div style="background:linear-gradient(135deg,#F4F7F9,#EBF4FB);border-radius:16px;padding:18px;margin-bottom:16px;border:1px solid #D5DFE8">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-          <div style="font-size:32px">🥈</div>
-          <div>
-            <div style="font-weight:800;color:#003366;font-size:15px">Consultanță cu specialist uman online</div>
-            <div style="font-size:12px;color:#6B7A8D;margin-top:2px">Video call / Chat live / Telefon · Specialist verificat My Darrin</div>
-          </div>
-        </div>
-        <p style="font-size:13px;color:#6B7A8D;line-height:1.65;margin-bottom:14px">Un specialist tehnic verificat va analiza problema ta în timp real prin video call, chat sau telefon. Are acces la istoricul descrierii tale și la imaginile/video-ul uploadat.</p>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
-          <span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:99px;background:#D4EDDA;color:#1A7A3A">✓ Video call HD</span>
-          <span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:99px;background:#D4EDDA;color:#1A7A3A">✓ Chat text live</span>
-          <span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:99px;background:#D4EDDA;color:#1A7A3A">✓ Partajare ecran</span>
-          <span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:99px;background:#D4EDDA;color:#1A7A3A">✓ Raport scris după sesiune</span>
-        </div>
-        <!-- Pricing -->
-        <div style="background:#fff;border-radius:12px;padding:14px;border:1px solid #D5DFE8">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <span style="font-size:13px;color:#6B7A8D">Consultanță online — 30 min</span>
-            <span style="font-weight:800;color:#003366;font-size:18px">50 Lei</span>
-          </div>
-          <div style="font-size:11px;color:#8C9BAD">Tarif minim · TVA inclus · Escrow securizat · Plătit după sesiune</div>
-        </div>
-      </div>
-
-      <!-- Disponibilitate specialiști -->
-      <div style="margin-bottom:16px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:10px">Specialiști disponibili acum</div>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#F4F7F9;border-radius:12px;border:1px solid #D5DFE8;cursor:pointer;transition:all .18s" onclick="selectSpecialist(this,'Andrei M.','Termic & Gaz')" onmouseover="this.style.borderColor='#0E9E99'" onmouseout="this.style.borderColor='#D5DFE8'">
-            <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#003366,#1A5FAD);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:16px;flex-shrink:0">A</div>
-            <div style="flex:1">
-              <div style="font-weight:700;font-size:13px;color:#2D2D2D">Andrei M. <span style="font-family:monospace;font-size:10px;color:#8C9BAD">#SP-112</span></div>
-              <div style="font-size:11px;color:#6B7A8D">Instalații termice & gaz · ISCO 7412 · 4.97 ⭐ (184 sesiuni)</div>
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-              <span style="font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(26,122,58,.12);color:#1A7A3A;display:flex;align-items:center;gap:4px"><span style="width:5px;height:5px;border-radius:50%;background:#1A7A3A;display:inline-block"></span>Online</span>
-              <span style="font-size:10px;color:#8C9BAD">Disponibil imediat</span>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#F4F7F9;border-radius:12px;border:1px solid #D5DFE8;cursor:pointer;transition:all .18s" onclick="selectSpecialist(this,'Elena P.','Instalații sanitare')" onmouseover="this.style.borderColor='#0E9E99'" onmouseout="this.style.borderColor='#D5DFE8'">
-            <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#0E9E99,#0B7A76);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:16px;flex-shrink:0">E</div>
-            <div style="flex:1">
-              <div style="font-weight:700;font-size:13px;color:#2D2D2D">Elena P. <span style="font-family:monospace;font-size:10px;color:#8C9BAD">#SP-089</span></div>
-              <div style="font-size:11px;color:#6B7A8D">Instalații sanitare · ISCO 7411 · 4.94 ⭐ (97 sesiuni)</div>
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-              <span style="font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(26,122,58,.12);color:#1A7A3A;display:flex;align-items:center;gap:4px"><span style="width:5px;height:5px;border-radius:50%;background:#1A7A3A;display:inline-block"></span>Online</span>
-              <span style="font-size:10px;color:#8C9BAD">~5 min așteptare</span>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#F4F7F9;border-radius:12px;border:1px solid #D5DFE8;cursor:pointer;transition:all .18s" onclick="selectSpecialist(this,'Mihai D.','Construcții & Renovări')" onmouseover="this.style.borderColor='#0E9E99'" onmouseout="this.style.borderColor='#D5DFE8'">
-            <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#D97706,#B45309);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:16px;flex-shrink:0">M</div>
-            <div style="flex:1">
-              <div style="font-weight:700;font-size:13px;color:#2D2D2D">Mihai D. <span style="font-family:monospace;font-size:10px;color:#8C9BAD">#SP-241</span></div>
-              <div style="font-size:11px;color:#6B7A8D">Construcții & Renovări · ISCO 7121 · 4.91 ⭐ (312 sesiuni)</div>
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-              <span style="font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(255,140,0,.12);color:#CC7000">În sesiune</span>
-              <span style="font-size:10px;color:#8C9BAD">~15 min așteptare</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Selected specialist confirmation -->
-      <div id="specialist-selected" style="display:none;background:#E0F5F4;border-radius:14px;border:1px solid rgba(14,158,153,.3);padding:14px;margin-bottom:16px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#0E9E99;margin-bottom:6px">Specialist selectat</div>
-        <div style="font-size:13px;font-weight:700;color:#2D2D2D" id="sel-spec-name">—</div>
-        <div style="font-size:11.5px;color:#6B7A8D" id="sel-spec-spec">—</div>
-      </div>
-
-      <!-- Mod contact -->
-      <div style="margin-bottom:16px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:10px">Mod de contact preferat *</div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-          <button onclick="selContact('video',this)" id="cmode-video" style="padding:12px 8px;border-radius:12px;border:1.5px solid #D5DFE8;background:#fff;cursor:pointer;font-family:inherit;font-size:12px;font-weight:700;color:#6B7A8D;transition:all .18s;line-height:1.4">📹<br>Video Call</button>
-          <button onclick="selContact('chat',this)" id="cmode-chat" style="padding:12px 8px;border-radius:12px;border:1.5px solid #003366;background:#EBF4FB;cursor:pointer;font-family:inherit;font-size:12px;font-weight:700;color:#003366;transition:all .18s;line-height:1.4">💬<br>Chat Live</button>
-          <button onclick="selContact('tel',this)" id="cmode-tel" style="padding:12px 8px;border-radius:12px;border:1.5px solid #D5DFE8;background:#fff;cursor:pointer;font-family:inherit;font-size:12px;font-weight:700;color:#6B7A8D;transition:all .18s;line-height:1.4">📞<br>Telefon</button>
-        </div>
-      </div>
-
-      <!-- Escalate to Aur -->
-      <div id="escalate-to-aur" style="display:none;background:#FFF8EE;border-radius:14px;border:1px solid #FFD980;padding:14px;margin-bottom:16px">
-        <div style="font-weight:700;color:#CC7000;font-size:13px;margin-bottom:6px">🥇 Specialist recomandă evaluare la adresă</div>
-        <div style="font-size:12.5px;color:#6B7A8D;line-height:1.6;margin-bottom:12px">Problema necesită inspecție fizică. Un specialist va veni la adresa ta pentru evaluare completă și deviz exact.</div>
-        <button onclick="switchConsTab('aur',document.getElementById('ctab-aur'))" style="width:100%;padding:12px;border-radius:12px;background:#FF8C00;color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .18s" onmouseover="this.style.background='#CC7000'" onmouseout="this.style.background='#FF8C00'">
-          Comandă evaluare la adresă → 100 Lei
-        </button>
-      </div>
-
-      <!-- CTA Argint -->
-      <button onclick="bookArgint()" style="width:100%;padding:14px;border-radius:14px;background:#003366;color:#fff;border:none;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px rgba(0,51,102,.25);transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px" onmouseover="this.style.background='#1A5FAD'" onmouseout="this.style.background='#003366'">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.68A2 2 0 012 .99h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
-        Inițiază sesiunea cu specialistul · 50 Lei Escrow
-      </button>
-    </div>
-
-    <!-- ══ AUR: EVALUARE LA ADRESĂ ══ -->
-    <div id="cons-aur" style="display:none">
-      <div style="background:linear-gradient(135deg,#FFF8EE,#FFF0D6);border-radius:16px;padding:18px;margin-bottom:16px;border:1.5px solid #FFD980">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-          <div style="font-size:32px">🥇</div>
-          <div>
-            <div style="font-weight:800;color:#003366;font-size:15px">Evaluare fizică la adresa ta</div>
-            <div style="font-size:12px;color:#6B7A8D;margin-top:2px">Specialist tehnic vine la tine · Deviz exact · Raport detaliat</div>
-          </div>
-        </div>
-        <p style="font-size:13px;color:#6B7A8D;line-height:1.65;margin-bottom:14px">Un specialist verificat și autorizat vine la adresa ta pentru inspecție fizică completă. Primești un raport detaliat cu diagnostic, recomandări și deviz estimativ.</p>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
-          <span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:99px;background:#D4EDDA;color:#1A7A3A">✓ Inspecție la fața locului</span>
-          <span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:99px;background:#D4EDDA;color:#1A7A3A">✓ Diagnostic complet</span>
-          <span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:99px;background:#D4EDDA;color:#1A7A3A">✓ Deviz estimativ inclus</span>
-          <span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:99px;background:#D4EDDA;color:#1A7A3A">✓ Raport PDF descărcabil</span>
-          <span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:99px;background:#D4EDDA;color:#1A7A3A">✓ Garanție evaluare corectă</span>
-        </div>
-        <div style="background:#fff;border-radius:12px;padding:14px;border:1px solid #FFD980">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <span style="font-size:13px;color:#6B7A8D">Evaluare la adresă — 60 min</span>
-            <span style="font-weight:800;color:#003366;font-size:18px">100 Lei</span>
-          </div>
-          <div style="font-size:11px;color:#8C9BAD">Tarif minim · TVA inclus · Transport inclus în tarif · Escrow securizat</div>
-        </div>
-      </div>
-
-      <!-- Same 6-step flow ca pagina serviciu -->
-      <div style="background:#F4F7F9;border-radius:14px;border:1px solid #D5DFE8;padding:14px;margin-bottom:16px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:10px">Parcurge aceiași pași ca la orice comandă</div>
-        <div style="display:flex;flex-direction:column;gap:8px;font-size:12.5px;color:#6B7A8D">
-          <div style="display:flex;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:7px;background:#003366;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</span>Confirmă adresa de evaluare</div>
-          <div style="display:flex;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:7px;background:#003366;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</span>Poliță asigurare (opțional)</div>
-          <div style="display:flex;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:7px;background:#003366;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</span>Acceptă condițiile contractuale</div>
-          <div style="display:flex;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:7px;background:#003366;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</span>Selectează data și intervalul orar</div>
-          <div style="display:flex;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:7px;background:#003366;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">5</span>Card bancar — 100 Lei Escrow</div>
-          <div style="display:flex;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:7px;background:#FF8C00;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">🚀</span>Lansare — Darrin AI alocă specialistul cel mai aproape</div>
-        </div>
-      </div>
-
-      <!-- Address for evaluation -->
-      <div style="margin-bottom:16px">
-        <label style="display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:6px">Adresă evaluare *</label>
-        <input type="text" id="aur-addr" placeholder="Str. Păcurari 23, Iași — sau adresa ta completă" style="width:100%;border:1.5px solid #D5DFE8;border-radius:12px;padding:11px 14px;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#FF8C00'" onblur="this.style.borderColor='#D5DFE8'"/>
-        <div style="margin-top:5px;font-size:11.5px;color:#1A7A3A;font-weight:600;display:none" id="aur-addr-ok">✓ Zonă validată · Specialist disponibil în zona ta · Darrin AI alocă automat</div>
-      </div>
-      <!-- Descriere problemă -->
-      <div style="margin-bottom:16px">
-        <label style="display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:6px">Descriere problemă (opțional — din chat-ul anterior)</label>
-        <textarea id="aur-desc" rows="3" style="width:100%;border:1.5px solid #D5DFE8;border-radius:12px;padding:11px 14px;font-size:13px;font-family:inherit;outline:none;resize:vertical;transition:border-color .18s" onfocus="this.style.borderColor='#FF8C00'" onblur="this.style.borderColor='#D5DFE8'" placeholder="Se completează automat din conversația cu Darrin AI..."></textarea>
-      </div>
-
-      <!-- CTA Aur — deschide pagina produs cu slug dedicat -->
-      <button onclick="bookAur()" style="width:100%;padding:14px;border-radius:14px;background:#FF8C00;color:#fff;border:none;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 18px rgba(255,140,0,.35);transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px" onmouseover="this.style.background='#CC7000'" onmouseout="this.style.background='#FF8C00'">
-        🥇 Comandă evaluare la adresă · 100 Lei Escrow
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </button>
-      <p style="text-align:center;font-size:11.5px;color:#8C9BAD;margin-top:8px">Escrow securizat · Darrin AI alocă specialistul din zona ta · Garanție evaluare</p>
-    </div>
-
-  </div><!-- /scrollable content -->
-</div>
 
 <style>
 .cons-tab{ font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif; }
