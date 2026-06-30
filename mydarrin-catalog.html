@@ -719,13 +719,16 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 .sync-bar{background:#fff;border-bottom:1px solid #D5DFE8;padding:8px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:11px}
 
 /* ── RESPONSIVE ── */
+/* Ordine CRITICĂ: 1024px (mai general) ÎNAINTE de 768px (mai specific)
+   — la viewport <768px ambele condiții sunt adevărate; ultima regulă declarată
+   câștigă în CSS cascade, deci regula mobilă (768px) trebuie să fie ultima. */
+@media(max-width:1024px){
+  #main-grid{grid-template-columns:200px 1fr!important}
+}
 @media(max-width:768px){
   #main-grid{grid-template-columns:1fr!important;padding:16px!important}
   .cat-sidebar{position:static!important}
   #cart-drawer{width:100vw!important;max-width:100vw!important}
-}
-@media(max-width:1024px){
-  #main-grid{grid-template-columns:200px 1fr!important}
 }
 
 /* ── SCROLLBAR ── */
@@ -4572,8 +4575,6 @@ function initSync(){
   setEl('zone-label', zone);
   setEl('cart-zone', zone);
   setTimeout(()=>{ setEl('sync-status','Sincronizat · v2026.06.11'); }, 600);
-  // Refresh prices every 30s
-  setInterval(refreshPrices, 30000);
 }
 
 
@@ -5409,269 +5410,7 @@ if(typeof lucide!=="undefined")lucide.createIcons();
 </style>
 
 
-<script>
-// ── CONSULTANȚĂ MODAL ──
-let consOpen = false;
-let uploadedFiles = [];
-let selectedSpecialist = null;
-let contactMode = 'chat';
 
-function openConsultanta(){
-  consOpen = true;
-  document.getElementById('consultanta-overlay').style.display='block';
-  const modal = document.getElementById('consultanta-modal');
-  modal.style.display='flex';
-  requestAnimationFrame(()=>modal.classList.add('cons-open'));
-  document.body.style.overflow='hidden';
-}
-
-function closeConsultanta(){
-  const modal = document.getElementById('consultanta-modal');
-  modal.classList.remove('cons-open');
-  setTimeout(()=>{
-    document.getElementById('consultanta-overlay').style.display='none';
-    consOpen=false;
-    document.body.style.overflow='';
-  },350);
-}
-
-function switchConsTab(tab, btn){
-  // Hide all panels
-  ['bronz','argint','aur'].forEach(t=>{
-    const el=document.getElementById('cons-'+t);
-    if(el) el.style.display='none';
-    const tb=document.getElementById('ctab-'+t);
-    if(tb){ tb.classList.remove('active-cons-tab'); tb.style.background='rgba(255,255,255,.06)'; tb.style.color='rgba(255,255,255,.6)'; tb.style.border='1px solid rgba(255,255,255,.12)'; }
-  });
-  // Show selected
-  const panel=document.getElementById('cons-'+tab);
-  if(panel) panel.style.display='block';
-  if(btn){ btn.classList.add('active-cons-tab'); btn.style.background='rgba(14,158,153,.25)'; btn.style.color='#0E9E99'; btn.style.border='1px solid rgba(14,158,153,.4)'; }
-  // If going to AUR, pre-fill description from chat
-  if(tab==='aur'){
-    const chatTxt = document.getElementById('chat-input')?.value||'';
-    const aurDesc = document.getElementById('aur-desc');
-    if(aurDesc && chatTxt) aurDesc.value=chatTxt;
-    const aurAddr = document.getElementById('aur-addr');
-    const consAddr = document.getElementById('cons-addr')?.value||'';
-    if(aurAddr && consAddr) aurAddr.value=consAddr;
-  }
-}
-
-// ── FILE UPLOAD ──
-function handleFiles(files){
-  Array.from(files).forEach(file=>{
-    if(uploadedFiles.length>=5) return;
-    uploadedFiles.push(file);
-    const preview=document.getElementById('file-preview');
-    const item=document.createElement('div');
-    item.style.cssText='position:relative;width:64px;height:64px;border-radius:10px;overflow:hidden;border:1px solid #D5DFE8;flex-shrink:0';
-    if(file.type.startsWith('image/')){
-      const img=document.createElement('img');
-      img.style.cssText='width:100%;height:100%;object-fit:cover';
-      img.src=URL.createObjectURL(file);
-      item.appendChild(img);
-    } else {
-      item.style.background='#F4F7F9';
-      item.style.display='flex';
-      item.style.alignItems='center';
-      item.style.justifyContent='center';
-      item.innerHTML='<span style="font-size:24px">🎥</span>';
-    }
-    // Remove btn
-    const rm=document.createElement('button');
-    rm.textContent='×';
-    rm.style.cssText='position:absolute;top:2px;right:2px;width:18px;height:18px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;line-height:1';
-    rm.onclick=()=>{ item.remove(); uploadedFiles=uploadedFiles.filter(f=>f!==file); };
-    item.appendChild(rm);
-    preview.appendChild(item);
-  });
-  const uz=document.getElementById('upload-zone');
-  if(uz&&uploadedFiles.length>0){ uz.style.borderColor='#0E9E99'; uz.style.background='rgba(14,158,153,.05)'; document.getElementById('upload-icon').textContent='✅'; }
-}
-function handleDrop(e){
-  e.preventDefault();
-  document.getElementById('upload-zone').style.borderColor='#D5DFE8';
-  document.getElementById('upload-zone').style.background='';
-  handleFiles(e.dataTransfer.files);
-}
-
-// ── SEND TO AI ──
-function sendToAI(){
-  const txt=document.getElementById('chat-input')?.value.trim()||'';
-  if(!txt&&uploadedFiles.length===0){ alert('Descrie problema sau încarcă o imagine/video.'); return; }
-
-  // Add user message to chat
-  const msgs=document.getElementById('chat-messages');
-  const userMsg=document.createElement('div');
-  userMsg.style.cssText='display:flex;justify-content:flex-end;gap:10px';
-  userMsg.innerHTML=`<div style="background:#003366;border-radius:14px 0 14px 14px;padding:12px 15px;max-width:85%;color:#fff;font-size:13px;line-height:1.65">${txt||'['+uploadedFiles.length+' fișier(e) uploadat(e)]'}</div>`;
-  msgs.appendChild(userMsg);
-
-  // If files uploaded, show file count
-  if(uploadedFiles.length>0){
-    const fileMsg=document.createElement('div');
-    fileMsg.style.cssText='display:flex;justify-content:flex-end';
-    fileMsg.innerHTML=`<div style="font-size:11px;color:#8C9BAD;margin-top:4px">${uploadedFiles.length} fișier(e) atașat(e) · ${uploadedFiles.map(f=>f.name).join(', ').substring(0,50)}...</div>`;
-    msgs.appendChild(fileMsg);
-  }
-
-  document.getElementById('chat-input').value='';
-
-  // Show thinking
-  const thinking=document.getElementById('ai-thinking');
-  if(thinking) thinking.style.display='block';
-
-  // Progress steps
-  document.getElementById('cp-1').style.background='#0E9E99';
-  document.getElementById('cp-2').style.background='#FF8C00';
-
-  // Simulate AI analysis
-  const analyses=[
-    'Analizez descrierea problemei...',
-    uploadedFiles.length>0?'Procesez '+uploadedFiles.length+' fișier(e) — detectez elementele vizuale relevante...':'Procesez textul descrierii...',
-    'Caut în baza de date de servicii My Darrin...',
-    'Generez recomandări personalizate...',
-  ];
-  let step=0;
-  const interval=setInterval(()=>{
-    if(step<analyses.length){
-      const el=document.getElementById('ai-analysis-text');
-      if(el) el.textContent=analyses[step];
-      step++;
-    } else {
-      clearInterval(interval);
-      showAIResult(txt, uploadedFiles.length>0);
-    }
-  },800);
-}
-
-function showAIResult(txt, hasFiles){
-  const thinking=document.getElementById('ai-thinking');
-  if(thinking) thinking.style.display='none';
-  const result=document.getElementById('ai-result');
-  if(result) result.style.display='block';
-  document.getElementById('cp-2').style.background='#0E9E99';
-  document.getElementById('cp-3').style.background='#0E9E99';
-
-  // Generate recommendation based on keywords
-  const lower=txt.toLowerCase();
-  let recommendation='';
-  let services=[];
-  let needsEscalation=false;
-
-  if(lower.match(/central[ăa]|termic[ăa]|gaz|cazan|boiler/)){
-    recommendation='Am identificat o problemă la instalația termică/gaz. Îți recomand serviciul de <strong>Reparație centrală termică</strong>. Pentru siguranță, un instalator autorizat ISCIR va face diagnosticul complet.';
-    services=[{slug:'inlocuire-calorifer',title:'Instalații termice & gaz',price:'85 Lei/oră',icon:'🔥'}];
-    if(hasFiles) needsEscalation=true;
-  } else if(lower.match(/electric|curent|tablou|priz[ăa]|siguran[țt]/)){
-    recommendation='Problemă electrică detectată. Recomand <strong>Instalații electrice</strong> cu electrician autorizat ANRE.';
-    services=[{slug:'instalatii-electrice',title:'Instalații electrice',price:'75 Lei/oră',icon:'⚡'}];
-  } else if(lower.match(/ap[ăa]|surg[ei]|[țt]eav[ăa]|robinet|scurgere/)){
-    recommendation='Posibilă problemă la instalația sanitară. Recomand <strong>Instalații sanitare</strong> cu instalator autorizat.';
-    services=[{slug:'instalatii-sanitare',title:'Instalații sanitare',price:'85 Lei/oră',icon:'🚿'}];
-  } else if(lower.match(/vopsit|zugr[ăa]vit|perete|tavan|fisur/)){
-    recommendation='Lucrare de finisaj necesară. Recomand serviciul <strong>Zugrăveli & Finisaje</strong>.';
-    services=[{slug:'zugraveli-finisaje',title:'Zugrăveli & Finisaje',price:'18 Lei/m²',icon:'🖌'}];
-  } else {
-    recommendation='Am analizat solicitarea ta. Pe baza descrierii, recomand să verifici catalogul de servicii de mai jos sau să discuți cu un specialist pentru o evaluare mai precisă.';
-    services=[{slug:'instalatii-sanitare',title:'Instalații sanitare',price:'85 Lei/oră',icon:'🚿'},{slug:'instalatii-electrice',title:'Instalații electrice',price:'75 Lei/oră',icon:'⚡'}];
-    needsEscalation=!lower||lower.length<20;
-  }
-
-  const recEl=document.getElementById('ai-recommendation');
-  if(recEl) recEl.innerHTML=recommendation;
-
-  // Services
-  const recSvc=document.getElementById('rec-services');
-  if(recSvc){
-    recSvc.innerHTML='';
-    services.forEach(svc=>{
-      const div=document.createElement('div');
-      div.style.cssText='display:flex;align-items:center;gap:12px;padding:11px 14px;background:#fff;border-radius:12px;border:1.5px solid #D5DFE8;cursor:pointer;transition:all .18s';
-      div.innerHTML=`<span style="font-size:22px">${svc.icon}</span>
-        <div style="flex:1"><div style="font-weight:700;font-size:13px;color:#2D2D2D">${svc.title}</div><div style="font-size:11px;color:#8C9BAD">De la ${svc.price} · Darrin AI alocă</div></div>
-        <button onclick="goToService('${svc.slug}')" style="background:#FF8C00;color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">Comandă →</button>`;
-      div.onmouseover=()=>div.style.borderColor='#FF8C00';
-      div.onmouseout=()=>div.style.borderColor='#D5DFE8';
-      recSvc.appendChild(div);
-    });
-  }
-
-  // Escalate if needed
-  if(needsEscalation||hasFiles){
-    const esc=document.getElementById('escalate-to-argint');
-    if(esc) esc.style.display='block';
-  }
-
-  // Scroll to result
-  setTimeout(()=>{ result?.scrollIntoView({behavior:'smooth',block:'start'}); },300);
-}
-
-function goToService(slug){
-  closeConsultanta();
-  window.open('mydarrin-produs.html?slug='+slug+'&type=serviciu','_blank');
-}
-
-// ── ARGINT ──
-function selectSpecialist(el, name, spec){
-  document.querySelectorAll('#cons-argint .dp-sp-sel').forEach(e=>{ e.style.borderColor='#D5DFE8'; e.style.background='#F4F7F9'; });
-  el.style.borderColor='#0E9E99'; el.style.background='rgba(14,158,153,.06)';
-  selectedSpecialist={name,spec};
-  const ss=document.getElementById('specialist-selected');
-  if(ss) ss.style.display='block';
-  document.getElementById('sel-spec-name').textContent=name;
-  document.getElementById('sel-spec-spec').textContent=spec;
-}
-
-function selContact(mode,btn){
-  contactMode=mode;
-  ['video','chat','tel'].forEach(m=>{
-    const b=document.getElementById('cmode-'+m);
-    if(b){ b.style.borderColor='#D5DFE8'; b.style.background='#fff'; b.style.color='#6B7A8D'; }
-  });
-  const b=document.getElementById('cmode-'+mode);
-  if(b){ b.style.borderColor='#003366'; b.style.background='#EBF4FB'; b.style.color='#003366'; }
-}
-
-function bookArgint(){
-  const sp=selectedSpecialist;
-  if(!sp){ alert('Selectează un specialist disponibil.'); return; }
-  closeConsultanta();
-  // Redirect to product page with consultanta-argint slug
-  const addr = document.getElementById('cons-addr')?.value||'';
-  const desc = document.getElementById('chat-input')?.value||'';
-  const url = 'mydarrin-produs.html?slug=consultanta-argint&type=serviciu&addr='+encodeURIComponent(addr)+'&desc='+encodeURIComponent(desc.substring(0,100));
-  window.open(url,'_blank');
-}
-
-function updateConsAddr(){
-  const addr=document.getElementById('cons-addr')?.value.trim()||'';
-  const ok=document.getElementById('cons-addr-ok');
-  if(ok) ok.style.display=addr.length>8?'block':'none';
-}
-
-// ── AUR ──
-document.addEventListener('DOMContentLoaded',()=>{
-  const aAdr=document.getElementById('aur-addr');
-  if(aAdr) aAdr.addEventListener('input',()=>{
-    const ok=document.getElementById('aur-addr-ok');
-    if(ok) ok.style.display=aAdr.value.length>8?'block':'none';
-  });
-});
-
-function bookAur(){
-  const addr=document.getElementById('aur-addr')?.value.trim()||'';
-  if(!addr){ alert('Introdu adresa de evaluare.'); return; }
-  closeConsultanta();
-  const desc=document.getElementById('aur-desc')?.value||'';
-  const url='mydarrin-produs.html?slug=consultanta-aur&type=serviciu&addr='+encodeURIComponent(addr)+'&desc='+encodeURIComponent(desc.substring(0,100));
-  window.open(url,'_blank');
-}
-
-// ESC to close
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&consOpen) closeConsultanta(); });
-</script>
 
 <script src="branding-loader.js" defer></script>
 
