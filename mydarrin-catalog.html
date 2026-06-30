@@ -360,11 +360,11 @@ body { font-family:'Helvetica World','Helvetica Neue',Arial,system-ui,sans-serif
 #sidebar {
   position:fixed; top:0; right:-300px; height:100vh; width:300px;
   background:#fff; z-index:300;
-  box-shadow:-6px 0 40px rgba(27,52,87,.14);
-  transition:right .3s cubic-bezier(.22,1,.36,1);
+  box-shadow:none;
+  transition:right .3s cubic-bezier(.22,1,.36,1), box-shadow .3s;
   overflow-y:auto; overflow-x:hidden;
 }
-#sidebar.open { right:0; }
+#sidebar.open { right:0; box-shadow:-6px 0 40px rgba(27,52,87,.14); }
 #sidebar-overlay {
   display:none; position:fixed; inset:0;
   background:rgba(26,38,64,.4); z-index:299;
@@ -603,8 +603,8 @@ footer a:hover { color:#FF8C00; }
 <style>
 /* ── RESET ── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth; overflow-x:hidden;}
-body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;background:#F8FAFC !important;color:#2D2D2D;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+html{scroll-behavior:smooth; overflow-x:clip; max-width:100vw;}
+body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;background:#F8FAFC !important;color:#2D2D2D;overflow-x:clip;max-width:100vw;-webkit-font-smoothing:antialiased}
 
 /* ── PROGRESS BAR ── */
 #spbar{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,#FF8C00,#0E9E99);z-index:9999;width:0%;transition:width .08s}
@@ -1193,14 +1193,14 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
     <div style="display:flex;flex-direction:column;align-items:stretch;width:100%;gap:24px" class="hero-inner">
 
       <!-- ── TEXT + CTA — full width, centrat ── -->
-      <div style="max-width:680px;margin:0 auto;text-align:center">
+      <div style="max-width:680px;width:100%;margin:0 auto;text-align:center;box-sizing:border-box">
         <!-- Eyebrow -->
         <div class="reveal" style="display:inline-flex;align-items:center;gap:8px;background:rgba(14,158,153,.15);border:1px solid rgba(14,158,153,.3);color:#0E9E99;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:6px 16px;border-radius:99px;margin-bottom:20px">
           <span style="width:6px;height:6px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span>
           Catalog live · Darrin AI · Escrow securizat
         </div>
         <!-- Titlu principal -->
-        <h1 class="reveal d1" style="font-size:clamp(40px,5vw,60px);font-weight:800;color:#fff;line-height:1.2;letter-spacing:-.02em;margin-bottom:20px;word-wrap:break-word">
+        <h1 class="reveal d1" style="font-size:clamp(40px,5vw,60px);font-weight:800;color:#fff;line-height:1.2;letter-spacing:-.02em;margin-bottom:20px;word-wrap:break-word;overflow-wrap:break-word;max-width:100%;box-sizing:border-box">
           Tot ce ai nevoie<br>
           <span style="color:#FF8C00">pentru casă sau afacere</span><br>
           <span style="font-size:.65em;font-weight:600;color:rgba(255,255,255,.65)">într-un singur loc, alocat de AI</span>
