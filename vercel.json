@@ -5,12 +5,15 @@
 
   "rewrites": [
     { "source": "/:path*", "has": [{ "type": "host", "value": "api.mydarrin.homebestpal.com" }], "destination": "/api/:path*" },
+
     { "source": "/", "has": [{ "type": "host", "value": "admin.mydarrin.homebestpal.com" }], "destination": "/mydarrin-superadmin.html" },
     { "source": "/backoffice", "has": [{ "type": "host", "value": "admin.mydarrin.homebestpal.com" }], "destination": "/mydarrin-backoffice-serviciu.html" },
 
-    { "source": "/", "destination": "/mydarrin-v3.html" },
+    { "source": "/", "has": [{ "type": "host", "value": "mydarrin.homebestpal.com" }], "destination": "/mydarrin-v3.html" },
     { "source": "/catalog", "destination": "/mydarrin-catalog.html" },
-    { "source": "/devino-partener", "destination": "/mydarrin-devino-partner.html" }
+    { "source": "/devino-partener", "destination": "/mydarrin-devino-partener.html" },
+
+    { "source": "/", "destination": "/mydarrin-v3.html" }
   ],
 
   "headers": [
@@ -23,11 +26,6 @@
         { "key": "Content-Security-Policy", "value": "default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co" }
       ]
     },
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-store" }
-      ]
-    }
+    { "source": "/api/(.*)", "headers": [{ "key": "Cache-Control", "value": "no-store" }] }
   ]
 }
