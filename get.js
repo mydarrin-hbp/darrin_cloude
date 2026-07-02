@@ -1,7 +1,5 @@
 // /api/branding/get.js
-// Citește logo-urile curente din Vercel KV.
-// Returnează null pentru fiecare slot necustomizat → frontend folosește fallback-ul implicit (base64 din cod).
-
+// Citește logo-urile curente din Vercel KV. Endpoint public (read-only).
 const { kv } = require('@vercel/kv');
 
 module.exports = async function handler(req, res) {
@@ -21,12 +19,12 @@ module.exports = async function handler(req, res) {
 
     res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
     return res.status(200).json({
-      header_logo: headerLogo || null,   // { dataUrl, updatedAt } sau null
+      header_logo: headerLogo || null,
       footer_logo: footerLogo || null,
       robot_mascot: robotMascot || null,
     });
   } catch (err) {
     console.error('branding/get error:', err);
-    return res.status(500).json({ error: 'Failed to read branding', detail: String(err) });
+    return res.status(500).json({ error: 'Failed to read branding' });
   }
 };
