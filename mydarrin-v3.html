@@ -2290,10 +2290,16 @@ const CURRENCIES = {
 const ACTIVE_ZONES = ['RO', 'MD'];
 
 function detectAndApplyCurrency() {
-  // Try to get country from IP via free API
-  fetch('https://ipapi.co/json/')
+  // Try to get country from IP via free API — cu timeout, ca să nu lăsăm
+  // pagina blocată dacă serviciul extern e lent sau indisponibil (rate-limit etc.)
+  const GEO_TIMEOUT_MS = 3500;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), GEO_TIMEOUT_MS);
+
+  fetch('https://ipapi.co/json/', { signal: controller.signal })
     .then(r => r.json())
     .then(data => {
+      clearTimeout(timeoutId);
       const country = data.country_code || 'RO';
       const city = data.city || '';
       const region = data.region || '';
@@ -2319,7 +2325,12 @@ function detectAndApplyCurrency() {
       }
     })
     .catch(() => {
-      // Fallback: RO
+      // Fallback: eșec, timeout sau abort → tratăm vizitatorul ca fiind în
+      // România, fără banner de "zonă indisponibilă". Mai bine arătăm
+      // catalogul complet decât să blocăm pagina din cauza unui API extern.
+      clearTimeout(timeoutId);
+      document.getElementById('loc-display').textContent = 'România';
+      document.getElementById('loc-input').value = 'România';
       applyCurrency(CURRENCIES.RO);
     });
 }
@@ -2398,48 +2409,9 @@ function animateCounter(el){
     if(t<1)requestAnimationFrame(tick);
   })(performance.now());
 }
-const cobs=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting&&!x.target.dataset.done){x.target.dataset.done='1';animateCounter(x.target);}}),{threshold:.5});
+const cobs=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting&&!x.target.dataset.done){x.target.dataset.done='1';animateCounter(x.target);}}),{threshold:.3});
 document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
 </script>
-
-<script>
-// ════ COUNTER ANIMATION — My Darrin ════
-(function() {
-  function animateCounter(el) {
-    const target  = parseInt(el.getAttribute('data-target')) || 0;
-    const duration = 1800;
-    const step     = 16;
-    const increment = target / (duration / step);
-    let current = 0;
-    const fmt = n => n >= 1000 ? (n/1000).toFixed(1).replace('.',',')+'K' : Math.round(n).toString();
-    const timer = setInterval(() => {
-      current += increment;
-      if (current >= target) { current = target; clearInterval(timer); }
-      el.textContent = fmt(current);
-    }, step);
-  }
-
-  function initCounters() {
-    const counters = document.querySelectorAll('.counter[data-target]');
-    if (!counters.length) return;
-    const obs = new IntersectionObserver((entries) => {
-      entries.forEach(e => {
-        if (e.isIntersecting && e.target.textContent.trim() === '0') {
-          animateCounter(e.target);
-        }
-      });
-    }, { threshold: 0.3 });
-    counters.forEach(c => obs.observe(c));
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initCounters);
-  } else {
-    initCounters();
-  }
-})();
-</script>
-
 
 <script>
 // ════ ZONE ACTIVE CHECK — My Darrin ════
