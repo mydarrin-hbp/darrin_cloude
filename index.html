@@ -6,11 +6,28 @@
   <script>
     (function () {
       var host = window.location.hostname;
-      var target = '/mydarrin-v3.html';
+
+      // admin.mydarrin.homebestpal.com → panoul de superadmin
       if (host.indexOf('admin.') === 0) {
-        target = '/mydarrin-superadmin.html';
+        window.location.replace('/mydarrin-superadmin.html');
+        return;
       }
-      window.location.replace(target);
+
+      // api.mydarrin.homebestpal.com → NU redirecționa niciodată către
+      // paginile HTML publice. Acest subdomeniu servește exclusiv
+      // endpoint-uri sub /api/*, consumate de aplicația mobilă.
+      if (host.indexOf('api.') === 0) {
+        document.title = 'My Darrin API';
+        document.body.innerHTML =
+          '<pre>{"service":"My Darrin API","status":"ok",' +
+          '"info":"Acest subdomeniu servește exclusiv endpoint-uri /api/*. ' +
+          'Nu există pagini HTML aici."}</pre>';
+        return;
+      }
+
+      // mydarrin.homebestpal.com (și orice alt domeniu, ex. *.vercel.app)
+      // → site-ul public
+      window.location.replace('/mydarrin-v3.html');
     })();
   </script>
 </head>
