@@ -665,13 +665,6 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
   box-sizing: border-box !important;
 }
 </style>
-<script>
-  window.__ENV__ = {
-    SUPABASE_URL: 'https://aacojyvujhywanaulvuu.supabase.co',
-    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhY29qeXZ1amh5d2FuYXVsdnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MjAzMzIsImV4cCI6MjA5ODQ5NjMzMn0.iwZnxctvazOL5OU_wqD7AvAKrVoOqLH_uvj1krK8-vs'
-  };
-</script>
-<script type="module" src="/lib/supabaseClient.js"></script>
 <script src="account-system.js"></script>
 </head>
 <body>
@@ -1871,46 +1864,31 @@ function saveLocation(){
 // Auth modal
 let isLoggedIn = false;
 
-async function performLogin() {
-  const emailEl = document.getElementById('login-email');
-  const passEl  = document.getElementById('login-pass');
-  const email = emailEl ? emailEl.value.trim() : '';
-  const pass  = passEl ? passEl.value : '';
-  if (!email || !pass) { showToastMsg('Completează email și parolă.'); return; }
-  try {
-    await window.MyDarrinAuth.performLogin(email, pass);
-    isLoggedIn = true;
-    const modal = document.getElementById('auth-modal');
-    if (modal) modal.classList.add('hidden');
-    document.body.style.overflow = '';
-    const link = document.getElementById('sb-comenzi-link');
-    if (link) link.style.display = 'flex';
-    showToastMsg('✅ Te-ai autentificat cu succes!');
-  } catch (e) {
-    showToastMsg('✗ ' + (e.message || 'Autentificare eșuată'));
-  }
+function performLogin() {
+  isLoggedIn = true;
+  const modal = document.getElementById('auth-modal');
+  if (modal) modal.classList.add('hidden');
+  document.body.style.overflow = '';
+  const link = document.getElementById('sb-comenzi-link');
+  if (link) link.style.display = 'flex';
+  try { sessionStorage.setItem('myd_logged_in', '1'); } catch(e) {}
+  showToastMsg('✅ Te-ai autentificat cu succes!');
 }
 
-async function performRegister() {
+function performRegister() {
+  isLoggedIn = true;
   const emailEl = document.getElementById('reg-email');
   const numeEl  = document.getElementById('reg-nume');
-  const passEl  = document.getElementById('reg-pass');
-  const email = emailEl ? emailEl.value.trim() : '';
-  const nume  = numeEl ? numeEl.value.trim() : '';
-  const pass  = passEl ? passEl.value : '';
-  if (!email || !pass) { showToastMsg('Completează email și parolă.'); return; }
-  try {
-    await window.MyDarrinAuth.performRegister(email, pass, nume);
-    isLoggedIn = true;
-    const modal = document.getElementById('auth-modal');
-    if (modal) modal.classList.add('hidden');
-    document.body.style.overflow = '';
-    const link = document.getElementById('sb-comenzi-link');
-    if (link) link.style.display = 'flex';
-    showToastMsg('✅ Cont creat cu succes! Verifică emailul pentru confirmare.');
-  } catch (e) {
-    showToastMsg('✗ ' + (e.message || 'Înregistrare eșuată'));
+  if (typeof createBaseAccount === 'function') {
+    createBaseAccount(emailEl ? emailEl.value.trim() : '', numeEl ? numeEl.value.trim() : '');
   }
+  const modal = document.getElementById('auth-modal');
+  if (modal) modal.classList.add('hidden');
+  document.body.style.overflow = '';
+  const link = document.getElementById('sb-comenzi-link');
+  if (link) link.style.display = 'flex';
+  try { sessionStorage.setItem('myd_logged_in', '1'); } catch(e) {}
+  showToastMsg('✅ Cont creat cu succes! Bine ai venit pe My Darrin.');
 }
 
 function showToastMsg(msg) {
@@ -2571,8 +2549,8 @@ function daiSendMessage(){
       <h3 class="font-bold text-xl text-[#2D2D2D] mb-1" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Bine ai revenit!</h3>
       <p class="text-gray-400 text-sm mb-5">Intră în contul tău My Darrin.</p>
       <div class="space-y-3 mb-4">
-        <input type="email" id="login-email" placeholder="Adresa de email" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
-        <input type="password" id="login-pass" placeholder="Parola" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
+        <input type="email" placeholder="Adresa de email" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
+        <input type="password" placeholder="Parola" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
       </div>
       <a href="mailto:contact@mydarrin.ro?subject=Resetare%20parola" class="text-xs text-[#003366] hover:underline mb-5 block">Ai uitat parola?</a>
       <button onclick="performLogin()" class="w-full bg-[#003366] text-white py-3.5 rounded-xl font-bold text-sm hover:bg-[#002855] transition">
