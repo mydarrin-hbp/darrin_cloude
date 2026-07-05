@@ -105,6 +105,37 @@ async function enforceAdminBarrier() {
   return true;
 }
 
+/* ── Verifică o permisiune granulară pentru secțiuni sensibile ──
+   Superadmin trece mereu. Un admin obișnuit trece DOAR dacă are
+   o înregistrare în admin_permissions pentru acea secțiune, cu
+   poate_scrie = true (acordată explicit de un superadmin din RBAC). */
+async function enforceSuperadminOrPermission(sectiune) {
+  const user = await getCurrentUser();
+  const roles = getUserRoles(user);
+  if (!user) {
+    window.location.href = 'https://mydarrin.homebestpal.com';
+    return false;
+  }
+  if (roles.includes('superadmin')) return true;
+
+  if (roles.includes('admin')) {
+    try {
+      const { data, error } = await sb()
+        .from('admin_permissions')
+        .select('poate_scrie')
+        .eq('admin_id', user.id)
+        .eq('sectiune', sectiune)
+        .maybeSingle();
+      if (!error && data && data.poate_scrie) return true;
+    } catch (e) {
+      console.error('Eroare la verificarea permisiunii:', e);
+    }
+  }
+
+  window.location.href = 'https://mydarrin.homebestpal.com';
+  return false;
+}
+
 /* ════════════════════════════════════════════════════════════════
    ADMINISTRARE — invitare admini secundari + roluri (Etapa 2.2/2.3)
    Apelurile reale către supabase.auth.admin.* rulează DOAR server-side
@@ -138,6 +169,6 @@ async function renderActiveRolesBadge(containerId) {
 window.MyDarrinAuth = {
   getCurrentUser, getUserRoles, hasRole,
   performRegister, verifyPhoneOtp, performLogin, performLogout,
-  enforceSuperadminBarrier, enforceAdminBarrier,
+  enforceSuperadminBarrier, enforceAdminBarrier, enforceSuperadminOrPermission,
   inviteSecondaryAdmin, renderActiveRolesBadge,
 };
