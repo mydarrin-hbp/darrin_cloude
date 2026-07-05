@@ -92,7 +92,7 @@ async function performLogin(email, parola) {
 
 async function performLogout() {
   await sb().auth.signOut();
-  window.location.href = 'mydarrin-v3.html';
+  window.location.href = 'https://mydarrin.homebestpal.com';
 }
 
 /* ════════════════════════════════════════════════════════════════
