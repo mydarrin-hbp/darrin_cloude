@@ -494,16 +494,6 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
       Backoffice Servicii
     </a>
-    <a class="sa-nav-item" href="mydarrin-design-system.html">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
-      Design System
-      <span class="badge chip-teal" style="font-size:9px">Admin+</span>
-    </a>
-    <a class="sa-nav-item" href="mydarrin-business-model.html">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      Business Model
-      <span class="badge chip-orange" style="font-size:9px">Superadmin</span>
-    </a>
     <a class="sa-nav-item" href="mydarrin-dashboard-furnizor.html">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
       Dashboard Furnizor
@@ -996,6 +986,44 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════ SECȚIUNE REALĂ — Permisiuni pentru admini existenți (conectat live la Supabase) ════ -->
+      <div class="sa-card" style="margin-top:20px">
+        <div class="sa-card-hdr">
+          <div style="font-weight:700;color:#1A2332;font-size:13.5px">🔑 Permisiuni pentru admini existenți — date reale</div>
+          <span id="ram-status" style="font-size:11px;color:#8FA3BD">Se încarcă...</span>
+        </div>
+        <div class="sa-card-body">
+          <div style="margin-bottom:14px">
+            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080">Selectează adminul</label>
+            <select id="ram-select" style="width:100%;max-width:400px;background:#F0F4F8;border:1px solid #D5DFE8;border-radius:9px;padding:9px 12px;color:#1A2332;font-size:13px;font-family:inherit;margin-top:6px" onchange="ramLoadPermissions()">
+              <option value="">— selectează —</option>
+            </select>
+          </div>
+
+          <div id="ram-perms-box" style="display:none">
+            <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px" id="ram-checkboxes">
+              <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#1A2332;cursor:pointer">
+                <input type="checkbox" class="ram-perm" value="aprobare_pfa_cui" style="width:15px;height:15px;cursor:pointer"> Aprobare documente PFA/CUI parteneri
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#1A2332;cursor:pointer">
+                <input type="checkbox" class="ram-perm" value="comisioane" style="width:15px;height:15px;cursor:pointer"> Calcul comisioane financiare
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#1A2332;cursor:pointer">
+                <input type="checkbox" class="ram-perm" value="curieri" style="width:15px;height:15px;cursor:pointer"> Monitorizare curieri de cartier
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#1A2332;cursor:pointer">
+                <input type="checkbox" class="ram-perm" value="asigurari_escrow" style="width:15px;height:15px;cursor:pointer"> Management polițe & Escrow
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#1A2332;cursor:pointer">
+                <input type="checkbox" class="ram-perm" value="business_model" style="width:15px;height:15px;cursor:pointer"> Acces Business Model (confidențial)
+              </label>
+            </div>
+            <div id="ram-msg" style="font-size:12px;margin-bottom:10px;min-height:16px"></div>
+            <button class="btn-p" id="ram-save-btn" onclick="ramSavePermissions()">Salvează permisiunile</button>
           </div>
         </div>
       </div>
@@ -2037,12 +2065,17 @@ window.addEventListener('scroll',()=>{});
   // Inițializăm doar când panoul Branding devine vizibil (lazy, evită fetch inutil la load)
   const origShowPanel = window.showPanel;
   let brandingInitialized = false;
+  let ramInitialized = false;
   if (typeof origShowPanel === 'function') {
     window.showPanel = function (id) {
       origShowPanel(id);
       if (id === 'branding' && !brandingInitialized) {
         brandingInitialized = true;
         initBrandingPanel();
+      }
+      if (id === 'rbac' && !ramInitialized) {
+        ramInitialized = true;
+        if (typeof ramInit === 'function') ramInit();
       }
     };
   }
@@ -2077,9 +2110,6 @@ window.addEventListener('scroll',()=>{});
       </label>
       <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#E2E8F0;cursor:pointer">
         <input type="checkbox" value="asigurari_escrow" style="width:15px;height:15px;cursor:pointer"> Management polițe & Escrow
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#E2E8F0;cursor:pointer">
-        <input type="checkbox" value="business_model" style="width:15px;height:15px;cursor:pointer"> Acces Business Model (confidențial)
       </label>
     </div>
 
@@ -2132,6 +2162,84 @@ async function submitInvite(){
   } finally {
     btn.disabled = false;
     btn.textContent = 'Trimite invitația';
+  }
+}
+</script>
+
+<script>
+/* ════ Permisiuni admini existenți — conectat real la Supabase (tabelul admin_permissions) ════ */
+async function ramInit(){
+  const status = document.getElementById('ram-status');
+  const select = document.getElementById('ram-select');
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('profiles')
+      .select('id,email,role')
+      .in('role', ['admin','superadmin'])
+      .order('email');
+    if (error) throw error;
+    select.innerHTML = '<option value="">— selectează —</option>' +
+      (data||[]).map(u => `<option value="${u.id}">${u.email} (${u.role})</option>`).join('');
+    status.textContent = (data||[]).length + ' admini găsiți';
+    status.style.color = '#8FA3BD';
+  } catch (e) {
+    status.textContent = 'Eroare: ' + e.message;
+    status.style.color = '#E57373';
+  }
+}
+
+async function ramLoadPermissions(){
+  const id = document.getElementById('ram-select').value;
+  const box = document.getElementById('ram-perms-box');
+  document.querySelectorAll('.ram-perm').forEach(c=>c.checked=false);
+  document.getElementById('ram-msg').textContent = '';
+  if (!id) { box.style.display='none'; return; }
+  box.style.display='block';
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('admin_permissions')
+      .select('sectiune,poate_scrie')
+      .eq('admin_id', id);
+    if (error) throw error;
+    (data||[]).forEach(p=>{
+      if (p.poate_scrie) {
+        const cb = document.querySelector(`.ram-perm[value="${p.sectiune}"]`);
+        if (cb) cb.checked = true;
+      }
+    });
+  } catch (e) {
+    const msg = document.getElementById('ram-msg');
+    msg.style.color='#C0392B';
+    msg.textContent = 'Eroare la încărcare: ' + e.message;
+  }
+}
+
+async function ramSavePermissions(){
+  const adminId = document.getElementById('ram-select').value;
+  const msg = document.getElementById('ram-msg');
+  const btn = document.getElementById('ram-save-btn');
+  if (!adminId) return;
+  btn.disabled = true; btn.textContent = 'Se salvează...';
+  try {
+    const { data: userData } = await window.supabaseClient.auth.getUser();
+    const rows = Array.from(document.querySelectorAll('.ram-perm')).map(cb => ({
+      admin_id: adminId,
+      sectiune: cb.value,
+      poate_scrie: cb.checked,
+      acordat_de: userData?.user?.id || null,
+    }));
+    const { error } = await window.supabaseClient
+      .from('admin_permissions')
+      .upsert(rows, { onConflict: 'admin_id,sectiune' });
+    if (error) throw error;
+    msg.style.color = '#1A7A3A';
+    msg.textContent = '✓ Permisiuni salvate.';
+    if (typeof showToast === 'function') showToast('✓ Permisiuni actualizate');
+  } catch (e) {
+    msg.style.color = '#C0392B';
+    msg.textContent = '✗ ' + e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Salvează permisiunile';
   }
 }
 </script>
