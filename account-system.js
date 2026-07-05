@@ -31,19 +31,34 @@ async function getCurrentUser() {
   return data.user;
 }
 
-function getUserRoles(user) {
+async function getUserRoles(user) {
   if (!user) return [];
-  const role = user.user_metadata?.role;
-  const roles = user.user_metadata?.roles;
   const set = new Set();
-  if (role) set.add(role);
-  if (Array.isArray(roles)) roles.forEach(r => set.add(r));
+
+  // Sursa metadata (JWT) — utilă pentru admini invitați prin assign-role,
+  // dar poate fi desincronizată față de baza de date (nu se actualizează
+  // automat la fiecare schimbare din tabelul profiles).
+  const metaRole = user.user_metadata?.role;
+  const metaRoles = user.user_metadata?.roles;
+  if (metaRole) set.add(metaRole);
+  if (Array.isArray(metaRoles)) metaRoles.forEach(r => set.add(r));
+
+  // Sursa reală, autoritativă: tabelul profiles (aceeași sursă pe care
+  // o folosesc și politicile RLS din Supabase) — mereu prioritară.
+  try {
+    const { data } = await sb().from('profiles').select('role').eq('id', user.id).single();
+    if (data?.role) set.add(data.role);
+  } catch (e) {
+    console.error('Eroare la citirea rolului din profiles:', e);
+  }
+
   return Array.from(set);
 }
 
 async function hasRole(roleKey) {
   const user = await getCurrentUser();
-  return getUserRoles(user).includes(roleKey);
+  const roles = await getUserRoles(user);
+  return roles.includes(roleKey);
 }
 
 /* ── Înregistrare — Pasul 1 (Etapa 3.2) ── */
@@ -87,7 +102,7 @@ async function performLogout() {
    ════════════════════════════════════════════════════════════════ */
 async function enforceSuperadminBarrier() {
   const user = await getCurrentUser();
-  const roles = getUserRoles(user);
+  const roles = await getUserRoles(user);
   if (!user || !roles.includes('superadmin')) {
     window.location.href = 'https://mydarrin.homebestpal.com';
     return false;
@@ -97,7 +112,7 @@ async function enforceSuperadminBarrier() {
 
 async function enforceAdminBarrier() {
   const user = await getCurrentUser();
-  const roles = getUserRoles(user);
+  const roles = await getUserRoles(user);
   if (!user || !(roles.includes('admin') || roles.includes('superadmin'))) {
     window.location.href = 'https://mydarrin.homebestpal.com';
     return false;
@@ -111,7 +126,7 @@ async function enforceAdminBarrier() {
    poate_scrie = true (acordată explicit de un superadmin din RBAC). */
 async function enforceSuperadminOrPermission(sectiune) {
   const user = await getCurrentUser();
-  const roles = getUserRoles(user);
+  const roles = await getUserRoles(user);
   if (!user) {
     window.location.href = 'https://mydarrin.homebestpal.com';
     return false;
@@ -157,7 +172,7 @@ async function renderActiveRolesBadge(containerId) {
   const el = document.getElementById(containerId);
   if (!el) return;
   const user = await getCurrentUser();
-  const roles = getUserRoles(user);
+  const roles = await getUserRoles(user);
   if (roles.length === 0) { el.innerHTML = ''; return; }
   el.innerHTML = roles.map(function (key) {
     const r = ROLE_META[key];

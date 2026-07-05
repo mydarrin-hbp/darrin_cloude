@@ -2336,10 +2336,16 @@ async function accInit(){
   try {
     const { data: userData } = await window.supabaseClient.auth.getUser();
     const user = userData?.user;
-    const role = user?.user_metadata?.role;
-    let hasAccess = role === 'superadmin';
+    if (!user) { denied.style.display = 'block'; return; }
 
-    if (!hasAccess && user) {
+    const { data: profile } = await window.supabaseClient
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    let hasAccess = profile?.role === 'superadmin';
+
+    if (!hasAccess) {
       const { data: perms } = await window.supabaseClient
         .from('admin_permissions')
         .select('poate_scrie')

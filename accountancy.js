@@ -7,8 +7,9 @@ const { supabaseAdmin } = require('../lib/supabaseAdmin');
 const { getAuthenticatedUser } = require('../lib/auth-middleware');
 
 async function checkAccountancyAccess(user, tara_cod) {
-  const role = user.user_metadata?.role;
-  if (role === 'superadmin') return true;
+  const { data: profile } = await supabaseAdmin.from('profiles').select('role').eq('id', user.id).single();
+  if (profile?.role === 'superadmin') return true;
+  if (user.user_metadata?.role === 'superadmin') return true;
 
   const { data } = await supabaseAdmin
     .from('admin_permissions')
@@ -20,7 +21,6 @@ async function checkAccountancyAccess(user, tara_cod) {
   return data.some(p => p.poate_scrie && (p.tara_cod === null || p.tara_cod === tara_cod));
 }
 
-// ── Convertește o proformă în factură fiscală DOAR dacă ambele confirmări sunt true ──
 async function actionConfirmIncasare(req, res, user) {
   const { invoice_id } = req.body;
   const { data: inv, error } = await supabaseAdmin.from('invoices').select('*').eq('id', invoice_id).single();
@@ -61,7 +61,6 @@ async function maybeConvert(res, invoice_id) {
 
     if (error) return res.status(500).json({ error: 'Eroare la conversia facturii' });
 
-    // Înregistrare automată în financial_records
     await supabaseAdmin.from('financial_records').insert({
       tip: 'venit',
       suma: updated.suma_totala,
