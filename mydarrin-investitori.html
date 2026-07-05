@@ -419,8 +419,11 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 <body>
 
 <script>
-// Polyfill scrollTo pentru sectiuni (nu overrideam window.scrollTo)
-function scrollTo(id){
+// Redenumit din scrollTo → scrollToSection: un <button onclick="scrollTo(...)">
+// inline apelează ÎNTÂI scrollTo() nativ al elementului (Element.prototype.scrollTo,
+// folosit pentru derulare internă de conținut), nu funcția globală personalizată —
+// de-aia butoanele nu funcționau, indiferent cât de corectă era funcția.
+function scrollToSection(id){
   if(typeof id === 'string'){
     const el = document.getElementById(id);
     if(el) el.scrollIntoView({behavior:'smooth'});
@@ -475,11 +478,11 @@ function scrollTo(id){
           Platformă hibrid clasic & AI pentru servicii integrate la cerere. Multi-țară, multi-actor, Escrow securizat. Administrat de <strong style="color:#fff">Home Best Pal SRL</strong> · Bacău, România.
         </p>
         <div class="reveal d3" style="display:flex;gap:12px;flex-wrap:wrap">
-          <button class="btn-p" onclick="scrollTo('runda')">
+          <button class="btn-p" onclick="scrollToSection('runda')">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             Intră în rundă
           </button>
-          <button class="btn-s" onclick="scrollTo('kpis')" style="color:rgba(255,255,255,.75);border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.08)" onmouseover="this.style.background='rgba(255,255,255,.16)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">
+          <button class="btn-s" onclick="scrollToSection('kpis')" style="color:rgba(255,255,255,.75);border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.08)" onmouseover="this.style.background='rgba(255,255,255,.16)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">
             KPIs Live →
           </button>
         </div>
