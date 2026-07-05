@@ -490,6 +490,11 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
       Branding & Design
     </a>
+    <a class="sa-nav-item" onclick="showPanel('accountancy')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      Accountancy
+      <span class="badge chip-orange" style="font-size:9px">Restricționat</span>
+    </a>
     <a class="sa-nav-item" href="mydarrin-backoffice-serviciu.html">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
       Backoffice Servicii
@@ -1370,6 +1375,74 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       </div>
     </div>
 
+    <!-- ══ PANEL: ACCOUNTANCY (restricționat — superadmin sau contabil aprobat) ══ -->
+    <div id="panel-accountancy" style="display:none">
+      <div id="acc-denied" style="display:none;text-align:center;padding:60px 20px">
+        <div style="font-size:48px;margin-bottom:16px">🔒</div>
+        <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:8px">Acces restricționat</div>
+        <p style="color:#4A6080">Această secțiune e vizibilă doar contabililor aprobați de Superadmin sau superadminului însuși.</p>
+      </div>
+
+      <div id="acc-content" style="display:none">
+        <div style="margin-bottom:20px">
+          <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">💰 Accountancy — Financiar Global</h2>
+          <p style="font-size:12.5px;color:#4A6080">Venituri · Cheltuieli · TVA · Salarii · Facturare fiscală</p>
+        </div>
+
+        <!-- KPI sumar financiar -->
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px">
+          <div class="kpi-card kpi-green"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;margin-bottom:8px">Venituri</div><div id="acc-venituri" style="font-size:22px;font-weight:800;color:#4ADE80">—</div></div>
+          <div class="kpi-card kpi-red"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;margin-bottom:8px">Cheltuieli</div><div id="acc-cheltuieli" style="font-size:22px;font-weight:800;color:#F87171">—</div></div>
+          <div class="kpi-card kpi-blue"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;margin-bottom:8px">Salarii</div><div id="acc-salarii" style="font-size:22px;font-weight:800;color:#7AB3E0">—</div></div>
+          <div class="kpi-card kpi-orange"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;margin-bottom:8px">TVA de plată</div><div id="acc-tva" style="font-size:22px;font-weight:800;color:#FF8C00">—</div></div>
+          <div class="kpi-card kpi-teal"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;margin-bottom:8px">Profit net</div><div id="acc-profit" style="font-size:22px;font-weight:800;color:#0E9E99">—</div></div>
+        </div>
+
+        <!-- Config TVA per țară -->
+        <div class="sa-card" style="margin-bottom:18px">
+          <div class="sa-card-hdr"><div style="font-weight:700;color:#1A2332;font-size:13.5px">⚖ Cote TVA & Impozite per țară</div></div>
+          <div class="sa-card-body" style="padding:0">
+            <table class="sa-table">
+              <thead><tr><th>Țară</th><th>Monedă</th><th>TVA %</th><th>Impozit venit %</th><th>Acțiune</th></tr></thead>
+              <tbody id="acc-tax-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Conturi bancare -->
+        <div class="sa-card" style="margin-bottom:18px">
+          <div class="sa-card-hdr">
+            <div style="font-weight:700;color:#1A2332;font-size:13.5px">🏦 Conturi bancare</div>
+            <button class="btn-p" style="font-size:11px;padding:6px 12px" onclick="document.getElementById('acc-bank-form').style.display='flex'">+ Adaugă cont</button>
+          </div>
+          <div class="sa-card-body">
+            <div id="acc-bank-form" style="display:none;gap:8px;margin-bottom:14px;flex-wrap:wrap;padding:12px;background:#F8FAFC;border-radius:10px">
+              <input id="acc-bank-nume" placeholder="Nume afișat" style="flex:1;min-width:140px;padding:8px 10px;border:1px solid #D5DFE8;border-radius:8px;font-size:12px;font-family:inherit">
+              <input id="acc-bank-banca" placeholder="Banca" style="flex:1;min-width:120px;padding:8px 10px;border:1px solid #D5DFE8;border-radius:8px;font-size:12px;font-family:inherit">
+              <input id="acc-bank-iban" placeholder="IBAN" style="flex:2;min-width:180px;padding:8px 10px;border:1px solid #D5DFE8;border-radius:8px;font-size:12px;font-family:inherit">
+              <input id="acc-bank-moneda" placeholder="Monedă (RON/EUR...)" style="width:120px;padding:8px 10px;border:1px solid #D5DFE8;border-radius:8px;font-size:12px;font-family:inherit">
+              <button class="btn-p" style="font-size:11px" onclick="accAddBankAccount()">Salvează</button>
+            </div>
+            <table class="sa-table">
+              <thead><tr><th>Nume</th><th>Bancă</th><th>IBAN</th><th>Monedă</th></tr></thead>
+              <tbody id="acc-bank-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Facturi — proformă → fiscală -->
+        <div class="sa-card">
+          <div class="sa-card-hdr"><div style="font-weight:700;color:#1A2332;font-size:13.5px">🧾 Facturi — confirmare & conversie fiscală</div></div>
+          <div class="sa-card-body">
+            <table class="sa-table">
+              <thead><tr><th>Tip</th><th>Nr. document</th><th>Sumă</th><th>Încasare</th><th>Livrare</th><th>Status</th><th>Acțiune</th></tr></thead>
+              <tbody id="acc-invoices-tbody"><tr><td colspan="7" style="text-align:center;color:#8C9BAD">Nicio factură încă</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Alte paneluri placeholder -->
 <div id="panel-platforme" style="display:none;text-align:center;padding:60px 20px">
       <div style="font-size:48px;margin-bottom:16px">🔗</div>
@@ -1428,13 +1501,13 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 
 <script>
 // ── NAVIGATION ──
-const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding'];
+const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding','accountancy'];
 const TITLES = {
   dashboard:'Dashboard Global',tari:'Țări & Zone',utilizatori:'Utilizatori & Actori',
   rbac:'Permisiuni RBAC',platforme:'Platforme & Integrări',escrow:'Escrow Global',
   comisioane:'Comisioane & Tarifare',vmc:'VMC per Țară',parteneri:'Parteneri Globali',
   comenzi:'Comenzi Globale',audit:'Audit Log',config:'Configurare Sistem',
-  branding:'Branding & Design Platformă'
+  branding:'Branding & Design Platformă',accountancy:'Accountancy'
 };
 
 function showPanel(id){
@@ -2077,6 +2150,9 @@ window.addEventListener('scroll',()=>{});
         ramInitialized = true;
         if (typeof ramInit === 'function') ramInit();
       }
+      if (id === 'accountancy') {
+        if (typeof accInit === 'function') accInit();
+      }
     };
   }
 })();
@@ -2241,6 +2317,147 @@ async function ramSavePermissions(){
   } finally {
     btn.disabled = false; btn.textContent = 'Salvează permisiunile';
   }
+}
+</script>
+
+<script>
+/* ════ ACCOUNTANCY — verificare acces + date reale din Supabase/API ════ */
+async function accGetToken(){
+  const { data } = await window.supabaseClient.auth.getSession();
+  return data?.session?.access_token || '';
+}
+
+async function accInit(){
+  const denied = document.getElementById('acc-denied');
+  const content = document.getElementById('acc-content');
+  denied.style.display = 'none';
+  content.style.display = 'none';
+
+  try {
+    const { data: userData } = await window.supabaseClient.auth.getUser();
+    const user = userData?.user;
+    const role = user?.user_metadata?.role;
+    let hasAccess = role === 'superadmin';
+
+    if (!hasAccess && user) {
+      const { data: perms } = await window.supabaseClient
+        .from('admin_permissions')
+        .select('poate_scrie')
+        .eq('admin_id', user.id)
+        .eq('sectiune', 'accountancy');
+      hasAccess = (perms || []).some(p => p.poate_scrie);
+    }
+
+    if (!hasAccess) { denied.style.display = 'block'; return; }
+    content.style.display = 'block';
+
+    await Promise.all([accLoadTaxConfig(), accLoadBankAccounts(), accLoadInvoices(), accLoadSummary()]);
+  } catch (e) {
+    console.error('[accountancy]', e);
+    denied.style.display = 'block';
+  }
+}
+
+async function accLoadSummary(){
+  try {
+    const token = await accGetToken();
+    const res = await fetch('/api/accountancy?action=summary', { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    if (!res.ok) return;
+    const s = data.summary;
+    const fmt = n => (n || 0).toLocaleString('ro-RO', { maximumFractionDigits: 2 });
+    document.getElementById('acc-venituri').textContent = fmt(s.venituri);
+    document.getElementById('acc-cheltuieli').textContent = fmt(s.cheltuieli);
+    document.getElementById('acc-salarii').textContent = fmt(s.salarii);
+    document.getElementById('acc-tva').textContent = fmt(s.tva_de_plata);
+    document.getElementById('acc-profit').textContent = fmt(s.profit_net);
+  } catch (e) { console.error(e); }
+}
+
+async function accLoadTaxConfig(){
+  const { data } = await window.supabaseClient.from('tax_configurations').select('*').order('tara_cod');
+  const tbody = document.getElementById('acc-tax-tbody');
+  tbody.innerHTML = (data || []).map(t => `
+    <tr>
+      <td>${t.tara_nume} (${t.tara_cod})</td>
+      <td>${t.moneda}</td>
+      <td><input type="number" step="0.1" value="${t.cota_tva}" id="acc-tva-${t.tara_cod}" style="width:70px;padding:4px 8px;border:1px solid #D5DFE8;border-radius:6px;font-family:inherit"></td>
+      <td><input type="number" step="0.1" value="${t.cota_impozit_venit || 0}" id="acc-imp-${t.tara_cod}" style="width:70px;padding:4px 8px;border:1px solid #D5DFE8;border-radius:6px;font-family:inherit"></td>
+      <td><button class="btn-s" style="font-size:11px;padding:5px 10px" onclick="accSaveTaxConfig('${t.tara_cod}')">Salvează</button></td>
+    </tr>`).join('');
+}
+
+async function accSaveTaxConfig(tara_cod){
+  const cota_tva = parseFloat(document.getElementById(`acc-tva-${tara_cod}`).value);
+  const cota_impozit_venit = parseFloat(document.getElementById(`acc-imp-${tara_cod}`).value);
+  const token = await accGetToken();
+  const res = await fetch('/api/accountancy', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ action: 'update_tax_config', tara_cod, cota_tva, cota_impozit_venit }),
+  });
+  if (res.ok) showToast(`✓ Cote actualizate pentru ${tara_cod}`);
+  else showToast('✗ Eroare la salvare');
+}
+
+async function accLoadBankAccounts(){
+  const { data } = await window.supabaseClient.from('bank_accounts').select('*').order('created_at', { ascending: false });
+  const tbody = document.getElementById('acc-bank-tbody');
+  tbody.innerHTML = (data || []).length
+    ? data.map(b => `<tr><td>${b.nume_afisat}</td><td>${b.banca}</td><td>${b.iban}</td><td>${b.moneda}</td></tr>`).join('')
+    : '<tr><td colspan="4" style="text-align:center;color:#8C9BAD">Niciun cont adăugat</td></tr>';
+}
+
+async function accAddBankAccount(){
+  const payload = {
+    action: 'add_bank_account',
+    nume_afisat: document.getElementById('acc-bank-nume').value.trim(),
+    banca: document.getElementById('acc-bank-banca').value.trim(),
+    iban: document.getElementById('acc-bank-iban').value.trim(),
+    moneda: document.getElementById('acc-bank-moneda').value.trim().toUpperCase(),
+  };
+  if (!payload.nume_afisat || !payload.iban || !payload.moneda) { showToast('✗ Completează Nume, IBAN și Monedă'); return; }
+  const token = await accGetToken();
+  const res = await fetch('/api/accountancy', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload),
+  });
+  if (res.ok) {
+    showToast('✓ Cont bancar adăugat');
+    document.getElementById('acc-bank-form').style.display = 'none';
+    accLoadBankAccounts();
+  } else showToast('✗ Eroare la adăugare');
+}
+
+async function accLoadInvoices(){
+  const { data } = await window.supabaseClient.from('invoices').select('*').order('emisa_la', { ascending: false }).limit(50);
+  const tbody = document.getElementById('acc-invoices-tbody');
+  if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#8C9BAD">Nicio factură încă</td></tr>'; return; }
+  tbody.innerHTML = data.map(inv => `
+    <tr>
+      <td><span class="chip ${inv.tip === 'fiscala' ? 'chip-green' : 'chip-orange'}">${inv.tip}</span></td>
+      <td>${inv.numar_document || '—'}</td>
+      <td>${Number(inv.suma_totala).toLocaleString('ro-RO')} ${inv.moneda}</td>
+      <td>${inv.incasare_confirmata ? '✅' : `<button class="btn-s" style="font-size:10px;padding:3px 8px" onclick="accConfirm('${inv.id}','confirm_incasare')">Confirmă</button>`}</td>
+      <td>${inv.livrare_confirmata ? '✅' : `<button class="btn-s" style="font-size:10px;padding:3px 8px" onclick="accConfirm('${inv.id}','confirm_livrare')">Confirmă</button>`}</td>
+      <td>${inv.status}</td>
+      <td>—</td>
+    </tr>`).join('');
+}
+
+async function accConfirm(invoice_id, action){
+  const token = await accGetToken();
+  const res = await fetch('/api/accountancy', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ action, invoice_id }),
+  });
+  const data = await res.json();
+  if (!res.ok) { showToast('✗ ' + (data.error || 'Eroare')); return; }
+  showToast(data.converted ? '🎉 Convertită în factură fiscală: ' + data.invoice.numar_document : '✓ Confirmare înregistrată');
+  accLoadInvoices();
+  accLoadSummary();
 }
 </script>
 
