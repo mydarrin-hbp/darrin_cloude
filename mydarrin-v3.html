@@ -867,6 +867,13 @@ footer a:hover { color:#FF8C00; }
         <span class="hidden md:inline">Backoffice</span>
       </a>
 
+      <!-- Dashboard-ul propriu — vizibil DOAR dacă ești logat ȘI ai un rol de actor (client/partener/investitor) -->
+      <a href="#" id="header-dashboard-link" style="display:none"
+         class="sm:flex items-center gap-2 bg-[#0E9E99] text-white px-4 py-2.5 rounded-xl text-xs font-semibold hover:bg-[#0c8a86] transition">
+        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+        <span class="hidden md:inline" id="header-dashboard-label">Dashboard</span>
+      </a>
+
       <!-- Creare/logare cont — se schimbă vizual dacă ești deja logat -->
       <button onclick="toggleAuthModal()" id="header-account-btn"
               class="hidden sm:flex items-center gap-2 border border-[#D5DFE8] text-[#2D2D2D] px-4 py-2.5 rounded-xl text-xs font-semibold hover:border-[#003366] hover:text-[#003366] transition">
@@ -915,6 +922,22 @@ footer a:hover { color:#FF8C00; }
           const bo = document.getElementById('header-backoffice-link');
           if (bo) bo.style.display = 'flex';
         }
+
+        // Dashboard propriu, în funcție de rol — vizibil doar dacă avem un rol recunoscut de actor
+        const DASHBOARD_MAP = [
+          { roles: ['partener_servicii', 'partener_curier', 'partener_asigurari', 'partener_inchirieri'], url: 'mydarrin-dashboard-partener.html', label: 'Dashboard Partener' },
+          { roles: ['furnizor_materiale', 'partener_materiale'], url: 'mydarrin-dashboard-furnizor.html', label: 'Dashboard Furnizor' },
+          { roles: ['investor'], url: 'mydarrin-investitori.html', label: 'Zona Investitor' },
+          { roles: ['client'], url: 'mydarrin-dashboard-client.html', label: 'Dashboard-ul meu' },
+        ];
+        const match = DASHBOARD_MAP.find(m => m.roles.some(r => roles.includes(r)));
+        if (match) {
+          const dl = document.getElementById('header-dashboard-link');
+          const dlabel = document.getElementById('header-dashboard-label');
+          if (dl) { dl.href = match.url; dl.style.display = 'flex'; }
+          if (dlabel) dlabel.textContent = match.label;
+        }
+
         if (typeof lucide !== 'undefined') lucide.createIcons();
       } catch (e) {
         console.error('[header] eroare la inițializarea stării de logare:', e);
@@ -2231,6 +2254,7 @@ async function performLogin() {
     const link = document.getElementById('sb-comenzi-link');
     if (link) link.style.display = 'flex';
     showToastMsg('✅ Te-ai autentificat cu succes!');
+    setTimeout(() => window.location.reload(), 800);
   } catch (e) {
     showToastMsg('✗ ' + (e.message || 'Autentificare eșuată'));
   }
