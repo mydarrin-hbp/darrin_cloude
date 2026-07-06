@@ -415,6 +415,13 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       document.getElementById('auth-gate-overlay')?.remove();
       const emailEl = document.getElementById('dp-user-email');
       if (emailEl) emailEl.textContent = user.email;
+
+      const nume = user.user_metadata?.nume || user.email.split('@')[0];
+      const initiala = nume.charAt(0).toUpperCase();
+      const sbAvatar = document.getElementById('sb-avatar');
+      const sbName = document.getElementById('sb-partner-name');
+      if (sbAvatar) sbAvatar.textContent = initiala;
+      if (sbName) sbName.textContent = nume;
     } catch (e) {
       console.error('[dashboard-partener] eroare barieră:', e);
       window.location.href = 'https://mydarrin.homebestpal.com';

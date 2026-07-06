@@ -705,23 +705,59 @@ table:not([class*="nav"]) tr:hover td { background: #F8FBFF !important; }
 </div>
 <script type="module">
   (async function () {
+    function populateUserData(user) {
+      const nume = user.user_metadata?.nume || '';
+      const [prenume, ...restNume] = nume.split(' ');
+      const numeDeFamilie = restNume.join(' ');
+      const displayName = nume || user.email.split('@')[0];
+      const initiala = displayName.charAt(0).toUpperCase();
+      const dataCont = user.created_at
+        ? new Date(user.created_at).toLocaleDateString('ro-RO', { year: 'numeric', month: 'long' })
+        : '—';
+
+      const greet = document.getElementById('dp-greeting');
+      const sub = document.getElementById('dp-subtext');
+      if (greet) greet.textContent = 'Bună, ' + displayName + '! 👋';
+      if (sub) sub.textContent = user.email;
+
+      const sbAvatar = document.getElementById('dp-sidebar-avatar');
+      const sbName = document.getElementById('dp-sidebar-name');
+      const sbEmail = document.getElementById('dp-sidebar-email');
+      if (sbAvatar) sbAvatar.textContent = initiala;
+      if (sbName) sbName.textContent = displayName;
+      if (sbEmail) sbEmail.textContent = user.email;
+
+      const pAvatar = document.getElementById('profil-avatar');
+      const pName = document.getElementById('profil-name');
+      const pEmailPhone = document.getElementById('profil-email-phone');
+      const pSince = document.getElementById('profil-since');
+      if (pAvatar) pAvatar.textContent = initiala;
+      if (pName) pName.textContent = displayName;
+      if (pEmailPhone) pEmailPhone.textContent = user.email + (user.phone ? ' · ' + user.phone : '');
+      if (pSince) pSince.textContent = 'Client din: ' + dataCont;
+
+      const iPrenume = document.getElementById('profil-input-prenume');
+      const iNume = document.getElementById('profil-input-nume');
+      const iEmail = document.getElementById('profil-input-email');
+      const iTelefon = document.getElementById('profil-input-telefon');
+      if (iPrenume) iPrenume.value = prenume || '—';
+      if (iNume) iNume.value = numeDeFamilie || '—';
+      if (iEmail) iEmail.value = user.email;
+      if (iTelefon) iTelefon.value = user.phone || '—';
+    }
+
     try {
       let tries = 0;
       while (!window.MyDarrinAuth && tries < 50) { await new Promise(r => setTimeout(r, 100)); tries++; }
       const user = await window.MyDarrinAuth?.getCurrentUser();
       if (!user) { window.location.href = 'https://mydarrin.homebestpal.com'; return; }
       document.getElementById('auth-gate-overlay')?.remove();
-      window.addEventListener('DOMContentLoaded', () => {
-        const greet = document.getElementById('dp-greeting');
-        const sub = document.getElementById('dp-subtext');
-        if (greet) greet.textContent = 'Bună, ' + (user.user_metadata?.nume || user.email.split('@')[0]) + '! 👋';
-        if (sub) sub.textContent = user.email;
-      });
-      // DOM e deja gata în majoritatea cazurilor (script rulează la finalul body)
-      const greet = document.getElementById('dp-greeting');
-      const sub = document.getElementById('dp-subtext');
-      if (greet) greet.textContent = 'Bună, ' + (user.user_metadata?.nume || user.email.split('@')[0]) + '! 👋';
-      if (sub) sub.textContent = user.email;
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => populateUserData(user));
+      } else {
+        populateUserData(user);
+      }
     } catch (e) {
       console.error('[dashboard-client] eroare barieră:', e);
       window.location.href = 'https://mydarrin.homebestpal.com';
@@ -1186,10 +1222,10 @@ table:not([class*="nav"]) tr:hover td { background: #F8FBFF !important; }
       <!-- User card -->
       <div class="bg-white rounded-2xl border border-[#D5DFE8] p-5 mb-4">
         <div class="flex items-center gap-3 mb-4">
-          <div class="w-12 h-12 rounded-2xl bg-[#003366] flex items-center justify-center text-white font-bold text-lg flex-shrink-0">A</div>
+          <div class="w-12 h-12 rounded-2xl bg-[#003366] flex items-center justify-center text-white font-bold text-lg flex-shrink-0" id="dp-sidebar-avatar">?</div>
           <div>
-            <div class="font-bold text-[#003366] text-[14px]">Alexandru M.</div>
-            <div class="text-xs text-[#8C9BAD]">alexandru@email.ro</div>
+            <div class="font-bold text-[#003366] text-[14px]" id="dp-sidebar-name">—</div>
+            <div class="text-xs text-[#8C9BAD]" id="dp-sidebar-email">—</div>
           </div>
         </div>
         <div class="grid grid-cols-3 gap-2 text-center">
@@ -1579,19 +1615,19 @@ table:not([class*="nav"]) tr:hover td { background: #F8FBFF !important; }
         <div class="bg-white rounded-2xl border border-[#D5DFE8] p-6">
           <h2 class="text-lg font-bold text-[#003366] mb-5 flex items-center gap-2"><i data-lucide="user" class="w-5 h-5"></i>Profilul meu</h2>
           <div class="flex items-center gap-5 mb-6 pb-5 border-b border-[#F4F7F9]">
-            <div class="w-16 h-16 rounded-2xl bg-[#003366] flex items-center justify-center text-white font-bold text-2xl">A</div>
+            <div class="w-16 h-16 rounded-2xl bg-[#003366] flex items-center justify-center text-white font-bold text-2xl" id="profil-avatar">?</div>
             <div>
-              <div class="font-bold text-[#003366] text-lg">Alexandru Moldovan</div>
-              <div class="text-sm text-[#8C9BAD]">alexandru@email.ro · +40721234567</div>
-              <div class="text-xs text-[#8C9BAD] mt-1">Client din: martie 2025 · București, Sector 1</div>
+              <div class="font-bold text-[#003366] text-lg" id="profil-name">—</div>
+              <div class="text-sm text-[#8C9BAD]" id="profil-email-phone">—</div>
+              <div class="text-xs text-[#8C9BAD] mt-1" id="profil-since">—</div>
             </div>
             <button class="ml-auto btn-ghost" style="padding:8px 16px;font-size:12px"><i data-lucide="edit" class="w-3.5 h-3.5"></i>Editează</button>
           </div>
           <div class="grid sm:grid-cols-2 gap-4">
-            <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Prenume</label><input type="text" value="Alexandru" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm bg-[#F4F7F9]" readonly/></div>
-            <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Nume</label><input type="text" value="Moldovan" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm bg-[#F4F7F9]" readonly/></div>
-            <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Email</label><input type="email" value="alexandru@email.ro" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm bg-[#F4F7F9]" readonly/></div>
-            <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Telefon</label><input type="tel" value="+40721234567" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm bg-[#F4F7F9]" readonly/></div>
+            <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Prenume</label><input type="text" id="profil-input-prenume" value="" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm bg-[#F4F7F9]" readonly/></div>
+            <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Nume</label><input type="text" id="profil-input-nume" value="" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm bg-[#F4F7F9]" readonly/></div>
+            <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Email</label><input type="email" id="profil-input-email" value="" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm bg-[#F4F7F9]" readonly/></div>
+            <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Telefon</label><input type="tel" id="profil-input-telefon" value="—" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm bg-[#F4F7F9]" readonly/></div>
           </div>
         </div>
       </div>
