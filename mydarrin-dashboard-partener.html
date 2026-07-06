@@ -394,6 +394,33 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 </style>
 </head>
 <body>
+<script>
+  window.__ENV__ = {
+    SUPABASE_URL: 'https://aacojyvujhywanaulvuu.supabase.co',
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhY29qeXZ1amh5d2FuYXVsdnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MjAzMzIsImV4cCI6MjA5ODQ5NjMzMn0.iwZnxctvazOL5OU_wqD7AvAKrVoOqLH_uvj1krK8-vs'
+  };
+</script>
+<script type="module" src="/lib/supabaseClient.js"></script>
+<script src="account-system.js"></script>
+<div id="auth-gate-overlay" style="position:fixed;inset:0;background:#0F1923;z-index:99999;display:flex;align-items:center;justify-content:center;color:#8BA3C0;font-family:sans-serif;font-size:14px">
+  Se verifică accesul...
+</div>
+<script type="module">
+  (async function () {
+    try {
+      let tries = 0;
+      while (!window.MyDarrinAuth && tries < 50) { await new Promise(r => setTimeout(r, 100)); tries++; }
+      const user = await window.MyDarrinAuth?.getCurrentUser();
+      if (!user) { window.location.href = 'https://mydarrin.homebestpal.com'; return; }
+      document.getElementById('auth-gate-overlay')?.remove();
+      const emailEl = document.getElementById('dp-user-email');
+      if (emailEl) emailEl.textContent = user.email;
+    } catch (e) {
+      console.error('[dashboard-partener] eroare barieră:', e);
+      window.location.href = 'https://mydarrin.homebestpal.com';
+    }
+  })();
+</script>
 <div class="dp-layout" id="dp-root">
 
 <!-- ════ SIDEBAR ════ -->
@@ -446,7 +473,11 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
         <div style="font-size:10px;color:#4A6080">Câștig azi</div>
         <div style="font-size:13px;font-weight:700;color:#FF8C00" id="dp-earnings">847 Lei</div>
       </div>
+      <span id="dp-user-email" style="font-size:11px;color:#4A6080"></span>
       <a href="mydarrin-v3.html" class="btn-s" style="font-size:11px;padding:6px 12px;color:#8BA3C0;border-color:#2D3F55;background:#192433">← Platformă</a>
+      <button onclick="window.MyDarrinAuth.performLogout()" class="btn-s" style="font-size:11px;padding:6px 10px;color:#F87171;border-color:rgba(192,57,43,.3);background:#192433" title="Deconectare">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
       <!-- IO1: Buton Pauză rapidă — vizibil doar la curier -->
       <button id="btn-pauza" onclick="showPauzaModal()" 
               style="display:none;padding:6px 14px;border-radius:9px;border:none;background:#FF8C00;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit"

@@ -690,9 +690,44 @@ table:not([class*="nav"]) tr:hover td { background: #F8FBFF !important; }
   box-sizing: border-box !important;
 }
 </style>
+<script>
+  window.__ENV__ = {
+    SUPABASE_URL: 'https://aacojyvujhywanaulvuu.supabase.co',
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhY29qeXZ1amh5d2FuYXVsdnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MjAzMzIsImV4cCI6MjA5ODQ5NjMzMn0.iwZnxctvazOL5OU_wqD7AvAKrVoOqLH_uvj1krK8-vs'
+  };
+</script>
+<script type="module" src="/lib/supabaseClient.js"></script>
 <script src="account-system.js"></script>
 </head>
 <body>
+<div id="auth-gate-overlay" style="position:fixed;inset:0;background:#F0F4F8;z-index:99999;display:flex;align-items:center;justify-content:center;color:#5A6B7D;font-family:sans-serif;font-size:14px">
+  Se verifică accesul...
+</div>
+<script type="module">
+  (async function () {
+    try {
+      let tries = 0;
+      while (!window.MyDarrinAuth && tries < 50) { await new Promise(r => setTimeout(r, 100)); tries++; }
+      const user = await window.MyDarrinAuth?.getCurrentUser();
+      if (!user) { window.location.href = 'https://mydarrin.homebestpal.com'; return; }
+      document.getElementById('auth-gate-overlay')?.remove();
+      window.addEventListener('DOMContentLoaded', () => {
+        const greet = document.getElementById('dp-greeting');
+        const sub = document.getElementById('dp-subtext');
+        if (greet) greet.textContent = 'Bună, ' + (user.user_metadata?.nume || user.email.split('@')[0]) + '! 👋';
+        if (sub) sub.textContent = user.email;
+      });
+      // DOM e deja gata în majoritatea cazurilor (script rulează la finalul body)
+      const greet = document.getElementById('dp-greeting');
+      const sub = document.getElementById('dp-subtext');
+      if (greet) greet.textContent = 'Bună, ' + (user.user_metadata?.nume || user.email.split('@')[0]) + '! 👋';
+      if (sub) sub.textContent = user.email;
+    } catch (e) {
+      console.error('[dashboard-client] eroare barieră:', e);
+      window.location.href = 'https://mydarrin.homebestpal.com';
+    }
+  })();
+</script>
 <div id="spbar"></div>
 <div id="topbar" class="hidden md:flex items-center justify-between px-8 py-2 gap-4">
 
@@ -1182,8 +1217,8 @@ table:not([class*="nav"]) tr:hover td { background: #F8FBFF !important; }
       <div class="reveal">
         <div class="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 class="text-2xl font-bold text-[#003366]">Bună, Alexandru! 👋</h1>
-            <p class="text-sm text-[#8C9BAD] mt-0.5">Joi, 11 iunie 2026 · 2 comenzi active</p>
+            <h1 class="text-2xl font-bold text-[#003366]" id="dp-greeting">Bună! 👋</h1>
+            <p class="text-sm text-[#8C9BAD] mt-0.5" id="dp-subtext">Se încarcă...</p>
           </div>
           <div class="flex gap-2">
             <button class="flex items-center gap-2 border border-[#D5DFE8] text-[#6B7A8D] px-4 py-2.5 rounded-xl text-sm font-semibold hover:border-[#003366] hover:text-[#003366] transition">
@@ -1192,6 +1227,9 @@ table:not([class*="nav"]) tr:hover td { background: #F8FBFF !important; }
             <a href="mydarrin-v3.html" class="flex items-center gap-2 bg-[#FF8C00] text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-[#CC7000] transition">
               <i data-lucide="plus" class="w-4 h-4"></i>Comandă nouă
             </a>
+            <button onclick="window.MyDarrinAuth.performLogout()" class="flex items-center gap-2 border border-[#D5DFE8] text-[#C0392B] px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#FEF2F2] hover:border-[#C0392B] transition" title="Deconectare">
+              <i data-lucide="log-out" class="w-4 h-4"></i>
+            </button>
           </div>
         </div>
       </div>
