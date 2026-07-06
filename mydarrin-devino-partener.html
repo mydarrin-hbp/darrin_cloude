@@ -1970,7 +1970,7 @@ function simulateSign(area) {
   showToast('✅ Semnătură electronică validată · eIDAS Qualified');
 }
 
-function submitRegistration() {
+async function submitRegistration() {
   const cb1 = document.getElementById('cb-termeni');
   const cb2 = document.getElementById('cb-gdpr');
   const cb3 = document.getElementById('cb-contract');
@@ -1980,24 +1980,30 @@ function submitRegistration() {
   const btn = event?.target;
   if (btn) { btn.textContent='⏳ Se procesează...'; btn.disabled=true; }
 
-  setTimeout(() => {
-    const id       = 'MP-BCU-2026-' + selectedPartnerType.toUpperCase().slice(0,3) + '-' + String(Math.floor(Math.random()*900)+100);
-    const email    = document.getElementById('f-email')?.value || '—';
-    const meta     = PARTNER_META[selectedPartnerType];
+  const nume  = document.getElementById('f-nume')?.value || '';
+  const email = document.getElementById('f-email')?.value || '';
 
-    // Actualizăm success screen
+  try {
+    const res = await fetch('/api/public/partner-register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nume, email, tip: selectedPartnerType }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+
+    const meta = PARTNER_META[selectedPartnerType];
     const idEl     = document.getElementById('partner-id-display');
     const emailEl  = document.getElementById('confirm-email-show');
     const ocrEl    = document.getElementById('final-ocr-score');
     const dashLink = document.getElementById('success-dashboard-link');
 
-    if (idEl)     idEl.textContent   = id;
+    if (idEl)     idEl.textContent   = data.user_id.slice(0, 8).toUpperCase();
     if (emailEl)  emailEl.textContent = email;
-    if (ocrEl)    ocrEl.textContent  = Math.max(ocrScore, 85) + '% → Aprobare automată';
+    if (ocrEl)    ocrEl.textContent  = 'Cont creat — verifică emailul pentru setarea parolei';
     if (dashLink && meta?.dashLink) dashLink.href = meta.dashLink;
     if (dashLink && meta) dashLink.textContent = '📊 Accesează ' + meta.title + ' Dashboard →';
 
-    // Afișăm success
     for (let i = 0; i <= 4; i++) {
       const el = document.getElementById('wiz-step-' + i);
       if (el) el.style.display = 'none';
@@ -2005,8 +2011,11 @@ function submitRegistration() {
     const succ = document.getElementById('wiz-step-success');
     if (succ) succ.style.display = 'block';
 
-    showToast('🎉 Înregistrat ca ' + meta?.title + ' · ID: ' + id);
-  }, 2000);
+    showToast('🎉 Cont real creat ca ' + meta?.title + ' — verifică emailul!');
+  } catch (err) {
+    showToast('✗ ' + (err.message || 'Eroare la înregistrare'));
+    if (btn) { btn.textContent = 'Finalizează înregistrarea'; btn.disabled = false; }
+  }
 }
 
 function loadSubCat(nace) { /* GET /backoffice/categorii?nace= */ }
