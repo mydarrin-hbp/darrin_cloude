@@ -2709,11 +2709,30 @@ function loadFromURL(){
   if(urlDesc){ setTimeout(()=>{ const mi=document.getElementById('mentions-input'); if(mi){ mi.value=urlDesc; onMentions(); } },200); }
   S.type = prod.type; S.unit = prod.unit;
 
-  // Dacă serviciul are niveluri custom (tiers), actualizăm tabelul de comparație dinamic
-  if (prod.tiers) {
+  // Dacă serviciul are niveluri custom (tiers), actualizăm tabelul de comparație dinamic.
+  // Sursa reală de date e TIER_DB (separată de PRODUCTS_DB) — o normalizăm aici,
+  // ca produsele care n-au `tiers` direct în PRODUCTS_DB (marea majoritate) să
+  // preia datele corecte, în loc să rămână blocate pe „Se încarcă...".
+  let tierSource = prod.tiers;
+  if (!tierSource && typeof TIER_DB !== 'undefined' && TIER_DB[slug]) {
+    const raw = TIER_DB[slug].tiers;
+    tierSource = {};
+    ['bronz', 'argint', 'aur', 'platinum'].forEach(k => {
+      const r = raw[k];
+      if (r) {
+        tierSource[k] = {
+          label: r.label,
+          garantie: r.garantie != null ? r.garantie + ' luni' : '—',
+          materiale: r.desc || '—',
+          pret: r.price,
+        };
+      }
+    });
+  }
+  if (tierSource) {
     const tbody = document.getElementById('tier-comparison-body');
     if (tbody) {
-      const t = prod.tiers;
+      const t = tierSource;
       tbody.innerHTML = `
         <tr><td style="padding:8px 12px;border-bottom:1px solid #EEF2F7;color:#5A6B7D">Detalii incluse</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7;font-size:11px">${t.bronz.label}</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7;font-size:11px">${t.argint.label}</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7;font-weight:700;color:#FF8C00;font-size:11px">${t.aur.label}</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7;font-weight:700;color:#5B8DEF;font-size:11px">${t.platinum.label}</td></tr>
         <tr><td style="padding:8px 12px;border-bottom:1px solid #EEF2F7;color:#5A6B7D">Garanție lucrare</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7">${t.bronz.garantie}</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7">${t.argint.garantie}</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7;font-weight:700;color:#FF8C00">${t.aur.garantie}</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7;font-weight:700;color:#5B8DEF">${t.platinum.garantie}</td></tr>
