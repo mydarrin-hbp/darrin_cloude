@@ -2270,13 +2270,33 @@ async function performRegister() {
   if (!email || !pass) { showToastMsg('Completează email și parolă.'); return; }
   try {
     await window.MyDarrinAuth.performRegister(email, pass, nume);
-    isLoggedIn = true;
-    const modal = document.getElementById('auth-modal');
-    if (modal) modal.classList.add('hidden');
-    document.body.style.overflow = '';
-    const link = document.getElementById('sb-comenzi-link');
-    if (link) link.style.display = 'flex';
-    showToastMsg('✅ Cont creat cu succes! Verifică emailul pentru confirmare.');
+
+    // IMPORTANT: cu confirmarea de email activă în Supabase, înregistrarea
+    // NU creează automat o sesiune activă — trebuie confirmat emailul întâi,
+    // apoi logare separată. Nu presupunem login imediat aici.
+    const realUser = await window.MyDarrinAuth.getCurrentUser();
+    if (realUser) {
+      // Cazul rar în care confirmarea de email e dezactivată — chiar ești logat
+      isLoggedIn = true;
+      const modal = document.getElementById('auth-modal');
+      if (modal) modal.classList.add('hidden');
+      document.body.style.overflow = '';
+      const link = document.getElementById('sb-comenzi-link');
+      if (link) link.style.display = 'flex';
+      showToastMsg('✅ Cont creat și autentificat cu succes!');
+      setTimeout(() => window.location.reload(), 800);
+      return;
+    }
+
+    // Cazul normal: cont creat, dar trebuie confirmat emailul
+    if (typeof switchAuthTab === 'function') switchAuthTab('login');
+    const msgBox = document.getElementById('auth-modal-persistent-msg');
+    if (msgBox) {
+      msgBox.style.display = 'block';
+      msgBox.textContent = '✅ Cont creat! Ți-am trimis un email de confirmare la ' + email + ' (verifică și folderul Spam). Confirmă-l, apoi loghează-te aici.';
+    } else {
+      showToastMsg('✅ Cont creat! Verifică emailul (și Spam-ul) pentru confirmare, apoi loghează-te.');
+    }
   } catch (e) {
     showToastMsg('✗ ' + (e.message || 'Înregistrare eșuată'));
   }
@@ -2773,6 +2793,9 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
         Creare cont
       </button>
     </div>
+
+    <!-- Mesaj persistent (ex: confirmă emailul după înregistrare) -->
+    <div id="auth-modal-persistent-msg" style="display:none;margin:16px 28px 0;padding:12px 14px;background:#E0F5F4;border:1px solid #0E9E99;border-radius:12px;font-size:12.5px;color:#065455;line-height:1.5"></div>
 
     <!-- LOGIN -->
     <div id="auth-login" class="p-7">
