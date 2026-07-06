@@ -875,6 +875,12 @@ footer a:hover { color:#FF8C00; }
         <span id="header-logged-dot" style="display:none;width:7px;height:7px;border-radius:50%;background:#0E9E99"></span>
       </button>
 
+      <!-- Deconectare — vizibil DOAR când ești logat -->
+      <button onclick="window.MyDarrinAuth.performLogout()" id="header-logout-btn" style="display:none"
+              class="items-center gap-2 border border-[#D5DFE8] text-[#C0392B] px-3 py-2.5 rounded-xl text-xs font-semibold hover:bg-[#FEF2F2] hover:border-[#C0392B] transition" title="Deconectare">
+        <i data-lucide="log-out" class="w-4 h-4"></i>
+      </button>
+
       <!-- Burger mobil -->
       <button class="lg:hidden p-2.5 rounded-xl hover:bg-[#EBF4FB] transition" onclick="openSidebar()">
         <i data-lucide="menu" class="w-5 h-5"></i>
@@ -885,25 +891,33 @@ footer a:hover { color:#FF8C00; }
   <script type="module">
     // Actualizează header-ul cu starea reală de logare + link Backoffice pentru superadmin
     (async function () {
-      // Așteaptă până se încarcă account-system.js (dependent de ordinea scripturilor)
-      let tries = 0;
-      while (!window.MyDarrinAuth && tries < 40) { await new Promise(r => setTimeout(r, 100)); tries++; }
-      if (!window.MyDarrinAuth) return;
+      try {
+        // Așteaptă până se încarcă account-system.js (dependent de ordinea scripturilor)
+        let tries = 0;
+        while (!window.MyDarrinAuth && tries < 50) { await new Promise(r => setTimeout(r, 100)); tries++; }
+        if (!window.MyDarrinAuth) { console.error('[header] MyDarrinAuth nu s-a încărcat după 5s'); return; }
 
-      const user = await window.MyDarrinAuth.getCurrentUser();
-      if (!user) return; // nu ești logat — header-ul rămâne cum e implicit
+        const user = await window.MyDarrinAuth.getCurrentUser();
+        if (!user) { console.log('[header] niciun utilizator logat'); return; }
 
-      const label = document.getElementById('header-account-label');
-      const dot = document.getElementById('header-logged-dot');
-      const btn = document.getElementById('header-account-btn');
-      if (label) label.textContent = (user.email || 'Cont').split('@')[0];
-      if (dot) dot.style.display = 'inline-block';
-      if (btn) btn.title = 'Logat ca ' + user.email + ' — click pentru cont / deconectare';
+        const label = document.getElementById('header-account-label');
+        const dot = document.getElementById('header-logged-dot');
+        const btn = document.getElementById('header-account-btn');
+        const logoutBtn = document.getElementById('header-logout-btn');
+        if (label) label.textContent = (user.email || 'Cont').split('@')[0];
+        if (dot) dot.style.display = 'inline-block';
+        if (btn) btn.title = 'Logat ca ' + user.email;
+        if (logoutBtn) logoutBtn.style.display = 'flex';
 
-      const roles = await window.MyDarrinAuth.getUserRoles(user);
-      if (roles.includes('superadmin')) {
-        const bo = document.getElementById('header-backoffice-link');
-        if (bo) bo.style.display = 'flex';
+        const roles = await window.MyDarrinAuth.getUserRoles(user);
+        console.log('[header] roluri detectate:', roles);
+        if (roles.includes('superadmin') || roles.includes('admin')) {
+          const bo = document.getElementById('header-backoffice-link');
+          if (bo) bo.style.display = 'flex';
+        }
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+      } catch (e) {
+        console.error('[header] eroare la inițializarea stării de logare:', e);
       }
     })();
   </script>
@@ -1869,10 +1883,6 @@ footer a:hover { color:#FF8C00; }
     <a href="mydarrin-checkout.html" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">🛒 Checkout</a>
     <span style="color:rgba(255,255,255,.15)">·</span>
     <a href="mydarrin-dashboard-client.html" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">📊 Dashboard Client</a>
-    <span style="color:rgba(255,255,255,.15)">·</span>
-    <a href="mydarrin-business-model.html" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">📋 Business Model</a>
-    <span style="color:rgba(255,255,255,.15)">·</span>
-    <a href="mydarrin-design-system.html" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">🎨 Design System</a>
   </div>
 </div>
 
