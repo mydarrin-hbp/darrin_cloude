@@ -532,153 +532,263 @@ function scrollToSection(id){
   </div>
 </section>
 
-<!-- ════ KPIs LIVE ════ -->
+
+<!-- ════ DASHBOARD PRIVAT INVESTITOR — Visible doar cu rol investitor ════ -->
+<div id="inv-private-dashboard" style="display:none">
+  <!-- Sentinel bar -->
+  <div style="background:linear-gradient(90deg,#001E3C,#003366,#0E9E99);height:4px"></div>
+
+  <section style="background:#F0F4F8;padding:32px 0" id="investor-dashboard-section">
+    <div class="inv-max">
+
+      <!-- Header dashboard privat -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+        <div>
+          <div style="display:inline-flex;align-items:center;gap:6px;background:#003366;color:#fff;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:4px 12px;border-radius:99px;margin-bottom:8px">
+            <span class="pulse-dot" style="width:5px;height:5px;background:#22D3A6"></span>
+            Dashboard Privat · Investitor Verificat
+          </div>
+          <h3 style="font-size:22px;font-weight:800;color:#1A2332;margin:0">Portofoliul tău My Darrin</h3>
+          <div style="font-size:12px;color:#5A6B7D;margin-top:4px" id="inv-dash-subtitle">Runda Pre-Seed 2026 · Date actualizate din Supabase</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="showAccountModal()" style="padding:9px 16px;border-radius:10px;border:1.5px solid #D5DFE8;background:#fff;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;color:#1A2332">⚙ Date cont</button>
+          <button onclick="refreshPortofoliu()" style="padding:9px 16px;border-radius:10px;border:1.5px solid #0E9E99;background:#E0F5F4;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;color:#0B7A76">↻ Actualizează</button>
+        </div>
+      </div>
+
+      <!-- KPI Portofoliu (4 carduri) -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px" id="inv-kpi-grid">
+        <div class="kpi-big kpi-bl">
+          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:8px">Investiție inițială</div>
+          <div style="font-size:26px;font-weight:800;color:#1A5FAD;line-height:1" id="inv-kpi-suma">—</div>
+          <div style="font-size:10.5px;color:#5A6B7D;margin-top:5px">EUR · valoare subscrisă</div>
+        </div>
+        <div class="kpi-big kpi-or">
+          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:8px">Acțiuni deținute</div>
+          <div style="font-size:26px;font-weight:800;color:#FF8C00;line-height:1" id="inv-kpi-actiuni">—</div>
+          <div style="font-size:10.5px;color:#5A6B7D;margin-top:5px"><span id="inv-kpi-pct">—</span>% din companie</div>
+        </div>
+        <div class="kpi-big kpi-gr">
+          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:8px">ROI estimat</div>
+          <div style="font-size:26px;font-weight:800;line-height:1" id="inv-kpi-roi" style="color:#1A7A3A">—</div>
+          <div style="font-size:10.5px;color:#5A6B7D;margin-top:5px">vs. preț achiziție</div>
+        </div>
+        <div class="kpi-big kpi-te">
+          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:8px">Dividende an curent</div>
+          <div style="font-size:26px;font-weight:800;color:#0E9E99;line-height:1" id="inv-kpi-dividende">—</div>
+          <div style="font-size:10.5px;color:#5A6B7D;margin-top:5px">din profit net distribuit</div>
+        </div>
+      </div>
+
+      <!-- Tabel portofoliu + Exit/Distribuții -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px" class="inv-2col">
+
+        <!-- Tabel acțiuni -->
+        <div style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;overflow:hidden">
+          <div style="padding:14px 18px;border-bottom:1px solid #EEF2F7;background:#F8FAFC;display:flex;align-items:center;justify-content:space-between">
+            <strong style="color:#1A2332;font-size:14px">📋 Portofoliu acțiuni</strong>
+            <span id="inv-kyc-badge" style="font-size:10px;background:#FFF0D6;color:#CC7000;border-radius:99px;padding:3px 10px;font-weight:700;border:1px solid rgba(255,140,0,.2)">KYC: verificare</span>
+          </div>
+          <div style="padding:16px;font-size:12.5px;display:flex;flex-direction:column;gap:8px" id="inv-portofoliu-rows">
+            <div style="display:flex;justify-content:space-between;padding:9px 12px;background:#F0F4F8;border-radius:9px">
+              <span style="color:#5A6B7D">Instrument</span>
+              <strong id="inv-instrument-label">—</strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:9px 12px;background:#F0F4F8;border-radius:9px">
+              <span style="color:#5A6B7D">Număr acțiuni</span>
+              <strong id="inv-actiuni-detaliu">—</strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:9px 12px;background:#F0F4F8;border-radius:9px">
+              <span style="color:#5A6B7D">% din companie</span>
+              <strong style="color:#1A5FAD" id="inv-pct-detaliu">—</strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:9px 12px;background:#F0F4F8;border-radius:9px">
+              <span style="color:#5A6B7D">Valoare investită</span>
+              <strong id="inv-suma-detaliu">—</strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:9px 12px;background:#D4EDDA;border-radius:9px;border:1px solid rgba(26,122,58,.2)">
+              <span style="color:#5A6B7D">Ultima evaluare</span>
+              <strong style="color:#1A7A3A" id="inv-ultima-evaluare">—</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Distribuții + Exit -->
+        <div style="display:flex;flex-direction:column;gap:12px">
+
+          <!-- Distribuții -->
+          <div style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;overflow:hidden;flex:1">
+            <div style="padding:13px 17px;border-bottom:1px solid #EEF2F7;background:#F8FAFC">
+              <strong style="color:#1A2332">💰 Distribuții financiare</strong>
+            </div>
+            <div style="padding:14px;font-size:12.5px;display:flex;flex-direction:column;gap:7px">
+              <div style="display:flex;justify-content:space-between;padding:7px 10px;background:#F0F4F8;border-radius:8px">
+                <span style="color:#5A6B7D">Tip venit</span>
+                <strong id="inv-tip-venit">Dividend (profit net)</strong>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:7px 10px;background:#F0F4F8;border-radius:8px">
+                <span style="color:#5A6B7D">Dividende an curent</span>
+                <strong style="color:#1A7A3A" id="inv-dividende-suma">—</strong>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:7px 10px;background:#F0F4F8;border-radius:8px">
+                <span style="color:#5A6B7D">Impozit ANAF</span>
+                <strong>8% dividende</strong>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:7px 10px;background:#D4EDDA;border-radius:8px;border:1px solid rgba(26,122,58,.2)">
+                <span style="color:#5A6B7D">Next distribuție</span>
+                <strong style="color:#1A7A3A">Q4 2026</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Exit actions -->
+          <div style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;overflow:hidden">
+            <div style="padding:12px 17px;border-bottom:1px solid #EEF2F7;background:#F8FAFC">
+              <strong style="color:#1A2332">🚪 Exit & Lichiditate</strong>
+            </div>
+            <div style="padding:13px;display:flex;flex-direction:column;gap:7px">
+              <button onclick="initiazaExitReal('buyback')"
+                style="padding:10px;border-radius:10px;border:1.5px solid #D5DFE8;background:#F8FAFC;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;text-align:left;transition:all .18s"
+                onmouseover="this.style.borderColor='#003366'" onmouseout="this.style.borderColor='#D5DFE8'">
+                🏢 Share Buyback<br>
+                <span style="font-size:10.5px;color:#5A6B7D;font-weight:400">Răscumpărare la evaluare curentă (−10%)</span>
+              </button>
+              <button onclick="initiazaExitReal('p2p')"
+                style="padding:10px;border-radius:10px;border:1.5px solid #D5DFE8;background:#F8FAFC;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;text-align:left;transition:all .18s"
+                onmouseover="this.style.borderColor='#0E9E99'" onmouseout="this.style.borderColor='#D5DFE8'">
+                🔄 Piață Secundară P2P<br>
+                <span style="font-size:10.5px;color:#5A6B7D;font-weight:400">Listează pentru investitori validați</span>
+              </button>
+              <div style="font-size:10px;color:#8C9BAD;text-align:center;padding-top:2px">Lock-up: 12 luni de la data subscrierii</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Avertisment legal -->
+      <div style="background:#FFF0F0;border-radius:13px;border:1px solid rgba(192,57,43,.2);padding:12px 16px;text-align:center;font-size:11px;color:#C0392B">
+        ⚠ Investițiile în companii early-stage implică riscul pierderii totale a capitalului · Instrumentele nu sunt garantate de FGDB · MiFID II Art. 24
+      </div>
+    </div>
+  </section>
+</div>
+
+
+<!-- ════ KPIs LIVE — DATE REALE DIN SUPABASE RPC ════ -->
 <section class="inv-section" id="kpis">
   <div class="inv-max">
+
+    <!-- Header secțiune -->
     <div style="text-align:center;margin-bottom:40px">
-      <div class="reveal" style="display:inline-flex;align-items:center;gap:7px;background:#E0F5F4;color:#0B7A76;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:5px 14px;border-radius:99px;margin-bottom:12px">
+      <div class="reveal" id="kpi-live-badge" style="display:inline-flex;align-items:center;gap:7px;background:#E0F5F4;color:#0B7A76;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:5px 14px;border-radius:99px;margin-bottom:12px">
         <span class="pulse-dot" style="width:5px;height:5px"></span>
-        KPIs în timp real · content_version: v2026.06.16
+        <span id="kpi-live-label">Se încarcă datele live...</span>
       </div>
       <h2 class="reveal d1" style="font-size:32px;font-weight:800;color:#1A2332;margin-bottom:8px">Indicatori cheie de performanță</h2>
-      <p class="reveal d2" style="font-size:14px;color:#5A6B7D;max-width:540px;margin:0 auto">Toate datele sunt actualizate în timp real. Platforma operează live în 5 țări.</p>
+      <p class="reveal d2" style="font-size:14px;color:#5A6B7D;max-width:540px;margin:0 auto">Date reale din Supabase · Actualizate la fiecare vizită · Filtrabile pe țară</p>
     </div>
 
-    <!-- KPI Grid 5 -->
+    <!-- Filtru țară -->
+    <div class="reveal" style="display:flex;align-items:center;gap:8px;margin-bottom:24px;flex-wrap:wrap">
+      <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D">Filtru țară:</span>
+      <button class="kpi-filter-btn active" data-tara="" onclick="filterKpiTara(this,'')">🌍 Toate</button>
+      <button class="kpi-filter-btn" data-tara="RO" onclick="filterKpiTara(this,'RO')">🇷🇴 România</button>
+      <button class="kpi-filter-btn" data-tara="MD" onclick="filterKpiTara(this,'MD')">🇲🇩 Moldova</button>
+      <button class="kpi-filter-btn" data-tara="DE" onclick="filterKpiTara(this,'DE')">🇩🇪 Germania</button>
+      <button class="kpi-filter-btn" data-tara="FR" onclick="filterKpiTara(this,'FR')">🇫🇷 Franța</button>
+      <button class="kpi-filter-btn" data-tara="BG" onclick="filterKpiTara(this,'BG')">🇧🇬 Bulgaria</button>
+    </div>
+
+    <!-- KPI Grid 5 — skeleton inițial -->
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:24px" class="kpi-grid-5 reveal">
       <div class="kpi-big kpi-or">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:10px">Comenzi totale</div>
-        <div style="font-size:36px;font-weight:800;color:#FF8C00;line-height:1" id="kpi-comenzi-total">1.247</div>
-        <div style="font-size:11px;color:#5A6B7D;margin-top:5px">↑ +247 luna aceasta</div>
-        <div style="font-size:10px;color:#0E9E99;margin-top:3px;font-weight:600">+24.7% vs luna precedentă</div>
+        <div style="font-size:36px;font-weight:800;color:#FF8C00;line-height:1" id="kpi-comenzi-total">
+          <span class="kpi-skeleton">—</span>
+        </div>
+        <div style="font-size:11px;color:#5A6B7D;margin-top:5px" id="kpi-comenzi-luna-text">Luna curentă: —</div>
       </div>
       <div class="kpi-big kpi-te">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:10px">GMV lunar</div>
-        <div style="font-size:36px;font-weight:800;color:#0E9E99;line-height:1">480K</div>
-        <div style="font-size:11px;color:#5A6B7D;margin-top:5px">Lei · Gross Merchandise Value</div>
-        <div style="font-size:10px;color:#0E9E99;margin-top:3px;font-weight:600">+31% MoM</div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:10px">GMV total</div>
+        <div style="font-size:36px;font-weight:800;color:#0E9E99;line-height:1" id="kpi-gmv-total">
+          <span class="kpi-skeleton">—</span>
+        </div>
+        <div style="font-size:11px;color:#5A6B7D;margin-top:5px" id="kpi-gmv-moneda">Gross Merchandise Value</div>
       </div>
       <div class="kpi-big kpi-bl">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:10px">Revenue lunar</div>
-        <div style="font-size:36px;font-weight:800;color:#1A5FAD;line-height:1">48.2K</div>
-        <div style="font-size:11px;color:#5A6B7D;margin-top:5px">Lei · comisioane HBP</div>
-        <div style="font-size:10px;color:#0E9E99;margin-top:3px;font-weight:600">Take rate: ~10%</div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:10px">Revenue total</div>
+        <div style="font-size:36px;font-weight:800;color:#1A5FAD;line-height:1" id="kpi-revenue-total">
+          <span class="kpi-skeleton">—</span>
+        </div>
+        <div style="font-size:11px;color:#5A6B7D;margin-top:5px">Take rate: <span id="kpi-take-rate">10%</span></div>
       </div>
       <div class="kpi-big kpi-gr">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:10px">Parteneri activi</div>
-        <div style="font-size:36px;font-weight:800;color:#1A7A3A;line-height:1">1.834</div>
-        <div style="font-size:11px;color:#5A6B7D;margin-top:5px">Verificați KYC · 5 țări</div>
-        <div style="font-size:10px;color:#0E9E99;margin-top:3px;font-weight:600">+18% față de T1</div>
+        <div style="font-size:36px;font-weight:800;color:#1A7A3A;line-height:1" id="kpi-parteneri">
+          <span class="kpi-skeleton">—</span>
+        </div>
+        <div style="font-size:11px;color:#5A6B7D;margin-top:5px">Verificați KYC · <span id="kpi-tari-active">5</span> țări</div>
       </div>
       <div class="kpi-big kpi-pu">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:10px">Rating mediu</div>
-        <div style="font-size:36px;font-weight:800;color:#7C3AED;line-height:1">4.87</div>
-        <div style="font-size:11px;color:#5A6B7D;margin-top:5px">⭐ din 3.240 recenzii</div>
-        <div style="font-size:10px;color:#0E9E99;margin-top:3px;font-weight:600">NPS estimat: +68</div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:10px">Revenue luna</div>
+        <div style="font-size:36px;font-weight:800;color:#7C3AED;line-height:1" id="kpi-revenue-luna">
+          <span class="kpi-skeleton">—</span>
+        </div>
+        <div style="font-size:11px;color:#5A6B7D;margin-top:5px">Luna curentă · comisioane</div>
       </div>
     </div>
 
-    <!-- KPI Grid 4 + Chart -->
+    <!-- Grid grafice -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px" class="inv-2col">
 
-      <!-- Unit economics -->
+      <!-- Revenue split per țară -->
       <div class="inv-card reveal">
         <div class="inv-card-hdr">
-          <div style="font-weight:700;color:#1A2332;font-size:14px">📊 Unit Economics</div>
-          <span class="chip ch-g">Sănătos</span>
+          <div style="font-weight:700;color:#1A2332;font-size:14px">🌍 Revenue split per țară</div>
+          <span class="chip ch-g" id="kpi-updated-at">Live</span>
         </div>
         <div class="inv-card-body">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
-            <div style="background:#F0F4F8;border-radius:12px;padding:14px;text-align:center">
-              <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:6px">CAC</div>
-              <div style="font-size:24px;font-weight:800;color:#1A2332">~12</div>
-              <div style="font-size:10.5px;color:#5A6B7D">EUR/client nou</div>
-            </div>
-            <div style="background:#F0F4F8;border-radius:12px;padding:14px;text-align:center">
-              <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:6px">LTV</div>
-              <div style="font-size:24px;font-weight:800;color:#1A2332">~180</div>
-              <div style="font-size:10.5px;color:#5A6B7D">EUR/client/an</div>
-            </div>
-            <div style="background:#F0F4F8;border-radius:12px;padding:14px;text-align:center">
-              <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:6px">LTV/CAC</div>
-              <div style="font-size:24px;font-weight:800;color:#0E9E99">15×</div>
-              <div style="font-size:10.5px;color:#5A6B7D">Benchmark: >3×</div>
-            </div>
-            <div style="background:#F0F4F8;border-radius:12px;padding:14px;text-align:center">
-              <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:6px">Payback</div>
-              <div style="font-size:24px;font-weight:800;color:#FF8C00">~8</div>
-              <div style="font-size:10.5px;color:#5A6B7D">luni</div>
-            </div>
-          </div>
-          <!-- Revenue per tara -->
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:12px">Revenue split per țară</div>
-          <div class="chart-bar-wrap">
-            <div class="chart-bar-item"><div class="chart-bar-label">🇷🇴 RO</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:74%;background:#003366"></div></div><div class="chart-bar-val">35.7K Lei</div></div>
-            <div class="chart-bar-item"><div class="chart-bar-label">🇲🇩 MD</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:16%;background:#0E9E99"></div></div><div class="chart-bar-val">7.7K Lei</div></div>
-            <div class="chart-bar-item"><div class="chart-bar-label">🇩🇪 DE</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:6%;background:#1A5FAD"></div></div><div class="chart-bar-val">2.9K Lei</div></div>
-            <div class="chart-bar-item"><div class="chart-bar-label">🇫🇷 FR</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:3%;background:#7C3AED"></div></div><div class="chart-bar-val">1.4K Lei</div></div>
-            <div class="chart-bar-item"><div class="chart-bar-label">🇧🇬 BG</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:1%;background:#FF8C00"></div></div><div class="chart-bar-val">0.4K Lei</div></div>
+          <div class="chart-bar-wrap" id="kpi-chart-tara">
+            <!-- Skeleton bars -->
+            <div class="chart-bar-item"><div class="chart-bar-label">...</div><div class="chart-bar-track"><div class="chart-bar-fill kpi-skeleton-bar" style="width:60%"></div></div><div class="chart-bar-val">—</div></div>
+            <div class="chart-bar-item"><div class="chart-bar-label">...</div><div class="chart-bar-track"><div class="chart-bar-fill kpi-skeleton-bar" style="width:30%"></div></div><div class="chart-bar-val">—</div></div>
+            <div class="chart-bar-item"><div class="chart-bar-label">...</div><div class="chart-bar-track"><div class="chart-bar-fill kpi-skeleton-bar" style="width:15%"></div></div><div class="chart-bar-val">—</div></div>
           </div>
         </div>
       </div>
 
-      <!-- KPIs per categorie -->
+      <!-- Evoluție lunară comenzi -->
       <div class="inv-card reveal d1">
         <div class="inv-card-hdr">
-          <div style="font-weight:700;color:#1A2332;font-size:14px">📈 Creștere lunară (MoM)</div>
-          <button class="btn-s" style="font-size:11px;padding:6px 12px" onclick="toggleGrowthView()">Alternat</button>
+          <div style="font-weight:700;color:#1A2332;font-size:14px">📈 Evoluție lunară</div>
+          <button class="btn-s" style="font-size:11px;padding:6px 12px" onclick="toggleLunarView(this)">Revenue</button>
         </div>
         <div class="inv-card-body">
-          <div id="growth-view-1">
-            <div class="chart-bar-wrap" style="margin-bottom:20px">
-              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:10px">Comenzi · ultimele 6 luni</div>
-              <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">Ian</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:28%;background:#D5DFE8"></div></div><div class="chart-bar-val">312</div></div>
-              <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">Feb</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:36%;background:#CBD5E8"></div></div><div class="chart-bar-val">401</div></div>
-              <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">Mar</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:46%;background:#1A5FAD"></div></div><div class="chart-bar-val">518</div></div>
-              <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">Apr</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:57%;background:#1A5FAD"></div></div><div class="chart-bar-val">634</div></div>
-              <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">Mai</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:72%;background:#0E9E99"></div></div><div class="chart-bar-val">800</div></div>
-              <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">Iun</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:90%;background:#FF8C00"></div></div><div class="chart-bar-val">1.000+</div></div>
-            </div>
+          <div id="kpi-chart-lunar" class="chart-bar-wrap">
+            <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">...</div><div class="chart-bar-track"><div class="chart-bar-fill kpi-skeleton-bar" style="width:40%"></div></div><div class="chart-bar-val">—</div></div>
+            <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">...</div><div class="chart-bar-track"><div class="chart-bar-fill kpi-skeleton-bar" style="width:60%"></div></div><div class="chart-bar-val">—</div></div>
+            <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">...</div><div class="chart-bar-track"><div class="chart-bar-fill kpi-skeleton-bar" style="width:80%"></div></div><div class="chart-bar-val">—</div></div>
           </div>
-          <div id="growth-view-2" style="display:none">
-            <div class="chart-bar-wrap">
-              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:10px">Revenue (Lei) · ultimele 6 luni</div>
-              <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">Ian</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:18%;background:#D5DFE8"></div></div><div class="chart-bar-val">8.6K</div></div>
-              <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">Feb</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:24%;background:#CBD5E8"></div></div><div class="chart-bar-val">11.5K</div></div>
-              <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">Mar</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:33%;background:#1A5FAD"></div></div><div class="chart-bar-val">15.8K</div></div>
-              <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">Apr</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:46%;background:#1A5FAD"></div></div><div class="chart-bar-val">22.1K</div></div>
-              <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">Mai</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:65%;background:#0E9E99"></div></div><div class="chart-bar-val">31.4K</div></div>
-              <div class="chart-bar-item"><div class="chart-bar-label" style="min-width:30px">Iun</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:100%;background:#FF8C00"></div></div><div class="chart-bar-val">48.2K</div></div>
-            </div>
-          </div>
-          <!-- Cohort retention -->
-          <div style="margin-top:18px;padding-top:18px;border-top:1px solid #EEF2F7">
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:10px">Retenție clienți (cohorte)</div>
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
-              <div style="text-align:center;background:#F0F4F8;border-radius:10px;padding:10px">
-                <div style="font-size:18px;font-weight:800;color:#1A2332">76%</div>
-                <div style="font-size:9.5px;color:#5A6B7D">Luna 1</div>
-              </div>
-              <div style="text-align:center;background:#F0F4F8;border-radius:10px;padding:10px">
-                <div style="font-size:18px;font-weight:800;color:#003366">64%</div>
-                <div style="font-size:9.5px;color:#5A6B7D">Luna 3</div>
-              </div>
-              <div style="text-align:center;background:#F0F4F8;border-radius:10px;padding:10px">
-                <div style="font-size:18px;font-weight:800;color:#0E9E99">51%</div>
-                <div style="font-size:9.5px;color:#5A6B7D">Luna 6</div>
-              </div>
-              <div style="text-align:center;background:#EBF4FB;border-radius:10px;padding:10px;border:1px solid #D5DFE8">
-                <div style="font-size:18px;font-weight:800;color:#FF8C00">Best</div>
-                <div style="font-size:9.5px;color:#5A6B7D">în sector</div>
-              </div>
-            </div>
-          </div>
+          <div style="margin-top:8px;font-size:10px;color:#8C9BAD;text-align:center" id="kpi-lunar-note">Comenzi finalizate · ultimele 12 luni</div>
         </div>
       </div>
     </div>
+
+    <!-- Mesaj zero-state (ascuns implicit) -->
+    <div id="kpi-zero-state" style="display:none;text-align:center;padding:40px;background:#F8FAFC;border-radius:16px;border:1px dashed #D5DFE8;margin-top:20px">
+      <div style="font-size:32px;margin-bottom:12px">📊</div>
+      <div style="font-weight:700;color:#1A2332;margin-bottom:6px">Platforma e Live — date în creștere</div>
+      <div style="font-size:13px;color:#5A6B7D">Primele comenzi vor apărea în timp real imediat după activarea completă în fiecare țară.</div>
+    </div>
+
+    <!-- Eroare state (ascuns implicit) -->
+    <div id="kpi-error-state" style="display:none;text-align:center;padding:24px;background:#FFF0F0;border-radius:12px;border:1px solid rgba(192,57,43,.2);margin-top:16px">
+      <div style="font-size:12.5px;color:#C0392B">⚠ Date temporar indisponibile · <button onclick="loadKpiLive(currentTaraFilter)" style="background:none;border:none;color:#003366;font-weight:700;cursor:pointer;font-family:inherit;font-size:12.5px">Reîncearcă</button></div>
+    </div>
+
   </div>
 </section>
-
 <!-- ════ PROIECȚII VENITURI ════ -->
 <section class="inv-section inv-section-alt" id="proiectii">
   <div class="inv-max">
@@ -1150,6 +1260,373 @@ document.addEventListener('DOMContentLoaded',()=>{
 });
 </script>
 
+<style>
+/* Skeleton loading */
+.kpi-skeleton { color: #D5DFE8 !important; animation: kpi-pulse 1.5s infinite; }
+.kpi-skeleton-bar { background: linear-gradient(90deg,#E8EEF5 0%,#D5DFE8 50%,#E8EEF5 100%) !important; background-size: 200% 100% !important; animation: kpi-shimmer 1.5s infinite; }
+@keyframes kpi-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+@keyframes kpi-shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+/* Filtru țară */
+.kpi-filter-btn {
+  padding:6px 14px;border-radius:99px;border:1.5px solid #D5DFE8;
+  background:#fff;font-size:11.5px;font-weight:600;cursor:pointer;
+  font-family:inherit;color:#5A6B7D;transition:all .18s;
+}
+.kpi-filter-btn:hover { border-color:#003366;color:#003366; }
+.kpi-filter-btn.active { background:#003366;color:#fff;border-color:#003366; }
+
+/* KPI grid mobile */
+@media(max-width:640px){
+  #inv-kpi-grid { grid-template-columns:repeat(2,1fr)!important; }
+}
+</style>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+// MODULE: KPIs LIVE — Supabase RPC get_live_investor_kpis
+// ════════════════════════════════════════════════════════════════
+
+const SUPABASE_URL  = window.__ENV__?.SUPABASE_URL  || 'https://aacojyvujhywanaulvuu.supabase.co';
+const SUPABASE_ANON = window.__ENV__?.SUPABASE_ANON_KEY || '';
+
+// State
+let currentTaraFilter = '';
+let kpiDataCache      = null;
+let lunarViewMode     = 'comenzi'; // 'comenzi' | 'revenue'
+
+// Emoji flags + culori per țară
+const TARA_META = {
+  RO: { flag:'🇷🇴', color:'#003366', moneda:'Lei' },
+  MD: { flag:'🇲🇩', color:'#0E9E99', moneda:'MDL' },
+  DE: { flag:'🇩🇪', color:'#1A5FAD', moneda:'EUR' },
+  FR: { flag:'🇫🇷', color:'#7C3AED', moneda:'EUR' },
+  BG: { flag:'🇧🇬', color:'#FF8C00', moneda:'BGN' },
+};
+
+// ── Formatare numere ──────────────────────────────────────────
+function fmt(n, decimals = 0) {
+  if (n == null || isNaN(n)) return '—';
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+  if (n >= 1_000)     return (n / 1_000).toFixed(1) + 'K';
+  return Number(n).toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+// ── Apel RPC via supabase-js sau fetch direct ─────────────────
+async function callRpc(fnName, params = {}) {
+  // Încearcă supabase-js (dacă e inițializat)
+  if (window.supabaseClient) {
+    const { data, error } = await window.supabaseClient.rpc(fnName, params);
+    if (error) throw error;
+    return data;
+  }
+  // Fallback: fetch direct la REST API
+  const url = `${SUPABASE_URL}/rest/v1/rpc/${fnName}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'apikey':        SUPABASE_ANON,
+      'Authorization': `Bearer ${SUPABASE_ANON}`,
+    },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) throw new Error(`RPC ${fnName}: HTTP ${res.status}`);
+  return res.json();
+}
+
+// ── Populează KPI widgets ─────────────────────────────────────
+function renderKpis(data) {
+  if (!data || data.error) {
+    document.getElementById('kpi-error-state').style.display = 'block';
+    document.getElementById('kpi-live-label').textContent = 'Date temporar indisponibile';
+    return;
+  }
+
+  const k = data.kpis || {};
+
+  // Badge live
+  const ts = data.timestamp ? new Date(data.timestamp) : new Date();
+  document.getElementById('kpi-live-label').textContent =
+    `Date live · Actualizat ${ts.toLocaleTimeString('ro-RO', {hour:'2-digit',minute:'2-digit'})}`;
+  document.getElementById('kpi-updated-at').textContent =
+    ts.toLocaleTimeString('ro-RO', {hour:'2-digit',minute:'2-digit'});
+
+  // KPI 5 grid
+  const setText = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = val;
+  };
+
+  setText('kpi-comenzi-total',  fmt(k.comenzi_total));
+  setText('kpi-gmv-total',      fmt(k.gmv_total));
+  setText('kpi-revenue-total',  fmt(k.revenue_total));
+  setText('kpi-parteneri',      fmt(k.parteneri_activi));
+  setText('kpi-revenue-luna',   fmt(k.revenue_luna));
+  setText('kpi-comenzi-luna-text', `Luna curentă: ${fmt(k.comenzi_luna)} comenzi`);
+  setText('kpi-take-rate',      `${k.take_rate_pct || 10}%`);
+  setText('kpi-tari-active',    k.tari_active || 5);
+
+  // Chart per țară
+  renderChartTara(data.per_tara || []);
+
+  // Chart lunar
+  renderChartLunar(data.lunar || [], lunarViewMode);
+
+  // Zero state
+  const hasData = (k.comenzi_total || 0) > 0;
+  document.getElementById('kpi-zero-state').style.display  = hasData ? 'none'  : 'block';
+  document.getElementById('kpi-error-state').style.display = 'none';
+
+  // Sync modal KL (dacă e deschis)
+  const klComenzi = document.getElementById('kl-comenzi');
+  if (klComenzi) klComenzi.textContent = fmt(k.comenzi_total);
+  const klRevRo = document.getElementById('kl-revenue-ro');
+  if (klRevRo && data.per_tara) {
+    const ro = (data.per_tara || []).find(t => t.tara_cod === 'RO');
+    if (klRevRo) klRevRo.textContent = ro ? fmt(ro.revenue) + ' Lei' : '—';
+  }
+  // Sync carduri modale KL
+  const _s = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
+  _s('kl-gmv',       fmt(k.gmv_total) + ' Lei');
+  _s('kl-revenue',   fmt(k.revenue_total) + ' Lei');
+  _s('kl-parteneri', fmt(k.parteneri_activi));
+  _s('kl-revenue-text', fmt(k.revenue_luna) + ' Lei');
+}
+
+// ── Grafic bare per țară ──────────────────────────────────────
+function renderChartTara(perTara) {
+  const container = document.getElementById('kpi-chart-tara');
+  if (!container || !perTara.length) return;
+
+  const maxGmv = Math.max(...perTara.map(t => t.gmv || 0), 1);
+
+  container.innerHTML = perTara.map(t => {
+    const meta  = TARA_META[t.tara_cod] || { flag: '🌍', color: '#5A6B7D', moneda: 'RON' };
+    const pct   = maxGmv > 0 ? Math.max((t.gmv / maxGmv) * 100, 2) : 0;
+    const label = `${meta.flag} ${t.tara_cod}`;
+    const val   = t.gmv > 0 ? `${fmt(t.gmv)} ${meta.moneda}` : '—';
+    return `<div class="chart-bar-item">
+      <div class="chart-bar-label">${label}</div>
+      <div class="chart-bar-track">
+        <div class="chart-bar-fill" style="width:${pct}%;background:${meta.color};transition:width .8s cubic-bezier(.22,1,.36,1)"></div>
+      </div>
+      <div class="chart-bar-val">${val}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Grafic lunar ──────────────────────────────────────────────
+function renderChartLunar(lunar, mode) {
+  const container = document.getElementById('kpi-chart-lunar');
+  const note      = document.getElementById('kpi-lunar-note');
+  if (!container) return;
+
+  if (!lunar || !lunar.length) {
+    container.innerHTML = '<div style="text-align:center;color:#8C9BAD;font-size:12px;padding:20px">Date insuficiente pentru grafic</div>';
+    return;
+  }
+
+  const vals  = lunar.map(l => mode === 'revenue' ? (l.revenue || 0) : (l.comenzi || 0));
+  const maxV  = Math.max(...vals, 1);
+  const COLORS = ['#D5DFE8','#CBD5E8','#1A5FAD','#1A5FAD','#0E9E99','#FF8C00','#FF8C00'];
+
+  container.innerHTML = lunar.slice(-8).map((l, i) => {
+    const v   = mode === 'revenue' ? (l.revenue || 0) : (l.comenzi || 0);
+    const pct = Math.max((v / maxV) * 100, 2);
+    const clr = COLORS[Math.min(i, COLORS.length - 1)];
+    const val = mode === 'revenue' ? `${fmt(v)} Lei` : fmt(v);
+    return `<div class="chart-bar-item">
+      <div class="chart-bar-label" style="min-width:36px;font-size:10.5px">${escapeHTML(l.luna || '')}</div>
+      <div class="chart-bar-track">
+        <div class="chart-bar-fill" style="width:${pct}%;background:${clr};transition:width .8s"></div>
+      </div>
+      <div class="chart-bar-val">${val}</div>
+    </div>`;
+  }).join('');
+
+  if (note) note.textContent = mode === 'revenue'
+    ? 'Revenue (Lei) · ultimele luni'
+    : 'Comenzi finalizate · ultimele luni';
+}
+
+// ── Toggle view lunar ─────────────────────────────────────────
+function toggleLunarView(btn) {
+  lunarViewMode = lunarViewMode === 'comenzi' ? 'revenue' : 'comenzi';
+  btn.textContent = lunarViewMode === 'comenzi' ? 'Revenue' : 'Comenzi';
+  if (kpiDataCache) renderChartLunar(kpiDataCache.lunar || [], lunarViewMode);
+}
+
+// ── Filtru țară ───────────────────────────────────────────────
+function filterKpiTara(btn, taraCode) {
+  document.querySelectorAll('.kpi-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentTaraFilter = taraCode;
+  loadKpiLive(taraCode);
+}
+
+// ── LOAD PRINCIPAL ────────────────────────────────────────────
+async function loadKpiLive(taraFilter = '') {
+  // Arată skeleton
+  document.querySelectorAll('.kpi-skeleton').forEach(el => el.textContent = '...');
+  document.getElementById('kpi-live-label').textContent = 'Se actualizează...';
+  document.getElementById('kpi-error-state').style.display = 'none';
+
+  try {
+    const params = taraFilter ? { p_tara_cod: taraFilter } : { p_tara_cod: null };
+    const data   = await callRpc('get_live_investor_kpis', params);
+    kpiDataCache = data;
+    renderKpis(data);
+  } catch (err) {
+    console.error('[KPI Live]', err);
+    document.getElementById('kpi-error-state').style.display = 'block';
+    document.getElementById('kpi-live-label').textContent = 'Eroare încărcare date';
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// MODULE: DASHBOARD PRIVAT INVESTITOR
+// ════════════════════════════════════════════════════════════════
+
+async function loadPortofoliuPrivat() {
+  try {
+    const data = await callRpc('get_investor_portofoliu', {});
+
+    if (data.error) {
+      console.warn('[Portofoliu]', data.error);
+      return;
+    }
+
+    // Afișează dashboard-ul privat
+    const dash = document.getElementById('inv-private-dashboard');
+    if (dash) dash.style.display = 'block';
+
+    // Populează KPI-urile
+    const roi    = parseFloat(data.roi_estimat || 0);
+    const roiClr = roi >= 0 ? '#1A7A3A' : '#C0392B';
+
+    const setText = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = val;
+    };
+
+    setText('inv-kpi-suma',       data.valoare_investita > 0 ? `€${fmt(data.valoare_investita)}` : '—');
+    setText('inv-kpi-actiuni',    fmt(data.actiuni));
+    setText('inv-kpi-pct',        data.pct_companie || '0.0000');
+    setText('inv-kpi-roi',
+      `<span style="color:${roiClr}">${roi >= 0 ? '+' : ''}${roi.toFixed(1)}%</span>`);
+    setText('inv-kpi-dividende',  data.dividende_an_curent > 0 ? `€${fmt(data.dividende_an_curent, 2)}` : '—');
+
+    // Detalii tabel
+    setText('inv-actiuni-detaliu', fmt(data.actiuni));
+    setText('inv-pct-detaliu',     `${data.pct_companie || 0}%`);
+    setText('inv-suma-detaliu',    `€${fmt(data.valoare_investita)}`);
+    setText('inv-dividende-suma',  data.dividende_an_curent > 0
+      ? `€${fmt(data.dividende_an_curent, 2)}`
+      : 'Primele distribuții Q4 2026');
+    setText('inv-ultima-evaluare', data.ultima_evaluare
+      ? new Date(data.ultima_evaluare).toLocaleDateString('ro-RO')
+      : '—');
+
+    // KYC badge
+    const kycBadge = document.getElementById('inv-kyc-badge');
+    if (kycBadge) {
+      const KYC_STYLES = {
+        aprobat:       { bg:'#D4EDDA', color:'#1A7A3A', border:'rgba(26,122,58,.2)', text:'✅ KYC Aprobat' },
+        in_verificare: { bg:'#FFF8EE', color:'#CC7000', border:'rgba(255,140,0,.2)', text:'⏳ KYC în verificare' },
+        pending:       { bg:'#FFF0D6', color:'#CC7000', border:'rgba(255,140,0,.2)', text:'⚠ KYC necesar' },
+        respins:       { bg:'#FFF0F0', color:'#C0392B', border:'rgba(192,57,43,.2)', text:'❌ KYC respins' },
+      };
+      const s = KYC_STYLES[data.kyc_status] || KYC_STYLES.pending;
+      kycBadge.style.background   = s.bg;
+      kycBadge.style.color        = s.color;
+      kycBadge.style.borderColor  = s.border;
+      kycBadge.textContent        = s.text;
+    }
+
+    // Subtitle
+    setText('inv-dash-subtitle', `Portofoliu activ · ${
+      data.actiuni > 0 ? `${fmt(data.actiuni)} acțiuni` : 'Fără acțiuni înregistrate'
+    } · Date Supabase`);
+
+  } catch (err) {
+    console.error('[Dashboard Privat]', err);
+  }
+}
+
+// ── Refresh manual ────────────────────────────────────────────
+async function refreshPortofoliu() {
+  await Promise.all([
+    loadKpiLive(currentTaraFilter),
+    loadPortofoliuPrivat(),
+  ]);
+  showToastInv('✅ Date actualizate');
+}
+
+// ── Exit real (Supabase) ──────────────────────────────────────
+async function initiazaExitReal(type) {
+  // Verifică dacă user e logat
+  if (!window.supabaseClient) {
+    showToastInv('⚠ Autentifică-te pentru a iniția un Exit');
+    return;
+  }
+  const { data: { user } } = await window.supabaseClient.auth.getUser();
+  if (!user) {
+    showToastInv('⚠ Trebuie să fii autentificat');
+    return;
+  }
+
+  // Deschide modalul de exit existent (compatibil cu restul paginii)
+  if (typeof showExitModal === 'function') {
+    showExitModal(type);
+  } else {
+    showToastInv('🔄 Funcție exit în curs de activare...');
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
+
+  // 1. Încarcă KPIs publice imediat
+  loadKpiLive('');
+
+  // 2. Verifică dacă userul e logat cu rol investitor
+  try {
+    if (!window.supabaseClient) return;
+
+    // Ascultă schimbările de auth
+    window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
+      if (!session) return;
+
+      const user   = session.user;
+      const roles  = user?.user_metadata?.roles || [];
+      const role   = user?.user_metadata?.role  || '';
+
+      // Verifică rol investitor
+      const esteInvestitor = roles.includes('investitor') || role === 'investitor';
+
+      if (esteInvestitor) {
+        loadPortofoliuPrivat();
+      }
+    });
+
+    // Verificare imediată la load
+    const { data: { session } } = await window.supabaseClient.auth.getSession();
+    if (session?.user) {
+      const roles = session.user.user_metadata?.roles || [];
+      const role  = session.user.user_metadata?.role  || '';
+      if (roles.includes('investitor') || role === 'investitor') {
+        loadPortofoliuPrivat();
+      }
+    }
+
+  } catch (e) {
+    console.warn('[Init investitor]', e);
+  }
+});
+</script>
 <!-- ════ MODAL INTRĂ ÎN RUNDĂ ════ -->
 <div id="modal-runda-overlay" onclick="closeRunda()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);z-index:900"></div>
 
@@ -1420,31 +1897,31 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div style="background:#1E2A3B;border-radius:14px;border:1px solid #2D3F55;padding:14px;position:relative;overflow:hidden">
         <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#FF8C00;border-radius:14px 14px 0 0"></div>
         <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">Comenzi totale</div>
-        <div style="font-size:28px;font-weight:800;color:#FF8C00;line-height:1" id="kl-comenzi">1.247</div>
+        <div style="font-size:28px;font-weight:800;color:#FF8C00;line-height:1" id="kl-comenzi"><span class="kpi-skeleton">—</span></div>
         <div style="font-size:10px;color:#4ADE80;margin-top:4px;font-weight:600">↑ +24.7% MoM</div>
       </div>
       <div style="background:#1E2A3B;border-radius:14px;border:1px solid #2D3F55;padding:14px;position:relative;overflow:hidden">
         <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#0E9E99;border-radius:14px 14px 0 0"></div>
         <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">GMV lunar</div>
-        <div style="font-size:28px;font-weight:800;color:#0E9E99;line-height:1">480K</div>
+        <div style="font-size:28px;font-weight:800;color:#0E9E99;line-height:1" id="kl-gmv">—</div>
         <div style="font-size:10px;color:#4ADE80;margin-top:4px;font-weight:600">↑ +31% MoM</div>
       </div>
       <div style="background:#1E2A3B;border-radius:14px;border:1px solid #2D3F55;padding:14px;position:relative;overflow:hidden">
         <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#1A5FAD;border-radius:14px 14px 0 0"></div>
         <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">Revenue</div>
-        <div style="font-size:28px;font-weight:800;color:#7AB3E0;line-height:1">48.2K</div>
+        <div style="font-size:28px;font-weight:800;color:#7AB3E0;line-height:1" id="kl-revenue">—</div>
         <div style="font-size:10px;color:#4ADE80;margin-top:4px;font-weight:600">Take rate: ~10%</div>
       </div>
       <div style="background:#1E2A3B;border-radius:14px;border:1px solid #2D3F55;padding:14px;position:relative;overflow:hidden">
         <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#1A7A3A;border-radius:14px 14px 0 0"></div>
         <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">Parteneri</div>
-        <div style="font-size:28px;font-weight:800;color:#4ADE80;line-height:1">1.834</div>
+        <div style="font-size:28px;font-weight:800;color:#4ADE80;line-height:1" id="kl-parteneri">—</div>
         <div style="font-size:10px;color:#4ADE80;margin-top:4px;font-weight:600">+18% vs T1</div>
       </div>
       <div style="background:#1E2A3B;border-radius:14px;border:1px solid #2D3F55;padding:14px;position:relative;overflow:hidden">
         <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#7C3AED;border-radius:14px 14px 0 0"></div>
         <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:6px">Rating</div>
-        <div style="font-size:28px;font-weight:800;color:#A78BFA;line-height:1">4.87</div>
+        <div style="font-size:28px;font-weight:800;color:#A78BFA;line-height:1">—</div>
         <div style="font-size:10px;color:#4ADE80;margin-top:4px;font-weight:600">NPS: +68</div>
       </div>
     </div>
@@ -1493,7 +1970,7 @@ document.addEventListener('DOMContentLoaded',()=>{
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:12px;min-width:20px">🇷🇴</span>
             <div style="flex:1;height:8px;background:#2D3F55;border-radius:99px;overflow:hidden"><div style="width:74%;height:100%;background:#003366;border-radius:99px"></div></div>
-            <span style="font-size:10.5px;color:#7AB3E0;font-weight:700;min-width:36px;text-align:right">35.7K</span>
+            <span style="font-size:10.5px;color:#7AB3E0;font-weight:700;min-width:36px;text-align:right" id="kl-revenue-ro">—</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:12px;min-width:20px">🇲🇩</span>
@@ -1518,7 +1995,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         </div>
         <div style="margin-top:12px;padding-top:10px;border-top:1px solid #2D3F55;display:flex;justify-content:space-between;font-size:11px">
           <span style="color:#4A6080">Total revenue lunar</span>
-          <span style="font-weight:800;color:#FF8C00">48.2K Lei</span>
+          <span style="font-weight:800;color:#FF8C00" id="kl-revenue-text">—</span>
         </div>
       </div>
     </div>
@@ -2773,4 +3250,3 @@ function daiSendMessage(){
 </script>
 
 </body>
-</html>
