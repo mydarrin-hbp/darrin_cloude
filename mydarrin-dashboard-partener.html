@@ -392,6 +392,24 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 ::-webkit-scrollbar-thumb{background:#D5DFE8;border-radius:2px}
 @media(max-width:768px){.dp-sidebar{transform:translateX(-100%)}.dp-main{margin-left:0}}
 </style>
+  <!-- DOMPurify — sanitizare XSS (audit 2026-07-10) -->
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <script>
+    // Helper escapeHTML — pentru text pur (mesaje chat, nume, etc.)
+    // Folosește textContent intern — niciun risc XSS
+    function escapeHTML(str) {
+      if (str == null) return '';
+      const d = document.createElement('div');
+      d.textContent = String(str);
+      return d.innerHTML;
+    }
+    // Alias scurt pentru DOMPurify.sanitize — pentru HTML mixt din API
+    function safeHTML(html) {
+      return typeof DOMPurify !== 'undefined'
+        ? DOMPurify.sanitize(html, { USE_PROFILES: { html: true } })
+        : escapeHTML(html);
+    }
+  </script>
 </head>
 <body>
 <script>
