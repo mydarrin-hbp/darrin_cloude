@@ -668,11 +668,26 @@ footer a:hover { color:#FF8C00; }
 </script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-const _sbkey = document.querySelector('meta[name="supabase-key"]')?.content || window.__DARRIN_SUPABASE_KEY__ || "";
-const _sc = createClient("https://aacojyvujhywanaulvuu.supabase.co", _sbkey);
-window.supabaseClient = _sc;
+// Cheia vine ÎNTOTDEAUNA din window.__ENV__ (injectat în <head> mai sus)
+const _sbkey = (window.__ENV__ && window.__ENV__.SUPABASE_ANON_KEY) || '';
+const _surl  = (window.__ENV__ && window.__ENV__.SUPABASE_URL)      || 'https://aacojyvujhywanaulvuu.supabase.co';
+if (!_sbkey) { console.warn('[Supabase] ANON_KEY lipsă — verifică window.__ENV__'); }
+else {
+  const _sc = createClient(_surl, _sbkey);
+  window.supabaseClient = _sc;
+}
 </script>
-<script src="account-system.js"></script>
+<script>
+// Fallback pentru account-system.js — dacă nu se încarcă (ex: file://)
+// creăm un stub minim ca pagina să nu se blocheze
+window.MyDarrinAuth = window.MyDarrinAuth || {
+  getCurrentUser: async function(){ return null; },
+  getUserRoles:   async function(){ return []; },
+  performLogout:  async function(){ window.location.href='mydarrin-v3.html'; },
+  isLoggedIn:     function(){ return false; }
+};
+</script>
+<script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
   <!-- DOMPurify — sanitizare XSS (audit 2026-07-10) -->
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
   <script>
@@ -2402,284 +2417,153 @@ const CURRENCIES = {
 // Zones where platform is ACTIVE
 const ACTIVE_ZONES = ['RO', 'MD', 'DE', 'FR', 'BG'];
 
-// ═══════════════════════════════════════════════════════════════════
-// SISTEM GEO LOCALIZARE — 3 niveluri de precizie
-//
-// Nivel 1 (AUTOMAT, ~120km eroare): IP detection via ipapi.co
-//   → pornește imediat, silențios, la load
-//   → setează țara + moneda → suficient pentru taxe/prețuri
-//
-// Nivel 2 (LA CERERE, 3-15m precizie): GPS browser
-//   → navigator.geolocation.getCurrentPosition()
-//   → reverse geocoding via Nominatim (OSM, gratuit, fără API key)
-//   → actualizează adresa exactă în câmp
-//
-// Nivel 3 (MANUAL): utilizatorul tastează adresa direct în câmp
-//   → autocomplete Google Maps Places (dacă e cheie configurată)
-//   → sau acceptă ce a scris
-// ═══════════════════════════════════════════════════════════════════
+// ── Geo cache ──────────────────────────────────────────────────
+var GEO_CACHE_KEY = GEO_CACHE_KEY || 'myd_geo_v1';
+function geoSave(d){ try{sessionStorage.setItem(GEO_CACHE_KEY,JSON.stringify({...d,ts:Date.now()}));}catch(e){} }
+function geoLoad(){ try{var d=JSON.parse(sessionStorage.getItem(GEO_CACHE_KEY)||'{}'); if(d.ts&&Date.now()-d.ts<1800000)return d;}catch(e){} return null; }
 
-// Cache locație GPS în sessionStorage (nu re-cerem GPS la fiecare navigare)
-const GEO_CACHE_KEY = 'myd_geo_v1';
+// ── Aplică date geo în UI ────────────────────────────────────────
+function applyGeoData(data){
+  var country=data.country||'RO', city=data.city||'', region=data.region||'';
+  var address=data.address||[city,region].filter(Boolean).join(', ')||country;
 
-function geoSave(data) {
-  try { sessionStorage.setItem(GEO_CACHE_KEY, JSON.stringify({...data, ts: Date.now()})); } catch(e){}
-}
-function geoLoad() {
-  try {
-    const d = JSON.parse(sessionStorage.getItem(GEO_CACHE_KEY)||'{}');
-    // Cache valid 30 min
-    if (d.ts && Date.now() - d.ts < 1800000) return d;
-  } catch(e){}
-  return null;
-}
-
-// Actualizează UI cu datele de locație
-function applyGeoData(data) {
-  const { country = 'RO', city = '', region = '', address = '', lat, lng, source } = data;
-
-  // 1. Monedă și prețuri
-  const cur = CURRENCIES[country] || CURRENCIES.DEFAULT;
+  // Prețuri / monedă
+  var cur=CURRENCIES[country]||CURRENCIES.DEFAULT;
   applyCurrency(cur);
 
-  // 2. Câmpul de locație afișat
-  const locEl   = document.getElementById('loc-display');
-  const inputEl = document.getElementById('loc-input');
-  const display = address || [city, region].filter(Boolean).join(', ') || country;
-  if (locEl)   locEl.textContent = display;
-  if (inputEl && !inputEl._userEdited) inputEl.value = display;
+  // Display locație desktop
+  var locEl=document.getElementById('loc-display');
+  var inpEl=document.getElementById('loc-input');
+  if(locEl) locEl.textContent=address;
+  if(inpEl&&!inpEl._userEdited) inpEl.value=address;
 
-  // 3. Badge precizie
-  const badge = document.getElementById('geo-precision-badge');
-  if (badge) {
-    const labels = { gps:'📍 GPS · ±15m', ip:'🌐 IP · ±50km', manual:'✏️ Introdus manual', cache:'📍 Locație salvată' };
-    badge.textContent = labels[source] || '';
-    badge.style.color = source === 'gps' ? '#1A7A3A' : source === 'ip' ? '#CC7000' : '#1A5FAD';
+  // Buton GPS central în bottom nav — actualizare text
+  var mbnTxt=document.getElementById('mbn-loc-text');
+  if(mbnTxt) mbnTxt.textContent=city||country;
+
+  // Event pentru alte componente
+  try{ window.dispatchEvent(new CustomEvent('myd-geo-update',{detail:data})); }catch(e){}
+
+  // Banner zonă indisponibilă
+  var ACTIVE=['RO','MD','DE','FR','BG'];
+  if(!ACTIVE.includes(country)){
+    var zn=document.getElementById('unavail-zone');
+    if(zn) zn.textContent=city||country;
+    setTimeout(function(){ document.getElementById('zone-unavailable')?.classList.remove('hidden'); },2000);
   }
 
-  // 4. Banner zonă indisponibilă
-  const isActive = ACTIVE_ZONES.includes(country);
-  if (!isActive) {
-    const nameEl = document.getElementById('unavail-zone');
-    if (nameEl) nameEl.textContent = city || country;
-    setTimeout(() => {
-      document.getElementById('zone-unavailable')?.classList.remove('hidden');
-    }, 2000);
+  // Salvare DB Supabase (fire-and-forget)
+  if(data.lat&&data.lng&&window.__ENV__&&window.__ENV__.SUPABASE_ANON_KEY){
+    fetch(window.__ENV__.SUPABASE_URL+'/rest/v1/geo_context_cache',{
+      method:'POST',
+      headers:{apikey:window.__ENV__.SUPABASE_ANON_KEY,Authorization:'Bearer '+window.__ENV__.SUPABASE_ANON_KEY,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},
+      body:JSON.stringify({ip_hash:'browser_'+Math.random().toString(36).slice(2,8),tara_cod:country,regiune:region,oras:city,moneda:cur.symbol,creat_la:new Date().toISOString(),expira_la:new Date(Date.now()+86400000).toISOString()})
+    }).catch(function(){});
   }
-
-  // 5. Salvare Supabase geo_context_cache (fire-and-forget)
-  if (lat && lng && window.__ENV__?.SUPABASE_URL) {
-    const SUPA = window.__ENV__.SUPABASE_URL;
-    const KEY  = window.__ENV__.SUPABASE_ANON_KEY;
-    if (KEY) {
-      fetch(`${SUPA}/rest/v1/geo_context_cache`, {
-        method: 'POST',
-        headers: {
-          apikey: KEY, Authorization: `Bearer ${KEY}`,
-          'Content-Type': 'application/json',
-          Prefer: 'resolution=merge-duplicates'
-        },
-        body: JSON.stringify({
-          ip_hash: 'browser_' + Math.random().toString(36).slice(2,8),
-          tara_cod: country, regiune: region, oras: city, moneda: cur.symbol,
-          creat_la: new Date().toISOString(),
-          expira_la: new Date(Date.now() + 86400000).toISOString()
-        })
-      }).catch(()=>{});
-    }
-  }
-
   geoSave(data);
 }
 
-// ── NIVEL 1: IP Detection ─────────────────────────────────────────
-function detectFromIP() {
-  // Verificăm cache mai întâi
-  const cached = geoLoad();
-  if (cached) { applyGeoData({...cached, source:'cache'}); return; }
-
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), 4000);
-
-  fetch('https://ipapi.co/json/', { signal: ctrl.signal })
-    .then(r => r.json())
-    .then(d => {
+// ── Nivel 1: IP ──────────────────────────────────────────────────
+function detectFromIP(){
+  var cached=geoLoad();
+  if(cached){ applyGeoData(Object.assign({},cached,{source:'cache'})); return; }
+  var ctrl=new AbortController();
+  var t=setTimeout(function(){ctrl.abort();},4000);
+  fetch('https://ipapi.co/json/',{signal:ctrl.signal})
+    .then(function(r){return r.json();})
+    .then(function(d){
       clearTimeout(t);
-      applyGeoData({
-        country: d.country_code || 'RO',
-        city:    d.city || '',
-        region:  d.region || '',
-        lat:     d.latitude,
-        lng:     d.longitude,
-        source:  'ip'
-      });
+      applyGeoData({country:d.country_code||'RO',city:d.city||'',region:d.region||'',lat:d.latitude,lng:d.longitude,source:'ip'});
     })
-    .catch(() => {
+    .catch(function(){
       clearTimeout(t);
-      // Fallback silențios la RO
-      applyGeoData({ country: 'RO', city: '', region: '', source: 'ip' });
+      applyGeoData({country:'RO',city:'România',region:'',source:'ip'});
     });
 }
 
-// ── NIVEL 2: GPS Browser (precizie 3-15m) ────────────────────────
-function detectFromGPS() {
-  const btn = document.getElementById('btn-gps-detect');
-  const badge = document.getElementById('geo-precision-badge');
-
-  if (!navigator.geolocation) {
-    if (badge) { badge.textContent = '⚠ GPS indisponibil în browser'; badge.style.color='#C0392B'; }
+// ── Nivel 2: GPS browser (3-15m precizie) ────────────────────────
+function detectFromGPS(){
+  if(!navigator.geolocation){
+    showGeoToast('⚠ GPS indisponibil în acest browser');
     return;
   }
 
-  // Loading state
-  if (btn) { btn.disabled = true; btn.innerHTML = '<span style="animation:spin 1s linear infinite;display:inline-block">⟳</span> Detectare...'; }
-  if (badge) { badge.textContent = '📡 Aștept semnal GPS...'; badge.style.color='#1A5FAD'; }
+  // Loading state pe iconița din bottom nav
+  var gpsIcon=document.getElementById('mbn-gps-icon');
+  if(gpsIcon) gpsIcon.querySelector('svg').classList.add('mbn-gps-loading');
 
   navigator.geolocation.getCurrentPosition(
-    async (pos) => {
-      const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+    function(pos){
+      var lat=pos.coords.latitude, lng=pos.coords.longitude, acc=Math.round(pos.coords.accuracy);
+      if(gpsIcon) gpsIcon.querySelector('svg').classList.remove('mbn-gps-loading');
 
-      if (btn) { btn.innerHTML = '📍 Localizare...'; }
+      // Reverse geocoding Nominatim (OSM, gratuit, fără API key)
+      fetch('https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lng+'&format=json&accept-language=ro',
+        {headers:{'User-Agent':'MyDarrin/1.0 (homebestpal.com)'}})
+        .then(function(r){return r.json();})
+        .then(function(geo){
+          var a=geo.address||{};
+          var city=a.city||a.town||a.village||a.municipality||'';
+          var region=a.county||a.state||'';
+          var country=(a.country_code||'ro').toUpperCase();
+          var street=[a.road,a.house_number].filter(Boolean).join(' ');
+          var address=[street,city,region].filter(Boolean).join(', ');
 
-      try {
-        // Reverse geocoding cu Nominatim (OSM) — gratuit, fără API key
-        const r = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ro`,
-          { headers: { 'User-Agent': 'MyDarrin/1.0 (homebestpal.com)' } }
-        );
-        const geo = await r.json();
-        const addr = geo.address || {};
+          applyGeoData({country:country,city:city,region:region,address:address,lat:lat,lng:lng,source:'gps',accuracy:acc});
+          showGeoToast('📍 Locație GPS detectată · ±'+acc+'m · '+city);
 
-        const city    = addr.city || addr.town || addr.village || addr.municipality || '';
-        const region  = addr.county || addr.state || '';
-        const country = addr.country_code?.toUpperCase() || 'RO';
-        // Adresă completă formatată
-        const street  = [addr.road, addr.house_number].filter(Boolean).join(' ');
-        const address = [street, city, region].filter(Boolean).join(', ');
-
-        applyGeoData({ country, city, region, address, lat, lng, source:'gps',
-                       accuracy: Math.round(accuracy) });
-
-        if (badge) {
-          badge.textContent = `📍 GPS · ±${Math.round(accuracy)}m · ${city}`;
-          badge.style.color = '#1A7A3A';
-        }
-
-        // Actualizăm input cu adresa exactă
-        const inputEl = document.getElementById('loc-input');
-        if (inputEl) {
-          inputEl.value = address || city;
-          inputEl._userEdited = false; // permite update ulterior
-        }
-
-      } catch(e) {
-        // Reverse geocoding eșuat, dar avem coords — folosim doar coords
-        applyGeoData({ country:'RO', lat, lng, source:'gps',
-                       city: `${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E` });
-        if (badge) { badge.textContent = `📍 GPS · ±${Math.round(accuracy)}m`; badge.style.color='#1A7A3A'; }
-      }
-
-      if (btn) { btn.disabled = false; btn.innerHTML = '📍 Actualizează locația'; }
+          // Actualizăm și inputul din modal
+          var inp=document.getElementById('loc-input');
+          if(inp){inp.value=address||city; inp._userEdited=false;}
+        })
+        .catch(function(){
+          applyGeoData({country:'RO',city:lat.toFixed(3)+'°N '+lng.toFixed(3)+'°E',lat:lat,lng:lng,source:'gps',accuracy:acc});
+          showGeoToast('📍 GPS ±'+acc+'m (reverse geocoding eșuat)');
+        });
     },
-    (err) => {
-      if (btn) { btn.disabled = false; btn.innerHTML = '📍 Detectează locația'; }
-      const msgs = {
-        1: '🔒 Accesul la locație a fost refuzat — permite în setările browserului',
-        2: '⚠ Semnal GPS indisponibil — încearcă în exterior',
-        3: '⏱ Timeout GPS — încearcă din nou'
-      };
-      if (badge) { badge.textContent = msgs[err.code] || '⚠ Eroare GPS'; badge.style.color='#C0392B'; }
-      // Toast informativ
-      showGeoToast(msgs[err.code] || 'Eroare la detectare GPS');
+    function(err){
+      if(gpsIcon) gpsIcon.querySelector('svg').classList.remove('mbn-gps-loading');
+      var msgs={1:'🔒 Permite accesul la locație în browser → Setări → Locație',2:'⚠ Semnal GPS slab — încearcă în exterior sau lângă fereastră',3:'⏱ Timeout GPS — încearcă din nou'};
+      showGeoToast(msgs[err.code]||'⚠ Eroare GPS');
     },
-    {
-      enableHighAccuracy: true,  // ← forțează GPS real (nu doar IP/WiFi)
-      timeout:            15000, // 15s pentru GPS cold start
-      maximumAge:         60000  // acceptă coords cu max 1 min vechime din cache browser
-    }
+    {enableHighAccuracy:true, timeout:15000, maximumAge:60000}
   );
 }
 
-// ── NIVEL 3: Input manual cu validare ────────────────────────────
-function onLocInputChange(el) {
-  el._userEdited = true;
-  const val = el.value.trim();
-  if (!val) return;
-
-  // Detectăm țara din ce a scris
-  const map = {
-    'moldova': 'MD', 'chisinau': 'MD', 'chișinău': 'MD',
-    'german':  'DE', 'berlin':   'DE', 'munchen': 'DE', 'münchen': 'DE',
-    'france':  'FR', 'paris':    'FR', 'lyon': 'FR',
-    'bulgaria':'BG', 'sofia':    'BG', 'varna': 'BG',
-  };
-  const lower = val.toLowerCase();
-  const country = Object.entries(map).find(([k]) => lower.includes(k))?.[1] || 'RO';
-
-  applyGeoData({ country, city: val, source: 'manual' });
+// ── Nivel 3: Input manual ────────────────────────────────────────
+function onLocInputChange(el){
+  el._userEdited=true;
+  var val=el.value.trim();
+  if(!val) return;
+  var map={'moldova':'MD','chisinau':'MD','chișinău':'MD','german':'DE','berlin':'DE','munchen':'DE','münchen':'DE','france':'FR','paris':'FR','lyon':'FR','bulgaria':'BG','sofia':'BG','varna':'BG'};
+  var lower=val.toLowerCase();
+  var country=Object.entries(map).find(function(e){return lower.includes(e[0]);})?.[1]||'RO';
+  applyGeoData({country:country,city:val,source:'manual'});
 }
 
-// ── Toast helper ──────────────────────────────────────────────────
-function showGeoToast(msg) {
-  const t = document.createElement('div');
-  t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1A2332;color:#fff;padding:10px 20px;border-radius:12px;font-size:12.5px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:inherit;max-width:90vw;text-align:center';
-  t.textContent = msg;
+// ── Toast ─────────────────────────────────────────────────────────
+function showGeoToast(msg){
+  var t=document.createElement('div');
+  t.style.cssText='position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:#1A2332;color:#fff;padding:10px 20px;border-radius:12px;font-size:12.5px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:inherit;max-width:90vw;text-align:center;pointer-events:none';
+  t.textContent=msg;
   document.body.appendChild(t);
-  setTimeout(() => t.remove(), 4000);
+  setTimeout(function(){if(t.parentNode)t.remove();},3500);
 }
 
-// ── INIT: pornire automată ────────────────────────────────────────
-function detectAndApplyCurrency() {
-  detectFromIP(); // Nivel 1 — pornește imediat, silențios
-}
-
-// Input manual — marcăm că userul a editat
-document.addEventListener('DOMContentLoaded', () => {
-  const inp = document.getElementById('loc-input');
-  if (inp) {
-    inp._userEdited = false;
-    inp.addEventListener('input', () => { inp._userEdited = true; });
-    inp.addEventListener('change', () => onLocInputChange(inp));
-    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') onLocInputChange(inp); });
+// ── Init loc input manual ─────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',function(){
+  var inp=document.getElementById('loc-input');
+  if(inp){
+    inp._userEdited=false;
+    inp.addEventListener('input',function(){inp._userEdited=true;});
+    inp.addEventListener('change',function(){onLocInputChange(inp);});
+    inp.addEventListener('keydown',function(e){if(e.key==='Enter')onLocInputChange(inp);});
   }
 });
 
-function applyCurrency(cur) {
-  // Update label in catalog header
-  const lbl = document.getElementById('currency-label');
-  if (lbl) lbl.textContent = cur.flag + ' ' + cur.label;
+// ── INIT: pornire cu IP detection ────────────────────────────────
+function detectAndApplyCurrency(){ detectFromIP(); }
 
-  // Update all prices
-  document.querySelectorAll('.dyn-price').forEach(el => {
-    const ron = parseFloat(el.dataset.ron);
-    const converted = Math.round(ron * cur.rate);
-    el.textContent = converted.toLocaleString();
-  });
-  document.querySelectorAll('.dyn-currency').forEach(el => {
-    el.textContent = cur.symbol;
-  });
-}
-
-// Zone unavailable tabs
-function switchUnavailTab(tab) {
-  document.getElementById('unavail-tab-client').classList.toggle('active', tab==='client');
-  document.getElementById('unavail-tab-furnizor').classList.toggle('active', tab==='furnizor');
-}
-
-function submitUnavail() {
-  const subscribed = document.getElementById('unavail-subscribe').checked;
-  const modal = document.getElementById('zone-unavailable');
-  modal.querySelector('.bg-white').innerHTML = `
-    <div class="p-8 text-center">
-      <div class="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4 text-3xl">✅</div>
-      <h3 class="font-bold text-xl text-[#2D2D2D] mb-2" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Înregistrat cu succes!</h3>
-      <p class="text-gray-400 text-sm leading-relaxed mb-6">Vei fi printre primii care află când My Darrin lansează în zona ta${subscribed ? ' — vei primi notificări pe email' : ''}.</p>
-      <button onclick="document.getElementById('zone-unavailable').classList.add('hidden')" class="bg-[#FF8C00] text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition">Închide</button>
-    </div>
-  `;
-}
-
-// Init currency detection on page load
 detectAndApplyCurrency();
 
 // ── INVESTOR MODAL ──
@@ -3190,6 +3074,91 @@ function daiSendMessage(){
   daiRespond(text);
 }
 </script>
+
+
+<!-- ════ MOBILE BOTTOM NAV BAR (doar pe ecrane < 1024px) ════ -->
+<nav id="mobile-bottom-nav" style="
+  display:none;
+  position:fixed; bottom:0; left:0; right:0; z-index:1000;
+  background:#fff;
+  border-top:1px solid #E8F0FB;
+  box-shadow:0 -4px 24px rgba(0,0,0,.10);
+  padding:0 0 env(safe-area-inset-bottom,0) 0;
+" aria-label="Navigare principală mobilă">
+  <div style="display:flex;align-items:stretch;height:56px">
+
+    <!-- Acasă -->
+    <a href="mydarrin-v3.html" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:#8C9BAD;font-size:9.5px;font-weight:600;font-family:inherit;border-right:1px solid #F0F2F7;transition:color .15s" id="mbn-home"
+       onmousedown="this.style.background='#F4F7F9'" onmouseup="this.style.background=''">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Acasă
+    </a>
+
+    <!-- Catalog -->
+    <a href="mydarrin-catalog.html" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:#8C9BAD;font-size:9.5px;font-weight:600;font-family:inherit;border-right:1px solid #F0F2F7;transition:color .15s" id="mbn-catalog"
+       onmousedown="this.style.background='#F4F7F9'" onmouseup="this.style.background=''">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Catalog
+    </a>
+
+    <!-- GPS Locație — buton central proeminent -->
+    <button onclick="detectFromGPS()" id="mbn-gps" style="flex:1.2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:#003366;color:#fff;font-size:9.5px;font-weight:700;font-family:inherit;cursor:pointer;border-right:1px solid rgba(255,255,255,.1);position:relative;transition:background .15s"
+       title="Detectează locația exactă prin GPS">
+      <div id="mbn-gps-icon" style="width:36px;height:36px;border-radius:50%;background:#FF8C00;display:flex;align-items:center;justify-content:center;margin-bottom:2px;position:relative;top:-8px;box-shadow:0 4px 14px rgba(255,140,0,.45);border:3px solid #fff">
+        <svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+      </div>
+      <span id="mbn-loc-text" style="font-size:8.5px;color:rgba(255,255,255,.7);margin-top:-10px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="mbn-city">Locație</span>
+    </button>
+
+    <!-- Devino Partener -->
+    <a href="mydarrin-devino-partener.html" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:#8C9BAD;font-size:9.5px;font-weight:600;font-family:inherit;border-right:1px solid #F0F2F7;transition:color .15s" id="mbn-partener"
+       onmousedown="this.style.background='#F4F7F9'" onmouseup="this.style.background=''">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      Partener
+    </a>
+
+    <!-- Cont -->
+    <button onclick="toggleAuthModal()" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:#fff;color:#8C9BAD;font-size:9.5px;font-weight:600;font-family:inherit;cursor:pointer;transition:color .15s" id="mbn-cont">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Cont
+    </button>
+
+  </div>
+</nav>
+
+<!-- CSS + JS pentru bottom nav -->
+<style>
+@media (max-width:1023px) {
+  #mobile-bottom-nav { display:block !important; }
+  /* Spațiu jos ca paginea să nu fie acoperită de nav */
+  body { padding-bottom:calc(56px + env(safe-area-inset-bottom,0)) !important; }
+}
+/* Activ: tab curent evidențiat */
+#mbn-home.active, #mbn-catalog.active, #mbn-partener.active { color:#003366 !important; }
+#mbn-cont.active { color:#003366 !important; background:#EBF4FB !important; }
+/* Animație GPS spin */
+@keyframes mbn-spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+.mbn-gps-loading { animation:mbn-spin 1s linear infinite; }
+</style>
+
+<script>
+// Evidențiem tab-ul activ pe baza URL-ului curent
+(function(){
+  var path = window.location.pathname;
+  if (path.includes('mydarrin-catalog'))        document.getElementById('mbn-catalog')?.classList.add('active');
+  else if (path.includes('devino-partener'))     document.getElementById('mbn-partener')?.classList.add('active');
+  else if (path.includes('mydarrin-v3') || path === '/') document.getElementById('mbn-home')?.classList.add('active');
+})();
+
+// Actualizăm textul locației în butonul GPS central când avem locația
+document.addEventListener('myd-geo-update', function(e) {
+  var el = document.getElementById('mbn-loc-text');
+  if (el && e.detail && e.detail.city) {
+    el.textContent = e.detail.city;
+  }
+});
+</script>
+<!-- ════ END MOBILE BOTTOM NAV BAR ════ -->
 
 </body>
 </html>
