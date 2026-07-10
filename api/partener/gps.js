@@ -14,6 +14,24 @@ async function handlePost(req, res, user) {
     return res.status(400).json({ error: 'lat și lng (numerice) sunt obligatorii' });
   }
 
+  // FIX SECURITATE (audit 2026-07-10): verifică că comanda aparține acestui partener
+  if (comanda_id) {
+    const { data: comanda, error: cmdErr } = await supabaseAdmin
+      .from('comenzi')
+      .select('partener_id, status')
+      .eq('id', comanda_id)
+      .single();
+    if (cmdErr || !comanda) {
+      return res.status(404).json({ error: 'Comanda nu există' });
+    }
+    if (comanda.partener_id !== user.id) {
+      return res.status(403).json({ error: 'Comanda nu îți este alocată' });
+    }
+    if (!['acceptata','in_desfasurare'].includes(comanda.status)) {
+      return res.status(409).json({ error: 'Comanda nu e activă' });
+    }
+  }
+
   const { error } = await supabaseAdmin
     .from('gps_tracking')
     .upsert(
