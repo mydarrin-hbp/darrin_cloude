@@ -4560,6 +4560,330 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&consOpen) closeCon
 })();
 </script>
 
+
+<!-- ════ SUPABASE LIVE MODULE — Catalog v2: Obiect→Servicii + ESCO + Uniclass ════ -->
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// CATALOG LIVE — încarcă din Supabase și injectează carduri dinamice
+// Strategia: carduri statice RĂMÂN (pentru SEO + fallback)
+//            cardurile Supabase se ADAUGĂ după, cu clasa 'supabase-card'
+//            filterul applyFilters() lucrează pe toți (statici + dinamici)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const SUPA_URL  = window.__ENV__?.SUPABASE_URL  || 'https://aacojyvujhywanaulvuu.supabase.co';
+const SUPA_ANON = window.__ENV__?.SUPABASE_ANON_KEY || '';
+
+// Imagini per domeniu (Unsplash CDN)
+const DOMAIN_IMG = {
+  'Instalații sanitare și termice': 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=600&q=80',
+  'Instalații electrice':           'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&q=80',
+  'Electrocasnice':                 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80',
+  'Sanitare & Termo':               'https://images.unsplash.com/photo-1615529328331-f8917597711f?w=600&q=80',
+  'Sanitare & Obiecte':             'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=600&q=80',
+  'Electrice & Iluminat':           'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=600&q=80',
+  'Electrice & Tablouri':           'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=600&q=80',
+  'default':                        'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=600&q=80',
+};
+
+// Mapare domeniu → data-cat și data-subcat (pentru filtrele existente)
+const DOMAIN_CAT = {
+  'Instalații sanitare și termice': {cat:'Instalații', subcat:'Sanitare & Termo'},
+  'Instalații electrice':           {cat:'Instalații', subcat:'Electrice'},
+  'Electrocasnice':                 {cat:'Exterior',   subcat:'Reparații'},
+  'Sanitare & Termo':               {cat:'Construcții',subcat:'Sanitare'},
+  'Sanitare & Obiecte':             {cat:'Construcții',subcat:'Sanitare & Termo'},
+  'Electrice & Iluminat':           {cat:'Instalații', subcat:'Electrice'},
+  'Electrice & Tablouri':           {cat:'Instalații', subcat:'Electrice'},
+};
+
+// Tipuri serviciu → badge și culoare
+const TIP_META = {
+  mentenanta:  {icon:'🔍', label:'Mentenanță', cls:'chip-ai'},
+  inlocuire:   {icon:'🔄', label:'Înlocuire',  cls:'chip-primary'},
+  reparatie:   {icon:'🔧', label:'Reparație',  cls:'chip-primary'},
+  montaj_nou:  {icon:'🏗', label:'Montaj nou', cls:'chip-ai'},
+};
+
+// ── Fetch Supabase REST ────────────────────────────────────────────────────
+async function supaFetch(path, params = '') {
+  if (!SUPA_ANON) return null;
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/${path}${params}`, {
+      headers: { apikey: SUPA_ANON, Authorization: `Bearer ${SUPA_ANON}`,
+                 'Content-Type': 'application/json' }
+    });
+    if (!r.ok) return null;
+    return r.json();
+  } catch { return null; }
+}
+
+// ── Render card serviciu (același HTML ca cardurile statice) ───────────────
+function renderServiceCard(item, delay = 0, tipSvc = null) {
+  const img = DOMAIN_IMG[item.domeniu] || DOMAIN_IMG.default;
+  const catInfo = DOMAIN_CAT[item.domeniu] || {cat:'Instalații', subcat:'General'};
+  const tip = tipSvc || detectTip(item.id_serviciu);
+  const tipM = TIP_META[tip] || {};
+  const nace = item.nace || '';
+  const esco = item.cod_esco || '';
+  const price = item._pret || 0;
+  const priceStr = price > 0 ? price : '—';
+  const isUrgent = item.id_serviciu?.includes('inlocuire') || item.id_serviciu?.includes('montaj');
+  const isNew = !!(item._is_new);
+
+  // servicii asociate obiect (din catalog_relatii)
+  const serviciiAssoc = item._servicii_asociate || [];
+  const assocHTML = serviciiAssoc.length > 0
+    ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px">
+        ${serviciiAssoc.slice(0,4).map(s=>`<span style="font-size:9px;padding:2px 7px;border-radius:99px;background:#E8F0FB;color:#1A5FAD;font-weight:600">${TIP_META[detectTip(s.id_serviciu)]?.icon || '🔧'} ${TIP_META[detectTip(s.id_serviciu)]?.label || s.titlu}</span>`).join('')}
+       </div>`
+    : '';
+
+  return `<div class="rich-card reveal supabase-card" style="animation-delay:${delay}ms"
+      data-tab="${item.categorie}"
+      data-cat="${catInfo.cat}"
+      data-subcat="${catInfo.subcat}"
+      data-title="${escapeHTML(item.titlu?.toLowerCase() || '')}"
+      data-price="${price}"
+      data-rating="4.8"
+      data-reviews="0"
+      data-urgent="${isUrgent}"
+      data-ai="true"
+      data-slug="${escapeHTML(item.id_serviciu || '')}"
+      data-uniclass="${escapeHTML(item.cod_uniclass || '')}"
+      data-esco="${escapeHTML(esco)}"
+      onclick="openService('${escapeHTML(item.id_serviciu || '')}','${escapeHTML(item.titlu || '')}')">
+    <div class="card-media">
+      <img src="${img}" alt="${escapeHTML(item.titlu || '')}" loading="lazy"/>
+      <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+      ${isNew ? '<span class="card-badge hot">Nou</span>' : ''}
+      ${isUrgent ? '<span style="position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;background:rgba(220,38,38,.85);color:#fff;padding:2px 8px;border-radius:99px">⚡ Urgent</span>' : ''}
+      <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)">
+        <span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;display:inline-block"></span>
+        <span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-title">${escapeHTML(item.titlu || '')}</div>
+      ${tipM.label ? `<div style="display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:99px;background:#E0F5F4;color:#0B7A76;font-size:9px;font-weight:700;margin-bottom:6px">${tipM.icon} ${tipM.label}</div>` : ''}
+      ${assocHTML}
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">
+        ${nace ? `<span class="chip chip-primary" style="font-size:9px;padding:2px 8px">${escapeHTML(nace)}</span>` : ''}
+        ${esco ? `<span class="chip chip-ai" style="font-size:9px;padding:2px 8px">ESCO ${escapeHTML(esco)}</span>` : ''}
+        ${item.cod_uniclass ? `<span style="font-size:8px;padding:2px 6px;border-radius:99px;background:#F3E5F5;color:#7C3AED;font-weight:600">📐 ${escapeHTML(item.cod_uniclass)}</span>` : ''}
+      </div>
+      <div class="card-rating">
+        <span class="stars">★★★★★</span>
+        <span class="rating-val">4.8 · ${escapeHTML(item.garantie_luni ? item.garantie_luni + ' luni garanție' : 'garanție inclusă')}</span>
+      </div>
+      <div class="card-footer">
+        <div class="card-price">
+          <span class="price-from">De la</span>
+          <span class="price-val"><span class="dyn-price" data-ron="${price}">${priceStr}</span> <span class="dyn-currency">Lei</span></span>
+          <span class="price-unit">/ ${escapeHTML(item.unitate_masura || 'buc')}</span>
+          <div class="vmc-note">⚖ Min. 100 Lei · 📍 +5% zonă</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── Render card material (Marketplace) ────────────────────────────────────
+function renderMaterialCard(item, delay = 0, serviciiAsoc = []) {
+  const img = DOMAIN_IMG[item.domeniu] || DOMAIN_IMG.default;
+  const catInfo = DOMAIN_CAT[item.domeniu] || {cat:'Construcții', subcat:'Sanitare'};
+
+  const assocHTML = serviciiAsoc.length > 0
+    ? `<div style="margin-bottom:8px">
+        <div style="font-size:9px;font-weight:700;color:#5A6B7D;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Servicii disponibile:</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          ${serviciiAsoc.map(s => `<button onclick="event.stopPropagation();openService('${escapeHTML(s.id_serviciu)}','${escapeHTML(s.titlu)}')"
+            style="font-size:9px;padding:3px 8px;border-radius:99px;border:1px solid #D5DFE8;background:#fff;cursor:pointer;font-family:inherit;color:#003366;font-weight:600">
+            ${TIP_META[detectTip(s.id_serviciu)]?.icon || '🔧'} ${TIP_META[detectTip(s.id_serviciu)]?.label || escapeHTML(s.titlu?.split('/')[0] || s.titlu)}
+          </button>`).join('')}
+        </div>
+       </div>`
+    : '';
+
+  return `<div class="rich-card reveal supabase-card" style="animation-delay:${delay}ms"
+      data-tab="materiale"
+      data-cat="${catInfo.cat}"
+      data-subcat="${catInfo.subcat}"
+      data-title="${escapeHTML(item.titlu?.toLowerCase() || '')}"
+      data-price="${item._pret || 0}"
+      data-rating="4.8"
+      data-reviews="0"
+      data-urgent="false"
+      data-ai="false"
+      data-slug="${escapeHTML(item.id_serviciu || '')}"
+      onclick="openService('${escapeHTML(item.id_serviciu || '')}','${escapeHTML(item.titlu || '')}')">
+    <div class="card-media">
+      <img src="${img}" alt="${escapeHTML(item.titlu || '')}" loading="lazy"/>
+      <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+      <span class="card-badge hot">${escapeHTML(item.domeniu || 'Material')}</span>
+    </div>
+    <div class="card-body">
+      <div class="card-title">${escapeHTML(item.titlu || '')}</div>
+      ${assocHTML}
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">
+        ${item.nace ? `<span class="chip chip-primary" style="font-size:9px;padding:2px 8px">${escapeHTML(item.nace)}</span>` : ''}
+        ${item.cod_uniclass ? `<span style="font-size:8px;padding:2px 6px;border-radius:99px;background:#E8F0FB;color:#1A5FAD;font-weight:600">📦 Pr·${escapeHTML(item.cod_uniclass?.split('_').slice(-1)[0] || item.cod_uniclass)}</span>` : ''}
+      </div>
+      <div class="card-footer">
+        <div class="card-price">
+          <span class="price-from">De la</span>
+          <span class="price-val"><span class="dyn-price" data-ron="${item._pret || 0}">${item._pret || '—'}</span> <span class="dyn-currency">Lei</span></span>
+          <span class="price-unit">/ ${escapeHTML(item.unitate_masura || 'buc')}</span>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── Detectează tipul de serviciu din id ────────────────────────────────────
+function detectTip(id = '') {
+  if (id.includes('mentenanta')) return 'mentenanta';
+  if (id.includes('inlocuire'))  return 'inlocuire';
+  if (id.includes('reparatie'))  return 'reparatie';
+  if (id.includes('montaj'))     return 'montaj_nou';
+  return null;
+}
+
+// ── Încarcă serviciile noi (Catalog v2) ───────────────────────────────────
+async function loadCatalogV2Servicii() {
+  const SERVICII_V2 = ['cal-','ilu-','tel-','lav-','mas-'];
+  const filter = SERVICII_V2.map(p => `id_serviciu.like.${p}*`).join(',');
+
+  const [servicii, preturi] = await Promise.all([
+    supaFetch('catalog_servicii', `?categorie=eq.servicii&id_serviciu=like.cal-*,id_serviciu=like.ilu-*,id_serviciu=like.tel-*,id_serviciu=like.lav-*,id_serviciu=like.mas-*&select=*`),
+    supaFetch('catalog_preturi', `?tara_cod=eq.RO&activ=eq.true&select=nivel_id,pret`),
+  ]);
+
+  if (!servicii?.length) return;
+
+  const grid = document.getElementById('grid-servicii');
+  if (!grid) return;
+
+  // Marchează separator
+  const sep = document.createElement('div');
+  sep.className = 'supabase-separator';
+  sep.style.cssText = 'width:100%;grid-column:1/-1;padding:12px 0 4px;border-top:1px dashed #D5DFE8;margin-top:4px';
+  sep.innerHTML = '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#0E9E99">🆕 Catalog v2 — Obiecte & Servicii (live Supabase)</span>';
+  grid.appendChild(sep);
+
+  // Grupăm pe obiect (prefix) pentru afișare clară
+  const grupuri = {};
+  servicii.forEach(s => {
+    const prefix = s.id_serviciu?.split('-')[0] || 'other';
+    if (!grupuri[prefix]) grupuri[prefix] = [];
+    grupuri[prefix].push(s);
+  });
+
+  let delay = 0;
+  for (const [prefix, items] of Object.entries(grupuri)) {
+    // Header grup
+    const grpHdr = document.createElement('div');
+    grpHdr.style.cssText = 'width:100%;grid-column:1/-1;padding:8px 0 2px';
+    const firstItem = items[0];
+    const obj = firstItem.domeniu || '';
+    grpHdr.innerHTML = `<span style="font-size:11px;font-weight:700;color:#1A2332">${firstItem.icon || '🔧'} ${obj}</span>`;
+    grid.appendChild(grpHdr);
+
+    items.forEach(s => {
+      const tip = detectTip(s.id_serviciu);
+      const div = document.createElement('div');
+      div.innerHTML = renderServiceCard(s, delay, tip);
+      grid.appendChild(div.firstElementChild);
+      delay += 50;
+    });
+  }
+
+  // Actualizăm counter
+  setTimeout(() => {
+    if (typeof applyFilters === 'function') applyFilters();
+  }, 200);
+}
+
+// ── Încarcă materialele noi (Marketplace) cu servicii asociate ────────────
+async function loadCatalogV2Materiale() {
+  const [materiale, relatii, servicii] = await Promise.all([
+    supaFetch('catalog_servicii', '?categorie=eq.materiale&id_serviciu=like.cal-*,id_serviciu=like.ilu-*,id_serviciu=like.tel-*,id_serviciu=like.lav-*,id_serviciu=like.mas-*&select=*'),
+    supaFetch('catalog_relatii', '?tip_relatie=eq.obiect_asociat&select=catalog_serviciu_id,catalog_relatie_id'),
+    supaFetch('catalog_servicii', '?categorie=eq.servicii&id_serviciu=like.cal-*,id_serviciu=like.ilu-*,id_serviciu=like.tel-*,id_serviciu=like.lav-*,id_serviciu=like.mas-*&select=id,id_serviciu,titlu'),
+  ]);
+
+  if (!materiale?.length) return;
+
+  const grid = document.getElementById('grid-materiale');
+  if (!grid) return;
+
+  // Index servicii per ID
+  const svcById = {};
+  (servicii || []).forEach(s => { svcById[s.id] = s; });
+
+  // Index relații: material_id → [serviciu_id, ...]
+  const relIdx = {};
+  (relatii || []).forEach(r => {
+    if (!relIdx[r.catalog_serviciu_id]) relIdx[r.catalog_serviciu_id] = [];
+    relIdx[r.catalog_serviciu_id].push(r.catalog_relatie_id);
+  });
+
+  const sep = document.createElement('div');
+  sep.style.cssText = 'width:100%;grid-column:1/-1;padding:12px 0 4px;border-top:1px dashed #D5DFE8;margin-top:4px';
+  sep.innerHTML = '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#0E9E99">🆕 Obiecte fizice (Marketplace) cu servicii asociate · live Supabase</span>';
+  grid.appendChild(sep);
+
+  let delay = 0;
+  for (const mat of materiale) {
+    const svcIds = relIdx[mat.id] || [];
+    const svcAsoc = svcIds.map(id => svcById[id]).filter(Boolean);
+
+    const div = document.createElement('div');
+    div.innerHTML = renderMaterialCard(mat, delay, svcAsoc);
+    grid.appendChild(div.firstElementChild);
+    delay += 60;
+  }
+
+  setTimeout(() => {
+    if (typeof applyFilters === 'function') applyFilters();
+  }, 200);
+}
+
+// ── ESCO enrichment: adaugă badge Uniclass pe carduri statice existente ────
+async function enrichStaticCardsWithEsco() {
+  const esco = await supaFetch('competente_esco', '?select=cod_esco,denumire,cod_uniclass,cor_code,isco_group,denumire_en');
+  if (!esco?.length) return;
+
+  const escoMap = {};
+  esco.forEach(e => { escoMap[e.cod_esco] = e; });
+
+  document.querySelectorAll('.rich-card:not(.supabase-card) [class*="chip-ai"]').forEach(chip => {
+    const text = chip.textContent?.trim();
+    const match = text?.match(/(\d{4,6})/);
+    if (!match) return;
+    const cod = match[1];
+    const e = escoMap[cod];
+    if (!e || !e.cod_uniclass) return;
+    if (chip.nextElementSibling?.textContent?.includes('📐')) return;
+    const badge = document.createElement('span');
+    badge.style.cssText = 'font-size:8px;padding:2px 6px;border-radius:99px;background:#F3E5F5;color:#7C3AED;font-weight:600;margin-left:4px';
+    badge.title = `Uniclass 2015: ${e.cod_uniclass} · COR: ${e.cor_code || '—'}`;
+    badge.textContent = `📐 Ss`;
+    chip.after(badge);
+  });
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  // Rulează în paralel, nu blochează pagina
+  Promise.all([
+    loadCatalogV2Servicii(),
+    loadCatalogV2Materiale(),
+    enrichStaticCardsWithEsco(),
+  ]).catch(err => console.warn('[CatalogV2]', err));
+});
+</script>
+<!-- ════ END SUPABASE LIVE MODULE ════ -->
+
 </body>
 </html>
 
@@ -5271,5 +5595,329 @@ function daiSendMessage(){
 
   </div>
 </div>
+
+<!-- ════ SUPABASE LIVE MODULE — Catalog v2: Obiect→Servicii + ESCO + Uniclass ════ -->
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// CATALOG LIVE — încarcă din Supabase și injectează carduri dinamice
+// Strategia: carduri statice RĂMÂN (pentru SEO + fallback)
+//            cardurile Supabase se ADAUGĂ după, cu clasa 'supabase-card'
+//            filterul applyFilters() lucrează pe toți (statici + dinamici)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const SUPA_URL  = window.__ENV__?.SUPABASE_URL  || 'https://aacojyvujhywanaulvuu.supabase.co';
+const SUPA_ANON = window.__ENV__?.SUPABASE_ANON_KEY || '';
+
+// Imagini per domeniu (Unsplash CDN)
+const DOMAIN_IMG = {
+  'Instalații sanitare și termice': 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=600&q=80',
+  'Instalații electrice':           'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&q=80',
+  'Electrocasnice':                 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80',
+  'Sanitare & Termo':               'https://images.unsplash.com/photo-1615529328331-f8917597711f?w=600&q=80',
+  'Sanitare & Obiecte':             'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=600&q=80',
+  'Electrice & Iluminat':           'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=600&q=80',
+  'Electrice & Tablouri':           'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=600&q=80',
+  'default':                        'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=600&q=80',
+};
+
+// Mapare domeniu → data-cat și data-subcat (pentru filtrele existente)
+const DOMAIN_CAT = {
+  'Instalații sanitare și termice': {cat:'Instalații', subcat:'Sanitare & Termo'},
+  'Instalații electrice':           {cat:'Instalații', subcat:'Electrice'},
+  'Electrocasnice':                 {cat:'Exterior',   subcat:'Reparații'},
+  'Sanitare & Termo':               {cat:'Construcții',subcat:'Sanitare'},
+  'Sanitare & Obiecte':             {cat:'Construcții',subcat:'Sanitare & Termo'},
+  'Electrice & Iluminat':           {cat:'Instalații', subcat:'Electrice'},
+  'Electrice & Tablouri':           {cat:'Instalații', subcat:'Electrice'},
+};
+
+// Tipuri serviciu → badge și culoare
+const TIP_META = {
+  mentenanta:  {icon:'🔍', label:'Mentenanță', cls:'chip-ai'},
+  inlocuire:   {icon:'🔄', label:'Înlocuire',  cls:'chip-primary'},
+  reparatie:   {icon:'🔧', label:'Reparație',  cls:'chip-primary'},
+  montaj_nou:  {icon:'🏗', label:'Montaj nou', cls:'chip-ai'},
+};
+
+// ── Fetch Supabase REST ────────────────────────────────────────────────────
+async function supaFetch(path, params = '') {
+  if (!SUPA_ANON) return null;
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/${path}${params}`, {
+      headers: { apikey: SUPA_ANON, Authorization: `Bearer ${SUPA_ANON}`,
+                 'Content-Type': 'application/json' }
+    });
+    if (!r.ok) return null;
+    return r.json();
+  } catch { return null; }
+}
+
+// ── Render card serviciu (același HTML ca cardurile statice) ───────────────
+function renderServiceCard(item, delay = 0, tipSvc = null) {
+  const img = DOMAIN_IMG[item.domeniu] || DOMAIN_IMG.default;
+  const catInfo = DOMAIN_CAT[item.domeniu] || {cat:'Instalații', subcat:'General'};
+  const tip = tipSvc || detectTip(item.id_serviciu);
+  const tipM = TIP_META[tip] || {};
+  const nace = item.nace || '';
+  const esco = item.cod_esco || '';
+  const price = item._pret || 0;
+  const priceStr = price > 0 ? price : '—';
+  const isUrgent = item.id_serviciu?.includes('inlocuire') || item.id_serviciu?.includes('montaj');
+  const isNew = !!(item._is_new);
+
+  // servicii asociate obiect (din catalog_relatii)
+  const serviciiAssoc = item._servicii_asociate || [];
+  const assocHTML = serviciiAssoc.length > 0
+    ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px">
+        ${serviciiAssoc.slice(0,4).map(s=>`<span style="font-size:9px;padding:2px 7px;border-radius:99px;background:#E8F0FB;color:#1A5FAD;font-weight:600">${TIP_META[detectTip(s.id_serviciu)]?.icon || '🔧'} ${TIP_META[detectTip(s.id_serviciu)]?.label || s.titlu}</span>`).join('')}
+       </div>`
+    : '';
+
+  return `<div class="rich-card reveal supabase-card" style="animation-delay:${delay}ms"
+      data-tab="${item.categorie}"
+      data-cat="${catInfo.cat}"
+      data-subcat="${catInfo.subcat}"
+      data-title="${escapeHTML(item.titlu?.toLowerCase() || '')}"
+      data-price="${price}"
+      data-rating="4.8"
+      data-reviews="0"
+      data-urgent="${isUrgent}"
+      data-ai="true"
+      data-slug="${escapeHTML(item.id_serviciu || '')}"
+      data-uniclass="${escapeHTML(item.cod_uniclass || '')}"
+      data-esco="${escapeHTML(esco)}"
+      onclick="openService('${escapeHTML(item.id_serviciu || '')}','${escapeHTML(item.titlu || '')}')">
+    <div class="card-media">
+      <img src="${img}" alt="${escapeHTML(item.titlu || '')}" loading="lazy"/>
+      <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+      ${isNew ? '<span class="card-badge hot">Nou</span>' : ''}
+      ${isUrgent ? '<span style="position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;background:rgba(220,38,38,.85);color:#fff;padding:2px 8px;border-radius:99px">⚡ Urgent</span>' : ''}
+      <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)">
+        <span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;display:inline-block"></span>
+        <span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-title">${escapeHTML(item.titlu || '')}</div>
+      ${tipM.label ? `<div style="display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:99px;background:#E0F5F4;color:#0B7A76;font-size:9px;font-weight:700;margin-bottom:6px">${tipM.icon} ${tipM.label}</div>` : ''}
+      ${assocHTML}
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">
+        ${nace ? `<span class="chip chip-primary" style="font-size:9px;padding:2px 8px">${escapeHTML(nace)}</span>` : ''}
+        ${esco ? `<span class="chip chip-ai" style="font-size:9px;padding:2px 8px">ESCO ${escapeHTML(esco)}</span>` : ''}
+        ${item.cod_uniclass ? `<span style="font-size:8px;padding:2px 6px;border-radius:99px;background:#F3E5F5;color:#7C3AED;font-weight:600">📐 ${escapeHTML(item.cod_uniclass)}</span>` : ''}
+      </div>
+      <div class="card-rating">
+        <span class="stars">★★★★★</span>
+        <span class="rating-val">4.8 · ${escapeHTML(item.garantie_luni ? item.garantie_luni + ' luni garanție' : 'garanție inclusă')}</span>
+      </div>
+      <div class="card-footer">
+        <div class="card-price">
+          <span class="price-from">De la</span>
+          <span class="price-val"><span class="dyn-price" data-ron="${price}">${priceStr}</span> <span class="dyn-currency">Lei</span></span>
+          <span class="price-unit">/ ${escapeHTML(item.unitate_masura || 'buc')}</span>
+          <div class="vmc-note">⚖ Min. 100 Lei · 📍 +5% zonă</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── Render card material (Marketplace) ────────────────────────────────────
+function renderMaterialCard(item, delay = 0, serviciiAsoc = []) {
+  const img = DOMAIN_IMG[item.domeniu] || DOMAIN_IMG.default;
+  const catInfo = DOMAIN_CAT[item.domeniu] || {cat:'Construcții', subcat:'Sanitare'};
+
+  const assocHTML = serviciiAsoc.length > 0
+    ? `<div style="margin-bottom:8px">
+        <div style="font-size:9px;font-weight:700;color:#5A6B7D;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Servicii disponibile:</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          ${serviciiAsoc.map(s => `<button onclick="event.stopPropagation();openService('${escapeHTML(s.id_serviciu)}','${escapeHTML(s.titlu)}')"
+            style="font-size:9px;padding:3px 8px;border-radius:99px;border:1px solid #D5DFE8;background:#fff;cursor:pointer;font-family:inherit;color:#003366;font-weight:600">
+            ${TIP_META[detectTip(s.id_serviciu)]?.icon || '🔧'} ${TIP_META[detectTip(s.id_serviciu)]?.label || escapeHTML(s.titlu?.split('/')[0] || s.titlu)}
+          </button>`).join('')}
+        </div>
+       </div>`
+    : '';
+
+  return `<div class="rich-card reveal supabase-card" style="animation-delay:${delay}ms"
+      data-tab="materiale"
+      data-cat="${catInfo.cat}"
+      data-subcat="${catInfo.subcat}"
+      data-title="${escapeHTML(item.titlu?.toLowerCase() || '')}"
+      data-price="${item._pret || 0}"
+      data-rating="4.8"
+      data-reviews="0"
+      data-urgent="false"
+      data-ai="false"
+      data-slug="${escapeHTML(item.id_serviciu || '')}"
+      onclick="openService('${escapeHTML(item.id_serviciu || '')}','${escapeHTML(item.titlu || '')}')">
+    <div class="card-media">
+      <img src="${img}" alt="${escapeHTML(item.titlu || '')}" loading="lazy"/>
+      <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+      <span class="card-badge hot">${escapeHTML(item.domeniu || 'Material')}</span>
+    </div>
+    <div class="card-body">
+      <div class="card-title">${escapeHTML(item.titlu || '')}</div>
+      ${assocHTML}
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">
+        ${item.nace ? `<span class="chip chip-primary" style="font-size:9px;padding:2px 8px">${escapeHTML(item.nace)}</span>` : ''}
+        ${item.cod_uniclass ? `<span style="font-size:8px;padding:2px 6px;border-radius:99px;background:#E8F0FB;color:#1A5FAD;font-weight:600">📦 Pr·${escapeHTML(item.cod_uniclass?.split('_').slice(-1)[0] || item.cod_uniclass)}</span>` : ''}
+      </div>
+      <div class="card-footer">
+        <div class="card-price">
+          <span class="price-from">De la</span>
+          <span class="price-val"><span class="dyn-price" data-ron="${item._pret || 0}">${item._pret || '—'}</span> <span class="dyn-currency">Lei</span></span>
+          <span class="price-unit">/ ${escapeHTML(item.unitate_masura || 'buc')}</span>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── Detectează tipul de serviciu din id ────────────────────────────────────
+function detectTip(id = '') {
+  if (id.includes('mentenanta')) return 'mentenanta';
+  if (id.includes('inlocuire'))  return 'inlocuire';
+  if (id.includes('reparatie'))  return 'reparatie';
+  if (id.includes('montaj'))     return 'montaj_nou';
+  return null;
+}
+
+// ── Încarcă serviciile noi (Catalog v2) ───────────────────────────────────
+async function loadCatalogV2Servicii() {
+  const SERVICII_V2 = ['cal-','ilu-','tel-','lav-','mas-'];
+  const filter = SERVICII_V2.map(p => `id_serviciu.like.${p}*`).join(',');
+
+  const [servicii, preturi] = await Promise.all([
+    supaFetch('catalog_servicii', `?categorie=eq.servicii&id_serviciu=like.cal-*,id_serviciu=like.ilu-*,id_serviciu=like.tel-*,id_serviciu=like.lav-*,id_serviciu=like.mas-*&select=*`),
+    supaFetch('catalog_preturi', `?tara_cod=eq.RO&activ=eq.true&select=nivel_id,pret`),
+  ]);
+
+  if (!servicii?.length) return;
+
+  const grid = document.getElementById('grid-servicii');
+  if (!grid) return;
+
+  // Marchează separator
+  const sep = document.createElement('div');
+  sep.className = 'supabase-separator';
+  sep.style.cssText = 'width:100%;grid-column:1/-1;padding:12px 0 4px;border-top:1px dashed #D5DFE8;margin-top:4px';
+  sep.innerHTML = '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#0E9E99">🆕 Catalog v2 — Obiecte & Servicii (live Supabase)</span>';
+  grid.appendChild(sep);
+
+  // Grupăm pe obiect (prefix) pentru afișare clară
+  const grupuri = {};
+  servicii.forEach(s => {
+    const prefix = s.id_serviciu?.split('-')[0] || 'other';
+    if (!grupuri[prefix]) grupuri[prefix] = [];
+    grupuri[prefix].push(s);
+  });
+
+  let delay = 0;
+  for (const [prefix, items] of Object.entries(grupuri)) {
+    // Header grup
+    const grpHdr = document.createElement('div');
+    grpHdr.style.cssText = 'width:100%;grid-column:1/-1;padding:8px 0 2px';
+    const firstItem = items[0];
+    const obj = firstItem.domeniu || '';
+    grpHdr.innerHTML = `<span style="font-size:11px;font-weight:700;color:#1A2332">${firstItem.icon || '🔧'} ${obj}</span>`;
+    grid.appendChild(grpHdr);
+
+    items.forEach(s => {
+      const tip = detectTip(s.id_serviciu);
+      const div = document.createElement('div');
+      div.innerHTML = renderServiceCard(s, delay, tip);
+      grid.appendChild(div.firstElementChild);
+      delay += 50;
+    });
+  }
+
+  // Actualizăm counter
+  setTimeout(() => {
+    if (typeof applyFilters === 'function') applyFilters();
+  }, 200);
+}
+
+// ── Încarcă materialele noi (Marketplace) cu servicii asociate ────────────
+async function loadCatalogV2Materiale() {
+  const [materiale, relatii, servicii] = await Promise.all([
+    supaFetch('catalog_servicii', '?categorie=eq.materiale&id_serviciu=like.cal-*,id_serviciu=like.ilu-*,id_serviciu=like.tel-*,id_serviciu=like.lav-*,id_serviciu=like.mas-*&select=*'),
+    supaFetch('catalog_relatii', '?tip_relatie=eq.obiect_asociat&select=catalog_serviciu_id,catalog_relatie_id'),
+    supaFetch('catalog_servicii', '?categorie=eq.servicii&id_serviciu=like.cal-*,id_serviciu=like.ilu-*,id_serviciu=like.tel-*,id_serviciu=like.lav-*,id_serviciu=like.mas-*&select=id,id_serviciu,titlu'),
+  ]);
+
+  if (!materiale?.length) return;
+
+  const grid = document.getElementById('grid-materiale');
+  if (!grid) return;
+
+  // Index servicii per ID
+  const svcById = {};
+  (servicii || []).forEach(s => { svcById[s.id] = s; });
+
+  // Index relații: material_id → [serviciu_id, ...]
+  const relIdx = {};
+  (relatii || []).forEach(r => {
+    if (!relIdx[r.catalog_serviciu_id]) relIdx[r.catalog_serviciu_id] = [];
+    relIdx[r.catalog_serviciu_id].push(r.catalog_relatie_id);
+  });
+
+  const sep = document.createElement('div');
+  sep.style.cssText = 'width:100%;grid-column:1/-1;padding:12px 0 4px;border-top:1px dashed #D5DFE8;margin-top:4px';
+  sep.innerHTML = '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#0E9E99">🆕 Obiecte fizice (Marketplace) cu servicii asociate · live Supabase</span>';
+  grid.appendChild(sep);
+
+  let delay = 0;
+  for (const mat of materiale) {
+    const svcIds = relIdx[mat.id] || [];
+    const svcAsoc = svcIds.map(id => svcById[id]).filter(Boolean);
+
+    const div = document.createElement('div');
+    div.innerHTML = renderMaterialCard(mat, delay, svcAsoc);
+    grid.appendChild(div.firstElementChild);
+    delay += 60;
+  }
+
+  setTimeout(() => {
+    if (typeof applyFilters === 'function') applyFilters();
+  }, 200);
+}
+
+// ── ESCO enrichment: adaugă badge Uniclass pe carduri statice existente ────
+async function enrichStaticCardsWithEsco() {
+  const esco = await supaFetch('competente_esco', '?select=cod_esco,denumire,cod_uniclass,cor_code,isco_group,denumire_en');
+  if (!esco?.length) return;
+
+  const escoMap = {};
+  esco.forEach(e => { escoMap[e.cod_esco] = e; });
+
+  document.querySelectorAll('.rich-card:not(.supabase-card) [class*="chip-ai"]').forEach(chip => {
+    const text = chip.textContent?.trim();
+    const match = text?.match(/(\d{4,6})/);
+    if (!match) return;
+    const cod = match[1];
+    const e = escoMap[cod];
+    if (!e || !e.cod_uniclass) return;
+    if (chip.nextElementSibling?.textContent?.includes('📐')) return;
+    const badge = document.createElement('span');
+    badge.style.cssText = 'font-size:8px;padding:2px 6px;border-radius:99px;background:#F3E5F5;color:#7C3AED;font-weight:600;margin-left:4px';
+    badge.title = `Uniclass 2015: ${e.cod_uniclass} · COR: ${e.cor_code || '—'}`;
+    badge.textContent = `📐 Ss`;
+    chip.after(badge);
+  });
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  // Rulează în paralel, nu blochează pagina
+  Promise.all([
+    loadCatalogV2Servicii(),
+    loadCatalogV2Materiale(),
+    enrichStaticCardsWithEsco(),
+  ]).catch(err => console.warn('[CatalogV2]', err));
+});
+</script>
+<!-- ════ END SUPABASE LIVE MODULE ════ -->
+
 </body>
 </html>

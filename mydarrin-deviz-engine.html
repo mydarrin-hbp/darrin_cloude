@@ -2170,7 +2170,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
           <select onchange="filterRC()" style="background:#fff;border:1.5px solid #D5DFE8;border-radius:10px;padding:7px 12px;font-size:12.5px;color:#2D2D2D;outline:none;cursor:pointer;font-family:inherit">
             <option>Toate meseriile</option><option>ISCO 7411 — Electrician</option><option selected>ISCO 7412 — Instalator termic</option><option>ISCO 7121 — Constructor</option><option>ISCO 9112 — Curățenie</option>
           </select>
-          <input type="text" placeholder="Caută cod ESCO / meserie..." style="flex:1;min-width:180px;background:#fff;border:1.5px solid #D5DFE8;border-radius:10px;padding:7px 14px;font-size:12.5px;color:#2D2D2D;outline:none;font-family:inherit"/>
+          <input type="text" placeholder="Caută cod ESCO / meserie..." data-rc-search oninput="filterRC()" style="flex:1;min-width:180px;background:#fff;border:1.5px solid #D5DFE8;border-radius:10px;padding:7px 14px;font-size:12.5px;color:#2D2D2D;outline:none;font-family:inherit"/>
         </div>
 
         <div style="overflow-x:auto;border-radius:16px;border:1px solid #D5DFE8">
@@ -2585,32 +2585,208 @@ function editPolygon(z){
   alert('🗺 Google Maps Polygon Editor\n\nDeschide editorul de polygon pentru Zona '+z+'.\n\nFuncționalitate: trasare linie pe hartă → coordonate salvate ca GeoJSON polygon\n→ PUT /api/v1/backoffice/zones/'+z+'/polygon\n\n(Integrare completă Google Maps JavaScript API cu DrawingManager)');
 }
 
-// ── RATE CARD JS ──
-let rcCount = 4;
-function updateRCDay(id){
-  const ora = parseFloat(document.getElementById('rc-'+id+'-ora')?.value) || 0;
-  const zi = document.getElementById('rc-'+id+'-zi');
-  if(zi) zi.textContent = (ora*8).toFixed(0)+' RON';
+// ── RATE CARD JS — LIVE SUPABASE (manopera_costuri + competente_esco) ──
+const SUPA_DEVIZ_URL  = window.__ENV__?.SUPABASE_URL  || 'https://aacojyvujhywanaulvuu.supabase.co';
+const SUPA_DEVIZ_ANON = window.__ENV__?.SUPABASE_ANON_KEY || '';
+
+let rcData = [];         // toate rândurile din manopera_costuri
+let rcFiltered = [];     // după filtre active
+let escoMeta = {};       // cod_esco → {denumire, cor_code, isco_group, denumire_en}
+
+async function supaDevizFetch(path, params='') {
+  if (!SUPA_DEVIZ_ANON) return null;
+  try {
+    const r = await fetch(`${SUPA_DEVIZ_URL}/rest/v1/${path}${params}`, {
+      headers: { apikey: SUPA_DEVIZ_ANON, Authorization:`Bearer ${SUPA_DEVIZ_ANON}` }
+    });
+    return r.ok ? r.json() : null;
+  } catch { return null; }
 }
-function saveRC(id){
-  const ora = document.getElementById('rc-'+id+'-ora')?.value || 0;
-  alert('✅ Rate Card salvat!\nValoare: '+ora+' /oră · '+ora*8+' /zi (8h)\nPUT /api/v1/backoffice/rate-card/'+id);
-}
-function dupRC(id){
-  rcCount++;
-  alert('📋 Rând duplicat ca Rate Card #'+rcCount+'\nModifică parametrii și salvează.');
-}
-function delRC(id){
-  if(confirm('Ștergi Rate Card #'+id+'? Verifică că nu există devize active care folosesc acest tarif.')){
-    alert('🗑 Rate Card #'+id+' șters.\nDELETE /api/v1/backoffice/rate-card/'+id);
+
+async function loadRateCard() {
+  const tbody = document.getElementById('rc-body');
+  if (!tbody) return;
+
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:#8C9BAD">Se încarcă din Supabase...</td></tr>';
+
+  const [mc, esco] = await Promise.all([
+    supaDevizFetch('manopera_costuri','?select=*&order=tara_cod,cod_esco'),
+    supaDevizFetch('competente_esco','?select=cod_esco,denumire,cor_code,isco_group,denumire_en,cod_uniclass'),
+  ]);
+
+  if (!mc) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:#C0392B">⚠ Date indisponibile · Verifică conexiunea Supabase</td></tr>';
+    return;
   }
+
+  // Indexăm ESCO
+  (esco||[]).forEach(e => { escoMeta[e.cod_esco] = e; });
+  rcData = mc;
+  rcFiltered = [...mc];
+  renderRCTable(rcFiltered);
 }
-function addRateCard(){
-  alert('+ Adaugă Rate Card nou\n\nCompletează:\n• Meserie (ESCO/ISCO code)\n• Țară + Zonă\n• Valoare/oră + Monedă\n\nSalvează → POST /api/v1/backoffice/rate-card');
+
+function renderRCTable(rows) {
+  const tbody = document.getElementById('rc-body');
+  if (!tbody) return;
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:#8C9BAD">Niciun tarif găsit</td></tr>';
+    return;
+  }
+
+  const FLAG = {RO:'🇷🇴',MD:'🇲🇩',DE:'🇩🇪',FR:'🇫🇷',BG:'🇧🇬'};
+  tbody.innerHTML = rows.map(r => {
+    const e = escoMeta[r.cod_esco] || {};
+    const zi = (parseFloat(r.cost_ora) * 8).toFixed(0);
+    const flag = FLAG[r.tara_cod] || r.tara_cod;
+    const uniclass = e.cod_uniclass ? `<span style="font-size:9px;color:#7C3AED">📐 ${e.cod_uniclass}</span>` : '';
+    return `<tr style="border-bottom:1px solid #F4F7F9;transition:background .15s" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background=''">
+      <td style="padding:11px 14px">
+        <div style="font-weight:600;color:#2D2D2D">${escapeHTML(e.denumire || r.cod_esco)}</div>
+        <div style="font-family:monospace;font-size:10px;color:#0E9E99">ISCO ${r.cod_esco} · COR ${e.cor_code || '—'}</div>
+        ${uniclass}
+      </td>
+      <td style="padding:11px 14px"><span style="font-weight:700">${flag} ${r.tara_cod}</span></td>
+      <td style="padding:11px 14px;color:#8C9BAD;font-size:12px">—</td>
+      <td style="padding:11px 14px;text-align:center">
+        <div style="font-size:16px;font-weight:800;color:#003366">${r.cost_ora} <span style="font-size:10px;color:#8C9BAD;font-weight:400">${r.moneda}/oră</span></div>
+      </td>
+      <td style="padding:11px 14px;text-align:center;font-weight:700;color:#1A5FAD">${zi} ${r.moneda}/zi</td>
+      <td style="padding:11px 14px;text-align:center"><span style="font-family:monospace;font-size:12px">${r.moneda}</span></td>
+      <td style="padding:11px 14px;text-align:center"><span style="background:#D4EDDA;color:#1A7A3A;font-size:10px;padding:3px 9px;border-radius:99px;font-weight:700">✅ Activ</span></td>
+      <td style="padding:11px 14px;text-align:center">
+        <div style="display:flex;gap:6px;justify-content:center">
+          <button onclick="editRC('${r.id}')" style="padding:5px 10px;border-radius:7px;border:1px solid #D5DFE8;background:#F8FAFC;font-size:11px;cursor:pointer">✏️</button>
+          <button onclick="dupRC('${r.id}')" style="padding:5px 10px;border-radius:7px;border:1px solid #D5DFE8;background:#F8FAFC;font-size:11px;cursor:pointer">📋</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Counter
+  const cnt = document.querySelector('[data-rc-count]');
+  if (cnt) cnt.textContent = rows.length + ' tarife';
 }
-function exportRC(){ alert('⬇ Export CSV Rate Card\nGET /api/v1/backoffice/rate-card/export?format=csv'); }
-function importRC(){ alert('⬆ Import CSV Rate Card\nFormat: esco_code;country_code;zone_id;value_per_hour;currency\nPOST /api/v1/backoffice/rate-card/import'); }
-function filterRC(){ console.log('Filter Rate Card'); }
+
+function filterRC() {
+  const tara  = document.querySelector('[data-rc-tara]')?.value || '';
+  const query = document.querySelector('[data-rc-search]')?.value?.toLowerCase() || '';
+
+  rcFiltered = rcData.filter(r => {
+    const e = escoMeta[r.cod_esco] || {};
+    const matchTara  = !tara  || r.tara_cod === tara;
+    const matchQuery = !query || r.cod_esco.includes(query) ||
+                       (e.denumire||'').toLowerCase().includes(query) ||
+                       (e.cor_code||'').toLowerCase().includes(query);
+    return matchTara && matchQuery;
+  });
+  renderRCTable(rcFiltered);
+}
+
+function editRC(id) {
+  const r = rcData.find(x => x.id === id);
+  if (!r) return;
+  const noua = prompt(`Tarif nou pentru ${escoMeta[r.cod_esco]?.denumire || r.cod_esco} (${r.tara_cod}):\nCurent: ${r.cost_ora} ${r.moneda}/oră`, r.cost_ora);
+  if (noua === null || isNaN(parseFloat(noua))) return;
+  // PATCH în Supabase
+  fetch(`${SUPA_DEVIZ_URL}/rest/v1/manopera_costuri?id=eq.${id}`, {
+    method:'PATCH',
+    headers:{ apikey:SUPA_DEVIZ_ANON, Authorization:`Bearer ${SUPA_DEVIZ_ANON}`,
+              'Content-Type':'application/json', Prefer:'return=minimal' },
+    body: JSON.stringify({ cost_ora: parseFloat(noua), updated_at: new Date().toISOString() })
+  }).then(res => {
+    if (res.ok) {
+      const row = rcData.find(x => x.id === id);
+      if (row) row.cost_ora = parseFloat(noua);
+      filterRC();
+      showRCToast('✅ Tarif actualizat: ' + noua + ' ' + r.moneda + '/oră');
+    } else {
+      showRCToast('⚠ Eroare actualizare — verifică permisiunile admin');
+    }
+  }).catch(() => showRCToast('⚠ Eroare conexiune'));
+}
+
+function dupRC(id) {
+  showRCToast('📋 Duplicate via API — în dezvoltare');
+}
+
+function addRateCard() {
+  const cod  = prompt('Cod ESCO (ex: 7411):');
+  if (!cod) return;
+  const tara = prompt('Țara (RO/MD/DE/FR/BG):');
+  if (!tara) return;
+  const val  = prompt('Valoare/oră:');
+  if (!val || isNaN(parseFloat(val))) return;
+  const MONEDE = {RO:'RON',MD:'MDL',DE:'EUR',FR:'EUR',BG:'BGN'};
+
+  fetch(`${SUPA_DEVIZ_URL}/rest/v1/manopera_costuri`, {
+    method:'POST',
+    headers:{ apikey:SUPA_DEVIZ_ANON, Authorization:`Bearer ${SUPA_DEVIZ_ANON}`,
+              'Content-Type':'application/json', Prefer:'return=minimal' },
+    body: JSON.stringify({ cod_esco:cod, tara_cod:tara.toUpperCase(),
+                           cost_ora:parseFloat(val), moneda:MONEDE[tara.toUpperCase()]||'RON' })
+  }).then(res => {
+    if (res.ok) { loadRateCard(); showRCToast('✅ Rate Card adăugat'); }
+    else showRCToast('⚠ Eroare · verifică că cod_esco există în competente_esco');
+  });
+}
+
+function exportRC() {
+  if (!rcData.length) { loadRateCard().then(exportRC); return; }
+  const rows = [['cod_esco','denumire_esco','cor_code','tara_cod','cost_ora','moneda']];
+  rcData.forEach(r => {
+    const e = escoMeta[r.cod_esco] || {};
+    rows.push([r.cod_esco, e.denumire||'', e.cor_code||'', r.tara_cod, r.cost_ora, r.moneda]);
+  });
+  const csv = rows.map(r => r.join(';')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download = 'rate-card-esco-' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  showRCToast('✅ CSV exportat: ' + rcData.length + ' tarife');
+}
+
+function importRC() {
+  const input = document.createElement('input');
+  input.type='file'; input.accept='.csv';
+  input.onchange = async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const text = await file.text();
+    const lines = text.trim().split('\n').slice(1); // skip header
+    let imported = 0;
+    for (const line of lines) {
+      const [cod_esco,_,__,tara_cod,cost_ora,moneda] = line.split(';');
+      if (!cod_esco || !tara_cod || !cost_ora) continue;
+      await fetch(`${SUPA_DEVIZ_URL}/rest/v1/manopera_costuri`, {
+        method:'POST',
+        headers:{ apikey:SUPA_DEVIZ_ANON, Authorization:`Bearer ${SUPA_DEVIZ_ANON}`,
+                  'Content-Type':'application/json', Prefer:'resolution=merge-duplicates' },
+        body: JSON.stringify({ cod_esco:cod_esco.trim(), tara_cod:tara_cod.trim(),
+                               cost_ora:parseFloat(cost_ora), moneda:(moneda||'RON').trim() })
+      });
+      imported++;
+    }
+    await loadRateCard();
+    showRCToast('✅ Importate ' + imported + ' tarife');
+  };
+  input.click();
+}
+
+function showRCToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1A2332;color:#fff;padding:12px 22px;border-radius:14px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.3);font-family:inherit';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+// ── Auto-load la DOMContentLoaded ─────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const rcTable = document.getElementById('rc-body');
+  if (rcTable) loadRateCard();
+});
 
 // ── MULTI-COUNTRY PARTNER JS ──
 function manageCountry(code){ alert('⚙ Gestionează activitate în '+code+'\n• Editează zone active\n• Verifică certificări\n• Dezactivează temporar'); }
