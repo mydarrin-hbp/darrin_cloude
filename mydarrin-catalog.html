@@ -842,6 +842,100 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
         : escapeHTML(html);
     }
   </script>
+
+<style>
+/* ── Sidebar NACE ──────────────────────────────────────────────── */
+.nace-group { margin-bottom: 2px; }
+.nace-group-hdr:hover { opacity:.85; }
+#cat-aside::-webkit-scrollbar { width:4px; }
+#cat-aside::-webkit-scrollbar-track { background:transparent; }
+#cat-aside::-webkit-scrollbar-thumb { background:#D5DFE8; border-radius:4px; }
+
+/* Tip-btn active state */
+.tip-btn.active { border-color:currentColor !important; }
+.tip-btn:hover { opacity:.8; }
+
+/* Mobile: sidebar ascuns, apare ca sheet de jos */
+@media (max-width:767px) {
+  #main-grid {
+    grid-template-columns: 1fr !important;
+  }
+  #cat-aside {
+    display: none;
+    position: fixed !important;
+    bottom: 56px; left: 0; right: 0;
+    max-height: 70vh;
+    background: #fff;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -8px 32px rgba(0,0,0,.18);
+    z-index: 500;
+    padding: 16px;
+    overflow-y: auto;
+    top: auto !important;
+  }
+  #cat-aside.mobile-open {
+    display: block !important;
+  }
+  /* Buton filtre pe mobil */
+  #mobile-filter-btn {
+    display: flex !important;
+  }
+}
+@media (min-width:768px) and (max-width:1023px) {
+  #main-grid {
+    grid-template-columns: 200px 1fr !important;
+  }
+}
+@media (min-width:1024px) {
+  #main-grid {
+    grid-template-columns: 220px 1fr !important;
+  }
+}
+
+/* Buton filtre mobil — ascuns pe desktop */
+#mobile-filter-btn {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #003366;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+/* Overlay pentru sidebar mobil */
+#sidebar-mobile-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  z-index: 499;
+  backdrop-filter: blur(2px);
+}
+#sidebar-mobile-overlay.show { display: block; }
+
+/* Handle drag pe mobil */
+.sidebar-handle {
+  width: 40px; height: 4px;
+  background: #D5DFE8;
+  border-radius: 99px;
+  margin: 0 auto 14px;
+}
+
+/* Chips tip activitate în rezultate */
+.chip-mentenanta { background:#E3F2FD; color:#1565C0; }
+.chip-inlocuire  { background:#FFF3E0; color:#E65100; }
+.chip-reparatie  { background:#FCE4EC; color:#B71C1C; }
+.chip-montaj     { background:#E8F5E9; color:#1B5E20; }
+
+/* Tabs NACE collapse */
+.nace-group > div:not(.nace-group-hdr).hidden { display: none; }
+</style>
+
 </head>
 <body>
 <div id="spbar"></div>
@@ -1597,109 +1691,312 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 <span id="catalog-grid-section" style="display:block;position:relative;top:-80px"></span>
 <div style="max-width:1200px;width:100%;margin:0 auto;padding:24px 20px 64px;box-sizing:border-box;display:grid;grid-template-columns:220px 1fr;gap:24px;align-items:start" id="main-grid">
 
-  <!-- LEFT: CATEGORY SIDEBAR -->
-  <aside>
-    <!-- Main tabs -->
-    <div style="display:flex;gap:4px;background:#fff;border-radius:14px;border:1px solid #D5DFE8;padding:6px;margin-bottom:16px">
-      <button class="cat-tab active" style="flex:1;font-size:12px;padding:8px 0;text-align:center" onclick="switchMainTab('servicii',this)" id="main-tab-servicii">🔧 Servicii</button>
-      <button class="cat-tab" style="flex:1;font-size:12px;padding:8px 0;text-align:center" onclick="switchMainTab('materiale',this)" id="main-tab-materiale">📦 Mat.</button>
-      <button class="cat-tab" style="flex:1;font-size:12px;padding:8px 0;text-align:center" onclick="switchMainTab('inchiriere',this)" id="main-tab-inchiriere">🏗 Inch.</button>
-    </div>
-    <!-- Category sidebar per tab -->
-    <div class="cat-sidebar" id="sidebar-servicii">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:10px">Categorii servicii</div>
-      <div class="cat-sidebar-item active" onclick="filterCat('servicii','all',this)" id="svc-cat-all"><span>Toate</span><span class="cat-count" id="svc-count-all">—</span></div>
-      <!-- Categorii populate live din DB -->
-      <div id="sidebar-servicii-cats">
-        <div class="cat-sidebar-item" onclick="filterCat('servicii','Instalații',this)"><span>🔧 Instalații</span><span class="cat-count">—</span></div>
-        <div class="cat-sidebar-item" onclick="filterCat('servicii','Construcții',this)"><span>🏗 Construcții</span><span class="cat-count">—</span></div>
-        <div class="cat-sidebar-item" onclick="filterCat('servicii','Climatizare',this)"><span>❄️ Climatizare</span><span class="cat-count">—</span></div>
-        <div class="cat-sidebar-item" onclick="filterCat('servicii','Finisaje',this)"><span>🎨 Finisaje</span><span class="cat-count">—</span></div>
-        <div class="cat-sidebar-item" onclick="filterCat('servicii','Exterior',this)"><span>🌿 Exterior</span><span class="cat-count">—</span></div>
-        <div class="cat-sidebar-item" onclick="filterCat('servicii','Tâmplărie',this)"><span>🪟 Tâmplărie</span><span class="cat-count">—</span></div>
-        <div class="cat-sidebar-item" onclick="filterCat('servicii','Curățenie',this)"><span>🧹 Curățenie</span><span class="cat-count">—</span></div>
-        <div class="cat-sidebar-item" onclick="filterCat('servicii','Auto',this)"><span>🚗 Auto</span><span class="cat-count">—</span></div>
-        <div class="cat-sidebar-item" onclick="filterCat('servicii','Consultanță',this)"><span>💼 Consultanță</span><span class="cat-count">—</span></div>
-        <div class="cat-sidebar-item" onclick="filterCat('servicii','Acoperișuri',this)"><span>🏠 Acoperișuri</span><span class="cat-count">—</span></div>
-      </div>
-    </div>
-    <div class="cat-sidebar hidden" id="sidebar-materiale">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:10px">Categorii materiale</div>
-      <div class="cat-sidebar-item active" onclick="filterCat('materiale','all',this)"><span>Toate</span><span class="cat-count" id="mat-count-all">—</span></div>
-      <div id="sidebar-materiale-cats">
-        <div class="cat-sidebar-item" onclick="filterCat('materiale','Construcții',this)"><span>🧱 Construcții</span><span class="cat-count">—</span></div>
-        <div class="cat-sidebar-item" onclick="filterCat('materiale','Finisaje',this)"><span>🎨 Finisaje</span><span class="cat-count">—</span></div>
-        <div class="cat-sidebar-item" onclick="filterCat('materiale','Instalații',this)"><span>🔧 Instalații</span><span class="cat-count">—</span></div>
-        <div class="cat-sidebar-item" onclick="filterCat('materiale','Exterior',this)"><span>🌿 Exterior</span><span class="cat-count">—</span></div>
-        <div class="cat-sidebar-item" onclick="filterCat('materiale','Acoperișuri',this)"><span>🏠 Acoperișuri</span><span class="cat-count">—</span></div>
-      </div>
-    </div>
-    <div class="cat-sidebar hidden" id="sidebar-inchiriere">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:10px">Categorii închirieri</div>
-      <div class="cat-sidebar-item active" onclick="filterCat('inchiriere','all',this)"><span>Toate</span><span class="cat-count">6</span></div>
-<div class="cat-sidebar-item" onclick="filterCat('inchiriere','Utilaje',this)"><span>🏗 Utilaje</span><span class="cat-count">1</span></div>
-<div class="cat-sidebar-item" onclick="filterCat('inchiriere','Scule',this)"><span>🏗 Scule</span><span class="cat-count">1</span></div>
-<div class="cat-sidebar-item" onclick="filterCat('inchiriere','Acces',this)"><span>🏗 Acces</span><span class="cat-count">1</span></div>
-<div class="cat-sidebar-item" onclick="filterCat('inchiriere','Transport',this)"><span>🏗 Transport</span><span class="cat-count">1</span></div>
-<div class="cat-sidebar-item" onclick="filterCat('inchiriere','Personal',this)"><span>🏗 Personal</span><span class="cat-count">1</span></div>
-<div class="cat-sidebar-item" onclick="filterCat('inchiriere','Exterior',this)"><span>🏗 Exterior</span><span class="cat-count">1</span></div>
 
+<!-- ════════════════════════════════════════════════════════════
+     LEFT SIDEBAR — NACE/CAEN structurat + Filtre tip serviciu
+     Responsive: ascuns pe mobil, scroll lateral pe tabletă
+════════════════════════════════════════════════════════════ -->
+<aside id="cat-aside" style="position:sticky;top:80px;max-height:calc(100vh - 100px);overflow-y:auto;scrollbar-width:thin">
+
+  <!-- TABS PRINCIPALE: Servicii / Materiale / Închirieri -->
+  <div style="display:flex;gap:3px;background:#F4F7F9;border-radius:12px;padding:4px;margin-bottom:14px">
+    <button class="cat-tab active" onclick="switchMainTab('servicii',this)" id="main-tab-servicii"
+      style="flex:1;font-size:11.5px;font-weight:700;padding:7px 4px;border-radius:9px;border:none;background:#003366;color:#fff;cursor:pointer;transition:all .2s;font-family:inherit">
+      🔧 Servicii
+    </button>
+    <button class="cat-tab" onclick="switchMainTab('materiale',this)" id="main-tab-materiale"
+      style="flex:1;font-size:11.5px;font-weight:700;padding:7px 4px;border-radius:9px;border:none;background:transparent;color:#6B7A8D;cursor:pointer;transition:all .2s;font-family:inherit">
+      📦 Materiale
+    </button>
+    <button class="cat-tab" onclick="switchMainTab('inchiriere',this)" id="main-tab-inchiriere"
+      style="flex:1;font-size:11.5px;font-weight:700;padding:7px 4px;border-radius:9px;border:none;background:transparent;color:#6B7A8D;cursor:pointer;transition:all .2s;font-family:inherit">
+      🏗 Închirieri
+    </button>
+  </div>
+
+  <!-- ────── SIDEBAR SERVICII ────────────────────────────────── -->
+  <div class="cat-sidebar" id="sidebar-servicii">
+
+    <!-- FILTRU TIP SERVICIU — 4 butoane (cele 4 logici universale) -->
+    <div style="background:#fff;border-radius:12px;border:1px solid #E8F0FB;padding:12px;margin-bottom:12px">
+      <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:8px">Tip intervenție</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+        <button id="tip-all" onclick="filterTipSvc('all',this)"
+          class="tip-btn active"
+          style="padding:6px 4px;border-radius:8px;border:1.5px solid #003366;background:#EBF4FB;color:#003366;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;text-align:center">
+          ⊞ Toate
+        </button>
+        <button id="tip-mentenanta" onclick="filterTipSvc('mentenanta',this)"
+          class="tip-btn"
+          style="padding:6px 4px;border-radius:8px;border:1.5px solid #D5DFE8;background:#fff;color:#1A5FAD;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;text-align:center">
+          🔍 Mentenanță
+        </button>
+        <button id="tip-inlocuire" onclick="filterTipSvc('inlocuire',this)"
+          class="tip-btn"
+          style="padding:6px 4px;border-radius:8px;border:1.5px solid #D5DFE8;background:#fff;color:#CC7000;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;text-align:center">
+          🔄 Înlocuire
+        </button>
+        <button id="tip-reparatie" onclick="filterTipSvc('reparatie',this)"
+          class="tip-btn"
+          style="padding:6px 4px;border-radius:8px;border:1.5px solid #D5DFE8;background:#fff;color:#C0392B;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;text-align:center">
+          🔧 Reparație
+        </button>
+        <button id="tip-montaj" onclick="filterTipSvc('montaj',this)"
+          class="tip-btn" style="grid-column:1/-1;padding:6px 4px;border-radius:8px;border:1.5px solid #D5DFE8;background:#fff;color:#1A7A3A;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;text-align:center">
+          🏗 Montaj & Punere în funcțiune
+        </button>
+      </div>
     </div>
 
-    <!-- Quick filters -->
-    <div style="background:#fff;border-radius:14px;border:1px solid #D5DFE8;padding:14px;margin-top:14px">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:10px">Filtre rapide</div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#6B7A8D;cursor:pointer">
-          <input type="checkbox" id="filter-urgent" onchange="applyFilters()" style="accent-color:#FF8C00;width:16px;height:16px;border-radius:4px;cursor:pointer"/>
-          ⚡ Disponibil urgent
-        </label>
-        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#6B7A8D;cursor:pointer">
-          <input type="checkbox" id="filter-ai" onchange="applyFilters()" style="accent-color:#0E9E99;width:16px;height:16px;cursor:pointer"/>
-          🤖 AI alocă automat
-        </label>
-        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#6B7A8D;cursor:pointer">
-          <input type="checkbox" id="filter-aca" onchange="applyFilters()" style="accent-color:#1A5FAD;width:16px;height:16px;cursor:pointer"/>
-          📦 Furnizor ACA BG
-        </label>
+    <!-- CATEGORII NACE/CAEN — Servicii -->
+    <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:8px">Domeniu NACE/CAEN</div>
+
+    <div class="cat-sidebar-item active" onclick="filterCat('servicii','all',this)" id="svc-cat-all"
+      style="font-weight:700">
+      <span>⊞ Toate serviciile</span><span class="cat-count" id="svc-count-all">—</span>
+    </div>
+
+    <!-- F 43.21 — Instalații electrice -->
+    <div class="nace-group">
+      <div class="nace-group-hdr" onclick="toggleNaceGroup('nace-electric')" style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;margin:4px 0 2px;border-radius:8px;cursor:pointer;background:#EBF4FB;font-size:11px;font-weight:700;color:#003366;user-select:none">
+        <span>⚡ F 43.21 — Instalații electrice</span>
+        <span id="ico-nace-electric" style="transition:transform .2s;font-size:10px">▾</span>
       </div>
-      <div style="margin-top:12px;padding-top:10px;border-top:1px solid #F4F7F9">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:8px">Preț max (Lei)</div>
-        <input type="range" id="price-range" min="0" max="1000" value="1000" step="10" oninput="updatePriceRange(this.value)" style="width:100%;accent-color:#FF8C00;cursor:pointer"/>
-        <div style="display:flex;justify-content:space-between;font-size:11px;color:#8C9BAD;margin-top:4px">
-          <span>0 Lei</span><span id="price-label" style="font-weight:700;color:#003366">≤ 1000 Lei</span>
+      <div id="nace-electric">
+        <div class="cat-sidebar-item" onclick="filterCat('servicii','F4321',this)" data-nace="F 43.21">
+          <span style="padding-left:8px">🔌 Toate electrice</span><span class="cat-count">—</span>
+        </div>
+        <div class="cat-sidebar-item" onclick="filterCat('servicii','F4321-tab',this)" data-nace="F 43.21" data-sub="tablou">
+          <span style="padding-left:16px;font-size:11.5px">· Tablouri electrice</span><span class="cat-count">—</span>
+        </div>
+        <div class="cat-sidebar-item" onclick="filterCat('servicii','F4321-ilum',this)" data-nace="F 43.21" data-sub="iluminat">
+          <span style="padding-left:16px;font-size:11.5px">· Corpuri iluminat</span><span class="cat-count">—</span>
+        </div>
+        <div class="cat-sidebar-item" onclick="filterCat('servicii','F4321-inst',this)" data-nace="F 43.21" data-sub="instalatie">
+          <span style="padding-left:16px;font-size:11.5px">· Instalație generală</span><span class="cat-count">—</span>
         </div>
       </div>
     </div>
 
-    <!-- Consultanta CTA in sidebar -->
-    <div style="background:linear-gradient(135deg,#E0F5F4,#EBF4FB);border-radius:14px;border:1px solid rgba(14,158,153,.25);padding:14px;margin-top:14px;cursor:pointer;transition:all .2s" onclick="openConsultanta()" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
-        <span style="font-size:20px">🤖</span>
-        <div style="font-size:12px;font-weight:700;color:#003366">Nu știi ce serviciu?</div>
+    <!-- F 43.22 — Instalații sanitare și termice -->
+    <div class="nace-group">
+      <div class="nace-group-hdr" onclick="toggleNaceGroup('nace-sanitar')" style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;margin:4px 0 2px;border-radius:8px;cursor:pointer;background:#E0F5F4;font-size:11px;font-weight:700;color:#065455;user-select:none">
+        <span>🔥 F 43.22 — Sanitare & Termice</span>
+        <span id="ico-nace-sanitar" style="transition:transform .2s;font-size:10px">▾</span>
       </div>
-      <div style="font-size:11.5px;color:#6B7A8D;line-height:1.6;margin-bottom:10px">Darrin AI te ajută să identifici serviciul potrivit — gratuit.</div>
-      <div style="font-size:11px;font-weight:700;color:#0E9E99;display:flex;align-items:center;gap:4px">
-        Consultanță gratuită →
+      <div id="nace-sanitar">
+        <div class="cat-sidebar-item" onclick="filterCat('servicii','F4322',this)" data-nace="F 43.22">
+          <span style="padding-left:8px">🚿 Toate sanitare & termice</span><span class="cat-count">—</span>
+        </div>
+        <div class="cat-sidebar-item" onclick="filterCat('servicii','F4322-cal',this)" data-nace="F 43.22" data-sub="calorifer">
+          <span style="padding-left:16px;font-size:11.5px">· Calorifere & Radiatoare</span><span class="cat-count">—</span>
+        </div>
+        <div class="cat-sidebar-item" onclick="filterCat('servicii','F4322-ob',this)" data-nace="F 43.22" data-sub="obiect-sanitar">
+          <span style="padding-left:16px;font-size:11.5px">· Obiecte sanitare</span><span class="cat-count">—</span>
+        </div>
+        <div class="cat-sidebar-item" onclick="filterCat('servicii','F4322-inst',this)" data-nace="F 43.22" data-sub="instalatie-termica">
+          <span style="padding-left:16px;font-size:11.5px">· Instalație termică</span><span class="cat-count">—</span>
+        </div>
       </div>
     </div>
 
-    <!-- VMC info box -->
-    <div style="background:linear-gradient(135deg,#FFF8EE,#FFF0D6);border-radius:14px;border:1px solid #FFD980;padding:14px;margin-top:14px">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#CC7000;margin-bottom:6px">⚖ Valoare Minimă Comandă</div>
-      <div style="font-size:12px;color:#6B7A8D;line-height:1.6">
-        🇷🇴 <strong>România:</strong> 100 Lei<br>
-        🇲🇩 <strong>Moldova:</strong> 400 MDL<br>
-        🇩🇪 <strong>Germania:</strong> 25 EUR<br>
-        <span style="font-size:10.5px;color:#CC7000;margin-top:4px;display:block">Aplicat automat de Deviz Engine</span>
+    <!-- F 43.32 — Tâmplărie -->
+    <div class="nace-group">
+      <div class="nace-group-hdr" onclick="toggleNaceGroup('nace-tamplarie')" style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;margin:4px 0 2px;border-radius:8px;cursor:pointer;background:#F3E5F5;font-size:11px;font-weight:700;color:#6A1B9A;user-select:none">
+        <span>🪟 F 43.32 — Tâmplărie</span>
+        <span id="ico-nace-tamplarie" style="transition:transform .2s;font-size:10px">▾</span>
+      </div>
+      <div id="nace-tamplarie">
+        <div class="cat-sidebar-item" onclick="filterCat('servicii','F4332',this)" data-nace="F 43.32">
+          <span style="padding-left:8px">🪟 Uși, ferestre, parchet</span><span class="cat-count">—</span>
+        </div>
       </div>
     </div>
-  </aside>
+
+    <!-- F 43.3x — Finisaje -->
+    <div class="nace-group">
+      <div class="nace-group-hdr" onclick="toggleNaceGroup('nace-finisaje')" style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;margin:4px 0 2px;border-radius:8px;cursor:pointer;background:#FFF0D6;font-size:11px;font-weight:700;color:#7A3200;user-select:none">
+        <span>🎨 F 43.3x — Finisaje & Zugrăveli</span>
+        <span id="ico-nace-finisaje" style="transition:transform .2s;font-size:10px">▾</span>
+      </div>
+      <div id="nace-finisaje">
+        <div class="cat-sidebar-item" onclick="filterCat('servicii','F433x',this)" data-nace-prefix="F 43.3">
+          <span style="padding-left:8px">🖌 Gresie, faianță, vopsele</span><span class="cat-count">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- F 43.91 — Acoperișuri -->
+    <div class="nace-group">
+      <div class="nace-group-hdr" onclick="toggleNaceGroup('nace-acoperis')" style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;margin:4px 0 2px;border-radius:8px;cursor:pointer;background:#E8F5E9;font-size:11px;font-weight:700;color:#1A5C28;user-select:none">
+        <span>🏠 F 43.91 — Acoperișuri</span>
+        <span id="ico-nace-acoperis" style="transition:transform .2s;font-size:10px">▾</span>
+      </div>
+      <div id="nace-acoperis">
+        <div class="cat-sidebar-item" onclick="filterCat('servicii','F4391',this)" data-nace="F 43.91">
+          <span style="padding-left:8px">🏠 Șarpantă & Izolație</span><span class="cat-count">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- S 95.22 — Electrocasnice -->
+    <div class="nace-group">
+      <div class="nace-group-hdr" onclick="toggleNaceGroup('nace-electrocasn')" style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;margin:4px 0 2px;border-radius:8px;cursor:pointer;background:#FCE4EC;font-size:11px;font-weight:700;color:#880E4F;user-select:none">
+        <span>🌀 S 95.22 — Electrocasnice</span>
+        <span id="ico-nace-electrocasn" style="transition:transform .2s;font-size:10px">▾</span>
+      </div>
+      <div id="nace-electrocasn">
+        <div class="cat-sidebar-item" onclick="filterCat('servicii','S9522',this)" data-nace="S 95.22">
+          <span style="padding-left:8px">🌀 Reparații & Instalare</span><span class="cat-count">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alte NACE -->
+    <div class="nace-group">
+      <div class="nace-group-hdr" onclick="toggleNaceGroup('nace-alte')" style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;margin:4px 0 2px;border-radius:8px;cursor:pointer;background:#F7F9FC;font-size:11px;font-weight:700;color:#2D3748;user-select:none">
+        <span>⊕ Alte domenii</span>
+        <span id="ico-nace-alte" style="transition:transform .2s;font-size:10px">▾</span>
+      </div>
+      <div id="nace-alte" class="hidden">
+        <div class="cat-sidebar-item" onclick="filterCat('servicii','A0161',this)" data-nace="A 01.61">
+          <span style="padding-left:8px">🌿 A 01.61 — Grădinărit</span><span class="cat-count">—</span>
+        </div>
+        <div class="cat-sidebar-item" onclick="filterCat('servicii','T9531',this)" data-nace-prefix="T 95">
+          <span style="padding-left:8px">🚗 T 95.31 — Auto & Service</span><span class="cat-count">—</span>
+        </div>
+        <div class="cat-sidebar-item" onclick="filterCat('servicii','N71',this)" data-nace-prefix="N 7">
+          <span style="padding-left:8px">💼 N 71 — Consultanță</span><span class="cat-count">—</span>
+        </div>
+        <div class="cat-sidebar-item" onclick="filterCat('servicii','O8121',this)" data-nace="O 81.21">
+          <span style="padding-left:8px">🧹 O 81.21 — Curățenie</span><span class="cat-count">—</span>
+        </div>
+        <div class="cat-sidebar-item" onclick="filterCat('servicii','I5510',this)" data-nace="I 55.10">
+          <span style="padding-left:8px">🏨 I 55.10 — Ospitalitate</span><span class="cat-count">—</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /sidebar-servicii -->
+
+  <!-- ────── SIDEBAR MATERIALE ──────────────────────────────── -->
+  <div class="cat-sidebar hidden" id="sidebar-materiale">
+    <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:8px">Categorie material</div>
+    <div class="cat-sidebar-item active" onclick="filterCat('materiale','all',this)">
+      <span>⊞ Toate materialele</span><span class="cat-count" id="mat-count-all">—</span>
+    </div>
+    <div class="cat-sidebar-item" onclick="filterCat('materiale','Instalatii-electrice',this)" data-nace="F 43.21">
+      <span>⚡ Electrice & Iluminat</span><span class="cat-count">—</span>
+    </div>
+    <div class="cat-sidebar-item" onclick="filterCat('materiale','Sanitare-termo',this)" data-nace="F 43.22">
+      <span>🔥 Sanitare & Termice</span><span class="cat-count">—</span>
+    </div>
+    <div class="cat-sidebar-item" onclick="filterCat('materiale','Tamplarie-lemn',this)" data-nace="F 43.32">
+      <span>🪵 Tâmplărie & Lemn</span><span class="cat-count">—</span>
+    </div>
+    <div class="cat-sidebar-item" onclick="filterCat('materiale','Finisaje-mat',this)" data-nace-prefix="F 43.3">
+      <span>🎨 Finisaje & Vopsele</span><span class="cat-count">—</span>
+    </div>
+    <div class="cat-sidebar-item" onclick="filterCat('materiale','Constructii-mat',this)" data-nace-prefix="F 4">
+      <span>🧱 Construcții generale</span><span class="cat-count">—</span>
+    </div>
+    <div class="cat-sidebar-item" onclick="filterCat('materiale','Bricolaj',this)">
+      <span>🔩 Bricolaj & Consumabile</span><span class="cat-count">—</span>
+    </div>
+    <div class="cat-sidebar-item" onclick="filterCat('materiale','Electrocasnice-mat',this)" data-nace="S 95.22">
+      <span>🌀 Electrocasnice</span><span class="cat-count">—</span>
+    </div>
+  </div>
+
+  <!-- ────── SIDEBAR ÎNCHIRIERI ────────────────────────────── -->
+  <div class="cat-sidebar hidden" id="sidebar-inchiriere">
+    <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:8px">Tip echipament</div>
+    <div class="cat-sidebar-item active" onclick="filterCat('inchiriere','all',this)">
+      <span>⊞ Toate echipamentele</span><span class="cat-count">—</span>
+    </div>
+    <div class="cat-sidebar-item" onclick="filterCat('inchiriere','Utilaje-grele',this)" data-nace="O 77.32">
+      <span>🏗 O 77.32 — Utilaje grele</span><span class="cat-count">—</span>
+    </div>
+    <div class="cat-sidebar-item" onclick="filterCat('inchiriere','Scule-mici',this)" data-nace="O 77.32">
+      <span>🔩 Scule & echipamente mici</span><span class="cat-count">—</span>
+    </div>
+    <div class="cat-sidebar-item" onclick="filterCat('inchiriere','Vehicule',this)" data-nace="O 77.32">
+      <span>🚚 Vehicule & Transport</span><span class="cat-count">—</span>
+    </div>
+    <div class="cat-sidebar-item" onclick="filterCat('inchiriere','Personal',this)" data-nace="O 81.10">
+      <span>👷 O 81.10 — Personal calificat</span><span class="cat-count">—</span>
+    </div>
+    <div class="cat-sidebar-item" onclick="filterCat('inchiriere','Sport-outdoor',this)" data-nace="O 77.21">
+      <span>🏖 O 77.21 — Sport & Outdoor</span><span class="cat-count">—</span>
+    </div>
+    <div class="cat-sidebar-item" onclick="filterCat('inchiriere','Gradinari',this)" data-nace="O 77.32">
+      <span>🌿 Echipamente grădinărit</span><span class="cat-count">—</span>
+    </div>
+  </div>
+
+  <!-- FILTRE RAPIDE -->
+  <div style="background:#fff;border-radius:12px;border:1px solid #D5DFE8;padding:12px;margin-top:12px" id="filtre-rapide-box">
+    <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:10px">Filtre rapide</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#6B7A8D;cursor:pointer">
+        <input type="checkbox" id="filter-urgent" onchange="applyFilters()" style="accent-color:#FF8C00;width:15px;height:15px;cursor:pointer"/>
+        ⚡ Disponibil urgent
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#6B7A8D;cursor:pointer">
+        <input type="checkbox" id="filter-ai" onchange="applyFilters()" style="accent-color:#0E9E99;width:15px;height:15px;cursor:pointer"/>
+        🤖 AI alocă automat
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#6B7A8D;cursor:pointer">
+        <input type="checkbox" id="filter-aca" onchange="applyFilters()" style="accent-color:#1A5FAD;width:15px;height:15px;cursor:pointer"/>
+        📦 Furnizor verificat ACA
+      </label>
+    </div>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid #F4F7F9">
+      <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:6px">Preț max</div>
+      <input type="range" id="price-range" min="0" max="5000" value="5000" step="50"
+        oninput="updatePriceRange(this.value)"
+        style="width:100%;accent-color:#FF8C00;cursor:pointer"/>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:#8C9BAD;margin-top:3px">
+        <span>0</span><span id="price-label" style="font-weight:700;color:#003366">Orice preț</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Consultanță -->
+  <div style="background:linear-gradient(135deg,#E0F5F4,#EBF4FB);border-radius:12px;border:1px solid rgba(14,158,153,.2);padding:12px;margin-top:12px;cursor:pointer" onclick="openConsultanta()" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+    <div style="display:flex;align-items:center;gap:7px;margin-bottom:5px">
+      <span style="font-size:18px">🤖</span>
+      <div style="font-size:11.5px;font-weight:700;color:#003366">Nu știi ce serviciu?</div>
+    </div>
+    <div style="font-size:11px;color:#6B7A8D;line-height:1.5;margin-bottom:8px">Darrin AI identifică serviciul potrivit — gratuit.</div>
+    <div style="font-size:11px;font-weight:700;color:#0E9E99">Consultanță gratuită →</div>
+  </div>
+
+  <!-- VMC Box -->
+  <div style="background:linear-gradient(135deg,#FFF8EE,#FFF0D6);border-radius:12px;border:1px solid #FFD980;padding:12px;margin-top:12px">
+    <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#CC7000;margin-bottom:6px">⚖ Valoare Minimă Comandă</div>
+    <div style="font-size:11.5px;color:#6B7A8D;line-height:1.7">
+      🇷🇴 România: <strong>100 Lei</strong><br>
+      🇲🇩 Moldova: <strong>400 MDL</strong><br>
+      🇩🇪 Germania: <strong>25 EUR</strong>
+    </div>
+  </div>
+
+</aside>
+
+
 
   <!-- CENTER: CATALOG GRID -->
   <main>
     <!-- SEARCH + SORT BAR -->
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+      <!-- Buton Filtre pe mobil -->
+      <button id="mobile-filter-btn" onclick="openMobileFilter()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+        Filtre & Categorii
+      </button>
+      <!-- Overlay mobil -->
+      <div id="sidebar-mobile-overlay" onclick="closeMobileFilter()"></div>
       <div class="search-wrap">
         <svg class="search-icon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" class="search-input" id="search-input" placeholder="Caută servicii, materiale, echipamente..." oninput="applyFilters()"/>
@@ -5057,6 +5354,232 @@ document.addEventListener('myd-geo-update', function(e) {
 });
 </script>
 <!-- ════ END MOBILE BOTTOM NAV BAR ════ -->
+
+<script>
+// ── NACE/CAEN filter logic ───────────────────────────────────────
+var activeTip = 'all'; // mentenanta | inlocuire | reparatie | montaj | all
+
+// NACE → keywords pentru matching cu domeniile din DB
+var NACE_MAP = {
+  'F4321':       {nace:'F 43.21', sub:null,                domains:['Instalații electrice','Înlocuire becuri','Înlocuire instalație','Montaj tablou','Testare & verificare','Consultanță & proiectare','Reparație cuptor']},
+  'F4321-tab':   {nace:'F 43.21', sub:'tablou',            keywords:['tablou']},
+  'F4321-ilum':  {nace:'F 43.21', sub:'iluminat',          keywords:['iluminat','becuri','lumina','lustra','plafoniera','spot']},
+  'F4321-inst':  {nace:'F 43.21', sub:'instalatie',        keywords:['instalatie electrica','cablu','prize','circuit']},
+  'F4322':       {nace:'F 43.22', sub:null,                domains:['Instalații sanitare','Reparație garnituri','Înlocuire calorifer','HVAC']},
+  'F4322-cal':   {nace:'F 43.22', sub:'calorifer',         keywords:['calorifer','radiator','termic']},
+  'F4322-ob':    {nace:'F 43.22', sub:'obiect-sanitar',    keywords:['lavoar','chiuveta','vas','cada','cada','obiecte sanitare']},
+  'F4322-inst':  {nace:'F 43.22', sub:'instalatie-termica',keywords:['instalatie termica','centrala','boiler','pompa','hvac']},
+  'F4332':       {nace:'F 43.32', sub:null,                domains:['Lucrări de tâmplărie','Tâmplărie & Geamuri']},
+  'F433x':       {nace_prefix:'F 43.3',                    domains:['Zugrăveli & Finisaje','Montaj gresie','Pavaje & Alei']},
+  'F4391':       {nace:'F 43.91',                          domains:['Acoperiș & Șarpantă']},
+  'S9522':       {nace:'S 95.22',                          domains:['Electrocasnice']},
+  'A0161':       {nace:'A 01.61',                          domains:['Activități auxiliare','Grădinărit & Agri']},
+  'T9531':       {nace_prefix:'T 95',                      domains:['Reparații autovehicule','Service Auto']},
+  'N71':         {nace_prefix:'N 7',                       domains:['Consultanță tehnică','Consultanță & Design']},
+  'O8121':       {nace:'O 81.21',                          domains:['Curățenie profesională']},
+  'I5510':       {nace:'I 55.10',                          domains:['Hoteluri']},
+};
+
+// Mapare catKey pentru materiale → NACE / domeniu keywords
+var NACE_MAP_MAT = {
+  'Instalatii-electrice': {domains:['Electrice & Iluminat','Electrice & Tablouri','Electrice & Cabluri']},
+  'Sanitare-termo':       {domains:['Sanitare & Termo','Sanitare & Obiecte']},
+  'Tamplarie-lemn':       {domains:['Lemn & Cherestea']},
+  'Finisaje-mat':         {domains:['Vopsele & Finisaje','Parchet & Pardoseli']},
+  'Constructii-mat':      {domains:['Zidărie & Beton','Acoperiș & Izolații','Metalurgie & Profile']},
+  'Bricolaj':             {domains:['Bricolaj & Consumabile']},
+  'Electrocasnice-mat':   {domains:['Electrocasnice']},
+};
+
+// Mapare catKey pentru închirieri → domeniu keywords
+var NACE_MAP_INC = {
+  'Utilaje-grele':  {domains:['Utilaje & Echipamente Grele']},
+  'Scule-mici':     {domains:['Scule & Echipamente Mici']},
+  'Vehicule':       {domains:['Vehicule & Transport']},
+  'Personal':       {domains:['Personal calificat zilnic']},
+  'Sport-outdoor':  {domains:['Închiriere Echipamente Vacanță']},
+  'Gradinari':      {domains:['Echipamente grădinărit']},
+};
+
+// ── Tip intervenție filter ───────────────────────────────────────
+function filterTipSvc(tip, btn) {
+  activeTip = tip;
+
+  // Actualizăm butoanele tip
+  document.querySelectorAll('.tip-btn').forEach(b => {
+    b.classList.remove('active');
+    b.style.background = '#fff';
+    b.style.borderColor = '#D5DFE8';
+  });
+  if (btn) {
+    btn.classList.add('active');
+    btn.style.background = '#EBF4FB';
+    btn.style.borderColor = '#003366';
+  }
+
+  applyFilters();
+}
+
+// ── Toggle grup NACE collapse ────────────────────────────────────
+function toggleNaceGroup(id) {
+  var el = document.getElementById(id);
+  var ico = document.getElementById('ico-' + id);
+  if (!el) return;
+  el.classList.toggle('hidden');
+  if (ico) ico.style.transform = el.classList.contains('hidden') ? 'rotate(-90deg)' : '';
+}
+
+// ── Mobile sidebar toggle ─────────────────────────────────────────
+function openMobileFilter() {
+  document.getElementById('cat-aside').classList.add('mobile-open');
+  document.getElementById('sidebar-mobile-overlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closeMobileFilter() {
+  document.getElementById('cat-aside').classList.remove('mobile-open');
+  document.getElementById('sidebar-mobile-overlay').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+// ── Extinde applyFilters cu logica NACE + tip intervenție ─────────
+var _origApplyFilters = typeof applyFilters === 'function' ? applyFilters : null;
+
+function applyFilters() {
+  var search = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
+  var sortBy = document.getElementById('sort-select')?.value || 'default';
+  var filterUrgent = document.getElementById('filter-urgent')?.checked;
+  var filterAI = document.getElementById('filter-ai')?.checked;
+  var filterACA = document.getElementById('filter-aca')?.checked;
+  var maxPrice = parseFloat(document.getElementById('price-range')?.value || 99999);
+  var cat = activeCat[activeTab] || 'all';
+
+  var grid = document.getElementById('grid-' + activeTab);
+  if (!grid) return;
+
+  var cards = Array.from(grid.querySelectorAll('.rich-card'));
+  var visible = 0;
+
+  // Obținem domeniile acceptate pentru filtrul NACE activ
+  var acceptedDomains = null; // null = toate
+  var acceptedKeywords = null;
+
+  if (cat !== 'all') {
+    var mapSrc = activeTab === 'servicii' ? NACE_MAP :
+                 activeTab === 'materiale' ? NACE_MAP_MAT : NACE_MAP_INC;
+    var entry = mapSrc[cat];
+    if (entry) {
+      if (entry.domains) acceptedDomains = entry.domains.map(d => d.toLowerCase());
+      if (entry.keywords) acceptedKeywords = entry.keywords;
+    }
+  }
+
+  cards.forEach(function(card) {
+    var show = true;
+    var cardTitle = (card.dataset.title || '').toLowerCase();
+    var cardDomain = (card.getAttribute('data-subcat') || card.getAttribute('data-cat') || '').toLowerCase();
+    var cardNace = (card.getAttribute('data-nace') || '').toLowerCase();
+    var cardSlug = (card.getAttribute('data-slug') || '').toLowerCase();
+    var cardPrice = parseFloat(card.dataset.price || 0);
+    var cardUrgent = card.dataset.urgent === 'true';
+    var cardAI = card.dataset.ai === 'true';
+
+    // 1. Filtru categorie NACE
+    if (acceptedDomains !== null) {
+      var domainMatch = acceptedDomains.some(d =>
+        cardDomain.includes(d) || cardTitle.includes(d)
+      );
+      var keyMatch = acceptedKeywords ?
+        acceptedKeywords.some(k => cardTitle.includes(k) || cardSlug.includes(k)) : false;
+      if (!domainMatch && !keyMatch) show = false;
+    }
+
+    // 2. Filtru tip intervenție (mentenanta/inlocuire/reparatie/montaj)
+    if (show && activeTip !== 'all') {
+      var tipMatch = cardSlug.includes(activeTip) ||
+                     cardTitle.includes(activeTip.replace('_',' ')) ||
+                     (activeTip === 'montaj' && (cardSlug.includes('montaj') || cardTitle.includes('montaj') || cardTitle.includes('punere'))) ||
+                     (activeTip === 'mentenanta' && (cardSlug.includes('mentenanta') || cardTitle.includes('mentenan') || cardTitle.includes('verificare'))) ||
+                     (activeTip === 'inlocuire' && (cardSlug.includes('inlocuire') || cardTitle.includes('înlocuire') || cardTitle.includes('inlocuire'))) ||
+                     (activeTip === 'reparatie' && (cardSlug.includes('reparatie') || cardTitle.includes('reparati') || cardTitle.includes('reconditio')));
+      if (!tipMatch) show = false;
+    }
+
+    // 3. Search text
+    if (show && search) {
+      var descEl = card.querySelector('.card-desc');
+      var descText = descEl ? descEl.textContent.toLowerCase() : '';
+      if (!cardTitle.includes(search) && !descText.includes(search) && !cardSlug.includes(search)) show = false;
+    }
+
+    // 4. Filtre rapide
+    if (show && filterUrgent && !cardUrgent) show = false;
+    if (show && filterAI && !cardAI) show = false;
+    if (show && maxPrice < 4999 && cardPrice > maxPrice && cardPrice > 0) show = false;
+
+    card.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+
+  // Sortare
+  if (sortBy !== 'default') {
+    var visCards = cards.filter(c => c.style.display !== 'none');
+    var sorted = visCards.sort(function(a,b) {
+      if (sortBy === 'price-asc') return parseFloat(a.dataset.price||0) - parseFloat(b.dataset.price||0);
+      if (sortBy === 'price-desc') return parseFloat(b.dataset.price||0) - parseFloat(a.dataset.price||0);
+      if (sortBy === 'rating') return parseFloat(b.dataset.rating||0) - parseFloat(a.dataset.rating||0);
+      return 0;
+    });
+    sorted.forEach(c => grid.appendChild(c));
+  }
+
+  // Result count
+  var rc = document.getElementById('result-count');
+  if (rc) rc.innerHTML = '<strong>' + visible + '</strong> rezultate';
+
+  // Empty state
+  var empty = document.getElementById('empty-state');
+  if (empty) empty.style.display = visible === 0 ? 'block' : 'none';
+
+  // Actualizăm count-urile în sidebar
+  updateSidebarCounts(cards);
+}
+
+// ── Actualizare count-uri sidebar ────────────────────────────────
+function updateSidebarCounts(allCards) {
+  // Total vizibile per tab
+  var tot = allCards ? allCards.filter(c => c.style.display !== 'none').length : 0;
+  var totEl = document.getElementById('svc-count-all') ||
+              document.getElementById('mat-count-all');
+  if (totEl) totEl.textContent = tot;
+}
+
+// ── Actualizare sidebar după load DB ─────────────────────────────
+function updateSidebar(tab, items) {
+  if (!items || !items.length) return;
+  // Grupăm items pe domeniu
+  var domainCounts = {};
+  items.forEach(function(item) {
+    var d = item.domeniu || '';
+    domainCounts[d] = (domainCounts[d] || 0) + 1;
+  });
+
+  var total = items.length;
+  var allEl = document.getElementById('svc-count-all') || document.getElementById('mat-count-all');
+  if (allEl) allEl.textContent = total;
+}
+
+// ── Mobile overlay ─────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  // Adăugăm drag handle în sidebar
+  var aside = document.getElementById('cat-aside');
+  if (aside) {
+    var handle = document.createElement('div');
+    handle.className = 'sidebar-handle';
+    aside.insertBefore(handle, aside.firstChild);
+  }
+});
+</script>
+
 </body>
 </html>
 
@@ -5147,73 +5670,6 @@ function updatePageTitleForSubcat(tab, cat, subcat){
 }
 
 // ── APPLY ALL FILTERS ──
-function applyFilters(){
-  const search = (document.getElementById('search-input')?.value||'').toLowerCase().trim();
-  const sortBy = document.getElementById('sort-select')?.value || 'default';
-  const filterUrgent = document.getElementById('filter-urgent')?.checked;
-  const filterAI = document.getElementById('filter-ai')?.checked;
-  const filterACA = document.getElementById('filter-aca')?.checked;
-  const cat = activeCat[activeTab] || 'all';
-  const subcat = activeSubCat[activeTab] || 'all';
-
-  const grid = document.getElementById('grid-'+activeTab);
-  if(!grid) return;
-
-  const cards = Array.from(grid.querySelectorAll('.rich-card'));
-  let visible = 0;
-
-  cards.forEach(card=>{
-    let show = true;
-    const cardCat = card.dataset.cat || '';
-    const cardSubcat = card.dataset.subcat || '';
-    const cardTitle = card.dataset.title || '';
-    const cardDesc = card.querySelector('.card-desc')?.textContent.toLowerCase()||'';
-    const cardPrice = parseFloat(card.dataset.price||0);
-    const cardUrgent = card.dataset.urgent === 'true';
-    const cardAI = card.dataset.ai === 'true';
-    const cardBadge = card.querySelector('.card-badge')?.classList.contains('aca');
-
-    if(cat !== 'all' && cardCat !== cat) show=false;
-    if(subcat !== 'all' && cardSubcat !== subcat) show=false;
-    if(search && !cardTitle.includes(search) && !cardDesc.includes(search)) show=false;
-    if(filterUrgent && !cardUrgent) show=false;
-    if(filterAI && !cardAI) show=false;
-    if(filterACA && !cardBadge) show=false;
-    if(cardPrice > maxPrice) show=false;
-
-    card.style.display = show ? '' : 'none';
-    if(show) visible++;
-  });
-
-  // Sort visible cards
-  if(sortBy !== 'default'){
-    const visibleCards = cards.filter(c=>c.style.display!=='none');
-    const sorted = visibleCards.sort((a,b)=>{
-      if(sortBy==='price-asc') return parseFloat(a.dataset.price)-parseFloat(b.dataset.price);
-      if(sortBy==='price-desc') return parseFloat(b.dataset.price)-parseFloat(a.dataset.price);
-      if(sortBy==='rating') return parseFloat(b.dataset.rating)-parseFloat(a.dataset.rating);
-      if(sortBy==='reviews') return parseFloat(b.dataset.reviews)-parseFloat(a.dataset.reviews);
-      return 0;
-    });
-    sorted.forEach(c=>grid.appendChild(c));
-  }
-
-  // Show/hide empty state
-  const empty = document.getElementById('empty-state');
-  const tabEl = document.getElementById('tab-'+activeTab);
-  if(empty){
-    empty.style.display = visible===0 ? 'block' : 'none';
-    if(tabEl && visible===0) tabEl.style.opacity='0.3';
-    else if(tabEl) tabEl.style.opacity='';
-  }
-
-  // Update active filters display
-  updateActiveFilters(search, filterUrgent, filterAI, filterACA, cat);
-  setEl('result-count', '');
-  const rc = document.getElementById('result-count');
-  if(rc) rc.innerHTML = '<strong>'+visible+'</strong> rezultate';
-  setEl('breadcrumb-count', visible+' produse & servicii');
-}
 
 function updateActiveFilters(search, urgent, ai, aca, cat){
   const container = document.getElementById('active-filters');
