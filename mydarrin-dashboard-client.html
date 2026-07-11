@@ -2621,152 +2621,114 @@ function linkGuestOrder(btn) {
 </script>
 
 <script>
-// ── Geo cache ──────────────────────────────────────────────────
-var GEO_CACHE_KEY = GEO_CACHE_KEY || 'myd_geo_v1';
-function geoSave(d){ try{sessionStorage.setItem(GEO_CACHE_KEY,JSON.stringify({...d,ts:Date.now()}));}catch(e){} }
-function geoLoad(){ try{var d=JSON.parse(sessionStorage.getItem(GEO_CACHE_KEY)||'{}'); if(d.ts&&Date.now()-d.ts<1800000)return d;}catch(e){} return null; }
+// ═══════════════════════════════════════════════════════════════
+// GEO — simplu: detectăm ȚARA (din IP) pentru monedă și prețuri.
+// Adresa exactă NU se cere la load — doar la comandă.
+// Utilizatorul poate schimba MANUAL țara + limba oricând din topbar.
+// ═══════════════════════════════════════════════════════════════
 
-// ── Aplică date geo în UI ────────────────────────────────────────
-function applyGeoData(data){
-  var country=data.country||'RO', city=data.city||'', region=data.region||'';
-  var address=data.address||[city,region].filter(Boolean).join(', ')||country;
+// Date salvate în localStorage (persistă între sesiuni)
+var GEO_KEY = 'myd_country_v1';
 
-  // Prețuri / monedă
-  var cur=CURRENCIES[country]||CURRENCIES.DEFAULT;
+function geoLoad(){
+  try{ return JSON.parse(localStorage.getItem(GEO_KEY)||'null'); }catch(e){ return null; }
+}
+function geoSave(d){
+  try{ localStorage.setItem(GEO_KEY, JSON.stringify(d)); }catch(e){}
+}
+
+// Setează țara + moneda în UI
+function setCountry(code, flag, name, currency, currCode){
+  // Topbar
+  var flagEl = document.getElementById('loc-flag');
+  var nameEl = document.getElementById('loc-display');
+  var curEl  = document.getElementById('loc-currency');
+  if(flagEl) flagEl.textContent = flag;
+  if(nameEl) nameEl.textContent = name;
+  if(curEl)  curEl.textContent  = '· ' + currency;
+
+  // Prețuri
+  var cur = CURRENCIES[code] || CURRENCIES['RO'];
   applyCurrency(cur);
 
-  // Display locație desktop
-  var locEl=document.getElementById('loc-display');
-  var inpEl=document.getElementById('loc-input');
-  if(locEl) locEl.textContent=address;
-  if(inpEl&&!inpEl._userEdited) inpEl.value=address;
-
-  // Buton GPS central în bottom nav — actualizare text
-  var mbnTxt=document.getElementById('mbn-loc-text');
-  if(mbnTxt) mbnTxt.textContent=city||country;
-
-  // Event pentru alte componente
-  try{ window.dispatchEvent(new CustomEvent('myd-geo-update',{detail:data})); }catch(e){}
-
-  // Banner zonă indisponibilă
-  var ACTIVE=['RO','MD','DE','FR','BG'];
-  if(!ACTIVE.includes(country)){
-    var zn=document.getElementById('unavail-zone');
-    if(zn) zn.textContent=city||country;
-    setTimeout(function(){ document.getElementById('zone-unavailable')?.classList.remove('hidden'); },2000);
+  // Banner zonă inactivă (ES, GB etc.)
+  var ACTIVE = ['RO','MD','DE','FR','BG'];
+  if(!ACTIVE.includes(code)){
+    var zn = document.getElementById('unavail-zone');
+    if(zn) zn.textContent = name;
+    setTimeout(function(){
+      var b = document.getElementById('zone-unavailable');
+      if(b) b.classList.remove('hidden');
+    }, 500);
+  } else {
+    var b = document.getElementById('zone-unavailable');
+    if(b) b.classList.add('hidden');
   }
 
-  // Salvare DB Supabase (fire-and-forget)
-  if(data.lat&&data.lng&&window.__ENV__&&window.__ENV__.SUPABASE_ANON_KEY){
-    fetch(window.__ENV__.SUPABASE_URL+'/rest/v1/geo_context_cache',{
-      method:'POST',
-      headers:{apikey:window.__ENV__.SUPABASE_ANON_KEY,Authorization:'Bearer '+window.__ENV__.SUPABASE_ANON_KEY,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},
-      body:JSON.stringify({ip_hash:'browser_'+Math.random().toString(36).slice(2,8),tara_cod:country,regiune:region,oras:city,moneda:cur.symbol,creat_la:new Date().toISOString(),expira_la:new Date(Date.now()+86400000).toISOString()})
-    }).catch(function(){});
-  }
-  geoSave(data);
+  // Salvare
+  geoSave({code:code, flag:flag, name:name, currency:currency, currCode:currCode});
+
+  // Închide dropdown
+  var dd = document.getElementById('countryDd');
+  if(dd) dd.style.display = 'none';
 }
 
-// ── Nivel 1: IP ──────────────────────────────────────────────────
-function detectFromIP(){
-  var cached=geoLoad();
-  if(cached){ applyGeoData(Object.assign({},cached,{source:'cache'})); return; }
-  var ctrl=new AbortController();
-  var t=setTimeout(function(){ctrl.abort();},4000);
-  fetch('https://ipapi.co/json/',{signal:ctrl.signal})
-    .then(function(r){return r.json();})
-    .then(function(d){
-      clearTimeout(t);
-      applyGeoData({country:d.country_code||'RO',city:d.city||'',region:d.region||'',lat:d.latitude,lng:d.longitude,source:'ip'});
-    })
-    .catch(function(){
-      clearTimeout(t);
-      applyGeoData({country:'RO',city:'România',region:'',source:'ip'});
-    });
+// Toggle dropdown țară
+function toggleCountry(){
+  var dd = document.getElementById('countryDd');
+  if(!dd) return;
+  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
 }
-
-// ── Nivel 2: GPS browser (3-15m precizie) ────────────────────────
-function detectFromGPS(){
-  if(!navigator.geolocation){
-    showGeoToast('⚠ GPS indisponibil în acest browser');
-    return;
-  }
-
-  // Loading state pe iconița din bottom nav
-  var gpsIcon=document.getElementById('mbn-gps-icon');
-  if(gpsIcon) gpsIcon.querySelector('svg').classList.add('mbn-gps-loading');
-
-  navigator.geolocation.getCurrentPosition(
-    function(pos){
-      var lat=pos.coords.latitude, lng=pos.coords.longitude, acc=Math.round(pos.coords.accuracy);
-      if(gpsIcon) gpsIcon.querySelector('svg').classList.remove('mbn-gps-loading');
-
-      // Reverse geocoding Nominatim (OSM, gratuit, fără API key)
-      fetch('https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lng+'&format=json&accept-language=ro',
-        {headers:{'User-Agent':'MyDarrin/1.0 (homebestpal.com)'}})
-        .then(function(r){return r.json();})
-        .then(function(geo){
-          var a=geo.address||{};
-          var city=a.city||a.town||a.village||a.municipality||'';
-          var region=a.county||a.state||'';
-          var country=(a.country_code||'ro').toUpperCase();
-          var street=[a.road,a.house_number].filter(Boolean).join(' ');
-          var address=[street,city,region].filter(Boolean).join(', ');
-
-          applyGeoData({country:country,city:city,region:region,address:address,lat:lat,lng:lng,source:'gps',accuracy:acc});
-          showGeoToast('📍 Locație GPS detectată · ±'+acc+'m · '+city);
-
-          // Actualizăm și inputul din modal
-          var inp=document.getElementById('loc-input');
-          if(inp){inp.value=address||city; inp._userEdited=false;}
-        })
-        .catch(function(){
-          applyGeoData({country:'RO',city:lat.toFixed(3)+'°N '+lng.toFixed(3)+'°E',lat:lat,lng:lng,source:'gps',accuracy:acc});
-          showGeoToast('📍 GPS ±'+acc+'m (reverse geocoding eșuat)');
-        });
-    },
-    function(err){
-      if(gpsIcon) gpsIcon.querySelector('svg').classList.remove('mbn-gps-loading');
-      var msgs={1:'🔒 Permite accesul la locație în browser → Setări → Locație',2:'⚠ Semnal GPS slab — încearcă în exterior sau lângă fereastră',3:'⏱ Timeout GPS — încearcă din nou'};
-      showGeoToast(msgs[err.code]||'⚠ Eroare GPS');
-    },
-    {enableHighAccuracy:true, timeout:15000, maximumAge:60000}
-  );
-}
-
-// ── Nivel 3: Input manual ────────────────────────────────────────
-function onLocInputChange(el){
-  el._userEdited=true;
-  var val=el.value.trim();
-  if(!val) return;
-  var map={'moldova':'MD','chisinau':'MD','chișinău':'MD','german':'DE','berlin':'DE','munchen':'DE','münchen':'DE','france':'FR','paris':'FR','lyon':'FR','bulgaria':'BG','sofia':'BG','varna':'BG'};
-  var lower=val.toLowerCase();
-  var country=Object.entries(map).find(function(e){return lower.includes(e[0]);})?.[1]||'RO';
-  applyGeoData({country:country,city:val,source:'manual'});
-}
-
-// ── Toast ─────────────────────────────────────────────────────────
-function showGeoToast(msg){
-  var t=document.createElement('div');
-  t.style.cssText='position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:#1A2332;color:#fff;padding:10px 20px;border-radius:12px;font-size:12.5px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:inherit;max-width:90vw;text-align:center;pointer-events:none';
-  t.textContent=msg;
-  document.body.appendChild(t);
-  setTimeout(function(){if(t.parentNode)t.remove();},3500);
-}
-
-// ── Init loc input manual ─────────────────────────────────────────
-document.addEventListener('DOMContentLoaded',function(){
-  var inp=document.getElementById('loc-input');
-  if(inp){
-    inp._userEdited=false;
-    inp.addEventListener('input',function(){inp._userEdited=true;});
-    inp.addEventListener('change',function(){onLocInputChange(inp);});
-    inp.addEventListener('keydown',function(e){if(e.key==='Enter')onLocInputChange(inp);});
+// Închide la click în afară
+document.addEventListener('click', function(e){
+  var btn = document.getElementById('loc-btn');
+  var dd  = document.getElementById('countryDd');
+  if(dd && btn && !btn.contains(e.target) && !dd.contains(e.target)){
+    dd.style.display = 'none';
   }
 });
 
-// ── INIT: pornire cu IP detection ────────────────────────────────
-function detectAndApplyCurrency(){ detectFromIP(); }
+// Detectare automată țară din IP (la primul load, fără cache)
+function detectAndApplyCurrency(){
+  // 1. Verifică cache
+  var cached = geoLoad();
+  if(cached && cached.code){
+    setCountry(cached.code, cached.flag, cached.name, cached.currency, cached.currCode);
+    return;
+  }
+
+  // 2. Detectare IP — folosim ipapi.co (free tier, fără API key)
+  var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  var t = setTimeout(function(){
+    if(ctrl) ctrl.abort();
+    // Fallback silențios la RO
+    setCountry('RO','🇷🇴','România','Lei','RON');
+  }, 4000);
+
+  var opts = ctrl ? {signal: ctrl.signal} : {};
+  fetch('https://ipapi.co/json/', opts)
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      clearTimeout(t);
+      var code = d.country_code || 'RO';
+      // Mapare la țările noastre
+      var COUNTRIES = {
+        RO:{flag:'🇷🇴',name:'România',currency:'Lei',currCode:'RON'},
+        MD:{flag:'🇲🇩',name:'Moldova',currency:'Lei',currCode:'MDL'},
+        DE:{flag:'🇩🇪',name:'Germania',currency:'EUR',currCode:'EUR'},
+        FR:{flag:'🇫🇷',name:'Franța',currency:'EUR',currCode:'EUR'},
+        BG:{flag:'🇧🇬',name:'Bulgaria',currency:'BGN',currCode:'BGN'},
+        ES:{flag:'🇪🇸',name:'Spania',currency:'EUR',currCode:'EUR'},
+        GB:{flag:'🇬🇧',name:'UK',currency:'GBP',currCode:'GBP'},
+      };
+      var c = COUNTRIES[code] || COUNTRIES['RO'];
+      setCountry(code, c.flag, c.name, c.currency, c.currCode);
+    })
+    .catch(function(){
+      clearTimeout(t);
+      setCountry('RO','🇷🇴','România','Lei','RON');
+    });
+}
 
 detectAndApplyCurrency();
 </script>
@@ -2853,22 +2815,6 @@ document.addEventListener('myd-geo-update', function(e) {
 });
 </script>
 <!-- ════ END MOBILE BOTTOM NAV BAR ════ -->
-<script>
-(function(){
-  if(window.location.protocol === 'file:'){
-    document.addEventListener('DOMContentLoaded', function(){
-      setTimeout(function(){
-        if(typeof detectFromGPS !== 'function') return;
-        try{
-          var c=JSON.parse(sessionStorage.getItem('myd_geo_v1')||'{}');
-          if(!c.city) detectFromGPS();
-          else if(typeof applyGeoData==='function') applyGeoData(Object.assign({},c,{source:'cache'}));
-        }catch(e){ detectFromGPS(); }
-      }, 800);
-    });
-  }
-})();
-</script>
 </body>
 </html>
 
