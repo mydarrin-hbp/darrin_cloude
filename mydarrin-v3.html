@@ -329,19 +329,39 @@ input:valid:not(:placeholder-shown):not([type="checkbox"]) {
 })();
 </script>
 
-<!-- Tailwind via Play CDN -->
-<script src="https://cdn.tailwindcss.com/3.4.1/tailwind.min.js"></script>
+<!-- Tailwind CSS Play CDN — URL corect fără versiune în path -->
+<script>
+// tailwind.config trebuie definit ÎNAINTE de a încărca scriptul Tailwind
+// ca să fie disponibil când Tailwind procesează clasele
+window.tailwindConfig = {
+  theme: { extend: { colors: {
+    primary:{ DEFAULT:"#003366", light:"#1A5FAD", dark:"#002855", muted:"#EBF4FB" },
+    accent: { DEFAULT:"#FF8C00", light:"#FFA033", dark:"#CC7000", muted:"#FFF0D6" },
+    ai:     { DEFAULT:"#0E9E99", light:"#1DBDB8", dark:"#0B7A76", muted:"#E0F5F4" },
+    surface:{ DEFAULT:"#F4F7F9", card:"#FFFFFF",  border:"#D5DFE8" },
+    ink:    { DEFAULT:"#2D2D2D", muted:"#6B7A8D", soft:"#8C9BAD" }
+  }}}
+};
+</script>
+<script>
+// Tailwind Play CDN — încărcat cu fallback
+(function() {
+  var s = document.createElement('script');
+  s.src = 'https://cdn.tailwindcss.com';
+  s.onload = function() {
+    // Aplicăm config după ce Tailwind e încărcat
+    if (typeof tailwind !== 'undefined' && tailwind.config) {
+      tailwind.config = window.tailwindConfig;
+    }
+  };
+  s.onerror = function() {
+    console.warn('[MyDarrin] Tailwind CDN indisponibil — clasele Tailwind pot să nu fie aplicate');
+  };
+  document.head.appendChild(s);
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script>
-tailwind.config={theme:{extend:{colors:{
-  primary:{DEFAULT:"#003366",light:"#1A5FAD",dark:"#002855",muted:"#EBF4FB"},
-  accent:{DEFAULT:"#FF8C00",light:"#FFA033",dark:"#CC7000",muted:"#FFF0D6"},
-  ai:{DEFAULT:"#0E9E99",light:"#1DBDB8",dark:"#0B7A76",muted:"#E0F5F4"},
-  surface:{DEFAULT:"#F4F7F9",card:"#FFFFFF",border:"#D5DFE8"},
-  ink:{DEFAULT:"#2D2D2D",muted:"#6B7A8D",soft:"#8C9BAD"}
-}}}}
-</script>
 <style>
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
 html { scroll-behavior:smooth; }
