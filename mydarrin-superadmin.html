@@ -2730,12 +2730,12 @@ async function ramInit(){
   try {
     const { data, error } = await window.supabaseClient
       .from('profiles')
-      .select('id,email,role')
-      .in('role', ['admin','superadmin'])
+      .select('id,email,roles')
+      .overlaps('roles', ['admin','superadmin'])
       .order('email');
     if (error) throw error;
     select.innerHTML = '<option value="">— selectează —</option>' +
-      (data||[]).map(u => `<option value="${u.id}">${u.email} (${u.role})</option>`).join('');
+      (data||[]).map(u => `<option value="${u.id}">${u.email} (${(u.roles||[]).join(', ')})</option>`).join('');
     status.textContent = (data||[]).length + ' admini găsiți';
     status.style.color = '#8FA3BD';
   } catch (e) {
@@ -2820,10 +2820,10 @@ async function accInit(){
 
     const { data: profile } = await window.supabaseClient
       .from('profiles')
-      .select('role')
+      .select('roles')
       .eq('id', user.id)
       .single();
-    let hasAccess = profile?.role === 'superadmin';
+    let hasAccess = Array.isArray(profile?.roles) && profile.roles.includes('superadmin');
 
     if (!hasAccess) {
       const { data: perms } = await window.supabaseClient

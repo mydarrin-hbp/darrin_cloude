@@ -45,11 +45,13 @@ async function getUserRoles(user) {
 
   // Sursa reală, autoritativă: tabelul profiles (aceeași sursă pe care
   // o folosesc și politicile RLS din Supabase) — mereu prioritară.
+  // Coloana e `roles` (array) — vezi schema.sql; nu există `role` singular
+  // (corectat în audit 2026-07-11, dezalinia complet verificarea de rol).
   try {
-    const { data } = await sb().from('profiles').select('role').eq('id', user.id).single();
-    if (data?.role) set.add(data.role);
+    const { data } = await sb().from('profiles').select('roles').eq('id', user.id).single();
+    if (Array.isArray(data?.roles)) data.roles.forEach(r => set.add(r));
   } catch (e) {
-    console.error('Eroare la citirea rolului din profiles:', e);
+    console.error('Eroare la citirea rolurilor din profiles:', e);
   }
 
   return Array.from(set);
@@ -62,10 +64,16 @@ async function hasRole(roleKey) {
 }
 
 /* ── Înregistrare — Pasul 1 (Etapa 3.2) ── */
-async function performRegister(email, parola, nume) {
+// gdprAcceptat: bifa checkbox-ului GDPR din formularul de înregistrare —
+// trimisă acum efectiv la Supabase; handle_new_user() din schema.sql o
+// citește și setează profiles.gdpr_consimtamant_at (fix audit 2026-07-11,
+// coloana era scrisă în schemă dar nu era populată niciodată de niciun cod).
+// Parametru opțional, cu fallback la `false`, ca să nu rupem apelurile
+// existente din paginile care încă nu au checkbox-ul în UI.
+async function performRegister(email, parola, nume, gdprAcceptat) {
   const { data, error } = await sb().auth.signUp({
     email, password: parola,
-    options: { data: { nume, roles: [] } },
+    options: { data: { nume, roles: [], gdpr_acceptat: !!gdprAcceptat } },
   });
   if (error) throw error;
   return data.user; // status: pending_otp până la verificarea telefonului (pasul 2)

@@ -2373,12 +2373,15 @@ async function performRegister() {
   const emailEl = document.getElementById('reg-email');
   const numeEl  = document.getElementById('reg-nume');
   const passEl  = document.getElementById('reg-pass');
+  const gdprEl  = document.getElementById('reg-gdpr');
   const email = emailEl ? emailEl.value.trim() : '';
   const nume  = numeEl ? numeEl.value.trim() : '';
   const pass  = passEl ? passEl.value : '';
+  const gdprAcceptat = gdprEl ? gdprEl.checked : false;
   if (!email || !pass) { showToastMsg('Completează email și parolă.'); return; }
+  if (!gdprAcceptat) { showToastMsg('Trebuie să accepți Termenii și Politica de Confidențialitate.'); return; }
   try {
-    await window.MyDarrinAuth.performRegister(email, pass, nume);
+    await window.MyDarrinAuth.performRegister(email, pass, nume, gdprAcceptat);
 
     // IMPORTANT: cu confirmarea de email activă în Supabase, înregistrarea
     // NU creează automat o sesiune activă — trebuie confirmat emailul întâi,
@@ -2978,8 +2981,8 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
         <input type="password" id="reg-pass" placeholder="Parola" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
       </div>
       <label class="flex items-start gap-2.5 mb-5 cursor-pointer">
-        <input type="checkbox" checked class="mt-0.5 w-4 h-4 accent-[#FF8C00] flex-shrink-0"/>
-        <span class="text-xs text-gray-400 leading-relaxed">Accept <a href="mydarrin-termeni.html" class="text-[#003366] hover:underline">Termenii și Condițiile</a> platformei My Darrin.</span>
+        <input type="checkbox" id="reg-gdpr" class="mt-0.5 w-4 h-4 accent-[#FF8C00] flex-shrink-0"/>
+        <span class="text-xs text-gray-400 leading-relaxed">Accept <a href="mydarrin-termeni.html" class="text-[#003366] hover:underline">Termenii și Condițiile</a> și <a href="mydarrin-politica-confidentialitate.html" class="text-[#003366] hover:underline">Politica de Confidențialitate</a> (prelucrare date GDPR) platformei My Darrin.</span>
       </label>
       <button onclick="performRegister()" class="w-full bg-[#FF8C00] text-white py-3.5 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition">
         Creează cont gratuit

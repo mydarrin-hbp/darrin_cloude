@@ -1,7 +1,7 @@
 # My Darrin — Platformă hibrid clasic & AI
 ### Servicii integrate la cerere · Multi-țară · Multi-actor · ERP Marketplace
 
-**Live:** https://darrin-cloude.vercel.app  
+**Live:** https://mydarrin.homebestpal.com  
 **GitHub:** https://github.com/mydarrin-hbp/darrin_cloude  
 **Versiune:** v2026.06 · Build 18.06.2026  
 
