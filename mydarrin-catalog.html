@@ -936,6 +936,19 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 .nace-group > div:not(.nace-group-hdr).hidden { display: none; }
 </style>
 
+<style>
+.tier-card { user-select: none; }
+.cons-card { user-select: none; }
+.proj-card { user-select: none; }
+@media (max-width:640px) {
+  #grid-tiere-consultanta { grid-template-columns: 1fr 1fr !important; }
+  #grid-proiectare { grid-template-columns: 1fr 1fr !important; }
+  #grid-tip-consultanta { grid-template-columns: 1fr 1fr !important; }
+}
+@media (max-width:380px) {
+  #grid-tiere-consultanta, #grid-proiectare, #grid-tip-consultanta { grid-template-columns: 1fr !important; }
+}
+</style>
 </head>
 <body>
 <div id="spbar"></div>
@@ -1712,6 +1725,10 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
       style="flex:1;font-size:11.5px;font-weight:700;padding:7px 4px;border-radius:9px;border:none;background:transparent;color:#6B7A8D;cursor:pointer;transition:all .2s;font-family:inherit">
       🏗 Închirieri
     </button>
+    <button class="cat-tab" onclick="switchMainTab('consultanta',this)" id="main-tab-consultanta"
+      style="flex:1;font-size:11.5px;font-weight:700;padding:7px 4px;border-radius:9px;border:none;background:transparent;color:#6B7A8D;cursor:pointer;transition:all .2s;font-family:inherit">
+      💎 Consult.
+    </button>
   </div>
 
   <!-- ────── SIDEBAR SERVICII ────────────────────────────────── -->
@@ -1931,6 +1948,64 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
     </div>
     <div class="cat-sidebar-item" onclick="filterCat('inchiriere','Gradinari',this)" data-nace="O 77.32">
       <span>🌿 Echipamente grădinărit</span><span class="cat-count">—</span>
+    </div>
+  </div>
+
+  <!-- ────── SIDEBAR CONSULTANȚĂ & PROIECTARE ─────────────────── -->
+  <div class="cat-sidebar hidden" id="sidebar-consultanta">
+    <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:8px">Tip serviciu</div>
+
+    <!-- 4 tipuri universale de intervenție + Consultanță -->
+    <div class="cat-sidebar-item active" onclick="filterCat('consultanta','all',this)">
+      <span>⊞ Toate</span><span class="cat-count">—</span>
+    </div>
+    <div class="cat-sidebar-item" onclick="filterCat('consultanta','mentenanta-c',this)">
+      <span>🔍 Mentenanță preventivă</span><span class="cat-count">—</span>
+    </div>
+    <div class="cat-sidebar-item" onclick="filterCat('consultanta','inlocuire-c',this)">
+      <span>🔄 Înlocuire & Upgrade</span><span class="cat-count">—</span>
+    </div>
+    <div class="cat-sidebar-item" onclick="filterCat('consultanta','reparatie-c',this)">
+      <span>🔧 Reparație & Diagnoză</span><span class="cat-count">—</span>
+    </div>
+    <div class="cat-sidebar-item" onclick="filterCat('consultanta','montaj-c',this)">
+      <span>🏗 Montaj & Punere funcț.</span><span class="cat-count">—</span>
+    </div>
+
+    <div style="height:1px;background:#F0F2F7;margin:10px 0"></div>
+    <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:8px">Consultanță & Evaluare</div>
+    <div class="cat-sidebar-item" onclick="filterCat('consultanta','cons-bronz',this)">
+      <span>🥉 Bronz · AI Gratuit</span><span class="cat-count">—</span>
+    </div>
+    <div class="cat-sidebar-item" onclick="filterCat('consultanta','cons-argint',this)">
+      <span>🥈 Argint · Remote</span><span class="cat-count">—</span>
+    </div>
+    <div class="cat-sidebar-item" onclick="filterCat('consultanta','cons-aur',this)">
+      <span>🥇 Aur · La adresă</span><span class="cat-count">—</span>
+    </div>
+    <div class="cat-sidebar-item" onclick="filterCat('consultanta','cons-platinum',this)">
+      <span>💎 Platinum · Proiectare</span><span class="cat-count">—</span>
+    </div>
+
+    <div style="height:1px;background:#F0F2F7;margin:10px 0"></div>
+    <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:8px">Servicii de proiectare</div>
+    <div class="cat-sidebar-item" onclick="filterCat('consultanta','proj-electric',this)">
+      <span>⚡ Proiectare electrică</span><span class="cat-count">—</span>
+    </div>
+    <div class="cat-sidebar-item" onclick="filterCat('consultanta','proj-sanitar',this)">
+      <span>🚿 Proiectare sanitară</span><span class="cat-count">—</span>
+    </div>
+    <div class="cat-sidebar-item" onclick="filterCat('consultanta','proj-hvac',this)">
+      <span>❄️ Proiectare HVAC</span><span class="cat-count">—</span>
+    </div>
+    <div class="cat-sidebar-item" onclick="filterCat('consultanta','proj-interior',this)">
+      <span>🏠 Design interior</span><span class="cat-count">—</span>
+    </div>
+    <div class="cat-sidebar-item" onclick="filterCat('consultanta','proj-structura',this)">
+      <span>🏗 Proiectare structurală</span><span class="cat-count">—</span>
+    </div>
+    <div class="cat-sidebar-item" onclick="filterCat('consultanta','proj-cerere',this)">
+      <span>📋 La cerere (valoare negociată)</span><span class="cat-count">—</span>
     </div>
   </div>
 
@@ -4549,6 +4624,244 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&consOpen) closeCon
   </a>
 </div>
 
+    </div><!-- /tab-inchiriere -->
+
+    <!-- ══ TAB: CONSULTANȚĂ & PROIECTARE ══ -->
+    <div id="tab-consultanta" class="tab-content" style="display:none">
+
+      <!-- BANNER intro -->
+      <div style="background:linear-gradient(135deg,#001E3C,#003366);border-radius:18px;padding:22px 24px;margin-bottom:20px;display:flex;align-items:center;gap:16px">
+        <div style="font-size:40px;flex-shrink:0">🤖</div>
+        <div>
+          <div style="font-weight:800;color:#fff;font-size:16px;margin-bottom:4px">Consultanță & Proiectare My Darrin</div>
+          <div style="color:rgba(255,255,255,.6);font-size:12.5px;line-height:1.6">4 tiere de consultanță · Prețuri configurate de admin · Servicii de proiectare completă</div>
+        </div>
+        <div id="cons-prices-loaded" style="margin-left:auto;font-size:10px;color:rgba(255,255,255,.3);flex-shrink:0">⏳ Încarc prețuri...</div>
+      </div>
+
+      <!-- SECȚIUNEA 1: Cele 4 tipuri de intervenție cu consultanță integrată -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD">Consultanță pentru orice tip de intervenție</div>
+        <div style="flex:1;height:1px;background:#E8F0FB"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:28px" id="grid-tip-consultanta">
+
+        <!-- 4 tipuri de intervenție -->
+        <div class="cons-card" data-tip="mentenanta" onclick="openConsultantaWithTip('mentenanta')" style="background:#E3F2FD;border:1.5px solid #90CAF9;border-radius:16px;padding:18px;cursor:pointer;transition:all .2s" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+          <div style="font-size:28px;margin-bottom:8px">🔍</div>
+          <div style="font-weight:800;color:#1565C0;font-size:14px;margin-bottom:4px">Mentenanță preventivă</div>
+          <div style="font-size:12px;color:#5B7FA6;line-height:1.6;margin-bottom:10px">Consultanță pentru plan de mentenanță periodică, verificări preventive și evitarea avariilor.</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <span style="background:#fff;border-radius:99px;padding:3px 10px;font-size:10px;font-weight:700;color:#1565C0">🥉 AI Gratuit</span>
+            <span style="background:#fff;border-radius:99px;padding:3px 10px;font-size:10px;font-weight:700;color:#1565C0">🥈 Remote</span>
+            <span style="background:#fff;border-radius:99px;padding:3px 10px;font-size:10px;font-weight:700;color:#1565C0">🥇 La adresă</span>
+          </div>
+        </div>
+
+        <div class="cons-card" data-tip="inlocuire" onclick="openConsultantaWithTip('inlocuire')" style="background:#FFF3E0;border:1.5px solid #FFCC80;border-radius:16px;padding:18px;cursor:pointer;transition:all .2s" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+          <div style="font-size:28px;margin-bottom:8px">🔄</div>
+          <div style="font-weight:800;color:#E65100;font-size:14px;margin-bottom:4px">Înlocuire & Upgrade</div>
+          <div style="font-size:12px;color:#8B5E3C;line-height:1.6;margin-bottom:10px">Evaluare obiect/echipament defect, recomandare înlocuitor, deviz comparativ cost-eficiență.</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <span style="background:#fff;border-radius:99px;padding:3px 10px;font-size:10px;font-weight:700;color:#E65100">🥉 AI Gratuit</span>
+            <span style="background:#fff;border-radius:99px;padding:3px 10px;font-size:10px;font-weight:700;color:#E65100">🥈 Remote</span>
+            <span style="background:#fff;border-radius:99px;padding:3px 10px;font-size:10px;font-weight:700;color:#E65100">🥇 La adresă</span>
+          </div>
+        </div>
+
+        <div class="cons-card" data-tip="reparatie" onclick="openConsultantaWithTip('reparatie')" style="background:#FCE4EC;border:1.5px solid #F48FB1;border-radius:16px;padding:18px;cursor:pointer;transition:all .2s" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+          <div style="font-size:28px;margin-bottom:8px">🔧</div>
+          <div style="font-weight:800;color:#B71C1C;font-size:14px;margin-bottom:4px">Reparație & Diagnoză</div>
+          <div style="font-size:12px;color:#8B3A3A;line-height:1.6;margin-bottom:10px">Diagnoză avarie, identificare piesă defectă, deviz reparație vs înlocuire. Cu sau fără deplasare.</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <span style="background:#fff;border-radius:99px;padding:3px 10px;font-size:10px;font-weight:700;color:#B71C1C">🥉 AI Gratuit</span>
+            <span style="background:#fff;border-radius:99px;padding:3px 10px;font-size:10px;font-weight:700;color:#B71C1C">🥈 Remote</span>
+            <span style="background:#fff;border-radius:99px;padding:3px 10px;font-size:10px;font-weight:700;color:#B71C1C">🥇 La adresă</span>
+          </div>
+        </div>
+
+        <div class="cons-card" data-tip="montaj" onclick="openConsultantaWithTip('montaj')" style="background:#E8F5E9;border:1.5px solid #A5D6A7;border-radius:16px;padding:18px;cursor:pointer;transition:all .2s" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+          <div style="font-size:28px;margin-bottom:8px">🏗</div>
+          <div style="font-weight:800;color:#1B5E20;font-size:14px;margin-bottom:4px">Montaj & Punere în funcțiune</div>
+          <div style="font-size:12px;color:#3A6B3A;line-height:1.6;margin-bottom:10px">Consultanță pre-montaj, verificare cerințe tehnice, avize necesare, deviz complet instalare.</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <span style="background:#fff;border-radius:99px;padding:3px 10px;font-size:10px;font-weight:700;color:#1B5E20">🥉 AI Gratuit</span>
+            <span style="background:#fff;border-radius:99px;padding:3px 10px;font-size:10px;font-weight:700;color:#1B5E20">🥈 Remote</span>
+            <span style="background:#fff;border-radius:99px;padding:3px 10px;font-size:10px;font-weight:700;color:#1B5E20">🥇 La adresă</span>
+            <span style="background:#fff;border-radius:99px;padding:3px 10px;font-size:10px;font-weight:700;color:#1B5E20">💎 Proiectare</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- SECȚIUNEA 2: Tiere Consultanță & Evaluare -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD">Tiere consultanță / evaluare</div>
+        <div style="flex:1;height:1px;background:#E8F0FB"></div>
+        <span style="font-size:10px;color:#0E9E99;font-weight:600">Prețuri configurabile din Backoffice</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:28px" id="grid-tiere-consultanta">
+
+        <!-- BRONZ -->
+        <div class="tier-card" id="card-bronz" onclick="openConsultanta()" style="background:#fff;border:2px solid #E6C99A;border-radius:18px;padding:20px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 12px 32px rgba(0,0,0,.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+          <div style="position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#CD7F32,#E6C99A)"></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <span style="font-size:28px">🥉</span>
+            <div>
+              <div style="font-weight:800;color:#CD7F32;font-size:14px">Bronz</div>
+              <div style="font-size:10.5px;color:#8C9BAD">Darrin AI Online</div>
+            </div>
+            <div style="margin-left:auto;font-size:18px;font-weight:900;color:#CD7F32" id="pret-bronz">Gratuit</div>
+          </div>
+          <div style="font-size:12px;color:#6B7A8D;line-height:1.7;margin-bottom:14px" id="desc-bronz">Analiză nevoie + recomandare servicii prin Darrin AI. Instant, online, fără specialist uman.</div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+            <div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:#2D2D2D"><span style="color:#CD7F32">✓</span> Chat AI 24/7, răspuns instant</div>
+            <div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:#2D2D2D"><span style="color:#CD7F32">✓</span> Analiză imagini & video</div>
+            <div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:#2D2D2D"><span style="color:#CD7F32">✓</span> Deviz estimativ automat</div>
+            <div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:#8C9BAD"><span>○</span> Fără specialist uman</div>
+          </div>
+          <button style="width:100%;background:#FDF4E8;color:#CD7F32;border:1.5px solid #E6C99A;border-radius:10px;padding:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;transition:all .2s" onmouseover="this.style.background='#CD7F32';this.style.color='#fff'" onmouseout="this.style.background='#FDF4E8';this.style.color='#CD7F32'">
+            Pornește Darrin AI →
+          </button>
+        </div>
+
+        <!-- ARGINT -->
+        <div class="tier-card" id="card-argint" onclick="openConsultanta('argint')" style="background:#fff;border:2px solid #C5CDD8;border-radius:18px;padding:20px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 12px 32px rgba(0,0,0,.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+          <div style="position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#9E9E9E,#E0E0E0)"></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <span style="font-size:28px">🥈</span>
+            <div>
+              <div style="font-weight:800;color:#5A6B7D;font-size:14px">Argint</div>
+              <div style="font-size:10.5px;color:#8C9BAD">Specialist Remote</div>
+            </div>
+            <div style="margin-left:auto;text-align:right">
+              <div style="font-size:18px;font-weight:900;color:#5A6B7D"><span id="pret-argint">50</span> <span id="curr-argint" style="font-size:12px">Lei</span></div>
+              <div style="font-size:9.5px;color:#8C9BAD" id="dur-argint">30 min</div>
+            </div>
+          </div>
+          <div style="font-size:12px;color:#6B7A8D;line-height:1.7;margin-bottom:14px" id="desc-argint">Consultanță video/telefon cu specialist My Darrin. Analiză, deviz estimativ, recomandare partener.</div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+            <div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:#2D2D2D"><span style="color:#9E9E9E">✓</span> Specialist tehnic verificat</div>
+            <div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:#2D2D2D"><span style="color:#9E9E9E">✓</span> Sesiune video/telefon 30 min</div>
+            <div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:#2D2D2D"><span style="color:#9E9E9E">✓</span> Deviz detaliat inclus</div>
+            <div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:#2D2D2D"><span style="color:#9E9E9E">✓</span> Fără deplasare fizică</div>
+          </div>
+          <button style="width:100%;background:#F4F7F9;color:#5A6B7D;border:1.5px solid #C5CDD8;border-radius:10px;padding:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;transition:all .2s" onmouseover="this.style.background='#5A6B7D';this.style.color='#fff'" onmouseout="this.style.background='#F4F7F9';this.style.color='#5A6B7D'">
+            Rezervă consultanță →
+          </button>
+        </div>
+
+        <!-- AUR -->
+        <div class="tier-card" id="card-aur" onclick="openConsultanta('aur')" style="background:#fff;border:2px solid #FFD980;border-radius:18px;padding:20px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 12px 32px rgba(0,0,0,.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+          <div style="position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#CC7000,#FFD980)"></div>
+          <span style="position:absolute;top:12px;right:12px;background:#FF8C00;color:#fff;font-size:9px;font-weight:700;padding:3px 9px;border-radius:99px">⭐ POPULAR</span>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <span style="font-size:28px">🥇</span>
+            <div>
+              <div style="font-weight:800;color:#CC7000;font-size:14px">Aur</div>
+              <div style="font-size:10.5px;color:#8C9BAD">Evaluare la Locație</div>
+            </div>
+            <div style="margin-left:auto;text-align:right">
+              <div style="font-size:18px;font-weight:900;color:#CC7000"><span id="pret-aur">500</span> <span id="curr-aur" style="font-size:12px">Lei</span></div>
+              <div style="font-size:9.5px;color:#8C9BAD" id="dur-aur">60 min</div>
+            </div>
+          </div>
+          <div style="font-size:12px;color:#6B7A8D;line-height:1.7;margin-bottom:14px" id="desc-aur">Specialist vine la adresa ta, evaluează, fotografiază, măsoară și emite deviz detaliat complet.</div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+            <div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:#2D2D2D"><span style="color:#CC7000">✓</span> Deplasare la adresa clientului</div>
+            <div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:#2D2D2D"><span style="color:#CC7000">✓</span> Măsurători & fotografii</div>
+            <div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:#2D2D2D"><span style="color:#CC7000">✓</span> Deviz complet + PV evaluare</div>
+            <div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:#2D2D2D"><span style="color:#CC7000">✓</span> Recomandare partener + programare</div>
+          </div>
+          <button style="width:100%;background:#FFF0D6;color:#CC7000;border:1.5px solid #FFD980;border-radius:10px;padding:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;transition:all .2s" onmouseover="this.style.background='#CC7000';this.style.color='#fff'" onmouseout="this.style.background='#FFF0D6';this.style.color='#CC7000'">
+            Programează evaluare →
+          </button>
+        </div>
+
+        <!-- PLATINUM -->
+        <div class="tier-card" id="card-platinum" onclick="openConsultanta('platinum')" style="background:linear-gradient(135deg,#001E3C,#003366);border:2px solid #1A5FAD;border-radius:18px;padding:20px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 12px 40px rgba(0,51,102,.4)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+          <div style="position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#003366,#1A5FAD,#0E9E99)"></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <span style="font-size:28px">💎</span>
+            <div>
+              <div style="font-weight:800;color:#fff;font-size:14px">Platinum</div>
+              <div style="font-size:10.5px;color:rgba(255,255,255,.5)">Proiectare Completă</div>
+            </div>
+            <div style="margin-left:auto;text-align:right">
+              <div style="font-size:14px;font-weight:800;color:#0E9E99" id="pret-platinum">La cerere</div>
+              <div style="font-size:9.5px;color:rgba(255,255,255,.4)">Valoare negociată</div>
+            </div>
+          </div>
+          <div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.7;margin-bottom:14px" id="desc-platinum">Consultanță + evaluare + proiectare tehnică + caiet sarcini + supraveghere execuție.</div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+            <div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:rgba(255,255,255,.85)"><span style="color:#0E9E99">✓</span> Tot ce include Aur</div>
+            <div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:rgba(255,255,255,.85)"><span style="color:#0E9E99">✓</span> Documentație tehnică & avize</div>
+            <div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:rgba(255,255,255,.85)"><span style="color:#0E9E99">✓</span> Proiect tehnic + PT</div>
+            <div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:rgba(255,255,255,.85)"><span style="color:#0E9E99">✓</span> Supraveghere execuție la cerere</div>
+          </div>
+          <button style="width:100%;background:rgba(14,158,153,.2);color:#0E9E99;border:1.5px solid rgba(14,158,153,.4);border-radius:10px;padding:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;transition:all .2s" onmouseover="this.style.background='#0E9E99';this.style.color='#fff'" onmouseout="this.style.background='rgba(14,158,153,.2)';this.style.color='#0E9E99'">
+            Solicită ofertă Platinum →
+          </button>
+        </div>
+
+      </div>
+
+      <!-- SECȚIUNEA 3: Servicii de proiectare -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD">Servicii de proiectare</div>
+        <div style="flex:1;height:1px;background:#E8F0FB"></div>
+        <span style="font-size:10px;color:#8C9BAD">Prețuri încep de la</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:28px" id="grid-proiectare">
+
+        <div class="proj-card" onclick="openConsultanta('platinum')" style="background:#fff;border:1.5px solid #E8F0FB;border-radius:14px;padding:16px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='#1A5FAD';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='#E8F0FB';this.style.transform=''">
+          <div style="font-size:24px;margin-bottom:8px">⚡</div>
+          <div style="font-weight:700;color:#1A2332;font-size:13px;margin-bottom:4px">Proiectare electrică</div>
+          <div style="font-size:11px;color:#6B7A8D;margin-bottom:8px">Schema electrică, calcul sarcini, tablou, aviz ANRE</div>
+          <div style="font-size:14px;font-weight:800;color:#003366">De la <span id="pret-proj-electric">800</span> <span id="curr-proj">Lei</span></div>
+        </div>
+
+        <div class="proj-card" onclick="openConsultanta('platinum')" style="background:#fff;border:1.5px solid #E8F0FB;border-radius:14px;padding:16px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='#1A5FAD';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='#E8F0FB';this.style.transform=''">
+          <div style="font-size:24px;margin-bottom:8px">🚿</div>
+          <div style="font-weight:700;color:#1A2332;font-size:13px;margin-bottom:4px">Proiectare sanitară</div>
+          <div style="font-size:11px;color:#6B7A8D;margin-bottom:8px">Instalație apă-canal, branșament, aviz apă</div>
+          <div style="font-size:14px;font-weight:800;color:#003366">De la <span id="pret-proj-sanitar">600</span> Lei</div>
+        </div>
+
+        <div class="proj-card" onclick="openConsultanta('platinum')" style="background:#fff;border:1.5px solid #E8F0FB;border-radius:14px;padding:16px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='#1A5FAD';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='#E8F0FB';this.style.transform=''">
+          <div style="font-size:24px;margin-bottom:8px">❄️</div>
+          <div style="font-weight:700;color:#1A2332;font-size:13px;margin-bottom:4px">Proiectare HVAC</div>
+          <div style="font-size:11px;color:#6B7A8D;margin-bottom:8px">Climatizare, ventilație, centrale termice, pompe căldură</div>
+          <div style="font-size:14px;font-weight:800;color:#003366">De la <span id="pret-proj-hvac">900</span> Lei</div>
+        </div>
+
+        <div class="proj-card" onclick="openConsultanta('platinum')" style="background:#fff;border:1.5px solid #E8F0FB;border-radius:14px;padding:16px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='#1A5FAD';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='#E8F0FB';this.style.transform=''">
+          <div style="font-size:24px;margin-bottom:8px">🏠</div>
+          <div style="font-weight:700;color:#1A2332;font-size:13px;margin-bottom:4px">Design interior</div>
+          <div style="font-size:11px;color:#6B7A8D;margin-bottom:8px">Plan spațiu, planșe 3D, specificații materiale, avize</div>
+          <div style="font-size:14px;font-weight:800;color:#003366">De la <span id="pret-proj-interior">1200</span> Lei</div>
+        </div>
+
+        <div class="proj-card" onclick="openConsultanta('platinum')" style="background:#fff;border:1.5px solid #E8F0FB;border-radius:14px;padding:16px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='#1A5FAD';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='#E8F0FB';this.style.transform=''">
+          <div style="font-size:24px;margin-bottom:8px">🏗</div>
+          <div style="font-weight:700;color:#1A2332;font-size:13px;margin-bottom:4px">Proiectare structurală</div>
+          <div style="font-size:11px;color:#6B7A8D;margin-bottom:8px">Calcul rezistență, extinderi, consolidări, autorizație</div>
+          <div style="font-size:14px;font-weight:800;color:#003366">De la <span id="pret-proj-structura">1500</span> Lei</div>
+        </div>
+
+        <div class="proj-card" onclick="openConsultanta('platinum')" style="background:linear-gradient(135deg,#F4F7F9,#EBF4FB);border:1.5px solid #D5DFE8;border-radius:14px;padding:16px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='#1A5FAD';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='#D5DFE8';this.style.transform=''">
+          <div style="font-size:24px;margin-bottom:8px">📋</div>
+          <div style="font-weight:700;color:#1A2332;font-size:13px;margin-bottom:4px">Proiect la cerere</div>
+          <div style="font-size:11px;color:#6B7A8D;margin-bottom:8px">Proiecte complexe, multidisciplinare, valoare negociată</div>
+          <div style="font-size:14px;font-weight:800;color:#1A5FAD">La cerere</div>
+        </div>
+
+      </div>
+
+    </div><!-- /tab-consultanta -->
+
+
+
 
 <script>
 // ════ URGENT FILTER AUTO-ACTIVATE ════
@@ -5576,6 +5889,155 @@ document.addEventListener('DOMContentLoaded', function() {
     var handle = document.createElement('div');
     handle.className = 'sidebar-handle';
     aside.insertBefore(handle, aside.firstChild);
+  }
+});
+</script>
+
+
+<script>
+// ── Funcție deschidere consultanță cu tip pre-selectat ────────────
+function openConsultantaWithTip(tip) {
+  openConsultanta('bronz'); // deschide modalul la bronz
+  // Pre-completează câmpul cu tipul de intervenție
+  setTimeout(function(){
+    var inp = document.getElementById('chat-input');
+    var tips = {
+      mentenanta: 'Am nevoie de consultanță pentru un plan de mentenanță preventivă. ',
+      inlocuire:  'Vreau evaluare pentru înlocuirea unui echipament/obiect. ',
+      reparatie:  'Am nevoie de diagnoză și consultanță pentru o reparație. ',
+      montaj:     'Vreau consultanță pentru un montaj nou / punere în funcțiune. ',
+    };
+    if(inp && tips[tip]) inp.value = tips[tip];
+  }, 400);
+}
+
+// ── Extinde openConsultanta să accepte tier ca parametru ─────────
+var _origOpenConsultanta = typeof openConsultanta === 'function' ? openConsultanta : null;
+function openConsultanta(tier) {
+  if(_origOpenConsultanta) _origOpenConsultanta();
+  if(tier && tier !== 'bronz') {
+    setTimeout(function(){
+      var btn = document.getElementById('ctab-' + tier);
+      if(btn) btn.click();
+    }, 300);
+  }
+}
+
+// ── Încarc prețuri din backoffice_config via Supabase ────────────
+async function loadConsPrices() {
+  var SUPA_URL  = window.__ENV__?.SUPABASE_URL  || 'https://aacojyvujhywanaulvuu.supabase.co';
+  var SUPA_ANON = window.__ENV__?.SUPABASE_ANON_KEY || '';
+  if(!SUPA_ANON) return;
+
+  try {
+    var r = await fetch(SUPA_URL + '/rest/v1/backoffice_config?sectiune=in.(consultanta,proiectare)&select=cheie,valoare,eticheta,tip', {
+      headers: { apikey: SUPA_ANON, Authorization: 'Bearer ' + SUPA_ANON }
+    });
+    if(!r.ok) return;
+    var data = await r.json();
+
+    var cfg = {};
+    data.forEach(function(row){ cfg[row.cheie] = row.valoare; });
+
+    // Actualizăm prețurile în UI
+    var mapping = {
+      'pret-bronz':        cfg['consultanta_bronz_pret']     ? (cfg['consultanta_bronz_pret']==='0'?'Gratuit':cfg['consultanta_bronz_pret']+' Lei') : 'Gratuit',
+      'pret-argint':       cfg['consultanta_argint_pret']    || '50',
+      'pret-aur':          cfg['consultanta_aur_pret']       || '500',
+      'desc-bronz':        cfg['consultanta_bronz_desc']     || null,
+      'desc-argint':       cfg['consultanta_argint_desc']    || null,
+      'desc-aur':          cfg['consultanta_aur_desc']       || null,
+      'desc-platinum':     cfg['consultanta_platinum_desc']  || null,
+      'dur-argint':        cfg['consultanta_argint_durata']  ? cfg['consultanta_argint_durata']+' min' : '30 min',
+      'dur-aur':           cfg['consultanta_aur_durata']     ? cfg['consultanta_aur_durata']+' min' : '60 min',
+      'pret-proj-electric':cfg['proiectare_electric_pret']  || '800',
+      'pret-proj-sanitar': cfg['proiectare_sanitar_pret']   || '600',
+      'pret-proj-hvac':    cfg['proiectare_hvac_pret']      || '900',
+      'pret-proj-interior':cfg['proiectare_interior_pret']  || '1200',
+      'pret-proj-structura':cfg['proiectare_structura_pret']|| '1500',
+    };
+
+    Object.entries(mapping).forEach(function([id, val]){
+      if(val === null) return;
+      var el = document.getElementById(id);
+      if(el) el.textContent = val;
+    });
+
+    // Actualizăm și tab-urile din modal consultanță
+    var tabArgint = document.getElementById('ctab-argint');
+    if(tabArgint && cfg['consultanta_argint_pret']) {
+      tabArgint.querySelector('span').textContent = 'Consultant online · ' + cfg['consultanta_argint_pret'] + ' Lei';
+    }
+    var tabAur = document.getElementById('ctab-aur');
+    if(tabAur && cfg['consultanta_aur_pret']) {
+      tabAur.querySelector('span').textContent = 'La adresă · ' + cfg['consultanta_aur_pret'] + ' Lei';
+    }
+
+    var loaded = document.getElementById('cons-prices-loaded');
+    if(loaded) { loaded.textContent = '✅ Prețuri actualizate'; setTimeout(function(){loaded.style.display='none';},2000); }
+
+  } catch(e) {
+    console.warn('[ConsPreturi]', e);
+  }
+}
+
+// ── Extindere switchMainTab pentru tabul consultanta ─────────────
+var _origSwitchMainTab = typeof switchMainTab==='function' ? switchMainTab : null;
+function switchMainTab(tab, btn) {
+  // Ascundem tab consultanta
+  var tabCons = document.getElementById('tab-consultanta');
+  if(tabCons) tabCons.style.display = 'none';
+
+  // Resetăm stilul butonului consultanta
+  var btnCons = document.getElementById('main-tab-consultanta');
+  if(btnCons) {
+    btnCons.style.background = 'transparent';
+    btnCons.style.color = '#6B7A8D';
+  }
+
+  if(tab === 'consultanta') {
+    // Ascundem toate tab-urile standard
+    ['servicii','materiale','inchiriere'].forEach(function(t){
+      var el = document.getElementById('tab-' + t);
+      if(el) el.style.display = 'none';
+      var sidebar = document.getElementById('sidebar-' + t);
+      if(sidebar) sidebar.classList.add('hidden');
+    });
+    // Resetăm toate butoanele
+    document.querySelectorAll('.cat-tab').forEach(function(b){
+      b.style.background='transparent'; b.style.color='#6B7A8D';
+    });
+
+    // Arătăm tab consultanță
+    if(tabCons) tabCons.style.display = 'block';
+    if(btnCons) { btnCons.style.background='#003366'; btnCons.style.color='#fff'; }
+    var sidebarCons = document.getElementById('sidebar-consultanta');
+    ['sidebar-servicii','sidebar-materiale','sidebar-inchiriere'].forEach(function(id){
+      var el = document.getElementById(id);
+      if(el) el.classList.add('hidden');
+    });
+    if(sidebarCons) sidebarCons.classList.remove('hidden');
+
+    // Încarcă prețuri dacă nu s-au încărcat
+    loadConsPrices();
+  } else {
+    if(_origSwitchMainTab) _origSwitchMainTab(tab, btn);
+    else {
+      // Fallback minimal
+      ['servicii','materiale','inchiriere'].forEach(function(t){
+        var el = document.getElementById('tab-'+t);
+        if(el) el.style.display = t===tab ? 'block' : 'none';
+      });
+    }
+  }
+}
+
+// Inițializăm la load dacă URL conține ?tab=consultanta
+document.addEventListener('DOMContentLoaded', function(){
+  var params = new URLSearchParams(window.location.search);
+  if(params.get('tab') === 'consultanta') {
+    var btn = document.getElementById('main-tab-consultanta');
+    if(btn) switchMainTab('consultanta', btn);
   }
 });
 </script>

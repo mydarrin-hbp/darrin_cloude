@@ -545,6 +545,10 @@ window.supabaseClient = _sc;
       Accountancy
       <span class="badge chip-orange" style="font-size:9px">Restricționat</span>
     </a>
+    <a class="sa-nav-item" onclick="showPanel('consultanta')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      <span>💎 Consultanță & Proiectare</span>
+    </a>
     <a class="sa-nav-item" onclick="showPanel('investitori')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/><circle cx="12" cy="12" r="10"/></svg>
       Investitori Admin
@@ -1556,6 +1560,198 @@ window.supabaseClient = _sc;
 
 
     <!-- ══ PANEL: INVESTITORI ADMIN ══ -->
+    
+    <!-- ══════════════════════════════════════════════════════════
+         PANEL: CONSULTANȚĂ & PROIECTARE — Configurare tiere și prețuri
+    ═══════════════════════════════════════════════════════════════ -->
+    <div id="panel-consultanta" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:12px">
+        <div>
+          <h2 style="font-size:20px;font-weight:800;color:#E2E8F0;margin:0 0 4px">💎 Consultanță & Proiectare</h2>
+          <p style="font-size:12px;color:#8BA3C0;margin:0">Configurare tiere consultanță (Bronz/Argint/Aur/Platinum) și servicii de proiectare. Prețuri configurabile per țară.</p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="saveAllConsConfig()" class="btn-p" style="background:#0E9E99">
+            💾 Salvează tot
+          </button>
+          <button onclick="loadConsConfig()" class="btn-s">
+            🔄 Reîncarcă
+          </button>
+        </div>
+      </div>
+
+      <!-- SELECTOR ȚARĂ -->
+      <div style="background:#192433;border-radius:12px;border:1px solid #2D3F55;padding:14px;margin-bottom:20px;display:flex;align-items:center;gap:12px">
+        <span style="font-size:12px;font-weight:700;color:#8BA3C0">Configurare pentru țara:</span>
+        <select id="cons-tara-sel" onchange="loadConsConfig()" style="background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:6px 12px;color:#E2E8F0;font-size:12px;font-family:inherit">
+          <option value="ALL">🌍 Toate țările (global)</option>
+          <option value="RO">🇷🇴 România</option>
+          <option value="MD">🇲🇩 Moldova</option>
+          <option value="DE">🇩🇪 Germania</option>
+          <option value="FR">🇫🇷 Franța</option>
+          <option value="BG">🇧🇬 Bulgaria</option>
+        </select>
+        <span id="cons-config-status" style="font-size:11px;color:#8BA3C0"></span>
+      </div>
+
+      <!-- CELE 4 TIERE -->
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8BA3C0;margin-bottom:12px">Tiere Consultanță / Evaluare</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:24px">
+
+        <!-- BRONZ -->
+        <div style="background:#192433;border-radius:14px;border:2px solid #7C5D3A;padding:18px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+            <span style="font-size:20px">🥉</span>
+            <div style="font-weight:700;color:#E6C99A;font-size:14px">Bronz — Darrin AI</div>
+            <span style="margin-left:auto;font-size:10px;background:rgba(14,158,153,.2);color:#0E9E99;padding:2px 8px;border-radius:99px;font-weight:700">GRATUIT (fix)</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div>
+              <label style="font-size:10px;color:#8BA3C0;font-weight:700;display:block;margin-bottom:4px">TITLU AFIȘAT</label>
+              <input type="text" id="bronz-label" value="Bronz — Darrin AI Online" style="width:100%;background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:8px 10px;color:#E2E8F0;font-size:12px;font-family:inherit;box-sizing:border-box"/>
+            </div>
+            <div>
+              <label style="font-size:10px;color:#8BA3C0;font-weight:700;display:block;margin-bottom:4px">DESCRIERE (vizibilă în catalog)</label>
+              <textarea id="bronz-desc" rows="2" style="width:100%;background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:8px 10px;color:#E2E8F0;font-size:12px;font-family:inherit;resize:vertical;box-sizing:border-box">Analiză nevoie + recomandare servicii prin Darrin AI. Gratuit, instant, online.</textarea>
+            </div>
+            <div style="background:#0D1B2A;border-radius:8px;padding:10px;border:1px solid #2D3F55">
+              <div style="font-size:11px;color:#8BA3C0">💡 Prețul Bronz este ÎNTOTDEAUNA 0 Lei — nu se poate modifica. Serviciu oferit gratuit de My Darrin.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ARGINT -->
+        <div style="background:#192433;border-radius:14px;border:2px solid #5A6B7D;padding:18px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+            <span style="font-size:20px">🥈</span>
+            <div style="font-weight:700;color:#C5CDD8;font-size:14px">Argint — Specialist Remote</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div>
+              <label style="font-size:10px;color:#8BA3C0;font-weight:700;display:block;margin-bottom:4px">TITLU</label>
+              <input type="text" id="argint-label" value="Argint — Specialist Remote" style="width:100%;background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:8px 10px;color:#E2E8F0;font-size:12px;font-family:inherit;box-sizing:border-box"/>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div>
+                <label style="font-size:10px;color:#8BA3C0;font-weight:700;display:block;margin-bottom:4px">PREȚ (Lei / monedă țară)</label>
+                <input type="number" id="argint-pret" value="50" min="0" step="10" style="width:100%;background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:8px 10px;color:#E2E8F0;font-size:14px;font-weight:700;font-family:inherit;box-sizing:border-box"/>
+              </div>
+              <div>
+                <label style="font-size:10px;color:#8BA3C0;font-weight:700;display:block;margin-bottom:4px">DURATĂ (minute)</label>
+                <input type="number" id="argint-durata" value="30" min="15" step="15" style="width:100%;background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:8px 10px;color:#E2E8F0;font-size:13px;font-family:inherit;box-sizing:border-box"/>
+              </div>
+            </div>
+            <div>
+              <label style="font-size:10px;color:#8BA3C0;font-weight:700;display:block;margin-bottom:4px">DESCRIERE</label>
+              <textarea id="argint-desc" rows="2" style="width:100%;background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:8px 10px;color:#E2E8F0;font-size:12px;font-family:inherit;resize:vertical;box-sizing:border-box">Consultanță video sau telefon cu specialist My Darrin. Analiză, deviz estimativ, recomandare partener.</textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- AUR -->
+        <div style="background:#192433;border-radius:14px;border:2px solid #7A5C00;padding:18px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+            <span style="font-size:20px">🥇</span>
+            <div style="font-weight:700;color:#FFD980;font-size:14px">Aur — Evaluare la Locație</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div>
+              <label style="font-size:10px;color:#8BA3C0;font-weight:700;display:block;margin-bottom:4px">TITLU</label>
+              <input type="text" id="aur-label" value="Aur — Evaluare la Locație" style="width:100%;background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:8px 10px;color:#E2E8F0;font-size:12px;font-family:inherit;box-sizing:border-box"/>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div>
+                <label style="font-size:10px;color:#8BA3C0;font-weight:700;display:block;margin-bottom:4px">PREȚ (Lei)</label>
+                <input type="number" id="aur-pret" value="500" min="0" step="50" style="width:100%;background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:8px 10px;color:#E2E8F0;font-size:14px;font-weight:700;font-family:inherit;box-sizing:border-box"/>
+              </div>
+              <div>
+                <label style="font-size:10px;color:#8BA3C0;font-weight:700;display:block;margin-bottom:4px">DURATĂ (minute)</label>
+                <input type="number" id="aur-durata" value="60" min="30" step="15" style="width:100%;background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:8px 10px;color:#E2E8F0;font-size:13px;font-family:inherit;box-sizing:border-box"/>
+              </div>
+            </div>
+            <div>
+              <label style="font-size:10px;color:#8BA3C0;font-weight:700;display:block;margin-bottom:4px">DESCRIERE</label>
+              <textarea id="aur-desc" rows="2" style="width:100%;background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:8px 10px;color:#E2E8F0;font-size:12px;font-family:inherit;resize:vertical;box-sizing:border-box">Specialist vine la adresa ta, evaluează, fotografiază, măsoară și emite deviz detaliat.</textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- PLATINUM -->
+        <div style="background:linear-gradient(135deg,#0D1B2A,#192433);border-radius:14px;border:2px solid #1A5FAD;padding:18px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+            <span style="font-size:20px">💎</span>
+            <div style="font-weight:700;color:#60A5FA;font-size:14px">Platinum — Proiectare Completă</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div>
+              <label style="font-size:10px;color:#8BA3C0;font-weight:700;display:block;margin-bottom:4px">TITLU</label>
+              <input type="text" id="platinum-label" value="Platinum — Proiectare Completă" style="width:100%;background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:8px 10px;color:#E2E8F0;font-size:12px;font-family:inherit;box-sizing:border-box"/>
+            </div>
+            <div>
+              <label style="font-size:10px;color:#8BA3C0;font-weight:700;display:block;margin-bottom:4px">PREȚ (0 = La cerere, alt număr = preț fix)</label>
+              <input type="number" id="platinum-pret" value="0" min="0" step="100" placeholder="0 = La cerere" style="width:100%;background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:8px 10px;color:#E2E8F0;font-size:14px;font-weight:700;font-family:inherit;box-sizing:border-box"/>
+            </div>
+            <div>
+              <label style="font-size:10px;color:#8BA3C0;font-weight:700;display:block;margin-bottom:4px">DESCRIERE</label>
+              <textarea id="platinum-desc" rows="2" style="width:100%;background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:8px 10px;color:#E2E8F0;font-size:12px;font-family:inherit;resize:vertical;box-sizing:border-box">Consultanță + evaluare + proiectare tehnică + caiet sarcini + supraveghere execuție.</textarea>
+            </div>
+            <div style="background:rgba(14,158,153,.1);border-radius:8px;padding:10px;border:1px solid rgba(14,158,153,.2)">
+              <div style="font-size:11px;color:#0E9E99">💡 Valoare 0 → afișat ca „La cerere" în catalog. Clientul solicită ofertă personalizată.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- SERVICII DE PROIECTARE -->
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8BA3C0;margin-bottom:12px">Servicii de Proiectare — Prețuri de bază</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:24px">
+
+        <div style="background:#192433;border-radius:12px;border:1px solid #2D3F55;padding:14px">
+          <div style="font-size:18px;margin-bottom:6px">⚡</div>
+          <label style="font-size:11px;font-weight:700;color:#8BA3C0;display:block;margin-bottom:6px">Proiectare electrică (Lei)</label>
+          <input type="number" id="proj-electric" value="800" min="0" step="50" style="width:100%;background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:8px 10px;color:#E2E8F0;font-size:16px;font-weight:700;font-family:inherit;box-sizing:border-box"/>
+        </div>
+
+        <div style="background:#192433;border-radius:12px;border:1px solid #2D3F55;padding:14px">
+          <div style="font-size:18px;margin-bottom:6px">🚿</div>
+          <label style="font-size:11px;font-weight:700;color:#8BA3C0;display:block;margin-bottom:6px">Proiectare sanitară (Lei)</label>
+          <input type="number" id="proj-sanitar" value="600" min="0" step="50" style="width:100%;background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:8px 10px;color:#E2E8F0;font-size:16px;font-weight:700;font-family:inherit;box-sizing:border-box"/>
+        </div>
+
+        <div style="background:#192433;border-radius:12px;border:1px solid #2D3F55;padding:14px">
+          <div style="font-size:18px;margin-bottom:6px">❄️</div>
+          <label style="font-size:11px;font-weight:700;color:#8BA3C0;display:block;margin-bottom:6px">Proiectare HVAC (Lei)</label>
+          <input type="number" id="proj-hvac" value="900" min="0" step="50" style="width:100%;background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:8px 10px;color:#E2E8F0;font-size:16px;font-weight:700;font-family:inherit;box-sizing:border-box"/>
+        </div>
+
+        <div style="background:#192433;border-radius:12px;border:1px solid #2D3F55;padding:14px">
+          <div style="font-size:18px;margin-bottom:6px">🏠</div>
+          <label style="font-size:11px;font-weight:700;color:#8BA3C0;display:block;margin-bottom:6px">Design interior (Lei)</label>
+          <input type="number" id="proj-interior" value="1200" min="0" step="100" style="width:100%;background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:8px 10px;color:#E2E8F0;font-size:16px;font-weight:700;font-family:inherit;box-sizing:border-box"/>
+        </div>
+
+        <div style="background:#192433;border-radius:12px;border:1px solid #2D3F55;padding:14px">
+          <div style="font-size:18px;margin-bottom:6px">🏗</div>
+          <label style="font-size:11px;font-weight:700;color:#8BA3C0;display:block;margin-bottom:6px">Proiectare structurală (Lei)</label>
+          <input type="number" id="proj-structura" value="1500" min="0" step="100" style="width:100%;background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:8px 10px;color:#E2E8F0;font-size:16px;font-weight:700;font-family:inherit;box-sizing:border-box"/>
+        </div>
+
+        <div style="background:#192433;border-radius:12px;border:1px solid #2D3F55;padding:14px">
+          <div style="font-size:18px;margin-bottom:6px">📋</div>
+          <label style="font-size:11px;font-weight:700;color:#8BA3C0;display:block;margin-bottom:6px">Prag „La cerere" (peste această valoare)</label>
+          <input type="number" id="proj-la-cerere" value="5000" min="0" step="500" style="width:100%;background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:8px 10px;color:#E2E8F0;font-size:16px;font-weight:700;font-family:inherit;box-sizing:border-box"/>
+        </div>
+
+      </div>
+
+      <!-- LOG MODIFICĂRI -->
+      <div id="cons-save-log" style="background:#0D1B2A;border-radius:10px;border:1px solid #2D3F55;padding:12px;font-size:11.5px;color:#8BA3C0;min-height:40px;font-family:'Courier New',monospace">
+        Nicio modificare salvată în această sesiune.
+      </div>
+    </div>
+
+
     <div id="panel-investitori" style="display:none">
 
       <!-- Header -->
@@ -3160,6 +3356,116 @@ window.showPanel = function(id) {
   }
 };
 
+</script>
+
+
+<script>
+// ══ BACKOFFICE CONSULTANȚĂ ════════════════════════════════════════
+var _consConfigLoaded = false;
+
+async function loadConsConfig() {
+  var tara = document.getElementById('cons-tara-sel')?.value || 'ALL';
+  var status = document.getElementById('cons-config-status');
+  if(status) status.textContent = '⏳ Se încarcă...';
+
+  var r = await supabaseClient
+    .from('backoffice_config')
+    .select('cheie,valoare')
+    .in('sectiune', ['consultanta','proiectare'])
+    .or('tara_cod.eq.' + tara + ',tara_cod.eq.ALL')
+    .order('cheie');
+
+  if(r.error) { if(status) status.textContent = '❌ Eroare: ' + r.error.message; return; }
+
+  var cfg = {};
+  (r.data || []).forEach(function(row){ cfg[row.cheie] = row.valoare; });
+
+  // Populăm câmpurile
+  var map = {
+    'bronz-label':    cfg['consultanta_bronz_label']    || 'Bronz — Darrin AI Online',
+    'bronz-desc':     cfg['consultanta_bronz_desc']     || '',
+    'argint-label':   cfg['consultanta_argint_label']   || 'Argint — Specialist Remote',
+    'argint-pret':    cfg['consultanta_argint_pret']    || '50',
+    'argint-durata':  cfg['consultanta_argint_durata']  || '30',
+    'argint-desc':    cfg['consultanta_argint_desc']    || '',
+    'aur-label':      cfg['consultanta_aur_label']      || 'Aur — Evaluare la Locație',
+    'aur-pret':       cfg['consultanta_aur_pret']       || '500',
+    'aur-durata':     cfg['consultanta_aur_durata']     || '60',
+    'aur-desc':       cfg['consultanta_aur_desc']       || '',
+    'platinum-label': cfg['consultanta_platinum_label'] || 'Platinum — Proiectare Completă',
+    'platinum-pret':  cfg['consultanta_platinum_pret']  || '0',
+    'platinum-desc':  cfg['consultanta_platinum_desc']  || '',
+    'proj-electric':  cfg['proiectare_electric_pret']   || '800',
+    'proj-sanitar':   cfg['proiectare_sanitar_pret']    || '600',
+    'proj-hvac':      cfg['proiectare_hvac_pret']       || '900',
+    'proj-interior':  cfg['proiectare_interior_pret']   || '1200',
+    'proj-structura': cfg['proiectare_structura_pret']  || '1500',
+    'proj-la-cerere': cfg['proiectare_la_cerere_prag']  || '5000',
+  };
+
+  Object.entries(map).forEach(function([id, val]) {
+    var el = document.getElementById(id);
+    if(el) el.value = val;
+  });
+
+  _consConfigLoaded = true;
+  if(status) status.textContent = '✅ Încărcat (' + Object.keys(cfg).length + ' valori)';
+}
+
+async function saveAllConsConfig() {
+  var tara = document.getElementById('cons-tara-sel')?.value || 'ALL';
+  var log = document.getElementById('cons-save-log');
+  if(log) log.textContent = '⏳ Se salvează...';
+
+  var rows = [
+    // Consultanță
+    {cheie:'consultanta_bronz_label',   valoare: document.getElementById('bronz-label')?.value,    sectiune:'consultanta', tara_cod:tara, tip:'text',   eticheta:'Titlu Bronz'},
+    {cheie:'consultanta_bronz_desc',    valoare: document.getElementById('bronz-desc')?.value,     sectiune:'consultanta', tara_cod:tara, tip:'text',   eticheta:'Descriere Bronz'},
+    {cheie:'consultanta_bronz_pret',    valoare: '0',                                              sectiune:'consultanta', tara_cod:tara, tip:'number', eticheta:'Preț Bronz'},
+    {cheie:'consultanta_argint_label',  valoare: document.getElementById('argint-label')?.value,   sectiune:'consultanta', tara_cod:tara, tip:'text',   eticheta:'Titlu Argint'},
+    {cheie:'consultanta_argint_pret',   valoare: document.getElementById('argint-pret')?.value,    sectiune:'consultanta', tara_cod:tara, tip:'number', eticheta:'Preț Argint'},
+    {cheie:'consultanta_argint_durata', valoare: document.getElementById('argint-durata')?.value,  sectiune:'consultanta', tara_cod:tara, tip:'number', eticheta:'Durată Argint (min)'},
+    {cheie:'consultanta_argint_desc',   valoare: document.getElementById('argint-desc')?.value,    sectiune:'consultanta', tara_cod:tara, tip:'text',   eticheta:'Descriere Argint'},
+    {cheie:'consultanta_aur_label',     valoare: document.getElementById('aur-label')?.value,      sectiune:'consultanta', tara_cod:tara, tip:'text',   eticheta:'Titlu Aur'},
+    {cheie:'consultanta_aur_pret',      valoare: document.getElementById('aur-pret')?.value,       sectiune:'consultanta', tara_cod:tara, tip:'number', eticheta:'Preț Aur'},
+    {cheie:'consultanta_aur_durata',    valoare: document.getElementById('aur-durata')?.value,     sectiune:'consultanta', tara_cod:tara, tip:'number', eticheta:'Durată Aur (min)'},
+    {cheie:'consultanta_aur_desc',      valoare: document.getElementById('aur-desc')?.value,       sectiune:'consultanta', tara_cod:tara, tip:'text',   eticheta:'Descriere Aur'},
+    {cheie:'consultanta_platinum_label',valoare: document.getElementById('platinum-label')?.value, sectiune:'consultanta', tara_cod:tara, tip:'text',   eticheta:'Titlu Platinum'},
+    {cheie:'consultanta_platinum_pret', valoare: document.getElementById('platinum-pret')?.value,  sectiune:'consultanta', tara_cod:tara, tip:'number', eticheta:'Preț Platinum'},
+    {cheie:'consultanta_platinum_desc', valoare: document.getElementById('platinum-desc')?.value,  sectiune:'consultanta', tara_cod:tara, tip:'text',   eticheta:'Descriere Platinum'},
+    // Proiectare
+    {cheie:'proiectare_electric_pret',  valoare: document.getElementById('proj-electric')?.value,  sectiune:'proiectare',  tara_cod:tara, tip:'number', eticheta:'Proiectare Electrică'},
+    {cheie:'proiectare_sanitar_pret',   valoare: document.getElementById('proj-sanitar')?.value,   sectiune:'proiectare',  tara_cod:tara, tip:'number', eticheta:'Proiectare Sanitară'},
+    {cheie:'proiectare_hvac_pret',      valoare: document.getElementById('proj-hvac')?.value,      sectiune:'proiectare',  tara_cod:tara, tip:'number', eticheta:'Proiectare HVAC'},
+    {cheie:'proiectare_interior_pret',  valoare: document.getElementById('proj-interior')?.value,  sectiune:'proiectare',  tara_cod:tara, tip:'number', eticheta:'Design Interior'},
+    {cheie:'proiectare_structura_pret', valoare: document.getElementById('proj-structura')?.value, sectiune:'proiectare',  tara_cod:tara, tip:'number', eticheta:'Proiectare Structurală'},
+    {cheie:'proiectare_la_cerere_prag', valoare: document.getElementById('proj-la-cerere')?.value, sectiune:'proiectare',  tara_cod:tara, tip:'number', eticheta:'Prag La Cerere'},
+  ].filter(function(r){ return r.valoare !== undefined && r.valoare !== null; })
+   .map(function(r){ return Object.assign({updated_at: new Date().toISOString(), editabil_de: 'superadmin'}, r); });
+
+  var result = await supabaseClient
+    .from('backoffice_config')
+    .upsert(rows, { onConflict: 'cheie,tara_cod' });
+
+  if(result.error) {
+    if(log) log.textContent = '❌ Eroare la salvare: ' + result.error.message;
+  } else {
+    var ts = new Date().toLocaleTimeString('ro-RO');
+    if(log) log.textContent = '✅ [' + ts + '] ' + rows.length + ' valori salvate pentru țara: ' + tara + '
+' +
+      rows.map(function(r){ return '  · ' + r.cheie + ' = ' + r.valoare; }).join('
+');
+  }
+}
+
+// Încarcă automat când se deschide panelul
+var _origShowPanel = typeof showPanel === 'function' ? showPanel : null;
+function showPanel(id) {
+  if(_origShowPanel) _origShowPanel(id);
+  if(id === 'consultanta' && !_consConfigLoaded) {
+    setTimeout(loadConsConfig, 300);
+  }
+}
 </script>
 
 </body>
