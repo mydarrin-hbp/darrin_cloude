@@ -329,7 +329,8 @@ input:valid:not(:placeholder-shown):not([type="checkbox"]) {
 })();
 </script>
 
-<script src="https://cdn.tailwindcss.com"></script>
+<!-- Tailwind via Play CDN -->
+<script src="https://cdn.tailwindcss.com/3.4.1/tailwind.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script>
@@ -958,7 +959,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
         if (!window.MyDarrinAuth) { console.error('[header] MyDarrinAuth nu s-a încărcat după 5s'); return; }
 
         const user = await window.MyDarrinAuth.getCurrentUser();
-        if (!user) { console.log('[header] niciun utilizator logat'); return; }
+        if (!user) { return; } // utilizator nelogat — stare normală
 
         const label = document.getElementById('header-account-label');
         const dot = document.getElementById('header-logged-dot');
@@ -970,7 +971,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
         if (logoutBtn) logoutBtn.style.display = 'flex';
 
         const roles = await window.MyDarrinAuth.getUserRoles(user);
-        console.log('[header] roluri detectate:', roles);
+        // roluri detectate: 
         if (roles.includes('superadmin') || roles.includes('admin')) {
           const bo = document.getElementById('header-backoffice-link');
           if (bo) bo.style.display = 'flex';
@@ -2417,6 +2418,23 @@ function switchTab(name,btn){
 }
 
 // ── CURRENCY & ZONE DETECTION (simulat din IP / locatie) ──
+// applyCurrency — actualizează prețurile și moneda în tot UI-ul
+function applyCurrency(cur) {
+  if (!cur) return;
+  // Actualizează simbolurile monedei
+  document.querySelectorAll('.dyn-currency').forEach(function(el) {
+    el.textContent = cur.symbol || cur.label || 'Lei';
+  });
+  // Actualizează prețurile convertite (dacă există data-ron)
+  var rate = cur.rate || 1;
+  document.querySelectorAll('.dyn-price[data-ron]').forEach(function(el) {
+    var ron = parseFloat(el.getAttribute('data-ron'));
+    if (!isNaN(ron)) {
+      el.textContent = rate === 1 ? ron : Math.round(ron * rate * 10) / 10;
+    }
+  });
+}
+
 const CURRENCIES = {
   RO: { code:'RON', symbol:'Lei',  rate:1,       label:'RON (Lei)',   flag:'🇷🇴' },
   DE: { code:'EUR', symbol:'€',    rate:0.2,     label:'EUR (€)',     flag:'🇩🇪' },
