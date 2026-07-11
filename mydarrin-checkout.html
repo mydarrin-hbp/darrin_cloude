@@ -676,6 +676,11 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
   isLoggedIn:     function(){ return false; }
 };
 </script>
+<!-- FIX (audit 2026-07-11): lipsea lib/supabaseClient.js — fără el, window.supabaseClient
+     nu exista niciodată, iar account-system.js nu se putea conecta la Supabase (arunca
+     eroare la orice apel real), motiv pentru care pagina folosea până acum un
+     performLogin()/performRegister() local, complet fals (doar sessionStorage). -->
+<script type="module" src="lib/supabaseClient.js"></script>
 <script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
   <!-- DOMPurify — sanitizare XSS (audit 2026-07-10) -->
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
@@ -1808,33 +1813,56 @@ function saveLocation(){
 }
 
 // Auth modal
+// FIX (audit 2026-07-11): performLogin/performRegister erau complet locale —
+// doar sessionStorage, niciun apel real la Supabase (createBaseAccount nici
+// măcar nu exista ca funcție). Înlocuite cu apeluri reale prin
+// window.MyDarrinAuth, identic cu implementarea din mydarrin-v3.html.
 let isLoggedIn = false;
 
-function performLogin() {
-  isLoggedIn = true;
-  const modal = document.getElementById('auth-modal');
-  if (modal) modal.classList.add('hidden');
-  document.body.style.overflow = '';
-  const link = document.getElementById('sb-comenzi-link');
-  if (link) link.style.display = 'flex';
-  try { sessionStorage.setItem('myd_logged_in', '1'); } catch(e) {}
-  showToastMsg('✅ Te-ai autentificat cu succes!');
+async function performLogin() {
+  const emailEl = document.getElementById('login-email');
+  const passEl  = document.getElementById('login-pass');
+  const email = emailEl ? emailEl.value.trim() : '';
+  const pass  = passEl ? passEl.value : '';
+  if (!email || !pass) { showToastMsg('Completează email și parolă.'); return; }
+  try {
+    await window.MyDarrinAuth.performLogin(email, pass);
+    isLoggedIn = true;
+    const modal = document.getElementById('auth-modal');
+    if (modal) modal.classList.add('hidden');
+    document.body.style.overflow = '';
+    const link = document.getElementById('sb-comenzi-link');
+    if (link) link.style.display = 'flex';
+    showToastMsg('✅ Te-ai autentificat cu succes!');
+    setTimeout(() => window.location.reload(), 800);
+  } catch (e) {
+    showToastMsg('✗ ' + (e.message || 'Autentificare eșuată'));
+  }
 }
 
-function performRegister() {
-  isLoggedIn = true;
+async function performRegister() {
   const emailEl = document.getElementById('reg-email');
   const numeEl  = document.getElementById('reg-nume');
-  if (typeof createBaseAccount === 'function') {
-    createBaseAccount(emailEl ? emailEl.value.trim() : '', numeEl ? numeEl.value.trim() : '');
+  const passEl  = document.getElementById('reg-pass');
+  const gdprEl  = document.getElementById('reg-gdpr');
+  const email = emailEl ? emailEl.value.trim() : '';
+  const nume  = numeEl ? numeEl.value.trim() : '';
+  const pass  = passEl ? passEl.value : '';
+  const gdprAcceptat = gdprEl ? gdprEl.checked : false;
+  if (!email || !pass) { showToastMsg('Completează email și parolă.'); return; }
+  if (!gdprAcceptat) { showToastMsg('Trebuie să accepți Termenii și Politica de Confidențialitate.'); return; }
+  try {
+    await window.MyDarrinAuth.performRegister(email, pass, nume, gdprAcceptat);
+    isLoggedIn = true;
+    const modal = document.getElementById('auth-modal');
+    if (modal) modal.classList.add('hidden');
+    document.body.style.overflow = '';
+    const link = document.getElementById('sb-comenzi-link');
+    if (link) link.style.display = 'flex';
+    showToastMsg('✅ Cont creat! Verifică emailul pentru confirmare, apoi intră în cont.');
+  } catch (e) {
+    showToastMsg('✗ ' + (e.message || 'Înregistrare eșuată'));
   }
-  const modal = document.getElementById('auth-modal');
-  if (modal) modal.classList.add('hidden');
-  document.body.style.overflow = '';
-  const link = document.getElementById('sb-comenzi-link');
-  if (link) link.style.display = 'flex';
-  try { sessionStorage.setItem('myd_logged_in', '1'); } catch(e) {}
-  showToastMsg('✅ Cont creat cu succes! Bine ai venit pe My Darrin.');
 }
 
 function showToastMsg(msg) {
@@ -2127,43 +2155,37 @@ function saveGuestOrder(orderData) {
   return order;
 }
 
-// ── ETA MEȘTER ── 
-function showETAScreen(orderId, partener, etaMin) {
-  const eta = new Date(Date.now() + etaMin*60000);
-  const etaStr = eta.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'});
-  
+// ── CONFIRMARE COMANDĂ ──
+// FIX (audit 2026-07-11): fostul showETAScreen() afișa un partener și un
+// ETA hardcodate ("Valentin P. ⭐ 4.97", 25 min) — ficțiune totală, arătată
+// indiferent de comanda reală. Motorul de matching care ar aloca un
+// partener real nu există încă (vezi auditul extins). Ecranul de mai jos
+// confirmă doar ce s-a întâmplat cu adevărat: comanda a fost înregistrată.
+function showComandaInregistrataScreen(numarComanda) {
   const overlay = document.createElement('div');
-  overlay.id = 'eta-overlay';
+  overlay.id = 'order-confirm-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:800;display:flex;align-items:center;justify-content:center;padding:20px';
   overlay.innerHTML = `
     <div style="background:#fff;border-radius:24px;max-width:420px;width:100%;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.3)">
       <div style="background:linear-gradient(135deg,#1A7A3A,#0E9E99);padding:24px;text-align:center">
         <div style="font-size:48px;margin-bottom:8px">✅</div>
         <div style="font-size:18px;font-weight:800;color:#fff">Comandă înregistrată!</div>
-        <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:4px">${orderId}</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:4px">${escapeHTML(numarComanda)}</div>
       </div>
       <div style="padding:22px">
         <div style="background:#F0F4F8;border-radius:14px;padding:16px;text-align:center;margin-bottom:16px;border:1px solid #D5DFE8">
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:6px">🚀 Meșter alocat de Darrin AI</div>
-          <div style="font-size:22px;font-weight:800;color:#1A2332;margin-bottom:4px">${partener}</div>
-          <div style="font-size:13px;color:#5A6B7D">Sosire estimată: <strong style="color:#FF8C00">${etaStr}</strong> (~${etaMin} min)</div>
-          <div style="margin-top:8px;height:6px;background:#EEF2F7;border-radius:99px;overflow:hidden">
-            <div id="eta-progress" style="height:100%;width:0%;background:linear-gradient(90deg,#FF8C00,#0E9E99);border-radius:99px;transition:width 1.5s ease"></div>
-          </div>
-        </div>
-        <div style="background:#E8F5E9;border-radius:12px;padding:12px 14px;margin-bottom:14px;border:1px solid rgba(26,122,58,.2)">
-          <div style="font-size:11.5px;color:#1A7A3A;font-weight:700;margin-bottom:4px">📱 Confirmare trimisă</div>
-          <div style="font-size:11px;color:#5A6B7D">✉ Email confirmare trimis · 📱 SMS cu detalii meșter trimis</div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:6px">🔎 Căutăm un partener disponibil</div>
+          <div style="font-size:13px;color:#5A6B7D">Vei fi notificat de îndată ce un partener acceptă comanda.</div>
         </div>
         <div style="font-size:11.5px;color:#5A6B7D;text-align:center;margin-bottom:14px">
-          Urmărești comanda cu: <strong style="color:#003366;font-family:monospace">${orderId}</strong>
+          Urmărești comanda cu: <strong style="color:#003366;font-family:monospace">${escapeHTML(numarComanda)}</strong>
         </div>
         <div style="display:flex;gap:10px">
-          <a href="mydarrin-dashboard-client.html?order=${orderId}&guest=true" 
+          <a href="mydarrin-dashboard-client.html"
              style="flex:1;padding:12px;border-radius:12px;background:#003366;color:#fff;font-weight:700;font-size:13px;text-decoration:none;text-align:center;display:block">
             📊 Dashboard comandă
           </a>
-          <button onclick="document.getElementById('eta-overlay').remove()" 
+          <button onclick="document.getElementById('order-confirm-overlay').remove()"
                   style="padding:12px 16px;border-radius:12px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-weight:600;font-size:12px;cursor:pointer;font-family:inherit">
             Închide
           </button>
@@ -2171,31 +2193,48 @@ function showETAScreen(orderId, partener, etaMin) {
       </div>
     </div>`;
   document.body.appendChild(overlay);
-  
-  // Animăm progress bar
-  setTimeout(() => {
-    const bar = document.getElementById('eta-progress');
-    if (bar) bar.style.width = '35%';
-  }, 100);
 }
 
 // ── HOOK PE SUBMIT CHECKOUT ──
+// FIX (audit 2026-07-11): trimitea comanda doar în sessionStorage
+// (saveGuestOrder), niciodată către backend — acum: cere un cont real
+// (deschide modalul de autentificare dacă nu ești logat) și apelează
+// /api/comenzi/creeaza, care inserează efectiv un rând în `comenzi`.
 document.addEventListener('DOMContentLoaded', function() {
   const submitBtns = document.querySelectorAll('[class*="submit"],[id*="submit"],[onclick*="submit"],[onclick*="plat"],[onclick*="confirm"]');
   submitBtns.forEach(btn => {
-    const orig = btn.onclick;
-    btn.addEventListener('click', function(e) {
-      const emailEl  = document.querySelector('input[type="email"]');
-      const addrEl   = document.querySelector('[id*="addr"], [class*="addr"]');
-      const email    = emailEl ? emailEl.value : 'elena.cucu@email.ro';
-      const addr     = addrEl  ? addrEl.textContent : 'Str. Gorjului 118, Sector 6';
-      const orderId  = 'CMD-' + Math.floor(Date.now()/1000);
-      
-      // Salvăm guest order
-      saveGuestOrder({ id:orderId, email, address:addr });
-      
-      // Arătăm ETA după 1.5s (simulând procesare)
-      setTimeout(() => showETAScreen(orderId, 'Valentin P. ⭐ 4.97', 25), 1500);
+    btn.addEventListener('click', async function(e) {
+      const user = window.MyDarrinAuth ? await window.MyDarrinAuth.getCurrentUser() : null;
+      if (!user) {
+        showToastCheckout('Trebuie să ai un cont pentru a plasa o comandă.');
+        const modal = document.getElementById('auth-modal');
+        if (modal) {
+          modal.classList.remove('hidden');
+          document.body.style.overflow = 'hidden';
+          switchAuthTab('register');
+        }
+        return;
+      }
+
+      const addrEl = document.querySelector('[id*="addr"], [class*="addr"]');
+      const adresa = addrEl ? addrEl.textContent.trim() : '';
+      const totalEl = document.getElementById('total-price');
+      const totalText = totalEl ? totalEl.textContent : '0';
+      const valoare_totala = parseFloat(totalText.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+
+      try {
+        const session = (await window.supabaseClient.auth.getSession()).data.session;
+        const res = await fetch('/api/comenzi/creeaza', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+          body: JSON.stringify({ tip_serviciu: 'Înlocuire calorifer', valoare_totala, adresa }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Eroare la plasarea comenzii');
+        showComandaInregistrataScreen(data.comanda.numar_comanda);
+      } catch (err) {
+        showToastCheckout('✗ ' + (err.message || 'Comanda nu a putut fi înregistrată'));
+      }
     });
   });
 });
@@ -3066,8 +3105,8 @@ function daiSendMessage(){
       <h3 class="font-bold text-xl text-[#2D2D2D] mb-1" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Bine ai revenit!</h3>
       <p class="text-gray-400 text-sm mb-5">Intră în contul tău My Darrin.</p>
       <div class="space-y-3 mb-4">
-        <input type="email" placeholder="Adresa de email" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
-        <input type="password" placeholder="Parola" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
+        <input type="email" id="login-email" placeholder="Adresa de email" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
+        <input type="password" id="login-pass" placeholder="Parola" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
       </div>
       <a href="mailto:contact@mydarrin.ro?subject=Resetare%20parola" class="text-xs text-[#003366] hover:underline mb-5 block">Ai uitat parola?</a>
       <button onclick="performLogin()" class="w-full bg-[#003366] text-white py-3.5 rounded-xl font-bold text-sm hover:bg-[#002855] transition">
@@ -3087,8 +3126,8 @@ function daiSendMessage(){
         <input type="password" id="reg-pass" placeholder="Parola" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
       </div>
       <label class="flex items-start gap-2.5 mb-5 cursor-pointer">
-        <input type="checkbox" checked class="mt-0.5 w-4 h-4 accent-[#FF8C00] flex-shrink-0"/>
-        <span class="text-xs text-gray-400 leading-relaxed">Accept <a href="mydarrin-termeni.html" class="text-[#003366] hover:underline">Termenii și Condițiile</a> platformei My Darrin.</span>
+        <input type="checkbox" id="reg-gdpr" class="mt-0.5 w-4 h-4 accent-[#FF8C00] flex-shrink-0"/>
+        <span class="text-xs text-gray-400 leading-relaxed">Accept <a href="mydarrin-termeni.html" class="text-[#003366] hover:underline">Termenii și Condițiile</a> și <a href="mydarrin-politica-confidentialitate.html" class="text-[#003366] hover:underline">Politica de Confidențialitate</a> (prelucrare date GDPR) platformei My Darrin.</span>
       </label>
       <button onclick="performRegister()" class="w-full bg-[#FF8C00] text-white py-3.5 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition">
         Creează cont gratuit
