@@ -3101,13 +3101,17 @@ function daiSendMessage(){
       Catalog
     </a>
 
-    <!-- GPS Locație — buton central proeminent -->
-    <button onclick="detectFromGPS()" id="mbn-gps" style="flex:1.2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:#003366;color:#fff;font-size:9.5px;font-weight:700;font-family:inherit;cursor:pointer;border-right:1px solid rgba(255,255,255,.1);position:relative;transition:background .15s"
-       title="Detectează locația exactă prin GPS">
-      <div id="mbn-gps-icon" style="width:36px;height:36px;border-radius:50%;background:#FF8C00;display:flex;align-items:center;justify-content:center;margin-bottom:2px;position:relative;top:-8px;box-shadow:0 4px 14px rgba(255,140,0,.45);border:3px solid #fff">
-        <svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+    <!-- GPS Locație — buton central -->
+    <button onclick="detectFromGPS()" id="mbn-gps"
+      style="flex:1.2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border:none;background:#003366;color:rgba(255,255,255,.8);font-size:9px;font-weight:700;font-family:inherit;cursor:pointer;border-right:1px solid rgba(255,255,255,.1);padding-top:4px"
+      title="Detectează locația exactă prin GPS">
+      <!-- Cerc portocaliu cu iconița pin -->
+      <div id="mbn-gps-icon" style="width:34px;height:34px;border-radius:50%;background:#FF8C00;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(255,140,0,.5);flex-shrink:0">
+        <svg width="16" height="16" fill="none" stroke="#fff" stroke-width="2.2" viewBox="0 0 24 24">
+          <circle cx="12" cy="10" r="3"/><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+        </svg>
       </div>
-      <span id="mbn-loc-text" style="font-size:8.5px;color:rgba(255,255,255,.7);margin-top:-10px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="mbn-city">Locație</span>
+      <span id="mbn-loc-text" style="font-size:8px;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px">Locație</span>
     </button>
 
     <!-- Devino Partener -->
@@ -3160,5 +3164,22 @@ document.addEventListener('myd-geo-update', function(e) {
 </script>
 <!-- ════ END MOBILE BOTTOM NAV BAR ════ -->
 
+<script>
+// Auto-GPS pe file:// (ipapi.co nu funcționează local, GPS da)
+(function(){
+  if(window.location.protocol === 'file:'){
+    document.addEventListener('DOMContentLoaded', function(){
+      setTimeout(function(){
+        if(typeof detectFromGPS !== 'function') return;
+        try{
+          var c=JSON.parse(sessionStorage.getItem('myd_geo_v1')||'{}');
+          if(!c.city) detectFromGPS();
+          else if(typeof applyGeoData==='function') applyGeoData(Object.assign({},c,{source:'cache'}));
+        }catch(e){ detectFromGPS(); }
+      }, 800);
+    });
+  }
+})();
+</script>
 </body>
 </html>
