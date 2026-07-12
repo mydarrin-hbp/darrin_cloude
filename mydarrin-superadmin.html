@@ -554,6 +554,14 @@ window.supabaseClient = _sc;
       Investitori Admin
       <span class="badge chip-orange" id="inv-kyc-badge-nav" style="display:none">0</span>
     </a>
+    <a class="sa-nav-item" onclick="showPanel('contact')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      Mesaje Contact
+    </a>
+    <a class="sa-nav-item" onclick="showPanel('prospecti')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      Prospecți Parteneri
+    </a>
     <a class="sa-nav-item" href="mydarrin-backoffice-serviciu.html">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
       Backoffice Servicii
@@ -1551,6 +1559,56 @@ window.supabaseClient = _sc;
       <p style="color:#4A6080;margin-bottom:20px">KYC · Certificări · Zone active · Suspendare</p>
       <a href="mydarrin-backoffice-serviciu.html" class="btn-p">→ Backoffice Servicii (Tab Parteneri)</a>
     </div>
+
+    <!-- ══ MESAJE CONTACT (adăugat 2026-07-12) ══ -->
+    <div id="panel-contact" style="display:none;padding:24px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <select id="contact-filtru" onchange="loadMesajeContact()" style="border:1.5px solid #2D3F55;background:#192433;color:#fff;border-radius:9px;padding:8px 12px;font-size:12.5px;font-family:inherit">
+          <option value="">Toate</option>
+          <option value="nou">Nou</option>
+          <option value="citit">Citit</option>
+          <option value="raspuns">Răspuns trimis</option>
+        </select>
+        <button onclick="loadMesajeContact()" class="btn-p" style="font-size:12px;padding:8px 14px">↻ Reîncarcă</button>
+      </div>
+      <div id="contact-list" style="color:#8BA3C0;font-size:13px">Se încarcă...</div>
+    </div>
+
+    <!-- ══ PROSPECȚI PARTENERI (adăugat 2026-07-12) ══
+         Doar administrare manuală — adaugă/urmărește status. Fără trimitere
+         automată de email; e o decizie separată, ulterioară. -->
+    <div id="panel-prospecti" style="display:none;padding:24px">
+      <div style="background:#192433;border:1px solid #2D3F55;border-radius:14px;padding:18px;margin-bottom:20px">
+        <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:12px">+ Adaugă prospect</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 100px 140px;gap:8px;margin-bottom:10px">
+          <input id="pr-firma" placeholder="Denumire firmă *" style="border:1.5px solid #2D3F55;background:#0F1923;color:#fff;border-radius:9px;padding:9px 12px;font-size:12.5px;font-family:inherit"/>
+          <input id="pr-email" placeholder="Email *" style="border:1.5px solid #2D3F55;background:#0F1923;color:#fff;border-radius:9px;padding:9px 12px;font-size:12.5px;font-family:inherit"/>
+          <input id="pr-tara" placeholder="Țară (RO, IT...)" style="border:1.5px solid #2D3F55;background:#0F1923;color:#fff;border-radius:9px;padding:9px 12px;font-size:12.5px;font-family:inherit"/>
+          <select id="pr-tip" style="border:1.5px solid #2D3F55;background:#0F1923;color:#fff;border-radius:9px;padding:9px 12px;font-size:12.5px;font-family:inherit">
+            <option value="servicii">Servicii</option>
+            <option value="materiale">Materiale</option>
+            <option value="inchirieri">Închirieri</option>
+            <option value="curier">Curier</option>
+            <option value="asigurari">Asigurări</option>
+          </select>
+        </div>
+        <input id="pr-nota" placeholder="Notă (opțional)" style="width:100%;border:1.5px solid #2D3F55;background:#0F1923;color:#fff;border-radius:9px;padding:9px 12px;font-size:12.5px;font-family:inherit;margin-bottom:10px"/>
+        <button onclick="adaugaProspect()" class="btn-p" style="font-size:12.5px;padding:9px 18px">Adaugă în listă</button>
+        <span id="pr-add-status" style="font-size:12px;margin-left:10px;color:#8BA3C0"></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <select id="prospecti-filtru" onchange="loadProspecti()" style="border:1.5px solid #2D3F55;background:#192433;color:#fff;border-radius:9px;padding:8px 12px;font-size:12.5px;font-family:inherit">
+          <option value="">Toate statusurile</option>
+          <option value="nou">Nou</option>
+          <option value="contactat">Contactat</option>
+          <option value="inscris">Înscris</option>
+          <option value="refuzat">Refuzat</option>
+        </select>
+        <button onclick="loadProspecti()" class="btn-p" style="font-size:12px;padding:8px 14px">↻ Reîncarcă</button>
+      </div>
+      <div id="prospecti-list" style="color:#8BA3C0;font-size:13px">Se încarcă...</div>
+    </div>
+
     <div id="panel-comenzi" style="display:none;text-align:center;padding:60px 20px">
       <div style="font-size:48px;margin-bottom:16px">📦</div>
       <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:8px">Comenzi Globale — 247 active</div>
@@ -1980,14 +2038,14 @@ window.supabaseClient = _sc;
 
 <script>
 // ── NAVIGATION ──
-const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding','accountancy','investitori'];
+const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding','accountancy','investitori','contact','prospecti'];
 const TITLES = {
   dashboard:'Dashboard Global',tari:'Țări & Zone',utilizatori:'Utilizatori & Actori',
   rbac:'Permisiuni RBAC',platforme:'Platforme & Integrări',escrow:'Escrow Global',
   comisioane:'Comisioane & Tarifare',vmc:'VMC per Țară',parteneri:'Parteneri Globali',
   comenzi:'Comenzi Globale',audit:'Audit Log',config:'Configurare Sistem',
   branding:'Branding & Design Platformă',accountancy:'Accountancy',
-  investitori:'Administrare Investitori'
+  investitori:'Administrare Investitori',contact:'Mesaje Contact',prospecti:'Prospecți Parteneri'
 };
 
 function showPanel(id){
@@ -3451,10 +3509,8 @@ async function saveAllConsConfig() {
     if(log) log.textContent = '❌ Eroare la salvare: ' + result.error.message;
   } else {
     var ts = new Date().toLocaleTimeString('ro-RO');
-    if(log) log.textContent = '✅ [' + ts + '] ' + rows.length + ' valori salvate pentru țara: ' + tara + '
-' +
-      rows.map(function(r){ return '  · ' + r.cheie + ' = ' + r.valoare; }).join('
-');
+    if(log) log.textContent = '✅ [' + ts + '] ' + rows.length + ' valori salvate pentru țara: ' + tara + '\n' +
+      rows.map(function(r){ return '  · ' + r.cheie + ' = ' + r.valoare; }).join('\n');
   }
 }
 
@@ -3465,6 +3521,137 @@ function showPanel(id) {
   if(id === 'consultanta' && !_consConfigLoaded) {
     setTimeout(loadConsConfig, 300);
   }
+  if (id === 'contact') loadMesajeContact();
+  if (id === 'prospecti') loadProspecti();
+}
+</script>
+
+<!-- ══ MESAJE CONTACT + PROSPECȚI — adăugat 2026-07-12 ══ -->
+<script>
+async function _adminAuthHeader() {
+  const session = (await window.supabaseClient.auth.getSession()).data.session;
+  return { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` };
+}
+
+const STATUS_LABEL_MESAJ = { nou: '🆕 Nou', citit: '👁 Citit', raspuns: '✅ Răspuns trimis' };
+
+async function loadMesajeContact() {
+  const el = document.getElementById('contact-list');
+  el.textContent = 'Se încarcă...';
+  try {
+    const status = document.getElementById('contact-filtru').value;
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/mesaje-contact' + (status ? `?status=${status}` : ''), { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+
+    if (!data.mesaje.length) { el.innerHTML = '<div style="padding:20px;text-align:center">Niciun mesaj.</div>'; return; }
+
+    el.innerHTML = data.mesaje.map(m => `
+      <div style="background:#192433;border:1px solid #2D3F55;border-radius:12px;padding:14px 16px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:6px">
+          <div>
+            <span style="font-weight:700;color:#fff;font-size:13px">${escapeHTML(m.nume || m.email)}</span>
+            <span style="color:#4A6080;font-size:11px;margin-left:8px">${escapeHTML(m.email)} · ${escapeHTML(m.predestinatie)}</span>
+          </div>
+          <span style="font-size:11px;color:#8BA3C0;white-space:nowrap">${new Date(m.created_at).toLocaleString('ro-RO')}</span>
+        </div>
+        <div style="color:#C5D2E0;font-size:12.5px;line-height:1.5;margin-bottom:10px;white-space:pre-wrap">${escapeHTML(m.mesaj)}</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;color:#8BA3C0">${STATUS_LABEL_MESAJ[m.status] || m.status}</span>
+          ${m.status !== 'citit' ? `<button onclick="setStatusMesaj('${m.id}','citit')" style="font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">Marchează citit</button>` : ''}
+          ${m.status !== 'raspuns' ? `<button onclick="setStatusMesaj('${m.id}','raspuns')" style="font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">Marchează răspuns trimis</button>` : ''}
+          <a href="mailto:${escapeHTML(m.email)}" style="font-size:11px;color:#0E9E99;margin-left:auto">↩ Răspunde</a>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    el.innerHTML = `<div style="color:#E57373">Eroare: ${escapeHTML(e.message)}</div>`;
+  }
+}
+
+async function setStatusMesaj(id, status) {
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/mesaje-contact', { method: 'POST', headers, body: JSON.stringify({ id, status }) });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadMesajeContact();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+const STATUS_LABEL_PROSPECT = { nou: '🆕 Nou', contactat: '📨 Contactat', inscris: '✅ Înscris', refuzat: '✗ Refuzat' };
+
+async function loadProspecti() {
+  const el = document.getElementById('prospecti-list');
+  el.textContent = 'Se încarcă...';
+  try {
+    const status = document.getElementById('prospecti-filtru').value;
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/prospecti' + (status ? `?status=${status}` : ''), { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+
+    if (!data.prospecti.length) { el.innerHTML = '<div style="padding:20px;text-align:center">Niciun prospect încă.</div>'; return; }
+
+    el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12.5px">
+      <thead><tr style="text-align:left;color:#4A6080;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em">
+        <th style="padding:8px 10px">Firmă</th><th style="padding:8px 10px">Email</th><th style="padding:8px 10px">Țară</th>
+        <th style="padding:8px 10px">Tip</th><th style="padding:8px 10px">Status</th><th style="padding:8px 10px">Acțiuni</th>
+      </tr></thead>
+      <tbody>${data.prospecti.map(p => `
+        <tr style="border-top:1px solid #2D3F55">
+          <td style="padding:8px 10px;color:#fff;font-weight:600">${escapeHTML(p.nume_firma)}</td>
+          <td style="padding:8px 10px;color:#C5D2E0">${escapeHTML(p.email)}</td>
+          <td style="padding:8px 10px;color:#8BA3C0">${escapeHTML(p.tara || '—')}</td>
+          <td style="padding:8px 10px;color:#8BA3C0">${escapeHTML(p.tip_partener || '—')}</td>
+          <td style="padding:8px 10px;color:#8BA3C0">${STATUS_LABEL_PROSPECT[p.status] || p.status}</td>
+          <td style="padding:8px 10px">
+            <select onchange="setStatusProspect('${p.id}', this.value)" style="border:1px solid #2D3F55;background:#0F1923;color:#fff;border-radius:6px;padding:3px 6px;font-size:11px;font-family:inherit">
+              ${Object.keys(STATUS_LABEL_PROSPECT).map(s => `<option value="${s}" ${s===p.status?'selected':''}>${STATUS_LABEL_PROSPECT[s]}</option>`).join('')}
+            </select>
+          </td>
+        </tr>
+      `).join('')}</tbody>
+    </table>`;
+  } catch (e) {
+    el.innerHTML = `<div style="color:#E57373">Eroare: ${escapeHTML(e.message)}</div>`;
+  }
+}
+
+async function adaugaProspect() {
+  const nume_firma = document.getElementById('pr-firma').value.trim();
+  const email = document.getElementById('pr-email').value.trim();
+  const tara = document.getElementById('pr-tara').value.trim();
+  const tip_partener = document.getElementById('pr-tip').value;
+  const nota = document.getElementById('pr-nota').value.trim();
+  const statusEl = document.getElementById('pr-add-status');
+
+  if (!nume_firma || !email) { statusEl.textContent = 'Firma și email sunt obligatorii.'; statusEl.style.color = '#E57373'; return; }
+
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/prospecti', {
+      method: 'POST', headers,
+      body: JSON.stringify({ action: 'adauga', nume_firma, email, tara, tip_partener, nota }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error);
+    statusEl.textContent = '✓ Adăugat'; statusEl.style.color = '#0E9E99';
+    document.getElementById('pr-firma').value = '';
+    document.getElementById('pr-email').value = '';
+    document.getElementById('pr-tara').value = '';
+    document.getElementById('pr-nota').value = '';
+    loadProspecti();
+  } catch (e) {
+    statusEl.textContent = 'Eroare: ' + e.message; statusEl.style.color = '#E57373';
+  }
+}
+
+async function setStatusProspect(id, status) {
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/prospecti', { method: 'POST', headers, body: JSON.stringify({ action: 'status', id, status }) });
+    if (!res.ok) throw new Error((await res.json()).error);
+  } catch (e) { alert('Eroare: ' + e.message); loadProspecti(); }
 }
 </script>
 

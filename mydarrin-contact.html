@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact · My Darrin</title>
+<meta name="description" content="Scrie-ne — echipa My Darrin / Home Best Pal îți răspunde cât de curând posibil.">
+<script>
+  window.__ENV__ = {
+    SUPABASE_URL: 'https://aacojyvujhywanaulvuu.supabase.co',
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhY29qeXZ1amh5d2FuYXVsdnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MjAzMzIsImV4cCI6MjA5ODQ5NjMzMn0.iwZnxctvazOL5OU_wqD7AvAKrVoOqLH_uvj1krK8-vs'
+  };
+</script>
+<style>
+:root { --primary:#003366; --accent:#FF8C00; --teal:#0E9E99; }
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Helvetica World','Helvetica Neue',Arial,system-ui,sans-serif;background:#F4F7F9;color:#2D2D2D;margin:0;-webkit-font-smoothing:antialiased}
+a{text-decoration:none}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+</style>
+<!-- DOMPurify — sanitizare XSS (audit 2026-07-10) -->
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+<script>
+  function escapeHTML(str) {
+    if (str == null) return '';
+    const d = document.createElement('div');
+    d.textContent = String(str);
+    return d.innerHTML;
+  }
+</script>
+</head>
+<body>
+
+<!-- ════ HEADER ════ -->
+<header style="background:#fff;border-bottom:1px solid #EEF2F7;box-shadow:0 2px 10px rgba(0,51,102,.06)">
+  <div class="wrap" style="height:64px;display:flex;align-items:center;justify-content:space-between;gap:16px">
+    <a href="mydarrin-v3.html" style="display:flex;align-items:center;gap:9px">
+      <div style="width:34px;height:34px;background:#FF8C00;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff">D</div>
+      <span style="font-weight:800;font-size:15px;color:#1A2332">My Darrin</span>
+    </a>
+    <a href="mydarrin-v3.html" style="font-size:13px;font-weight:600;color:#5A6B7D">← Înapoi la platformă</a>
+  </div>
+</header>
+
+<!-- ════ HERO ════ -->
+<section style="background:linear-gradient(135deg,#003366,#001E3C);padding:56px 24px 64px">
+  <div class="wrap">
+    <h1 style="color:#fff;font-size:32px;font-weight:800;margin:0 0 10px;letter-spacing:-.01em">Scrie-ne</h1>
+    <p style="color:rgba(255,255,255,.6);font-size:14.5px;max-width:60ch;margin:0">Întrebare, sugestie de serviciu, problemă cu o comandă sau colaborare? Completează formularul — răspundem la <strong style="color:#fff">contact@homebestpal.com</strong>.</p>
+  </div>
+</section>
+
+<!-- ════ FORMULAR ════ -->
+<section style="padding:0 24px">
+  <div class="wrap" style="max-width:640px;margin-top:-32px;margin-bottom:64px">
+    <div style="background:#fff;border-radius:20px;box-shadow:0 20px 60px rgba(0,51,102,.12);padding:32px;border:1px solid #EEF2F7">
+
+      <div id="contact-success" style="display:none;text-align:center;padding:24px 0">
+        <div style="font-size:44px;margin-bottom:10px">✅</div>
+        <div style="font-size:17px;font-weight:800;color:#1A2332;margin-bottom:6px">Mesaj trimis!</div>
+        <p style="color:#5A6B7D;font-size:13.5px">Îți răspundem cât de curând posibil, la adresa de email pe care ai completat-o.</p>
+      </div>
+
+      <form id="contact-form" onsubmit="return submitContactForm(event)">
+        <div style="margin-bottom:14px">
+          <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5A6B7D;margin-bottom:6px">Nume</label>
+          <input type="text" id="c-nume" placeholder="Numele tău" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:11px 14px;font-size:13.5px;font-family:inherit;outline:none"/>
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5A6B7D;margin-bottom:6px">Email *</label>
+          <input type="email" id="c-email" required placeholder="adresa@exemplu.com" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:11px 14px;font-size:13.5px;font-family:inherit;outline:none"/>
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5A6B7D;margin-bottom:6px">Subiect</label>
+          <select id="c-predestinatie" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:11px 14px;font-size:13.5px;font-family:inherit;outline:none;background:#fff">
+            <option value="general">Întrebare generală</option>
+            <option value="parteneri">Devin partener / colaborare</option>
+            <option value="investitori">Investitori</option>
+            <option value="suport">Suport pentru o comandă existentă</option>
+          </select>
+        </div>
+        <div style="margin-bottom:18px">
+          <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5A6B7D;margin-bottom:6px">Mesaj *</label>
+          <textarea id="c-mesaj" required rows="5" placeholder="Scrie-ne aici..." style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:11px 14px;font-size:13.5px;font-family:inherit;outline:none;resize:vertical"></textarea>
+        </div>
+        <label style="display:flex;align-items:flex-start;gap:9px;margin-bottom:20px;cursor:pointer">
+          <input type="checkbox" id="c-gdpr" required style="margin-top:2px;width:15px;height:15px;accent-color:#FF8C00;flex-shrink:0"/>
+          <span style="font-size:11.5px;color:#8C9BAD;line-height:1.5">Sunt de acord ca datele completate mai sus să fie folosite exclusiv pentru a răspunde acestui mesaj, conform <a href="mydarrin-politica-confidentialitate.html" style="color:#003366">Politicii de Confidențialitate</a> (GDPR).</span>
+        </label>
+        <button type="submit" id="c-submit-btn" style="width:100%;background:#FF8C00;color:#fff;border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Trimite mesajul</button>
+        <p id="c-error" style="display:none;color:#C0392B;font-size:12.5px;margin-top:10px;text-align:center"></p>
+      </form>
+    </div>
+
+    <div style="text-align:center;margin-top:24px;font-size:12.5px;color:#8C9BAD">
+      My Darrin este operată de <strong>Home Best Pal SRL</strong> (România) și <strong>Home Best Pal LTD</strong>.
+    </div>
+  </div>
+</section>
+
+<script>
+async function submitContactForm(e) {
+  e.preventDefault();
+  const btn = document.getElementById('c-submit-btn');
+  const errEl = document.getElementById('c-error');
+  errEl.style.display = 'none';
+
+  const nume = document.getElementById('c-nume').value.trim();
+  const email = document.getElementById('c-email').value.trim();
+  const predestinatie = document.getElementById('c-predestinatie').value;
+  const mesaj = document.getElementById('c-mesaj').value.trim();
+  const gdpr = document.getElementById('c-gdpr').checked;
+
+  if (!email || !mesaj) { errEl.textContent = 'Completează email și mesaj.'; errEl.style.display = 'block'; return false; }
+  if (!gdpr) { errEl.textContent = 'Trebuie să accepți prelucrarea datelor conform GDPR.'; errEl.style.display = 'block'; return false; }
+
+  btn.disabled = true;
+  btn.textContent = 'Se trimite...';
+
+  try {
+    const res = await fetch('/api/public/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nume, email, predestinatie, mesaj }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+
+    document.getElementById('contact-form').style.display = 'none';
+    document.getElementById('contact-success').style.display = 'block';
+  } catch (err) {
+    errEl.textContent = err.message || 'Nu am putut trimite mesajul.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Trimite mesajul';
+  }
+  return false;
+}
+</script>
+</body>
+</html>
