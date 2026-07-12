@@ -97,6 +97,10 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 };
 </script>
 <script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
+  <!-- Detectare țară (GPS→IP→manual) — folosită pentru limba emailurilor
+       de bun venit (audit 2026-07-12). Fișierul exista deja în repo, dar
+       nu era încărcat pe nicio pagină. -->
+  <script src="myd-geo.js"></script>
   <!-- DOMPurify — sanitizare XSS (audit 2026-07-10) -->
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
   <script>
@@ -2030,11 +2034,16 @@ async function submitRegistration() {
     return;
   }
 
+  // Țara detectată (GPS→IP→manual, myd-geo.js) — determină limba emailului
+  // de bun venit. Dacă scriptul încă n-a terminat detecția, trimitem fără
+  // țară — server-ul cade pe română implicit.
+  const tara = (window.MYD_GEO && window.MYD_GEO.data && window.MYD_GEO.data.cc) || null;
+
   try {
     const res = await fetch('/api/public/partner-register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nume, email, tip: selectedPartnerType, nume_firma, cui }),
+      body: JSON.stringify({ nume, email, tip: selectedPartnerType, nume_firma, cui, tara }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');

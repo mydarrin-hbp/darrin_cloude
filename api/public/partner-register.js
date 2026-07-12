@@ -6,6 +6,7 @@
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { checkRateLimit } = require('../../lib/rate-limit');
+const { limbaDinTara, renderEmailBunVenitPartener } = require('../../lib/i18n');
 
 const TYPE_TO_ROLE = {
   servicii: 'partener_servicii',
@@ -22,6 +23,40 @@ const TYPE_TO_ENUM = {
   asigurari: 'asigurari',
 };
 
+// Etichetă tip partener, per limbă — folosită doar în emailul de bun venit.
+// Traduceri generate, nu revizuite nativ (vezi notă în lib/i18n.js).
+const TIP_LABELS = {
+  servicii:   { ro:'furnizor de servicii',            en:'service provider',              it:'fornitore di servizi',                 fr:'prestataire de services',               de:'Dienstleister',                es:'proveedor de servicios' },
+  materiale:  { ro:'furnizor de materiale',           en:'materials supplier',            it:'fornitore di materiali',               fr:'fournisseur de matériaux',              de:'Materiallieferant',            es:'proveedor de materiales' },
+  inchirieri: { ro:'furnizor de închirieri utilaje',  en:'equipment rental supplier',     it:'fornitore di noleggio attrezzature',   fr:"fournisseur de location d'équipements", de:'Vermietungsanbieter',          es:'proveedor de alquiler de equipos' },
+  curier:     { ro:'curier de cartier',               en:'neighborhood courier',          it:'corriere di quartiere',                fr:'coursier de quartier',                  de:'Nachbarschaftskurier',         es:'mensajero de barrio' },
+  asigurari:  { ro:'furnizor de asigurări',           en:'insurance provider',            it:'fornitore di assicurazioni',           fr:"fournisseur d'assurances",              de:'Versicherungsanbieter',        es:'proveedor de seguros' },
+};
+
+async function trimiteEmailBunVenit({ email, nume, tip, limba }) {
+  if (!process.env.RESEND_API_KEY) return;
+  const tipLabel = (TIP_LABELS[tip] && TIP_LABELS[tip][limba]) || TIP_LABELS[tip]?.ro || tip;
+  const { subiect, html } = renderEmailBunVenitPartener(limba, { nume, tipLabel });
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'noreply@homebestpal.com',
+        to: email,
+        subject: subiect,
+        html,
+      }),
+    });
+  } catch (emailErr) {
+    // Best-effort — nu blocăm înregistrarea dacă emailul de bun venit eșuează.
+    console.error('[partner-register] email bun venit eșuat:', emailErr);
+  }
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -34,7 +69,7 @@ module.exports = async function handler(req, res) {
   const allowed = await checkRateLimit(req, { key: 'partner-register', limit: 5, windowSeconds: 600 });
   if (!allowed) return res.status(429).json({ error: 'Prea multe cereri. Încearcă din nou mai târziu.' });
 
-  const { nume, email, tip, nume_firma, cui } = req.body || {};
+  const { nume, email, tip, nume_firma, cui, tara } = req.body || {};
 
   if (!email || !email.includes('@')) {
     return res.status(400).json({ error: 'Email valid obligatoriu.' });
@@ -52,6 +87,7 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'Denumirea firmei și CUI/CNP sunt obligatorii.' });
   }
 
+  const limba = limbaDinTara(tara);
   let invitedUserId = null;
   try {
     // 1. Invitație reală — creează contul Supabase Auth cu rolul corect în metadate
@@ -70,6 +106,17 @@ module.exports = async function handler(req, res) {
       status_verificare: 'in_asteptare',
     });
     if (partnerErr) throw partnerErr;
+
+    // 3. Setează țara + limba (adăugat 2026-07-12) — handle_new_user() nu le
+    // cunoaște, deci le completăm separat pe rândul din profiles deja creat
+    // de trigger. Limba determină ulterior în ce limbă primește partenerul
+    // emailuri/notificări; utilizatorul o poate schimba oricând din cont.
+    if (tara) {
+      await supabaseAdmin.from('profiles').update({ tara, limba }).eq('id', invited.user.id);
+    }
+
+    // 4. Email de bun venit, în limba dedusă din țară — best-effort.
+    await trimiteEmailBunVenit({ email, nume, tip, limba });
 
     return res.status(200).json({ ok: true, user_id: invited.user.id });
   } catch (err) {
