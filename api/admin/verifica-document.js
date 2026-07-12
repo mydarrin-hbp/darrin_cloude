@@ -10,6 +10,11 @@ const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 
 const DECIZII_VALIDE = ['aprobat', 'respins'];
+// FIX (audit 2026-07-12): documente_partener.status folosește valorile
+// românești ('aprobat'/'respins'), dar partners.status_verificare are o
+// constrângere separată, în engleză ('pending_review'|'approved'|'rejected') —
+// verificat direct în baza reală, nu doar presupus din schema.sql.
+const DECIZIE_LA_STATUS_PARTNERS = { aprobat: 'approved', respins: 'rejected' };
 
 async function handler(req, res, admin) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -33,7 +38,7 @@ async function handler(req, res, admin) {
 
     const { data, error } = await supabaseAdmin
       .from('partners')
-      .update({ status_verificare: decizie })
+      .update({ status_verificare: DECIZIE_LA_STATUS_PARTNERS[decizie] })
       .eq('id', id)
       .select()
       .single();

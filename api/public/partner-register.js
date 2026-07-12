@@ -98,12 +98,15 @@ module.exports = async function handler(req, res) {
     invitedUserId = invited.user.id;
 
     // 2. Înregistrare în tabelul partners (documente suplimentare se completează ulterior, la aprobare)
+    // FIX (audit 2026-07-12): constrângerea reală de pe partners.status_verificare
+    // acceptă doar 'pending_review'|'approved'|'rejected' (engleză) — 'in_asteptare'
+    // (românesc, ca restul convenției din schema.sql) o respingea mereu la nivel de DB.
     const { error: partnerErr } = await supabaseAdmin.from('partners').insert({
       id: invited.user.id,
       partner_type: enumType,
       nume_firma,
       cui,
-      status_verificare: 'in_asteptare',
+      status_verificare: 'pending_review',
     });
     if (partnerErr) throw partnerErr;
 
