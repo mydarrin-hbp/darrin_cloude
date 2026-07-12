@@ -2363,6 +2363,7 @@ async function performLogin() {
     const link = document.getElementById('sb-comenzi-link');
     if (link) link.style.display = 'flex';
     showToastMsg('✅ Te-ai autentificat cu succes!');
+    if (redirectDupaAutentificare()) return;
     setTimeout(() => window.location.reload(), 800);
   } catch (e) {
     showToastMsg('✗ ' + (e.message || 'Autentificare eșuată'));
@@ -2396,6 +2397,7 @@ async function performRegister() {
       const link = document.getElementById('sb-comenzi-link');
       if (link) link.style.display = 'flex';
       showToastMsg('✅ Cont creat și autentificat cu succes!');
+      if (redirectDupaAutentificare()) return;
       setTimeout(() => window.location.reload(), 800);
       return;
     }
@@ -2410,7 +2412,37 @@ async function performRegister() {
       showToastMsg('✅ Cont creat! Verifică emailul (și Spam-ul) pentru confirmare, apoi loghează-te.');
     }
   } catch (e) {
-    showToastMsg('✗ ' + (e.message || 'Înregistrare eșuată'));
+    // FIX (Etapa 1, audit 2026-07-12): dacă emailul are deja un cont, un toast
+    // generic care dispare în 3s nu ajută utilizatorul să iasă din blocaj —
+    // injectăm direct un link de recuperare parolă legat de emailul introdus.
+    if (window.MyDarrinAuth && window.MyDarrinAuth.emailDejaInregistrat(e)) {
+      showToastMsg('✗ Acest email are deja un cont.');
+      window.MyDarrinAuth.injecteazaLinkRecuperareParola(document.getElementById('reg-recover-link-container'), email);
+    } else {
+      showToastMsg('✗ ' + (e.message || 'Înregistrare eșuată'));
+    }
+  }
+}
+
+// Link "Ai uitat parola?" din tab-ul de login — folosește emailul deja
+// completat, dacă există; altfel cere-l printr-un prompt minimal.
+async function cerereResetareParola() {
+  const emailEl = document.getElementById('login-email');
+  let email = emailEl ? emailEl.value.trim() : '';
+  const msgEl = document.getElementById('login-recover-msg');
+  if (!email) {
+    email = (window.prompt('Introdu adresa de email pentru recuperarea parolei:') || '').trim();
+  }
+  if (!email || !email.includes('@')) {
+    if (msgEl) msgEl.textContent = 'Introdu o adresă de email validă.';
+    return;
+  }
+  if (msgEl) msgEl.textContent = 'Se trimite emailul de recuperare...';
+  try {
+    await window.MyDarrinAuth.resetPasswordForEmail(email);
+    if (msgEl) msgEl.textContent = '✓ Ți-am trimis un email de recuperare la ' + email + ' (verifică și Spam-ul).';
+  } catch (e) {
+    if (msgEl) msgEl.textContent = 'Nu am putut trimite recuperarea — încearcă din nou.';
   }
 }
 
@@ -2432,6 +2464,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   } catch(e) {}
 });
+
+// FIX (Etapa 1, audit 2026-07-12): mydarrin-devino-partener.html blochează
+// acum wizardul de partener dacă nu există o sesiune Supabase confirmată, și
+// redirecționează aici cu ?redirect=devino-partener&reason=auth_required.
+// Deschidem direct tab-ul de înregistrare și reținem destinația, ca s-o
+// putem redirecționa înapoi după autentificare/confirmare.
+document.addEventListener('DOMContentLoaded', () => {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('reason') === 'auth_required') {
+      const redirect = params.get('redirect');
+      if (redirect) sessionStorage.setItem('myd_post_auth_redirect', redirect);
+      const modal = document.getElementById('auth-modal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+      }
+      if (typeof switchAuthTab === 'function') switchAuthTab('register');
+      const msgBox = document.getElementById('auth-modal-persistent-msg');
+      if (msgBox) {
+        msgBox.style.display = 'block';
+        msgBox.textContent = 'Creează-ți contul și confirmă emailul pentru a continua înregistrarea de partener.';
+      }
+    }
+  } catch (e) {}
+});
+
+// Redirecționează către destinația reținută înainte de gate-ul de partener,
+// dacă există — apelat după login/înregistrare reușite.
+function redirectDupaAutentificare() {
+  try {
+    const redirect = sessionStorage.getItem('myd_post_auth_redirect');
+    if (redirect) {
+      sessionStorage.removeItem('myd_post_auth_redirect');
+      window.location.href = redirect + '.html';
+      return true;
+    }
+  } catch (e) {}
+  return false;
+}
 
 
 // Basket
@@ -2961,9 +3033,15 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
       <p class="text-gray-400 text-sm mb-5">Intră în contul tău My Darrin.</p>
       <div class="space-y-3 mb-4">
         <input type="email" id="login-email" placeholder="Adresa de email" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
-        <input type="password" id="login-pass" placeholder="Parola" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
+        <div class="relative">
+          <input type="password" id="login-pass" placeholder="Parola" class="w-full border border-gray-200 rounded-xl px-4 py-3 pr-11 text-sm focus:outline-none focus:border-[#003366] transition"/>
+          <button type="button" onclick="togglePasswordVisibility('login-pass', this)" aria-label="Arată parola" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
       </div>
-      <a href="mailto:contact@mydarrin.ro?subject=Resetare%20parola" class="text-xs text-[#003366] hover:underline mb-5 block">Ai uitat parola?</a>
+      <button type="button" onclick="cerereResetareParola()" class="text-xs text-[#003366] hover:underline mb-2 block">Ai uitat parola?</button>
+      <div id="login-recover-msg" class="text-xs text-gray-400 mb-3"></div>
       <button onclick="performLogin()" class="w-full bg-[#003366] text-white py-3.5 rounded-xl font-bold text-sm hover:bg-[#002855] transition">
         Intră în cont
       </button>
@@ -2978,7 +3056,12 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
         <input type="text" id="reg-nume" placeholder="Nume complet" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
         <input type="email" id="reg-email" placeholder="Adresa de email" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
         <input type="tel" id="reg-tel" placeholder="Telefon" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
-        <input type="password" id="reg-pass" placeholder="Parola" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
+        <div class="relative">
+          <input type="password" id="reg-pass" placeholder="Parola" class="w-full border border-gray-200 rounded-xl px-4 py-3 pr-11 text-sm focus:outline-none focus:border-[#003366] transition"/>
+          <button type="button" onclick="togglePasswordVisibility('reg-pass', this)" aria-label="Arată parola" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
       </div>
       <label class="flex items-start gap-2.5 mb-5 cursor-pointer">
         <input type="checkbox" id="reg-gdpr" class="mt-0.5 w-4 h-4 accent-[#FF8C00] flex-shrink-0"/>
@@ -2987,6 +3070,7 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
       <button onclick="performRegister()" class="w-full bg-[#FF8C00] text-white py-3.5 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition">
         Creează cont gratuit
       </button>
+      <div id="reg-recover-link-container" class="mt-1"></div>
       <p class="text-xs text-gray-400 text-center mt-4">Ai deja cont? <button onclick="switchAuthTab('login')" class="text-[#003366] font-semibold hover:underline">Intră în cont</button></p>
     </div>
 

@@ -103,6 +103,69 @@ async function performLogout() {
   window.location.href = 'https://mydarrin.homebestpal.com';
 }
 
+/* ── Recuperare parolă (Etapa 1, audit 2026-07-12) ──
+   Folosit atât de link-ul static "Ai uitat parola?" din modalul de login,
+   cât și de link-ul injectat dinamic când înregistrarea eșuează pentru că
+   emailul există deja (vezi emailDejaInregistrat/injecteazaLinkRecuperareParola). */
+async function resetPasswordForEmail(email) {
+  const { error } = await sb().auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + '/reset-password.html',
+  });
+  if (error) throw error;
+}
+
+// Mesajul exact variază după versiunea GoTrue ("User already registered",
+// "A user with this email address has already been registered" etc.) —
+// verificăm o substring stabilă, nu un match exact.
+function emailDejaInregistrat(err) {
+  const msg = ((err && err.message) || '').toLowerCase();
+  return msg.includes('already registered') || msg.includes('already been registered') || msg.includes('already exists');
+}
+
+// Injectează, sub formularul de înregistrare, un link de recuperare parolă
+// legat de emailul introdus — apare doar când Supabase confirmă că emailul
+// are deja un cont (nu presupunem asta doar din faptul că signUp a eșuat).
+function injecteazaLinkRecuperareParola(container, email) {
+  if (!container || !email) return;
+  container.innerHTML = '';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.style.cssText = 'display:block;width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#003366;font-size:12.5px;font-weight:700;text-decoration:underline;cursor:pointer;font-family:inherit';
+  btn.textContent = 'Acest email are deja un cont — Recuperare parolă';
+  btn.onclick = async function () {
+    btn.disabled = true;
+    btn.style.textDecoration = 'none';
+    btn.style.cursor = 'default';
+    btn.textContent = 'Se trimite emailul de recuperare...';
+    try {
+      await resetPasswordForEmail(email);
+      btn.textContent = '✓ Email de recuperare trimis — verifică inboxul (și Spam).';
+    } catch (e) {
+      btn.disabled = false;
+      btn.style.textDecoration = 'underline';
+      btn.style.cursor = 'pointer';
+      btn.textContent = 'Nu am putut trimite recuperarea — încearcă din nou';
+    }
+  };
+  container.appendChild(btn);
+}
+
+/* ── Toggle vizibilitate parolă ("eye", Etapa 1, audit 2026-07-12) ──
+   btnEl e butonul apăsat (event.currentTarget din onclick inline) —
+   evită să mai căutăm un al doilea id doar pentru buton. */
+const ICON_EYE_ON  = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+const ICON_EYE_OFF = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+function togglePasswordVisibility(inputId, btnEl) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const willShow = input.type === 'password';
+  input.type = willShow ? 'text' : 'password';
+  if (btnEl) {
+    btnEl.innerHTML = willShow ? ICON_EYE_OFF : ICON_EYE_ON;
+    btnEl.setAttribute('aria-label', willShow ? 'Ascunde parola' : 'Arată parola');
+  }
+}
+
 /* ════════════════════════════════════════════════════════════════
    BARIERĂ DE SECURITATE — pagini de admin (Etapa 2.1)
    Se apelează la încărcarea mydarrin-superadmin.html /
@@ -194,4 +257,6 @@ window.MyDarrinAuth = {
   performRegister, verifyPhoneOtp, performLogin, performLogout,
   enforceSuperadminBarrier, enforceAdminBarrier, enforceSuperadminOrPermission,
   inviteSecondaryAdmin, renderActiveRolesBadge,
+  resetPasswordForEmail, emailDejaInregistrat, injecteazaLinkRecuperareParola,
+  togglePasswordVisibility,
 };

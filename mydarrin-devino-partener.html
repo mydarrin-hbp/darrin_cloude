@@ -2009,6 +2009,19 @@ function simulateSign(area) {
 }
 
 async function submitRegistration() {
+  // Etapa 1 (audit 2026-07-12): a doua verificare, la trimitere efectivă —
+  // modalul nu ar trebui să fie deschis fără gate trecut (vezi
+  // openPartnerModal), dar nu ne bazăm exclusiv pe o verificare făcută la
+  // deschidere, cu minute în urmă (sesiunea poate expira/fi revocată între timp).
+  const accesPermis = await verificaAccesFormularPartener();
+  if (!accesPermis) {
+    afiseazaBannerAccesRestrictionat();
+    blocheazaFormularPartener();
+    setTimeout(function () {
+      window.location.href = 'mydarrin-v3.html?redirect=devino-partener&reason=auth_required';
+    }, 3000);
+    return;
+  }
   const cb1 = document.getElementById('cb-termeni');
   const cb2 = document.getElementById('cb-gdpr');
   const cb3 = document.getElementById('cb-contract');
@@ -2595,15 +2608,48 @@ const PARTNER_META = {
   asigurari:  { icon:'🛡', title:'Furnizor de Asigurări',   color:'#1A7A3A', bg:'linear-gradient(135deg,#D4EDDA,#B8DFC5)', dashLink:'mydarrin-dashboard-partener.html?type=asigurari' },
 };
 
-function openPartnerModal(type) {
-  if (typeof isAccountCreated === 'function' && !isAccountCreated()) {
-    if (typeof toggleAuthModal === 'function') {
-      toggleAuthModal();
-      if (typeof switchAuthTab === 'function') switchAuthTab('register');
-    }
-    if (typeof showToastMsg === 'function') {
-      showToastMsg('⚠️ Creează-ți contul mai întâi — apoi continui ca partener.');
-    }
+// FIX (Etapa 1, audit 2026-07-12 — "intervenție urgentă"): gate-ul vechi
+// verifica `isAccountCreated()`, o funcție care nu există nicăieri în acest
+// fișier — `typeof isAccountCreated === 'function'` era mereu false, deci
+// gate-ul nu s-a executat NICIODATĂ. Wizardul de partener era complet
+// deschis, fără nicio verificare de sesiune. Înlocuit cu o verificare reală,
+// pe sesiunea Supabase (window.MyDarrinAuth, deja încărcat prin
+// account-system.js) + email confirmat, cerință explicită: "Trimiterea
+// formularului este permisă exclusiv dacă sesiunea utilizatorului este
+// activă ȘI e-mailul este confirmat (user.email_confirmed_at !== null)".
+async function verificaAccesFormularPartener() {
+  if (!window.MyDarrinAuth || typeof window.MyDarrinAuth.getCurrentUser !== 'function') return false;
+  try {
+    const user = await window.MyDarrinAuth.getCurrentUser();
+    return !!(user && user.email_confirmed_at);
+  } catch (e) {
+    return false;
+  }
+}
+
+function blocheazaFormularPartener() {
+  document.querySelectorAll('#pm-content input, #pm-content select, #pm-content textarea, #pm-content button')
+    .forEach(function (el) { el.disabled = true; });
+}
+
+function afiseazaBannerAccesRestrictionat() {
+  if (document.getElementById('gate-partener-banner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'gate-partener-banner';
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9998;background:#C0392B;color:#fff;padding:14px 20px;font-size:13.5px;font-weight:700;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.25)';
+  const mesaj = 'Trebuie să ai un cont creat și emailul confirmat pentru a te înregistra ca partener. Te redirecționăm către pagina de înregistrare...';
+  banner.innerHTML = typeof safeHTML === 'function' ? safeHTML(mesaj) : mesaj;
+  document.body.prepend(banner);
+}
+
+async function openPartnerModal(type) {
+  const accesPermis = await verificaAccesFormularPartener();
+  if (!accesPermis) {
+    afiseazaBannerAccesRestrictionat();
+    blocheazaFormularPartener();
+    setTimeout(function () {
+      window.location.href = 'mydarrin-v3.html?redirect=devino-partener&reason=auth_required';
+    }, 3000);
     return;
   }
   const modal = document.getElementById('partner-modal');
@@ -3124,8 +3170,13 @@ function daiSendMessage(){
       <h3 class="font-bold text-xl text-[#2D2D2D] mb-1" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Bine ai revenit!</h3>
       <p class="text-gray-400 text-sm mb-5">Intră în contul tău My Darrin.</p>
       <div class="space-y-3 mb-4">
-        <input type="email" placeholder="Adresa de email" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
-        <input type="password" placeholder="Parola" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
+        <input type="email" id="login-email" placeholder="Adresa de email" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
+        <div class="relative">
+          <input type="password" id="login-pass" placeholder="Parola" class="w-full border border-gray-200 rounded-xl px-4 py-3 pr-11 text-sm focus:outline-none focus:border-[#003366] transition"/>
+          <button type="button" onclick="togglePasswordVisibility('login-pass', this)" aria-label="Arată parola" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
       </div>
       <a href="mailto:contact@mydarrin.ro?subject=Resetare%20parola" class="text-xs text-[#003366] hover:underline mb-5 block">Ai uitat parola?</a>
       <button onclick="performLogin()" class="w-full bg-[#003366] text-white py-3.5 rounded-xl font-bold text-sm hover:bg-[#002855] transition">
@@ -3142,7 +3193,12 @@ function daiSendMessage(){
         <input type="text" id="reg-nume" placeholder="Nume complet" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
         <input type="email" id="reg-email" placeholder="Adresa de email" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
         <input type="tel" id="reg-tel" placeholder="Telefon" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
-        <input type="password" id="reg-pass" placeholder="Parola" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
+        <div class="relative">
+          <input type="password" id="reg-pass" placeholder="Parola" class="w-full border border-gray-200 rounded-xl px-4 py-3 pr-11 text-sm focus:outline-none focus:border-[#003366] transition"/>
+          <button type="button" onclick="togglePasswordVisibility('reg-pass', this)" aria-label="Arată parola" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
       </div>
       <label class="flex items-start gap-2.5 mb-5 cursor-pointer">
         <input type="checkbox" checked class="mt-0.5 w-4 h-4 accent-[#FF8C00] flex-shrink-0"/>
