@@ -2052,15 +2052,15 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
     <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:10px">Filtre rapide</div>
     <div style="display:flex;flex-direction:column;gap:8px">
       <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#6B7A8D;cursor:pointer">
-        <input type="checkbox" id="filter-urgent" onchange="applyFilters()" style="accent-color:#FF8C00;width:15px;height:15px;cursor:pointer"/>
+        <input type="checkbox" id="filter-urgent" style="accent-color:#FF8C00;width:15px;height:15px;cursor:pointer"/>
         ⚡ Disponibil urgent
       </label>
       <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#6B7A8D;cursor:pointer">
-        <input type="checkbox" id="filter-ai" onchange="applyFilters()" style="accent-color:#0E9E99;width:15px;height:15px;cursor:pointer"/>
+        <input type="checkbox" id="filter-ai" style="accent-color:#0E9E99;width:15px;height:15px;cursor:pointer"/>
         🤖 AI alocă automat
       </label>
       <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#6B7A8D;cursor:pointer">
-        <input type="checkbox" id="filter-aca" onchange="applyFilters()" style="accent-color:#1A5FAD;width:15px;height:15px;cursor:pointer"/>
+        <input type="checkbox" id="filter-aca" style="accent-color:#1A5FAD;width:15px;height:15px;cursor:pointer"/>
         📦 Furnizor verificat ACA
       </label>
     </div>
@@ -2112,15 +2112,25 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
       <div id="sidebar-mobile-overlay" onclick="closeMobileFilter()"></div>
       <div class="search-wrap">
         <svg class="search-icon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" class="search-input" id="search-input" placeholder="Caută servicii, materiale, echipamente..." oninput="applyFilters()"/>
+        <input type="text" class="search-input" id="search-input" placeholder="Caută servicii, materiale, echipamente..." onkeydown="if(event.key==='Enter')applyFilters()"/>
       </div>
-      <select class="sort-select" id="sort-select" onchange="applyFilters()">
+      <select class="sort-select" id="sort-select">
         <option value="default">Sortare: Recomandat</option>
         <option value="price-asc">Preț: mic → mare</option>
         <option value="price-desc">Preț: mare → mic</option>
         <option value="rating">Rating</option>
         <option value="reviews">Recenzii</option>
       </select>
+      <!-- FIX (Etapa 4, audit 2026-07-12): filtrele (căutare text, sortare,
+           filtre rapide, preț) doar actualizau starea, iar grila se
+           re-filtra la fiecare tastă/click/drag (oninput/onchange direct pe
+           applyFilters) — vizibil lent cu multe carduri. Acum toate
+           actualizează doar starea locală; interogarea reală rulează
+           exclusiv la apăsarea acestui buton. Enter în câmpul de căutare
+           tot declanșează căutarea, ca UX standard, dar tot explicit. -->
+      <button id="btn-execute-search" onclick="applyFilters()" style="display:flex;align-items:center;gap:7px;background:#FF8C00;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(255,140,0,.3);white-space:nowrap">
+        🔍 Caută / Aplică filtre
+      </button>
       <div class="result-count" id="result-count"><strong>26</strong> rezultate</div>
     </div>
 
@@ -6439,9 +6449,11 @@ function resetFilters(){
 }
 
 function updatePriceRange(val){
+  // FIX (Etapa 4, audit 2026-07-12): doar actualizează starea locală
+  // (maxPrice + eticheta) în timp ce utilizatorul trage slider-ul — grila nu
+  // se mai re-filtrează decât la apăsarea btn-execute-search.
   maxPrice = parseInt(val);
   setEl('price-label','≤ '+val+' Lei');
-  applyFilters();
 }
 
 function updateResultCount(){ applyFilters(); }
