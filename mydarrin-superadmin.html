@@ -346,6 +346,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 .kpi-card.kpi-blue::before{background:#1A5FAD}
 .kpi-card.kpi-green::before{background:#1A7A3A}
 .kpi-card.kpi-red::before{background:#C0392B}
+.kpi-card.kpi-purple::before{background:#7C3AED}
 
 /* ── TABLE ── */
 .sa-table{width:100%;border-collapse:collapse}
@@ -1460,13 +1461,45 @@ window.supabaseClient = _sc;
           <p style="font-size:12.5px;color:#4A6080">Venituri · Cheltuieli · TVA · Salarii · Facturare fiscală</p>
         </div>
 
+        <!-- Filtru țară — determină nivelul curent al axei geografice (Global implicit) -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#4A6080">Domeniu:</label>
+          <select id="acc-tara-filtru" onchange="accOnTaraFiltruSchimbat()" style="border:1.5px solid #2D3F55;background:#192433;color:#fff;border-radius:9px;padding:8px 12px;font-size:12.5px;font-family:inherit">
+            <option value="">🌍 Global (toate țările)</option>
+          </select>
+          <span id="acc-breadcrumb" style="font-size:12px;color:#4A6080"></span>
+        </div>
+
         <!-- KPI sumar financiar -->
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px">
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:20px">
           <div class="kpi-card kpi-green"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;margin-bottom:8px">Venituri</div><div id="acc-venituri" style="font-size:22px;font-weight:800;color:#4ADE80">—</div></div>
           <div class="kpi-card kpi-red"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;margin-bottom:8px">Cheltuieli</div><div id="acc-cheltuieli" style="font-size:22px;font-weight:800;color:#F87171">—</div></div>
           <div class="kpi-card kpi-blue"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;margin-bottom:8px">Salarii</div><div id="acc-salarii" style="font-size:22px;font-weight:800;color:#7AB3E0">—</div></div>
           <div class="kpi-card kpi-orange"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;margin-bottom:8px">TVA de plată</div><div id="acc-tva" style="font-size:22px;font-weight:800;color:#FF8C00">—</div></div>
           <div class="kpi-card kpi-teal"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;margin-bottom:8px">Profit net</div><div id="acc-profit" style="font-size:22px;font-weight:800;color:#0E9E99">—</div></div>
+          <div class="kpi-card kpi-purple"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;margin-bottom:8px">Impozit venit<span id="acc-cota-imp" style="font-weight:400"></span></div><div id="acc-impozit" style="font-size:22px;font-weight:800;color:#C084FC">—</div></div>
+        </div>
+
+        <!-- Defalcare geografică + operațională (Etapa 2) -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+          <div class="sa-card">
+            <div class="sa-card-hdr"><div style="font-weight:700;color:#1A2332;font-size:13.5px">🌍 Defalcare geografică</div></div>
+            <div class="sa-card-body" style="padding:0">
+              <table class="sa-table">
+                <thead><tr><th id="acc-geo-th">Țară</th><th>Venituri</th><th>Cheltuieli</th><th>Comenzi</th></tr></thead>
+                <tbody id="acc-geo-tbody"><tr><td colspan="4" style="text-align:center;color:#8C9BAD">Se încarcă...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="sa-card">
+            <div class="sa-card-hdr"><div style="font-weight:700;color:#1A2332;font-size:13.5px">🧩 Defalcare pe vertical</div></div>
+            <div class="sa-card-body" style="padding:0">
+              <table class="sa-table">
+                <thead><tr><th>Vertical</th><th>Venituri</th><th>Cheltuieli</th><th>Comenzi</th></tr></thead>
+                <tbody id="acc-vertical-tbody"><tr><td colspan="4" style="text-align:center;color:#8C9BAD">Se încarcă...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
         <!-- Config TVA per țară -->
@@ -2895,17 +2928,68 @@ async function accInit(){
     if (!hasAccess) { denied.style.display = 'block'; return; }
     content.style.display = 'block';
 
-    await Promise.all([accLoadTaxConfig(), accLoadBankAccounts(), accLoadInvoices(), accLoadSummary()]);
+    await accLoadTaxConfig();
+    await Promise.all([accLoadBankAccounts(), accLoadInvoices(), accReloadAll()]);
   } catch (e) {
     console.error('[accountancy]', e);
     denied.style.display = 'block';
   }
 }
 
+// Etapa 2 (audit 2026-07-12): axa geografică Global -> Țară -> Regiune ->
+// Localitate. accCurrentTara/accCurrentRegiune țin nivelul curent de drill;
+// null înseamnă "un nivel mai sus" (Global dacă ambele sunt null).
+let accCurrentTara = null;
+let accCurrentRegiune = null;
+
+function accOnTaraFiltruSchimbat(){
+  accCurrentTara = document.getElementById('acc-tara-filtru').value || null;
+  accCurrentRegiune = null;
+  accReloadAll();
+}
+
+function accResetGlobal(){
+  accCurrentTara = null;
+  accCurrentRegiune = null;
+  document.getElementById('acc-tara-filtru').value = '';
+  accReloadAll();
+}
+
+function accDrillGeo(grupEncodat){
+  // grup vine din comenzi.regiune/localitate — text liber, potențial cu
+  // apostrof (ex: "Val-d'Oise") — decodat aici, nu concatenat direct în
+  // onclick (ar rupe/putea fi abuzat în atributul HTML generat mai jos).
+  const grup = decodeURIComponent(grupEncodat);
+  // Nu se poate coborî sub nivelul "Localitate", și nu are sens să tragem
+  // pe un grup 'necunoscut' (rânduri fără comandă asociată).
+  if (grup === 'necunoscut') return;
+  if (!accCurrentTara) {
+    accCurrentTara = grup;
+    document.getElementById('acc-tara-filtru').value = grup;
+  } else if (!accCurrentRegiune) {
+    accCurrentRegiune = grup;
+  } else {
+    return;
+  }
+  accReloadAll();
+}
+
+async function accReloadAll(){
+  const breadcrumb = document.getElementById('acc-breadcrumb');
+  const parti = [];
+  if (accCurrentTara) parti.push(accCurrentTara);
+  if (accCurrentRegiune) parti.push(accCurrentRegiune);
+  breadcrumb.innerHTML = parti.length
+    ? '› ' + parti.map(escapeHTML).join(' › ') + ' · <a onclick="accResetGlobal()" style="cursor:pointer;color:#0E9E99;text-decoration:underline">← Global</a>'
+    : '';
+  await Promise.all([accLoadSummary(), accLoadGeoBreakdown(), accLoadVerticalBreakdown()]);
+}
+
 async function accLoadSummary(){
   try {
     const token = await accGetToken();
-    const res = await fetch('/api/accountancy?action=summary', { headers: { Authorization: `Bearer ${token}` } });
+    const qs = accCurrentTara ? `&tara_cod=${encodeURIComponent(accCurrentTara)}` : '';
+    const res = await fetch(`/api/accountancy?action=summary${qs}`, { headers: { Authorization: `Bearer ${token}` } });
     const data = await res.json();
     if (!res.ok) return;
     const s = data.summary;
@@ -2915,7 +2999,71 @@ async function accLoadSummary(){
     document.getElementById('acc-salarii').textContent = fmt(s.salarii);
     document.getElementById('acc-tva').textContent = fmt(s.tva_de_plata);
     document.getElementById('acc-profit').textContent = fmt(s.profit_net);
+    document.getElementById('acc-impozit').textContent = fmt(s.impozit_venit);
+    document.getElementById('acc-cota-imp').textContent = accCurrentTara ? ` (${s.cota_impozit_venit}%)` : '';
   } catch (e) { console.error(e); }
+}
+
+const ACC_VERTICAL_LABELS = {
+  servicii_tehnice: '🔧 Servicii (Meșteri)',
+  furnizor_materiale: '📦 Materiale (Depozite)',
+  inchirieri_utilaje: '🏗 Închirieri (Utilaje)',
+  curier_utilitara: '🚚 Curieri de cartier',
+  asigurari: '🛡 Asigurători',
+  nealocat: '— Nealocat —',
+};
+
+async function accLoadGeoBreakdown(){
+  const thEl = document.getElementById('acc-geo-th');
+  const tbody = document.getElementById('acc-geo-tbody');
+  const nivel = !accCurrentTara ? 'tara' : (!accCurrentRegiune ? 'regiune' : 'localitate');
+  thEl.textContent = nivel === 'tara' ? 'Țară' : (nivel === 'regiune' ? 'Regiune' : 'Localitate');
+  try {
+    const token = await accGetToken();
+    const params = new URLSearchParams({ action: 'geo_breakdown' });
+    if (accCurrentTara) params.set('tara_cod', accCurrentTara);
+    if (accCurrentRegiune) params.set('regiune', accCurrentRegiune);
+    const res = await fetch(`/api/accountancy?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const rows = data.breakdown || [];
+    const fmt = n => Number(n || 0).toLocaleString('ro-RO', { maximumFractionDigits: 2 });
+    const potDrilla = nivel !== 'localitate';
+    tbody.innerHTML = rows.length ? rows.map(r => `
+      <tr${potDrilla && r.grup !== 'necunoscut' ? ` style="cursor:pointer" onclick="accDrillGeo('${encodeURIComponent(r.grup)}')"` : ''}>
+        <td>${escapeHTML(r.grup)}${potDrilla && r.grup !== 'necunoscut' ? ' →' : ''}</td>
+        <td>${fmt(r.venituri)}</td>
+        <td>${fmt(r.cheltuieli)}</td>
+        <td>${r.nr_comenzi}</td>
+      </tr>`).join('') : '<tr><td colspan="4" style="text-align:center;color:#8C9BAD">Fără date</td></tr>';
+  } catch (e) {
+    console.error('[acc-geo]', e);
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#8C9BAD">Eroare la încărcare</td></tr>';
+  }
+}
+
+async function accLoadVerticalBreakdown(){
+  const tbody = document.getElementById('acc-vertical-tbody');
+  try {
+    const token = await accGetToken();
+    const params = new URLSearchParams({ action: 'vertical_breakdown' });
+    if (accCurrentTara) params.set('tara_cod', accCurrentTara);
+    const res = await fetch(`/api/accountancy?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const rows = data.breakdown || [];
+    const fmt = n => Number(n || 0).toLocaleString('ro-RO', { maximumFractionDigits: 2 });
+    tbody.innerHTML = rows.length ? rows.map(r => `
+      <tr>
+        <td>${ACC_VERTICAL_LABELS[r.vertical] || escapeHTML(r.vertical)}</td>
+        <td>${fmt(r.venituri)}</td>
+        <td>${fmt(r.cheltuieli)}</td>
+        <td>${r.nr_comenzi}</td>
+      </tr>`).join('') : '<tr><td colspan="4" style="text-align:center;color:#8C9BAD">Fără date</td></tr>';
+  } catch (e) {
+    console.error('[acc-vertical]', e);
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#8C9BAD">Eroare la încărcare</td></tr>';
+  }
 }
 
 async function accLoadTaxConfig(){
@@ -2929,6 +3077,14 @@ async function accLoadTaxConfig(){
       <td><input type="number" step="0.1" value="${t.cota_impozit_venit || 0}" id="acc-imp-${t.tara_cod}" style="width:70px;padding:4px 8px;border:1px solid #D5DFE8;border-radius:6px;font-family:inherit"></td>
       <td><button class="btn-s" style="font-size:11px;padding:5px 10px" onclick="accSaveTaxConfig('${t.tara_cod}')">Salvează</button></td>
     </tr>`).join('');
+
+  // Domeniul (filtrul de țară) e populat din aceleași rânduri — o singură
+  // sursă adevărată, nicio listă hardcodată separată.
+  const filtru = document.getElementById('acc-tara-filtru');
+  const selectat = filtru.value;
+  filtru.innerHTML = '<option value="">🌍 Global (toate țările)</option>' +
+    (data || []).map(t => `<option value="${t.tara_cod}">${t.tara_nume} (${t.tara_cod})</option>`).join('');
+  filtru.value = selectat;
 }
 
 async function accSaveTaxConfig(tara_cod){

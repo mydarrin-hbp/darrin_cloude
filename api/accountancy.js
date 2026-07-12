@@ -102,25 +102,52 @@ async function actionAddBankAccount(req, res) {
   return res.status(200).json({ ok: true, account: data });
 }
 
+// FIX (Etapa 2, audit 2026-07-12): agregarea se făcea în JS, aducând TOATE
+// rândurile din financial_records în memorie — corect azi (tabelul e gol),
+// dar nesustenabil pe măsură ce contabilitatea reală crește. Mutată în SQL
+// (SUM/COUNT), via funcția accountancy_totals (migrație
+// accountancy_sql_aggregation_functions) — care aplică și cota de impozit pe
+// venit din tax_configurations, absentă complet înainte (nimic din cod nu
+// calcula vreodată impozitul, doar TVA).
 async function actionGetSummary(req, res) {
-  const { tara_cod } = req.query;
-  let query = supabaseAdmin.from('financial_records').select('tip, suma, moneda, tva_aferent');
-  if (tara_cod) query = query.eq('tara_cod', tara_cod);
-  const { data, error } = await query;
+  const tara_cod = req.query.tara_cod || null;
+  const { data, error } = await supabaseAdmin.rpc('accountancy_totals', { p_tara_cod: tara_cod });
   if (error) return res.status(500).json({ error: error.message });
-
-  const summary = { venituri: 0, cheltuieli: 0, tva_incasat: 0, tva_dedus: 0, salarii: 0 };
-  (data || []).forEach(r => {
-    if (r.tip === 'venit') summary.venituri += Number(r.suma);
-    if (r.tip === 'cheltuiala') summary.cheltuieli += Number(r.suma);
-    if (r.tip === 'salariu') summary.salarii += Number(r.suma);
-    if (r.tip === 'tva_incasat') summary.tva_incasat += Number(r.suma);
-    if (r.tip === 'tva_dedus') summary.tva_dedus += Number(r.suma);
-  });
-  summary.tva_de_plata = summary.tva_incasat - summary.tva_dedus;
-  summary.profit_net = summary.venituri - summary.cheltuieli - summary.salarii;
-
+  const r = (data && data[0]) || {};
+  const summary = {
+    venituri: Number(r.venituri || 0),
+    cheltuieli: Number(r.cheltuieli || 0),
+    salarii: Number(r.salarii || 0),
+    tva_incasat: Number(r.tva_incasat || 0),
+    tva_dedus: Number(r.tva_dedus || 0),
+    tva_de_plata: Number(r.tva_de_plata || 0),
+    profit_net: Number(r.profit_net || 0),
+    cota_impozit_venit: Number(r.cota_impozit_venit || 0),
+    impozit_venit: Number(r.impozit_venit || 0),
+  };
   return res.status(200).json({ ok: true, summary });
+}
+
+// Axa geografică (Etapa 2): Global -> Țară -> Regiune -> Localitate.
+// Nivelul de drill e determinat de câți parametri sunt trimiși: fără
+// tara_cod -> grupare pe țară; cu tara_cod, fără regiune -> grupare pe
+// regiune; cu ambele -> grupare pe localitate.
+async function actionGeoBreakdown(req, res) {
+  const tara_cod = req.query.tara_cod || null;
+  const regiune = req.query.regiune || null;
+  const { data, error } = await supabaseAdmin.rpc('accountancy_geo_breakdown', { p_tara_cod: tara_cod, p_regiune: regiune });
+  if (error) return res.status(500).json({ error: error.message });
+  return res.status(200).json({ ok: true, breakdown: data || [] });
+}
+
+// Axa operațională (Etapa 2): segmentare pe vertical — Servicii, Materiale,
+// Închirieri, Curieri, Asigurări (partners.partner_type), opțional filtrată
+// pe o singură țară.
+async function actionVerticalBreakdown(req, res) {
+  const tara_cod = req.query.tara_cod || null;
+  const { data, error } = await supabaseAdmin.rpc('accountancy_vertical_breakdown', { p_tara_cod: tara_cod });
+  if (error) return res.status(500).json({ error: error.message });
+  return res.status(200).json({ ok: true, breakdown: data || [] });
 }
 
 module.exports = async function handler(req, res) {
@@ -138,6 +165,8 @@ module.exports = async function handler(req, res) {
   if (req.method === 'GET') {
     const action = req.query.action;
     if (action === 'summary') return actionGetSummary(req, res);
+    if (action === 'geo_breakdown') return actionGeoBreakdown(req, res);
+    if (action === 'vertical_breakdown') return actionVerticalBreakdown(req, res);
     return res.status(400).json({ error: 'Acțiune GET necunoscută' });
   }
 
