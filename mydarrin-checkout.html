@@ -1972,7 +1972,13 @@ const CURRENCIES = {
   DEFAULT: { code:'EUR', symbol:'€', rate:0.2,   label:'EUR (€)',     flag:'🌍' },
 };
 
-// Zones where platform is ACTIVE
+// NOTĂ (Etapa 4, audit 2026-07-12): această listă e depășită/greșită
+// ("prima țară activă este România", nu toate 5) — dar nu contează la
+// runtime: detectAndApplyCurrency de mai jos e reasignată mai târziu în
+// pagină (vezi window.detectAndApplyCurrency=function(){start();}, în
+// modulul GEO MODULE v3), care folosește sursa reală (ACTIVE_TARI, live din
+// API). Las-o neatinsă — a o "corecta" aici ar da falsa impresie că mai
+// contează undeva.
 const ACTIVE_ZONES = ['RO', 'MD', 'DE', 'FR', 'BG'];
 
 function detectAndApplyCurrency() {
@@ -2032,21 +2038,45 @@ function switchUnavailTab(tab) {
   document.getElementById('unavail-tab-furnizor').classList.toggle('active', tab==='furnizor');
 }
 
-function submitUnavail() {
-  const subscribed = document.getElementById('unavail-subscribe').checked;
-  const modal = document.getElementById('zone-unavailable');
-  modal.querySelector('.bg-white').innerHTML = `
-    <div class="p-8 text-center">
-      <div class="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4 text-3xl">✅</div>
-      <h3 class="font-bold text-xl text-[#2D2D2D] mb-2" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Înregistrat cu succes!</h3>
-      <p class="text-gray-400 text-sm leading-relaxed mb-6">Vei fi printre primii care află când My Darrin lansează în zona ta${subscribed ? ' — vei primi notificări pe email' : ''}.</p>
-      <button onclick="document.getElementById('zone-unavailable').classList.add('hidden')" class="bg-[#FF8C00] text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition">Închide</button>
-    </div>
-  `;
-}
+// FIX (Etapa 4, audit 2026-07-12): rescrisă complet — versiunea veche
+// referea #unavail-subscribe (element care nu a existat niciodată în
+// pagină) și nu trimitea nimic nicăieri; era doar un swap de HTML local,
+// fără nicio captare reală de lead. Acum POST-ează efectiv către
+// /api/public/lead-zona.js.
+async function submitUnavail() {
+  const emailEl = document.getElementById('unavail-email');
+  const errEl = document.getElementById('unavail-error');
+  const email = emailEl ? emailEl.value.trim() : '';
+  if (errEl) errEl.style.display = 'none';
+  if (!email || !email.includes('@')) {
+    if (errEl) { errEl.textContent = 'Introdu o adresă de email validă.'; errEl.style.display = 'block'; }
+    return;
+  }
+  const cc = (window.MYD_GEO_LAST && window.MYD_GEO_LAST.cc) || null;
+  const zoneName = document.getElementById('unavail-zone')?.textContent || null;
+  try {
+    const res = await fetch('/api/public/lead-zona', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, tara_cod: cc, tara_nume: zoneName }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
 
-// Init currency detection on page load
-detectAndApplyCurrency();
+    const body = document.getElementById('zone-unavailable-body');
+    if (body) {
+      body.innerHTML = `
+        <div class="text-center">
+          <div class="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4 text-3xl">✅</div>
+          <h3 class="font-bold text-xl text-[#2D2D2D] mb-2" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Înregistrat cu succes!</h3>
+          <p class="text-gray-400 text-sm leading-relaxed mb-6">Vei fi printre primii care află când My Darrin lansează în zona ta — vei primi un email.</p>
+          <button onclick="document.getElementById('zone-unavailable').classList.add('hidden')" class="bg-[#FF8C00] text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition">Închide</button>
+        </div>`;
+    }
+  } catch (err) {
+    if (errEl) { errEl.textContent = err.message || 'Nu am putut trimite cererea.'; errEl.style.display = 'block'; }
+  }
+}
 
 // ── PARTNER MODAL ──
 
@@ -2230,6 +2260,16 @@ document.addEventListener('DOMContentLoaded', function() {
   const submitBtns = document.querySelectorAll('[class*="submit"],[id*="submit"],[onclick*="submit"],[onclick*="plat"],[onclick*="confirm"]');
   submitBtns.forEach(btn => {
     btn.addEventListener('click', async function(e) {
+      // FIX (Etapa 4, audit 2026-07-12): verificare reală de zonă înainte de
+      // a permite plasarea comenzii — "prima țară activă este România".
+      // Backup real (nu doar UX) în api/comenzi/creeaza.js, care respinge
+      // oricum cererea server-side dacă tara_cod nu e checkout_activ.
+      if (window.MYD_CHECKOUT_BLOCAT) {
+        const modal = document.getElementById('zone-unavailable');
+        if (modal) modal.classList.remove('hidden');
+        return;
+      }
+
       const user = window.MyDarrinAuth ? await window.MyDarrinAuth.getCurrentUser() : null;
       if (!user) {
         showToastCheckout('Trebuie să ai un cont pentru a plasa o comandă.');
@@ -2247,17 +2287,25 @@ document.addEventListener('DOMContentLoaded', function() {
       const totalEl = document.getElementById('total-price');
       const totalText = totalEl ? totalEl.textContent : '0';
       const valoare_totala = parseFloat(totalText.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+      const geo = window.MYD_GEO_LAST || {};
 
       try {
         const session = (await window.supabaseClient.auth.getSession()).data.session;
         const res = await fetch('/api/comenzi/creeaza', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
-          body: JSON.stringify({ tip_serviciu: 'Înlocuire calorifer', valoare_totala, adresa }),
+          body: JSON.stringify({ valoare_totala, adresa, tara_cod: geo.cc || null, regiune: geo.region || null, localitate: geo.city || null }),
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Eroare la plasarea comenzii');
-        showComandaInregistrataScreen(data.comanda.numar_comanda);
+        if (!res.ok) {
+          if (data.code === 'ZONA_INDISPONIBILA') {
+            const modal = document.getElementById('zone-unavailable');
+            if (modal) modal.classList.remove('hidden');
+            return;
+          }
+          throw new Error(data.error || 'Eroare la plasarea comenzii');
+        }
+        showComandaInregistrataScreen(data.comanda.nr_comanda);
       } catch (err) {
         showToastCheckout('✗ ' + (err.message || 'Comanda nu a putut fi înregistrată'));
       }
@@ -2526,7 +2574,9 @@ function setCountry(code, flag, name, currency, currCode){
   var cur = CURRENCIES[code] || CURRENCIES['RO'];
   applyCurrency(cur);
 
-  // Banner zonă inactivă (ES, GB etc.)
+  // NOTĂ (Etapa 4, audit 2026-07-12): idem — window.setCountry e reasignată
+  // mai jos, în modulul GEO MODULE v3; corpul acestei funcții devine
+  // neapelabil odată ce pagina termină de încărcat toate scripturile.
   var ACTIVE = ['RO','MD','DE','FR','BG'];
   if(!ACTIVE.includes(code)){
     var zn = document.getElementById('unavail-zone');
@@ -2698,15 +2748,39 @@ document.addEventListener('myd-geo-update', function(e) {
 var CACHE_KEY = 'myd_geo_v3';
 var CACHE_TTL = 1800000; // 30 min
 
+// FIX (Etapa 4, audit 2026-07-12): `active` de mai jos era hardcodat true
+// pentru RO/MD/DE/FR/BG deodată — greșit față de realitatea comercială
+// curentă ("prima țară activă este România"; celelalte 4 nu au încă
+// suficienți parteneri integrați). Alte două blocuri de script din această
+// pagină (ACTIVE_ZONES, ACTIVE) repetau aceeași listă greșită, dar rulează
+// înaintea acestuia și sunt suprascrise de el — acesta e blocul care are
+// ultimul cuvânt, deci e singurul care contează la runtime. Valorile de mai
+// jos sunt doar fallback pentru intervalul scurt până răspunde
+// /api/public/tari-active — sursa reală e ACTIVE_TARI, populată din DB.
 var DB = {
   RO:{flag:'🇷🇴',name:'România', currency:'Lei',code:'RON',lang:'ro',active:true},
-  MD:{flag:'🇲🇩',name:'Moldova', currency:'Lei',code:'MDL',lang:'ro',active:true},
-  DE:{flag:'🇩🇪',name:'Germania',currency:'EUR',code:'EUR',lang:'de',active:true},
-  FR:{flag:'🇫🇷',name:'Franța',  currency:'EUR',code:'EUR',lang:'fr',active:true},
-  BG:{flag:'🇧🇬',name:'Bulgaria',currency:'BGN',code:'BGN',lang:'bg',active:true},
+  MD:{flag:'🇲🇩',name:'Moldova', currency:'Lei',code:'MDL',lang:'ro',active:false},
+  DE:{flag:'🇩🇪',name:'Germania',currency:'EUR',code:'EUR',lang:'de',active:false},
+  FR:{flag:'🇫🇷',name:'Franța',  currency:'EUR',code:'EUR',lang:'fr',active:false},
+  BG:{flag:'🇧🇬',name:'Bulgaria',currency:'BGN',code:'BGN',lang:'bg',active:false},
   ES:{flag:'🇪🇸',name:'Spania',  currency:'EUR',code:'EUR',lang:'es',active:false},
   GB:{flag:'🇬🇧',name:'UK',      currency:'GBP',code:'GBP',lang:'en',active:false},
 };
+
+// Sursă reală, live din tax_configurations.checkout_activ (nu hardcodată).
+// ['RO'] e doar fallback-ul folosit până răspunde fetch-ul de mai jos.
+var ACTIVE_TARI = ['RO'];
+fetch('/api/public/tari-active')
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if (d && Array.isArray(d.active) && d.active.length) {
+      ACTIVE_TARI = d.active;
+      Object.keys(DB).forEach(function(cc){ DB[cc].active = ACTIVE_TARI.indexOf(cc) !== -1; });
+      // Dacă am aplicat deja o țară înainte să răspundă fetch-ul, reevaluăm.
+      if (window.MYD_GEO_LAST) applyGeo(window.MYD_GEO_LAST);
+    }
+  })
+  .catch(function(){ /* fail-open pe fallback-ul ['RO'] de mai sus */ });
 
 function cacheGet(){
   try{
@@ -2763,7 +2837,14 @@ function applyGeo(d){
     if(!isNaN(ron))el.textContent=rate===1?ron:Math.round(ron*rate*10)/10;
   });
 
-  // ── Banner zonă inactivă ───────────────────────────────────
+  // ── Zonă indisponibilă — blochează efectiv checkout-ul ─────
+  // FIX (Etapa 4, audit 2026-07-12): înainte doar arăta un banner
+  // închidibil, fără nicio legătură cu trimiterea comenzii — un utilizator
+  // din orice țară putea plasa o comandă oricum. window.MYD_CHECKOUT_BLOCAT
+  // e citit de handler-ul de submit mai jos în pagină; blocajul real e
+  // oricum reverificat server-side, în api/comenzi/creeaza.js.
+  window.MYD_GEO_LAST = d;
+  window.MYD_CHECKOUT_BLOCAT = !info.active;
   if(!info.active){
     var zn=document.getElementById('unavail-zone');
     if(zn)zn.textContent=info.name;
@@ -3107,6 +3188,36 @@ function daiSendMessage(){
 }
 </script>
 
+
+<!-- ══════════════════════════════════════════
+     MODAL: ZONĂ INDISPONIBILĂ (Etapa 4, audit 2026-07-12)
+     Element inexistent anterior — 3 blocuri de script diferite din această
+     pagină făceau document.getElementById('zone-unavailable') fără ca
+     div-ul să existe vreodată în DOM; funcția nu avea niciun efect vizibil.
+     "Prima țară activă este România" — checkout blocat real (verificat și
+     server-side, în api/comenzi/creeaza.js) pentru restul țărilor, cu
+     captare de lead pentru strategia de extindere.
+══════════════════════════════════════════ -->
+<div id="zone-unavailable" class="hidden fixed inset-0 z-[450] flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/55 backdrop-blur-sm"></div>
+  <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-md z-10 overflow-hidden">
+    <button onclick="document.getElementById('zone-unavailable').classList.add('hidden')" class="absolute top-5 right-5 p-1.5 rounded-lg hover:bg-gray-100 transition text-gray-400 z-10" aria-label="Închide">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div id="zone-unavailable-body" class="p-7">
+      <div style="font-size:38px;margin-bottom:10px">🌍</div>
+      <h3 class="font-bold text-xl text-[#2D2D2D] mb-2" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Nu suntem încă live în <span id="unavail-zone">zona ta</span></h3>
+      <p class="text-gray-500 text-sm leading-relaxed mb-5">Darrin inca nu este disponibil in zona ta. Imediat ce suntem live, te vom anunta cu email. Multumim pentru intelegere.</p>
+      <div id="zone-unavailable-form">
+        <input type="email" id="unavail-email" placeholder="Adresa ta de email" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition mb-3"/>
+        <button onclick="submitUnavail()" class="w-full bg-[#FF8C00] text-white py-3.5 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition">
+          Anunță-mă la lansare
+        </button>
+        <p id="unavail-error" style="display:none;color:#C0392B;font-size:12px;margin-top:8px;text-align:center"></p>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div id="auth-modal" class="hidden fixed inset-0 z-[400] flex items-center justify-center p-4">
   <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" onclick="toggleAuthModal()"></div>
