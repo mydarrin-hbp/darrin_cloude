@@ -5,6 +5,7 @@
 
 const { supabaseAdmin } = require('../lib/supabaseAdmin');
 const { getAuthenticatedUser } = require('../lib/auth-middleware');
+const { inregistreazaAudit } = require('../lib/audit-log');
 
 async function checkAccountancyAccess(user, tara_cod) {
   // Coloana din profiles e `roles` (array) — vezi schema.sql (corectat 2026-07-11).
@@ -29,6 +30,7 @@ async function actionConfirmIncasare(req, res, user) {
   if (error || !inv) return res.status(404).json({ error: 'Factura nu există' });
 
   await supabaseAdmin.from('invoices').update({ incasare_confirmata: true }).eq('id', invoice_id);
+  await inregistreazaAudit({ admin: user, req, actiune: 'confirmare_incasare', entitate: 'invoices', entitate_id: invoice_id });
   return maybeConvert(res, invoice_id);
 }
 
@@ -38,6 +40,7 @@ async function actionConfirmLivrare(req, res, user) {
   if (error || !inv) return res.status(404).json({ error: 'Factura nu există' });
 
   await supabaseAdmin.from('invoices').update({ livrare_confirmata: true }).eq('id', invoice_id);
+  await inregistreazaAudit({ admin: user, req, actiune: 'confirmare_livrare', entitate: 'invoices', entitate_id: invoice_id });
   return maybeConvert(res, invoice_id);
 }
 
@@ -78,7 +81,7 @@ async function maybeConvert(res, invoice_id) {
   return res.status(200).json({ ok: true, converted: false, invoice: inv });
 }
 
-async function actionUpdateTaxConfig(req, res) {
+async function actionUpdateTaxConfig(req, res, user) {
   const { tara_cod, cota_tva, cota_impozit_venit, cota_impozit_salarii } = req.body;
   const { data, error } = await supabaseAdmin
     .from('tax_configurations')
@@ -87,10 +90,14 @@ async function actionUpdateTaxConfig(req, res) {
     .select()
     .single();
   if (error) return res.status(500).json({ error: 'Eroare la actualizare' });
+  await inregistreazaAudit({
+    admin: user, req, actiune: 'actualizare_cote_fiscale', entitate: 'tax_configurations', entitate_id: tara_cod,
+    detalii: { cota_tva, cota_impozit_venit, cota_impozit_salarii },
+  });
   return res.status(200).json({ ok: true, config: data });
 }
 
-async function actionAddBankAccount(req, res) {
+async function actionAddBankAccount(req, res, user) {
   const { nume_afisat, banca, iban, swift, moneda, tara_cod, tip } = req.body;
   if (!nume_afisat || !iban || !moneda) return res.status(400).json({ error: 'Câmpuri obligatorii lipsă' });
   const { data, error } = await supabaseAdmin
@@ -99,6 +106,10 @@ async function actionAddBankAccount(req, res) {
     .select()
     .single();
   if (error) return res.status(500).json({ error: error.message });
+  await inregistreazaAudit({
+    admin: user, req, actiune: 'adaugare_cont_bancar', entitate: 'bank_accounts', entitate_id: data.id,
+    detalii: { nume_afisat, banca, moneda, tara_cod },
+  });
   return res.status(200).json({ ok: true, account: data });
 }
 
@@ -173,8 +184,8 @@ module.exports = async function handler(req, res) {
   const action = req.body?.action;
   if (action === 'confirm_incasare') return actionConfirmIncasare(req, res, user);
   if (action === 'confirm_livrare') return actionConfirmLivrare(req, res, user);
-  if (action === 'update_tax_config') return actionUpdateTaxConfig(req, res);
-  if (action === 'add_bank_account') return actionAddBankAccount(req, res);
+  if (action === 'update_tax_config') return actionUpdateTaxConfig(req, res, user);
+  if (action === 'add_bank_account') return actionAddBankAccount(req, res, user);
 
   return res.status(400).json({ error: 'Acțiune necunoscută' });
 };

@@ -2210,32 +2210,47 @@ function renderUsers(data){
 function filterUsers(role){ renderUsers(role==='all'?SAMPLE_USERS:SAMPLE_USERS.filter(u=>u.role.toLowerCase().includes(role.toLowerCase().replace('furnizor','furnizor')))); }
 function filterUsersSearch(q){ renderUsers(q?SAMPLE_USERS.filter(u=>u.name.toLowerCase().includes(q.toLowerCase())):SAMPLE_USERS); }
 
-// ── AUDIT LOG ──
-const AUDIT_EVENTS = [
-  {type:'order',color:'#0E9E99',text:'Comandă #MD-260616-4821 finalizată · Escrow 1.697 Lei eliberat',time:'acum 2 min',user:'System'},
-  {type:'partner',color:'#FF8C00',text:'Partener nou KYC trimis · Ion Vasile · ISCO 7411',time:'acum 8 min',user:'Admin RO'},
-  {type:'config',color:'#1A5FAD',text:'VMC actualizat Germania: 25→30 EUR',time:'acum 22 min',user:'Admin DE'},
-  {type:'security',color:'#C0392B',text:'Partener #SP-089 suspendat · fraud flag activat',time:'acum 45 min',user:'Super Admin'},
-  {type:'sync',color:'#0E9E99',text:'ACA BG sync: 248 produse actualizate în catalog_resources',time:'acum 1h',user:'System'},
-  {type:'publish',color:'#FF8C00',text:'Serviciu publicat: Acoperiș & Șarpantă · F 43.91',time:'acum 2h',user:'Admin RO'},
-  {type:'rbac',color:'#7C3AED',text:'RBAC modificat: Client · view_orders → revoked',time:'acum 3h',user:'Super Admin'},
-  {type:'escrow',color:'#1A5FAD',text:'Escrow override manual: +500 Lei · comandă MD-260615-1122',time:'acum 4h',user:'Super Admin'},
-  {type:'order',color:'#0E9E99',text:'3 comenzi simulate dispatch succes · Bacău Zona 1',time:'acum 5h',user:'System'},
-  {type:'config',color:'#1A5FAD',text:'Cache bust global forțat · content_version: v2026.06.16',time:'acum 6h',user:'Super Admin'},
-];
+// ── AUDIT LOG (Etapa 4, audit 2026-07-12) ──
+// FIX: acest panou afișa 10 evenimente hardcodate (AUDIT_EVENTS), cu
+// timestamp-uri fabricate ("acum 2 min" etc.) — nimic real. Acum citește
+// din /api/admin/audit-log, populat de fiecare acțiune de aprobare/editare
+// din backoffice (vezi lib/audit-log.js — verifica-document.js,
+// accountancy.js, mesaje-contact.js, prospecti.js).
+const AUDIT_ACTIUNE_COLOR = {
+  document_aprobat:'#1A7A3A', document_respins:'#C0392B',
+  partener_aprobat:'#1A7A3A', partener_respins:'#C0392B',
+  confirmare_incasare:'#0E9E99', confirmare_livrare:'#0E9E99',
+  actualizare_cote_fiscale:'#1A5FAD', adaugare_cont_bancar:'#1A5FAD',
+  actualizare_status_mesaj:'#FF8C00', adaugare_prospect:'#7C3AED', actualizare_status_prospect:'#7C3AED',
+};
 
-function renderAudit(){
+async function loadAuditLog(){
   const c=document.getElementById('audit-log-body');
   if(!c) return;
-  c.innerHTML=AUDIT_EVENTS.map(e=>`
-    <div class="log-item">
-      <div class="log-dot" style="background:${e.color}"></div>
-      <div style="flex:1">
-        <div style="font-size:12.5px;color:#E2E8F0">${e.text}</div>
-        <div style="font-size:10.5px;color:#4A6080;margin-top:2px">${e.user}</div>
-      </div>
-      <div style="font-size:10px;color:#4A6080;flex-shrink:0;margin-left:12px">${e.time}</div>
-    </div>`).join('');
+  c.innerHTML = '<div style="padding:16px;color:#8BA3C0;font-size:12.5px">Se încarcă...</div>';
+  try {
+    const token = await accGetToken();
+    const res = await fetch('/api/admin/audit-log?limit=100', { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    const evenimente = data.evenimente || [];
+    if (!evenimente.length) {
+      c.innerHTML = '<div style="padding:16px;color:#8BA3C0;font-size:12.5px">Niciun eveniment înregistrat încă.</div>';
+      return;
+    }
+    c.innerHTML = evenimente.map(e => `
+      <div class="log-item">
+        <div class="log-dot" style="background:${AUDIT_ACTIUNE_COLOR[e.actiune]||'#4A6080'}"></div>
+        <div style="flex:1">
+          <div style="font-size:12.5px;color:#E2E8F0">${escapeHTML(e.actiune)}${e.entitate ? ' · ' + escapeHTML(e.entitate) : ''}${e.entitate_id ? ' #' + escapeHTML(String(e.entitate_id).slice(0,8)) : ''}</div>
+          <div style="font-size:10.5px;color:#4A6080;margin-top:2px">${escapeHTML(e.admin_email || 'necunoscut')}</div>
+        </div>
+        <div style="font-size:10px;color:#4A6080;flex-shrink:0;margin-left:12px">${new Date(e.creat_la).toLocaleString('ro-RO')}</div>
+      </div>`).join('');
+  } catch (e) {
+    console.error('[audit-log]', e);
+    c.innerHTML = '<div style="padding:16px;color:#C0392B;font-size:12.5px">Eroare la încărcarea jurnalului.</div>';
+  }
 }
 
 // ── FEATURE FLAGS ──
@@ -2284,7 +2299,6 @@ function markChanged(el){el.style.borderColor='#FF8C00';}
 document.addEventListener('DOMContentLoaded',()=>{
   renderPerms();
   renderUsers(SAMPLE_USERS);
-  renderAudit();
   renderFlags();
   showPanel('dashboard');
   if(typeof lucide!=='undefined') lucide.createIcons();
@@ -3679,6 +3693,7 @@ function showPanel(id) {
   }
   if (id === 'contact') loadMesajeContact();
   if (id === 'prospecti') loadProspecti();
+  if (id === 'audit') loadAuditLog();
 }
 </script>
 

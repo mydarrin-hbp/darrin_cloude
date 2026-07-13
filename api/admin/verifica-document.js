@@ -8,6 +8,7 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { inregistreazaAudit } = require('../../lib/audit-log');
 
 const DECIZII_VALIDE = ['aprobat', 'respins'];
 // FIX (audit 2026-07-12): documente_partener.status folosește valorile
@@ -33,6 +34,9 @@ async function handler(req, res, admin) {
         .select()
         .single();
       if (error || !data) return res.status(404).json({ error: 'Documentul nu există' });
+      await inregistreazaAudit({
+        admin, req, actiune: `document_${decizie}`, entitate: 'documente_partener', entitate_id: id, detalii: { decizie },
+      });
       return res.status(200).json({ ok: true, document: data });
     }
 
@@ -43,6 +47,9 @@ async function handler(req, res, admin) {
       .select()
       .single();
     if (error || !data) return res.status(404).json({ error: 'Partenerul nu există' });
+    await inregistreazaAudit({
+      admin, req, actiune: `partener_${decizie}`, entitate: 'partners', entitate_id: id, detalii: { decizie },
+    });
     return res.status(200).json({ ok: true, partener: data });
   } catch (err) {
     console.error('[verifica-document]', err);

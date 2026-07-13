@@ -11,6 +11,7 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { inregistreazaAudit } = require('../../lib/audit-log');
 
 const STATUSURI_VALIDE = ['nou', 'contactat', 'inscris', 'refuzat'];
 
@@ -37,6 +38,7 @@ async function handler(req, res, admin) {
         .select()
         .single();
       if (error) return res.status(500).json({ error: error.message });
+      await inregistreazaAudit({ admin, req, actiune: 'adaugare_prospect', entitate: 'parteneri_prospecti', entitate_id: data.id, detalii: { nume_firma, email, tara } });
       return res.status(200).json({ ok: true, prospect: data });
     }
 
@@ -52,6 +54,7 @@ async function handler(req, res, admin) {
         .select()
         .single();
       if (error) return res.status(500).json({ error: error.message });
+      await inregistreazaAudit({ admin, req, actiune: 'actualizare_status_prospect', entitate: 'parteneri_prospecti', entitate_id: id, detalii: { status } });
       return res.status(200).json({ ok: true, prospect: data });
     }
 
