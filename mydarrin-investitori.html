@@ -538,6 +538,10 @@ function scrollToSection(id){
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             Intră în rundă
           </button>
+          <a href="mydarrin-pitch-deck.html" class="btn-p" style="background:#EF7F1A;text-decoration:none">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M4 4h16v12H4z"/><path d="M4 20h16"/></svg>
+            Pitch Deck
+          </a>
           <button class="btn-s" onclick="scrollToSection('kpis')" style="color:rgba(255,255,255,.75);border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.08)" onmouseover="this.style.background='rgba(255,255,255,.16)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">
             KPIs Live →
           </button>
@@ -570,6 +574,48 @@ function scrollToSection(id){
   </div>
 </section>
 
+<!-- ════ FLUX LIVE INVESTIȚII — doar investitori cu consimțământ public ════ -->
+<section class="inv-section" id="flux-live">
+  <div class="inv-max">
+    <div style="text-align:center;margin-bottom:24px">
+      <h2 class="reveal" style="font-size:26px;font-weight:800;color:#1A2332;margin-bottom:6px">Investiții live</h2>
+      <p class="reveal d1" style="font-size:13px;color:#5A6B7D">Doar investitorii care au ales explicit să apară aici — prenume și inițiala numelui, fără alte date de identificare.</p>
+    </div>
+    <div class="inv-card reveal" style="max-width:720px;margin:0 auto">
+      <div class="inv-card-body" style="padding:0">
+        <table class="inv-table" style="width:100%">
+          <thead><tr><th>Investitor</th><th>Acțiuni</th><th>Sumă</th><th>Exit estimat</th></tr></thead>
+          <tbody id="flux-live-tbody"><tr><td colspan="4" style="text-align:center;color:#8C9BAD;padding:20px">Se încarcă...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+async function incarcaFluxLiveInvestitii(){
+  const tbody = document.getElementById('flux-live-tbody');
+  if (!tbody) return;
+  try {
+    const res = await fetch('/api/public/investitori-live');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const rows = data.investitii || [];
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#8C9BAD;padding:20px">Niciun investitor public încă.</td></tr>'; return; }
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td style="font-weight:700">${escapeHTML(r.nume_afisat)}${r.oras ? ' · ' + escapeHTML(r.oras) : ''}</td>
+        <td>${Number(r.actiuni).toLocaleString()}</td>
+        <td style="font-weight:700;color:#FF8C00">€${Number(r.valoare_investita).toLocaleString()}</td>
+        <td>${r.exit_estimat_luni ? r.exit_estimat_luni + ' luni' : '—'}</td>
+      </tr>`).join('');
+  } catch (e) {
+    console.error('[flux-live]', e);
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#C0392B;padding:20px">Eroare la încărcare.</td></tr>';
+  }
+}
+document.addEventListener('DOMContentLoaded', incarcaFluxLiveInvestitii);
+</script>
 
 <!-- ════ DASHBOARD PRIVAT INVESTITOR — Visible doar cu rol investitor ════ -->
 <div id="inv-private-dashboard" style="display:none">
@@ -2493,6 +2539,14 @@ function updateStep4Summary() {
       <div style="font-size:10.5px;color:#C0392B;font-weight:700">⚠ Avertisment obligatoriu MiFID II</div>
       <div style="font-size:10.5px;color:#5A6B7D;margin-top:3px;line-height:1.6">Investițiile în companii la stadiu incipient (start-up) implică riscul pierderii totale a capitalului investit. Instrumentele financiare nu sunt garantate de FGDB. My Darrin nu oferă consultanță de investiții.</div>
     </div>
+    <div style="background:#F0F4F8;border-radius:12px;padding:13px;margin-bottom:14px">
+      <label style="display:block;font-size:11px;font-weight:700;color:#5A6B7D;margin-bottom:6px">Oraș (afișat doar dacă alegi să apari în fluxul public)</label>
+      <input type="text" id="sub-oras" placeholder="ex: Londra" style="width:100%;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;margin-bottom:10px">
+      <label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer">
+        <input type="checkbox" id="sub-consimtamant-public" style="margin-top:2px;accent-color:#FF8C00"/>
+        <span style="font-size:11.5px;color:#5A6B7D;line-height:1.5">Sunt de acord ca investiția mea să apară în fluxul public "Investiții live" — doar prenume + inițiala numelui, orașul, numărul de acțiuni și suma investită. Fără email, fără date de cont.</span>
+      </label>
+    </div>
     <button onclick="finalizeazaSubscriere()" style="width:100%;padding:14px;border-radius:13px;border:none;background:linear-gradient(135deg,#003366,#1A5FAD);color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit">
       ✅ Semnează & Finalizează subscrierea
     </button>`;
@@ -2638,7 +2692,7 @@ function finalizeKYC() {
 
 let INV_PORTFOLIO = null;
 
-function finalizeazaSubscriere() {
+async function finalizeazaSubscriere() {
   if (!INV_ACCOUNT || !INV_ACCOUNT.iban) {
     alert('Datele de cont (inclusiv IBAN) nu sunt completate. Te rugăm să revii la Pasul 1.');
     goStep(1);
@@ -2659,6 +2713,29 @@ function finalizeazaSubscriere() {
     cont: INV_ACCOUNT,
   };
   try { sessionStorage.setItem('myd_investor', JSON.stringify(INV_PORTFOLIO)); } catch(e) {}
+
+  // FIX (audit 2026-07-14): înainte, subscrierea rămânea doar în
+  // sessionStorage — niciun rând real nu ajungea în investitori_portofoliu.
+  // Best-effort: dacă scrierea reală eșuează, nu blocăm experiența
+  // investitorului (deja are confirmarea locală + contractul), dar
+  // înregistrăm eroarea.
+  try {
+    await fetch('/api/public/investitori-subscrie', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: INV_ACCOUNT.email,
+        suma_eur: INV_STATE.suma_eur,
+        actiuni: alo.actiuni,
+        instrument: INV_STATE.instrument,
+        oras: document.getElementById('sub-oras')?.value?.trim() || null,
+        consimtamant_public: !!document.getElementById('sub-consimtamant-public')?.checked,
+      }),
+    });
+  } catch (e) {
+    console.error('[investitori-subscrie] scriere reală eșuată (best-effort):', e);
+  }
+
   closeRunda && closeRunda();
   renderDashboardInvestitor();
 }
