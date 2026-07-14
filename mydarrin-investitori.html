@@ -2504,16 +2504,31 @@ function updateStep4Summary() {
 
 let KYC_DONE = false;
 let MIFID_SCORE = 0;
+// FIX (audit 2026-07-14): cardul KYC nu avea niciun buton de închidere și
+// niciun click-în-afară — odată deschis, singura ieșire era completarea
+// integrală a fluxului sau reîncărcarea paginii ("blocaj" raportat explicit).
+// isUploading rămâne true în timpul "procesării" documentului (chiar dacă
+// aici e simulată, nu vrem ca un upload real, viitor, să poată fi întrerupt
+// la jumătate de un click accidental pe overlay).
+let isUploading = false;
+
+function closeKYCModal() {
+  if (isUploading) return;
+  document.getElementById('kyc-overlay')?.remove();
+  document.body.style.overflow = '';
+}
 
 function showKYCModal() {
   if (KYC_DONE) { goStep(2); return; }
   const ov = document.createElement('div');
   ov.id = 'kyc-overlay';
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto';
+  ov.onclick = (e) => { if (e.target === ov) closeKYCModal(); };
   ov.innerHTML = `
-    <div style="background:#fff;border-radius:22px;max-width:500px;width:100%;padding:0;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.3);margin:auto">
+    <div style="background:#fff;border-radius:22px;max-width:500px;width:100%;padding:0;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.3);margin:auto;position:relative">
+      <button onclick="closeKYCModal()" aria-label="Închide" style="position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:9px;border:none;background:rgba(255,255,255,.15);color:#fff;font-size:16px;cursor:pointer;z-index:10;display:flex;align-items:center;justify-content:center">✕</button>
       <div style="background:linear-gradient(135deg,#003366,#1A5FAD);padding:20px 24px">
-        <div style="font-weight:800;color:#fff;font-size:16px;margin-bottom:4px">🪪 Verificare identitate (KYC/AML)</div>
+        <div style="font-weight:800;color:#fff;font-size:16px;margin-bottom:4px">Verificare identitate (KYC/AML)</div>
         <div style="font-size:11px;color:rgba(255,255,255,.6)">Obligatoriu pentru investiții ≥ €10.000 · Directiva UE 2015/849 (AML)</div>
       </div>
       <div style="padding:22px">
@@ -2590,9 +2605,11 @@ function selectMifid(btn, q, v) {
 
 function handleKYCDoc(input, type) {
   if(input.files.length > 0) {
-    document.getElementById('kyc-ci-status').innerHTML='<span style="color:#1A7A3A;font-weight:600">✅ '+input.files[0].name+' · OCR procesare... 88% scor identitate</span>';
+    isUploading = true;
+    document.getElementById('kyc-ci-status').innerHTML='<span style="color:#1A7A3A;font-weight:600">'+escapeHTML(input.files[0].name)+' · procesare document...</span>';
     setTimeout(()=>{
-      document.getElementById('kyc-ci-status').innerHTML='<span style="color:#1A7A3A;font-weight:600">✅ CI verificat · Radu Ionescu · RO · Valabil 2031 · Nicio sancțiune detectată</span>';
+      isUploading = false;
+      document.getElementById('kyc-ci-status').innerHTML='<span style="color:#1A7A3A;font-weight:600">CI verificat · Radu Ionescu · RO · Valabil 2031 · Nicio sancțiune detectată</span>';
       checkKYCComplete();
     }, 1500);
   }
@@ -3773,4 +3790,21 @@ if(document.readyState==='loading'){
 })();
 </script>
 <!-- ════ END GEO MODULE ════ -->
+<footer style="background:#003366" class="py-10">
+  <div style="max-width:1200px;margin:0 auto;padding:0 20px" class="flex flex-col md:flex-row items-center justify-between gap-6">
+    <a href="mydarrin-v3.html" class="flex items-center gap-2.5">
+      <div class="w-8 h-8 bg-[#FF8C00] rounded-lg flex items-center justify-center text-white font-bold text-sm" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">D</div>
+      <span class="text-white font-bold text-sm" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">My Darrin</span>
+    </a>
+    <nav class="flex items-center gap-6 flex-wrap justify-center">
+      <a href="mydarrin-termeni.html" class="text-white/50 hover:text-white text-xs transition">Termeni și condiții</a>
+      <a href="mydarrin-politica-confidentialitate.html" class="text-white/50 hover:text-white text-xs transition">Politică de confidențialitate</a>
+      <a href="mydarrin-contact.html" class="text-white/50 hover:text-white text-xs transition">Contact</a>
+    </nav>
+    <div class="text-white/35 text-xs text-center md:text-right leading-relaxed">
+      Home Best Pal SRL · Sediu central: Str. 22 Decembrie nr. 145, Bacău, România<br>
+      &copy; 2026 My Darrin
+    </div>
+  </div>
+</footer>
 </body>
