@@ -197,7 +197,7 @@ input:focus,select:focus{border-color:var(--primary)}
 
   <!-- PASUL 8 — Succes -->
   <div class="card" id="step-8" style="display:none;text-align:center">
-    <div style="font-size:44px;margin-bottom:10px">🎉</div>
+    <div style="font-size:44px;margin-bottom:10px"><i data-lucide="party-popper" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
     <h2>Dosarul tău a fost trimis spre verificare!</h2>
     <p class="sub">Companie, cont bancar, coduri NACE, utilaje, angajați, certificări și alocări — toate salvate. O echipă My Darrin verifică dosarul în maximum 48h.</p>
     <div class="upcoming-card" style="text-align:left">
@@ -209,9 +209,11 @@ input:focus,select:focus{border-color:var(--primary)}
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
 <script type="module" src="lib/supabaseClient.js"></script>
 <script src="account-system.js"></script>
 <script>
+if (typeof lucide !== 'undefined') lucide.createIcons();
 const TOTAL_PASI = 8;
 let PAS_CURENT = 1;
 let PASI_DEBLOCATI = 1;
@@ -260,7 +262,7 @@ async function verificaPasul1() {
   try {
     const user = window.MyDarrinAuth ? await window.MyDarrinAuth.getCurrentUser() : null;
     if (user && user.email_confirmed_at) {
-      statusEl.innerHTML = `✅ Autentificat ca <strong>${user.email}</strong> — email confirmat.`;
+      statusEl.innerHTML = `Autentificat ca <strong>${user.email}</strong> — email confirmat.`;
       btn.disabled = false;
       PASI_DEBLOCATI = Math.max(PASI_DEBLOCATI, 2);
       randerSteps();
@@ -303,7 +305,7 @@ async function salveazaPasul2() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
-    msgEl.className = 'msg ok'; msgEl.textContent = '✓ Salvat.';
+    msgEl.className = 'msg ok'; msgEl.textContent = 'Salvat.';
     PASI_DEBLOCATI = Math.max(PASI_DEBLOCATI, 3);
     setTimeout(() => mergiLaPasul(3), 500);
   } catch (e) {
@@ -384,7 +386,7 @@ async function salveazaPasul3() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
-    msgEl.className = 'msg ok'; msgEl.textContent = '✓ Salvat.';
+    msgEl.className = 'msg ok'; msgEl.textContent = 'Salvat.';
     PASI_DEBLOCATI = Math.max(PASI_DEBLOCATI, 4);
     setTimeout(() => mergiLaPasul(4), 500);
   } catch (e) {
@@ -402,7 +404,7 @@ function adaugaRandUtilaj() {
     <input type="text" placeholder="Tip" class="eq-tip">
     <input type="number" placeholder="Cant." min="1" value="1" class="eq-cantitate">
     <input type="number" placeholder="An fabr." class="eq-an">
-    <button class="rm-btn" onclick="this.parentElement.remove()">✕</button>`;
+    <button class="rm-btn" onclick="this.parentElement.remove()"></button>`;
   rows.appendChild(div);
 }
 
@@ -426,7 +428,7 @@ async function salveazaPasul4() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
-    msgEl.className = 'msg ok'; msgEl.textContent = '✓ Salvat.';
+    msgEl.className = 'msg ok'; msgEl.textContent = 'Salvat.';
     PASI_DEBLOCATI = Math.max(PASI_DEBLOCATI, 5);
     setTimeout(() => mergiLaPasul(5), 500);
   } catch (e) {
@@ -459,7 +461,7 @@ function adaugaRandAngajat() {
     <input type="text" placeholder="Nume complet" class="emp-nume">
     <input type="text" placeholder="CNP (13 cifre)" maxlength="13" class="emp-cnp">
     <select class="emp-esco"><option value="">Fără ocupație declarată</option></select>
-    <button class="rm-btn" onclick="this.parentElement.remove()">✕</button>`;
+    <button class="rm-btn" onclick="this.parentElement.remove()"></button>`;
   rows.appendChild(div);
   if (escoToate.length) populeazaSelectEsco(div.querySelector('.emp-esco'));
 }
@@ -484,7 +486,7 @@ async function salveazaPasul5() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
     angajatiSalvati = (data.angajati || []).map((a, i) => ({ id: a.id, nume: angajati[i].nume, cod_esco: angajati[i].cod_esco }));
-    msgEl.className = 'msg ok'; msgEl.textContent = '✓ Salvat.';
+    msgEl.className = 'msg ok'; msgEl.textContent = 'Salvat.';
     PASI_DEBLOCATI = Math.max(PASI_DEBLOCATI, 6);
     setTimeout(() => mergiLaPasul(6), 500);
   } catch (e) {
@@ -536,7 +538,7 @@ async function incarcaCertificare(tip) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
-    statusEl.className = 'msg ok'; statusEl.textContent = '✓ Încărcat.';
+    statusEl.className = 'msg ok'; statusEl.textContent = 'Încărcat.';
   } catch (e) {
     statusEl.className = 'msg err'; statusEl.textContent = e.message || 'Eroare la încărcare.';
   }
@@ -577,7 +579,7 @@ async function salveazaPasul7() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
-    msgEl.className = 'msg ok'; msgEl.textContent = '✓ Salvat.';
+    msgEl.className = 'msg ok'; msgEl.textContent = 'Salvat.';
     PASI_DEBLOCATI = Math.max(PASI_DEBLOCATI, 8);
     setTimeout(() => mergiLaPasul(8), 500);
   } catch (e) {
