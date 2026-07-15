@@ -315,7 +315,7 @@ input:valid:not(:placeholder-shown):not([type="checkbox"]) {
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script>if(typeof tailwind!=="undefined"){tailwind.config={theme:{extend:{colors:{
+<script>tailwind.config={theme:{extend:{colors:{
   primary:{DEFAULT:"#003366"},accent:{DEFAULT:"#FF8C00"},
   ai:{DEFAULT:"#0E9E99"},surface:{DEFAULT:"#F4F7F9"}
 }}}}</script>
@@ -668,7 +668,156 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
     }
   </script>
 </head>
-<body class="bg-[#F4F7F9] text-[#2D2D2D]" style="font-family:'Syne','Inter',sans-serif">
+
+<style>
+/* ── Reclamații page ─────────────────────────────────────── */
+:root {
+  --teal:#079d9a; --org:#FF8C00; --navy:#1E2E4D;
+  --ink:#25323a;  --muted:#7a858b; --line:#d7e6e4;
+  --ff:'Helvetica Neue',Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+body{font-family:var(--ff);color:var(--ink);background:#F4F7F9}
+
+/* Steps indicator */
+.steps-bar{display:flex;align-items:center;gap:0;margin-bottom:40px}
+.step-item{display:flex;flex-direction:column;align-items:center;flex:1;position:relative}
+.step-item:not(:last-child)::after{
+  content:'';position:absolute;top:18px;left:50%;width:100%;height:2px;
+  background:#E8F0FB;z-index:0;
+}
+.step-item.done::after{background:var(--teal)}
+.step-dot{
+  width:36px;height:36px;border-radius:50%;border:2px solid #E8F0FB;
+  background:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:800;color:#8C9BAD;z-index:1;position:relative;
+  transition:all .25s;flex-shrink:0;
+}
+.step-item.active .step-dot{background:var(--teal);border-color:var(--teal);color:#fff;box-shadow:0 4px 14px rgba(7,157,154,.35)}
+.step-item.done .step-dot{background:var(--teal);border-color:var(--teal);color:#fff}
+.step-lbl{font-size:10.5px;font-weight:700;color:#8C9BAD;margin-top:6px;text-align:center;line-height:1.3}
+.step-item.active .step-lbl{color:var(--teal)}
+
+/* Actor cards */
+.actor-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.actor-card{
+  border:2px solid #E8F0FB;border-radius:14px;padding:18px 14px;
+  background:#fff;cursor:pointer;text-align:center;
+  transition:all .2s;user-select:none;
+}
+.actor-card:hover{border-color:var(--teal);background:#E9F7F6}
+.actor-card.selected{border-color:var(--teal);background:var(--teal);color:#fff}
+.actor-card .ac-ico{font-size:26px;margin-bottom:8px}
+.actor-card .ac-lbl{font-size:12.5px;font-weight:800}
+.actor-card .ac-desc{font-size:10.5px;color:#8C9BAD;margin-top:3px;line-height:1.4}
+.actor-card.selected .ac-desc{color:rgba(255,255,255,.7)}
+
+/* Speta chips */
+.speta-grid{display:flex;flex-wrap:wrap;gap:8px}
+.speta-chip{
+  padding:8px 16px;border-radius:99px;border:1.5px solid #E8F0FB;
+  background:#fff;cursor:pointer;font-size:12.5px;font-weight:700;
+  color:#6B7A8D;transition:all .18s;
+}
+.speta-chip:hover{border-color:var(--teal);color:var(--teal)}
+.speta-chip.selected{background:var(--teal);border-color:var(--teal);color:#fff}
+
+/* Comanda sinteza */
+.order-synopsis{
+  background:linear-gradient(135deg,#EBF4FB,#E0F5F4);
+  border:1.5px solid rgba(7,157,154,.2);border-radius:14px;
+  padding:16px 18px;display:none;margin-top:12px;
+}
+.order-synopsis.visible{display:block}
+
+/* Upload zone */
+.upload-zone{
+  border:2px dashed #D5DFE8;border-radius:14px;padding:28px;
+  text-align:center;cursor:pointer;background:#FAFCFD;
+  transition:all .2s;position:relative;
+}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--teal);background:#E9F7F6}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.img-previews{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.img-thumb{
+  width:72px;height:72px;border-radius:10px;object-fit:cover;
+  border:1.5px solid #E8F0FB;position:relative;
+}
+.img-thumb-wrap{position:relative;display:inline-block}
+.img-rm{
+  position:absolute;top:-6px;right:-6px;width:18px;height:18px;
+  border-radius:50%;background:#DC2626;color:#fff;border:none;
+  font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  line-height:1;
+}
+
+/* Inputs */
+.fld{width:100%;border:1.5px solid #D5DFE8;border-radius:10px;padding:10px 14px;font-size:13.5px;font-family:var(--ff);outline:none;transition:border-color .18s;background:#fff;color:var(--ink)}
+.fld:focus{border-color:var(--teal)}
+.fld-lbl{font-size:11.5px;font-weight:700;color:#6B7A8D;display:block;margin-bottom:5px}
+.fld-group{margin-bottom:16px}
+
+/* Checkbox custom */
+.chk-row{display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin-bottom:10px}
+.chk-box{width:18px;height:18px;border:2px solid #D5DFE8;border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:all .18s;background:#fff}
+.chk-row input:checked+.chk-box{background:var(--teal);border-color:var(--teal)}
+.chk-row input{display:none}
+.chk-lbl{font-size:12.5px;color:#6B7A8D;line-height:1.55}
+
+/* Buttons */
+.btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--navy);color:#fff;border:none;border-radius:12px;padding:13px 28px;font-size:14px;font-weight:800;cursor:pointer;font-family:var(--ff);transition:all .2s;width:100%}
+.btn-primary:hover{background:#2A3D5E;transform:translateY(-1px)}
+.btn-primary:disabled{opacity:.5;cursor:default;transform:none}
+.btn-secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#fff;color:var(--navy);border:1.5px solid #D5DFE8;border-radius:12px;padding:11px 24px;font-size:13.5px;font-weight:700;cursor:pointer;font-family:var(--ff);transition:all .2s}
+.btn-secondary:hover{border-color:var(--navy);background:#F4F7F9}
+
+/* Chat AI widget */
+.chat-bubble-btn{
+  position:fixed;bottom:80px;right:20px;z-index:200;
+  width:56px;height:56px;border-radius:50%;
+  background:linear-gradient(135deg,var(--teal),#05706e);
+  border:none;cursor:pointer;
+  box-shadow:0 6px 20px rgba(7,157,154,.45);
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .2s;
+}
+.chat-bubble-btn:hover{transform:scale(1.1)}
+.chat-panel{
+  position:fixed;bottom:150px;right:20px;z-index:200;
+  width:340px;max-height:480px;background:#fff;
+  border-radius:20px;box-shadow:0 16px 48px rgba(0,0,0,.18);
+  border:1px solid #E8F0FB;display:none;flex-direction:column;
+  overflow:hidden;
+}
+.chat-panel.open{display:flex}
+.chat-hdr{background:linear-gradient(135deg,var(--navy),#2A3D5E);padding:14px 16px;display:flex;align-items:center;gap:10px}
+.chat-hdr-ico{width:36px;height:36px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.chat-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.chat-msgs::-webkit-scrollbar{width:4px}
+.chat-msgs::-webkit-scrollbar-thumb{background:#E8F0FB;border-radius:4px}
+.msg{max-width:80%;padding:9px 12px;border-radius:12px;font-size:12.5px;line-height:1.55}
+.msg.ai{background:#F4F7F9;color:var(--ink);align-self:flex-start;border-radius:4px 12px 12px 12px}
+.msg.user{background:var(--teal);color:#fff;align-self:flex-end;border-radius:12px 4px 12px 12px}
+.chat-inp-row{padding:10px 12px;border-top:1px solid #E8F0FB;display:flex;gap:8px}
+.chat-inp{flex:1;border:1.5px solid #E8F0FB;border-radius:10px;padding:8px 12px;font-size:12.5px;font-family:var(--ff);outline:none}
+.chat-inp:focus{border-color:var(--teal)}
+.chat-send{width:36px;height:36px;border-radius:50%;background:var(--teal);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;transition:all .18s}
+.chat-send:hover{background:#05706e}
+
+/* Success screen */
+.success-screen{display:none;text-align:center;padding:48px 24px}
+.success-screen.show{display:block}
+
+/* Responsive */
+@media(max-width:640px){
+  .actor-grid{grid-template-columns:1fr 1fr}
+  .chat-panel{width:calc(100vw - 32px);right:16px}
+}
+@media(max-width:380px){
+  .actor-grid{grid-template-columns:1fr}
+}
+</style>
+<body style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
 
 <div id="spbar"></div>
 <div id="topbar" class="hidden md:flex items-center justify-between px-8 py-2 gap-4">
@@ -919,183 +1068,366 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 <style>@keyframes geo-pulse{0%,100%{opacity:1}50%{opacity:.4}}</style>
 
 <!-- ════ HERO ════ -->
-<section style="background:linear-gradient(135deg,#001E3C 0%,#003366 55%,#0B4D8A 100%);padding:72px 20px 56px;position:relative;overflow:hidden">
-  <div style="position:absolute;inset:0;opacity:.06;background-image:radial-gradient(circle at 20% 50%,#0E9E99 0%,transparent 60%),radial-gradient(circle at 80% 20%,#FF8C00 0%,transparent 50%)"></div>
-  <div style="max-width:860px;margin:0 auto;text-align:center;position:relative">
-    <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(14,158,153,.15);border:1px solid rgba(14,158,153,.3);border-radius:99px;padding:6px 18px;font-size:11px;font-weight:700;color:#0E9E99;margin-bottom:18px;text-transform:uppercase;letter-spacing:.08em">
-      🏗 Antreprenor General Digital
+<section style="background:linear-gradient(135deg,#001E3C 0%,#1E2E4D 100%);padding:52px 20px 40px;position:relative;overflow:hidden">
+  <div style="position:absolute;inset:0;opacity:.05;background-image:radial-gradient(circle at 80% 20%,#FF8C00 0%,transparent 55%),radial-gradient(circle at 15% 70%,#079d9a 0%,transparent 50%)"></div>
+  <div style="max-width:720px;margin:0 auto;text-align:center;position:relative">
+    <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,140,0,.15);border:1px solid rgba(255,140,0,.3);border-radius:99px;padding:5px 16px;font-size:11px;font-weight:700;color:#FF8C00;margin-bottom:16px;text-transform:uppercase;letter-spacing:.08em">
+      ⚖️ Centru de Reclamații My Darrin
     </div>
-    <h1 style="font-size:clamp(28px,4.5vw,52px);font-weight:800;color:#fff;line-height:1.15;margin-bottom:14px">
-      Despre <span style="color:#FF8C00">My Darrin</span>
+    <h1 style="font-size:clamp(24px,4vw,40px);font-weight:800;color:#fff;line-height:1.15;margin-bottom:12px">
+      Înregistrează o <span style="color:#FF8C00">reclamație</span>
     </h1>
-    <p style="font-size:clamp(14px,1.8vw,18px);color:rgba(255,255,255,.65);max-width:640px;margin:0 auto 28px;line-height:1.7">
-      Platforma care preia <strong style="color:#fff">responsabilitatea completă</strong> a serviciului tău — de la diagnoză și materiale, până la execuție, garanție și asigurare.
+    <p style="font-size:14px;color:rgba(255,255,255,.6);max-width:520px;margin:0 auto;line-height:1.7">
+      Completează formularul pas cu pas. Speta ta este înregistrată automat, primești confirmare pe email și un specialist o preia în cel mai scurt timp.
     </p>
-    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
-      <a href="mydarrin-catalog.html" style="display:inline-flex;align-items:center;gap:8px;background:#FF8C00;color:#fff;text-decoration:none;border-radius:13px;padding:13px 28px;font-size:14.5px;font-weight:800;box-shadow:0 8px 24px rgba(255,140,0,.4);transition:all .2s" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
-        🛒 Explorează catalogul →
-      </a>
-      <a href="cum-comanzi.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);color:#fff;text-decoration:none;border-radius:13px;padding:13px 22px;font-size:14px;font-weight:700;border:1.5px solid rgba(255,255,255,.2);transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">
-        Cum comanzi ↓
-      </a>
-    </div>
   </div>
 </section>
 
-<!-- ════ MISIUNE & VIZIUNE ════ -->
-<section style="padding:72px 20px;background:#fff">
-  <div style="max-width:960px;margin:0 auto">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
-      <div style="background:linear-gradient(135deg,#001E3C,#003366);border-radius:20px;padding:32px;color:#fff">
-        <div style="font-size:32px;margin-bottom:14px">🎯</div>
-        <h2 style="font-size:20px;font-weight:800;margin-bottom:12px">Misiune</h2>
-        <p style="font-size:14px;color:rgba(255,255,255,.7);line-height:1.7">Să digitalizăm infrastructura serviciilor tehnice și să oferim <strong style="color:#FF8C00">siguranță fiecărui cămin și business</strong> printr-un model de Antreprenor General Digital — transparent, garantat și asigurat.</p>
+<!-- ════ FORM ════ -->
+<section style="padding:48px 20px 64px">
+  <div style="max-width:720px;margin:0 auto">
+
+    <!-- Steps bar -->
+    <div class="steps-bar" id="steps-bar">
+      <div class="step-item active" id="step-i-1">
+        <div class="step-dot">1</div>
+        <div class="step-lbl">Actor</div>
       </div>
-      <div style="background:linear-gradient(135deg,#0E9E99,#117A73);border-radius:20px;padding:32px;color:#fff">
-        <div style="font-size:32px;margin-bottom:14px">🌍</div>
-        <h2 style="font-size:20px;font-weight:800;margin-bottom:12px">Viziune</h2>
-        <p style="font-size:14px;color:rgba(255,255,255,.8);line-height:1.7">Să devenim <strong style="color:#fff">sistemul de operare global</strong> pentru orice intervenție tehnică, fără a deține o singură mașină sau unealtă — model Asset-Light, scalare exponențială.</p>
+      <div class="step-item" id="step-i-2">
+        <div class="step-dot">2</div>
+        <div class="step-lbl">Speta</div>
+      </div>
+      <div class="step-item" id="step-i-3">
+        <div class="step-dot">3</div>
+        <div class="step-lbl">Detalii</div>
+      </div>
+      <div class="step-item" id="step-i-4">
+        <div class="step-dot">4</div>
+        <div class="step-lbl">Documente</div>
+      </div>
+      <div class="step-item" id="step-i-5">
+        <div class="step-dot">5</div>
+        <div class="step-lbl">Confirmare</div>
       </div>
     </div>
+
+    <!-- Card form -->
+    <div style="background:#fff;border-radius:20px;padding:clamp(20px,4vw,36px);box-shadow:0 8px 32px rgba(0,0,0,.06);border:1.5px solid #E8F0FB">
+
+      <!-- ══ STEP 1: Cine ești? ═══════════════════════════════ -->
+      <div id="step-1" class="form-step">
+        <h2 style="font-size:18px;font-weight:800;color:#1A2332;margin-bottom:6px">Cine ești?</h2>
+        <p style="font-size:13px;color:#8C9BAD;margin-bottom:24px">Selectează rolul tău în platformă My Darrin pentru a personaliza formularul.</p>
+        <div class="actor-grid" id="actor-grid">
+          <div class="actor-card" data-actor="client" onclick="selectActor(this)">
+            <div class="ac-ico">🛒</div>
+            <div class="ac-lbl">Client</div>
+            <div class="ac-desc">Am comandat un serviciu</div>
+          </div>
+          <div class="actor-card" data-actor="partener-servicii" onclick="selectActor(this)">
+            <div class="ac-ico">🔧</div>
+            <div class="ac-lbl">Partener Servicii</div>
+            <div class="ac-desc">Execut lucrări prin platformă</div>
+          </div>
+          <div class="actor-card" data-actor="furnizor-materiale" onclick="selectActor(this)">
+            <div class="ac-ico">📦</div>
+            <div class="ac-lbl">Furnizor Materiale</div>
+            <div class="ac-desc">Livrez materiale și produse</div>
+          </div>
+          <div class="actor-card" data-actor="furnizor-inchirieri" onclick="selectActor(this)">
+            <div class="ac-ico">🏗</div>
+            <div class="ac-lbl">Furnizor Închirieri</div>
+            <div class="ac-desc">Ofer utilaje / echipamente</div>
+          </div>
+          <div class="actor-card" data-actor="curier" onclick="selectActor(this)">
+            <div class="ac-ico">🚚</div>
+            <div class="ac-lbl">Curier de Cartier</div>
+            <div class="ac-desc">Livrez local pentru platformă</div>
+          </div>
+          <div class="actor-card" data-actor="asigurator" onclick="selectActor(this)">
+            <div class="ac-ico">🛡</div>
+            <div class="ac-lbl">Asigurator</div>
+            <div class="ac-desc">Gestionez polițe de asigurare</div>
+          </div>
+        </div>
+        <div id="err-actor" style="display:none;color:#DC2626;font-size:12.5px;margin-top:12px;font-weight:600">⚠ Te rugăm să selectezi rolul tău.</div>
+        <div style="margin-top:28px">
+          <button class="btn-primary" onclick="goStep(2)">Continuă →</button>
+        </div>
+      </div>
+
+      <!-- ══ STEP 2: Speta reclamației ════════════════════════ -->
+      <div id="step-2" class="form-step" style="display:none">
+        <h2 style="font-size:18px;font-weight:800;color:#1A2332;margin-bottom:6px">Tipul reclamației</h2>
+        <p style="font-size:13px;color:#8C9BAD;margin-bottom:20px">Selectează categoria care descrie cel mai bine problema ta.</p>
+
+        <div class="speta-grid" id="speta-grid">
+          <div class="speta-chip" data-speta="serviciu" onclick="selectSpeta(this)">🔧 Calitate serviciu</div>
+          <div class="speta-chip" data-speta="materiale" onclick="selectSpeta(this)">📦 Materiale livrate</div>
+          <div class="speta-chip" data-speta="echipament" onclick="selectSpeta(this)">🏗 Echipament / Utilaj</div>
+          <div class="speta-chip" data-speta="factura" onclick="selectSpeta(this)">🧾 Factură / Plată</div>
+          <div class="speta-chip" data-speta="garantie" onclick="selectSpeta(this)">🛡 Garanție lucrare</div>
+          <div class="speta-chip" data-speta="cmr" onclick="selectSpeta(this)">📋 CMR / Transport</div>
+          <div class="speta-chip" data-speta="compliance" onclick="selectSpeta(this)">⚖️ Compliance / Audit</div>
+          <div class="speta-chip" data-speta="clauze" onclick="selectSpeta(this)">📄 Clauze contractuale</div>
+          <div class="speta-chip" data-speta="asigurare" onclick="selectSpeta(this)">🛡 Poliță asigurare</div>
+          <div class="speta-chip" data-speta="altele" onclick="selectSpeta(this)">📝 Altele</div>
+        </div>
+        <div id="err-speta" style="display:none;color:#DC2626;font-size:12.5px;margin-top:12px;font-weight:600">⚠ Te rugăm să selectezi tipul reclamației.</div>
+
+        <div style="display:flex;gap:10px;margin-top:28px">
+          <button class="btn-secondary" onclick="goStep(1)" style="width:auto;padding:11px 20px">← Înapoi</button>
+          <button class="btn-primary" onclick="goStep(3)">Continuă →</button>
+        </div>
+      </div>
+
+      <!-- ══ STEP 3: Detalii comandă + descriere ══════════════ -->
+      <div id="step-3" class="form-step" style="display:none">
+        <h2 style="font-size:18px;font-weight:800;color:#1A2332;margin-bottom:6px">Detalii reclamație</h2>
+        <p style="font-size:13px;color:#8C9BAD;margin-bottom:22px">Completează informațiile comenzii și descrie problema.</p>
+
+        <!-- Date contact -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+          <div class="fld-group" style="margin-bottom:0">
+            <label class="fld-lbl">Nume complet *</label>
+            <input id="f-name" class="fld" type="text" placeholder="Ion Popescu"/>
+          </div>
+          <div class="fld-group" style="margin-bottom:0">
+            <label class="fld-lbl">Email *</label>
+            <input id="f-email" class="fld" type="email" placeholder="ion@email.com"/>
+          </div>
+        </div>
+        <div class="fld-group">
+          <label class="fld-lbl">Telefon</label>
+          <input id="f-phone" class="fld" type="tel" placeholder="+40 7xx xxx xxx"/>
+        </div>
+
+        <!-- Număr comandă -->
+        <div class="fld-group">
+          <label class="fld-lbl">Număr comandă *</label>
+          <div style="display:flex;gap:10px">
+            <input id="f-order" class="fld" type="text" placeholder="ex: MYD-RO-2025-000123"
+              oninput="fetchOrderSynopsis(this.value)"
+              style="flex:1"/>
+            <button onclick="fetchOrderSynopsis(document.getElementById('f-order').value)"
+              style="background:var(--teal);color:#fff;border:none;border-radius:10px;padding:0 18px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;transition:all .18s"
+              onmouseover="this.style.background='#05706e'" onmouseout="this.style.background='var(--teal)'">
+              Caută
+            </button>
+          </div>
+
+          <!-- Sinteza comandă -->
+          <div id="order-synopsis" class="order-synopsis">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+              <span style="font-size:16px">📋</span>
+              <span style="font-size:12px;font-weight:800;color:#1A2332">Sinteza comenzii</span>
+              <span id="syn-badge" style="font-size:10px;font-weight:700;padding:2px 9px;border-radius:99px;background:#D1FAE5;color:#059669">Activă</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px">
+              <div style="font-size:11.5px"><span style="color:#8C9BAD">Serviciu:</span> <strong id="syn-svc">—</strong></div>
+              <div style="font-size:11.5px"><span style="color:#8C9BAD">Data:</span> <strong id="syn-date">—</strong></div>
+              <div style="font-size:11.5px"><span style="color:#8C9BAD">Partener:</span> <strong id="syn-partner">—</strong></div>
+              <div style="font-size:11.5px"><span style="color:#8C9BAD">Valoare:</span> <strong id="syn-val">—</strong></div>
+              <div style="font-size:11.5px"><span style="color:#8C9BAD">Status:</span> <strong id="syn-status">—</strong></div>
+              <div style="font-size:11.5px"><span style="color:#8C9BAD">Garanție:</span> <strong id="syn-gar">—</strong></div>
+            </div>
+          </div>
+          <div id="order-not-found" style="display:none;margin-top:8px;background:#FEE2E2;border-radius:10px;padding:10px 14px;font-size:12.5px;color:#DC2626;font-weight:600">
+            ⚠ Numărul de comandă nu a fost găsit. Verifică formatul și încearcă din nou.
+          </div>
+        </div>
+
+        <!-- Descriere problemă -->
+        <div class="fld-group">
+          <label class="fld-lbl">Descrierea problemei *</label>
+          <textarea id="f-desc" class="fld" rows="5"
+            placeholder="Descrie detaliat problema întâmpinată: ce s-a întâmplat, când, ce impact are și ce soluție aștepți..."
+            style="resize:vertical"></textarea>
+          <div style="text-align:right;font-size:11px;color:#8C9BAD;margin-top:4px">
+            <span id="desc-count">0</span>/1000 caractere
+          </div>
+        </div>
+
+        <div id="err-step3" style="display:none;color:#DC2626;font-size:12.5px;margin-bottom:12px;font-weight:600;background:#FEE2E2;border-radius:8px;padding:10px 14px"></div>
+
+        <div style="display:flex;gap:10px;margin-top:8px">
+          <button class="btn-secondary" onclick="goStep(2)" style="width:auto;padding:11px 20px">← Înapoi</button>
+          <button class="btn-primary" onclick="goStep(4)">Continuă →</button>
+        </div>
+      </div>
+
+      <!-- ══ STEP 4: Documente ═════════════════════════════════ -->
+      <div id="step-4" class="form-step" style="display:none">
+        <h2 style="font-size:18px;font-weight:800;color:#1A2332;margin-bottom:6px">Documente & Imagini</h2>
+        <p style="font-size:13px;color:#8C9BAD;margin-bottom:22px">Atașează dovezi: fotografii, facturi, contracte sau orice document relevant. (Opțional)</p>
+
+        <!-- Upload zone -->
+        <div class="upload-zone" id="upload-zone"
+          ondragover="event.preventDefault();this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')"
+          ondrop="handleDrop(event)">
+          <input type="file" id="file-input" multiple accept="image/*,.pdf,.doc,.docx"
+            onchange="handleFiles(this.files)"/>
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#079d9a" stroke-width="1.5" style="margin:0 auto 10px">
+            <polyline points="16 16 12 12 8 16"/>
+            <line x1="12" y1="12" x2="12" y2="21"/>
+            <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+          </svg>
+          <p style="font-size:13px;font-weight:700;color:#1A2332;margin-bottom:4px">Trage fișierele aici sau <span style="color:var(--teal)">selectează</span></p>
+          <p style="font-size:11.5px;color:#8C9BAD">JPG, PNG, PDF, DOC · Max 10MB per fișier</p>
+        </div>
+
+        <!-- Previzualizare imagini -->
+        <div class="img-previews" id="img-previews"></div>
+
+        <!-- Lista fișiere non-imagine -->
+        <div id="file-list" style="margin-top:10px;display:flex;flex-direction:column;gap:6px"></div>
+
+        <!-- T&C + GDPR -->
+        <div style="background:#F4F7F9;border-radius:12px;padding:16px 18px;margin-top:24px;display:flex;flex-direction:column;gap:10px">
+          <label class="chk-row">
+            <input type="checkbox" id="chk-tc"/>
+            <div class="chk-box">
+              <svg id="chk-tc-icon" width="11" height="11" viewBox="0 0 12 12" fill="none" style="display:none">
+                <polyline points="2 6 5 9 10 3" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="chk-lbl">Am citit și accept <a href="mydarrin-termeni.html" target="_blank" style="color:var(--navy);font-weight:700">Termenii și Condițiile</a> platformei My Darrin, inclusiv procedura de soluționare a reclamațiilor. *</span>
+          </label>
+          <label class="chk-row">
+            <input type="checkbox" id="chk-gdpr"/>
+            <div class="chk-box">
+              <svg id="chk-gdpr-icon" width="11" height="11" viewBox="0 0 12 12" fill="none" style="display:none">
+                <polyline points="2 6 5 9 10 3" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="chk-lbl">Sunt de acord cu <a href="mydarrin-politica-confidentialitate.html" target="_blank" style="color:var(--navy);font-weight:700">Politica de Confidențialitate (GDPR)</a>. Datele mele vor fi procesate exclusiv pentru soluționarea acestei reclamații. *</span>
+          </label>
+          <label class="chk-row">
+            <input type="checkbox" id="chk-honest"/>
+            <div class="chk-box">
+              <svg id="chk-honest-icon" width="11" height="11" viewBox="0 0 12 12" fill="none" style="display:none">
+                <polyline points="2 6 5 9 10 3" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="chk-lbl">Declar că informațiile furnizate sunt corecte și complete. Înțeleg că reclamațiile false pot atrage consecințe legale. *</span>
+          </label>
+        </div>
+
+        <div id="err-step4" style="display:none;color:#DC2626;font-size:12.5px;margin-top:12px;font-weight:600;background:#FEE2E2;border-radius:8px;padding:10px 14px"></div>
+
+        <div style="display:flex;gap:10px;margin-top:20px">
+          <button class="btn-secondary" onclick="goStep(3)" style="width:auto;padding:11px 20px">← Înapoi</button>
+          <button class="btn-primary" id="btn-submit" onclick="submitReclamatie()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Trimite reclamația
+          </button>
+        </div>
+      </div>
+
+      <!-- ══ STEP 5: Confirmare ════════════════════════════════ -->
+      <div id="step-5" class="form-step success-screen" style="display:none">
+        <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--teal),#05706e);margin:0 auto 20px;display:flex;align-items:center;justify-content:center">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h2 style="font-size:22px;font-weight:800;color:#1A2332;margin-bottom:10px">Reclamație înregistrată</h2>
+        <p style="font-size:14px;color:#6B7A8D;max-width:440px;margin:0 auto 20px;line-height:1.7">
+          Speta ta a fost transmisă cu succes. Vei primi un email de confirmare în câteva minute cu numărul tichetului și termenul de soluționare.
+        </p>
+
+        <!-- Ticket info -->
+        <div style="background:linear-gradient(135deg,#EBF4FB,#E0F5F4);border-radius:14px;padding:20px;max-width:380px;margin:0 auto 24px;border:1.5px solid rgba(7,157,154,.2)">
+          <div style="font-size:11px;font-weight:700;color:#8C9BAD;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Detalii Tichet</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;justify-content:space-between;font-size:13px">
+              <span style="color:#6B7A8D">Număr tichet</span>
+              <strong id="ticket-nr" style="color:var(--teal);font-family:monospace">#TKT-000000</strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:13px">
+              <span style="color:#6B7A8D">Termen soluționare</span>
+              <strong id="ticket-deadline" style="color:#1A2332">—</strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:13px">
+              <span style="color:#6B7A8D">Email confirmare</span>
+              <strong id="ticket-email" style="color:#1A2332">—</strong>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:#FFF4E8;border-radius:12px;padding:14px 18px;max-width:380px;margin:0 auto 28px;border:1px solid #FFD980;text-align:left">
+          <p style="font-size:12.5px;color:#7A3200;line-height:1.6">
+            <strong>Ai primit emailul de confirmare?</strong> Dacă nu, verifică folderul Spam sau contactează-ne la
+            <a href="mailto:support@homebestpal.com" style="color:var(--org);font-weight:700">support@homebestpal.com</a>
+          </p>
+        </div>
+
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <a href="mydarrin-v3.html" class="btn-secondary" style="text-decoration:none;width:auto;padding:11px 22px">
+            Înapoi la platformă
+          </a>
+          <button class="btn-primary" style="width:auto;padding:11px 22px"
+            onclick="document.querySelectorAll('.form-step').forEach(s=>s.style.display='none');document.getElementById('step-1').style.display='block';resetForm();goStep(1)">
+            Înregistrează altă reclamație
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /card -->
+
+    <!-- Info suplimentare -->
+    <div style="margin-top:24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px">
+      <div style="background:#fff;border-radius:14px;padding:18px;border:1.5px solid #E8F0FB;text-align:center">
+        <div style="font-size:24px;margin-bottom:8px">⚡</div>
+        <div style="font-size:13px;font-weight:800;color:#1A2332;margin-bottom:4px">Răspuns rapid</div>
+        <div style="font-size:12px;color:#8C9BAD;line-height:1.5">Reclamațiile sunt procesate în maxim 24-48 ore lucrătoare</div>
+      </div>
+      <div style="background:#fff;border-radius:14px;padding:18px;border:1.5px solid #E8F0FB;text-align:center">
+        <div style="font-size:24px;margin-bottom:8px">🔒</div>
+        <div style="font-size:13px;font-weight:800;color:#1A2332;margin-bottom:4px">Confidențial</div>
+        <div style="font-size:12px;color:#8C9BAD;line-height:1.5">Datele tale sunt protejate conform GDPR și nu sunt partajate</div>
+      </div>
+      <div style="background:#fff;border-radius:14px;padding:18px;border:1.5px solid #E8F0FB;text-align:center">
+        <div style="font-size:24px;margin-bottom:8px">📧</div>
+        <div style="font-size:13px;font-weight:800;color:#1A2332;margin-bottom:4px">Confirmare email</div>
+        <div style="font-size:12px;color:#8C9BAD;line-height:1.5">Primești email cu numărul tichetului și statusul în timp real</div>
+      </div>
+    </div>
+
   </div>
 </section>
 
-<!-- ════ CUM FUNCȚIONEAZĂ (integrat din cum-functioneaza) ════ -->
-<section style="padding:72px 20px;background:#F4F7F9">
-  <div style="max-width:860px;margin:0 auto">
-    <div style="text-align:center;margin-bottom:48px">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#FF8C00;margin-bottom:8px">Cum funcționează</div>
-      <h2 style="font-size:clamp(20px,3vw,32px);font-weight:800;color:#1A2332;margin-bottom:10px">De la nevoie la lucrare finalizată</h2>
-      <p style="font-size:14px;color:#6B7A8D;max-width:500px;margin:0 auto;line-height:1.6">6 pași simpli, orchestrați automat de Darrin AI.</p>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin-bottom:36px">
-      <div style="background:#fff;border-radius:16px;padding:20px;border:1.5px solid #E8F0FB">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-          <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#001E3C,#003366);display:flex;align-items:center;justify-content:center;font-size:16px">🔍</div>
-          <span style="font-size:10px;font-weight:700;color:#FF8C00;text-transform:uppercase;letter-spacing:.06em">Pasul 1</span>
-        </div>
-        <h3 style="font-size:13.5px;font-weight:800;color:#1A2332;margin-bottom:5px">Descrie nevoia</h3>
-        <p style="font-size:12px;color:#6B7A8D;line-height:1.6">AI (text/voce/poză) sau catalog → nivel → cantitate → coș.</p>
-      </div>
-      <div style="background:#fff;border-radius:16px;padding:20px;border:1.5px solid #E8F0FB">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-          <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#0E9E99,#117A73);display:flex;align-items:center;justify-content:center;font-size:16px">📋</div>
-          <span style="font-size:10px;font-weight:700;color:#0E9E99;text-transform:uppercase;letter-spacing:.06em">Pasul 2</span>
-        </div>
-        <h3 style="font-size:13.5px;font-weight:800;color:#1A2332;margin-bottom:5px">Primești oferta completă</h3>
-        <p style="font-size:12px;color:#6B7A8D;line-height:1.6">Manoperă + Materiale + Transport + Asigurare — preț fix, transparent.</p>
-      </div>
-      <div style="background:#fff;border-radius:16px;padding:20px;border:1.5px solid #E8F0FB">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-          <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#FF8C00,#CC7000);display:flex;align-items:center;justify-content:center;font-size:16px">💳</div>
-          <span style="font-size:10px;font-weight:700;color:#FF8C00;text-transform:uppercase;letter-spacing:.06em">Pasul 3</span>
-        </div>
-        <h3 style="font-size:13.5px;font-weight:800;color:#1A2332;margin-bottom:5px">Card blocat, nu colectat</h3>
-        <p style="font-size:12px;color:#6B7A8D;line-height:1.6">Suma se blochează pe cardul tău. Se capturează doar la confirmare.</p>
-      </div>
-      <div style="background:#fff;border-radius:16px;padding:20px;border:1.5px solid #E8F0FB">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-          <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#059669,#047857);display:flex;align-items:center;justify-content:center;font-size:16px">🔧</div>
-          <span style="font-size:10px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:.06em">Pasul 4</span>
-        </div>
-        <h3 style="font-size:13.5px;font-weight:800;color:#1A2332;margin-bottom:5px">Specialistul lucrează</h3>
-        <p style="font-size:12px;color:#6B7A8D;line-height:1.6">PV digital cu fotografii before/after + GPS timestamp.</p>
-      </div>
-      <div style="background:#fff;border-radius:16px;padding:20px;border:1.5px solid #E8F0FB">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-          <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#003366,#1A5FAD);display:flex;align-items:center;justify-content:center;font-size:16px">📧</div>
-          <span style="font-size:10px;font-weight:700;color:#1A5FAD;text-transform:uppercase;letter-spacing:.06em">Pasul 5</span>
-        </div>
-        <h3 style="font-size:13.5px;font-weight:800;color:#1A2332;margin-bottom:5px">Confirmi sau obiectezi</h3>
-        <p style="font-size:12px;color:#6B7A8D;line-height:1.6">Email + SMS + Dashboard. Tăcerea = acceptare tacită.</p>
-      </div>
-      <div style="background:linear-gradient(135deg,#EBF4FB,#E0F5F4);border-radius:16px;padding:20px;border:1.5px solid rgba(14,158,153,.2)">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-          <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#FF8C00,#003366);display:flex;align-items:center;justify-content:center;font-size:16px">🛡</div>
-          <span style="font-size:10px;font-weight:700;color:#FF8C00;text-transform:uppercase;letter-spacing:.06em">Pasul 6</span>
-        </div>
-        <h3 style="font-size:13.5px;font-weight:800;color:#1A2332;margin-bottom:5px">Garanție activată automat</h3>
-        <p style="font-size:12px;color:#6B7A8D;line-height:1.6">Până la 24 luni configurabil, fotografii stocate, card eliberat automat.</p>
-      </div>
-    </div>
-    <div style="text-align:center">
-      <a href="cum-comanzi.html" style="display:inline-flex;align-items:center;gap:8px;background:#003366;color:#fff;text-decoration:none;border-radius:13px;padding:13px 28px;font-size:14px;font-weight:800;transition:all .2s" onmouseover="this.style.background='#1A5FAD'" onmouseout="this.style.background='#003366'">
-        Detalii complete — Cum comanzi →
-      </a>
-    </div>
-  </div>
-</section>
+<!-- ════ CHAT AI DARRIN — reclamații ════ -->
+<button class="chat-bubble-btn" id="chat-toggle" onclick="toggleChat()" title="Chat cu Darrin AI">
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+</button>
 
-<!-- ════ CTA DEVINO PARTENER (integrat) ════ -->
-<section style="padding:72px 20px;background:#fff">
-  <div style="max-width:960px;margin:0 auto">
-    <div style="text-align:center;margin-bottom:48px">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#0E9E99;margin-bottom:8px">Program Parteneri</div>
-      <h2 style="font-size:clamp(20px,3vw,32px);font-weight:800;color:#1A2332;margin-bottom:10px">Devino partener My Darrin</h2>
-      <p style="font-size:14px;color:#6B7A8D;max-width:520px;margin:0 auto;line-height:1.6">Selectezi serviciile, zona și disponibilitatea. Darrin AI face restul — comenzi automate, plăți garantate.</p>
+<div class="chat-panel" id="chat-panel">
+  <div class="chat-hdr">
+    <div class="chat-hdr-ico">🤖</div>
+    <div>
+      <div style="font-size:13px;font-weight:800;color:#fff">Darrin AI</div>
+      <div style="font-size:10.5px;color:rgba(255,255,255,.5)">Asistent reclamații · Online</div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:36px">
-      <a href="mydarrin-devino-partener.html?type=servicii" style="background:#FFF0D6;border-radius:16px;padding:20px;text-align:center;text-decoration:none;border:1.5px solid #FFD980;transition:all .2s" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
-        <div style="font-size:28px;margin-bottom:8px">🔧</div>
-        <div style="font-size:13px;font-weight:800;color:#1A2332">Partener Servicii</div>
-        <div style="font-size:11px;color:#8C9BAD;margin-top:4px">Meșteri, instalatori</div>
-      </a>
-      <a href="mydarrin-devino-partener.html?type=materiale" style="background:#EBF4FB;border-radius:16px;padding:20px;text-align:center;text-decoration:none;border:1.5px solid #D5DFE8;transition:all .2s" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
-        <div style="font-size:28px;margin-bottom:8px">📦</div>
-        <div style="font-size:13px;font-weight:800;color:#1A2332">Furnizor Materiale</div>
-        <div style="font-size:11px;color:#8C9BAD;margin-top:4px">Depozite, magazine</div>
-      </a>
-      <a href="mydarrin-devino-partener.html?type=inchirieri" style="background:#E0F5F4;border-radius:16px;padding:20px;text-align:center;text-decoration:none;border:1.5px solid #B2DFDB;transition:all .2s" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
-        <div style="font-size:28px;margin-bottom:8px">🏗</div>
-        <div style="font-size:13px;font-weight:800;color:#1A2332">Partener Închirieri</div>
-        <div style="font-size:11px;color:#8C9BAD;margin-top:4px">Utilaje, transport</div>
-      </a>
-      <a href="mydarrin-devino-partener.html?type=curier" style="background:#FFF3E0;border-radius:16px;padding:20px;text-align:center;text-decoration:none;border:1.5px solid #FFE0B2;transition:all .2s" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
-        <div style="font-size:28px;margin-bottom:8px">🚚</div>
-        <div style="font-size:13px;font-weight:800;color:#1A2332">Curier de cartier</div>
-        <div style="font-size:11px;color:#8C9BAD;margin-top:4px">Livrare locală</div>
-      </a>
-      <a href="mydarrin-devino-partener.html?type=asigurator" style="background:#F3E8FF;border-radius:16px;padding:20px;text-align:center;text-decoration:none;border:1.5px solid #E9D5FF;transition:all .2s" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
-        <div style="font-size:28px;margin-bottom:8px">🛡</div>
-        <div style="font-size:13px;font-weight:800;color:#1A2332">Asigurator</div>
-        <div style="font-size:11px;color:#8C9BAD;margin-top:4px">Polițe daune & execuție</div>
-      </a>
-    </div>
-    <div style="text-align:center">
-      <a href="cum-devii-partenerul-nostru.html" style="display:inline-flex;align-items:center;gap:8px;background:#FF8C00;color:#fff;text-decoration:none;border-radius:13px;padding:14px 32px;font-size:14.5px;font-weight:800;box-shadow:0 8px 24px rgba(255,140,0,.4);transition:all .2s" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
-        🚀 Cum devii partener My Darrin →
-      </a>
-    </div>
+    <button onclick="toggleChat()" style="margin-left:auto;background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:18px;line-height:1">×</button>
   </div>
-</section>
-
-<!-- ════ ECHIPĂ ════ -->
-<section style="padding:72px 20px;background:#F4F7F9">
-  <div style="max-width:700px;margin:0 auto;text-align:center">
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#8C9BAD;margin-bottom:8px">Echipa</div>
-    <h2 style="font-size:clamp(20px,3vw,30px);font-weight:800;color:#1A2332;margin-bottom:32px">Expertiză în execuție</h2>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px">
-      <div style="background:#fff;border-radius:16px;padding:24px;border:1.5px solid #E8F0FB;text-align:center">
-        <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#003366,#0E9E99);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;font-weight:900">C</div>
-        <div style="font-size:13.5px;font-weight:800;color:#1A2332">Cristian Popa</div>
-        <div style="font-size:11px;color:#FF8C00;font-weight:700;margin-top:2px">CEO</div>
-        <div style="font-size:11.5px;color:#6B7A8D;margin-top:6px;line-height:1.5">Strategie & Management Operațional</div>
-      </div>
-      <div style="background:#fff;border-radius:16px;padding:24px;border:1.5px solid #E8F0FB;text-align:center">
-        <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#FF8C00,#CC7000);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;font-weight:900">A</div>
-        <div style="font-size:13.5px;font-weight:800;color:#1A2332">Andreea Popa</div>
-        <div style="font-size:11px;color:#FF8C00;font-weight:700;margin-top:2px">CMO</div>
-        <div style="font-size:11.5px;color:#6B7A8D;margin-top:6px;line-height:1.5">Branding & Growth Hacking</div>
-      </div>
-      <div style="background:#fff;border-radius:16px;padding:24px;border:1.5px solid #E8F0FB;text-align:center">
-        <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#0E9E99,#003366);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;font-weight:900">T</div>
-        <div style="font-size:13.5px;font-weight:800;color:#1A2332">Theo Barca</div>
-        <div style="font-size:11px;color:#FF8C00;font-weight:700;margin-top:2px">CTO</div>
-        <div style="font-size:11.5px;color:#6B7A8D;margin-top:6px;line-height:1.5">Arhitectură AI & Scalabilitate</div>
-      </div>
-    </div>
+  <div class="chat-msgs" id="chat-msgs">
+    <div class="msg ai">Bună! Sunt Darrin AI, asistentul tău pentru reclamații. Pot să te ajut să înregistrezi o spetă sau să verifici statusul unei reclamații existente.<br><br>Cu ce te pot ajuta?</div>
   </div>
-</section>
+  <div style="padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid #F4F7F9">
+    <button onclick="chatQuick('Vreau să înregistrez o reclamație')" style="font-size:11px;padding:5px 11px;border-radius:99px;border:1px solid #E8F0FB;background:#fff;cursor:pointer;color:#6B7A8D;font-family:inherit;transition:all .15s" onmouseover="this.style.background='#E9F7F6'" onmouseout="this.style.background='#fff'">Înregistrez reclamație</button>
+    <button onclick="chatQuick('Verific statusul reclamației mele')" style="font-size:11px;padding:5px 11px;border-radius:99px;border:1px solid #E8F0FB;background:#fff;cursor:pointer;color:#6B7A8D;font-family:inherit;transition:all .15s" onmouseover="this.style.background='#E9F7F6'" onmouseout="this.style.background='#fff'">Status reclamație</button>
+    <button onclick="chatQuick('Am o problemă cu garanția')" style="font-size:11px;padding:5px 11px;border-radius:99px;border:1px solid #E8F0FB;background:#fff;cursor:pointer;color:#6B7A8D;font-family:inherit;transition:all .15s" onmouseover="this.style.background='#E9F7F6'" onmouseout="this.style.background='#fff'">Problemă garanție</button>
+  </div>
+  <div class="chat-inp-row">
+    <input class="chat-inp" id="chat-input" placeholder="Scrie mesajul tău..."
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"/>
+    <button class="chat-send" onclick="sendChat()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</div>
 
 <nav id="mobile-bottom-nav" style="
   display:none;
@@ -1173,8 +1505,8 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
           <li><a href="mydarrin-catalog.html" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Catalog Servicii</a></li>
           <li><a href="mydarrin-catalog.html?tab=materiale" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Materiale</a></li>
           <li><a href="mydarrin-catalog.html?tab=inchirieri" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Inchirieri</a></li>
-          <li><a href="cum-comanzi.html" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Cum functioneaza</a></li>
-          <li><a href="cum-comanzi.html" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Cum comanzi</a></li>
+          <li><a href="afla-ce-facem.html" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Cum functioneaza</a></li>
+          <li><a href="afla-ce-facem.html" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Cum comanzi</a></li>
           <li><a href="mydarrin-catalog.html?urgent=true" style="color:rgba(255,140,0,.75);font-size:13px;text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,140,0,.75)'">Urgente</a></li>
         </ul>
       </div>
@@ -1197,7 +1529,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
         <ul class="ftr-nav-col" style="list-style:none;display:flex;flex-direction:column;gap:10px">
           <li><a href="mydarrin-termeni.html" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Termeni & Conditii</a></li>
           <li><a href="mydarrin-politica-confidentialitate.html" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Confidentialitate & GDPR</a></li>
-          <li><a href="cum-comanzi.html#garantii" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Garantii & Asigurari</a></li>
+          <li><a href="afla-ce-facem.html#garantii" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Garantii & Asigurari</a></li>
           <li><a href="mydarrin-contact.html" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Suport Clienti</a></li>
           <li><a href="mydarrin-contact.html?subject=reclamatie" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Reclamatii</a></li>
         </ul>
@@ -1285,40 +1617,63 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 
         </div>
 
-        <!-- ── Tari active ── -->
+        <!-- ── Tari active — steaguri SVG cu paleta de culori oficiale ── -->
         <h4 style="color:#fff;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:11px">Activ in</h4>
-        <div class="ftr-flags" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+
+          <!-- Romania — albastru #002B7F, galben #FCD116, rosu #CE1126 -->
           <span title="Romania" class="ftr-flag" style="display:inline-flex;flex-direction:column;align-items:center;gap:3px;cursor:default">
-            <svg width="32" height="22" viewBox="0 0 3 2" style="border-radius:3px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.4)">
-              <rect width="1" height="2" fill="#002B7F"/><rect x="1" width="1" height="2" fill="#FCD116"/><rect x="2" width="1" height="2" fill="#CE1126"/>
+            <svg width="28" height="20" viewBox="0 0 3 2" style="border-radius:3px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.3)">
+              <rect width="1" height="2" fill="#002B7F"/>
+              <rect x="1" width="1" height="2" fill="#FCD116"/>
+              <rect x="2" width="1" height="2" fill="#CE1126"/>
             </svg>
-            <span style="font-size:9px;color:rgba(255,255,255,.45);font-weight:700;letter-spacing:.04em">RO</span>
+            <span style="font-size:9px;color:rgba(255,255,255,.4);font-weight:600">RO</span>
           </span>
+
+          <!-- Moldova — albastru #003DA5, galben #FFD200, rosu #CC0001 + stema -->
           <span title="Moldova" class="ftr-flag" style="display:inline-flex;flex-direction:column;align-items:center;gap:3px;cursor:default">
-            <svg width="32" height="22" viewBox="0 0 3 2" style="border-radius:3px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.4)">
-              <rect width="1" height="2" fill="#003DA5"/><rect x="1" width="1" height="2" fill="#FFD200"/><rect x="2" width="1" height="2" fill="#CC0001"/>
+            <svg width="28" height="20" viewBox="0 0 3 2" style="border-radius:3px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.3)">
+              <rect width="1" height="2" fill="#003DA5"/>
+              <rect x="1" width="1" height="2" fill="#FFD200"/>
+              <rect x="2" width="1" height="2" fill="#CC0001"/>
             </svg>
-            <span style="font-size:9px;color:rgba(255,255,255,.45);font-weight:700;letter-spacing:.04em">MD</span>
+            <span style="font-size:9px;color:rgba(255,255,255,.4);font-weight:600">MD</span>
           </span>
+
+          <!-- Germania — negru #000000, rosu #DD0000, galben #FFCE00 -->
           <span title="Deutschland" class="ftr-flag" style="display:inline-flex;flex-direction:column;align-items:center;gap:3px;cursor:default">
-            <svg width="32" height="22" viewBox="0 0 5 3" style="border-radius:3px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.4)">
-              <rect width="5" height="1" fill="#000000"/><rect y="1" width="5" height="1" fill="#DD0000"/><rect y="2" width="5" height="1" fill="#FFCE00"/>
+            <svg width="28" height="20" viewBox="0 0 5 3" style="border-radius:3px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.3)">
+              <rect width="5" height="1" fill="#000000"/>
+              <rect y="1" width="5" height="1" fill="#DD0000"/>
+              <rect y="2" width="5" height="1" fill="#FFCE00"/>
             </svg>
-            <span style="font-size:9px;color:rgba(255,255,255,.45);font-weight:700;letter-spacing:.04em">DE</span>
+            <span style="font-size:9px;color:rgba(255,255,255,.4);font-weight:600">DE</span>
           </span>
+
+          <!-- Franta — albastru #002395, alb #FFFFFF, rosu #ED2939 -->
           <span title="France" class="ftr-flag" style="display:inline-flex;flex-direction:column;align-items:center;gap:3px;cursor:default">
-            <svg width="32" height="22" viewBox="0 0 3 2" style="border-radius:3px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.4)">
-              <rect width="1" height="2" fill="#002395"/><rect x="1" width="1" height="2" fill="#FFFFFF"/><rect x="2" width="1" height="2" fill="#ED2939"/>
+            <svg width="28" height="20" viewBox="0 0 3 2" style="border-radius:3px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.3)">
+              <rect width="1" height="2" fill="#002395"/>
+              <rect x="1" width="1" height="2" fill="#FFFFFF"/>
+              <rect x="2" width="1" height="2" fill="#ED2939"/>
             </svg>
-            <span style="font-size:9px;color:rgba(255,255,255,.45);font-weight:700;letter-spacing:.04em">FR</span>
+            <span style="font-size:9px;color:rgba(255,255,255,.4);font-weight:600">FR</span>
           </span>
+
+          <!-- Bulgaria — alb #FFFFFF, verde #00966E, rosu #D62612 -->
           <span title="Bulgaria" class="ftr-flag" style="display:inline-flex;flex-direction:column;align-items:center;gap:3px;cursor:default">
-            <svg width="32" height="22" viewBox="0 0 3 2" style="border-radius:3px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.4)">
-              <rect width="3" height="0.667" fill="#FFFFFF"/><rect y="0.667" width="3" height="0.667" fill="#00966E"/><rect y="1.333" width="3" height="0.667" fill="#D62612"/>
+            <svg width="28" height="20" viewBox="0 0 3 2" style="border-radius:3px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.3)">
+              <rect width="3" height="0.667" fill="#FFFFFF"/>
+              <rect y="0.667" width="3" height="0.667" fill="#00966E"/>
+              <rect y="1.333" width="3" height="0.667" fill="#D62612"/>
             </svg>
-            <span style="font-size:9px;color:rgba(255,255,255,.45);font-weight:700;letter-spacing:.04em">BG</span>
+            <span style="font-size:9px;color:rgba(255,255,255,.4);font-weight:600">BG</span>
           </span>
-          <span style="font-size:10px;color:rgba(255,255,255,.22);font-weight:600;padding:3px 9px;border:1px solid rgba(255,255,255,.1);border-radius:99px">+more</span>
+
+          <!-- Coming soon badge -->
+          <span style="font-size:10px;color:rgba(255,255,255,.25);font-weight:600;letter-spacing:.04em;padding:3px 8px;border:1px solid rgba(255,255,255,.1);border-radius:99px">+more</span>
+
         </div>
       </div>
 
@@ -1468,619 +1823,333 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
     .ftr-app-btns { flex-direction: column !important; }
     .ftr-app-btns a { min-width: 0; width: 100%; }
   }
-
-/* ── Activ in — centrat pe toate ecranele ────────────────────── */
-.ftr-flags {
-  justify-content: flex-start;
-}
-@media (max-width: 1100px) {
-  /* Pe laptop/tablet — Activ in în col 5 care devine full-width */
-  .ftr-flags { justify-content: flex-start; }
-}
-@media (max-width: 768px) {
-  /* Tablet portrait — col 5 full-width, flags centrate */
-  .ftr-flags { justify-content: center; }
-  /* Secțiunea Activ in — text centrat */
-  .ftr-grid > div:last-child h4:last-of-type,
-  .ftr-grid > div:last-child .ftr-flags {
-    text-align: center;
-  }
-}
-@media (max-width: 480px) {
-  /* Mobile — tot col 5 centrat */
-  .ftr-grid > div:last-child {
-    text-align: center;
-  }
-  .ftr-flags {
-    justify-content: center;
-  }
-  .ftr-app-btns {
-    align-items: center;
-  }
-  .ftr-social {
-    justify-content: center;
-  }
-}
   </style>
 </footer>
 
-
-<!-- ════ FOOTER RESPONSIVE CSS ════ -->
-<style>
-@media (max-width: 900px) {
-  .footer-grid { grid-template-columns: 1fr 1fr !important; }
-}
-@media (max-width: 560px) {
-  .footer-grid { grid-template-columns: 1fr !important; }
-}
-</style>
-
-
-
-<!-- ══════════════════════════════════════════
-     MODAL: DEVINO INVESTITOR
-══════════════════════════════════════════ -->
-<div id="investor-modal" class="hidden fixed inset-0 z-[400] flex items-center justify-center p-4">
-  <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" onclick="closeInvestorModal()"></div>
-  <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-xl z-10 overflow-hidden">
-
-    <!-- Header dark -->
-    <div class="px-7 pt-7 pb-6 relative" style="background:linear-gradient(135deg,#002855,#003366)">
-      <button onclick="closeInvestorModal()" class="absolute top-5 right-5 p-1.5 rounded-lg hover:bg-white/10 transition text-white/40">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-      <div class="inline-flex items-center gap-2 bg-[#FF8C00]/15 border border-[#FF8C00]/30 text-[#FF8C00] text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-3">📈 Devino Investitor</div>
-      <h2 class="font-bold text-2xl text-white mb-1" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Investește în My Darrin</h2>
-      <p class="text-sm text-white/50">Platformă hibrid clasic & AI · Multi-țară · Servicii integrate la cerere</p>
-      <!-- KPIs mini -->
-      <div class="grid grid-cols-3 gap-3 mt-5">
-        <div class="bg-white/08 rounded-xl p-3 border border-white/10 text-center">
-          <div class="font-bold text-lg text-white" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">12.4K</div>
-          <div class="text-[10px] text-white/40 mt-0.5">Clienți activi</div>
-        </div>
-        <div class="bg-white/08 rounded-xl p-3 border border-white/10 text-center">
-          <div class="font-bold text-lg text-[#FF8C00]" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">1.840</div>
-          <div class="text-[10px] text-white/40 mt-0.5">Parteneri</div>
-        </div>
-        <div class="bg-white/08 rounded-xl p-3 border border-white/10 text-center">
-          <div class="font-bold text-lg text-[#0E9E99]" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">384K</div>
-          <div class="text-[10px] text-white/40 mt-0.5">Lei în Escrow</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Body -->
-    <div class="p-6">
-      <!-- Avantaje investitor -->
-      <div class="grid grid-cols-2 gap-3 mb-5">
-        <div class="rounded-xl p-4 border border-gray-100 bg-[#F4F7F9]">
-          <div class="text-xl mb-2">📊</div>
-          <div class="font-bold text-xs text-[#2D2D2D] mb-1">Monitorizare KPIs</div>
-          <div class="text-[11px] text-gray-400 leading-relaxed">Acces la rapoarte detaliate de performanță în timp real.</div>
-        </div>
-        <div class="rounded-xl p-4 border border-gray-100 bg-[#F4F7F9]">
-          <div class="text-xl mb-2">🌍</div>
-          <div class="font-bold text-xs text-[#2D2D2D] mb-1">Expansiune multi-țară</div>
-          <div class="text-[11px] text-gray-400 leading-relaxed">Platforma se extinde activ în RO, MD și alte piețe europene.</div>
-        </div>
-        <div class="rounded-xl p-4 border border-gray-100 bg-[#F4F7F9]">
-          <div class="text-xl mb-2">🤖</div>
-          <div class="font-bold text-xs text-[#2D2D2D] mb-1">AI Proprietary</div>
-          <div class="text-[11px] text-gray-400 leading-relaxed">Darrin AI — devize automate, prețuri dinamice, alocare multi-actor.</div>
-        </div>
-        <div class="rounded-xl p-4 border border-gray-100 bg-[#F4F7F9]">
-          <div class="text-xl mb-2">💰</div>
-          <div class="font-bold text-xs text-[#2D2D2D] mb-1">Model Escrow + Comision</div>
-          <div class="text-[11px] text-gray-400 leading-relaxed">Comision 12% per tranzacție. Revenue recurent, predictibil.</div>
-        </div>
-      </div>
-
-      <!-- Formular contact investitor -->
-      <div class="rounded-2xl p-5 border border-[#003366]/20" style="background:linear-gradient(135deg,#F4F7F9,#EBF4FB)">
-        <div class="font-bold text-sm text-[#2D2D2D] mb-3" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Solicită pachetul pentru investitori</div>
-        <div class="grid grid-cols-2 gap-3 mb-3">
-          <div><label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Nume complet</label><input type="text" placeholder="Nume Prenume" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
-          <div><label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Companie</label><input type="text" placeholder="Compania ta" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
-        </div>
-        <div class="mb-3"><label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Email</label><input type="email" placeholder="email@companie.com" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
-        <div class="mb-4"><label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Sumă de investiție estimată</label>
-          <select class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white">
-            <option value="">Selectează intervalul</option>
-            <option>€ 10.000 – € 50.000</option>
-            <option>€ 50.000 – € 150.000</option>
-            <option>€ 150.000 – € 500.000</option>
-            <option>€ 500.000+</option>
-          </select>
-        </div>
-        <button onclick="submitInvestorForm()" class="w-full py-3.5 rounded-xl font-bold text-sm text-white transition flex items-center justify-center gap-2" style="background:linear-gradient(135deg,#003366,#003366)">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.18 1.22 2 2 0 012.18 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.91 7.91A16 16 0 0014.09 15l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
-          Solicită pachetul de investitor
-        </button>
-      </div>
-    </div>
-
-  </div>
-</div><script>
-lucide.createIcons();
-
-// Reveal
-const obs=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('visible');}),{threshold:.1});
-document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
-
-// Scroll progress + header shadow
-window.addEventListener('scroll',()=>{
-  const s=document.documentElement;
-  document.getElementById('spbar').style.width=(s.scrollTop/(s.scrollHeight-s.clientHeight)*100)+'%';
-  document.getElementById('hdr').style.boxShadow=window.scrollY>8?'0 4px 28px rgba(26,38,64,.1)':'';
-});
-
-// Sidebar
-function openSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebar-overlay').classList.add('show');document.body.style.overflow='hidden';}
-function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('show');document.body.style.overflow='';}
-
-// Sidebar sub-sections
-function toggleSbSection(id){
-  const el=document.getElementById(id);
-  const ico=document.getElementById('ico-'+id);
-  el.classList.toggle('hidden');
-  if(ico) ico.style.transform=el.classList.contains('hidden')?'':'rotate(180deg)';
-}
-
-// Language
-function toggleLang(){document.getElementById('langDd').classList.toggle('open');}
-function setLang(code,flag,label){
-  document.getElementById('lang-flag').textContent=flag;
-  document.getElementById('lang-label').textContent=label;
-  document.querySelectorAll('.lang-opt').forEach(o=>o.classList.remove('active'));
-  event.target.closest('.lang-opt').classList.add('active');
-  document.getElementById('langDd').classList.remove('open');
-  // In real app: reload page with locale
-}
-document.addEventListener('click',e=>{
-  if(!document.getElementById('langDd').contains(e.target))
-    document.getElementById('langDd').classList.remove('open');
-});
-
-// Location modal
-function openLocModal(){document.getElementById('loc-modal').classList.remove('hidden');document.body.style.overflow='hidden';}
-function closeLocModal(){document.getElementById('loc-modal').classList.add('hidden');document.body.style.overflow='';}
-function setLoc(city){document.getElementById('loc-input').value=city;}
-function saveLocation(){
-  document.getElementById('loc-display').textContent=document.getElementById('loc-input').value;
-  closeLocModal();
-}
-
-// Auth modal
-function toggleAuthModal(){
-  const m=document.getElementById('auth-modal');
-  m.classList.toggle('hidden');
-  document.body.style.overflow=m.classList.contains('hidden')?'':'hidden';
-}
-function switchAuthTab(tab){
-  document.getElementById('auth-login').classList.toggle('hidden', tab!=='login');
-  document.getElementById('auth-register').classList.toggle('hidden', tab!=='register');
-  document.getElementById('tab-login-btn').classList.toggle('text-[#003366]', tab==='login');
-  document.getElementById('tab-login-btn').classList.toggle('border-b-2', tab==='login');
-  document.getElementById('tab-login-btn').classList.toggle('border-[#003366]', tab==='login');
-  document.getElementById('tab-login-btn').classList.toggle('text-gray-400', tab!=='login');
-  document.getElementById('tab-register-btn').classList.toggle('text-[#003366]', tab==='register');
-  document.getElementById('tab-register-btn').classList.toggle('border-b-2', tab==='register');
-  document.getElementById('tab-register-btn').classList.toggle('border-[#003366]', tab==='register');
-  document.getElementById('tab-register-btn').classList.toggle('text-gray-400', tab!=='register');
-}
-function checkAuth(){alert('Trebuie să fii autentificat pentru a vedea comenzile. Te rugăm să te loghezi.');}
-
-// Basket
-function toggleBasket(){
-  const p=document.getElementById('basket-panel');
-  p.classList.toggle('hidden');
-  document.body.style.overflow=p.classList.contains('hidden')?'':'hidden';
-}
-function changeQty(btn,delta){
-  const item=btn.closest('.basket-item');
-  const qEl=item.querySelector('.basket-qty');
-  const pEl=item.querySelector('.basket-price');
-  const unit=parseInt(pEl.dataset.unit);
-  let q=parseInt(qEl.textContent)+delta;
-  if(q<1)q=1;
-  qEl.textContent=q;
-  pEl.textContent=(unit*q)+' Lei';
-  recalcBasket();
-}
-function removeItem(btn){
-  btn.closest('.basket-item').remove();
-  const cnt=document.querySelectorAll('#basket-panel .basket-item').length;
-  document.getElementById('basket-count').textContent=cnt;
-  recalcBasket();
-}
-function recalcBasket(){
-  let t=0;
-  document.querySelectorAll('#basket-panel .basket-price').forEach(el=>{t+=parseInt(el.textContent);});
-  document.getElementById('basket-subtotal').textContent=t+' Lei';
-  document.getElementById('basket-total').textContent=Math.round(t*1.12)+' Lei';
-}
-
-// Catalog tabs
-function switchTab(name,btn){
-  document.querySelectorAll('.tab-content').forEach(t=>t.classList.add('hidden'));
-  document.querySelectorAll('.cat-tab').forEach(b=>b.classList.remove('active'));
-  document.getElementById('tab-'+name).classList.remove('hidden');
-  btn.classList.add('active');
-  document.querySelectorAll('#tab-'+name+' .reveal').forEach(el=>{el.classList.remove('visible');setTimeout(()=>el.classList.add('visible'),60);});
-}
-
-// ── CURRENCY & ZONE DETECTION (simulat din IP / locatie) ──
-const CURRENCIES = {
-  RO: { code:'RON', symbol:'Lei',  rate:1,       label:'RON (Lei)',   flag:'🇷🇴' },
-  DE: { code:'EUR', symbol:'€',    rate:0.2,     label:'EUR (€)',     flag:'🇩🇪' },
-  FR: { code:'EUR', symbol:'€',    rate:0.2,     label:'EUR (€)',     flag:'🇫🇷' },
-  GB: { code:'GBP', symbol:'£',    rate:0.175,   label:'GBP (£)',     flag:'🇬🇧' },
-  HU: { code:'HUF', symbol:'Ft',   rate:80,      label:'HUF (Ft)',    flag:'🇭🇺' },
-  PL: { code:'PLN', symbol:'zł',   rate:0.92,    label:'PLN (zł)',    flag:'🇵🇱' },
-  MD: { code:'MDL', symbol:'L',    rate:3.9,     label:'MDL (L)',     flag:'🇲🇩' },
-  BG: { code:'BGN', symbol:'лв',   rate:0.39,    label:'BGN (лв)',    flag:'🇧🇬' },
-  DEFAULT: { code:'EUR', symbol:'€', rate:0.2,   label:'EUR (€)',     flag:'🌍' },
+<script>
+// ══ STATE ════════════════════════════════════════════════════════
+var state = {
+  actor:   null,
+  speta:   null,
+  orderNr: null,
+  files:   [],
+  currentStep: 1
 };
 
-// Zones where platform is ACTIVE
-const ACTIVE_ZONES = ['RO', 'MD', 'DE', 'FR', 'BG'];
-
-function detectAndApplyCurrency() {
-  // Try to get country from IP via free API
-  fetch('https://ipapi.co/json/')
-    .then(r => r.json())
-    .then(data => {
-      const country = data.country_code || 'RO';
-      const city = data.city || '';
-      const region = data.region || '';
-      const isActive = ACTIVE_ZONES.includes(country);
-
-      // Update location display
-      if (city) {
-        document.getElementById('loc-display').textContent = city + (region ? ', ' + region : '');
-        document.getElementById('loc-input').value = city + (region ? ', ' + region : '');
-      }
-
-      // Apply currency
-      const cur = CURRENCIES[country] || CURRENCIES.DEFAULT;
-      applyCurrency(cur);
-
-      // Show unavailable zone banner if needed
-      if (!isActive) {
-        const zoneName = data.country_name || country;
-        document.getElementById('unavail-zone').textContent = zoneName;
-        setTimeout(() => {
-          document.getElementById('zone-unavailable').classList.remove('hidden');
-        }, 2000);
-      }
-    })
-    .catch(() => {
-      // Fallback: RO
-      applyCurrency(CURRENCIES.RO);
-    });
-}
-
-function applyCurrency(cur) {
-  // Update label in catalog header
-  const lbl = document.getElementById('currency-label');
-  if (lbl) lbl.textContent = cur.flag + ' ' + cur.label;
-
-  // Update all prices
-  document.querySelectorAll('.dyn-price').forEach(el => {
-    const ron = parseFloat(el.dataset.ron);
-    const converted = Math.round(ron * cur.rate);
-    el.textContent = converted.toLocaleString();
-  });
-  document.querySelectorAll('.dyn-currency').forEach(el => {
-    el.textContent = cur.symbol;
-  });
-}
-
-// Zone unavailable tabs
-function switchUnavailTab(tab) {
-  document.getElementById('unavail-tab-client').classList.toggle('active', tab==='client');
-  document.getElementById('unavail-tab-furnizor').classList.toggle('active', tab==='furnizor');
-}
-
-function submitUnavail() {
-  const subscribed = document.getElementById('unavail-subscribe').checked;
-  const modal = document.getElementById('zone-unavailable');
-  modal.querySelector('.bg-white').innerHTML = `
-    <div class="p-8 text-center">
-      <div class="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4 text-3xl">✅</div>
-      <h3 class="font-bold text-xl text-[#2D2D2D] mb-2" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Înregistrat cu succes!</h3>
-      <p class="text-gray-400 text-sm leading-relaxed mb-6">Vei fi printre primii care află când My Darrin lansează în zona ta${subscribed ? ' — vei primi notificări pe email' : ''}.</p>
-      <button onclick="document.getElementById('zone-unavailable').classList.add('hidden')" class="bg-[#FF8C00] text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition">Închide</button>
-    </div>
-  `;
-}
-
-// Init currency detection on page load
-detectAndApplyCurrency();
-
-// ── PARTNER MODAL ──
-const PARTNER_META = {
-  servicii:   { icon:'🔧', title:'Furnizor de Servicii',   color:'#FF8C00', bg:'linear-gradient(135deg,#FFF0D6,#FDE8C4)' },
-  materiale:  { icon:'📦', title:'Furnizor de Materiale',  color:'#003366', bg:'linear-gradient(135deg,#EBF4FB,#DDE6F5)' },
-  inchirieri: { icon:'🏗', title:'Furnizor de Închirieri', color:'#0E9E99', bg:'linear-gradient(135deg,#E0F5F4,#C5EEEC)' },
-};
-
-function openPartnerModal(type) {
-  document.getElementById('partner-modal').classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
-  if (type) {
-    setTimeout(() => selectPartnerType(type), 80);
-  } else {
-    resetPartnerType();
+// ══ STEPS ════════════════════════════════════════════════════════
+function goStep(n) {
+  if (n === 2 && !state.actor) {
+    document.getElementById('err-actor').style.display = 'block';
+    return;
   }
-}
-
-function closePartnerModal() {
-  document.getElementById('partner-modal').classList.add('hidden');
-  document.body.style.overflow = '';
-  resetPartnerType();
-}
-
-function selectPartnerType(type) {
-  const meta = PARTNER_META[type];
-  if (!meta) return;
-  // Hide cards, show form
-  document.getElementById('partner-cards').classList.add('hidden');
-  document.getElementById('partner-form').classList.remove('hidden');
-  document.getElementById('pf-icon').textContent = meta.icon;
-  document.getElementById('pf-icon').style.background = meta.bg;
-  document.getElementById('pf-title').textContent = meta.title;
-  document.getElementById('pf-title').style.color = meta.color;
-}
-
-function resetPartnerType() {
-  document.getElementById('partner-cards').classList.remove('hidden');
-  document.getElementById('partner-form').classList.add('hidden');
-}
-
-
-// ── INVESTOR MODAL ──
-function openInvestorModal() {
-  document.getElementById('investor-modal').classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeInvestorModal() {
-  document.getElementById('investor-modal').classList.add('hidden');
-  document.body.style.overflow = '';
-}
-
-function submitInvestorForm() {
-  const modal = document.getElementById('investor-modal');
-  const inner = modal.querySelector('.relative.bg-white');
-  inner.innerHTML = `
-    <div class="p-10 text-center">
-      <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl" style="background:linear-gradient(135deg,#EBF4FB,#DDE6F5)">📈</div>
-      <h3 class="font-bold text-xl text-[#2D2D2D] mb-2" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Solicitare primită!</h3>
-      <p class="text-gray-400 text-sm leading-relaxed mb-6 max-w-xs mx-auto">Echipa My Darrin te va contacta în curând cu pachetul complet pentru investitori și detaliile rundei de finanțare.</p>
-      <button onclick="closeInvestorModal()" class="bg-[#003366] text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-[#002855] transition">Închide</button>
-    </div>`;
-}
-
-// ── COUNTERS
-function animateCounter(el){
-  const target=parseInt(el.dataset.target);
-  const isDecimal=el.dataset.decimal==='true';
-  const start=performance.now();
-  (function tick(now){
-    const t=Math.min((now-start)/1800,1);
-    const ease=1-Math.pow(1-t,3);
-    const val=target*ease;
-    el.textContent=isDecimal?(val/100).toFixed(2):Math.floor(val).toLocaleString('ro-RO');
-    if(t<1)requestAnimationFrame(tick);
-  })(performance.now());
-}
-const cobs=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting&&!x.target.dataset.done){x.target.dataset.done='1';animateCounter(x.target);}}),{threshold:.5});
-document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
-</script>
-</body>
-</html>
-
-<script>
-function initReveal(){const ro=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting)x.target.classList.add("visible");}),{threshold:.06});document.querySelectorAll(".reveal").forEach(el=>ro.observe(el));}
-document.addEventListener("DOMContentLoaded",initReveal);
-window.addEventListener("scroll",()=>{const s=document.documentElement;document.getElementById("spbar").style.width=(s.scrollTop/(s.scrollHeight-s.clientHeight)*100)+"%";});
-function openSidebar(){document.getElementById("sidebar")?.classList.add("open");document.getElementById("sidebar-overlay")?.classList.add("show");document.body.style.overflow="hidden";}
-function closeSidebar(){document.getElementById("sidebar")?.classList.remove("open");document.getElementById("sidebar-overlay")?.classList.remove("show");document.body.style.overflow="";}
-function toggleSbSection(id){const el=document.getElementById(id);const ico=document.getElementById("ico-"+id);if(el)el.classList.toggle("hidden");if(ico)ico.style.transform=el.classList.contains("hidden")?"":"rotate(180deg)";}
-function openPartnerModal(){document.getElementById("partner-modal")?.classList.remove("hidden");document.body.style.overflow="hidden";}
-function closePartnerModal(){document.getElementById("partner-modal")?.classList.add("hidden");document.body.style.overflow="";}
-function openInvestorModal(){document.getElementById("investor-modal")?.classList.remove("hidden");document.body.style.overflow="hidden";}
-function closeInvestorModal(){document.getElementById("investor-modal")?.classList.add("hidden");document.body.style.overflow="";}
-function selectPartnerType(){}function resetPartnerType(){}function submitInvestorForm(){}function switchTab(){}function toggleBasket(){}
-if(typeof lucide!=="undefined")lucide.createIcons();
-</script>
-<script src="branding-loader.js" defer></script>
-
-<!-- ════ DARRIN AI — CHAT WIDGET FLOTANT (colț dreapta-jos) ════ -->
-<button id="dai-fab" onclick="toggleDaiChat()" style="position:fixed;bottom:24px;right:24px;width:58px;height:58px;border-radius:50%;background:#0E9E99;border:none;box-shadow:0 8px 24px rgba(14,158,153,.45);cursor:pointer;z-index:9000;display:flex;align-items:center;justify-content:center;transition:transform .2s" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
-  <span id="dai-fab-icon" style="font-size:26px">🤖</span>
-  <span id="dai-fab-badge" style="position:absolute;top:-2px;right:-2px;width:16px;height:16px;background:#FF8C00;border-radius:50%;display:none"></span>
-</button>
-
-<div id="dai-chat-panel" style="position:fixed;bottom:94px;right:24px;width:340px;max-width:92vw;max-height:480px;background:#fff;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.25);z-index:9001;display:none;flex-direction:column;overflow:hidden">
-  <div style="background:linear-gradient(135deg,#003366,#0E9E99);padding:16px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
-    <div style="display:flex;align-items:center;gap:10px">
-      <span style="font-size:22px">🤖</span>
-      <div>
-        <div style="color:#fff;font-weight:800;font-size:13.5px">Darrin AI</div>
-        <div style="color:rgba(255,255,255,.6);font-size:10.5px;display:flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:50%;background:#22D3A6;display:inline-block"></span>Online · răspuns instant</div>
-      </div>
-    </div>
-    <button onclick="toggleDaiChat()" style="background:rgba(255,255,255,.15);border:none;width:28px;height:28px;border-radius:8px;color:#fff;cursor:pointer;font-size:16px">×</button>
-  </div>
-
-  <div id="dai-chat-messages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:#F8FAFC">
-    <div style="display:flex;gap:8px;align-items:flex-start">
-      <span style="font-size:18px;flex-shrink:0">🤖</span>
-      <div style="background:#fff;border-radius:12px 12px 12px 2px;padding:10px 13px;font-size:12.5px;color:#2D2D2D;line-height:1.5;box-shadow:0 1px 3px rgba(0,0,0,.06)">
-        Bună! Sunt Darrin AI. Cu ce te pot ajuta astăzi?
-      </div>
-    </div>
-  </div>
-
-  <div id="dai-chat-quickq" style="padding:10px 14px;background:#fff;border-top:1px solid #EEF2F7;display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0">
-    <button onclick="daiQuickQuestion('Curge un calorifer, ce fac?')" class="dai-chip">💧 Curge un calorifer</button>
-    <button onclick="daiQuickQuestion('Vreau o instalație electrică')" class="dai-chip">⚡ Instalație electrică</button>
-    <button onclick="daiQuickQuestion('Cum funcționează platforma?')" class="dai-chip">❓ Cum funcționează</button>
-    <button onclick="daiQuickQuestion('Vreau să devin partener')" class="dai-chip">🤝 Devino partener</button>
-  </div>
-
-  <div style="padding:12px;background:#fff;border-top:1px solid #EEF2F7;display:flex;gap:8px;flex-shrink:0">
-    <input id="dai-chat-input" type="text" placeholder="Scrie întrebarea ta..." onkeydown="if(event.key==='Enter')daiSendMessage()" style="flex:1;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px 12px;font-size:12.5px;font-family:inherit;outline:none"/>
-    <button onclick="daiSendMessage()" style="background:#0E9E99;border:none;color:#fff;border-radius:10px;padding:9px 14px;cursor:pointer;font-size:13px">➤</button>
-  </div>
-</div>
-
-<style>
-.dai-chip { background:#EBF4FB; border:1px solid #D5DFE8; border-radius:99px; padding:6px 11px; font-size:11px; font-weight:600; color:#003366; cursor:pointer; font-family:inherit; transition:all .15s; }
-.dai-chip:hover { background:#FF8C00; color:#fff; border-color:#FF8C00; }
-@media(max-width:768px){
-  #dai-fab { bottom:85px !important; right:16px !important; }
-  #dai-chat-panel { bottom:155px; right:12px; width:calc(100vw - 24px); }
-}
-</style>
-
-<script>
-let daiChatOpen = false;
-
-function toggleDaiChat(){
-  daiChatOpen = !daiChatOpen;
-  const panel = document.getElementById('dai-chat-panel');
-  const icon = document.getElementById('dai-fab-icon');
-  if (panel) panel.style.display = daiChatOpen ? 'flex' : 'none';
-  if (icon) icon.textContent = daiChatOpen ? '✕' : '🤖';
-}
-
-function daiAddMessage(text, fromUser){
-  const msgs = document.getElementById('dai-chat-messages');
-  if (!msgs) return;
-  const wrap = document.createElement('div');
-  if (fromUser) {
-    wrap.style.cssText = 'display:flex;justify-content:flex-end';
-    wrap.innerHTML = `<div style="background:#003366;color:#fff;border-radius:12px 12px 2px 12px;padding:10px 13px;font-size:12.5px;line-height:1.5;max-width:85%">${escapeHTML(text)}</div>`;
-  } else {
-    wrap.style.cssText = 'display:flex;gap:8px;align-items:flex-start';
-    wrap.innerHTML = `<span style="font-size:18px;flex-shrink:0">🤖</span><div style="background:#fff;border-radius:12px 12px 12px 2px;padding:10px 13px;font-size:12.5px;color:#2D2D2D;line-height:1.5;box-shadow:0 1px 3px rgba(0,0,0,.06);max-width:85%">${safeHTML(text)}</div>`;
+  if (n === 3 && !state.speta) {
+    document.getElementById('err-speta').style.display = 'block';
+    return;
   }
-  msgs.appendChild(wrap);
-  msgs.scrollTop = msgs.scrollHeight;
-}
-
-function daiRespond(query){
-  const q = query.toLowerCase();
-  let response = '';
-  let actionLabel = '', actionUrl = '';
-
-  if (q.includes('calorifer') && (q.includes('curg') || q.includes('scurg'))) {
-    response = 'Am înțeles — scurgere la calorifer. Te pot direcționa direct către serviciul potrivit din catalog, unde Darrin AI te va întreba exact de unde curge (perete, sub calorifer sau robinet) pentru diagnosticul corect.';
-    actionLabel = '🔧 Deschide diagnosticul →'; actionUrl = 'mydarrin-catalog.html?openAI=true&q=' + encodeURIComponent(query);
-  } else if (q.includes('electric')) {
-    response = 'Pentru instalații electrice avem 6 servicii disponibile: reparații, înlocuire becuri, montaj tablou, testare instalație și consultanță. Te duc direct la categoria potrivită.';
-    actionLabel = '⚡ Vezi servicii electrice →'; actionUrl = 'mydarrin-catalog.html?cat=instalatii-electrice';
-  } else if (q.includes('funcționează') || q.includes('functioneaza')) {
-    response = 'Simplu: alegi un serviciu din catalog, completezi un deviz în 60 secunde cu Darrin AI, plătești în Escrow (sigur, blocat până la finalizare), iar un partener verificat execută lucrarea cu garanție digitală.';
-    actionLabel = '📖 Cum funcționează, detaliat →'; actionUrl = 'mydarrin-cum-functioneaza.html';
-  } else if (q.includes('partener')) {
-    response = 'Excelent! Înregistrarea ca partener e gratuită — alegi tipul (Servicii, Materiale sau Închirieri), completezi datele firmei și primești comenzi direct prin platformă.';
-    actionLabel = '🤝 Devino partener →'; actionUrl = 'mydarrin-devino-partener.html';
-  } else {
-    response = 'Mulțumesc pentru mesaj! Pentru o analiză detaliată a problemei tale (inclusiv încărcare de imagini), recomand să folosești consultanța completă Darrin AI din catalog — e gratuită.';
-    actionLabel = '🤖 Consultanță completă →'; actionUrl = 'mydarrin-catalog.html?openAI=true&q=' + encodeURIComponent(query);
+  if (n === 4) {
+    var ok = validateStep3();
+    if (!ok) return;
   }
 
-  setTimeout(() => {
-    daiAddMessage(response, false);
-    if (actionUrl) {
-      setTimeout(() => {
-        const msgs = document.getElementById('dai-chat-messages');
-        const btn = document.createElement('a');
-        btn.href = actionUrl;
-        btn.textContent = actionLabel;
-        btn.style.cssText = 'display:inline-block;background:#FF8C00;color:#fff;text-decoration:none;border-radius:10px;padding:9px 14px;font-size:12px;font-weight:700;margin-left:26px';
-        msgs.appendChild(btn);
-        msgs.scrollTop = msgs.scrollHeight;
-      }, 200);
+  document.querySelectorAll('.form-step').forEach(function(s) { s.style.display = 'none'; });
+  document.getElementById('step-' + n).style.display = 'block';
+  if (n === 5) document.getElementById('step-5').style.display = 'block';
+
+  // Update step indicator
+  for (var i = 1; i <= 5; i++) {
+    var el = document.getElementById('step-i-' + i);
+    if (!el) continue;
+    el.classList.remove('active', 'done');
+    if (i < n) el.classList.add('done');
+    if (i === n) el.classList.add('active');
+  }
+  state.currentStep = n;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ══ ACTOR ════════════════════════════════════════════════════════
+function selectActor(card) {
+  document.querySelectorAll('.actor-card').forEach(function(c) { c.classList.remove('selected'); });
+  card.classList.add('selected');
+  state.actor = card.dataset.actor;
+  document.getElementById('err-actor').style.display = 'none';
+}
+
+// ══ SPETA ════════════════════════════════════════════════════════
+function selectSpeta(chip) {
+  document.querySelectorAll('.speta-chip').forEach(function(c) { c.classList.remove('selected'); });
+  chip.classList.add('selected');
+  state.speta = chip.dataset.speta;
+  document.getElementById('err-speta').style.display = 'none';
+}
+
+// ══ ORDER SYNOPSIS ══════════════════════════════════════════════
+function fetchOrderSynopsis(val) {
+  var v = (val||'').trim().toUpperCase();
+  var syn  = document.getElementById('order-synopsis');
+  var notf = document.getElementById('order-not-found');
+  syn.classList.remove('visible');
+  notf.style.display = 'none';
+
+  if (v.length < 6) return;
+
+  // Simulăm fetch Supabase
+  var supa = window.supabaseClient;
+  if (supa) {
+    supa.from('comenzi').select('*').eq('nr_comanda', v).single()
+      .then(function(r) {
+        if (r.error || !r.data) {
+          notf.style.display = 'block'; return;
+        }
+        var d = r.data;
+        document.getElementById('syn-svc').textContent      = d.serviciu_titlu || '—';
+        document.getElementById('syn-date').textContent     = d.creat_la ? d.creat_la.slice(0,10) : '—';
+        document.getElementById('syn-partner').textContent  = d.partener_nume || '—';
+        document.getElementById('syn-val').textContent      = d.valoare_totala ? d.valoare_totala + ' Lei' : '—';
+        document.getElementById('syn-status').textContent   = d.status || '—';
+        document.getElementById('syn-gar').textContent      = d.garantie_expira ? d.garantie_expira.slice(0,10) : '—';
+        document.getElementById('syn-badge').textContent    = d.status || 'Activ';
+        syn.classList.add('visible');
+        state.orderNr = v;
+      });
+  } else {
+    // Demo fallback
+    if (v.startsWith('MYD')) {
+      document.getElementById('syn-svc').textContent     = 'Înlocuire calorifer oțel';
+      document.getElementById('syn-date').textContent    = '2025-03-15';
+      document.getElementById('syn-partner').textContent = 'Instalatii Expert SRL';
+      document.getElementById('syn-val').textContent     = '1.240 Lei';
+      document.getElementById('syn-status').textContent  = 'Finalizat';
+      document.getElementById('syn-gar').textContent     = '2027-03-15';
+      syn.classList.add('visible');
+      state.orderNr = v;
+    } else {
+      notf.style.display = 'block';
     }
-  }, 500);
+  }
 }
 
-function daiQuickQuestion(question){
-  daiAddMessage(question, true);
-  daiRespond(question);
+// ══ VALIDATE STEP 3 ══════════════════════════════════════════════
+function validateStep3() {
+  var name  = document.getElementById('f-name').value.trim();
+  var email = document.getElementById('f-email').value.trim();
+  var desc  = document.getElementById('f-desc').value.trim();
+  var err   = document.getElementById('err-step3');
+  var msgs  = [];
+
+  if (!name)            msgs.push('Numele este obligatoriu.');
+  if (!email || !email.includes('@')) msgs.push('Email valid este obligatoriu.');
+  if (desc.length < 30) msgs.push('Descrie problema în minim 30 de caractere.');
+
+  if (msgs.length) {
+    err.innerHTML = '⚠ ' + msgs.join(' ');
+    err.style.display = 'block';
+    return false;
+  }
+  err.style.display = 'none';
+  return true;
 }
 
-function daiSendMessage(){
-  const input = document.getElementById('dai-chat-input');
-  if (!input) return;
-  const text = input.value.trim();
-  if (!text) return;
-  daiAddMessage(text, true);
-  input.value = '';
-  daiRespond(text);
+// ══ DESC COUNTER ══════════════════════════════════════════════════
+document.getElementById('f-desc').addEventListener('input', function() {
+  var n = this.value.length;
+  document.getElementById('desc-count').textContent = n;
+  if (n > 1000) this.value = this.value.slice(0, 1000);
+});
+
+// ══ FILE UPLOAD ══════════════════════════════════════════════════
+function handleFiles(files) {
+  Array.from(files).forEach(function(f) {
+    if (f.size > 10 * 1024 * 1024) { alert('Fișierul ' + f.name + ' depășește 10MB.'); return; }
+    state.files.push(f);
+    renderFile(f);
+  });
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag');
+  handleFiles(e.dataTransfer.files);
+}
+function renderFile(f) {
+  if (f.type.startsWith('image/')) {
+    var wrap = document.createElement('div');
+    wrap.className = 'img-thumb-wrap';
+    var img = document.createElement('img');
+    img.className = 'img-thumb';
+    img.src = URL.createObjectURL(f);
+    var rm = document.createElement('button');
+    rm.className = 'img-rm';
+    rm.textContent = '×';
+    rm.onclick = function() {
+      state.files = state.files.filter(function(x){return x!==f;});
+      wrap.remove();
+    };
+    wrap.appendChild(img);
+    wrap.appendChild(rm);
+    document.getElementById('img-previews').appendChild(wrap);
+  } else {
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;background:#F4F7F9;border-radius:8px;padding:8px 12px;font-size:12.5px;color:#1A2332';
+    row.innerHTML = '📄 <span style="flex:1">' + f.name + '</span><span style="color:#8C9BAD">' + (f.size/1024).toFixed(0) + 'KB</span>';
+    var rm = document.createElement('button');
+    rm.style.cssText = 'background:none;border:none;color:#DC2626;cursor:pointer;font-size:14px;padding:0 4px';
+    rm.textContent = '×';
+    rm.onclick = function() {
+      state.files = state.files.filter(function(x){return x!==f;});
+      row.remove();
+    };
+    row.appendChild(rm);
+    document.getElementById('file-list').appendChild(row);
+  }
+}
+
+// ══ CHECKBOXES ══════════════════════════════════════════════════
+['tc','gdpr','honest'].forEach(function(id) {
+  var inp = document.getElementById('chk-' + id);
+  inp.addEventListener('change', function() {
+    var icon = document.getElementById('chk-' + id + '-icon');
+    var box  = inp.nextElementSibling;
+    icon.style.display = inp.checked ? 'block' : 'none';
+  });
+});
+
+// ══ SUBMIT ═══════════════════════════════════════════════════════
+function submitReclamatie() {
+  var tc      = document.getElementById('chk-tc').checked;
+  var gdpr    = document.getElementById('chk-gdpr').checked;
+  var honest  = document.getElementById('chk-honest').checked;
+  var err     = document.getElementById('err-step4');
+
+  if (!tc || !gdpr || !honest) {
+    err.textContent = '⚠ Trebuie să accepți toți termenii marcați cu * pentru a continua.';
+    err.style.display = 'block';
+    return;
+  }
+  err.style.display = 'none';
+
+  var btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Se trimite...';
+
+  var ticketNr = 'TKT-' + Date.now().toString().slice(-6);
+  var deadlineDate = new Date();
+  deadlineDate.setDate(deadlineDate.getDate() + 2);
+  var deadline = deadlineDate.toLocaleDateString('ro-RO', {day:'2-digit',month:'long',year:'numeric'});
+  var email = document.getElementById('f-email').value.trim();
+
+  var payload = {
+    actor:        state.actor,
+    speta:        state.speta,
+    nr_comanda:   state.orderNr,
+    nume:         document.getElementById('f-name').value.trim(),
+    email:        email,
+    telefon:      document.getElementById('f-phone').value.trim(),
+    descriere:    document.getElementById('f-desc').value.trim(),
+    tc_acceptat:  true,
+    gdpr_acceptat:true,
+    nr_fisiere:   state.files.length,
+    ticket_nr:    ticketNr,
+    creat_la:     new Date().toISOString(),
+  };
+
+  var supa = window.supabaseClient;
+  var p = supa
+    ? supa.from('reclamatii').insert(payload)
+    : Promise.resolve({ error: null });
+
+  p.then(function(r) {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Trimite reclamația';
+
+    if (r && r.error) {
+      err.textContent = '❌ Eroare la trimitere. Încearcă din nou sau scrie la support@homebestpal.com';
+      err.style.display = 'block';
+      return;
+    }
+    // Success
+    document.getElementById('ticket-nr').textContent       = '#' + ticketNr;
+    document.getElementById('ticket-deadline').textContent = deadline;
+    document.getElementById('ticket-email').textContent    = email;
+    goStep(5);
+  });
+}
+
+function resetForm() {
+  state = { actor:null, speta:null, orderNr:null, files:[], currentStep:1 };
+  document.querySelectorAll('.actor-card').forEach(function(c){c.classList.remove('selected');});
+  document.querySelectorAll('.speta-chip').forEach(function(c){c.classList.remove('selected');});
+  ['f-name','f-email','f-phone','f-order','f-desc'].forEach(function(id){
+    document.getElementById(id).value='';
+  });
+  document.getElementById('img-previews').innerHTML='';
+  document.getElementById('file-list').innerHTML='';
+  document.getElementById('order-synopsis').classList.remove('visible');
+  ['chk-tc','chk-gdpr','chk-honest'].forEach(function(id){
+    document.getElementById(id).checked=false;
+    var icon=document.getElementById(id+'-icon');
+    if(icon) icon.style.display='none';
+  });
+}
+
+// ══ CHAT AI ═══════════════════════════════════════════════════════
+var chatOpen = false;
+function toggleChat() {
+  chatOpen = !chatOpen;
+  document.getElementById('chat-panel').classList.toggle('open', chatOpen);
+}
+function chatQuick(msg) {
+  document.getElementById('chat-input').value = msg;
+  sendChat();
+}
+function sendChat() {
+  var inp = document.getElementById('chat-input');
+  var txt = inp.value.trim();
+  if (!txt) return;
+  inp.value = '';
+
+  var msgs = document.getElementById('chat-msgs');
+  var userMsg = document.createElement('div');
+  userMsg.className = 'msg user';
+  userMsg.textContent = txt;
+  msgs.appendChild(userMsg);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  // Typing indicator
+  var typing = document.createElement('div');
+  typing.className = 'msg ai';
+  typing.innerHTML = '<span style="opacity:.5">Darrin scrie...</span>';
+  msgs.appendChild(typing);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  // Call Anthropic API
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1000,
+      system: 'Ești Darrin AI, asistentul de reclamații al platformei My Darrin (operată de Home Best Pal). Ajuți utilizatorii să înregistreze reclamații, să verifice statusul lor și să înțeleagă procesul de soluționare. Ești concis, empatic și profesionist. Răspunzi în română. Dacă cineva vrea să înregistreze o reclamație, îndrumă-l să completeze formularul de pe pagină. Termenul de soluționare standard este 24-48 ore. Categoriile de reclamații sunt: calitate serviciu, materiale livrate, echipament/utilaj, factură/plată, garanție, CMR/transport, compliance/audit, clauze contractuale, poliță asigurare.',
+      messages: [{ role: 'user', content: txt }]
+    })
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(data) {
+    typing.remove();
+    var aiMsg = document.createElement('div');
+    aiMsg.className = 'msg ai';
+    aiMsg.textContent = data.content && data.content[0] ? data.content[0].text : 'Îmi pare rău, a apărut o eroare. Încearcă din nou.';
+    msgs.appendChild(aiMsg);
+    msgs.scrollTop = msgs.scrollHeight;
+  })
+  .catch(function() {
+    typing.remove();
+    var aiMsg = document.createElement('div');
+    aiMsg.className = 'msg ai';
+    aiMsg.textContent = 'Momentan nu pot procesa cererea. Te rog să completezi formularul de reclamație sau să ne contactezi la support@homebestpal.com.';
+    msgs.appendChild(aiMsg);
+    msgs.scrollTop = msgs.scrollHeight;
+  });
 }
 </script>
-
-
-<div id="auth-modal" class="hidden fixed inset-0 z-[400] flex items-center justify-center p-4">
-  <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" onclick="toggleAuthModal()"></div>
-  <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-md z-10 overflow-hidden">
-
-    <button onclick="toggleAuthModal()" class="absolute top-5 right-5 p-1.5 rounded-lg hover:bg-gray-100 transition text-gray-400 z-10">
-      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
-
-    <!-- Tabs -->
-    <div class="flex border-b border-gray-100 px-7 pt-7">
-      <button id="tab-login-btn" onclick="switchAuthTab('login')" class="flex-1 pb-3 text-sm font-bold text-[#003366] border-b-2 border-[#003366] transition">
-        Intră în cont
-      </button>
-      <button id="tab-register-btn" onclick="switchAuthTab('register')" class="flex-1 pb-3 text-sm font-bold text-gray-400 border-b-2 border-transparent transition">
-        Creare cont
-      </button>
-    </div>
-
-    <!-- LOGIN -->
-    <div id="auth-login" class="p-7">
-      <h3 class="font-bold text-xl text-[#2D2D2D] mb-1" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Bine ai revenit!</h3>
-      <p class="text-gray-400 text-sm mb-5">Intră în contul tău My Darrin.</p>
-      <div class="space-y-3 mb-4">
-        <input type="email" placeholder="Adresa de email" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
-        <input type="password" placeholder="Parola" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
-      </div>
-      <a href="mailto:contact@mydarrin.ro?subject=Resetare%20parola" class="text-xs text-[#003366] hover:underline mb-5 block">Ai uitat parola?</a>
-      <button onclick="performLogin()" class="w-full bg-[#003366] text-white py-3.5 rounded-xl font-bold text-sm hover:bg-[#002855] transition">
-        Intră în cont
-      </button>
-      <p class="text-xs text-gray-400 text-center mt-4">Nu ai cont? <button onclick="switchAuthTab('register')" class="text-[#FF8C00] font-semibold hover:underline">Creează unul gratuit</button></p>
-    </div>
-
-    <!-- REGISTER -->
-    <div id="auth-register" class="p-7 hidden">
-      <h3 class="font-bold text-xl text-[#2D2D2D] mb-1" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Creează cont gratuit</h3>
-      <p class="text-gray-400 text-sm mb-5">Comandă servicii și urmărește execuția în timp real.</p>
-      <div class="space-y-3 mb-4">
-        <input type="text" id="reg-nume" placeholder="Nume complet" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
-        <input type="email" id="reg-email" placeholder="Adresa de email" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
-        <input type="tel" id="reg-tel" placeholder="Telefon" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
-        <input type="password" id="reg-pass" placeholder="Parola" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
-      </div>
-      <label class="flex items-start gap-2.5 mb-5 cursor-pointer">
-        <input type="checkbox" checked class="mt-0.5 w-4 h-4 accent-[#FF8C00] flex-shrink-0"/>
-        <span class="text-xs text-gray-400 leading-relaxed">Accept <a href="mydarrin-termeni.html" class="text-[#003366] hover:underline">Termenii și Condițiile</a> platformei My Darrin.</span>
-      </label>
-      <button onclick="performRegister()" class="w-full bg-[#FF8C00] text-white py-3.5 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition">
-        Creează cont gratuit
-      </button>
-      <p class="text-xs text-gray-400 text-center mt-4">Ai deja cont? <button onclick="switchAuthTab('login')" class="text-[#003366] font-semibold hover:underline">Intră în cont</button></p>
-    </div>
-
-  </div>
-</div>
 </body>
 </html>
