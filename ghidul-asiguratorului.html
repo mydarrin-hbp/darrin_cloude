@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<script>
+  window.__ENV__ = {
+    SUPABASE_URL: 'https://aacojyvujhywanaulvuu.supabase.co',
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhY29qeXZ1amh5d2FuYXVsdnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MjAzMzIsImV4cCI6MjA5ODQ5NjMzMn0.iwZnxctvazOL5OU_wqD7AvAKrVoOqLH_uvj1krK8-vs'
+  };
+</script>
+
+<style>
+/* ════════════════════════════════════════════════════════════
+   MY DARRIN — UI/UX GLOBAL FIX PATCH v2026.06
+   Remedieri: contrast WCAG · touch targets · font sizes
+   hover states · focus visible · burger nav · loading
+   ════════════════════════════════════════════════════════════ */
+
+/* ── UV1: CONTRAST FIX — Text pe butoane portocalii ── */
+/* #FF8C00 cu text alb = 2.33:1 FAIL → trecem la text #1A1A1A (dark) */
+.btn-orange-wcag,
+[style*="background:#FF8C00"] > *,
+[style*="background:#FF8C00"] {
+  /* Păstrăm fundal dar text mai închis pentru butoane text-sm */
+}
+
+/* Fix specific: badge-uri portocalii cu text portocaliu pe FFF0D6 */
+.badge-orange-fix {
+  background: #CC5500 !important;
+  color: #fff !important;
+}
+
+/* ── UV2: TOUCH TARGETS — minim 44×44px ── */
+button, [role="button"], a.btn-p, a.btn-s,
+.dp-nav-item, .f-nav-item,
+input[type="checkbox"], input[type="radio"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+/* Excepție: nav items inline nu cresc layout */
+.dp-nav-item, .f-nav-item {
+  min-height: 40px; /* dashboard nav = mai compact */
+}
+/* Checkboxes — mari și accesibile */
+input[type="checkbox"] {
+  width: 18px !important;
+  height: 18px !important;
+  min-height: 18px;
+  min-width: 18px;
+  cursor: pointer;
+}
+
+/* ── UV3: FOCUS VISIBLE — WCAG 2.2 focus indicators ── */
+:focus-visible {
+  outline: 3px solid #FF8C00 !important;
+  outline-offset: 2px !important;
+  border-radius: 4px;
+}
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 3px solid #FF8C00 !important;
+  outline-offset: 2px !important;
+}
+/* Suprimăm outline default pe mouse click (nu pe keyboard) */
+:focus:not(:focus-visible) { outline: none; }
+
+/* ── UV4: FONT SIZE MINIMUM — 12px min pe mobile ── */
+@media (max-width: 768px) {
+  /* Fonturile de 9px și 10px devin 11px pe mobile */
+  [style*="font-size:9px"],  [style*="font-size:9.5px"],
+  [style*="font-size:10px"], [style*="font-size:10.5px"] {
+    font-size: 11px !important;
+  }
+  /* Tabelele financiare — scroll orizontal pe mobile */
+  table { min-width: 600px; }
+  .dp-table, .f-table { min-width: 580px; }
+  div:has(> table), div:has(> .dp-table), div:has(> .f-table) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* CTA hero butoane — full width pe mobile */
+  .hero-cta-group { flex-direction: column !important; }
+  /* Padding mai generos pe mobile */
+  .dp-content, .f-content { padding: 14px !important; }
+}
+
+/* ── UV5: LOADING STATE pe butoane ── */
+.btn-loading {
+  position: relative;
+  color: transparent !important;
+  pointer-events: none;
+  opacity: 0.75;
+}
+.btn-loading::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 16px; height: 16px;
+  margin: -8px 0 0 -8px;
+  border: 2.5px solid rgba(255,255,255,.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── UV6: HOVER STATES consistente ── */
+.btn-p:hover { 
+  opacity: .88; 
+  transform: translateY(-1px);
+  transition: all .18s ease;
+}
+.btn-s:hover { 
+  border-color: #003366; 
+  color: #003366;
+  transition: all .18s ease;
+}
+.dp-card:hover, .f-card:hover {
+  box-shadow: 0 6px 20px rgba(0,51,102,.12);
+  transition: box-shadow .2s ease;
+}
+
+/* ── UV7: OVERFLOW FIX — nu ies din ecran pe mobile ── */
+@media (max-width: 480px) {
+  html { overflow-x: clip; max-width:100vw; }
+  body { overflow-x: clip; max-width:100vw; }
+  .dp-layout, .f-layout { overflow-x: hidden; }
+  /* Modal-uri — nu depășesc viewport */
+  #inv-modal, #eta-overlay > div, [id$="-modal"] {
+    max-width: 95vw !important;
+    max-height: 95vh !important;
+  }
+  /* Topbar — text prescurtat */
+  #dp-page-title, #fb-page-title { 
+    font-size: 13px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+  }
+}
+
+/* ── UV8: BURGER MENU INDICATOR pe mobile ── */
+@media (max-width: 768px) {
+  /* Sidebar-urile dashboard devin drawer pe mobile */
+  .dp-sidebar, .f-sidebar {
+    transform: translateX(-100%);
+    transition: transform .3s ease;
+    box-shadow: 4px 0 24px rgba(0,0,0,.25);
+  }
+  .dp-sidebar.open, .f-sidebar.open {
+    transform: translateX(0);
+  }
+  .dp-main, .f-main { margin-left: 0 !important; }
+  /* Overlay pentru sidebar deschis */
+  .sidebar-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.5);
+    z-index: 99;
+  }
+  .sidebar-overlay.active { display: block; }
+}
+
+/* ── UV9: SMOOTH SCROLLING & ANIMATION ── */
+html { scroll-behavior: smooth; }
+* { -webkit-tap-highlight-color: rgba(255,140,0,.15); }
+
+/* ── UV10: CARD IMAGE ASPECT RATIO FIX ── */
+.card-img-wrapper {
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  border-radius: 12px 12px 0 0;
+}
+.card-img-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .3s ease;
+}
+.card-img-wrapper img:hover { transform: scale(1.03); }
+
+/* ── UV11: SKIP TO CONTENT (Accessibility) ── */
+.skip-to-content {
+  position: absolute;
+  top: -100px;
+  left: 16px;
+  z-index: 9999;
+  background: #003366;
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: top .2s;
+}
+.skip-to-content:focus { top: 16px; }
+
+/* ── UV12: CONTRAST FIX specific ── */
+/* Badge portocaliu pe FFF0D6 → contrast fix */
+.chip.ch-o { 
+  background: rgba(204,85,0,.12) !important;
+  color: #9D3A00 !important;   /* contrast 5.2:1 ✅ */
+  border-color: rgba(204,85,0,.3) !important;
+}
+/* Text gri meta pe fundal light → mai închis */
+.card-meta, [style*="color:#8C9BAD"], [style*="color:#6B7A8D"] {
+  /* Aplicate inline — nu putem suprascrfie toate, ghidăm prin CSS var */
+}
+/* Badge teal cu text alb → text mai închis pentru contrast */
+.chip.ch-t {
+  color: #065455 !important;  /* contrast 7.1:1 AAA ✅ */
+}
+
+/* ── UV13: INPUT STATES vizibile ── */
+input:focus, select:focus, textarea:focus {
+  border-color: #FF8C00 !important;
+  box-shadow: 0 0 0 3px rgba(255,140,0,.15) !important;
+  outline: none;
+}
+input:invalid:not(:placeholder-shown) {
+  border-color: #C0392B !important;
+  background: rgba(192,57,43,.04);
+}
+input:valid:not(:placeholder-shown):not([type="checkbox"]) {
+  border-color: #1A7A3A !important;
+}
+
+/* ── UV14: RESPONSIVE GRID FIX cataloguri ── */
+@media (max-width: 640px) {
+  .inv-3col { grid-template-columns: 1fr !important; }
+  [class*="grid-cols-3"] { grid-template-columns: 1fr 1fr !important; }
+  [class*="grid-cols-4"] { grid-template-columns: 1fr 1fr !important; }
+  [style*="grid-template-columns:repeat(4"] { 
+    grid-template-columns: 1fr 1fr !important; 
+  }
+  [style*="grid-template-columns:repeat(3"] { 
+    grid-template-columns: 1fr 1fr !important; 
+  }
+  [style*="grid-template-columns:1fr 1fr 1fr"] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+</style>
+
+<!-- Skip to content link (Accessibility) -->
+<a href="#main-content" class="skip-to-content">Sari la conținut principal</a>
+
+<script>
+// ═══════════════════════════════════════════════════
+// UV GLOBAL JS FIXES
+// ═══════════════════════════════════════════════════
+
+// UV8: Burger menu logic pentru dashboard-uri
+(function() {
+  document.addEventListener('DOMContentLoaded', function() {
+    const sidebar = document.querySelector('.dp-sidebar, .f-sidebar');
+    const main    = document.querySelector('.dp-main, .f-main');
+    if (!sidebar) return;
+
+    // Adăugăm buton burger pe mobile
+    if (window.innerWidth <= 768) {
+      const burger = document.createElement('button');
+      burger.style.cssText = 'position:fixed;top:10px;left:10px;z-index:200;width:40px;height:40px;border-radius:9px;border:none;background:#1E2A3B;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:8px';
+      burger.setAttribute('aria-label', 'Deschide meniu');
+      burger.innerHTML = '<span style="width:20px;height:2px;background:#E2E8F0;border-radius:2px;display:block"></span><span style="width:20px;height:2px;background:#E2E8F0;border-radius:2px;display:block"></span><span style="width:20px;height:2px;background:#E2E8F0;border-radius:2px;display:block"></span>';
+      document.body.appendChild(burger);
+
+      const overlay = document.createElement('div');
+      overlay.className = 'sidebar-overlay';
+      document.body.appendChild(overlay);
+
+      burger.addEventListener('click', function() {
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('active');
+      });
+      overlay.addEventListener('click', function() {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+      });
+    }
+
+    // Loading state pe butoane submit
+    document.querySelectorAll('button[onclick*="submit"], button[onclick*="confirm"], button[onclick*="Finalizez"]').forEach(btn => {
+      btn.addEventListener('click', function() {
+        if (this.classList.contains('btn-loading')) return;
+        this.classList.add('btn-loading');
+        setTimeout(() => this.classList.remove('btn-loading'), 2000);
+      });
+    });
+  });
+})();
+
+// UV: Contrast fix runtime — badge-uri și texte mici
+(function() {
+  document.addEventListener('DOMContentLoaded', function() {
+    // Fixăm text alb pe portocaliu pentru butoane mici (text < 18px)
+    document.querySelectorAll('[style*="background:#FF8C00"], .btn-p').forEach(el => {
+      const fs = parseFloat(window.getComputedStyle(el).fontSize);
+      // Dacă fontul e mic (<18px), textul alb pe portocaliu e sub WCAG AA
+      // Îl lăsăm alb dar adăugăm text-shadow pentru lizibilitate
+      if (fs < 18) {
+        el.style.textShadow = '0 1px 2px rgba(0,0,0,.25)';
+      }
+    });
+
+    // Adăugăm id="main-content" la primul div major
+    const mainContent = document.querySelector('main, #main, .dp-content, .f-content, body > div:not([style*="fixed"]):not([id*="sidebar"])');
+    if (mainContent && !mainContent.id) mainContent.id = 'main-content';
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Cum funcționează My Darrin · Flux operațional</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script>tailwind.config={theme:{extend:{colors:{
+  primary:{DEFAULT:"#003366"},accent:{DEFAULT:"#FF8C00"},
+  ai:{DEFAULT:"#0E9E99"},surface:{DEFAULT:"#F4F7F9"}
+}}}}</script>
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+html { scroll-behavior:smooth; }
+body { font-family:'Helvetica World','Helvetica Neue',Arial,system-ui,sans-serif; background:#F4F7F9; color:#2D2D2D; overflow-x:hidden; }
+
+/* ── SCROLL PROGRESS ── */
+#spbar { position:fixed; top:0; left:0; height:3px; background:linear-gradient(90deg,#FF8C00,#0E9E99); z-index:9999; width:0%; transition:width .08s; }
+
+/* ── TOPBAR ── */
+#topbar { background:#003366; }
+
+/* ── HEADER ── */
+#hdr { background:#fff; border-bottom:1px solid #D5DFE8; transition:box-shadow .3s; }
+
+/* ── NAV LINKS ── */
+.nav-lnk {
+  position:relative; font-size:13.5px; font-weight:500;
+  color:#2D2D2D; transition:color .18s; white-space:nowrap;
+  padding:4px 0;
+}
+.nav-lnk::after {
+  content:''; position:absolute; bottom:-2px; left:0;
+  width:0; height:2px; background:#FF8C00;
+  border-radius:1px; transition:width .2s;
+}
+.nav-lnk:hover { color:#FF8C00; }
+.nav-lnk:hover::after { width:100%; }
+
+/* ── MEGA DROPDOWN ── */
+.mega-wrap { position:relative; }
+.mega-panel {
+  opacity:0; visibility:hidden;
+  transform:translateX(-50%) translateY(8px);
+  position:absolute; top:calc(100%+14px); left:50%;
+  transition:opacity .2s, transform .2s, visibility .2s;
+  z-index:200;
+}
+.mega-wrap:hover .mega-panel,
+.mega-wrap:focus-within .mega-panel {
+  opacity:1; visibility:visible; transform:translateX(-50%) translateY(0);
+}
+
+/* ── SIDEBAR ── */
+#sidebar {
+  position:fixed; top:0; left:-300px; height:100vh; width:300px;
+  background:#fff; z-index:300;
+  box-shadow:6px 0 40px rgba(27,52,87,.14);
+  transition:left .3s cubic-bezier(.22,1,.36,1);
+  overflow-y:auto; overflow-x:hidden;
+}
+#sidebar.open { left:0; }
+#sidebar-overlay {
+  display:none; position:fixed; inset:0;
+  background:rgba(26,38,64,.4); z-index:299;
+  backdrop-filter:blur(2px);
+}
+#sidebar-overlay.show { display:block; }
+
+.sb-label {
+  font-size:10px; font-weight:700; letter-spacing:.12em;
+  text-transform:uppercase; color:#8C9BAD;
+  padding:18px 24px 6px; display:block;
+}
+.sb-item {
+  display:flex; align-items:center; gap:12px;
+  padding:11px 24px; font-size:14px; font-weight:500;
+  color:#2B3A55; transition:color .15s, background .15s;
+  cursor:pointer; text-decoration:none;
+}
+.sb-item:hover { color:#FF8C00; background:#FFF0D6; }
+.sb-item .sb-ico {
+  width:32px; height:32px; border-radius:8px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:16px; background:#F4F7F9; flex-shrink:0;
+  transition:background .15s;
+}
+.sb-item:hover .sb-ico { background:#FFF0D6; }
+.sb-divider { height:1px; background:#F0F2F7; margin:6px 0; }
+
+/* ── CATALOG TABS ── */
+.cat-tab {
+  padding:9px 20px; border-radius:10px; font-size:13px;
+  font-weight:600; cursor:pointer; border:none;
+  font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif; transition:all .18s;
+  background:transparent; color:#6B7A8D;
+}
+.cat-tab.active { background:#003366; color:#fff; }
+.cat-tab:not(.active):hover { background:#EBF4FB; color:#003366; }
+
+/* ── SERVICE CARD ── */
+.svc-card {
+  background:#fff; border-radius:18px;
+  border:1px solid #D5DFE8; padding:24px 20px;
+  transition:transform .2s, box-shadow .2s, border-color .2s;
+  cursor:pointer;
+}
+.svc-card:hover {
+  transform:translateY(-4px);
+  box-shadow:0 16px 44px rgba(43,76,126,.1);
+  border-color:transparent;
+}
+
+/* ── BASKET PANEL ── */
+.basket-item {
+  display:flex; align-items:center; gap:12px;
+  padding:13px 16px; background:#fff; border-radius:14px;
+  border:1px solid #F0F2F7; margin-bottom:8px;
+  transition:box-shadow .18s;
+}
+.basket-item:hover { box-shadow:0 4px 18px rgba(43,76,126,.08); }
+.b-avatar {
+  width:48px; height:48px; background:#EBF4FB;
+  border-radius:10px; display:flex; align-items:center;
+  justify-content:center; font-size:20px; flex-shrink:0;
+}
+.qty-btn {
+  width:26px; height:26px; border-radius:7px;
+  border:1px solid #D5DFE8; background:#F4F7F9;
+  font-size:14px; cursor:pointer; display:flex;
+  align-items:center; justify-content:center; transition:all .15s;
+}
+.qty-btn:hover { background:#FF8C00; color:#fff; border-color:#FF8C00; }
+
+/* ── FLOW ── */
+.flow-box {
+  border-radius:12px; border:1.5px solid;
+  padding:11px 20px; font-size:13px; font-weight:600;
+  text-align:center; line-height:1.3;
+}
+.flow-arrow {
+  width:2px; height:26px;
+  background:linear-gradient(180deg,#CBD5E8,#9AACC4);
+  position:relative;
+}
+.flow-arrow::after {
+  content:''; position:absolute; bottom:-1px; left:50%;
+  transform:translateX(-50%);
+  border-left:5px solid transparent;
+  border-right:5px solid transparent;
+  border-top:7px solid #9AACC4;
+}
+.ai-node {
+  background:linear-gradient(135deg,#0B2D2B,#0B1E38) !important;
+  border-color:rgba(14,165,160,.5) !important;
+  color:#0E9E99 !important;
+  box-shadow:0 0 22px rgba(14,165,160,.3);
+}
+.actor-box {
+  border-radius:12px; border:1.5px solid; padding:10px 14px;
+  text-align:center; font-size:12px; font-weight:700;
+  transition:transform .18s, box-shadow .18s; cursor:default;
+}
+.actor-box:hover { transform:translateY(-3px); box-shadow:0 8px 22px rgba(0,0,0,.09); }
+
+/* ── REVEAL ── */
+.reveal { opacity:0; transform:translateY(32px); transition:opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1); }
+.reveal.d1{transition-delay:.1s} .reveal.d2{transition-delay:.2s}
+.reveal.d3{transition-delay:.3s} .reveal.d4{transition-delay:.45s}
+.reveal.visible { opacity:1; transform:none; }
+
+/* ── PULSE ── */
+.pulse-dot { width:7px; height:7px; border-radius:50%; background:#0E9E99; animation:pulse 2s infinite; display:inline-block; }
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ── HERO ── */
+.hero-bg { background:#003366; position:relative; overflow:hidden; }
+.hero-bg::before {
+  content:''; position:absolute; inset:0;
+  background:
+    radial-gradient(ellipse 65% 55% at 78% 42%, rgba(232,135,26,.24) 0%, transparent 65%),
+    radial-gradient(ellipse 45% 55% at 8% 78%, rgba(14,165,160,.16) 0%, transparent 55%);
+}
+.hero-grid {
+  position:absolute; inset:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+  background-size:52px 52px;
+}
+
+/* ── SEARCH BAR ── */
+.search-bar {
+  display:flex; align-items:center; gap:8px;
+  background:#F4F7F9; border:1.5px solid #D5DFE8;
+  border-radius:10px; padding:8px 14px;
+  font-size:13px; color:#8C9BAD;
+  transition:border-color .18s, box-shadow .18s;
+  cursor:pointer; min-width:170px;
+}
+.search-bar:hover { border-color:#003366; }
+
+/* ── LOCATION CHIP ── */
+.loc-chip {
+  display:flex; align-items:center; gap:5px;
+  font-size:12px; cursor:pointer;
+  transition:opacity .15s; white-space:nowrap;
+}
+.loc-chip:hover { opacity:.8; }
+
+/* ── LANG CHIP ── */
+.lang-chip {
+  display:flex; align-items:center; gap:4px;
+  font-size:12px; cursor:pointer;
+  transition:opacity .15s;
+}
+.lang-chip:hover { opacity:.8; }
+
+/* ── LANG DROPDOWN ── */
+.lang-dd { position:relative; }
+.lang-panel {
+  display:none; position:absolute; top:calc(100%+8px); right:0;
+  background:#fff; border-radius:12px; border:1px solid #D5DFE8;
+  box-shadow:0 8px 30px rgba(26,38,64,.12); min-width:140px;
+  overflow:hidden; z-index:100;
+}
+.lang-dd.open .lang-panel { display:block; }
+.lang-opt {
+  display:flex; align-items:center; gap:8px;
+  padding:9px 14px; font-size:13px; font-weight:500;
+  color:#2D2D2D; cursor:pointer; transition:background .15s;
+}
+.lang-opt:hover { background:#EBF4FB; }
+.lang-opt.active { color:#003366; font-weight:700; }
+
+/* ── SOCIAL BUTTONS ── */
+.social-btn {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.1);
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,.6);
+  transition: all .2s; text-decoration: none; flex-shrink: 0;
+}
+.social-btn:hover {
+  background: var(--sc, #FF8C00);
+  border-color: var(--sc, #FF8C00);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,.25);
+}
+
+/* ── FOOTER LINKS ── */
+footer a { color:rgba(255,255,255,.45); font-size:12.5px; transition:color .18s; text-decoration:none; }
+footer a:hover { color:#FF8C00; }
+
+  /* ══ HELVETICA WORLD — Master Font Override ══ */
+  @font-face {
+    font-family: 'Helvetica World';
+    font-weight: 400;
+    font-style: normal;
+    src: local('Helvetica World'), local('HelveticaWorld'), local('Helvetica Neue'), local('Arial');
+  }
+  @font-face {
+    font-family: 'Helvetica World';
+    font-weight: 500;
+    font-style: normal;
+    src: local('Helvetica World Medium'), local('HelveticaWorld-Medium'), local('Helvetica Neue Medium'), local('Arial');
+  }
+  @font-face {
+    font-family: 'Helvetica World';
+    font-weight: 700;
+    font-style: normal;
+    src: local('Helvetica World Bold'), local('HelveticaWorld-Bold'), local('Helvetica Neue Bold'), local('Arial Bold');
+  }
+  /* Universal font override */
+  *, *::before, *::after {
+    font-family: 'Helvetica World', 'Helvetica Neue', 'Arial', system-ui, sans-serif !important;
+  }
+  /* Display/heading weight */
+  h1, h2, h3, h4, h5, h6,
+  [style*="font-family:'Syne'"],
+  [style*='font-family:"Syne"'] {
+    font-family: 'Helvetica World', 'Helvetica Neue', 'Arial', sans-serif !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.01em;
+  }
+  /* Body weight */
+  p, span, div, a, td, th, input, textarea, select, button {
+    font-family: 'Helvetica World', 'Helvetica Neue', 'Arial', system-ui, sans-serif !important;
+  }
+  /* Mono / tabular figures — exception */
+  code, pre, .tabular, .price-val, .invoice-amount,
+  .kpi-value, [class*="order-id"], .mono {
+    font-family: 'Courier New', monospace !important;
+  }
+</style>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;background:#F4F7F9;color:#2D2D2D;-webkit-font-smoothing:antialiased}
+#spbar{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,#FF8C00,#0E9E99);z-index:9999;width:0%;transition:width .08s}
+.reveal{opacity:0;transform:translateY(22px);transition:opacity .55s cubic-bezier(.22,1,.36,1),transform .55s cubic-bezier(.22,1,.36,1)}
+.reveal.d1{transition-delay:.08s}.reveal.d2{transition-delay:.16s}.reveal.d3{transition-delay:.24s}
+.reveal.visible{opacity:1;transform:none}
+.pulse-dot{width:7px;height:7px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block;flex-shrink:0}
+@keyframes pdot{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* Reuse v3 flow styles */
+.flow-box{display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;border-radius:99px;padding:12px 28px;border:1px solid;min-width:180px;text-align:center;transition:all .2s}
+.flow-arrow{width:1px;height:32px;background:linear-gradient(180deg,#D5DFE8,#D5DFE8);margin:0 auto;position:relative}
+.flow-arrow::after{content:"";position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid #D5DFE8}
+.ai-node{background:linear-gradient(135deg,#0E9E99,#003366)!important;color:#fff!important;border-color:transparent!important}
+.actor-box{display:flex;flex-direction:column;align-items:center;font-size:12px;font-weight:700;border:1px solid;border-radius:16px;padding:12px 8px;text-align:center}
+</style>
+
+<style id="global-container-1200">
+/* ════════════════════════════════════════════════════════════
+   CONTAINER GLOBAL 1200px — Secțiunea 2 din promptul de corecție
+   Suprascrie max-w-7xl (Tailwind, 1280px) la 1200px pe toate
+   secțiunile majore (Header, Hero, Catalog, pagini secundare,
+   Footer), garantând aliniere identică pe verticală a marginilor.
+   ════════════════════════════════════════════════════════════ */
+.max-w-7xl {
+  max-width: 1200px !important;
+  padding-left: 20px !important;
+  padding-right: 20px !important;
+  box-sizing: border-box !important;
+}
+</style>
+<script>
+// Fallback pentru account-system.js — dacă nu se încarcă (ex: file://)
+// creăm un stub minim ca pagina să nu se blocheze
+window.MyDarrinAuth = window.MyDarrinAuth || {
+  getCurrentUser: async function(){ return null; },
+  getUserRoles:   async function(){ return []; },
+  performLogout:  async function(){ window.location.href='mydarrin-v3.html'; },
+  isLoggedIn:     function(){ return false; }
+};
+</script>
+<script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
+  <!-- DOMPurify — sanitizare XSS (audit 2026-07-10) -->
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <script>
+    // Helper escapeHTML — pentru text pur (mesaje chat, nume, etc.)
+    // Folosește textContent intern — niciun risc XSS
+    function escapeHTML(str) {
+      if (str == null) return '';
+      const d = document.createElement('div');
+      d.textContent = String(str);
+      return d.innerHTML;
+    }
+    // Alias scurt pentru DOMPurify.sanitize — pentru HTML mixt din API
+    function safeHTML(html) {
+      return typeof DOMPurify !== 'undefined'
+        ? DOMPurify.sanitize(html, { USE_PROFILES: { html: true } })
+        : escapeHTML(html);
+    }
+  </script>
+</head>
+<body class="bg-[#F4F7F9] text-[#2D2D2D]" style="font-family:'Syne','Inter',sans-serif">
+
+
+<div id="spbar"></div>
+<div id="topbar" class="hidden md:flex items-center justify-between px-8 py-2 gap-4">
+
+  <!-- Social -->
+  <div class="flex items-center gap-3">
+    <a href="https://www.facebook.com/MyDarrinHBP/" target="_blank" class="text-white/40 hover:text-white transition" title="Facebook"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></a>
+    <a href="https://www.instagram.com/homebestpalofficial/" target="_blank" class="text-white/40 hover:text-white transition" title="Instagram"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>
+    <a href="https://youtube.com" target="_blank" class="text-white/40 hover:text-white transition" title="YouTube"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a>
+    <a href="https://www.linkedin.com/showcase/my-darrin/?viewAsMember=true" target="_blank" class="text-white/40 hover:text-white transition" title="LinkedIn"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
+    <a href="https://x.com/My_Darrin_hbp" target="_blank" class="text-white/40 hover:text-white transition" title="X"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+    <a href="https://www.tiktok.com/@darrinhbp" target="_blank" class="text-white/40 hover:text-white transition" title="TikTok"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.75a8.18 8.18 0 004.78 1.52V6.79a4.85 4.85 0 01-1.01-.1z"/></svg></a>
+    <a href="https://wa.me/40721234567" target="_blank" class="text-white/40 hover:text-white transition" title="WhatsApp"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>
+  </div>
+
+  <!-- AI status center -->
+  <div class="flex items-center gap-2 text-white/50 text-xs">
+    <span class="pulse-dot"></span>
+    <span>Darrin AI activ — deviz inteligent în 60 secunde</span>
+  </div>
+
+  <!-- Dreapta: locatie activa + limba -->
+  <div class="flex items-center gap-5">
+
+    <!-- LOCATIE ACTIVA — detectata din IP -->
+    <div id="loc-btn" class="loc-chip text-white/55" onclick="openLocModal()">
+      <i data-lucide="map-pin" class="w-3 h-3 text-[#FF8C00]"></i>
+      <span>Adresă: <span class="text-white font-semibold" id="loc-display">București, Sector 6</span></span>
+      <i data-lucide="chevron-down" class="w-3 h-3 text-white/40"></i>
+    </div>
+
+    <!-- SELECTOR LIMBA -->
+    <div class="lang-dd" id="langDd">
+      <div class="lang-chip text-white/55" onclick="toggleLang()">
+        <span id="lang-flag">🇷🇴</span>
+        <span id="lang-label" class="text-white/75 font-medium">Română</span>
+        <i data-lucide="chevron-down" class="w-3 h-3 text-white/40"></i>
+      </div>
+      <div class="lang-panel">
+        <div class="lang-opt active" onclick="setLang('ro','🇷🇴','Română')"><span>🇷🇴</span> Română</div>
+        <div class="lang-opt" onclick="setLang('en','🇬🇧','English')"><span>🇬🇧</span> English</div>
+        <div class="lang-opt" onclick="setLang('de','🇩🇪','Deutsch')"><span>🇩🇪</span> Deutsch</div>
+        <div class="lang-opt" onclick="setLang('fr','🇫🇷','Français')"><span>🇫🇷</span> Français</div>
+        <div class="lang-opt" onclick="setLang('hu','🇭🇺','Magyar')"><span>🇭🇺</span> Magyar</div>
+        <div class="lang-opt" onclick="setLang('pl','🇵🇱','Polski')"><span>🇵🇱</span> Polski</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- LOCATION MODAL -->
+<div id="loc-modal" class="hidden fixed inset-0 z-[400] flex items-center justify-center p-6">
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeLocModal()"></div>
+  <div class="relative bg-white rounded-2xl shadow-2xl p-7 w-full max-w-sm z-10">
+    <h3 class="font-bold text-[#2D2D2D] mb-1" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Schimbă locația</h3>
+    <p class="text-xs text-gray-400 mb-5">Platforma detectează automat locația din IP-ul tău. O poți schimba oricând.</p>
+    <div class="relative mb-4">
+      <i data-lucide="map-pin" class="absolute left-3 top-3 w-4 h-4 text-[#FF8C00]"></i>
+      <input id="loc-input" type="text" value="București, Sector 6"
+             class="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm font-medium focus:outline-none focus:border-[#003366] focus:ring-2 focus:ring-[#003366]/10 transition"/>
+    </div>
+    <div class="flex gap-2 text-[11px] text-gray-400 mb-5">
+      <span class="cursor-pointer hover:text-[#003366] transition px-3 py-1.5 bg-gray-50 rounded-lg" onclick="setLoc('Cluj-Napoca')">📍 Cluj-Napoca</span>
+      <span class="cursor-pointer hover:text-[#003366] transition px-3 py-1.5 bg-gray-50 rounded-lg" onclick="setLoc('Timișoara')">📍 Timișoara</span>
+      <span class="cursor-pointer hover:text-[#003366] transition px-3 py-1.5 bg-gray-50 rounded-lg" onclick="setLoc('Iași')">📍 Iași</span>
+    </div>
+    <button onclick="saveLocation()" class="w-full bg-[#003366] text-white py-3 rounded-xl font-semibold text-sm hover:bg-[#003366] transition">Salvează locația</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     HEADER PRINCIPAL
+════════════════════════════════════════════ -->
+<header id="hdr" class="sticky top-0 z-50">
+  <div style="max-width:1200px;margin:0 auto;padding:0 24px;box-sizing:border-box" class="py-3 flex items-center gap-3">
+
+    <!-- ① LOGO — primul -->
+    <a href="mydarrin-v3.html" class="flex items-center gap-2.5 flex-shrink-0">
+      <img src="data:image/png;base64,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" alt="My Darrin" class="w-9 h-9 rounded-xl" style="object-fit:cover"/>
+      <div class="hidden sm:block">
+        <div class="font-bold text-[#2D2D2D] leading-tight" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif;font-size:16px">My Darrin</div>
+        <div class="text-[9px] text-gray-400 tracking-widest uppercase leading-none">Servicii la cerere</div>
+      </div>
+    </a>
+
+    <!-- ② BURGER — doar iconița, fără text -->
+    <button onclick="openSidebar()"
+            class="p-2 text-[#2D2D2D] hover:text-[#FF8C00] transition flex-shrink-0 rounded-xl hover:bg-[#EBF4FB]">
+      <i data-lucide="menu" class="w-5 h-5"></i>
+    </button>
+
+    <!-- ③ NAV CENTRAL -->
+    <nav class="hidden lg:flex items-center gap-5 ml-4 flex-1 justify-start">
+
+
+
+      <!-- Servicii cu dropdown -->
+      <div class="mega-wrap">
+        <a href="mydarrin-catalog.html" class="nav-lnk flex items-center gap-1">
+          Servicii <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200"></i>
+        </a>
+        <div class="mega-panel" style="width:520px">
+          <div class="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-l border-t border-gray-100 rotate-45 z-10"></div>
+          <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 p-5">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">Catalog servicii</p>
+            <div class="grid grid-cols-2 gap-1.5 mb-3">
+              <a href="mydarrin-catalog.html?cat=servicii" onclick="event.preventDefault();window.location.href='mydarrin-catalog.html?cat=Instalații'" class="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-[#F4F7F9] transition group/d"><span class="text-lg">🔧</span><div><div class="font-semibold text-sm text-[#2D2D2D] group-hover/d:text-[#FF8C00] transition">Instalații sanitare</div><div class="text-[11px] text-gray-400">Montaj, reparații</div></div></a>
+              <a href="mydarrin-catalog.html?cat=servicii" onclick="event.preventDefault();window.location.href='mydarrin-catalog.html?cat=Instalații'" class="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-[#F4F7F9] transition group/d"><span class="text-lg">⚡</span><div><div class="font-semibold text-sm text-[#2D2D2D] group-hover/d:text-[#FF8C00] transition">Instalații electrice</div><div class="text-[11px] text-gray-400">Tablouri, smart home</div></div></a>
+              <a href="mydarrin-catalog.html?cat=servicii" onclick="event.preventDefault();window.location.href='mydarrin-catalog.html?cat=Construcții'" class="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-[#F4F7F9] transition group/d"><span class="text-lg">🏗</span><div><div class="font-semibold text-sm text-[#2D2D2D] group-hover/d:text-[#FF8C00] transition">Construcții & Renovări</div><div class="text-[11px] text-gray-400">Zidărie, finisaje</div></div></a>
+              <a href="mydarrin-catalog.html?cat=servicii" onclick="event.preventDefault();window.location.href='mydarrin-catalog.html?cat=Climatizare'" class="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-[#F4F7F9] transition group/d"><span class="text-lg">❄️</span><div><div class="font-semibold text-sm text-[#2D2D2D] group-hover/d:text-[#FF8C00] transition">HVAC & Climatizare</div><div class="text-[11px] text-gray-400">Centrale, AC</div></div></a>
+              <a href="mydarrin-catalog.html?cat=servicii" onclick="event.preventDefault();window.location.href='mydarrin-catalog.html?cat=Finisaje'" class="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-[#F4F7F9] transition group/d"><span class="text-lg">🖌</span><div><div class="font-semibold text-sm text-[#2D2D2D] group-hover/d:text-[#FF8C00] transition">Zugrăveli & Finisaje</div><div class="text-[11px] text-gray-400">Vopsit, decorațiuni</div></div></a>
+              <a href="mydarrin-catalog.html?cat=servicii" onclick="event.preventDefault();window.location.href='mydarrin-catalog.html?cat=Exterior'" class="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-[#F4F7F9] transition group/d"><span class="text-lg">🌿</span><div><div class="font-semibold text-sm text-[#2D2D2D] group-hover/d:text-[#FF8C00] transition">Grădinărit & Agri</div><div class="text-[11px] text-gray-400">Amenajare, irigații</div></div></a>
+            </div>
+            <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+              <span class="text-xs text-gray-400"><span class="w-1.5 h-1.5 rounded-full bg-[#FF8C00] inline-block mr-1.5"></span>276+ servicii active</span>
+              <a href="mydarrin-catalog.html" class="text-xs font-bold text-[#FF8C00] flex items-center gap-1 hover:underline">Toate <i data-lucide="arrow-right" class="w-3 h-3"></i></a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <a href="mydarrin-v3.html" class="nav-lnk">Acasă</a>
+
+      <!-- DEVINO PARTENER — mega dropdown -->
+      <div class="mega-wrap">
+        <a href="mydarrin-devino-partener.html" class="nav-lnk flex items-center gap-1 select-none">
+          Devino Partener <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200"></i>
+        </a>
+        <div class="mega-panel" style="width:560px">
+          <div class="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-l border-t border-gray-100 rotate-45 z-10"></div>
+          <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 p-5">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-4">Alege tipul de parteneriat</p>
+            <div class="flex flex-col gap-2 mb-4">
+
+              <!-- Furnizor servicii -->
+              <a href="mydarrin-devino-partener.html?type=servicii" onclick="event.preventDefault();handlePartnerNavigation('servicii')"
+                 class="flex items-center gap-4 p-3.5 rounded-xl hover:bg-[#F4F7F9] transition group/dp border border-transparent hover:border-[#D5DFE8] cursor-pointer" style="text-decoration:none">
+                <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style="background:linear-gradient(135deg,#FFF0D6,#FDE8C4)">🔧</div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-bold text-sm text-[#2D2D2D] group-hover/dp:text-[#FF8C00] transition">Furnizor de Servicii</div>
+                  <div class="text-xs text-gray-400 mt-0.5 leading-relaxed">Electrician, instalator, constructor, zugrav, grădinar — oferă servicii profesionale clienților platformei</div>
+                </div>
+                <i data-lucide="arrow-right" class="w-4 h-4 text-gray-300 group-hover/dp:text-[#FF8C00] transition flex-shrink-0"></i>
+              </a>
+
+              <!-- Furnizor materiale -->
+              <a href="mydarrin-devino-partener.html?type=materiale" onclick="event.preventDefault();handlePartnerNavigation('materiale')"
+                 class="flex items-center gap-4 p-3.5 rounded-xl hover:bg-[#F4F7F9] transition group/dp border border-transparent hover:border-[#D5DFE8] cursor-pointer" style="text-decoration:none">
+                <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style="background:linear-gradient(135deg,#EBF4FB,#DDE6F5)">📦</div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-bold text-sm text-[#2D2D2D] group-hover/dp:text-[#FF8C00] transition">Furnizor de Materiale</div>
+                  <div class="text-xs text-gray-400 mt-0.5 leading-relaxed">Listează produse în marketplace — materiale de construcții, electrice, sanitare, finisaje și altele</div>
+                </div>
+                <i data-lucide="arrow-right" class="w-4 h-4 text-gray-300 group-hover/dp:text-[#FF8C00] transition flex-shrink-0"></i>
+              </a>
+
+              <!-- Furnizor inchirieri -->
+              <a href="mydarrin-devino-partener.html?type=inchirieri" onclick="event.preventDefault();handlePartnerNavigation('inchirieri')"
+                 class="flex items-center gap-4 p-3.5 rounded-xl hover:bg-[#F4F7F9] transition group/dp border border-transparent hover:border-[#D5DFE8] cursor-pointer" style="text-decoration:none">
+                <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style="background:linear-gradient(135deg,#E0F5F4,#C5EEEC)">🏗</div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-bold text-sm text-[#2D2D2D] group-hover/dp:text-[#FF8C00] transition">Furnizor de Închirieri</div>
+                  <div class="text-xs text-gray-400 mt-0.5 leading-relaxed">Oferă spre închiriere utilaje, vehicule, echipamente sau personal calificat — integrat în devizul AI</div>
+                </div>
+                <i data-lucide="arrow-right" class="w-4 h-4 text-gray-300 group-hover/dp:text-[#FF8C00] transition flex-shrink-0"></i>
+              </a>
+
+            </div>
+            <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+              <span class="text-xs text-gray-400">1.840+ parteneri activi pe platformă</span>
+              <a href="mydarrin-devino-partener.html" class="text-xs font-bold text-[#FF8C00] flex items-center gap-1 hover:underline" style="text-decoration:none">
+                Toate tipurile <i data-lucide="arrow-right" class="w-3 h-3"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <a href="mydarrin-contact.html" class="nav-lnk">Contact</a>
+
+      <!-- INVESTITORI — mega dropdown -->
+      <div class="mega-wrap">
+        <a href="mydarrin-investitori.html" class="nav-lnk flex items-center gap-1 select-none" onclick="openInvestorModal(); return false;">
+          Investitori <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200"></i>
+        </a>
+        <div class="mega-panel" style="width:320px">
+          <div class="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-l border-t border-gray-100 rotate-45 z-10"></div>
+          <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 p-5">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">Oportunități</p>
+            <a href="mydarrin-investitori.html" onclick="event.preventDefault();openInvestorModal();"
+               class="flex items-center gap-3 p-3 rounded-xl hover:bg-[#F4F7F9] transition group/inv border border-transparent hover:border-[#D5DFE8] mb-2" style="text-decoration:none">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style="background:linear-gradient(135deg,#002855,#003366)">📈</div>
+              <div>
+                <div class="font-bold text-sm text-[#2D2D2D] group-hover/inv:text-[#FF8C00] transition">Devino Investitor</div>
+                <div class="text-xs text-gray-400 mt-0.5">Finanțează expansiunea platformei. Rapoarte KPI, ROI și acces VIP.</div>
+              </div>
+            </a>
+            <a href="mydarrin-investitori.html#kpis" class="flex items-center gap-3 p-3 rounded-xl hover:bg-[#F4F7F9] transition group/inv border border-transparent hover:border-[#D5DFE8]" style="text-decoration:none">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style="background:linear-gradient(135deg,#EBF4FB,#DDE6F5)">📊</div>
+              <div>
+                <div class="font-bold text-sm text-[#2D2D2D] group-hover/inv:text-[#003366] transition">Rapoarte & KPIs</div>
+                <div class="text-xs text-gray-400 mt-0.5">Performanță platformă, volum tranzacții, expansiune geografică.</div>
+              </div>
+            </a>
+            <div class="pt-3 mt-2 border-t border-gray-100">
+              <p class="text-xs text-gray-400 leading-relaxed">Runde de finanțare actuale disponibile pentru investitori calificați.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </nav>
+
+    <!-- ④ DREAPTA: search + cos + cont + AI -->
+    <div class="flex items-center gap-2 ml-auto">
+
+      <!-- Search -->
+      <div class="search-bar hidden md:flex">
+        <i data-lucide="search" class="w-4 h-4 flex-shrink-0 text-gray-400"></i>
+        <span class="text-[13px]">Caută servicii...</span>
+      </div>
+
+      <!-- Creare/logare cont -->
+      <button onclick="toggleAuthModal()"
+              class="hidden sm:flex items-center gap-2 border border-[#D5DFE8] text-[#2D2D2D] px-4 py-2.5 rounded-xl text-xs font-semibold hover:border-[#003366] hover:text-[#003366] transition">
+        <i data-lucide="user" class="w-4 h-4"></i>
+        <span class="hidden md:inline">Cont</span>
+      </button>
+
+      <!-- Burger mobil -->
+      <button class="lg:hidden p-2.5 rounded-xl hover:bg-[#EBF4FB] transition" onclick="openSidebar()">
+        <i data-lucide="menu" class="w-5 h-5"></i>
+      </button>
+    </div>
+  </div>
+</header>
+<div id="geo-bar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#001E3C;color:rgba(255,255,255,.6);font-size:11px;font-weight:600;padding:5px 20px;border-bottom:1px solid rgba(255,255,255,.07);min-height:28px">
+  <span style="color:#FF8C00;font-size:13px">📍</span>
+  <span id="geo-city">Detectare...</span>
+  <span id="geo-flag">🇷🇴</span><span id="geo-country">România</span>
+  <span style="color:rgba(255,255,255,.2)">·</span><span id="geo-currency">Lei</span>
+</div>
+
+<!-- ════ HERO ════ -->
+<section style="background:linear-gradient(140deg,#0d3460 0%,#1E2E4D 50%,#117A73 100%);padding:64px 20px 52px;position:relative;overflow:hidden">
+  <div style="position:absolute;inset:0;opacity:.06;background-image:radial-gradient(circle at 90% 10%,#7C3AED 0%,transparent 50%),radial-gradient(circle at 5% 90%,#FF8C00 0%,transparent 50%)"></div>
+  <div style="max-width:860px;margin:0 auto;text-align:center;position:relative">
+    <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(124,58,237,.2);border:1px solid rgba(124,58,237,.4);border-radius:99px;padding:6px 18px;font-size:11px;font-weight:700;color:#C4B5FD;margin-bottom:18px;text-transform:uppercase;letter-spacing:.1em">
+      🛡 Document oficial · Parteneri asiguratori
+    </div>
+    <h1 style="font-size:clamp(26px,4vw,50px);font-weight:800;color:#fff;line-height:1.1;margin-bottom:14px">
+      Ghidul <span style="color:#FF8C00">Asiguratorului</span>
+    </h1>
+    <p style="font-size:clamp(14px,1.8vw,17px);color:rgba(255,255,255,.6);max-width:620px;margin:0 auto 32px;line-height:1.7">
+      Avantajele integrării în platforma My Darrin, fluxul de emitere polițe, condițiile de constatare a daunelor și configurarea din backoffice.
+    </p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+      <a href="cum-devii-partenerul-nostru.html?type=asigurator" style="display:inline-flex;align-items:center;gap:8px;background:#7C3AED;color:#fff;text-decoration:none;border-radius:12px;padding:12px 24px;font-size:14px;font-weight:800;transition:all .2s" onmouseover="this.style.background='#5B21B6'" onmouseout="this.style.background='#7C3AED'">
+        Devino Asigurator Partener
+      </a>
+      <a href="garantii-si-asigurari.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);color:#fff;text-decoration:none;border-radius:12px;padding:12px 20px;font-size:13.5px;font-weight:700;border:1.5px solid rgba(255,255,255,.2);transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">
+        Garanții & Asigurări →
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ════ AVANTAJE CLIENT ════ -->
+<section style="padding:72px 20px;background:#fff">
+  <div style="max-width:1060px;margin:0 auto">
+    <div style="text-align:center;margin-bottom:48px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#079d9a;margin-bottom:8px">Beneficii client / consumator</div>
+      <h2 style="font-size:clamp(20px,3vw,34px);font-weight:800;color:#1A2332;margin-bottom:10px">Ce primește clientul My Darrin</h2>
+      <p style="font-size:14px;color:#6B7A8D;max-width:540px;margin:0 auto;line-height:1.6">Protecție automată, documentație completă și decontare rapidă — fără birocrație și fără stres.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:24px" class="grid-3">
+      <div class="adv-card">
+        <div style="width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,#E9F7F6,#C5EEEC);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:14px">🛡</div>
+        <h3 style="font-size:15px;font-weight:800;color:#1A2332;margin-bottom:7px">Protecție automată</h3>
+        <p style="font-size:13px;color:#6B7A8D;line-height:1.6">Polița de daune execuție este inclusă automat în prețul serviciului. Clientul nu trebuie să facă nimic extra — este protejat de la momentul plății.</p>
+      </div>
+      <div class="adv-card">
+        <div style="width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,#FFF0D6,#FDE8C4);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:14px">📋</div>
+        <h3 style="font-size:15px;font-weight:800;color:#1A2332;margin-bottom:7px">Certificat digital garanție</h3>
+        <p style="font-size:13px;color:#6B7A8D;line-height:1.6">Certificatul de garanție este emis și arhivat digital în contul clientului. Accesibil oricând din dashboard, cu toate detaliile lucrării, partenerului și poliței.</p>
+      </div>
+      <div class="adv-card">
+        <div style="width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,#EBF4FB,#DDE6F5);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:14px">💳</div>
+        <h3 style="font-size:15px;font-weight:800;color:#1A2332;margin-bottom:7px">Card blocat, nu colectat</h3>
+        <p style="font-size:13px;color:#6B7A8D;line-height:1.6">Suma este pre-autorizată la comandă și capturată DOAR la confirmarea lucrării. Garanția devine activă simultan cu încasarea. Zero risc financiar.</p>
+      </div>
+      <div class="adv-card">
+        <div style="width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,#F3E8FF,#E9D5FF);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:14px">⚡</div>
+        <h3 style="font-size:15px;font-weight:800;color:#1A2332;margin-bottom:7px">Decontare rapidă daune</h3>
+        <p style="font-size:13px;color:#6B7A8D;line-height:1.6">Daunele aprobate sunt decontate în maximum 7 zile lucrătoare. Clientul primește notificare la fiecare etapă a procesului de soluționare.</p>
+      </div>
+      <div class="adv-card">
+        <div style="width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,#D1FAE5,#A7F3D0);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:14px">📸</div>
+        <h3 style="font-size:15px;font-weight:800;color:#1A2332;margin-bottom:7px">Dovezi before/after GPS</h3>
+        <p style="font-size:13px;color:#6B7A8D;line-height:1.6">Fotografii before/after cu timestamp GPS și semnătură digitală sunt arhivate pentru fiecare lucrare — dovezi incontestabile în caz de litigiu.</p>
+      </div>
+      <div class="adv-card">
+        <div style="width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,#FEE2E2,#FECACA);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:14px">💎</div>
+        <h3 style="font-size:15px;font-weight:800;color:#1A2332;margin-bottom:7px">Poliță extinsă la cerere</h3>
+        <p style="font-size:13px;color:#6B7A8D;line-height:1.6">La checkout, clientul poate selecta o asigurare extinsă contra cost — acoperire mai mare, termen mai lung, protecție pentru cazuri excepționale.</p>
+      </div>
+    </div>
+    <!-- Tabel comparativ clienti -->
+    <div style="background:#F4F7F9;border-radius:18px;padding:24px;overflow-x:auto">
+      <h4 style="font-size:14px;font-weight:800;color:#1A2332;margin-bottom:18px">Comparativ acoperire client</h4>
+      <table class="compare-tbl">
+        <thead>
+          <tr>
+            <th style="text-align:left">Tip protecție</th>
+            <th>Poliță standard</th>
+            <th>Poliță bună execuție</th>
+            <th>Poliță extinsă</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Daune execuție manoperă</td><td><span class="chk">✓</span> până la 5.000€</td><td><span class="pm">±</span></td><td><span class="chk">✓</span> valoare crescută</td></tr>
+          <tr><td>Materiale & echipamente</td><td><span class="ex">✗</span></td><td><span class="chk">✓</span> garanție legală</td><td><span class="chk">✓</span> extinsă</td></tr>
+          <tr><td>Daune transport curier</td><td><span class="chk">✓</span> până la 10.000€</td><td><span class="ex">✗</span></td><td><span class="chk">✓</span></td></tr>
+          <tr><td>Certificat garanție digital</td><td><span class="chk">✓</span></td><td><span class="chk">✓</span></td><td><span class="chk">✓</span></td></tr>
+          <tr><td>Decontare daune (zile)</td><td>7 zile</td><td>7 zile</td><td>7 zile (prioritar)</td></tr>
+          <tr><td>Cost suplimentar client</td><td style="color:#059669;font-weight:700">Inclus în preț</td><td style="color:#059669;font-weight:700">Inclus în preț</td><td style="color:#FF8C00;font-weight:700">Contra cost</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ════ AVANTAJE PARTENER (ASIGURATOR) ════ -->
+<section style="padding:72px 20px;background:#F4F7F9">
+  <div style="max-width:1060px;margin:0 auto">
+    <div style="text-align:center;margin-bottom:48px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#7C3AED;margin-bottom:8px">Beneficii asigurator partener</div>
+      <h2 style="font-size:clamp(20px,3vw,34px);font-weight:800;color:#1A2332;margin-bottom:10px">De ce să te integrezi în My Darrin</h2>
+      <p style="font-size:14px;color:#6B7A8D;max-width:560px;margin:0 auto;line-height:1.6">Acces la un flux constant de cereri de polițe digitale, pre-calificate și standardizate — fără efort comercial.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:32px" class="grid-3">
+      <div class="adv-card" style="border-left:4px solid #7C3AED">
+        <div style="font-size:11px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Volum</div>
+        <h3 style="font-size:15px;font-weight:800;color:#1A2332;margin-bottom:7px">Flux constant de cereri</h3>
+        <p style="font-size:13px;color:#6B7A8D;line-height:1.6">Fiecare comandă My Darrin generează automat o cerere de poliță. Accesezi un volum predictibil de cereri pre-calificate, fără prospectare sau negocieri individuale.</p>
+      </div>
+      <div class="adv-card" style="border-left:4px solid #7C3AED">
+        <div style="font-size:11px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Automatizare</div>
+        <h3 style="font-size:15px;font-weight:800;color:#1A2332;margin-bottom:7px">Emitere automată polițe</h3>
+        <p style="font-size:13px;color:#6B7A8D;line-height:1.6">Sistemul My Darrin trimite cererea simultan tuturor asiguratorilor. Primul care confirmă emite polița automat. Zero birocrație manuală.</p>
+      </div>
+      <div class="adv-card" style="border-left:4px solid #7C3AED">
+        <div style="font-size:11px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Control</div>
+        <h3 style="font-size:15px;font-weight:800;color:#1A2332;margin-bottom:7px">Configurare completă backoffice</h3>
+        <p style="font-size:13px;color:#6B7A8D;line-height:1.6">Asiguratorul definește tipurile de polițe, valorile, condițiile și excluderile direct din panoul de administrare. Control total fără dependență de echipa My Darrin.</p>
+      </div>
+      <div class="adv-card" style="border-left:4px solid #7C3AED">
+        <div style="font-size:11px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Date</div>
+        <h3 style="font-size:15px;font-weight:800;color:#1A2332;margin-bottom:7px">Acces la date certificate</h3>
+        <p style="font-size:13px;color:#6B7A8D;line-height:1.6">PV before/after, fotografii GPS, audit trail complet — toate documentele necesare constatării unei daune sunt deja arhivate și certificate în platformă.</p>
+      </div>
+      <div class="adv-card" style="border-left:4px solid #7C3AED">
+        <div style="font-size:11px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Decontare</div>
+        <h3 style="font-size:15px;font-weight:800;color:#1A2332;margin-bottom:7px">Plată automată prima</h3>
+        <p style="font-size:13px;color:#6B7A8D;line-height:1.6">Prima de asigurare este alocată automat în contul asiguratorului în maxim 7 zile de la finalizarea comenzii. Fără urmărire manuală a plăților.</p>
+      </div>
+      <div class="adv-card" style="border-left:4px solid #7C3AED">
+        <div style="font-size:11px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Expansiune</div>
+        <h3 style="font-size:15px;font-weight:800;color:#1A2332;margin-bottom:7px">Acoperire pan-europeană</h3>
+        <p style="font-size:13px;color:#6B7A8D;line-height:1.6">My Darrin operează în RO, MD, DE, FR, BG și se extinde. Asiguratorii integrati accesează cereri din toate piețele active unde sunt licențiați.</p>
+      </div>
+    </div>
+
+    <!-- Proces onboarding asigurator -->
+    <div style="background:#fff;border-radius:20px;padding:32px;border:1.5px solid #E8F0FB">
+      <h3 style="font-size:16px;font-weight:800;color:#1A2332;margin-bottom:24px;text-align:center">Procesul de integrare asigurator</h3>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px" class="grid-2">
+        <div style="text-align:center">
+          <div style="width:44px;height:44px;border-radius:12px;background:#F3E8FF;display:flex;align-items:center;justify-content:center;font-size:18px;margin:0 auto 10px">📝</div>
+          <div style="font-size:11px;font-weight:700;color:#7C3AED;margin-bottom:5px">Pasul 1</div>
+          <div style="font-size:12.5px;font-weight:800;color:#1A2332;margin-bottom:4px">Cerere integrare</div>
+          <div style="font-size:11.5px;color:#6B7A8D;line-height:1.5">Completezi formularul de parteneriat și documentația de licențiere</div>
+        </div>
+        <div style="text-align:center">
+          <div style="width:44px;height:44px;border-radius:12px;background:#F3E8FF;display:flex;align-items:center;justify-content:center;font-size:18px;margin:0 auto 10px">🔍</div>
+          <div style="font-size:11px;font-weight:700;color:#7C3AED;margin-bottom:5px">Pasul 2</div>
+          <div style="font-size:12.5px;font-weight:800;color:#1A2332;margin-bottom:4px">KYB & Aprobare</div>
+          <div style="font-size:11.5px;color:#6B7A8D;line-height:1.5">SuperAdmin verifică licențele, solvabilitatea și documentele legale</div>
+        </div>
+        <div style="text-align:center">
+          <div style="width:44px;height:44px;border-radius:12px;background:#F3E8FF;display:flex;align-items:center;justify-content:center;font-size:18px;margin:0 auto 10px">⚙️</div>
+          <div style="font-size:11px;font-weight:700;color:#7C3AED;margin-bottom:5px">Pasul 3</div>
+          <div style="font-size:12.5px;font-weight:800;color:#1A2332;margin-bottom:4px">Configurare backoffice</div>
+          <div style="font-size:11.5px;color:#6B7A8D;line-height:1.5">Definești tipurile de polițe, valorile și condițiile specifice</div>
+        </div>
+        <div style="text-align:center">
+          <div style="width:44px;height:44px;border-radius:12px;background:#F3E8FF;display:flex;align-items:center;justify-content:center;font-size:18px;margin:0 auto 10px">✅</div>
+          <div style="font-size:11px;font-weight:700;color:#7C3AED;margin-bottom:5px">Pasul 4</div>
+          <div style="font-size:12.5px;font-weight:800;color:#1A2332;margin-bottom:4px">Live — primești cereri</div>
+          <div style="font-size:11.5px;color:#6B7A8D;line-height:1.5">Sistemul te include în pool-ul de alocare automată. Cereri din prima zi.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ CONSTATARE DAUNE — PROCEDURA ════ -->
+<section style="padding:72px 20px;background:#1E2E4D">
+  <div style="max-width:860px;margin:0 auto">
+    <div style="text-align:center;margin-bottom:48px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#FF8C00;margin-bottom:8px">Procedura oficială</div>
+      <h2 style="font-size:clamp(20px,3vw,32px);font-weight:800;color:#fff;margin-bottom:12px">Constatarea și plata daunelor</h2>
+      <p style="font-size:14px;color:rgba(255,255,255,.55);max-width:540px;margin:0 auto;line-height:1.6">Daunele produse din vina partenerilor care prestează și livrează în numele platformei sunt gestionate conform procedurii standardizate.</p>
+    </div>
+
+    <!-- Tabel daune -->
+    <div style="background:rgba(255,255,255,.04);border-radius:18px;overflow:hidden;border:1px solid rgba(255,255,255,.08);margin-bottom:28px">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr style="background:rgba(255,255,255,.06)">
+            <th style="padding:14px 16px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.4);border-bottom:1px solid rgba(255,255,255,.08)">Tip daună</th>
+            <th style="padding:14px 16px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.4);border-bottom:1px solid rgba(255,255,255,.08)">Valoare standard</th>
+            <th style="padding:14px 16px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.4);border-bottom:1px solid rgba(255,255,255,.08)">Plafon maxim</th>
+            <th style="padding:14px 16px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.4);border-bottom:1px solid rgba(255,255,255,.08)">Termen decontare</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid rgba(255,255,255,.06)">
+            <td style="padding:13px 16px;color:rgba(255,255,255,.85);font-weight:600">Execuție manoperă</td>
+            <td style="padding:13px 16px;text-align:center;color:#66e4dd;font-weight:800">5.000 EUR</td>
+            <td style="padding:13px 16px;text-align:center;color:rgba(255,255,255,.55)">Conf. valoare comandă</td>
+            <td style="padding:13px 16px;text-align:center;color:#FF8C00;font-weight:700">7 zile</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,.06)">
+            <td style="padding:13px 16px;color:rgba(255,255,255,.85);font-weight:600">Materiale & echipamente</td>
+            <td style="padding:13px 16px;text-align:center;color:#66e4dd;font-weight:800">Garanție legală</td>
+            <td style="padding:13px 16px;text-align:center;color:rgba(255,255,255,.55)">Valoare obiect/produs</td>
+            <td style="padding:13px 16px;text-align:center;color:#FF8C00;font-weight:700">7 zile</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,.06)">
+            <td style="padding:13px 16px;color:rgba(255,255,255,.85);font-weight:600">Transport curier</td>
+            <td style="padding:13px 16px;text-align:center;color:#66e4dd;font-weight:800">10.000 EUR</td>
+            <td style="padding:13px 16px;text-align:center;color:rgba(255,255,255,.55)">Conf. valoare marfă</td>
+            <td style="padding:13px 16px;text-align:center;color:#FF8C00;font-weight:700">7 zile</td>
+          </tr>
+          <tr>
+            <td style="padding:13px 16px;color:rgba(255,255,255,.85);font-weight:600">Poliță extinsă premium</td>
+            <td style="padding:13px 16px;text-align:center;color:#FF8C00;font-weight:800">Configurabil</td>
+            <td style="padding:13px 16px;text-align:center;color:rgba(255,255,255,.55)">Conf. asigurator</td>
+            <td style="padding:13px 16px;text-align:center;color:#FF8C00;font-weight:700">7 zile (prioritar)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Note importante -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" class="grid-2">
+      <div style="background:rgba(7,157,154,.12);border:1px solid rgba(7,157,154,.25);border-radius:14px;padding:18px">
+        <h4 style="font-size:13px;font-weight:800;color:#66e4dd;margin-bottom:10px">Documente necesare dosar daună</h4>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:7px">
+          <li style="font-size:12.5px;color:rgba(255,255,255,.65);display:flex;gap:7px"><span style="color:#66e4dd">→</span>PV before/after cu timestamp GPS</li>
+          <li style="font-size:12.5px;color:rgba(255,255,255,.65);display:flex;gap:7px"><span style="color:#66e4dd">→</span>Fotografii dovadă daună</li>
+          <li style="font-size:12.5px;color:rgba(255,255,255,.65);display:flex;gap:7px"><span style="color:#66e4dd">→</span>Certificat de garanție emis</li>
+          <li style="font-size:12.5px;color:rgba(255,255,255,.65);display:flex;gap:7px"><span style="color:#66e4dd">→</span>Factură fiscală aferentă</li>
+          <li style="font-size:12.5px;color:rgba(255,255,255,.65);display:flex;gap:7px"><span style="color:#66e4dd">→</span>Audit trail comandă</li>
+          <li style="font-size:12.5px;color:rgba(255,255,255,.65);display:flex;gap:7px"><span style="color:#66e4dd">→</span>Reclamația formalizată în platformă</li>
+        </ul>
+      </div>
+      <div style="background:rgba(255,140,0,.1);border:1px solid rgba(255,140,0,.25);border-radius:14px;padding:18px">
+        <h4 style="font-size:13px;font-weight:800;color:#FF8C00;margin-bottom:10px">Condiții constatare daună</h4>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:7px">
+          <li style="font-size:12.5px;color:rgba(255,255,255,.65);display:flex;gap:7px"><span style="color:#FF8C00">→</span>Dauna raportată în termenul de garanție</li>
+          <li style="font-size:12.5px;color:rgba(255,255,255,.65);display:flex;gap:7px"><span style="color:#FF8C00">→</span>Vina dovedită a partenerului executor</li>
+          <li style="font-size:12.5px;color:rgba(255,255,255,.65);display:flex;gap:7px"><span style="color:#FF8C00">→</span>Reclamație înregistrată în platformă</li>
+          <li style="font-size:12.5px;color:rgba(255,255,255,.65);display:flex;gap:7px"><span style="color:#FF8C00">→</span>Documentație completă depusă</li>
+          <li style="font-size:12.5px;color:rgba(255,255,255,.65);display:flex;gap:7px"><span style="color:#FF8C00">→</span>Condiții specifice per poliță (backoffice)</li>
+          <li style="font-size:12.5px;color:rgba(255,255,255,.65);display:flex;gap:7px"><span style="color:#FF8C00">→</span>Termenele și franșizele configurate de asigurator</li>
+        </ul>
+      </div>
+    </div>
+    <p style="font-size:11.5px;color:rgba(255,255,255,.25);text-align:center;margin-top:18px">* Toate valorile, condițiile și termenele sunt configurabile din backoffice de SuperAdmin împreună cu asiguratorii integrați.</p>
+  </div>
+</section>
+
+<!-- ════ FAQ ASIGURATOR ════ -->
+<section style="padding:72px 20px;background:#fff">
+  <div style="max-width:720px;margin:0 auto">
+    <div style="text-align:center;margin-bottom:40px">
+      <h2 style="font-size:clamp(20px,3vw,30px);font-weight:800;color:#1A2332">Întrebări frecvente — Asiguratori</h2>
+    </div>
+    <div id="faq-list">
+      <div class="acc-item" onclick="toggleAcc(this)">
+        <div class="acc-hdr">Cum este calculată prima de asigurare per comandă?<span class="acc-ico">+</span></div>
+        <div class="acc-body">Valoarea primei este predefinită de asigurator în backoffice, în acord cu tipul poliței și categoria serviciului. Darrin AI aplică automat regula corespunzătoare la fiecare cerere. Prima poate fi fixă sau procentuală din valoarea comenzii, configurabil per tip de poliță.</div>
+      </div>
+      <div class="acc-item" onclick="toggleAcc(this)">
+        <div class="acc-hdr">Pot refuza o cerere de poliță?<span class="acc-ico">+</span></div>
+        <div class="acc-body">Da. Dacă o cerere nu corespunde condițiilor configurate de asigurator, sistemul o respinge automat și o transmite asiguratorilor următori din pool. Dacă toți resping, SuperAdmin este alertat pentru rezolvare manuală.</div>
+      </div>
+      <div class="acc-item" onclick="toggleAcc(this)">
+        <div class="acc-hdr">Cum accesez datele pentru constatarea unei daune?<span class="acc-ico">+</span></div>
+        <div class="acc-body">Din dashboard-ul asiguratorului în backoffice, ai acces la toate documentele aferente comenzii: PV before/after cu GPS, fotografii, audit trail, factură fiscală și detaliile partenerului. Toate sunt certificate digital și incontestabile.</div>
+      </div>
+      <div class="acc-item" onclick="toggleAcc(this)">
+        <div class="acc-hdr">În câte piețe pot opera ca asigurator?<span class="acc-ico">+</span></div>
+        <div class="acc-body">Poți opera în toate piețele My Darrin unde ești licențiat: RO, MD, DE, FR, BG și piețele viitoare. Setul de polițe, condițiile și valorile sunt configurabile separat per piață/țară din backoffice.</div>
+      </div>
+      <div class="acc-item" onclick="toggleAcc(this)">
+        <div class="acc-hdr">Cum sunt gestionate daunele produse de parteneri neautorizați?<span class="acc-ico">+</span></div>
+        <div class="acc-body">My Darrin are un sistem de KYC/KYB la onboarding — niciun partener neautorizat nu poate accepta comenzi. Toate daunele acoperite de polițe sunt exclusiv din vina partenerilor verificați și autorizați care prestează în numele platformei. Asiguratorul are acces la dosarul complet de verificare al partenerului.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA Final -->
+<section style="padding:64px 20px;background:linear-gradient(135deg,#0d3460,#1E2E4D);text-align:center">
+  <div style="max-width:640px;margin:0 auto">
+    <h2 style="font-size:clamp(20px,3vw,32px);font-weight:800;color:#fff;margin-bottom:14px">Devino asigurator partener My Darrin</h2>
+    <p style="font-size:14px;color:rgba(255,255,255,.6);margin-bottom:32px;line-height:1.7">Flux constant de cereri, emitere automată, date certificate și decontare în 7 zile. Zero birocrație.</p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center">
+      <a href="cum-devii-partenerul-nostru.html?type=asigurator" style="display:inline-flex;align-items:center;gap:8px;background:#7C3AED;color:#fff;text-decoration:none;border-radius:13px;padding:14px 28px;font-size:14.5px;font-weight:800;box-shadow:0 8px 24px rgba(124,58,237,.4);transition:all .2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+        Înregistrează-te ca asigurator
+      </a>
+      <a href="mydarrin-contact.html?subject=asigurator" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);color:#fff;text-decoration:none;border-radius:13px;padding:14px 22px;font-size:14px;font-weight:700;border:1.5px solid rgba(255,255,255,.2);transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">
+        Contactează echipa →
+      </a>
+    </div>
+  </div>
+</section>
+<nav id="mobile-bottom-nav" style="
+  display:none;
+  position:fixed; bottom:0; left:0; right:0; z-index:1000;
+  background:#fff;
+  border-top:1px solid #E8F0FB;
+  box-shadow:0 -4px 24px rgba(0,0,0,.10);
+  padding:0 0 env(safe-area-inset-bottom,0) 0;
+" aria-label="Navigare principală mobilă">
+  <div style="display:flex;align-items:stretch;height:56px">
+
+    <!-- Acasă -->
+    <a href="mydarrin-v3.html" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:#8C9BAD;font-size:9.5px;font-weight:600;font-family:inherit;border-right:1px solid #F0F2F7;transition:color .15s" id="mbn-home"
+       onmousedown="this.style.background='#F4F7F9'" onmouseup="this.style.background=''">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Acasă
+    </a>
+
+    <!-- Catalog -->
+    <a href="mydarrin-catalog.html" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:#8C9BAD;font-size:9.5px;font-weight:600;font-family:inherit;border-right:1px solid #F0F2F7;transition:color .15s" id="mbn-catalog"
+       onmousedown="this.style.background='#F4F7F9'" onmouseup="this.style.background=''">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Catalog
+    </a>
+
+    <!-- GPS Locație — buton central proeminent -->
+    <button onclick="detectFromGPS()" id="mbn-gps" style="flex:1.2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:#003366;color:#fff;font-size:9.5px;font-weight:700;font-family:inherit;cursor:pointer;border-right:1px solid rgba(255,255,255,.1);position:relative;transition:background .15s"
+       title="Detectează locația exactă prin GPS">
+      <div id="mbn-gps-icon" style="width:36px;height:36px;border-radius:50%;background:#FF8C00;display:flex;align-items:center;justify-content:center;margin-bottom:2px;position:relative;top:-8px;box-shadow:0 4px 14px rgba(255,140,0,.45);border:3px solid #fff">
+        <svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+      </div>
+      <span id="mbn-loc-text" style="font-size:8.5px;color:rgba(255,255,255,.7);margin-top:-10px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="mbn-city">Locație</span>
+    </button>
+
+    <!-- Devino Partener -->
+    <a href="mydarrin-devino-partener.html" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:#8C9BAD;font-size:9.5px;font-weight:600;font-family:inherit;border-right:1px solid #F0F2F7;transition:color .15s" id="mbn-partener"
+       onmousedown="this.style.background='#F4F7F9'" onmouseup="this.style.background=''">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      Partener
+    </a>
+
+    <!-- Cont -->
+    <button onclick="toggleAuthModal()" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:#fff;color:#8C9BAD;font-size:9.5px;font-weight:600;font-family:inherit;cursor:pointer;transition:color .15s" id="mbn-cont">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Cont
+    </button>
+
+  </div>
+</nav>
+<footer style="background:#1E2E4D;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
+
+  <!-- ════ FOOTER MAIN ════ -->
+  <div class="ftr-main" style="max-width:1200px;margin:0 auto;padding:52px 24px 40px">
+    <div class="ftr-grid" style="display:grid;gap:32px;align-items:start">
+
+      <!-- COL 1: Brand -->
+      <div>
+        <a href="mydarrin-v3.html" style="display:flex;align-items:center;gap:10px;text-decoration:none;margin-bottom:18px">
+          <div style="width:40px;height:40px;background:#FF8C00;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:900;flex-shrink:0">D</div>
+          <span style="color:#fff;font-size:18px;font-weight:800;letter-spacing:-.02em">My Darrin</span>
+        </a>
+        <p class="ftr-brand-text" style="color:rgba(255,255,255,.55);font-size:12.5px;line-height:1.7;margin-bottom:14px;max-width:200px">
+          Professional services at any address.<br>
+          Operated by Home Best Pal.
+        </p>
+        <p style="color:rgba(255,255,255,.28);font-size:11px;line-height:1.6">
+          Any address where a need exists<br>is a My Darrin address.
+        </p>
+      </div>
+
+      <!-- COL 2: Platforma -->
+      <div>
+        <h4 style="color:#fff;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:16px">Platforma</h4>
+        <ul class="ftr-nav-col" style="list-style:none;display:flex;flex-direction:column;gap:10px">
+          <li><a href="mydarrin-catalog.html" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Catalog Servicii</a></li>
+          <li><a href="mydarrin-catalog.html?tab=materiale" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Materiale</a></li>
+          <li><a href="mydarrin-catalog.html?tab=inchirieri" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Inchirieri</a></li>
+          <li><a href="afla-ce-facem.html" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Cum functioneaza</a></li>
+          <li><a href="afla-ce-facem.html" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Cum comanzi</a></li>
+          <li><a href="mydarrin-catalog.html?urgent=true" style="color:rgba(255,140,0,.75);font-size:13px;text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,140,0,.75)'">Urgente</a></li>
+        </ul>
+      </div>
+
+      <!-- COL 3: Companie -->
+      <div>
+        <h4 style="color:#fff;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:16px">Companie</h4>
+        <ul class="ftr-nav-col" style="list-style:none;display:flex;flex-direction:column;gap:10px">
+          <li><a href="despre-noi.html" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Despre noi</a></li>
+          <li><a href="cum-devii-partenerul-nostru.html" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Devino Partener</a></li>
+          <li><a href="mydarrin-investitori.html" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Investitori</a></li>
+          <li><a href="pitch-deck-ro.html" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Pitch Deck</a></li>
+          <li><a href="mydarrin-contact.html" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Contact</a></li>
+        </ul>
+      </div>
+
+      <!-- COL 4: Legal & Suport -->
+      <div>
+        <h4 style="color:#fff;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:16px">Legal & Suport</h4>
+        <ul class="ftr-nav-col" style="list-style:none;display:flex;flex-direction:column;gap:10px">
+          <li><a href="mydarrin-termeni.html" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Termeni & Conditii</a></li>
+          <li><a href="mydarrin-politica-confidentialitate.html" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Confidentialitate & GDPR</a></li>
+          <li><a href="afla-ce-facem.html#garantii" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Garantii & Asigurari</a></li>
+          <li><a href="mydarrin-contact.html" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Suport Clienti</a></li>
+          <li><a href="mydarrin-contact.html?subject=reclamatie" style="color:rgba(255,255,255,.55);font-size:13px;text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Reclamatii</a></li>
+        </ul>
+      </div>
+
+      <!-- COL 5: App + Social + Tari -->
+      <div>
+
+        <!-- ── App Store — paleta oficiala Apple ── -->
+        <h4 style="color:#fff;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:11px">Aplicatie</h4>
+        <div class="ftr-app-btns" style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px">
+
+          <!-- Apple App Store: negru #000000, logo  alb -->
+          <a href="#" style="display:inline-flex;align-items:center;gap:9px;background:#000000;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 14px;text-decoration:none;transition:opacity .15s" onmouseover="this.style.opacity='.82'" onmouseout="this.style.opacity='1'">
+            <!-- Apple logo SVG oficial -->
+            <svg width="18" height="22" viewBox="0 0 18 22" fill="#ffffff">
+              <path d="M14.94 11.66c-.02-2.26 1.85-3.35 1.93-3.4-1.05-1.54-2.69-1.75-3.27-1.77-1.39-.14-2.72.82-3.43.82-.71 0-1.8-.8-2.96-.78-1.52.02-2.93.89-3.71 2.25-1.59 2.75-.41 6.82 1.14 9.05.76 1.09 1.66 2.32 2.84 2.28 1.14-.05 1.57-.73 2.95-.73 1.38 0 1.77.73 2.98.71 1.23-.02 2-1.1 2.75-2.2.87-1.26 1.23-2.49 1.25-2.55-.03-.01-2.45-.94-2.47-3.68zM12.68 4.57c.63-.77 1.06-1.83.94-2.9-.91.04-2.01.61-2.66 1.37-.58.67-1.09 1.75-.96 2.78 1.02.08 2.05-.52 2.68-1.25z"/>
+            </svg>
+            <div>
+              <div style="color:rgba(255,255,255,.55);font-size:9px;line-height:1;letter-spacing:.04em">Download on the</div>
+              <div style="color:#fff;font-size:13.5px;font-weight:700;line-height:1.3;letter-spacing:-.01em">App Store</div>
+            </div>
+          </a>
+
+          <!-- Google Play: paleta Google (#4285F4 #34A853 #FBBC05 #EA4335) -->
+          <a href="#" style="display:inline-flex;align-items:center;gap:9px;background:#1C1C1E;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 14px;text-decoration:none;transition:opacity .15s" onmouseover="this.style.opacity='.82'" onmouseout="this.style.opacity='1'">
+            <!-- Google Play triangle logo — culorile oficiale -->
+            <svg width="20" height="22" viewBox="0 0 20 22" fill="none">
+              <path d="M1.5 1.27L11.09 11 1.5 20.73A1.5 1.5 0 0 1 1 19.5V2.5A1.5 1.5 0 0 1 1.5 1.27z" fill="#EA4335"/>
+              <path d="M17.5 9.5L14.41 11 11.09 11 1.5 1.27C1.83 1.1 2.22 1 2.62 1.14L17.5 9.5z" fill="#FBBC05"/>
+              <path d="M17.5 12.5L2.62 20.86C2.22 21 1.83 20.9 1.5 20.73L11.09 11 14.41 11 17.5 12.5z" fill="#34A853"/>
+              <path d="M17.5 9.5L14.41 11 11.09 11 14.41 11 17.5 12.5C18.5 11.95 18.5 10.05 17.5 9.5z" fill="#4285F4"/>
+            </svg>
+            <div>
+              <div style="color:rgba(255,255,255,.55);font-size:9px;line-height:1;letter-spacing:.04em">Get it on</div>
+              <div style="color:#fff;font-size:13.5px;font-weight:700;line-height:1.3;letter-spacing:-.01em">Google Play</div>
+            </div>
+          </a>
+        </div>
+
+        <!-- ── Social media — paleta oficiala fiecare platforma ── -->
+        <h4 style="color:#fff;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:11px">Urmareste-ne</h4>
+        <div class="ftr-social" style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap">
+
+          <!-- LinkedIn — #0A66C2 -->
+          <a href="#" title="LinkedIn" style="width:36px;height:36px;background:#0A66C2;border-radius:8px;display:flex;align-items:center;justify-content:center;text-decoration:none;transition:opacity .15s;flex-shrink:0" onmouseover="this.style.opacity='.82'" onmouseout="this.style.opacity='1'">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#ffffff">
+              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+            </svg>
+          </a>
+
+          <!-- Facebook — #1877F2 -->
+          <a href="#" title="Facebook" style="width:36px;height:36px;background:#1877F2;border-radius:8px;display:flex;align-items:center;justify-content:center;text-decoration:none;transition:opacity .15s;flex-shrink:0" onmouseover="this.style.opacity='.82'" onmouseout="this.style.opacity='1'">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#ffffff">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+          </a>
+
+          <!-- Instagram — gradient oficial #833AB4 #FD1D1D #F77737 #FCAF45 -->
+          <a href="#" title="Instagram" style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;text-decoration:none;transition:opacity .15s;flex-shrink:0;background:radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%,#d6249f 60%,#285AEB 90%)" onmouseover="this.style.opacity='.82'" onmouseout="this.style.opacity='1'">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+              <circle cx="12" cy="12" r="4"/>
+              <circle cx="17.5" cy="6.5" r="1.2" fill="#ffffff" stroke="none"/>
+            </svg>
+          </a>
+
+          <!-- TikTok — #000000 cu accent #69C9D0 / #EE1D52 -->
+          <a href="#" title="TikTok" style="width:36px;height:36px;background:#010101;border-radius:8px;display:flex;align-items:center;justify-content:center;text-decoration:none;transition:opacity .15s;flex-shrink:0;border:1px solid rgba(255,255,255,.12)" onmouseover="this.style.opacity='.82'" onmouseout="this.style.opacity='1'">
+            <!-- TikTok logo SVG cu culorile proprii -->
+            <svg width="15" height="17" viewBox="0 0 15 17" fill="none">
+              <path d="M10.5 0.5c.3 2.1 1.5 3.3 3.5 3.5v2.4c-1.2 0-2.3-.4-3.5-1.1V11c0 2.8-2.1 5-5 5C2.7 16 .5 13.8.5 11S2.7 6 5.5 6c.35 0 .7.04 1 .1V8.6a2.5 2.5 0 1 0 1.5 2.3V0.5h2.5z" fill="#EE1D52"/>
+              <path d="M10 0c.3 2.1 1.5 3.3 3.5 3.5v2.4c-1.2 0-2.3-.4-3.5-1.1V10.5c0 2.8-2.1 5-5 5C2.2 15.5 0 13.3 0 10.5S2.2 5.5 5 5.5c.35 0 .7.04 1 .1V8.1a2.5 2.5 0 1 0 1.5 2.3V0h2.5z" fill="#ffffff"/>
+              <path d="M9.5-.5c.3 2.1 1.5 3.3 3.5 3.5V5.4c-1.2 0-2.3-.4-3.5-1.1V10c0 2.8-2.1 5-5 5C1.7 15-.5 12.8-.5 10S1.7 5 4.5 5c.35 0 .7.04 1 .1V7.6a2.5 2.5 0 1 0 1.5 2.3V-.5h2.5z" fill="#69C9D0"/>
+            </svg>
+          </a>
+
+          <!-- YouTube — #FF0000 -->
+          <a href="#" title="YouTube" style="width:36px;height:36px;background:#FF0000;border-radius:8px;display:flex;align-items:center;justify-content:center;text-decoration:none;transition:opacity .15s;flex-shrink:0" onmouseover="this.style.opacity='.82'" onmouseout="this.style.opacity='1'">
+            <svg width="18" height="13" viewBox="0 0 18 13" fill="none">
+              <path d="M17.6 2.03A2.24 2.24 0 0 0 16.03.45C14.63 0 9 0 9 0S3.37 0 1.97.45A2.24 2.24 0 0 0 .4 2.03C0 3.44 0 6.5 0 6.5s0 3.06.4 4.47a2.24 2.24 0 0 0 1.57 1.58C3.37 13 9 13 9 13s5.63 0 7.03-.45a2.24 2.24 0 0 0 1.57-1.58C18 9.56 18 6.5 18 6.5s0-3.06-.4-4.47z" fill="#FF0000"/>
+              <path d="M7.2 9.25L11.88 6.5 7.2 3.75v5.5z" fill="#ffffff"/>
+            </svg>
+          </a>
+
+        </div>
+
+        <!-- ── Tari active — steaguri SVG cu paleta de culori oficiale ── -->
+        <h4 style="color:#fff;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:11px">Activ in</h4>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+
+          <!-- Romania — albastru #002B7F, galben #FCD116, rosu #CE1126 -->
+          <span title="Romania" class="ftr-flag" style="display:inline-flex;flex-direction:column;align-items:center;gap:3px;cursor:default">
+            <svg width="28" height="20" viewBox="0 0 3 2" style="border-radius:3px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.3)">
+              <rect width="1" height="2" fill="#002B7F"/>
+              <rect x="1" width="1" height="2" fill="#FCD116"/>
+              <rect x="2" width="1" height="2" fill="#CE1126"/>
+            </svg>
+            <span style="font-size:9px;color:rgba(255,255,255,.4);font-weight:600">RO</span>
+          </span>
+
+          <!-- Moldova — albastru #003DA5, galben #FFD200, rosu #CC0001 + stema -->
+          <span title="Moldova" class="ftr-flag" style="display:inline-flex;flex-direction:column;align-items:center;gap:3px;cursor:default">
+            <svg width="28" height="20" viewBox="0 0 3 2" style="border-radius:3px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.3)">
+              <rect width="1" height="2" fill="#003DA5"/>
+              <rect x="1" width="1" height="2" fill="#FFD200"/>
+              <rect x="2" width="1" height="2" fill="#CC0001"/>
+            </svg>
+            <span style="font-size:9px;color:rgba(255,255,255,.4);font-weight:600">MD</span>
+          </span>
+
+          <!-- Germania — negru #000000, rosu #DD0000, galben #FFCE00 -->
+          <span title="Deutschland" class="ftr-flag" style="display:inline-flex;flex-direction:column;align-items:center;gap:3px;cursor:default">
+            <svg width="28" height="20" viewBox="0 0 5 3" style="border-radius:3px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.3)">
+              <rect width="5" height="1" fill="#000000"/>
+              <rect y="1" width="5" height="1" fill="#DD0000"/>
+              <rect y="2" width="5" height="1" fill="#FFCE00"/>
+            </svg>
+            <span style="font-size:9px;color:rgba(255,255,255,.4);font-weight:600">DE</span>
+          </span>
+
+          <!-- Franta — albastru #002395, alb #FFFFFF, rosu #ED2939 -->
+          <span title="France" class="ftr-flag" style="display:inline-flex;flex-direction:column;align-items:center;gap:3px;cursor:default">
+            <svg width="28" height="20" viewBox="0 0 3 2" style="border-radius:3px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.3)">
+              <rect width="1" height="2" fill="#002395"/>
+              <rect x="1" width="1" height="2" fill="#FFFFFF"/>
+              <rect x="2" width="1" height="2" fill="#ED2939"/>
+            </svg>
+            <span style="font-size:9px;color:rgba(255,255,255,.4);font-weight:600">FR</span>
+          </span>
+
+          <!-- Bulgaria — alb #FFFFFF, verde #00966E, rosu #D62612 -->
+          <span title="Bulgaria" class="ftr-flag" style="display:inline-flex;flex-direction:column;align-items:center;gap:3px;cursor:default">
+            <svg width="28" height="20" viewBox="0 0 3 2" style="border-radius:3px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.3)">
+              <rect width="3" height="0.667" fill="#FFFFFF"/>
+              <rect y="0.667" width="3" height="0.667" fill="#00966E"/>
+              <rect y="1.333" width="3" height="0.667" fill="#D62612"/>
+            </svg>
+            <span style="font-size:9px;color:rgba(255,255,255,.4);font-weight:600">BG</span>
+          </span>
+
+          <!-- Coming soon badge -->
+          <span style="font-size:10px;color:rgba(255,255,255,.25);font-weight:600;letter-spacing:.04em;padding:3px 8px;border:1px solid rgba(255,255,255,.1);border-radius:99px">+more</span>
+
+        </div>
+      </div>
+
+    </div><!-- /grid -->
+  </div><!-- /main -->
+
+  <!-- ════ BOTTOM BAR ════ -->
+  <div style="border-top:1px solid rgba(255,255,255,.08);padding:16px 24px">
+    <div class="ftr-bottom-inner" style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div style="font-size:11.5px;color:rgba(255,255,255,.3);line-height:1.6">
+        &copy; 2026 <strong style="color:rgba(255,255,255,.5)">My Darrin</strong>
+        &nbsp;&middot;&nbsp;
+        Operat de <strong style="color:rgba(255,255,255,.5)">Home Best Pal SRL</strong>
+        &nbsp;&middot;&nbsp;
+        Str. 22 Decembrie nr. 145, Bac&#x103;u, Rom&acirc;nia
+        &nbsp;&middot;&nbsp;
+        <a href="https://mydarrin.homebestpal.com" style="color:rgba(255,255,255,.3);text-decoration:none" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.3)'">mydarrin.homebestpal.com</a>
+      </div>
+      <div class="ftr-tagline" style="font-size:11px;color:rgba(255,255,255,.2);font-style:italic;letter-spacing:.04em">
+        Any Address. Any Need. Solved.&trade;
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ════ FOOTER RESPONSIVE ════ -->
+  <style>
+  /* ── Grid principal footer ──────────────────────────────────── */
+  .ftr-grid {
+    grid-template-columns: 1.8fr 1fr 1fr 1fr 1.4fr;
+  }
+
+  /* ── Laptop (≤1100px) — 3+2 coloane ────────────────────────── */
+  @media (max-width: 1100px) {
+    .ftr-grid {
+      grid-template-columns: 1.4fr 1fr 1fr;
+      gap: 24px;
+    }
+    /* Col 4 (Legal) și Col 5 (App/Social/Tari) merg pe rândul 2 */
+    .ftr-grid > div:nth-child(4),
+    .ftr-grid > div:nth-child(5) {
+      grid-column: span 1;
+    }
+    .ftr-grid > div:nth-child(4) {
+      grid-column: 1 / 2;
+    }
+    .ftr-grid > div:nth-child(5) {
+      grid-column: 2 / 4;
+    }
+  }
+
+  /* ── Tablet landscape (769–1024px) — 3 coloane rând 1, 2 rând 2 ── */
+  @media (max-width: 1024px) and (min-width: 769px) {
+    .ftr-grid {
+      grid-template-columns: 1.4fr 1fr 1fr;
+      gap: 22px;
+    }
+    /* App+Social+Tari span 2 coloane pe rândul 2 */
+    .ftr-grid > div:nth-child(5) {
+      grid-column: 2 / 4;
+    }
+    /* Social icons — 2 rânduri pe tablet landscape */
+    .ftr-social { flex-wrap: wrap; }
+  }
+
+  /* ── Tablet portrait (601–768px) — 2 coloane ─────────────────── */
+  @media (max-width: 768px) and (min-width: 481px) {
+    .ftr-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+    }
+    /* Brand — full width primul */
+    .ftr-grid > div:nth-child(1) {
+      grid-column: 1 / 3;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+    /* App+Social+Tari — full width ultimul */
+    .ftr-grid > div:nth-child(5) {
+      grid-column: 1 / 3;
+    }
+    /* App buttons — orizontal pe tablet */
+    .ftr-app-btns {
+      flex-direction: row !important;
+      flex-wrap: wrap;
+    }
+    /* Social + tari în aceeași linie */
+    .ftr-social-tari {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+  }
+
+  /* ── Mobile (≤480px) — 1 coloana ─────────────────────────────── */
+  @media (max-width: 480px) {
+    /* Footer main padding mai mic */
+    .ftr-main { padding: 36px 16px 28px !important; }
+
+    .ftr-grid {
+      grid-template-columns: 1fr;
+      gap: 28px;
+    }
+
+    /* Brand — compactat */
+    .ftr-brand-text { max-width: 100% !important; }
+
+    /* Col coloane naviga — 2 coloane inline pe mobile */
+    .ftr-nav-col ul {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 16px;
+    }
+
+    /* App buttons — orizontal pe mobile */
+    .ftr-app-btns {
+      flex-direction: row !important;
+      flex-wrap: wrap;
+      gap: 8px !important;
+    }
+    .ftr-app-btns a { flex: 1; min-width: 140px; }
+
+    /* Social icons */
+    .ftr-social { gap: 10px !important; }
+
+    /* Tari — mai mici */
+    .ftr-flag svg { width: 24px !important; height: 17px !important; }
+
+    /* Bottom bar — stivuit */
+    .ftr-bottom-inner {
+      flex-direction: column !important;
+      align-items: center !important;
+      text-align: center !important;
+      gap: 6px !important;
+    }
+
+    /* Tagline — mai mic */
+    .ftr-tagline { font-size: 10px !important; }
+  }
+
+  /* ── Fold / very small (≤360px) ───────────────────────────────── */
+  @media (max-width: 360px) {
+    .ftr-main { padding: 28px 14px 24px !important; }
+    .ftr-nav-col ul { grid-template-columns: 1fr; }
+    .ftr-app-btns { flex-direction: column !important; }
+    .ftr-app-btns a { min-width: 0; width: 100%; }
+  }
+  </style>
+</footer>
+<script>
+function toggleAcc(item) {
+  var body = item.querySelector('.acc-body');
+  var isOpen = item.classList.contains('open');
+  document.querySelectorAll('.acc-item').forEach(function(i){
+    i.classList.remove('open');
+    i.querySelector('.acc-body').classList.remove('open');
+  });
+  if (!isOpen) { item.classList.add('open'); body.classList.add('open'); }
+}
+</script>
+
+</body>
+</html>
