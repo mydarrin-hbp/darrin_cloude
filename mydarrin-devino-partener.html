@@ -2277,31 +2277,180 @@ function saveLocation(){
 // Auth modal
 let isLoggedIn = false;
 
-function performLogin() {
-  isLoggedIn = true;
-  const modal = document.getElementById('auth-modal');
-  if (modal) modal.classList.add('hidden');
-  document.body.style.overflow = '';
-  const link = document.getElementById('sb-comenzi-link');
-  if (link) link.style.display = 'flex';
-  try { sessionStorage.setItem('myd_logged_in', '1'); } catch(e) {}
-  showToastMsg('Te-ai autentificat cu succes!');
+// Furnizor extern (Google/Facebook/Apple) — necesită activare + credențiale
+// reale în Supabase Dashboard → Authentication → Providers; până atunci
+// Supabase răspunde cu eroare, prinsă și afișată clar mai jos.
+function switchAuthTab(tab){
+  document.getElementById('auth-login').classList.toggle('hidden', tab!=='login');
+  document.getElementById('auth-register').classList.toggle('hidden', tab!=='register');
+  const verifyPanel = document.getElementById('auth-verify-cod');
+  if (verifyPanel) verifyPanel.classList.toggle('hidden', tab!=='verify-cod');
+  const tabsBar = document.querySelector('#auth-modal .flex.border-b');
+  if (tabsBar) tabsBar.style.display = (tab==='verify-cod') ? 'none' : '';
+  document.getElementById('tab-login-btn').classList.toggle('text-[#003366]', tab==='login');
+  document.getElementById('tab-login-btn').classList.toggle('border-b-2', tab==='login');
+  document.getElementById('tab-login-btn').classList.toggle('border-[#003366]', tab==='login');
+  document.getElementById('tab-login-btn').classList.toggle('text-gray-400', tab!=='login');
+  document.getElementById('tab-register-btn').classList.toggle('text-[#003366]', tab==='register');
+  document.getElementById('tab-register-btn').classList.toggle('border-b-2', tab==='register');
+  document.getElementById('tab-register-btn').classList.toggle('border-[#003366]', tab==='register');
+  document.getElementById('tab-register-btn').classList.toggle('text-gray-400', tab!=='register');
 }
 
-function performRegister() {
-  isLoggedIn = true;
+async function oauthLogin(provider) {
+  try {
+    await window.MyDarrinAuth.performOAuthLogin(provider);
+  } catch (e) {
+    const NUME = { google: 'Google', facebook: 'Facebook', apple: 'Apple' };
+    showToastMsg('Autentificarea cu ' + (NUME[provider] || provider) + ' nu este încă disponibilă.');
+  }
+}
+
+async function performLogin() {
+  const emailEl = document.getElementById('login-email');
+  const passEl  = document.getElementById('login-pass');
+  const email = emailEl ? emailEl.value.trim() : '';
+  const pass  = passEl ? passEl.value : '';
+  if (!email || !pass) { showToastMsg('Completează email și parolă.'); return; }
+  try {
+    await window.MyDarrinAuth.performLogin(email, pass);
+    isLoggedIn = true;
+    const modal = document.getElementById('auth-modal');
+    if (modal) modal.classList.add('hidden');
+    document.body.style.overflow = '';
+    const link = document.getElementById('sb-comenzi-link');
+    if (link) link.style.display = 'flex';
+    showToastMsg('Te-ai autentificat cu succes!');
+    if (redirectDupaAutentificare()) return;
+    setTimeout(() => window.location.reload(), 800);
+  } catch (e) {
+    showToastMsg('' + (e.message || 'Autentificare eșuată'));
+  }
+}
+
+async function performRegister() {
   const emailEl = document.getElementById('reg-email');
   const numeEl  = document.getElementById('reg-nume');
-  if (typeof createBaseAccount === 'function') {
-    createBaseAccount(emailEl ? emailEl.value.trim() : '', numeEl ? numeEl.value.trim() : '');
+  const passEl  = document.getElementById('reg-pass');
+  const gdprEl  = document.getElementById('reg-gdpr');
+  const email = emailEl ? emailEl.value.trim() : '';
+  const nume  = numeEl ? numeEl.value.trim() : '';
+  const pass  = passEl ? passEl.value : '';
+  const gdprAcceptat = gdprEl ? gdprEl.checked : false;
+  if (!email || !pass) { showToastMsg('Completează email și parolă.'); return; }
+  if (!gdprAcceptat) { showToastMsg('Trebuie să accepți Termenii și Politica de Confidențialitate.'); return; }
+  try {
+    await window.MyDarrinAuth.performRegister(email, pass, nume, gdprAcceptat);
+
+    // IMPORTANT: cu confirmarea de email activă în Supabase, înregistrarea
+    // NU creează automat o sesiune activă — trebuie confirmat emailul întâi,
+    // apoi logare separată. Nu presupunem login imediat aici.
+    const realUser = await window.MyDarrinAuth.getCurrentUser();
+    if (realUser) {
+      // Cazul rar în care confirmarea de email e dezactivată — chiar ești logat
+      isLoggedIn = true;
+      const modal = document.getElementById('auth-modal');
+      if (modal) modal.classList.add('hidden');
+      document.body.style.overflow = '';
+      const link = document.getElementById('sb-comenzi-link');
+      if (link) link.style.display = 'flex';
+      showToastMsg('Cont creat și autentificat cu succes!');
+      if (redirectDupaAutentificare()) return;
+      setTimeout(() => window.location.reload(), 800);
+      return;
+    }
+
+    // Cazul normal: cont creat, trebuie confirmat emailul — afișăm pasul de
+    // confirmare prin cod (6 cifre), nu doar un mesaj care trimite la link.
+    const emailSpan = document.getElementById('verify-cod-email');
+    if (emailSpan) emailSpan.textContent = email;
+    sessionStorage.setItem('myd_pending_confirm_email', email);
+    if (typeof switchAuthTab === 'function') switchAuthTab('verify-cod');
+  } catch (e) {
+    // dacă emailul are deja un cont, injectăm direct un link de recuperare
+    // parolă legat de emailul introdus, nu doar un toast generic.
+    if (window.MyDarrinAuth && window.MyDarrinAuth.emailDejaInregistrat(e)) {
+      showToastMsg('Acest email are deja un cont.');
+      window.MyDarrinAuth.injecteazaLinkRecuperareParola(document.getElementById('reg-recover-link-container'), email);
+    } else {
+      showToastMsg('' + (e.message || 'Înregistrare eșuată'));
+    }
   }
-  const modal = document.getElementById('auth-modal');
-  if (modal) modal.classList.add('hidden');
-  document.body.style.overflow = '';
-  const link = document.getElementById('sb-comenzi-link');
-  if (link) link.style.display = 'flex';
-  try { sessionStorage.setItem('myd_logged_in', '1'); } catch(e) {}
-  showToastMsg('Cont creat cu succes! Bine ai venit pe My Darrin.');
+}
+
+// Confirmă codul de 6 cifre trimis la email (pasul auth-verify-cod) —
+// la succes, verifyOtp creează direct o sesiune activă (nu mai e nevoie
+// de un login separat după confirmare).
+async function confirmaCod() {
+  const email = sessionStorage.getItem('myd_pending_confirm_email') || '';
+  const codEl = document.getElementById('verify-cod-input');
+  const cod = codEl ? codEl.value.trim() : '';
+  const msgEl = document.getElementById('verify-cod-msg');
+  if (!email || !cod) { if (msgEl) msgEl.textContent = 'Introdu codul primit pe email.'; return; }
+  try {
+    await window.MyDarrinAuth.confirmaCodEmail(email, cod);
+    sessionStorage.removeItem('myd_pending_confirm_email');
+    isLoggedIn = true;
+    const modal = document.getElementById('auth-modal');
+    if (modal) modal.classList.add('hidden');
+    document.body.style.overflow = '';
+    const link = document.getElementById('sb-comenzi-link');
+    if (link) link.style.display = 'flex';
+    showToastMsg('Cont confirmat și autentificat cu succes!');
+    if (redirectDupaAutentificare()) return;
+    setTimeout(() => window.location.reload(), 800);
+  } catch (e) {
+    if (msgEl) msgEl.textContent = e.message || 'Cod invalid sau expirat.';
+  }
+}
+
+async function retrimiteCod() {
+  const email = sessionStorage.getItem('myd_pending_confirm_email') || '';
+  const msgEl = document.getElementById('verify-cod-msg');
+  if (!email) return;
+  try {
+    await window.MyDarrinAuth.retrimiteCodEmail(email);
+    if (msgEl) msgEl.textContent = 'Am retrimis codul la ' + email + '.';
+  } catch (e) {
+    if (msgEl) msgEl.textContent = e.message || 'Nu am putut retrimite codul.';
+  }
+}
+
+// Link "Ai uitat parola?" din tab-ul de login — folosește emailul deja
+// completat, dacă există; altfel cere-l printr-un prompt minimal.
+async function cerereResetareParola() {
+  const emailEl = document.getElementById('login-email');
+  let email = emailEl ? emailEl.value.trim() : '';
+  const msgEl = document.getElementById('login-recover-msg');
+  if (!email) {
+    email = (window.prompt('Introdu adresa de email pentru recuperarea parolei:') || '').trim();
+  }
+  if (!email || !email.includes('@')) {
+    if (msgEl) msgEl.textContent = 'Introdu o adresă de email validă.';
+    return;
+  }
+  if (msgEl) msgEl.textContent = 'Se trimite emailul de recuperare...';
+  try {
+    await window.MyDarrinAuth.resetPasswordForEmail(email);
+    if (msgEl) msgEl.textContent = 'Ți-am trimis un email de recuperare la ' + email + ' (verifică și Spam-ul).';
+  } catch (e) {
+    if (msgEl) msgEl.textContent = 'Nu am putut trimite recuperarea — încearcă din nou.';
+  }
+}
+
+// Redirecționează către destinația reținută înainte de gate-ul de partener,
+// dacă există — apelat după login/înregistrare/confirmare reușite.
+function redirectDupaAutentificare() {
+  try {
+    const redirect = sessionStorage.getItem('myd_post_auth_redirect');
+    if (redirect) {
+      sessionStorage.removeItem('myd_post_auth_redirect');
+      const pagina = redirect.startsWith('mydarrin-') ? redirect : 'mydarrin-' + redirect;
+      window.location.href = pagina + '.html';
+      return true;
+    }
+  } catch (e) {}
+  return false;
 }
 
 function showToastMsg(msg) {
@@ -2319,50 +2468,6 @@ function toggleAuthModal(){
   m.classList.toggle('hidden');
   document.body.style.overflow=m.classList.contains('hidden')?'':'hidden';
 }
-function switchAuthTab(tab){
-  document.getElementById('auth-login').classList.toggle('hidden', tab!=='login');
-  document.getElementById('auth-register').classList.toggle('hidden', tab!=='register');
-  document.getElementById('tab-login-btn').classList.toggle('text-[#003366]', tab==='login');
-  document.getElementById('tab-login-btn').classList.toggle('border-b-2', tab==='login');
-  document.getElementById('tab-login-btn').classList.toggle('border-[#003366]', tab==='login');
-  document.getElementById('tab-login-btn').classList.toggle('text-gray-400', tab!=='login');
-  document.getElementById('tab-register-btn').classList.toggle('text-[#003366]', tab==='register');
-  document.getElementById('tab-register-btn').classList.toggle('border-b-2', tab==='register');
-  document.getElementById('tab-register-btn').classList.toggle('border-[#003366]', tab==='register');
-  document.getElementById('tab-register-btn').classList.toggle('text-gray-400', tab!=='register');
-}
-function checkAuth(){alert('Trebuie să fii autentificat pentru a vedea comenzile. Te rugăm să te loghezi.');}
-
-// Basket
-function toggleBasket(){
-  const p=document.getElementById('basket-panel');
-  p.classList.toggle('hidden');
-  document.body.style.overflow=p.classList.contains('hidden')?'':'hidden';
-}
-function changeQty(btn,delta){
-  const item=btn.closest('.basket-item');
-  const qEl=item.querySelector('.basket-qty');
-  const pEl=item.querySelector('.basket-price');
-  const unit=parseInt(pEl.dataset.unit);
-  let q=parseInt(qEl.textContent)+delta;
-  if(q<1)q=1;
-  qEl.textContent=q;
-  pEl.textContent=(unit*q)+' Lei';
-  recalcBasket();
-}
-function removeItem(btn){
-  btn.closest('.basket-item').remove();
-  const cnt=document.querySelectorAll('#basket-panel .basket-item').length;
-  document.getElementById('basket-count').textContent=cnt;
-  recalcBasket();
-}
-function recalcBasket(){
-  let t=0;
-  document.querySelectorAll('#basket-panel .basket-price').forEach(el=>{t+=parseInt(el.textContent);});
-  document.getElementById('basket-subtotal').textContent=t+' Lei';
-  document.getElementById('basket-total').textContent=Math.round(t*1.12)+' Lei';
-}
-
 // Catalog tabs
 function switchTab(name,btn){
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.add('hidden'));
@@ -3027,10 +3132,29 @@ function daiSendMessage(){
       </button>
     </div>
 
+    <!-- Mesaj persistent (ex: confirmă emailul după înregistrare) -->
+    <div id="auth-modal-persistent-msg" style="display:none;margin:16px 28px 0;padding:12px 14px;background:#E0F5F4;border:1px solid #0E9E99;border-radius:12px;font-size:12.5px;color:#065455;line-height:1.5"></div>
+
     <!-- LOGIN -->
     <div id="auth-login" class="p-7">
       <h3 class="font-bold text-xl text-[#2D2D2D] mb-1" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Bine ai revenit!</h3>
       <p class="text-gray-400 text-sm mb-5">Intră în contul tău My Darrin.</p>
+      <div class="flex gap-2 mb-4">
+        <button type="button" onclick="oauthLogin('google')" title="Continuă cu Google" class="flex-1 flex items-center justify-center border border-gray-200 rounded-xl py-2.5 hover:bg-gray-50 transition">
+          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.52 12.27c0-.85-.08-1.67-.22-2.45H12v4.63h6.48c-.28 1.5-1.13 2.77-2.4 3.62v3h3.88c2.27-2.09 3.56-5.17 3.56-8.8z"/><path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.95-2.92l-3.88-3c-1.08.73-2.46 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.27v3.09C3.25 21.3 7.31 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.28A7.2 7.2 0 0 1 4.9 12c0-.79.14-1.56.37-2.28V6.63H1.27A11.99 11.99 0 0 0 0 12c0 1.93.46 3.76 1.27 5.37l4-3.09z"/><path fill="#EA4335" d="M12 4.75c1.76 0 3.35.61 4.6 1.8l3.44-3.44C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.27 6.63l4 3.09C6.22 6.86 8.87 4.75 12 4.75z"/></svg>
+        </button>
+        <button type="button" onclick="oauthLogin('facebook')" title="Continuă cu Facebook" class="flex-1 flex items-center justify-center border border-gray-200 rounded-xl py-2.5 hover:bg-gray-50 transition">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        </button>
+        <button type="button" onclick="oauthLogin('apple')" title="Continuă cu Apple" class="flex-1 flex items-center justify-center border border-gray-200 rounded-xl py-2.5 hover:bg-gray-50 transition">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="#000"><path d="M17.05 12.536c-.028-2.86 2.335-4.234 2.44-4.3-1.33-1.945-3.4-2.213-4.14-2.244-1.764-.18-3.443 1.04-4.337 1.04-.894 0-2.276-1.014-3.74-.987-1.924.028-3.7 1.12-4.69 2.845-2.002 3.47-.512 8.605 1.437 11.42.953 1.377 2.086 2.923 3.573 2.868 1.436-.056 1.978-.928 3.716-.928 1.737 0 2.226.928 3.74.9 1.545-.028 2.522-1.406 3.466-2.79 1.093-1.6 1.542-3.15 1.566-3.23-.034-.014-3-1.152-3.03-4.594zM14.4 4.06c.79-.958 1.323-2.286 1.177-3.61-1.14.046-2.518.76-3.335 1.717-.733.848-1.375 2.2-1.202 3.494 1.264.098 2.564-.643 3.36-1.6z"/></svg>
+        </button>
+      </div>
+      <div class="flex items-center gap-3 mb-4">
+        <div class="flex-1 h-px bg-gray-100"></div>
+        <span class="text-[11px] text-gray-400 uppercase tracking-wide">sau cu email</span>
+        <div class="flex-1 h-px bg-gray-100"></div>
+      </div>
       <div class="space-y-3 mb-4">
         <input type="email" id="login-email" placeholder="Adresa de email" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
         <div class="relative">
@@ -3040,7 +3164,8 @@ function daiSendMessage(){
           </button>
         </div>
       </div>
-      <a href="mailto:contact@mydarrin.ro?subject=Resetare%20parola" class="text-xs text-[#003366] hover:underline mb-5 block">Ai uitat parola?</a>
+      <button type="button" onclick="cerereResetareParola()" class="text-xs text-[#003366] hover:underline mb-2 block">Ai uitat parola?</button>
+      <div id="login-recover-msg" class="text-xs text-gray-400 mb-3"></div>
       <button onclick="performLogin()" class="w-full bg-[#003366] text-white py-3.5 rounded-xl font-bold text-sm hover:bg-[#002855] transition">
         Intră în cont
       </button>
@@ -3051,6 +3176,22 @@ function daiSendMessage(){
     <div id="auth-register" class="p-7 hidden">
       <h3 class="font-bold text-xl text-[#2D2D2D] mb-1" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Creează cont gratuit</h3>
       <p class="text-gray-400 text-sm mb-5">Comandă servicii și urmărește execuția în timp real.</p>
+      <div class="flex gap-2 mb-4">
+        <button type="button" onclick="oauthLogin('google')" title="Continuă cu Google" class="flex-1 flex items-center justify-center border border-gray-200 rounded-xl py-2.5 hover:bg-gray-50 transition">
+          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.52 12.27c0-.85-.08-1.67-.22-2.45H12v4.63h6.48c-.28 1.5-1.13 2.77-2.4 3.62v3h3.88c2.27-2.09 3.56-5.17 3.56-8.8z"/><path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.95-2.92l-3.88-3c-1.08.73-2.46 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.27v3.09C3.25 21.3 7.31 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.28A7.2 7.2 0 0 1 4.9 12c0-.79.14-1.56.37-2.28V6.63H1.27A11.99 11.99 0 0 0 0 12c0 1.93.46 3.76 1.27 5.37l4-3.09z"/><path fill="#EA4335" d="M12 4.75c1.76 0 3.35.61 4.6 1.8l3.44-3.44C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.27 6.63l4 3.09C6.22 6.86 8.87 4.75 12 4.75z"/></svg>
+        </button>
+        <button type="button" onclick="oauthLogin('facebook')" title="Continuă cu Facebook" class="flex-1 flex items-center justify-center border border-gray-200 rounded-xl py-2.5 hover:bg-gray-50 transition">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        </button>
+        <button type="button" onclick="oauthLogin('apple')" title="Continuă cu Apple" class="flex-1 flex items-center justify-center border border-gray-200 rounded-xl py-2.5 hover:bg-gray-50 transition">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="#000"><path d="M17.05 12.536c-.028-2.86 2.335-4.234 2.44-4.3-1.33-1.945-3.4-2.213-4.14-2.244-1.764-.18-3.443 1.04-4.337 1.04-.894 0-2.276-1.014-3.74-.987-1.924.028-3.7 1.12-4.69 2.845-2.002 3.47-.512 8.605 1.437 11.42.953 1.377 2.086 2.923 3.573 2.868 1.436-.056 1.978-.928 3.716-.928 1.737 0 2.226.928 3.74.9 1.545-.028 2.522-1.406 3.466-2.79 1.093-1.6 1.542-3.15 1.566-3.23-.034-.014-3-1.152-3.03-4.594zM14.4 4.06c.79-.958 1.323-2.286 1.177-3.61-1.14.046-2.518.76-3.335 1.717-.733.848-1.375 2.2-1.202 3.494 1.264.098 2.564-.643 3.36-1.6z"/></svg>
+        </button>
+      </div>
+      <div class="flex items-center gap-3 mb-4">
+        <div class="flex-1 h-px bg-gray-100"></div>
+        <span class="text-[11px] text-gray-400 uppercase tracking-wide">sau cu email</span>
+        <div class="flex-1 h-px bg-gray-100"></div>
+      </div>
       <div class="space-y-3 mb-4">
         <input type="text" id="reg-nume" placeholder="Nume complet" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
         <input type="email" id="reg-email" placeholder="Adresa de email" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
@@ -3063,13 +3204,28 @@ function daiSendMessage(){
         </div>
       </div>
       <label class="flex items-start gap-2.5 mb-5 cursor-pointer">
-        <input type="checkbox" checked class="mt-0.5 w-4 h-4 accent-[#FF8C00] flex-shrink-0"/>
-        <span class="text-xs text-gray-400 leading-relaxed">Accept <a href="mydarrin-termeni.html" class="text-[#003366] hover:underline">Termenii și Condițiile</a> platformei My Darrin.</span>
+        <input type="checkbox" id="reg-gdpr" class="mt-0.5 w-4 h-4 accent-[#FF8C00] flex-shrink-0"/>
+        <span class="text-xs text-gray-400 leading-relaxed">Accept <a href="mydarrin-termeni.html" class="text-[#003366] hover:underline">Termenii și Condițiile</a> și <a href="mydarrin-politica-confidentialitate.html" class="text-[#003366] hover:underline">Politica de Confidențialitate</a> (prelucrare date GDPR) platformei My Darrin.</span>
       </label>
       <button onclick="performRegister()" class="w-full bg-[#FF8C00] text-white py-3.5 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition">
         Creează cont gratuit
       </button>
+      <div id="reg-recover-link-container" class="mt-1"></div>
       <p class="text-xs text-gray-400 text-center mt-4">Ai deja cont? <button onclick="switchAuthTab('login')" class="text-[#003366] font-semibold hover:underline">Intră în cont</button></p>
+    </div>
+
+    <!-- CONFIRMARE COD EMAIL — alternativă la linkul de confirmare, afișată
+         imediat după crearea contului (vezi performRegister()) -->
+    <div id="auth-verify-cod" class="p-7 hidden">
+      <h3 class="font-bold text-xl text-[#2D2D2D] mb-1" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Confirmă adresa de email</h3>
+      <p class="text-gray-400 text-sm mb-5">Am trimis un cod de 6 cifre la <span id="verify-cod-email" class="font-semibold text-[#2D2D2D]"></span>. Introdu-l mai jos.</p>
+      <input type="text" id="verify-cod-input" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code"
+             class="w-full border border-gray-200 rounded-xl px-4 py-3 text-center text-xl font-bold tracking-[0.4em] focus:outline-none focus:border-[#003366] transition mb-4"/>
+      <button onclick="confirmaCod()" class="w-full bg-[#003366] text-white py-3.5 rounded-xl font-bold text-sm hover:bg-[#002855] transition mb-3">
+        Confirmă codul
+      </button>
+      <button type="button" onclick="retrimiteCod()" class="text-xs text-[#003366] hover:underline block mx-auto">Nu ai primit codul? Retrimite</button>
+      <div id="verify-cod-msg" class="text-xs text-center mt-3 text-gray-400"></div>
     </div>
 
   </div>

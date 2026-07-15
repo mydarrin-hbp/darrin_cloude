@@ -91,6 +91,38 @@ async function verifyPhoneOtp(telefon, cod) {
   return res.json();
 }
 
+/* ── Cod de confirmare email (alternativă la linkul din emailul standard) ──
+   Necesită ca template-ul "Confirm signup" din Supabase Dashboard →
+   Authentication → Emails să includă {{ .Token }} — implicit conține doar
+   {{ .ConfirmationURL }}, fără acest cod vizibil userul nu are ce introduce
+   aici, deși token-ul există intern la Supabase indiferent de template. */
+async function confirmaCodEmail(email, cod) {
+  const { data, error } = await sb().auth.verifyOtp({ email, token: cod, type: 'signup' });
+  if (error) throw error;
+  return data.user;
+}
+
+async function retrimiteCodEmail(email) {
+  const { error } = await sb().auth.resend({ type: 'signup', email });
+  if (error) throw error;
+}
+
+/* ── Login/înregistrare cu furnizor extern (Google/Facebook/Apple) ──
+   Fiecare necesită activare + credențiale reale în Supabase Dashboard →
+   Authentication → Providers (Client ID/Secret la Google și Facebook,
+   Services ID/Key/Team ID/cheie privată la Apple) — până atunci Supabase
+   răspunde cu eroare "Unsupported provider" / "provider is not enabled",
+   prinsă și afișată clar apelantului, nu ca o eroare generică. */
+async function performOAuthLogin(provider) {
+  const { error } = await sb().auth.signInWithOAuth({
+    provider,
+    options: { redirectTo: window.location.origin + window.location.pathname },
+  });
+  if (error) throw error;
+  // La succes, Supabase redirecționează browserul către furnizor — nu mai
+  // rulează cod după acest punct în pagina curentă.
+}
+
 /* ── Login ── */
 async function performLogin(email, parola) {
   const { data, error } = await sb().auth.signInWithPassword({ email, password: parola });
@@ -259,4 +291,5 @@ window.MyDarrinAuth = {
   inviteSecondaryAdmin, renderActiveRolesBadge,
   resetPasswordForEmail, emailDejaInregistrat, injecteazaLinkRecuperareParola,
   togglePasswordVisibility,
+  confirmaCodEmail, retrimiteCodEmail, performOAuthLogin,
 };
