@@ -1177,7 +1177,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
       <!-- Search -->
       <div class="search-bar hidden md:flex">
         <i data-lucide="search" class="w-4 h-4 flex-shrink-0 text-gray-400"></i>
-        <span class="text-[13px]">Caută servicii...</span>
+        <input type="text" id="header-search" placeholder="Caută servicii..." onkeydown="if(event.key==='Enter')triggerHeaderSearch()" style="border:none;outline:none;background:transparent;font-size:13px;font-family:inherit;color:#2D2D2D;width:130px">
       </div>
 
       <!-- Creare/logare cont -->
@@ -1194,6 +1194,25 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
     </div>
   </div>
 </header>
+<script>
+function triggerSidebarSearch(){
+  var input = document.getElementById('sidebar-search');
+  var query = input ? input.value.trim() : '';
+  if (!query) return;
+  if (typeof closeSidebar === 'function') closeSidebar();
+  window.location.href = 'mydarrin-catalog.html?q=' + encodeURIComponent(query);
+}
+</script>
+
+<script>
+function triggerHeaderSearch(){
+  var input = document.getElementById('header-search');
+  var query = input ? input.value.trim() : '';
+  if (!query) return;
+  window.location.href = 'mydarrin-catalog.html?q=' + encodeURIComponent(query);
+}
+</script>
+
 <!-- ════ GEO BAR ════ -->
 <div id="geo-bar" aria-live="polite" role="status">
   <span class="geo-pin"><i data-lucide="map-pin" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>
@@ -1228,6 +1247,13 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
     <button onclick="closeSidebar()" class="p-1.5 rounded-lg hover:bg-gray-100 transition text-gray-400 hover:text-gray-600">
       <i data-lucide="x" class="w-4 h-4"></i>
     </button>
+  </div>
+
+  <div style="padding:14px 20px 4px">
+    <div style="display:flex;align-items:center;gap:8px;background:#F4F7F9;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px 14px">
+      <i data-lucide="search" style="width:16px;height:16px;color:#8C9BAD;flex-shrink:0"></i>
+      <input type="text" id="sidebar-search" placeholder="Caută servicii..." onkeydown="if(event.key==='Enter')triggerSidebarSearch()" style="border:none;outline:none;background:transparent;font-size:13px;font-family:inherit;color:#2D2D2D;flex:1;min-width:0">
+    </div>
   </div>
 
   <div class="py-2">
@@ -2245,7 +2271,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
       <div id="sidebar-mobile-overlay" onclick="closeMobileFilter()"></div>
       <div class="search-wrap">
         <svg class="search-icon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" class="search-input" id="search-input" placeholder="Caută servicii, materiale, echipamente..." onkeydown="if(event.key==='Enter')applyFilters()"/>
+        <input type="text" class="search-input" id="search-input" placeholder="Caută servicii, materiale, echipamente..." oninput="debouncedApplyFilters()" onkeydown="if(event.key==='Enter')applyFilters()"/>
       </div>
       <select class="sort-select" id="sort-select">
         <option value="default">Sortare: Recomandat</option>
@@ -2254,13 +2280,9 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
         <option value="rating">Rating</option>
         <option value="reviews">Recenzii</option>
       </select>
-      <!-- FIX (Etapa 4, audit 2026-07-12): filtrele (căutare text, sortare,
-           filtre rapide, preț) doar actualizau starea, iar grila se
-           re-filtra la fiecare tastă/click/drag (oninput/onchange direct pe
-           applyFilters) — vizibil lent cu multe carduri. Acum toate
-           actualizează doar starea locală; interogarea reală rulează
-           exclusiv la apăsarea acestui buton. Enter în câmpul de căutare
-           tot declanșează căutarea, ca UX standard, dar tot explicit. -->
+      <!-- Căutarea rulează live pe măsură ce tastezi (debounce 250ms, vezi
+           debouncedApplyFilters) — acest buton rămâne ca trigger explicit
+           pentru sortare/filtre rapide, fără să aștepți debounce-ul. -->
       <button id="btn-execute-search" onclick="applyFilters()" style="display:flex;align-items:center;gap:7px;background:#FF8C00;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(255,140,0,.3);white-space:nowrap">
         Caută / Aplică filtre
       </button>
@@ -5665,6 +5687,34 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&consOpen) closeCon
 })();
 </script>
 
+<script>
+// ── URL ?q= HANDLER — pre-populează search-input și rulează căutarea ──
+// (folosit de bara de căutare din header, prezentă pe toate paginile)
+(function() {
+  function applyQueryFromURL() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('openAI') === 'true') return; // gestionat separat, de handler-ul AI
+    var q = params.get('q');
+    if (!q) return;
+    var tryApply = function(attempts) {
+      if (attempts <= 0) return;
+      var input = document.getElementById('search-input');
+      if (input && typeof applyFilters === 'function') {
+        input.value = q;
+        applyFilters();
+      } else {
+        setTimeout(function() { tryApply(attempts - 1); }, 200);
+      }
+    };
+    tryApply(15);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyQueryFromURL);
+  } else {
+    applyQueryFromURL();
+  }
+})();
+</script>
 
 <script>
 // ── URL ?openAI=true HANDLER — auto-deschide modalul Darrin AI ──
@@ -5790,6 +5840,17 @@ async function sg(table, qs) {
   return r.ok ? r.json() : [];
 }
 
+// ── Descriere derivată — catalog_servicii nu are coloană de descriere,
+// deci construim o linie scurtă din domeniu + unitate de măsură, ca
+// niciun card din catalogul dinamic (Supabase) să nu rămână fără text ──
+function descDinDomeniu(item, tab) {
+  const unit = item.unitate_masura || 'unitate';
+  const domeniu = item.domeniu || 'această categorie';
+  if (tab === 'materiale') return `Material din categoria ${domeniu}. Livrare organizată prin platformă, de la furnizori verificați. Cotat per ${unit}.`;
+  if (tab === 'inchiriere') return `Echipament disponibil pentru închiriere din categoria ${domeniu}. Rezervare directă prin platformă, per ${unit}.`;
+  return `Serviciu din categoria ${domeniu}. Execuție de către un partener verificat, alocat automat după plasarea comenzii. Cotat per ${unit}.`;
+}
+
 // ── Build card HTML ───────────────────────────────────────────────────────
 function mkCard(item, pret, tab, asoc) {
   const d   = DOM[item.domeniu] || {cat:'Instalații', sub:'General', img:IMG_DEF};
@@ -5826,6 +5887,7 @@ function mkCard(item, pret, tab, asoc) {
   </div>
   <div class="card-body">
     <div class="card-title">${item.titlu}</div>
+    <div class="card-desc">${descDinDomeniu(item, tab)}</div>
     ${aHtml}
     <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">
       ${item.nace?`<span class="chip chip-primary" style="font-size:9px;padding:2px 8px">${item.nace}</span>`:''}
@@ -6268,6 +6330,14 @@ function closeMobileFilter() {
 
 // ── Extinde applyFilters cu logica NACE + tip intervenție ─────────
 var _origApplyFilters = typeof applyFilters === 'function' ? applyFilters : null;
+
+// ── Căutare live (debounce 250ms) — pornește filtrarea automat pe
+// măsură ce utilizatorul tastează, fără să aștepte Enter/click ──
+var _searchDebounceTimer = null;
+function debouncedApplyFilters() {
+  clearTimeout(_searchDebounceTimer);
+  _searchDebounceTimer = setTimeout(applyFilters, 250);
+}
 
 function applyFilters() {
   var search = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
