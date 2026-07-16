@@ -974,6 +974,42 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 </style>
 </head>
 <body>
+<!-- ════ SIDEBAR STÂNGA UNITAR — Acasă + Ghid Contextual ════ -->
+<nav id="myd-sidebar-left" aria-label="Navigare rapidă" style="position:fixed;left:0;top:0;bottom:0;width:64px;background:#1E2E4D;flex-direction:column;align-items:center;padding:20px 0;gap:6px;z-index:8000;box-shadow:2px 0 16px rgba(0,0,0,.12)">
+  <a href="https://mydarrin.homebestpal.com" title="Acasă" aria-label="Acasă" style="width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.7);text-decoration:none;transition:background .15s,color .15s" onmouseover="this.style.background='rgba(255,255,255,.12)';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='rgba(255,255,255,.7)'">
+    <i data-lucide="home" style="width:20px;height:20px"></i>
+  </a>
+  <div style="width:28px;height:1px;background:rgba(255,255,255,.15);margin:6px 0"></div>
+  <a id="myd-sidebar-ghid" href="mydarrin-cum-functioneaza.html" title="Ghid: Cum funcționează" aria-label="Ghid contextual" style="width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#FF8C00;text-decoration:none;transition:background .15s" onmouseover="this.style.background='rgba(255,140,0,.15)'" onmouseout="this.style.background='transparent'">
+    <i data-lucide="book-open" style="width:20px;height:20px"></i>
+  </a>
+</nav>
+<style>
+  @media (min-width:1024px) {
+    #myd-sidebar-left { display:flex; }
+    body { padding-left:64px; }
+  }
+  @media (max-width:1023px) {
+    #myd-sidebar-left { display:none; }
+  }
+</style>
+<script>
+(function(){
+  var GHIDURI = {
+    partener:   { href: 'cum-devii-partenerul-nostru.html', label: 'Ghid: Cum devii partener' },
+    investitor: { href: 'mydarrin-investitori.html',        label: 'Ghid: Cum devii investitor' },
+    client:     { href: 'cum-comanzi.html',                 label: 'Ghid: Cum comanzi' },
+  };
+  var path = window.location.pathname.toLowerCase();
+  var ctx = 'client';
+  if (path.indexOf('partener') !== -1 || path.indexOf('furnizor') !== -1 || path.indexOf('marketplace') !== -1 || path.indexOf('asigurator') !== -1) ctx = 'partener';
+  else if (path.indexOf('investitor') !== -1) ctx = 'investitor';
+  var g = GHIDURI[ctx];
+  var link = document.getElementById('myd-sidebar-ghid');
+  if (link && g) { link.href = g.href; link.title = g.label; link.setAttribute('aria-label', g.label); }
+})();
+</script>
+
 <div id="spbar"></div>
 <div id="topbar" class="hidden md:flex items-center justify-between py-2" style="max-width:1200px;margin:0 auto;padding-left:20px;padding-right:20px;box-sizing:border-box;width:100%">
 
