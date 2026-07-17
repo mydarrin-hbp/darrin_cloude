@@ -1943,7 +1943,13 @@ if (__ctgI) __ctgI.innerHTML = catTileSkeleton(6);
 
 function renderCatTile(cat) {
   var style = CAT_TILE_STYLE[cat.slug] || { icon: cat.icon_name || 'circle', c1: '#F4F7F9', c2: '#E4E9EE', ic: '#5A6B7D' };
-  var href = 'mydarrin-categorie-servicii?type=' + cat.category_type + '&cat=' + cat.slug;
+  var typeRoutes = {
+    servicii:   function(slug) { return 'mydarrin-categorie-servicii?cat=' + slug; },
+    materiale:  function(slug) { return 'mydarrin-catalog.html?tab=materiale&cat=' + slug; },
+    inchiriere: function(slug) { return 'mydarrin-catalog.html?tab=inchirieri&cat=' + slug; }
+  };
+  var routeFn = typeRoutes[cat.category_type] || typeRoutes['servicii'];
+  var href = routeFn(cat.slug);
   return '<a class="cat-tile reveal visible" href="' + href + '">' +
     '<div class="cat-tile-icon" style="background:linear-gradient(135deg,' + style.c1 + ',' + style.c2 + ')">' +
       '<i data-lucide="' + (cat.icon_name || style.icon) + '" style="color:' + style.ic + '"></i>' +
