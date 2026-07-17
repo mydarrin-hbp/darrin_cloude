@@ -1953,9 +1953,26 @@ function renderCatTile(cat) {
   '</a>';
 }
 
+// window.supabaseClient e creat într-un <script type="module"> — modulele
+// sunt amânate (ca defer) și rulează DUPĂ acest script inline obișnuit,
+// deci la primul apel clientul poate încă lipsi. Așteptăm explicit, ca în
+// restul paginii (tryApply/tryOpen), în loc să presupunem că e deja gata.
+function waitForSupabaseClient(maxAttempts) {
+  return new Promise(function(resolve, reject) {
+    var attempts = maxAttempts || 25;
+    (function check() {
+      if (window.supabaseClient) return resolve(window.supabaseClient);
+      attempts--;
+      if (attempts <= 0) return reject(new Error('supabaseClient indisponibil'));
+      setTimeout(check, 150);
+    })();
+  });
+}
+
 async function loadCategoryTiles() {
   try {
-    var resp = await window.supabaseClient
+    var client = await waitForSupabaseClient();
+    var resp = await client
       .from('categorii')
       .select('title,slug,icon_name,description,category_type,display_order')
       .order('category_type').order('display_order');
