@@ -3379,11 +3379,41 @@ document.addEventListener('DOMContentLoaded',()=>{
   openSec(1);
 });
 
+// Produsele noi din mydarrin-categorie-materiale.html/mydarrin-categorie-inchirieri.html
+// nu au încă o intrare proprie în PRODUCTS_DB (catalog de ~70 articole,
+// autorat separat) — fără acest fallback, un slug necunoscut cădea tăcut
+// pe 'inlocuire-calorifer' și afișa un produs complet greșit/fără legătură.
+// Pagina de categorie salvează datele reale ale cardului (titlu, descriere,
+// preț, imagine) în sessionStorage înainte de navigare; le recuperăm aici.
+function buildFallbackProduct(slug, type) {
+  let stored = null;
+  try { stored = JSON.parse(sessionStorage.getItem('myd-fallback-product-' + slug) || 'null'); } catch (e) {}
+  const typeMap = { serviciu: 'serviciu', material: 'material', inchiriere: 'inchiriere' };
+  const prodType = typeMap[type] || 'material';
+  if (stored) {
+    return {
+      title: stored.title || slug, icon: '', nace: '', unit: stored.unit || 'buc',
+      type: prodType, urgent: false, rating: stored.rating || 'Nou',
+      req: stored.desc || 'Detalii complete în curând.',
+      price: stored.price, img: stored.img,
+    };
+  }
+  // Nici sessionStorage nu are date (ex: link deschis direct, fără să vină
+  // din pagina de categorie) — afișăm o pagină cinstită "în lucru", nu un
+  // produs la întâmplare.
+  return {
+    title: slug.replace(/-/g, ' '), icon: '', nace: '', unit: 'buc',
+    type: prodType, urgent: false, rating: 'Nou',
+    req: 'Fișa completă a acestui produs este în lucru.', price: null,
+  };
+}
+
 function loadFromURL(){
   const p = new URLSearchParams(window.location.search);
   const slug = p.get('slug')||'inlocuire-calorifer';
+  const urlType = p.get('type');
   S.slug = slug;
-  const prod = PRODUCTS_DB[slug]||PRODUCTS_DB['inlocuire-calorifer'];
+  const prod = PRODUCTS_DB[slug] || buildFallbackProduct(slug, urlType);
   // Pre-fill from consultanta redirect
   const urlAddr = p.get('addr')||'';
   const urlDesc = p.get('desc')||'';
@@ -3436,7 +3466,11 @@ function loadFromURL(){
   setEl('prod-rating',prod.rating);
   const typeChipMap = {serviciu:'Serviciu',material:'Material',inchiriere:'Închiriere'};
   setEl('prod-type-chip',typeChipMap[prod.type]||'Serviciu');
-  document.getElementById('prod-img').textContent = prod.icon;
+  // Produsele cu o imagine reală (din fallback-ul de categorie) o afișează
+  // direct, în loc de placeholder-ul cu iconiță generică.
+  const prodImgEl = document.getElementById('prod-img');
+  if (prod.img) { prodImgEl.innerHTML = ''; prodImgEl.style.backgroundImage = 'url(' + prod.img + ')'; prodImgEl.style.backgroundSize = 'cover'; prodImgEl.style.backgroundPosition = 'center'; }
+  else { prodImgEl.style.backgroundImage = ''; prodImgEl.textContent = prod.icon; }
   document.getElementById('sum-icon').textContent = prod.icon;
   setEl('sum-title',prod.title);
   setEl('sum-sub',(typeChipMap[prod.type]||'')+'  ·  '+prod.nace);
