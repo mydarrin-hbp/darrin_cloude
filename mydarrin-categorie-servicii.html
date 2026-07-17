@@ -87,6 +87,18 @@ h1,h2,h3 { font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif; }
         : escapeHTML(html);
     }
   </script>
+  <script>
+    window.__ENV__ = {
+      SUPABASE_URL: 'https://aacojyvujhywanaulvuu.supabase.co',
+      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhY29qeXZ1amh5d2FuYXVsdnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MjAzMzIsImV4cCI6MjA5ODQ5NjMzMn0.iwZnxctvazOL5OU_wqD7AvAKrVoOqLH_uvj1krK8-vs'
+    };
+  </script>
+  <script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+  const _sbkey = (window.__ENV__ && window.__ENV__.SUPABASE_ANON_KEY) || '';
+  const _surl  = (window.__ENV__ && window.__ENV__.SUPABASE_URL)      || 'https://aacojyvujhywanaulvuu.supabase.co';
+  if (_sbkey) window.supabaseClient = createClient(_surl, _sbkey);
+  </script>
 </head>
 <body>
 
@@ -363,26 +375,73 @@ function setEl(id, val){ const el=document.getElementById(id); if(el) el.textCon
 let CURRENT_ITEMS = [];
 let CURRENT_TAB = 'servicii';
 
-function loadCategory(){
+async function loadCategory(){
   const params = new URLSearchParams(window.location.search);
   const slug = params.get('cat') || 'instalatii-electrice';
+  const type = params.get('type') || 'servicii';
   const dbKey = SLUG_ALIAS[slug] || slug;
-  const data = SUBCATEGORY_DB[dbKey] || SUBCATEGORY_DB['instalatii-electrice'];
+  const curated = SUBCATEGORY_DB[dbKey];
 
-  document.title = data.title + ' · My Darrin';
-  const iconEl = document.getElementById('cat-icon');
-  if (iconEl) iconEl.innerHTML = data.icon;
-  setEl('cat-label', data.catLabel);
-  setEl('cat-title', data.title);
-  setEl('cat-subtitle', data.subtitle);
-  setEl('bc-cat', data.catLabel);
   const tabMap = {servicii:'Servicii', materiale:'Materiale', inchiriere:'Închirieri'};
-  document.getElementById('bc-cat-link').textContent = tabMap[data.tab] || 'Servicii';
-  document.getElementById('bc-cat-link').setAttribute('href', 'mydarrin-catalog.html?cat='+slug);
 
-  CURRENT_ITEMS = data.items;
-  CURRENT_TAB = data.tab;
+  if (curated) {
+    // Conținut curatoriat local — servicii cu articole reale deja scrise.
+    document.title = curated.title + ' · My Darrin';
+    const iconEl = document.getElementById('cat-icon');
+    if (iconEl) iconEl.innerHTML = curated.icon;
+    setEl('cat-label', curated.catLabel);
+    setEl('cat-title', curated.title);
+    setEl('cat-subtitle', curated.subtitle);
+    setEl('bc-cat', curated.catLabel);
+    document.getElementById('bc-cat-link').textContent = tabMap[curated.tab] || 'Servicii';
+    document.getElementById('bc-cat-link').setAttribute('href', 'mydarrin-catalog.html?cat='+slug);
+
+    CURRENT_ITEMS = curated.items;
+    CURRENT_TAB = curated.tab;
+    renderGrid(CURRENT_ITEMS, CURRENT_TAB);
+    return;
+  }
+
+  // Fără conținut curatoriat local — preluăm metadatele categoriei din
+  // Supabase (tabel categorii) și afișăm un mesaj clar, nu o pagină goală.
+  let meta = null;
+  try {
+    if (window.supabaseClient) {
+      const { data } = await window.supabaseClient
+        .from('categorii')
+        .select('title,icon_name,description,category_type')
+        .eq('slug', slug)
+        .maybeSingle();
+      meta = data;
+    }
+  } catch (e) {
+    console.warn('[categorii] eroare la încărcare metadate:', e);
+  }
+
+  const title = meta?.title || slug;
+  document.title = title + ' · My Darrin';
+  const iconEl = document.getElementById('cat-icon');
+  if (iconEl) iconEl.innerHTML = meta?.icon_name
+    ? '<i data-lucide="'+meta.icon_name+'" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i>'
+    : '';
+  setEl('cat-label', title);
+  setEl('cat-title', title);
+  setEl('cat-subtitle', meta?.description || '');
+  setEl('bc-cat', title);
+  document.getElementById('bc-cat-link').textContent = tabMap[type] || 'Servicii';
+  document.getElementById('bc-cat-link').setAttribute('href', 'mydarrin-catalog.html?cat='+slug);
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+
+  CURRENT_ITEMS = [];
+  CURRENT_TAB = type;
   renderGrid(CURRENT_ITEMS, CURRENT_TAB);
+  const empty = document.getElementById('empty-state');
+  if (empty) {
+    empty.innerHTML = '<div style="font-size:44px;margin-bottom:14px"><i data-lucide="clock" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>' +
+      '<div style="font-size:15px;font-weight:600">Listă de produse în lucru pentru această categorie.</div>' +
+      '<div style="font-size:13px;margin-top:8px"><a href="mydarrin-catalog.html?cat='+encodeURIComponent(slug)+'" style="color:#FF8C00;font-weight:600;text-decoration:none">Vezi în catalogul general →</a></div>';
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
 }
 
 // ── FILTRU PE PAGINĂ — căutare + sortare + preț max ──
