@@ -110,10 +110,24 @@ async function retrimiteCodEmail(email) {
 /* ── Login/înregistrare cu furnizor extern (Google/Facebook/Apple) ──
    Fiecare necesită activare + credențiale reale în Supabase Dashboard →
    Authentication → Providers (Client ID/Secret la Google și Facebook,
-   Services ID/Key/Team ID/cheie privată la Apple) — până atunci Supabase
-   răspunde cu eroare "Unsupported provider" / "provider is not enabled",
-   prinsă și afișată clar apelantului, nu ca o eroare generică. */
+   Services ID/Key/Team ID/cheie privată la Apple).
+
+   IMPORTANT: signInWithOAuth() face o navigare completă a browserului către
+   Supabase, nu un fetch — dacă providerul nu e activat acolo, Supabase
+   răspunde cu "Unsupported provider" DUPĂ ce pagina curentă a fost deja
+   părăsită, deci niciun try/catch din JS-ul aplicației nu mai poate prinde
+   eroarea (utilizatorul vede direct JSON-ul brut al Supabase). De-asta
+   verificăm AICI, înainte de orice navigare, dacă providerul e cu adevărat
+   activ — lista de mai jos trebuie actualizată manual, în cod, imediat ce
+   activezi un provider în Supabase Dashboard (nu există altă sursă automată
+   de adevăr pentru asta, provider-config-ul Supabase nu e interogabil din
+   client). */
+const OAUTH_PROVIDERS_ACTIVI = [];
+
 async function performOAuthLogin(provider) {
+  if (!OAUTH_PROVIDERS_ACTIVI.includes(provider)) {
+    throw new Error('provider_neactivat');
+  }
   const { error } = await sb().auth.signInWithOAuth({
     provider,
     options: { redirectTo: window.location.origin + window.location.pathname },
