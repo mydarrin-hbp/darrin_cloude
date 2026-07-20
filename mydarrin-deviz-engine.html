@@ -1871,6 +1871,9 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 
         <!-- HARTA SIMULATĂ -->
         <div>
+          <div style="background:#FFF8EE;border:1px solid #FFD980;border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#8A5A00;display:flex;align-items:center;gap:8px">
+            <span>⚠</span><span><strong>Integrare Google Maps API — în implementare.</strong> Harta și controalele de mai jos sunt un exemplu vizual static (Bacău, 3 zone); trasarea/editarea zonelor pe hartă reală nu e încă funcțională.</span>
+          </div>
           <div style="font-weight:700;color:#003366;font-size:14px;margin-bottom:12px">🗺 Exemplu: Bacău — 3 zone configurate</div>
           <div id="map-container" style="background:linear-gradient(135deg,#e8f0e8,#d4e8d4);border-radius:16px;border:2px solid #D5DFE8;overflow:hidden;position:relative;height:340px">
             <!-- SVG Map simulat Bacău -->
@@ -1944,16 +1947,16 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 
             <!-- Map controls simulat -->
             <div style="position:absolute;top:10px;right:10px;display:flex;flex-direction:column;gap:2px">
-              <button style="width:28px;height:28px;background:rgba(255,255,255,0.92);border:1px solid #D5DFE8;border-radius:6px;font-weight:700;font-size:16px;cursor:pointer;color:#003366" onclick="alert('Google Maps API — Zoom in')">+</button>
-              <button style="width:28px;height:28px;background:rgba(255,255,255,0.92);border:1px solid #D5DFE8;border-radius:6px;font-weight:700;font-size:16px;cursor:pointer;color:#003366" onclick="alert('Google Maps API — Zoom out')">−</button>
+              <button style="width:28px;height:28px;background:rgba(255,255,255,0.92);border:1px solid #D5DFE8;border-radius:6px;font-weight:700;font-size:16px;cursor:pointer;color:#003366" onclick="hartaIntegrarePending()">+</button>
+              <button style="width:28px;height:28px;background:rgba(255,255,255,0.92);border:1px solid #D5DFE8;border-radius:6px;font-weight:700;font-size:16px;cursor:pointer;color:#003366" onclick="hartaIntegrarePending()">−</button>
             </div>
             <div style="position:absolute;top:10px;left:10px;background:rgba(255,255,255,0.9);border-radius:8px;padding:5px 10px;border:1px solid #D5DFE8;font-size:10px;font-weight:700;color:#003366">
               🗺 Bacău, România · Google Maps API
             </div>
           </div>
           <div style="display:flex;gap:8px;margin-top:8px">
-            <button onclick="alert('Backoffice → Trasează zonă nouă pe hartă')" style="flex:1;padding:9px;background:#003366;color:#fff;border:none;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer">+ Trasează zonă nouă</button>
-            <button onclick="alert('Importă polygon din GeoJSON / KML')" style="padding:9px 14px;background:#EBF4FB;color:#003366;border:1px solid #D6E8F5;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer">📂 Import GeoJSON</button>
+            <button onclick="hartaIntegrarePending()" style="flex:1;padding:9px;background:#003366;color:#fff;border:none;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer">+ Trasează zonă nouă</button>
+            <button onclick="hartaIntegrarePending()" style="padding:9px 14px;background:#EBF4FB;color:#003366;border:1px solid #D6E8F5;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer">📂 Import GeoJSON</button>
           </div>
         </div>
       </div>
@@ -1964,7 +1967,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
           <div style="font-weight:700;color:#003366;font-size:14px">⚙️ Zone configurate — Bacău, România (CRUD complet)</div>
           <div style="display:flex;gap:8px">
             <button onclick="addZone()" style="display:inline-flex;align-items:center;gap:6px;background:#FF8C00;color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:12.5px;font-weight:700;cursor:pointer">+ Adaugă zonă</button>
-            <button onclick="alert('Salvează toate zonele')" style="display:inline-flex;align-items:center;gap:6px;background:#003366;color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:12.5px;font-weight:700;cursor:pointer">💾 Salvează tot</button>
+            <button onclick="hartaIntegrarePending()" style="display:inline-flex;align-items:center;gap:6px;background:#003366;color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:12.5px;font-weight:700;cursor:pointer">💾 Salvează tot</button>
           </div>
         </div>
         <div style="overflow-x:auto;border-radius:16px;border:1px solid #D5DFE8" id="zones-table">
@@ -2560,13 +2563,13 @@ function saveZone(z){
     const statusCell = row.cells[5];
     statusCell.innerHTML = '<span style="display:inline-flex;align-items:center;gap:4px;font-size:9px;background:#D4EDDA;color:#1A7A3A;padding:3px 10px;border-radius:99px;font-weight:700"><span style="width:5px;height:5px;border-radius:50%;background:#1A7A3A;display:inline-block"></span>LIVE</span>';
   }
-  alert('✅ Zona "'+name+'" salvată!\n+'+pct+'% cotă de preț\nPUT /api/v1/backoffice/zones/'+z);
+  backofficeApiPending('Zona "'+name+'" ('+pct+'% cotă de preț) e salvată doar local în această pagină de exemplu — nu există încă un API real de backoffice pentru zone.');
 }
 function deleteZone(z){
   if(confirm('Ștergi Zona '+z+'? Această acțiune este ireversibilă și va afecta toate comenzile active în această zonă.')){
     const row = document.getElementById('zone-row-'+z);
     if(row) row.remove();
-    alert('🗑 Zona '+z+' ștearsă.\nDELETE /api/v1/backoffice/zones/'+z);
+    backofficeApiPending('Zona '+z+' a fost ștearsă doar local — nu există încă un API real de backoffice pentru zone.');
   }
 }
 function duplicateZone(z){
@@ -2582,7 +2585,19 @@ function duplicateZone(z){
   },50);
 }
 function editPolygon(z){
-  alert('🗺 Google Maps Polygon Editor\n\nDeschide editorul de polygon pentru Zona '+z+'.\n\nFuncționalitate: trasare linie pe hartă → coordonate salvate ca GeoJSON polygon\n→ PUT /api/v1/backoffice/zones/'+z+'/polygon\n\n(Integrare completă Google Maps JavaScript API cu DrawingManager)');
+  hartaIntegrarePending();
+}
+
+// FIX (audit 2026-07-20, C3): butoanele din secțiunea de hartă/zone promiteau
+// o integrare Google Maps și un API de backoffice care nu există încă —
+// fiecare avea propriul text de alert() ad-hoc simulând un răspuns de
+// succes. Centralizat aici într-un singur mesaj onest, ca să nu se creadă
+// că funcționalitatea e implementată.
+function hartaIntegrarePending(){
+  alert('Integrare Google Maps API — în implementare.\nTrasarea/editarea zonelor pe hartă reală nu este încă funcțională.');
+}
+function backofficeApiPending(mesaj){
+  alert(mesaj);
 }
 
 // ── RATE CARD JS — LIVE SUPABASE (manopera_costuri + competente_esco) ──
@@ -2789,11 +2804,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── MULTI-COUNTRY PARTNER JS ──
-function manageCountry(code){ alert('⚙ Gestionează activitate în '+code+'\n• Editează zone active\n• Verifică certificări\n• Dezactivează temporar'); }
+function manageCountry(code){ backofficeApiPending('Gestionarea activității în '+code+' (zone, certificări, dezactivare) nu are încă un API real de backoffice — pagină de exemplu.'); }
 function addCountry(){
   const countries = ['🇫🇷 Franța','🇧🇬 Bulgaria','🇳🇴 Norvegia','🇸🇪 Suedia','🇬🇧 UK'];
   const sel = prompt('Selectează țara (1-5):\n1. Franța\n2. Bulgaria\n3. Norvegia\n4. Suedia\n5. UK');
-  if(sel) alert('Activare '+countries[parseInt(sel)-1]+'\n\nPași:\n1. Upload certificări obligatorii pentru această țară\n2. Sistem verifică documentele (max 48h)\n3. Partenerul primește confirmare\n\nPOST /api/v1/partner/countries/activate');
+  if(sel) backofficeApiPending('Activarea pentru '+countries[parseInt(sel)-1]+' (upload certificări, verificare, confirmare) nu are încă un API real de backoffice — pagină de exemplu.');
 }
 
 // VMC SIMULATOR

@@ -4484,6 +4484,10 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
         <div style="flex:1;height:3px;border-radius:99px;background:#0E9E99" id="cp-1"></div>
         <div style="flex:1;height:3px;border-radius:99px;background:#D5DFE8" id="cp-2"></div>
         <div style="flex:1;height:3px;border-radius:99px;background:#D5DFE8" id="cp-3"></div>
+        <div style="flex:1;height:3px;border-radius:99px;background:#D5DFE8" id="cp-4"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:9.5px;color:#8C9BAD;margin-bottom:14px;margin-top:-12px;padding:0 1px">
+        <span>Descriere</span><span>Analiză</span><span>Estimare</span><span>Confirmare</span>
       </div>
 
       <!-- Chat messages -->
@@ -4504,15 +4508,38 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
         </div>
       </div>
 
+      <!-- Comutator Varianta 1 (servicii) / Varianta 2 (proiect construcție) -->
+      <div style="text-align:right;margin-bottom:8px">
+        <button type="button" id="proiect-mode-toggle" onclick="toggleProiectMode()" style="background:none;border:none;color:#0E9E99;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;text-decoration:underline;padding:0">Ai un proiect de construcție/renovare mai mare? → Deviz Sumar Proiect</button>
+      </div>
+
+      <!-- Câmpuri Varianta 2 (proiect) — ascunse implicit, vezi toggleProiectMode() -->
+      <div id="proiect-fields" style="display:none;background:#F4F7F9;border-radius:16px;border:1px solid #D5DFE8;padding:14px;margin-bottom:10px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <select id="proiect-tip" style="border:1.5px solid #D5DFE8;border-radius:10px;padding:9px 10px;font-size:12.5px;font-family:inherit;outline:none;background:#fff">
+            <option value="">Tip construcție/proiect...</option>
+            <option value="casa-noua">Casă nouă</option>
+            <option value="renovare-completa">Renovare completă</option>
+            <option value="extindere">Extindere</option>
+            <option value="acoperis">Acoperiș/Șarpantă</option>
+            <option value="fatada-termoizolatie">Fațadă & termoizolație</option>
+            <option value="altele">Altele</option>
+          </select>
+          <input type="number" id="proiect-suprafata" placeholder="Suprafață (m²)" min="0" style="border:1.5px solid #D5DFE8;border-radius:10px;padding:9px 10px;font-size:12.5px;font-family:inherit;outline:none"/>
+        </div>
+        <input type="text" id="proiect-locatie" placeholder="Locație (oraș/județ)" style="width:100%;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px 10px;font-size:12.5px;font-family:inherit;outline:none;margin-bottom:8px"/>
+        <div style="font-size:10.5px;color:#8C9BAD;line-height:1.5">Deviz Sumar — o estimare preliminară pe baza acestor date, nu o ofertă tehnică detaliată (fără planșe/extras de materiale).</div>
+      </div>
+
       <!-- Chat input -->
       <div style="background:#F4F7F9;border-radius:16px;border:1px solid #D5DFE8;padding:14px;margin-bottom:16px">
         <textarea id="chat-input" placeholder="Descrie problema ta... (ex: centrala nu pornește, apare codul E3, am verificat presiunea...)" style="width:100%;border:none;background:transparent;font-size:13px;font-family:inherit;color:#2D2D2D;resize:none;outline:none;min-height:70px;line-height:1.6" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
         <!-- Upload zone -->
         <div id="upload-zone" style="border:2px dashed #D5DFE8;border-radius:12px;padding:14px;text-align:center;cursor:pointer;transition:all .2s;margin-top:10px;position:relative" onclick="document.getElementById('file-input').click()" ondragover="event.preventDefault();this.style.borderColor='#0E9E99';this.style.background='#E0F5F4'" ondragleave="this.style.borderColor='#D5DFE8';this.style.background=''" ondrop="handleDrop(event)">
-          <input type="file" id="file-input" multiple accept="image/*,video/*" style="display:none" onchange="handleFiles(this.files)"/>
+          <input type="file" id="file-input" multiple accept="image/jpeg,image/png,image/webp,image/heic,application/pdf" style="display:none" onchange="handleFiles(this.files)"/>
           <div style="font-size:24px;margin-bottom:6px" id="upload-icon"><i data-lucide="paperclip" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-          <div style="font-size:12.5px;font-weight:600;color:#6B7A8D">Drag & drop sau click · Imagini & Video</div>
-          <div style="font-size:10.5px;color:#8C9BAD;margin-top:3px">JPG, PNG, MP4, MOV · Max 50MB per fișier</div>
+          <div style="font-size:12.5px;font-weight:600;color:#6B7A8D">Drag & drop sau click · Imagini & PDF</div>
+          <div style="font-size:10.5px;color:#8C9BAD;margin-top:3px">JPG, PNG, WEBP, PDF · Max 2MB per fișier · max 3 fișiere</div>
         </div>
         <!-- Preview uploaded files -->
         <div id="file-preview" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
@@ -4521,7 +4548,7 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
           <div style="font-size:11px;color:#8C9BAD">Adresă prestare (opțional — îmbunătățește recomandarea)</div>
           <button onclick="sendToAI()" style="display:inline-flex;align-items:center;gap:7px;background:#0E9E99;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .18s" onmouseover="this.style.background='#0B7A76'" onmouseout="this.style.background='#0E9E99'">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            Trimite la Darrin AI
+            <span id="send-to-ai-label">Trimite la Darrin AI</span>
           </button>
         </div>
       </div>
@@ -4540,13 +4567,6 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
           <div style="margin-left:auto;width:18px;height:18px;border:2px solid rgba(14,158,153,.3);border-top-color:#0E9E99;border-radius:50%;animation:spin .7s linear infinite"></div>
         </div>
         <div id="ai-analysis-text" style="font-size:12.5px;color:#6B7A8D;line-height:1.65"></div>
-      </div>
-
-      <!-- AI Clarify — întrebare de precizare cu opțiuni multiple -->
-      <div id="ai-clarify" style="display:none;background:linear-gradient(135deg,#FFF8EE,#FFF0D6);border-radius:16px;border:1px solid #FFD980;padding:16px;margin-bottom:14px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#CC7000;margin-bottom:10px">Darrin AI — O precizare</div>
-        <div id="ai-clarify-question" style="font-size:13.5px;color:#2D2D2D;line-height:1.7;margin-bottom:14px"></div>
-        <div id="ai-clarify-options" style="display:flex;flex-direction:column;gap:8px"></div>
       </div>
 
       <!-- AI Result — recommendations -->
@@ -4753,6 +4773,17 @@ function openConsultanta(){
   modal.style.display='flex';
   requestAnimationFrame(()=>modal.classList.add('cons-open'));
   document.body.style.overflow='hidden';
+
+  // Reset la o sesiune nouă de Darrin AI, ca să nu rămână rezultate/estimări vechi vizibile
+  ultimulRezultatAI = null;
+  const result=document.getElementById('ai-result');
+  if(result) result.style.display='none';
+  const esc=document.getElementById('escalate-to-argint');
+  if(esc) esc.style.display='none';
+  ['cp-1','cp-2','cp-3','cp-4'].forEach((id,i)=>{
+    const el=document.getElementById(id);
+    if(el) el.style.background = i===0 ? '#0E9E99' : '#D5DFE8';
+  });
 }
 
 // ── HERO CATALOG SEARCH BAR → Darrin AI ──
@@ -4805,9 +4836,27 @@ function switchConsTab(tab, btn){
 }
 
 // ── FILE UPLOAD ──
+// Limite aliniate cu api/darrin-ai/deviz.js (MAX_FILES=3, MAX_FILE_BYTES=2MB)
+// — depășirea lor pe server ar respinge cererea, deci verificăm și aici,
+// ca utilizatorul să afle imediat, nu după round-trip-ul la API.
+const DARRIN_AI_MAX_FILES = 3;
+const DARRIN_AI_MAX_FILE_BYTES = 2 * 1024 * 1024;
+const DARRIN_AI_ALLOWED_MIME = ['image/jpeg','image/png','image/webp','image/heic','application/pdf'];
+
 function handleFiles(files){
   Array.from(files).forEach(file=>{
-    if(uploadedFiles.length>=5) return;
+    if(uploadedFiles.length>=DARRIN_AI_MAX_FILES){
+      alert(`Poți atașa maxim ${DARRIN_AI_MAX_FILES} fișiere.`);
+      return;
+    }
+    if(!DARRIN_AI_ALLOWED_MIME.includes(file.type)){
+      alert(`Tip de fișier nepermis: ${file.type||file.name}. Acceptate: JPG, PNG, WEBP, PDF.`);
+      return;
+    }
+    if(file.size>DARRIN_AI_MAX_FILE_BYTES){
+      alert(`Fișierul "${file.name}" depășește 2MB.`);
+      return;
+    }
     uploadedFiles.push(file);
     const preview=document.getElementById('file-preview');
     const item=document.createElement('div');
@@ -4822,7 +4871,7 @@ function handleFiles(files){
       item.style.display='flex';
       item.style.alignItems='center';
       item.style.justifyContent='center';
-      item.innerHTML='<span style="font-size:24px"><i data-lucide="video" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>';
+      item.innerHTML='<span style="font-size:24px"><i data-lucide="file-text" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>';
     }
     // Remove btn
     const rm=document.createElement('button');
@@ -4831,6 +4880,7 @@ function handleFiles(files){
     rm.onclick=()=>{ item.remove(); uploadedFiles=uploadedFiles.filter(f=>f!==file); };
     item.appendChild(rm);
     preview.appendChild(item);
+    if(window.lucide) lucide.createIcons();
   });
   const uz=document.getElementById('upload-zone');
   if(uz&&uploadedFiles.length>0){ uz.style.borderColor='#0E9E99'; uz.style.background='rgba(14,158,153,.05)'; document.getElementById('upload-icon').textContent=''; }
@@ -4842,28 +4892,55 @@ function handleDrop(e){
   handleFiles(e.dataTransfer.files);
 }
 
-// ── SEND TO AI ──
-// ════════════════════════════════════════════════════════════════
-// DARRIN AI — Strict Prompting / RAG limitat la backoffice My Darrin
-// Acest motor NU apelează niciun model AI extern (LLM generic). Toată
-// logica de interpretare se bazează exclusiv pe matching determinist
-// (regex/cuvinte-cheie) împotriva PRODUCTS_DB definit în backoffice.
-// Orice serviciu/material/închiriere recomandat trebuie să existe deja
-// ca produs aprobat în catalog — algoritmul nu poate "inventa" sau
-// recomanda ceva din afara bazei de date proprii My Darrin.
-// ════════════════════════════════════════════════════════════════
-function sendToAI(){
-  const txt=document.getElementById('chat-input')?.value.trim()||'';
-  if(!txt&&uploadedFiles.length===0){ alert('Descrie problema sau încarcă o imagine/video.'); return; }
+// ── DARRIN AI — motor real (Anthropic, constrâns la catalogul My Darrin) ──
+// Înlocuiește vechiul matching determinist pe cuvinte-cheie: apelează
+// api/darrin-ai/deviz.js, care folosește un model Claude real cu output
+// constrâns prin tool use la categoriile reale din `categorii`
+// (category_type='servicii') — AI-ul nu poate recomanda ceva în afara
+// catalogului. Prețul FINAL nu se calculează aici, doar o estimare de
+// cost brut; oficializarea trece prin /api/deviz/calculate.js existent,
+// la pasul de Confirmare (necesită login).
+let proiectMode = false;
+let ultimulRezultatAI = null;
 
-  // Add user message to chat
+function toggleProiectMode(){
+  proiectMode = !proiectMode;
+  document.getElementById('proiect-fields').style.display = proiectMode ? 'block' : 'none';
+  document.getElementById('upload-zone').style.display = proiectMode ? 'none' : 'block';
+  document.getElementById('chat-input').placeholder = proiectMode
+    ? 'Detalii suplimentare despre proiect (opțional)...'
+    : 'Descrie problema ta... (ex: centrala nu pornește, apare codul E3, am verificat presiunea...)';
+  document.getElementById('proiect-mode-toggle').textContent = proiectMode
+    ? '← Înapoi la Evaluare Instantă Servicii'
+    : 'Ai un proiect de construcție/renovare mai mare? → Deviz Sumar Proiect';
+}
+
+function fileToBase64(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',').pop());
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function sendToAI(){
+  const txt = document.getElementById('chat-input')?.value.trim() || '';
+  const tipConstructie = document.getElementById('proiect-tip')?.value || '';
+  const suprafata = document.getElementById('proiect-suprafata')?.value || '';
+  const locatie = document.getElementById('proiect-locatie')?.value || '';
+
+  if(proiectMode && !tipConstructie && !txt){ alert('Alege un tip de construcție/proiect sau descrie proiectul.'); return; }
+  if(!proiectMode && !txt && uploadedFiles.length===0){ alert('Descrie problema sau încarcă o imagine/PDF.'); return; }
+
+  // Mesaj utilizator în chat
   const msgs=document.getElementById('chat-messages');
+  const afisatText = txt || (proiectMode ? `Proiect: ${tipConstructie}${suprafata?` · ${suprafata} m²`:''}${locatie?` · ${locatie}`:''}` : `[${uploadedFiles.length} fișier(e) uploadat(e)]`);
   const userMsg=document.createElement('div');
   userMsg.style.cssText='display:flex;justify-content:flex-end;gap:10px';
-  userMsg.innerHTML=`<div style="background:#003366;border-radius:14px 0 14px 14px;padding:12px 15px;max-width:85%;color:#fff;font-size:13px;line-height:1.65">${escapeHTML(txt)||'['+uploadedFiles.length+' fișier(e) uploadat(e)]'}</div>`;
+  userMsg.innerHTML=`<div style="background:#003366;border-radius:14px 0 14px 14px;padding:12px 15px;max-width:85%;color:#fff;font-size:13px;line-height:1.65">${escapeHTML(afisatText)}</div>`;
   msgs.appendChild(userMsg);
 
-  // If files uploaded, show file count
   if(uploadedFiles.length>0){
     const fileMsg=document.createElement('div');
     fileMsg.style.cssText='display:flex;justify-content:flex-end';
@@ -4873,123 +4950,48 @@ function sendToAI(){
 
   document.getElementById('chat-input').value='';
 
-  // Show thinking
   const thinking=document.getElementById('ai-thinking');
   if(thinking) thinking.style.display='block';
+  const analysisEl=document.getElementById('ai-analysis-text');
+  if(analysisEl) analysisEl.textContent = uploadedFiles.length>0 ? `Analizez descrierea și ${uploadedFiles.length} fișier(e)...` : 'Analizez descrierea...';
 
-  // Progress steps
   document.getElementById('cp-1').style.background='#0E9E99';
   document.getElementById('cp-2').style.background='#FF8C00';
 
-  // Simulate AI analysis
-  const analyses=[
-    'Analizez descrierea problemei...',
-    uploadedFiles.length>0?'Procesez '+uploadedFiles.length+' fișier(e) — detectez elementele vizuale relevante...':'Procesez textul descrierii...',
-    'Caut în baza de date de servicii My Darrin...',
-    'Generez recomandări personalizate...',
-  ];
-  let step=0;
-  const interval=setInterval(()=>{
-    if(step<analyses.length){
-      const el=document.getElementById('ai-analysis-text');
-      if(el) el.textContent=analyses[step];
-      step++;
-    } else {
-      clearInterval(interval);
-      showAIResult(txt, uploadedFiles.length>0);
-    }
-  },800);
-}
+  const sendBtn = document.querySelector('#cons-bronz button[onclick="sendToAI()"]');
+  if(sendBtn) sendBtn.disabled = true;
 
-// ── CLARIFICARE CALORIFER — 3 variante de diagnostic ──
-function showClarifyCalorifer(hasFiles){
-  const thinking=document.getElementById('ai-thinking');
-  if(thinking) thinking.style.display='none';
-  document.getElementById('cp-2').style.background='#FF8C00';
+  try {
+    const filesPayload = await Promise.all(uploadedFiles.map(async f => ({
+      mime: f.type,
+      data_base64: await fileToBase64(f),
+    })));
+    uploadedFiles = [];
+    document.getElementById('file-preview').innerHTML = '';
 
-  const clarify=document.getElementById('ai-clarify');
-  clarify.style.display='block';
-  document.getElementById('ai-clarify-question').innerHTML=
-    `Am identificat o problemă de scurgere la calorifer${hasFiles?' (confirmat și din imaginile încărcate)':''}. Pentru a recomanda soluția corectă, te rog precizează exact de unde curge apa:`;
+    const body = proiectMode
+      ? { mod: 'proiect', text: txt || undefined, tip_constructie: tipConstructie || undefined, suprafata_mp: suprafata ? Number(suprafata) : undefined, locatie: locatie || undefined }
+      : { mod: 'servicii', text: txt || undefined, files: filesPayload };
 
-  const opts=[
-    {key:'perete', icon:'', label:'Curge din perete', desc:'Scurgere la nivelul țevii din zid, în spatele caloriferului'},
-    {key:'sub', icon:'', label:'Curge de sub calorifer', desc:'Apa se adună sub corpul caloriferului, posibil radiator fisurat'},
-    {key:'robinet', icon:'', label:'Curge la robinet', desc:'Scurgere vizibilă la robinetul/ventilul de reglare al caloriferului'},
-  ];
-  const container=document.getElementById('ai-clarify-options');
-  container.innerHTML='';
-  opts.forEach(o=>{
-    const btn=document.createElement('button');
-    btn.style.cssText='display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;border:1.5px solid #D5DFE8;border-radius:12px;cursor:pointer;text-align:left;font-family:inherit;transition:all .18s;width:100%';
-    btn.innerHTML=`<span style="font-size:22px">${o.icon}</span><div style="flex:1"><div style="font-weight:700;font-size:13px;color:#2D2D2D">${o.label}</div><div style="font-size:11px;color:#8C9BAD;margin-top:2px">${o.desc}</div></div><svg width="14" height="14" fill="none" stroke="#8C9BAD" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>`;
-    btn.onmouseover=()=>{btn.style.borderColor='#FF8C00';btn.style.background='#FFF8EE';};
-    btn.onmouseout=()=>{btn.style.borderColor='#D5DFE8';btn.style.background='#fff';};
-    btn.onclick=()=>selectCaloriferClarify(o.key, hasFiles);
-    container.appendChild(btn);
-  });
-
-  setTimeout(()=>{ clarify.scrollIntoView({behavior:'smooth',block:'start'}); },100);
-}
-
-function selectCaloriferClarify(option, hasFiles){
-  // Adăugăm răspunsul utilizatorului ca mesaj în chat
-  const msgs=document.getElementById('chat-messages');
-  const labels={perete:'Curge din perete',sub:'Curge de sub calorifer',robinet:'Curge la robinet'};
-  const userMsg=document.createElement('div');
-  userMsg.style.cssText='display:flex;justify-content:flex-end';
-  userMsg.innerHTML=`<div style="background:#003366;border-radius:14px 0 14px 14px;padding:10px 14px;color:#fff;font-size:13px">${labels[option]}</div>`;
-  msgs.appendChild(userMsg);
-
-  document.getElementById('ai-clarify').style.display='none';
-  document.getElementById('cp-2').style.background='#0E9E99';
-  document.getElementById('cp-3').style.background='#0E9E99';
-
-  const result=document.getElementById('ai-result');
-  result.style.display='block';
-
-  let recommendation='', services=[], needsEscalation=false;
-
-  if(option==='robinet'){
-    recommendation='Am identificat sursa: <strong>scurgere la robinetul caloriferului</strong>. Aceasta se rezolvă de obicei prin înlocuirea garniturilor și o probă de presiune pentru a confirma etanșeitatea întregului circuit. Recomand serviciul dedicat de mai jos, disponibil în 4 niveluri.';
-    services=[{slug:'reparatie-garnituri-calorifer',title:'Reparație garnituri & probă presiune calorifer',price:'150 Lei',icon:''}];
-  } else if(option==='sub'){
-    recommendation='Scurgerea de sub calorifer poate indica o <strong>fisură în corpul radiatorului</strong> — în multe cazuri necesită înlocuirea caloriferului. Recomand o evaluare la fața locului înainte de a comanda un serviciu fix.';
-    services=[{slug:'inlocuire-calorifer',title:'Înlocuire calorifer',price:'280 Lei',icon:''}];
-    needsEscalation=true;
-  } else { // perete
-    recommendation='Scurgerea din perete sugerează o <strong>problemă la țeava de alimentare</strong>, ascunsă în zidărie. Acest tip de intervenție necesită evaluare directă a unui instalator — recomand consultanță Argint pentru diagnostic precis înainte de orice lucrare.';
-    services=[{slug:'instalatii-sanitare',title:'Instalații sanitare',price:'85 Lei/oră',icon:''}];
-    needsEscalation=true;
-  }
-
-  const recEl=document.getElementById('ai-recommendation');
-  if(recEl) recEl.innerHTML=recommendation;
-
-  const recSvc=document.getElementById('rec-services');
-  if(recSvc){
-    recSvc.innerHTML='';
-    services.forEach(svc=>{
-      const div=document.createElement('div');
-      div.style.cssText='display:flex;align-items:center;gap:12px;padding:11px 14px;background:#fff;border-radius:12px;border:1.5px solid #D5DFE8;cursor:pointer;transition:all .18s';
-      div.innerHTML=`<span style="font-size:22px">${svc.icon}</span>
-        <div style="flex:1"><div style="font-weight:700;font-size:13px;color:#2D2D2D">${svc.title}</div><div style="font-size:11px;color:#8C9BAD">De la ${svc.price} · Darrin AI alocă</div></div>
-        <button onclick="goToService('${svc.slug}')" style="background:#FF8C00;color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">Comandă →</button>`;
-      div.onmouseover=()=>div.style.borderColor='#FF8C00';
-      div.onmouseout=()=>div.style.borderColor='#D5DFE8';
-      recSvc.appendChild(div);
+    const res = await fetch('/api/darrin-ai/deviz', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
     });
-  }
+    const data = await res.json();
+    if(!res.ok) throw new Error(data?.error || 'Eroare necunoscută');
 
-  if(needsEscalation){
-    const esc=document.getElementById('escalate-to-argint');
-    if(esc) esc.style.display='block';
+    renderAIResult(data);
+  } catch(e){
+    console.error('[Darrin AI]', e);
+    renderAIError(e.message);
+  } finally {
+    if(sendBtn) sendBtn.disabled = false;
   }
-
-  setTimeout(()=>{ result.scrollIntoView({behavior:'smooth',block:'start'}); },300);
 }
 
-function showAIResult(txt, hasFiles){
+function renderAIResult(data){
+  ultimulRezultatAI = data;
   const thinking=document.getElementById('ai-thinking');
   if(thinking) thinking.style.display='none';
   const result=document.getElementById('ai-result');
@@ -4997,64 +4999,90 @@ function showAIResult(txt, hasFiles){
   document.getElementById('cp-2').style.background='#0E9E99';
   document.getElementById('cp-3').style.background='#0E9E99';
 
-  // Generate recommendation based on keywords
-  const lower=txt.toLowerCase();
-  let recommendation='';
-  let services=[];
-  let needsEscalation=false;
-
-  // ── CALORIFER + CURGE/SCURGERE → clarificare cu 3 variante ──
-  if(lower.match(/calorifer/) && lower.match(/curg|scurg|pic[ăa]|ud[ăa]/)){
-    showClarifyCalorifer(hasFiles);
-    return;
-  }
-
-  if(lower.match(/central[ăa]|termic[ăa]|gaz|cazan|boiler/)){
-    recommendation='Am identificat o problemă la instalația termică/gaz. Îți recomand serviciul de <strong>Reparație centrală termică</strong>. Pentru siguranță, un instalator autorizat ISCIR va face diagnosticul complet.';
-    services=[{slug:'inlocuire-calorifer',title:'Instalații termice & gaz',price:'85 Lei/oră',icon:''}];
-    if(hasFiles) needsEscalation=true;
-  } else if(lower.match(/electric|curent|tablou|priz[ăa]|siguran[țt]/)){
-    recommendation='Problemă electrică detectată. Recomand <strong>Instalații electrice</strong> cu electrician autorizat ANRE.';
-    services=[{slug:'instalatii-electrice',title:'Instalații electrice',price:'75 Lei/oră',icon:''}];
-  } else if(lower.match(/ap[ăa]|surg[ei]|[țt]eav[ăa]|robinet|scurgere/)){
-    recommendation='Posibilă problemă la instalația sanitară. Recomand <strong>Instalații sanitare</strong> cu instalator autorizat.';
-    services=[{slug:'instalatii-sanitare',title:'Instalații sanitare',price:'85 Lei/oră',icon:''}];
-  } else if(lower.match(/vopsit|zugr[ăa]vit|perete|tavan|fisur/)){
-    recommendation='Lucrare de finisaj necesară. Recomand serviciul <strong>Zugrăveli & Finisaje</strong>.';
-    services=[{slug:'zugraveli-finisaje',title:'Zugrăveli & Finisaje',price:'18 Lei/m²',icon:''}];
-  } else {
-    recommendation='Am analizat solicitarea ta. Pe baza descrierii, recomand să verifici catalogul de servicii de mai jos sau să discuți cu un specialist pentru o evaluare mai precisă.';
-    services=[{slug:'instalatii-sanitare',title:'Instalații sanitare',price:'85 Lei/oră',icon:''},{slug:'instalatii-electrice',title:'Instalații electrice',price:'75 Lei/oră',icon:''}];
-    needsEscalation=!lower||lower.length<20;
-  }
-
+  const incredereProc = Math.round((data.incredere||0)*100);
   const recEl=document.getElementById('ai-recommendation');
-  if(recEl) recEl.innerHTML=recommendation;
+  if(recEl) recEl.innerHTML =
+    `Categorie identificată: <strong>${escapeHTML(data.titlu_categorie)}</strong> · încredere ${incredereProc}%<br>${escapeHTML(data.explicatie||'')}`;
 
-  // Services
   const recSvc=document.getElementById('rec-services');
   if(recSvc){
     recSvc.innerHTML='';
-    services.forEach(svc=>{
-      const div=document.createElement('div');
-      div.style.cssText='display:flex;align-items:center;gap:12px;padding:11px 14px;background:#fff;border-radius:12px;border:1.5px solid #D5DFE8;cursor:pointer;transition:all .18s';
-      div.innerHTML=`<span style="font-size:22px">${svc.icon}</span>
-        <div style="flex:1"><div style="font-weight:700;font-size:13px;color:#2D2D2D">${svc.title}</div><div style="font-size:11px;color:#8C9BAD">De la ${svc.price} · Darrin AI alocă</div></div>
-        <button onclick="goToService('${svc.slug}')" style="background:#FF8C00;color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">Comandă →</button>`;
-      div.onmouseover=()=>div.style.borderColor='#FF8C00';
-      div.onmouseout=()=>div.style.borderColor='#D5DFE8';
-      recSvc.appendChild(div);
+    const div=document.createElement('div');
+    div.style.cssText='display:flex;flex-direction:column;gap:8px;padding:13px 14px;background:#fff;border-radius:12px;border:1.5px solid #D5DFE8';
+    div.innerHTML=`
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="font-weight:700;font-size:13px;color:#2D2D2D">${escapeHTML(data.titlu_categorie)}</div>
+        <div style="font-weight:800;font-size:15px;color:#003366">~${Math.round(data.cost_brut_estimat).toLocaleString('ro-RO')} Lei</div>
+      </div>
+      <div style="font-size:10.5px;color:#8C9BAD">Estimare brută, preliminară — prețul oficial (cu TVA, comisioane, zonă și urgență) se calculează la pasul de confirmare.</div>
+      <button onclick="confirmaEstimareAI()" style="background:#0E9E99;color:#fff;border:none;border-radius:9px;padding:10px 14px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">Continuă spre deviz oficial →</button>
+    `;
+    recSvc.appendChild(div);
+  }
+
+  const esc=document.getElementById('escalate-to-argint');
+  if(esc) esc.style.display = (data.incredere!==undefined && data.incredere < 0.5) ? 'block' : 'none';
+
+  setTimeout(()=>{ result?.scrollIntoView({behavior:'smooth',block:'start'}); },200);
+}
+
+function renderAIError(msg){
+  const thinking=document.getElementById('ai-thinking');
+  if(thinking) thinking.style.display='none';
+  const result=document.getElementById('ai-result');
+  if(result) result.style.display='block';
+  document.getElementById('cp-2').style.background='#FF8C00';
+
+  const recEl=document.getElementById('ai-recommendation');
+  if(recEl) recEl.innerHTML = `Darrin AI nu a putut genera o estimare acum (${escapeHTML(msg)}). Poți vorbi direct cu un specialist verificat.`;
+  const recSvc=document.getElementById('rec-services');
+  if(recSvc) recSvc.innerHTML='';
+
+  const esc=document.getElementById('escalate-to-argint');
+  if(esc) esc.style.display='block';
+
+  setTimeout(()=>{ result?.scrollIntoView({behavior:'smooth',block:'start'}); },200);
+}
+
+// ── Pasul 4: Confirmare — oficializează estimarea prin /api/deviz/calculate.js (existent, neschimbat) ──
+async function confirmaEstimareAI(){
+  if(!ultimulRezultatAI) return;
+  const { data: sessionData } = await window.supabaseClient.auth.getSession();
+  const token = sessionData?.session?.access_token;
+  if(!token){
+    alert('Autentifică-te pentru a primi devizul oficial, apoi apasă din nou "Continuă spre deviz oficial".');
+    if(typeof toggleAuthModal==='function') toggleAuthModal();
+    return;
+  }
+
+  document.getElementById('cp-4').style.background='#FF8C00';
+
+  try {
+    const res = await fetch('/api/deviz/calculate', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
+      body: JSON.stringify({ serviciu_id: ultimulRezultatAI.categorie_slug, cost_brut: ultimulRezultatAI.cost_brut_estimat }),
     });
-  }
+    const data = await res.json();
+    if(!res.ok) throw new Error(data?.error || 'Eroare la calculul devizului');
 
-  // Escalate if needed
-  if(needsEscalation||hasFiles){
-    const esc=document.getElementById('escalate-to-argint');
-    if(esc) esc.style.display='block';
+    document.getElementById('cp-4').style.background='#0E9E99';
+    const recSvc=document.getElementById('rec-services');
+    if(recSvc){
+      const div=document.createElement('div');
+      div.style.cssText='padding:13px 14px;background:#E0F5F4;border-radius:12px;border:1px solid rgba(14,158,153,.3)';
+      div.innerHTML=`
+        <div style="font-size:11px;font-weight:700;color:#0E9E99;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Deviz oficial</div>
+        <div style="font-weight:800;font-size:20px;color:#003366;margin-bottom:8px">${Number(data.deviz.pret_final).toLocaleString('ro-RO')} Lei</div>
+        <button onclick="goToService('${ultimulRezultatAI.categorie_slug}')" style="width:100%;background:#FF8C00;color:#fff;border:none;border-radius:9px;padding:10px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">Comandă serviciul →</button>
+      `;
+      recSvc.appendChild(div);
+    }
+  } catch(e){
+    console.error('[confirmaEstimareAI]', e);
+    alert('Nu am putut calcula devizul oficial: ' + e.message);
+    document.getElementById('cp-4').style.background='#D5DFE8';
   }
-
-  // Scroll to result
-  setTimeout(()=>{ result?.scrollIntoView({behavior:'smooth',block:'start'}); },300);
 }
 
 function goToService(slug){
