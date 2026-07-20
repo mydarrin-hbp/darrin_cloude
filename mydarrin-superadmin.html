@@ -1548,11 +1548,72 @@ window.supabaseClient = _sc;
     </div>
 
     <!-- Alte paneluri placeholder -->
-<div id="panel-platforme" style="display:none;text-align:center;padding:60px 20px">
-      <div style="font-size:48px;margin-bottom:16px">🔗</div>
-      <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:8px">Platforme & Integrări</div>
-      <p style="color:#4A6080;margin-bottom:20px">Gestionare API keys, webhooks, conectori terți</p>
-      <button class="btn-p" onclick="showPanel('config')">→ Vezi Config Sistem</button>
+<div id="panel-platforme" style="display:none;padding:24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div>
+          <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">Platforme & Integrări</h2>
+          <p style="color:#4A6080;font-size:12.5px">Configurare API sau import CSV pentru orice furnizor extern — asiguratori, marketplace, procesatori carduri, curieri, închirieri, date companii, VAT, geolocalizare, contabilitate.</p>
+        </div>
+        <button class="btn-p" onclick="deschideFormularIntegrare(null)">+ Adaugă integrare</button>
+      </div>
+
+      <div id="integrari-list" style="margin-top:18px">Se încarcă...</div>
+
+      <!-- Formular adăugare/editare -->
+      <div id="integrare-form-wrap" style="display:none;margin-top:20px;background:#192433;border:1px solid #2D3F55;border-radius:14px;padding:18px">
+        <div style="font-weight:700;color:#fff;margin-bottom:12px" id="integrare-form-titlu">Integrare nouă</div>
+        <input type="hidden" id="integ-id">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
+          <div>
+            <label style="display:block;font-size:10.5px;color:#8BA3C0;margin-bottom:4px">Categorie *</label>
+            <select id="integ-categorie" style="width:100%;background:#0F1826;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:13px">
+              <option value="asigurari">Asiguratori</option>
+              <option value="marketplace_bricolaj">Marketplace — Bricolaj</option>
+              <option value="marketplace_general">Marketplace — General</option>
+              <option value="procesatori_carduri">Procesatori de carduri</option>
+              <option value="curieri">Curieri</option>
+              <option value="inchirieri">Centre de închirieri</option>
+              <option value="date_companii_ro">Date companii — România (ANAF)</option>
+              <option value="date_companii_eu">Date companii — Europa</option>
+              <option value="vat">VAT / VIES</option>
+              <option value="geolocalizare">Geolocalizare</option>
+              <option value="contabilitate">Contabilitate</option>
+              <option value="altele">Altele</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block;font-size:10.5px;color:#8BA3C0;margin-bottom:4px">Denumire furnizor *</label>
+            <input type="text" id="integ-nume" placeholder="ex: Cargus, Netopia, Asig Pro" style="width:100%;background:#0F1826;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:13px">
+          </div>
+        </div>
+        <div style="margin-bottom:10px">
+          <label style="display:block;font-size:10.5px;color:#8BA3C0;margin-bottom:6px">Tip configurare *</label>
+          <div style="display:flex;gap:14px">
+            <label style="display:flex;align-items:center;gap:6px;color:#C5D2E0;font-size:12.5px;cursor:pointer"><input type="radio" name="integ-tip" value="api" checked onchange="toggleTipConfigurareUI()"> API</label>
+            <label style="display:flex;align-items:center;gap:6px;color:#C5D2E0;font-size:12.5px;cursor:pointer"><input type="radio" name="integ-tip" value="csv" onchange="toggleTipConfigurareUI()"> Import CSV</label>
+            <label style="display:flex;align-items:center;gap:6px;color:#C5D2E0;font-size:12.5px;cursor:pointer"><input type="radio" name="integ-tip" value="ambele" onchange="toggleTipConfigurareUI()"> Ambele</label>
+          </div>
+        </div>
+        <div id="integ-api-fields" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
+          <div>
+            <label style="display:block;font-size:10.5px;color:#8BA3C0;margin-bottom:4px">Endpoint API</label>
+            <input type="text" id="integ-endpoint" placeholder="https://api.furnizor.ro/v1" style="width:100%;background:#0F1826;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:13px">
+          </div>
+          <div>
+            <label style="display:block;font-size:10.5px;color:#8BA3C0;margin-bottom:4px">Cheie API <span id="integ-cheie-status" style="color:#4A6080"></span></label>
+            <input type="password" id="integ-cheie" placeholder="Lasă gol ca să păstrezi cheia existentă" style="width:100%;background:#0F1826;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:13px">
+          </div>
+        </div>
+        <div style="margin-bottom:10px">
+          <label style="display:block;font-size:10.5px;color:#8BA3C0;margin-bottom:4px">Observații</label>
+          <input type="text" id="integ-observatii" style="width:100%;background:#0F1826;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:13px">
+        </div>
+        <div style="display:flex;gap:10px;margin-top:14px">
+          <button class="btn-p" onclick="salveazaIntegrare()">Salvează</button>
+          <button class="btn-s" onclick="document.getElementById('integrare-form-wrap').style.display='none'">Anulează</button>
+        </div>
+        <div id="integ-form-msg" style="margin-top:10px;font-size:12px"></div>
+      </div>
     </div>
     <div id="panel-escrow" style="display:none;text-align:center;padding:60px 20px">
       <div style="font-size:48px;margin-bottom:16px">🔒</div>
@@ -3823,6 +3884,179 @@ async function setStatusProspect(id, status) {
     const res = await fetch('/api/admin/prospecti', { method: 'POST', headers, body: JSON.stringify({ action: 'status', id, status }) });
     if (!res.ok) throw new Error((await res.json()).error);
   } catch (e) { alert('Eroare: ' + e.message); loadProspecti(); }
+}
+</script>
+
+<!-- ══ PLATFORME & INTEGRĂRI — structură generică API/CSV, adăugată 2026-07-20 ══ -->
+<script>
+const CATEGORIE_LABEL_INTEGRARE = {
+  asigurari: 'Asiguratori', marketplace_bricolaj: 'Marketplace — Bricolaj',
+  marketplace_general: 'Marketplace — General', procesatori_carduri: 'Procesatori de carduri',
+  curieri: 'Curieri', inchirieri: 'Centre de închirieri', date_companii_ro: 'Date companii — România',
+  date_companii_eu: 'Date companii — Europa', vat: 'VAT / VIES', geolocalizare: 'Geolocalizare',
+  contabilitate: 'Contabilitate', altele: 'Altele',
+};
+const STATUS_LABEL_INTEGRARE = { activ: '🟢 Activ', inactiv: '⚪ Inactiv', in_asteptare_test: '🟡 În așteptare test' };
+let _integrariCache = [];
+
+async function loadIntegrari() {
+  const el = document.getElementById('integrari-list');
+  if (!el) return;
+  el.textContent = 'Se încarcă...';
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/integrari/listeaza', { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    _integrariCache = data.integrari || [];
+
+    if (!_integrariCache.length) {
+      el.innerHTML = '<div style="padding:20px;text-align:center;color:#4A6080">Nicio integrare configurată încă.</div>';
+      return;
+    }
+
+    el.innerHTML = _integrariCache.map(i => `
+      <div style="background:#192433;border:1px solid #2D3F55;border-radius:12px;padding:14px 16px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+          <div>
+            <div style="font-weight:700;color:#fff;font-size:13.5px">${escapeHTML(i.nume_furnizor)}</div>
+            <div style="font-size:11px;color:#8BA3C0;margin-top:2px">${escapeHTML(CATEGORIE_LABEL_INTEGRARE[i.categorie] || i.categorie)} · ${i.tip_configurare.toUpperCase()}${i.are_cheie_api ? ' · 🔑 cheie API salvată' : ''}</div>
+            ${i.observatii ? `<div style="font-size:11px;color:#4A6080;margin-top:4px">${escapeHTML(i.observatii)}</div>` : ''}
+            ${i.ultima_verificare_la ? `<div style="font-size:10.5px;color:#4A6080;margin-top:4px">Ultima verificare: ${new Date(i.ultima_verificare_la).toLocaleString('ro-RO')} · ${i.ultima_verificare_status === 'ok' ? '✅' : '❌'}</div>` : ''}
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:11px;margin-bottom:8px">${STATUS_LABEL_INTEGRARE[i.status] || i.status}</div>
+            <div style="display:flex;gap:6px">
+              <button onclick="testeazaIntegrare('${i.id}')" style="font-size:11px;padding:5px 10px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">Testează</button>
+              <button onclick="deschideFormularIntegrare('${i.id}')" style="font-size:11px;padding:5px 10px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">Editează</button>
+              <button onclick="stergeIntegrare('${i.id}')" style="font-size:11px;padding:5px 10px;border-radius:7px;border:1px solid rgba(229,115,115,.3);background:transparent;color:#E57373;cursor:pointer">Șterge</button>
+            </div>
+          </div>
+        </div>
+        ${(i.tip_configurare === 'csv' || i.tip_configurare === 'ambele') ? `
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid #2D3F55;display:flex;align-items:center;gap:10px">
+          <input type="file" accept=".csv,text/csv" id="csv-file-${i.id}" style="font-size:11px;color:#8BA3C0;flex:1">
+          <button onclick="incarcaCsvIntegrare('${i.id}')" style="font-size:11px;padding:5px 10px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">Încarcă CSV</button>
+        </div>
+        <div id="csv-status-${i.id}" style="font-size:11px;margin-top:6px"></div>` : ''}
+      </div>
+    `).join('');
+  } catch (e) {
+    el.innerHTML = `<div style="color:#E57373">Eroare: ${escapeHTML(e.message)}</div>`;
+  }
+}
+
+function toggleTipConfigurareUI() {
+  const tip = document.querySelector('input[name="integ-tip"]:checked')?.value;
+  const apiFields = document.getElementById('integ-api-fields');
+  if (apiFields) apiFields.style.display = (tip === 'api' || tip === 'ambele') ? 'grid' : 'none';
+}
+
+function deschideFormularIntegrare(id) {
+  const wrap = document.getElementById('integrare-form-wrap');
+  document.getElementById('integ-id').value = id || '';
+  document.getElementById('integ-form-msg').textContent = '';
+  if (id) {
+    const i = _integrariCache.find(x => x.id === id);
+    if (!i) return;
+    document.getElementById('integrare-form-titlu').textContent = 'Editează: ' + i.nume_furnizor;
+    document.getElementById('integ-categorie').value = i.categorie;
+    document.getElementById('integ-nume').value = i.nume_furnizor;
+    document.querySelector(`input[name="integ-tip"][value="${i.tip_configurare}"]`).checked = true;
+    document.getElementById('integ-endpoint').value = i.api_endpoint || '';
+    document.getElementById('integ-cheie').value = '';
+    document.getElementById('integ-cheie-status').textContent = i.are_cheie_api ? '(cheie deja salvată)' : '';
+    document.getElementById('integ-observatii').value = i.observatii || '';
+  } else {
+    document.getElementById('integrare-form-titlu').textContent = 'Integrare nouă';
+    document.getElementById('integ-categorie').value = 'asigurari';
+    document.getElementById('integ-nume').value = '';
+    document.querySelector('input[name="integ-tip"][value="api"]').checked = true;
+    document.getElementById('integ-endpoint').value = '';
+    document.getElementById('integ-cheie').value = '';
+    document.getElementById('integ-cheie-status').textContent = '';
+    document.getElementById('integ-observatii').value = '';
+  }
+  toggleTipConfigurareUI();
+  wrap.style.display = 'block';
+  wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+async function salveazaIntegrare() {
+  const msg = document.getElementById('integ-form-msg');
+  msg.style.color = '#8BA3C0'; msg.textContent = 'Se salvează...';
+  const body = {
+    id: document.getElementById('integ-id').value || undefined,
+    categorie: document.getElementById('integ-categorie').value,
+    nume_furnizor: document.getElementById('integ-nume').value.trim(),
+    tip_configurare: document.querySelector('input[name="integ-tip"]:checked')?.value,
+    api_endpoint: document.getElementById('integ-endpoint').value.trim() || null,
+    api_key: document.getElementById('integ-cheie').value || undefined,
+    observatii: document.getElementById('integ-observatii').value.trim() || null,
+  };
+  if (!body.nume_furnizor) { msg.style.color = '#E57373'; msg.textContent = 'Denumirea furnizorului este obligatorie.'; return; }
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/integrari/salveaza', { method: 'POST', headers, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    msg.style.color = '#0E9E99'; msg.textContent = 'Salvat.';
+    document.getElementById('integrare-form-wrap').style.display = 'none';
+    loadIntegrari();
+  } catch (e) {
+    msg.style.color = '#E57373'; msg.textContent = 'Eroare: ' + e.message;
+  }
+}
+
+async function stergeIntegrare(id) {
+  if (!confirm('Ștergi această integrare? Import-urile CSV asociate se șterg și ele.')) return;
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/integrari/sterge', { method: 'POST', headers, body: JSON.stringify({ id }) });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadIntegrari();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+async function testeazaIntegrare(id) {
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/integrari/testeaza', { method: 'POST', headers, body: JSON.stringify({ id }) });
+    const data = await res.json();
+    alert(data.ok ? ('✅ ' + data.mesaj) : ('❌ ' + data.motiv));
+    loadIntegrari();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+async function incarcaCsvIntegrare(id) {
+  const fileInput = document.getElementById(`csv-file-${id}`);
+  const statusEl = document.getElementById(`csv-status-${id}`);
+  const file = fileInput?.files?.[0];
+  if (!file) { statusEl.style.color = '#E57373'; statusEl.textContent = 'Alege un fișier CSV.'; return; }
+  statusEl.style.color = '#8BA3C0'; statusEl.textContent = 'Se încarcă...';
+  try {
+    const path = `${id}/${Date.now()}-${file.name}`;
+    const { error: uploadErr } = await window.supabaseClient.storage.from('integrari-csv').upload(path, file);
+    if (uploadErr) throw uploadErr;
+
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/integrari/importa-csv', {
+      method: 'POST', headers,
+      body: JSON.stringify({ integrare_id: id, storage_path: path }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    statusEl.style.color = '#0E9E99';
+    statusEl.textContent = `Import finalizat: ${data.import.randuri_procesate}/${data.import.randuri_totale} rânduri în zona de verificare.`;
+  } catch (e) {
+    statusEl.style.color = '#E57373'; statusEl.textContent = 'Eroare: ' + e.message;
+  }
+}
+
+const _origShowPanelIntegrari = typeof showPanel === 'function' ? showPanel : null;
+function showPanel(id) {
+  if (_origShowPanelIntegrari) _origShowPanelIntegrari(id);
+  if (id === 'platforme') loadIntegrari();
 }
 </script>
 
