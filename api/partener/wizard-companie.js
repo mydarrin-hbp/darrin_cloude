@@ -4,10 +4,18 @@
 // niciodată în clar în DB) — vezi migrația partner_wizard_8_pasi_schema_si_criptare.
 //
 // GET  → starea curentă (fără IBAN în clar — doar ultimele 4 cifre, pentru UI)
-// POST { nume_firma, cui, partner_type, cont_bancar:{ nume_titular, iban, swift?, banca, moneda } }
+// POST { nume_firma, cui, partner_type, tip_entitate_legala?, is_treasury_account?,
+//        regiune_cod?, cont_bancar:{ nume_titular, iban, swift?, banca, moneda } }
+//
+// FIX (T7, 2026-07-20): tip_entitate_legala/is_treasury_account/regiune_cod
+// lipseau complet — nicio distincție PFA/SRL/SA/Instituție Publică, niciun
+// flag de trezorerie, nicio regiune. IBAN-ul nu era validat deloc înainte
+// de criptare — orice string trecea. Adăugat checksum MOD-97 real
+// (lib/iban.js), fără API extern.
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { validateIBAN } = require('../../lib/iban');
 
 const TYPE_TO_ENUM = {
   servicii: 'servicii_tehnice',
@@ -17,9 +25,14 @@ const TYPE_TO_ENUM = {
   asigurari: 'asigurari',
 };
 
+const TIPURI_ENTITATE = ['persoana_fizica', 'pfa', 'srl', 'srl_d', 'sa', 'institutie_publica'];
+
 async function handler(req, res, user) {
   if (req.method === 'GET') {
-    const { data: partner } = await supabaseAdmin.from('partners').select('nume_firma, cui, partner_type, status_verificare').eq('id', user.id).maybeSingle();
+    const { data: partner } = await supabaseAdmin
+      .from('partners')
+      .select('nume_firma, cui, partner_type, status_verificare, tip_entitate_legala, is_treasury_account, regiune_cod')
+      .eq('id', user.id).maybeSingle();
     const { data: conturi } = await supabaseAdmin
       .from('partner_conturi_bancare')
       .select('id, nume_titular, banca, moneda, activ, iban_criptat')
@@ -39,20 +52,29 @@ async function handler(req, res, user) {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { nume_firma, cui, partner_type, cont_bancar } = req.body || {};
+  const { nume_firma, cui, partner_type, tip_entitate_legala, is_treasury_account, regiune_cod, cont_bancar } = req.body || {};
   if (!nume_firma || !cui) return res.status(400).json({ error: 'nume_firma și cui sunt obligatorii' });
+  if (tip_entitate_legala !== undefined && tip_entitate_legala !== null && !TIPURI_ENTITATE.includes(tip_entitate_legala)) {
+    return res.status(400).json({ error: `tip_entitate_legala invalid. Valori acceptate: ${TIPURI_ENTITATE.join(', ')}` });
+  }
 
   try {
     const { data: existent } = await supabaseAdmin.from('partners').select('id').eq('id', user.id).maybeSingle();
 
+    const campuriEntitate = {
+      ...(tip_entitate_legala !== undefined ? { tip_entitate_legala } : {}),
+      ...(is_treasury_account !== undefined ? { is_treasury_account: Boolean(is_treasury_account) } : {}),
+      ...(regiune_cod !== undefined ? { regiune_cod } : {}),
+    };
+
     if (existent) {
-      const { error } = await supabaseAdmin.from('partners').update({ nume_firma, cui }).eq('id', user.id);
+      const { error } = await supabaseAdmin.from('partners').update({ nume_firma, cui, ...campuriEntitate }).eq('id', user.id);
       if (error) throw error;
     } else {
       const enumType = TYPE_TO_ENUM[partner_type];
       if (!enumType) return res.status(400).json({ error: 'partner_type invalid pentru un cont nou de partener' });
       const { error } = await supabaseAdmin.from('partners').insert({
-        id: user.id, partner_type: enumType, nume_firma, cui, status_verificare: 'pending_review',
+        id: user.id, partner_type: enumType, nume_firma, cui, status_verificare: 'pending_review', ...campuriEntitate,
       });
       if (error) throw error;
     }
@@ -61,6 +83,9 @@ async function handler(req, res, user) {
       const { nume_titular, iban, swift, banca, moneda } = cont_bancar;
       if (!nume_titular || !iban || !banca || !moneda) {
         return res.status(400).json({ error: 'cont_bancar: nume_titular, iban, banca și moneda sunt obligatorii' });
+      }
+      if (!validateIBAN(iban)) {
+        return res.status(400).json({ error: 'IBAN invalid (checksum incorect)' });
       }
       const { data: cripted, error: cryptErr } = await supabaseAdmin.rpc('cripteaza_camp', { valoare: iban });
       if (cryptErr) throw cryptErr;

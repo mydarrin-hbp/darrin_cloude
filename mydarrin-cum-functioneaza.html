@@ -1531,26 +1531,49 @@ function toggleAuthModal(){
   document.body.style.overflow=m.classList.contains('hidden')?'':'hidden';
 }
 // Catalog tabs
-// ── CATALOG SYNC SIMULATION ──
-function initCatalogSync(){
-  // Simulate IP geo-detection
-  const zones = ['Zona 1 · Centru','Zona 1 · Centru','Zona 2 · Periurban','Zona 1 · Centru'];
-  const vmcByCountry = {RON:'100 Lei',EUR:'25 EUR',MDL:'400 MDL'};
-  const currLabel = document.getElementById('currency-label');
+// ── CATALOG SYNC ──
+// FIX (T5, 2026-07-20): eticheta de zonă venea din Math.random() peste 4
+// valori fixe, deși pagina are deja geolocație reală (applyGeoData, mai jos
+// în fișier) care emite evenimentul real 'myd-geo-update' — exact cel deja
+// folosit de butonul GPS din bottom nav (linia ~2189). Îl reutilizăm aici
+// în loc să inventăm o zonă.
+let _tariActiveCumFunc = null;
+async function tariActiveCumFunc(){
+  if(_tariActiveCumFunc) return _tariActiveCumFunc;
+  try{
+    const res = await fetch('/api/public/tari-active');
+    const data = await res.json();
+    _tariActiveCumFunc = data?.active || ['RO'];
+  }catch(e){ _tariActiveCumFunc = ['RO']; }
+  return _tariActiveCumFunc;
+}
+async function setZoneLabelReal(detail){
   const zoneLabel = document.getElementById('zone-label');
+  if(!zoneLabel || !detail) return;
+  const cc = detail.country || 'RO';
+  const activeList = await tariActiveCumFunc();
+  const loc = detail.city || detail.country || 'RO';
+  zoneLabel.textContent = activeList.includes(cc) ? loc : (loc+' · în curând');
+}
+
+function initCatalogSync(){
+  const vmcByCountry = {RON:'100 Lei',EUR:'25 EUR',MDL:'400 MDL',BGN:'40 BGN'};
+  const currLabel = document.getElementById('currency-label');
   const vmcLabel = document.getElementById('vmc-label');
   const syncStatus = document.getElementById('sync-status');
   const cvEl = document.getElementById('content-version');
 
-  // Simulate sync check
+  // Sync check — pur cosmetic, nu simulează nimic funcțional
   setTimeout(()=>{
     if(syncStatus) syncStatus.textContent = 'Sincronizat · v2026.06.11';
     if(cvEl) cvEl.textContent = 'content_version: v2026.06.11';
   }, 800);
 
-  // Zone detection simulation  
-  const zoneData = ['Zona 1 · +5%','Zona 1 · +5%','Zona 2 · +10%','Zona 1 · +5%'];
-  if(zoneLabel) zoneLabel.textContent = zoneData[Math.floor(Math.random()*2)];
+  // Zonă reală: applyGeoData (alt <script> mai jos în pagină) dispatch-uiește
+  // deja evenimentul 'myd-geo-update' cu datele reale — nu putem citi direct
+  // geoLoad() de aici (scop diferit de script, IIFE separată), doar asculta
+  // evenimentul global, care funcționează peste orice graniță de <script>.
+  window.addEventListener('myd-geo-update', (e) => setZoneLabelReal(e.detail));
 
   // Currency detection
   const cur = document.querySelector('.dyn-currency');

@@ -97,11 +97,35 @@ input:focus,select:focus{border-color:var(--primary)}
       </div>
       <div>
         <label>CUI / CNP</label>
-        <input type="text" id="s2-cui" placeholder="RO12345678">
+        <input type="text" id="s2-cui" placeholder="RO12345678" onblur="cautaCUI()">
+        <div class="msg" id="s2-cui-msg" style="margin-top:-10px;margin-bottom:12px"></div>
       </div>
     </div>
     <label>Denumire firmă</label>
     <input type="text" id="s2-firma" placeholder="Firma Mea SRL">
+    <div class="grid2">
+      <div>
+        <label>Tip entitate legală</label>
+        <select id="s2-entitate" onchange="toggleTrezorerie()">
+          <option value="srl">SRL</option>
+          <option value="srl_d">SRL-D</option>
+          <option value="pfa">PFA</option>
+          <option value="sa">SA</option>
+          <option value="institutie_publica">Instituție publică</option>
+          <option value="persoana_fizica">Persoană fizică</option>
+        </select>
+      </div>
+      <div>
+        <label>Regiune / Județ</label>
+        <select id="s2-regiune"><option value="">Se încarcă...</option></select>
+      </div>
+    </div>
+    <div id="s2-trezorerie-wrap" style="display:none;margin-bottom:14px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;font-weight:400;font-size:13px;color:#4A5568">
+        <input type="checkbox" id="s2-trezorerie" style="width:auto;margin:0">
+        Contul bancar de mai jos este un cont de trezorerie (instituție publică)
+      </label>
+    </div>
     <div class="grid2">
       <div>
         <label>Titular cont bancar</label>
@@ -116,6 +140,7 @@ input:focus,select:focus{border-color:var(--primary)}
       <div>
         <label>IBAN</label>
         <input type="text" id="s2-iban" placeholder="RO49AAAA1B31007593840000">
+        <div class="msg" id="s2-iban-msg" style="margin-top:-10px;margin-bottom:12px"></div>
       </div>
       <div>
         <label>Monedă</label>
@@ -243,6 +268,10 @@ function mergiLaPasul(pas) {
     if (el) el.style.display = i === pas ? 'block' : 'none';
   }
   randerSteps();
+  if (pas === 2 && !document.getElementById('s2-regiune').dataset.incarcat) {
+    document.getElementById('s2-regiune').dataset.incarcat = '1';
+    incarcaRegiuni();
+  }
   if (pas === 3 && !naceToate.length) incarcaNace();
   if (pas === 5 && !escoToate.length) incarcaEsco();
   if (pas === 6) randerPasul6();
@@ -278,6 +307,57 @@ async function verificaPasul1() {
 }
 
 // ── PASUL 2 ──
+function toggleTrezorerie() {
+  const e = document.getElementById('s2-entitate').value;
+  document.getElementById('s2-trezorerie-wrap').style.display = e === 'institutie_publica' ? 'block' : 'none';
+  if (e !== 'institutie_publica') document.getElementById('s2-trezorerie').checked = false;
+}
+
+// Regiunile depind de țara partenerului (setată la înregistrare din
+// IP-detection, vezi profiles.tara) — nu de o selecție separată aici.
+async function incarcaRegiuni() {
+  const sel = document.getElementById('s2-regiune');
+  try {
+    const user = await window.MyDarrinAuth.getCurrentUser();
+    const { data: profil } = await window.supabaseClient.from('profiles').select('tara').eq('id', user.id).maybeSingle();
+    const tara = profil?.tara || 'RO';
+    const res = await fetch('/api/public/geo-regiuni?tara=' + encodeURIComponent(tara));
+    const data = await res.json();
+    const regiuni = data?.regiuni || [];
+    sel.innerHTML = '<option value="">Alege regiunea...</option>' + regiuni.map(r => `<option value="${r.cod}">${escapeHTML(r.denumire)}</option>`).join('');
+  } catch (e) {
+    sel.innerHTML = '<option value="">Nedisponibil</option>';
+  }
+}
+
+// CUI real (ANAF pentru RO, VIES pentru DE/FR/BG) — la blur pe câmpul CUI.
+// Nu suprascrie tăcut ce a scris utilizatorul dacă firma e deja completată.
+async function cautaCUI() {
+  const cui = document.getElementById('s2-cui').value.trim();
+  const msgEl = document.getElementById('s2-cui-msg');
+  if (!cui) { msgEl.textContent = ''; return; }
+  msgEl.className = 'msg'; msgEl.textContent = 'Verific...';
+  try {
+    const user = await window.MyDarrinAuth.getCurrentUser();
+    const { data: profil } = await window.supabaseClient.from('profiles').select('tara').eq('id', user.id).maybeSingle();
+    const tara = profil?.tara || 'RO';
+    const res = await fetch('/api/public/cui-lookup', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tara, cui }),
+    });
+    const data = await res.json();
+    if (data.ok && data.denumire) {
+      msgEl.className = 'msg ok'; msgEl.textContent = `Găsit: ${data.denumire}`;
+      const firmaEl = document.getElementById('s2-firma');
+      if (!firmaEl.value.trim()) firmaEl.value = data.denumire;
+    } else {
+      msgEl.className = 'msg'; msgEl.textContent = 'Nu am găsit date — completează manual.';
+    }
+  } catch (e) {
+    msgEl.className = 'msg'; msgEl.textContent = 'Verificare indisponibilă — completează manual.';
+  }
+}
+
 async function salveazaPasul2() {
   const msgEl = document.getElementById('s2-msg');
   msgEl.className = 'msg'; msgEl.textContent = '';
@@ -285,6 +365,9 @@ async function salveazaPasul2() {
     partner_type: document.getElementById('s2-tip').value,
     nume_firma: document.getElementById('s2-firma').value.trim(),
     cui: document.getElementById('s2-cui').value.trim(),
+    tip_entitate_legala: document.getElementById('s2-entitate').value,
+    is_treasury_account: document.getElementById('s2-trezorerie').checked,
+    regiune_cod: document.getElementById('s2-regiune').value || null,
     cont_bancar: {
       nume_titular: document.getElementById('s2-titular').value.trim(),
       banca: document.getElementById('s2-banca').value.trim(),
@@ -495,38 +578,48 @@ async function salveazaPasul5() {
 }
 
 // ── PASUL 6 ──
-const TIPURI_CERTIFICARE = [
-  { cod: 'fiscal', label: 'Certificat fiscal' },
-  { cod: 'pps', label: 'PPS (Protecția muncii)' },
-  { cod: 'a1', label: 'A1 (Detașare UE)' },
-  { cod: 'electrician', label: 'Autorizație electrician' },
-  { cod: 'gaz', label: 'Autorizație gaz' },
-  { cod: 'presiune', label: 'Autorizație echipamente sub presiune' },
-  { cod: 'inaltime', label: 'Autorizație lucru la înălțime' },
-];
+// FIX (T9, 2026-07-20): lista de certificări nu mai e hardcodată (7 tipuri
+// fixe, gândite doar pentru România) — vine acum din
+// GET /api/partener/wizard-certificari, care citește `certificari_necesare`
+// filtrată pe țara reală a partenerului (profiles.tara).
+let cerinteCertificare = [];
 
-function randerPasul6() {
+async function randerPasul6() {
   const rows = document.getElementById('s6-rows');
   if (rows.dataset.randat) return;
   rows.dataset.randat = '1';
-  rows.innerHTML = TIPURI_CERTIFICARE.map(t => `
-    <div class="upcoming-card" style="border-style:solid">
-      <div style="font-weight:700;font-size:13.5px;margin-bottom:8px">${t.label}</div>
-      <input type="file" id="cert-file-${t.cod}" accept="application/pdf,image/*" style="margin-bottom:8px">
-      <button class="btn btn-ghost" style="font-size:12px;padding:8px 14px" onclick="incarcaCertificare('${t.cod}')">Încarcă document</button>
-      <span class="msg" id="cert-status-${t.cod}" style="margin-left:10px"></span>
-    </div>`).join('');
+  rows.innerHTML = '<div style="padding:12px;color:#8C9BAD;font-size:12.5px">Se încarcă cerințele...</div>';
+  try {
+    const token = await accessToken();
+    const res = await fetch('/api/partener/wizard-certificari', { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    cerinteCertificare = data?.cerinte || [];
+    if (!cerinteCertificare.length) {
+      rows.innerHTML = `<div style="padding:12px;color:#8C9BAD;font-size:12.5px">Nicio cerință de certificare configurată încă pentru țara ta (${escapeHTML(data?.tara || '')}) — poți continua fără să încarci documente aici.</div>`;
+      return;
+    }
+    rows.innerHTML = cerinteCertificare.map(t => `
+      <div class="upcoming-card" style="border-style:solid">
+        <div style="font-weight:700;font-size:13.5px;margin-bottom:4px">${escapeHTML(t.nume_certificare)}${t.obligatorie ? ' <span style="color:#C0392B;font-weight:800">*</span>' : ''}</div>
+        <div style="font-size:11px;color:#8C9BAD;margin-bottom:8px">${t.obligatorie ? 'Obligatorie' : 'Opțională'}</div>
+        <input type="file" id="cert-file-${t.id}" accept="application/pdf,image/*" style="margin-bottom:8px">
+        <button class="btn btn-ghost" style="font-size:12px;padding:8px 14px" onclick="incarcaCertificare('${t.id}','${escapeHTML(t.nume_certificare).replace(/'/g, "\\'")}')">Încarcă document</button>
+        <span class="msg" id="cert-status-${t.id}" style="margin-left:10px"></span>
+      </div>`).join('');
+  } catch (e) {
+    rows.innerHTML = '<div style="padding:12px;color:#C0392B;font-size:12.5px">Nu am putut încărca cerințele de certificare.</div>';
+  }
 }
 
-async function incarcaCertificare(tip) {
-  const fileInput = document.getElementById(`cert-file-${tip}`);
-  const statusEl = document.getElementById(`cert-status-${tip}`);
+async function incarcaCertificare(certId, numeCertificare) {
+  const fileInput = document.getElementById(`cert-file-${certId}`);
+  const statusEl = document.getElementById(`cert-status-${certId}`);
   const file = fileInput.files[0];
   if (!file) { statusEl.className = 'msg err'; statusEl.textContent = 'Alege un fișier.'; return; }
   statusEl.className = 'msg'; statusEl.textContent = 'Se încarcă...';
   try {
     const user = await window.MyDarrinAuth.getCurrentUser();
-    const path = `${user.id}/${tip}-${Date.now()}-${file.name}`;
+    const path = `${user.id}/${certId}-${Date.now()}-${file.name}`;
     const { error: uploadErr } = await window.supabaseClient.storage.from('partner-certificari').upload(path, file);
     if (uploadErr) throw uploadErr;
 
@@ -534,7 +627,7 @@ async function incarcaCertificare(tip) {
     const res = await fetch('/api/partener/wizard-certificari', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ tip_certificare: tip, document_path: path }),
+      body: JSON.stringify({ tip_certificare: numeCertificare, document_path: path }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');

@@ -6876,13 +6876,12 @@ document.addEventListener('DOMContentLoaded', ()=>{
   updateResultCount();
 });
 
-// ── SYNC SIMULATION ──
+// ── SYNC ──
+// FIX (T5, 2026-07-20): zona/moneda erau alese cu Math.random() la fiecare
+// încărcare, deși geolocația reală (window.MYD_GEO, GPS→IP→manual, motorul
+// definit mai jos în pagină) era deja disponibilă și pur și simplu ignorată.
 function initSync(){
   detectZoneAndActivateCart();
-  const zones = ['Zona 1 · +5%','Zona 1 · +5%','Zona 2 · +10%'];
-  const zone = zones[Math.floor(Math.random()*2)];
-  setEl('zone-label', zone);
-  setEl('cart-zone', zone);
   setTimeout(()=>{ setEl('sync-status','Sincronizat · v2026.06.11'); }, 600);
 }
 
@@ -6995,34 +6994,55 @@ function updateResultCount(){ applyFilters(); }
 // ── CART DRAWER ──
 let zoneActive = false;  // set true when IP/address validated
 
-function detectZoneAndActivateCart(){
-  // Simulate IP geo-detection → zone check
-  const zones = [
-    {name:'Zona 1 · +5% · Bacău · RO', active:true, vmc:100, cur:'RON', tva:0.19},
-    {name:'Zona 1 · +5% · București · RO', active:true, vmc:100, cur:'RON', tva:0.19},
-    {name:'Zona 2 · +10% · Iași · RO', active:true, vmc:100, cur:'RON', tva:0.19},
-  ];
-  const zone = zones[Math.floor(Math.random()*zones.length)];
+// Țările "live" (checkout activ) vin din tax_configurations, prin endpoint-ul
+// deja real /api/public/tari-active.js — nu mai e o listă inventată aici.
+let _tariActiveCache = null;
+async function tariActive(){
+  if(_tariActiveCache) return _tariActiveCache;
+  try{
+    const res = await fetch('/api/public/tari-active');
+    const data = await res.json();
+    _tariActiveCache = data?.active || ['RO'];
+  }catch(e){
+    _tariActiveCache = ['RO'];
+  }
+  return _tariActiveCache;
+}
 
-  // Platforma este LIVE în această zonă → activăm coșul
-  zoneActive = zone.active;
+const TVA_AFISAT = {RO:0.19,MD:0.20,DE:0.19,FR:0.20,BG:0.20};
+const MONEDA_AFISATA = {RO:'RON',MD:'MDL',DE:'EUR',FR:'EUR',BG:'BGN'};
+
+async function detectZoneAndActivateCart(){
+  const geo = window.MYD_GEO && window.MYD_GEO.data;
+  if(!geo){
+    // Geolocația reală nu a terminat încă — reîncercăm la evenimentul real
+    // dispatch-uit de modulul de geo mai jos în pagină, o singură dată.
+    window.addEventListener('myd:geo', detectZoneAndActivateCart, {once:true});
+    return;
+  }
+
+  const cc = geo.cc || 'RO';
+  const activeList = await tariActive();
+  zoneActive = activeList.includes(cc);
+  const loc = geo.city ? `${geo.city} · ${cc}` : (geo.name || cc);
 
   if(zoneActive){
-    // Show FAB
     const fab = document.getElementById('cart-fab');
     if(fab){ fab.style.display='block'; }
-    // Update zone text in drawer
-    setEl('cart-zone-text', zone.name);
-    setEl('cart-currency-text', zone.cur+' · TVA '+(zone.tva*100).toFixed(0)+'%');
-    // Update header cart button (make it functional)
+    const cur = MONEDA_AFISATA[cc] || 'EUR';
+    const tva = TVA_AFISAT[cc] ?? 0.19;
+    setEl('cart-zone-text', loc);
+    setEl('cart-currency-text', cur+' · TVA '+(tva*100).toFixed(0)+'%');
     const hdrBtn = document.getElementById('cart-btn');
     if(hdrBtn){
       hdrBtn.style.cursor='pointer';
       hdrBtn.onclick = openCart;
     }
-    // Update sync bar
-    setEl('zone-label', zone.name.split('·')[0].trim()+' · +5%');
-    setEl('cart-zone', zone.name);
+    setEl('zone-label', loc);
+    setEl('cart-zone', loc);
+  } else {
+    setEl('zone-label', loc+' · în curând');
+    setEl('cart-zone', loc);
   }
 }
 

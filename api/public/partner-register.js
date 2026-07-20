@@ -7,6 +7,9 @@
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { checkRateLimit } = require('../../lib/rate-limit');
 const { limbaDinTara, renderEmailBunVenitPartener } = require('../../lib/i18n');
+const { validateIBAN } = require('../../lib/iban');
+
+const TIPURI_ENTITATE = ['persoana_fizica', 'pfa', 'srl', 'srl_d', 'sa', 'institutie_publica'];
 
 const TYPE_TO_ROLE = {
   servicii: 'partener_servicii',
@@ -69,7 +72,10 @@ module.exports = async function handler(req, res) {
   const allowed = await checkRateLimit(req, { key: 'partner-register', limit: 5, windowSeconds: 600 });
   if (!allowed) return res.status(429).json({ error: 'Prea multe cereri. Încearcă din nou mai târziu.' });
 
-  const { nume, email, tip, nume_firma, cui, tara } = req.body || {};
+  const {
+    nume, email, tip, nume_firma, cui, tara,
+    tip_entitate_legala, is_treasury_account, regiune_cod, iban, banca,
+  } = req.body || {};
 
   if (!email || !email.includes('@')) {
     return res.status(400).json({ error: 'Email valid obligatoriu.' });
@@ -85,6 +91,18 @@ module.exports = async function handler(req, res) {
   // înainte), lăsând un cont invitat fără rând corespunzător în partners.
   if (!nume_firma || !cui) {
     return res.status(400).json({ error: 'Denumirea firmei și CUI/CNP sunt obligatorii.' });
+  }
+  if (tip_entitate_legala !== undefined && tip_entitate_legala !== null && !TIPURI_ENTITATE.includes(tip_entitate_legala)) {
+    return res.status(400).json({ error: `tip_entitate_legala invalid. Valori acceptate: ${TIPURI_ENTITATE.join(', ')}` });
+  }
+  // FIX (T7, 2026-07-20): pagina publică colecta IBAN și-l arunca — nu
+  // ajungea niciodată la backend. Acum, dacă e trimis, e validat (checksum
+  // MOD-97) și salvat criptat — la fel ca în wizard-companie.js.
+  if (iban !== undefined && iban !== null && iban !== '' && !validateIBAN(iban)) {
+    return res.status(400).json({ error: 'IBAN invalid (checksum incorect).' });
+  }
+  if (iban && !banca) {
+    return res.status(400).json({ error: 'banca este obligatorie dacă trimiți IBAN.' });
   }
 
   const limba = limbaDinTara(tara);
@@ -107,8 +125,29 @@ module.exports = async function handler(req, res) {
       nume_firma,
       cui,
       status_verificare: 'pending_review',
+      ...(tip_entitate_legala ? { tip_entitate_legala } : {}),
+      ...(regiune_cod ? { regiune_cod } : {}),
+      ...(is_treasury_account !== undefined ? { is_treasury_account: Boolean(is_treasury_account) } : {}),
     });
     if (partnerErr) throw partnerErr;
+
+    // 2b. Cont bancar (T7, 2026-07-20) — colectat legitim înainte de
+    // autentificare (spre deosebire de CNP-uri de angajați/documente, care
+    // cer o sesiune reală pentru path-ul scoped pe user.id în Storage).
+    // Criptat exact ca în wizard-companie.js — nicio cale nouă, doar
+    // aceeași logică mutată aici, ca pagina publică să nu mai arunce IBAN-ul.
+    if (iban) {
+      const { data: cripted, error: cryptErr } = await supabaseAdmin.rpc('cripteaza_camp', { valoare: iban });
+      if (cryptErr) throw cryptErr;
+      const { error: contErr } = await supabaseAdmin.from('partner_conturi_bancare').insert({
+        partner_id: invited.user.id,
+        nume_titular: nume_firma,
+        iban_criptat: cripted,
+        banca,
+        moneda: { RO: 'RON', MD: 'MDL', DE: 'EUR', FR: 'EUR', BG: 'BGN' }[tara] || 'RON',
+      });
+      if (contErr) throw contErr;
+    }
 
     // 3. Setează țara + limba (adăugat 2026-07-12) — handle_new_user() nu le
     // cunoaște, deci le completăm separat pe rândul din profiles deja creat

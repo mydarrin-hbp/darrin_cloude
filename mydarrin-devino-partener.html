@@ -1201,10 +1201,19 @@ function submitNewsletter() {
         <!-- Tip entitate juridică -->
         <div style="margin-bottom:14px">
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:8px">Tip entitate juridică *</div>
-          <div style="display:flex;gap:8px">
-            <label style="flex:1;cursor:pointer"><input type="radio" name="entitate" value="SRL" checked style="accent-color:#FF8C00"/> <span style="font-size:13px;font-weight:600;color:#1A2332">SRL</span></label>
-            <label style="flex:1;cursor:pointer"><input type="radio" name="entitate" value="PFA" style="accent-color:#FF8C00"/> <span style="font-size:13px;font-weight:600;color:#1A2332">PFA</span></label>
-            <label style="flex:1;cursor:pointer"><input type="radio" name="entitate" value="PF" style="accent-color:#FF8C00"/> <span style="font-size:13px;font-weight:600;color:#1A2332">Persoană fizică</span></label>
+          <select id="f-entitate" onchange="toggleTrezorerie(this.value)" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;background:#fff;cursor:pointer">
+            <option value="srl" selected>SRL</option>
+            <option value="srl_d">SRL-D</option>
+            <option value="pfa">PFA</option>
+            <option value="sa">SA</option>
+            <option value="institutie_publica">Instituție publică / Autoritate contractantă</option>
+            <option value="persoana_fizica">Persoană fizică</option>
+          </select>
+          <div id="f-trezorerie-wrap" style="display:none;margin-top:8px">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+              <input type="checkbox" id="f-trezorerie" style="width:16px;height:16px;accent-color:#FF8C00"/>
+              <span style="font-size:12px;color:#1A2332">Contul bancar de mai jos este un cont de trezorerie</span>
+            </label>
           </div>
         </div>
 
@@ -1239,73 +1248,30 @@ function submitNewsletter() {
             <input type="tel" id="f-tel" placeholder="+40 721 456 789" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
           </div>
         </div>
-        <!-- IBAN + Zona -->
+        <!-- Cont bancar + Zona -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
           <div>
             <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">IBAN cont încasări * <span id="iban-status" style="font-size:9px"></span></label>
-            <input type="text" id="f-iban" placeholder="RO49RZBR0000060001234567" maxlength="24" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:12px;font-family:monospace;outline:none;transition:border-color .18s;letter-spacing:.04em" onfocus="this.style.borderColor='#003366'" oninput="validateIBAN(this)" onblur="this.style.borderColor='#D5DFE8'"/>
+            <input type="text" id="f-iban" placeholder="RO49RZBR0000060001234567" maxlength="34" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:12px;font-family:monospace;outline:none;transition:border-color .18s;letter-spacing:.04em" onfocus="this.style.borderColor='#003366'" oninput="validateIBAN(this)" onblur="this.style.borderColor='#D5DFE8'"/>
           </div>
           <div>
-            <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Locație / Județ *</label>
-            <select id="f-judet" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;background:#fff;cursor:pointer" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'" onchange="updateZone(this.value)">
-              <option value="">Selectează județul...</option>
-              <option value="B">București</option>
-              <option value="IF">Ilfov</option>
-              <option value="CJ">Cluj</option>
-              <option value="TM">Timiș</option>
-              <option value="IS">Iași</option>
-              <option value="BV">Brașov</option>
-              <option value="CT">Constanța</option>
-              <option value="PH">Prahova</option>
-              <option value="BC">Bacău</option>
-              <option value="other">Alt județ</option>
-            </select>
+            <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Banca *</label>
+            <input type="text" id="f-banca" placeholder="Banca Transilvania" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
           </div>
         </div>
-
-        <!-- Zona detectată -->
-        <div id="zona-info" style="display:none;background:#E0F5F4;border-radius:11px;padding:10px 14px;margin-bottom:10px;border:1px solid rgba(14,158,153,.2)">
-          <div style="font-size:11.5px;font-weight:700;color:#0B7A76" id="zona-text">Zona detectată: București · Zona A · VMC: 100 Lei</div>
+        <div style="margin-bottom:10px">
+          <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Regiune / Județ</label>
+          <select id="f-judet" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;background:#fff;cursor:pointer" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'">
+            <option value="">Se încarcă regiunile...</option>
+          </select>
         </div>
 
-        <!-- AI Asistent buton -->
-        <button onclick="aiPrefill()" style="width:100%;padding:10px;border-radius:11px;border:1.5px solid #0E9E99;background:#E0F5F4;color:#0B7A76;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;transition:all .18s" onmouseover="this.style.background='#0E9E99';this.style.color='#fff'" onmouseout="this.style.background='#E0F5F4';this.style.color='#0B7A76'">
-          <span>Darrin AI — completează automat din registrul companiilor</span>
-        </button>
-
-        <!-- ECHIPĂ -->
+        <!-- ECHIPĂ — mutat post-autentificare (Pasul 5 din wizard-ul complet):
+             colectarea de CNP-uri fără o sesiune reală (înainte de cont) nu
+             poate fi legată în siguranță de un partener autentificat. -->
         <div style="border-top:1px solid #EEF2F7;padding-top:14px;margin-bottom:10px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D">Membri echipă autorizați</div>
-            <button onclick="addTeamMember()" style="font-size:11px;font-weight:700;color:#FF8C00;background:#FFF0D6;border:1px solid rgba(255,140,0,.3);border-radius:8px;padding:5px 12px;cursor:pointer;font-family:inherit">+ Adaugă persoană</button>
-          </div>
-          <div id="team-members">
-            <!-- Member 1 — autoadăugat (administratorul) -->
-            <div class="team-member" style="background:#F8FAFC;border-radius:11px;padding:12px 14px;margin-bottom:8px;border:1px solid #EEF2F7">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-                <div style="font-size:11.5px;font-weight:700;color:#1A2332">Persoană autorizată #1 (Administrator)</div>
-              </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-                <input type="text" placeholder="Prenume" style="border:1px solid #D5DFE8;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;outline:none" value="Valentin"/>
-                <input type="text" placeholder="Nume" style="border:1px solid #D5DFE8;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;outline:none" value="Popescu"/>
-                <input type="text" placeholder="Telefon" style="border:1px solid #D5DFE8;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;outline:none" value="+40 721 456 789"/>
-              </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
-                <div style="position:relative">
-                <input type="text" placeholder="CNP" style="border:1px solid #D5DFE8;border-radius:8px;padding:8px 10px;font-size:12px;font-family:monospace;outline:none;width:100%"/>
-                <div style="font-size:9px;color:#8C9BAD;margin-top:2px;line-height:1.4">Date solicitate exclusiv pentru verificarea legalității fiscale în registrul ONRC și emiterea securizată a contractului eIDAS.</div>
-              </div>
-                <select style="border:1px solid #D5DFE8;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;outline:none;background:#fff">
-                  <option>Profesie principală...</option>
-                  <option selected>7127 · Instalator instalații sanitare</option>
-                  <option>7112 · Zidar și pietrar</option>
-                  <option>7411 · Electrician de construcții</option>
-                  <option>7322 · Tinichigiu</option>
-                  <option>9329 · Muncitor necalificat construcții</option>
-                </select>
-              </div>
-            </div>
-          </div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:6px">Membri echipă autorizați</div>
+          <div style="font-size:12px;color:#5A6B7D;line-height:1.6">Se completează după confirmarea contului, la Pasul 5 din wizard-ul complet de înregistrare (registru angajați, legat de nomenclatorul ESCO).</div>
         </div>
 
         <button onclick="goWizStep(1)" style="width:100%;padding:13px;border-radius:13px;border:none;background:#FF8C00;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 5px 18px rgba(255,140,0,.3);transition:all .2s" onmouseover="this.style.background='#CC7000'" onmouseout="this.style.background='#FF8C00'">
@@ -1332,7 +1298,7 @@ function submitNewsletter() {
           Email trimis la <strong id="confirm-email-show">—</strong><br/>
           SMS OTP trimis pe telefonul înregistrat<br/>
           ⏱ Verificare documente: <strong style="color:#FF8C00">max 48h</strong><br/>
-          Scor OCR: <strong style="color:#0E9E99" id="final-ocr-score">—</strong>
+          Cont: <strong style="color:#0E9E99" id="final-ocr-score">—</strong>
         </div>
         <div style="display:flex;gap:10px;flex-direction:column">
           <a id="success-dashboard-link" href="mydarrin-dashboard-partener.html" style="display:block;padding:13px;border-radius:13px;background:#003366;color:#fff;font-size:14px;font-weight:700;text-decoration:none;transition:all .2s">
@@ -1402,7 +1368,7 @@ const WIZARD_DATA = {
     },
     step3: {
       title:'Documente KYC & Autorizații',
-      subtitle:'Upload securizat · OCR Gemini AI · Aprobare automată dacă scor ≥85%',
+      subtitle:'Documentele se încarcă și se verifică după confirmarea contului',
       docs:[
         {label:'CI / Pașaport administrator',required:true,note:''},
         {label:'Certificat înregistrare firmă (J/...)',required:true,note:''},
@@ -1646,9 +1612,6 @@ const WIZARD_DATA = {
 // ══════════════════════════════════════════════════════════════
 let currentStep         = 0;
 let selectedPartnerType = 'servicii';
-let ocrScore            = 0;
-let uploadedDocs        = 0;
-let memberCount         = 2;
 
 // ══════════════════════════════════════════════════════════════
 // OPEN / CLOSE
@@ -1678,7 +1641,6 @@ function openPartnerModal(type) {
     document.body.style.overflow = 'hidden';
   }
   selectedPartnerType = type || 'servicii';
-  ocrScore = 0; uploadedDocs = 0;
   renderStep(0);
   // Scroll wizard into view
   setTimeout(() => {
@@ -1972,7 +1934,7 @@ function renderStep3(d, stepTitle) {
         <span style="font-size:9.5px;font-weight:700;padding:3px 9px;border-radius:99px;background:${doc.required?'rgba(255,140,0,.1)':'#F0F4F8'};color:${doc.required?'#CC7000':'#8C9BAD'}">${doc.required?'Obligatoriu':'Opțional'}</span>
       </div>
       ${doc.note?`<div style="font-size:10.5px;color:#5A6B7D;margin-bottom:6px">${doc.note}</div>`:''}
-      <div class="upload-zone" onclick="simulateUpload(this,'${doc.label.replace(/'/g,"\\'")}')" style="border:1.5px dashed #D5DFE8;border-radius:9px;padding:9px;text-align:center;cursor:pointer;transition:all .2s;font-size:11.5px;color:#8C9BAD" onmouseover="this.style.borderColor='${color}'" onmouseout="this.style.borderColor='#D5DFE8'">
+      <div style="border:1.5px dashed #D5DFE8;border-radius:9px;padding:9px;text-align:center;font-size:11.5px;color:#8C9BAD">Se încarcă după confirmarea contului, la Pasul 6 din wizard-ul complet</div>
         Click upload · PDF/JPG/PNG · max 10MB
       </div>
     </div>`).join('');
@@ -1980,11 +1942,7 @@ function renderStep3(d, stepTitle) {
   return `
     <h3 style="font-size:15px;font-weight:800;color:#1A2332;margin-bottom:4px;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">${stepTitle}</h3>
     <p style="font-size:12px;color:#5A6B7D;margin-bottom:12px">${d.subtitle}</p>
-    <div style="background:linear-gradient(135deg,#E0F5F4,#F0FFFE);border-radius:11px;padding:10px 14px;border:1px solid rgba(14,158,153,.2);margin-bottom:12px;display:flex;align-items:center;gap:12px">
-      <img src="data:image/jpeg;base64,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" alt="Darrin AI" style="width:38px;height:38px;border-radius:11px;object-fit:cover;flex-shrink:0"/>
-      <div style="flex:1"><div style="font-size:11.5px;font-weight:700;color:#0B7A76">OCR Gemini AI — Scor curent</div><div style="font-size:10.5px;color:#5A6B7D">Aprobare automată dacă ≥85%</div></div>
-      <div style="font-size:22px;font-weight:800;color:#0E9E99" id="ocr-score">0%</div>
-    </div>
+    <div style="font-size:11px;color:#8C9BAD;margin-bottom:12px">Documentele se încarcă și se verifică după confirmarea contului (max 48h) — nu există scor automat de aprobare.</div>
     ${asfBadge}
     ${docsHtml}
     <div style="display:flex;gap:10px;margin-top:4px">
@@ -2037,12 +1995,6 @@ function renderStep4() {
         <div style="font-size:12.5px;color:#5A6B7D;line-height:1.5">Accept notificări SMS/email pentru comenzi și expirări documente</div>
       </label>
     </div>
-    <div style="border:1.5px solid #D5DFE8;border-radius:12px;padding:12px;margin-bottom:14px;text-align:center;background:#FAFAFA">
-      <div style="font-size:10.5px;color:#5A6B7D;margin-bottom:8px">Semnătură electronică · eIDAS Qualified</div>
-      <div id="sig-area" onclick="simulateSign(this)" style="height:54px;border:1.5px dashed #D5DFE8;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;color:#8C9BAD;transition:all .2s" onmouseover="this.style.borderColor='${color}'" onmouseout="if(!this.classList.contains('signed'))this.style.borderColor='#D5DFE8'">
-        Click pentru semnătură electronică biometrică
-      </div>
-    </div>
     <button onclick="submitRegistration()" style="width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,${color},${color}cc);color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 6px 20px rgba(0,0,0,.2);transition:all .2s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">
       Înregistrează-mă ca ${PARTNER_META[selectedPartnerType]?.title}
     </button>
@@ -2067,118 +2019,78 @@ function selectType(type, el) {
   updateDots(0);
 }
 
-function validateCUI(input) {
-  const val = input.value.replace(/\s/g,'');
+// Validare IBAN reală (checksum MOD-97) — nicio dependență externă, doar
+// aritmetică pe stringuri (identică logic cu lib/iban.js server-side, care
+// e sursa autoritativă la salvare — asta e doar feedback rapid în UI).
+function ibanValid(ibanRaw) {
+  const iban = String(ibanRaw || '').replace(/\s+/g, '').toUpperCase();
+  if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/.test(iban)) return false;
+  const rearranjat = iban.slice(4) + iban.slice(0, 4);
+  const numeric = rearranjat.replace(/[A-Z]/g, ch => String(ch.charCodeAt(0) - 55));
+  let rest = 0;
+  for (let i = 0; i < numeric.length; i += 7) rest = Number(String(rest) + numeric.slice(i, i + 7)) % 97;
+  return rest === 1;
+}
+
+function toggleTrezorerie(tip) {
+  const wrap = document.getElementById('f-trezorerie-wrap');
+  if (wrap) wrap.style.display = tip === 'institutie_publica' ? 'block' : 'none';
+  if (tip !== 'institutie_publica') { const cb = document.getElementById('f-trezorerie'); if (cb) cb.checked = false; }
+}
+
+// Regiunile depind de țara detectată (window.MYD_GEO, GPS→IP→manual, real).
+async function incarcaRegiuniPublic() {
+  const sel = document.getElementById('f-judet');
+  if (!sel) return;
+  const tara = (window.MYD_GEO && window.MYD_GEO.data && window.MYD_GEO.data.cc) || 'RO';
+  try {
+    const res = await fetch('/api/public/geo-regiuni?tara=' + encodeURIComponent(tara));
+    const data = await res.json();
+    const regiuni = data?.regiuni || [];
+    sel.innerHTML = '<option value="">Selectează regiunea...</option>' + regiuni.map(r => `<option value="${r.cod}">${escapeHTML(r.denumire)}</option>`).join('');
+  } catch (e) {
+    sel.innerHTML = '<option value="">Nedisponibil — completează manual mai târziu</option>';
+  }
+}
+document.addEventListener('DOMContentLoaded', () => setTimeout(incarcaRegiuniPublic, 400));
+
+// CUI real — ANAF pentru RO, VIES pentru DE/FR/BG (vezi api/public/cui-lookup.js).
+// Nu suprascrie tăcut denumirea firmei dacă utilizatorul a scris deja ceva.
+async function validateCUI(input) {
+  const val = input.value.replace(/\s/g, '');
   const status = document.getElementById('cui-status');
-  if (val.length >= 6) {
-    setTimeout(() => {
-      if (status) { status.textContent='Verificat ANAF'; status.style.color='#0E9E99'; }
+  input.style.borderColor = '#D5DFE8';
+  if (val.length < 6) { if (status) status.textContent = ''; return; }
+  if (status) { status.textContent = 'Verific...'; status.style.color = '#5A6B7D'; }
+  try {
+    const tara = (window.MYD_GEO && window.MYD_GEO.data && window.MYD_GEO.data.cc) || 'RO';
+    const res = await fetch('/api/public/cui-lookup', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tara, cui: val }),
+    });
+    const data = await res.json();
+    if (data.ok && data.denumire) {
+      if (status) { status.textContent = 'Găsit: ' + data.denumire; status.style.color = '#0E9E99'; }
       input.style.borderColor = '#0E9E99';
       const f = document.getElementById('f-firma');
-      if (f && !f.value) f.value = 'Construct Val SRL';
-    }, 600);
+      if (f && !f.value.trim()) f.value = data.denumire;
+    } else if (status) {
+      status.textContent = 'Nu am găsit date — completează manual';
+      status.style.color = '#8C9BAD';
+    }
+  } catch (e) {
+    if (status) { status.textContent = 'Verificare indisponibilă — completează manual'; status.style.color = '#8C9BAD'; }
   }
-  input.style.borderColor = '#D5DFE8';
 }
 
 function validateIBAN(input) {
-  const val = input.value.toUpperCase().replace(/\s/g,'');
+  const val = input.value.toUpperCase().replace(/\s/g, '');
   const status = document.getElementById('iban-status');
   input.value = val;
-  if (val.length===24 && val.startsWith('RO')) {
-    if (status) { status.textContent='IBAN valid'; status.style.color='#0E9E99'; }
-    input.style.borderColor = '#0E9E99';
-  } else if (val.length>0 && status) {
-    status.textContent = val.length<24 ? val.length+'/24' : 'Format invalid';
-    status.style.color = val.length<24 ? '#5A6B7D' : '#C0392B';
-  }
-}
-
-function updateZone(judet) {
-  const zones = {B:'București · Zona A · VMC: 100 Lei',IF:'Ilfov · Zona B',CJ:'Cluj · Zona A',TM:'Timiș · Zona A',IS:'Iași · Zona A',BV:'Brașov · Zona A',BC:'Bacău · Zona A'};
-  const info = document.getElementById('zona-info');
-  const text = document.getElementById('zona-text');
-  if (judet && zones[judet] && info && text) {
-    info.style.display = 'block';
-    text.textContent   = '' + zones[judet];
-  } else if (info) info.style.display = 'none';
-}
-
-function aiPrefill() {
-  const btn = event?.target?.closest('button');
-  if (!btn) return;
-  btn.textContent = 'Procesează registrul ONRC...';
-  btn.disabled = true;
-  setTimeout(() => {
-    const fields = {
-      'f-firma':'Construct Val SRL','f-cui':'RO32145678',
-      'f-prenume':'Valentin','f-nume':'Popescu',
-      'f-email':'valentin@constructval.ro','f-tel':'+40 721 456 789',
-    };
-    Object.entries(fields).forEach(([id,val]) => {
-      const el = document.getElementById(id);
-      if (el) el.value = val;
-    });
-    const judEl = document.getElementById('f-judet');
-    if (judEl) { judEl.value='B'; updateZone('B'); }
-    const cui = document.getElementById('cui-status');
-    if (cui) { cui.textContent='Verificat ANAF'; cui.style.color='#0E9E99'; }
-    btn.textContent = 'Date completate din ONRC · Verifică și confirmă';
-    btn.style.background='#D4EDDA'; btn.style.color='#1A7A3A'; btn.style.borderColor='#1A7A3A';
-    showToast('Darrin AI a completat datele din ONRC');
-  }, 1800);
-}
-
-function addTeamMember() {
-  const container = document.getElementById('team-members');
-  if (!container) return;
-  const div = document.createElement('div');
-  div.className='team-member';
-  div.style.cssText='background:#F8FAFC;border-radius:11px;padding:12px 14px;margin-bottom:8px;border:1px solid #EEF2F7';
-  div.innerHTML=`
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <div style="font-size:11.5px;font-weight:700;color:#1A2332">Persoană autorizată #${memberCount}</div>
-      <button onclick="this.closest('.team-member').remove()" style="font-size:11px;color:#C0392B;background:rgba(192,57,43,.1);border:1px solid rgba(192,57,43,.2);border-radius:7px;padding:3px 10px;cursor:pointer;font-family:inherit">Șterge</button>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-      <input type="text" placeholder="Prenume" style="border:1px solid #D5DFE8;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;outline:none"/>
-      <input type="text" placeholder="Nume" style="border:1px solid #D5DFE8;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;outline:none"/>
-      <input type="text" placeholder="Telefon" style="border:1px solid #D5DFE8;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;outline:none"/>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
-      <input type="text" placeholder="CNP" style="border:1px solid #D5DFE8;border-radius:8px;padding:8px 10px;font-size:12px;font-family:monospace;outline:none"/>
-      <select style="border:1px solid #D5DFE8;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;outline:none;background:#fff">
-        <option>Profesie...</option>
-        <option>7127 · Instalator sanitare</option>
-        <option>7411 · Electrician</option>
-        <option>7112 · Zidar</option>
-      </select>
-    </div>`;
-  container.appendChild(div);
-  memberCount++;
-}
-
-function simulateUpload(zone, docName) {
-  const color = PARTNER_META[selectedPartnerType]?.color || '#0E9E99';
-  zone.style.background    = '#E0F5F4';
-  zone.style.borderColor   = '#0E9E99';
-  zone.style.color         = '#0B7A76';
-  zone.innerHTML = `${docName} — Procesat OCR Gemini AI`;
-  zone.classList.add('uploaded');
-  uploadedDocs++;
-  ocrScore = Math.min(95, 62 + uploadedDocs * 9);
-  const sc = document.getElementById('ocr-score');
-  if (sc) sc.textContent = ocrScore + '%';
-  showToast('' + docName.substring(0,30) + ' · OCR ' + ocrScore + '%');
-}
-
-function simulateSign(area) {
-  area.style.background  = '#E0F5F4';
-  area.style.borderColor = '#0E9E99';
-  area.classList.add('signed');
-  const firma = document.getElementById('f-firma')?.value || 'Partener';
-  area.innerHTML = `<span style="font-size:22px;color:#003366;font-family:Georgia,serif;font-style:italic">${escapeHTML(firma)}</span><span style="font-size:10px;color:#0E9E99;margin-left:10px">eIDAS Qualified · ${new Date().toLocaleTimeString('ro-RO')}</span>`;
-  showToast('Semnătură electronică validată · eIDAS Qualified');
+  if (!val) { if (status) status.textContent = ''; return; }
+  const valid = ibanValid(val);
+  if (status) { status.textContent = valid ? 'IBAN valid' : 'Format invalid'; status.style.color = valid ? '#0E9E99' : '#C0392B'; }
+  input.style.borderColor = valid ? '#0E9E99' : '#D5DFE8';
 }
 
 async function submitRegistration() {
@@ -2195,6 +2107,11 @@ async function submitRegistration() {
   const email      = document.getElementById('f-email')?.value || '';
   const nume_firma = document.getElementById('f-firma')?.value || '';
   const cui        = document.getElementById('f-cui')?.value || '';
+  const iban       = document.getElementById('f-iban')?.value || '';
+  const banca      = document.getElementById('f-banca')?.value || '';
+  const tip_entitate_legala = document.getElementById('f-entitate')?.value || '';
+  const is_treasury_account = document.getElementById('f-trezorerie')?.checked || false;
+  const regiune_cod = document.getElementById('f-judet')?.value || null;
 
   // FIX (audit 2026-07-12): formularul colectează firma + CUI (câmpuri
   // marcate obligatorii *), dar nu erau trimise deloc către API — insert-ul
@@ -2203,6 +2120,19 @@ async function submitRegistration() {
   // corespunzător în partners. Blocaj real, pe toate cele 5 tipuri.
   if (!nume_firma || !cui) {
     showToast('Completează denumirea firmei și CUI/CNP.');
+    if (btn) { btn.textContent='Trimite cererea'; btn.disabled=false; }
+    return;
+  }
+  // FIX (T7, 2026-07-20): IBAN/banca erau colectate și aruncate — acum sunt
+  // trimise efectiv (vezi api/public/partner-register.js), deci trebuie
+  // validate aici înainte de trimitere, nu doar cosmetic la input.
+  if (!iban || !banca) {
+    showToast('Completează IBAN și banca.');
+    if (btn) { btn.textContent='Trimite cererea'; btn.disabled=false; }
+    return;
+  }
+  if (!ibanValid(iban)) {
+    showToast('IBAN invalid — verifică și încearcă din nou.');
     if (btn) { btn.textContent='Trimite cererea'; btn.disabled=false; }
     return;
   }
@@ -2216,7 +2146,7 @@ async function submitRegistration() {
     const res = await fetch('/api/public/partner-register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nume, email, tip: selectedPartnerType, nume_firma, cui, tara }),
+      body: JSON.stringify({ nume, email, tip: selectedPartnerType, nume_firma, cui, tara, iban, banca, tip_entitate_legala, is_treasury_account, regiune_cod }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
