@@ -37,6 +37,18 @@ export const config = {
     '/mydarrin-superadmin.html',
     '/mydarrin-backoffice-serviciu',
     '/mydarrin-backoffice-serviciu.html',
+    // FIX (audit 2026-07-19): mydarrin-deviz-engine.html — pagina de concept
+    // de business intern (formula de preț, comisioane, editor de tarife) —
+    // era servită ca fișier static public, fără nicio verificare, alături de
+    // auth-schema.html și sync-architecture.html (aceeași categorie: doc de
+    // arhitectură internă, zero barieră, nici măcar client-side). Adăugate
+    // aici pe același tipar deja funcțional pentru superadmin/backoffice.
+    '/mydarrin-deviz-engine',
+    '/mydarrin-deviz-engine.html',
+    '/mydarrin-auth-schema',
+    '/mydarrin-auth-schema.html',
+    '/mydarrin-sync-architecture',
+    '/mydarrin-sync-architecture.html',
   ],
 };
 
