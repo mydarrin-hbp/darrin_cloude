@@ -19,7 +19,13 @@
 // auditul extins, secțiunea 3) — comanda e persistată real, dar alocarea
 // automată către un partener rămâne un pas separat, neconstruit.
 //
-// Body: { valoare_totala, adresa, tara_cod?, regiune?, localitate? }
+// Body: { valoare_totala, adresa, tara_cod?, regiune?, localitate?, suma_asigurare? }
+//
+// FIX (T8, 2026-07-20): `comenzi.suma_asigurare` exista deja în schemă
+// (proiectată corect pentru split-ul de asigurare), dar nu era scrisă
+// niciodată — checkout.html calcula prima de asigurare doar în UI, iar
+// suma se topea nediferențiat în valoare_totala. Acum se persistă separat,
+// ca api/financiar/comision.js să poată calcula split-ul real pe 3 părți.
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
@@ -27,13 +33,16 @@ const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 async function handler(req, res, user) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { valoare_totala, adresa, tara_cod = null, regiune = null, localitate = null } = req.body || {};
+  const { valoare_totala, adresa, tara_cod = null, regiune = null, localitate = null, suma_asigurare = 0 } = req.body || {};
 
   if (typeof valoare_totala !== 'number' || !(valoare_totala > 0)) {
     return res.status(400).json({ error: 'valoare_totala (numeric, pozitiv) este obligatorie' });
   }
   if (!adresa || typeof adresa !== 'string') {
     return res.status(400).json({ error: 'adresa este obligatorie' });
+  }
+  if (typeof suma_asigurare !== 'number' || suma_asigurare < 0 || suma_asigurare > valoare_totala) {
+    return res.status(400).json({ error: 'suma_asigurare trebuie să fie un număr între 0 și valoare_totala' });
   }
 
   // FIX (Etapa 4, audit 2026-07-12): "prima țară activă este România" —
@@ -71,6 +80,7 @@ async function handler(req, res, user) {
         client_id: user.id,
         status: 'in_cautare_partener',
         suma_totala_platita: valoare_totala,
+        suma_asigurare,
         tara_cod: tara_cod ? String(tara_cod).toUpperCase() : null,
         regiune,
         localitate,

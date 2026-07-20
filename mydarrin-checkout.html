@@ -1530,7 +1530,7 @@ function triggerHeaderSearch(){
                 <span style="font-weight:700;font-size:13px;color:#0B7A76">Adaugă poliță de asigurare extinsă</span>
                 <span style="font-size:10px;background:rgba(14,158,153,.15);color:#0B7A76;border-radius:99px;padding:2px 8px;font-weight:700">+89 Lei</span>
               </div>
-              <div style="font-size:11.5px;color:#5A6B7D;line-height:1.6">Acoperă daune materiale până la <strong>5.000 Lei</strong>, dincolo de garanția standard My Darrin (procent gestionat din valoarea serviciului). Emisă instant de Asig Pro, partener autorizat ASF, la finalizarea comenzii.</div>
+              <div style="font-size:11.5px;color:#5A6B7D;line-height:1.6">Acoperă daune materiale până la <strong>5.000 Lei</strong>, dincolo de garanția standard My Darrin. Polița se confirmă și se emite după plasarea comenzii — nu este încă un proces instant automatizat.</div>
             </div>
           </label>
         </div>
@@ -2584,6 +2584,11 @@ document.addEventListener('DOMContentLoaded', function() {
       const totalEl = document.getElementById('total-price');
       const totalText = totalEl ? totalEl.textContent : '0';
       const valoare_totala = parseFloat(totalText.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+      // FIX (T8, 2026-07-20): suma de asigurare era calculată doar în UI și
+      // se topea nediferențiat în valoare_totala — acum trimisă separat, ca
+      // api/comenzi/creeaza.js s-o persiste în comenzi.suma_asigurare (deja
+      // exista în schemă, doar nescrisă niciodată).
+      const suma_asigurare = document.getElementById('cb-insurance')?.checked ? INSURANCE_PRICE : 0;
       const geo = window.MYD_GEO_LAST || {};
 
       try {
@@ -2591,7 +2596,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const res = await fetch('/api/comenzi/creeaza', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
-          body: JSON.stringify({ valoare_totala, adresa, tara_cod: geo.cc || null, regiune: geo.region || null, localitate: geo.city || null }),
+          body: JSON.stringify({ valoare_totala, adresa, tara_cod: geo.cc || null, regiune: geo.region || null, localitate: geo.city || null, suma_asigurare }),
         });
         const data = await res.json();
         if (!res.ok) {
