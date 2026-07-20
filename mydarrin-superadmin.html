@@ -563,6 +563,10 @@ window.supabaseClient = _sc;
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
       Prospecți Parteneri
     </a>
+    <a class="sa-nav-item" onclick="showPanel('newsletter')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      Newsletter
+    </a>
     <a class="sa-nav-item" href="mydarrin-backoffice-serviciu.html">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
       Backoffice Servicii
@@ -1703,6 +1707,24 @@ window.supabaseClient = _sc;
       <div id="prospecti-list" style="color:#8BA3C0;font-size:13px">Se încarcă...</div>
     </div>
 
+    <!-- ══ NEWSLETTER & ABONAȚI — adăugat 2026-07-20 ══
+         Alimentat de formularul din footer (toate paginile publice), prin
+         /api/public/newsletter. Doar administrare status aici — trimiterea
+         efectivă de newslettere (campanii, template-uri) e o funcție separată,
+         neconstruită încă. -->
+    <div id="panel-newsletter" style="display:none;padding:24px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <span id="newsletter-total" style="color:#8BA3C0;font-size:12.5px"></span>
+        <select id="newsletter-filtru" onchange="loadNewsletter()" style="border:1.5px solid #2D3F55;background:#192433;color:#fff;border-radius:9px;padding:8px 12px;font-size:12.5px;font-family:inherit;margin-left:auto">
+          <option value="">Toate</option>
+          <option value="activ">Activ</option>
+          <option value="dezabonat">Dezabonat</option>
+        </select>
+        <button onclick="loadNewsletter()" class="btn-p" style="font-size:12px;padding:8px 14px">↻ Reîncarcă</button>
+      </div>
+      <div id="newsletter-list" style="color:#8BA3C0;font-size:13px">Se încarcă...</div>
+    </div>
+
     <div id="panel-comenzi" style="display:none;text-align:center;padding:60px 20px">
       <div style="font-size:48px;margin-bottom:16px">📦</div>
       <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:8px">Comenzi Globale — 247 active</div>
@@ -2132,14 +2154,15 @@ window.supabaseClient = _sc;
 
 <script>
 // ── NAVIGATION ──
-const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding','accountancy','investitori','contact','prospecti'];
+const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding','accountancy','investitori','contact','prospecti','newsletter'];
 const TITLES = {
   dashboard:'Dashboard Global',tari:'Țări & Zone',utilizatori:'Utilizatori & Actori',
   rbac:'Permisiuni RBAC',platforme:'Platforme & Integrări',escrow:'Escrow Global',
   comisioane:'Comisioane & Tarifare',vmc:'VMC per Țară',parteneri:'Parteneri Globali',
   comenzi:'Comenzi Globale',audit:'Audit Log',config:'Configurare Sistem',
   branding:'Branding & Design Platformă',accountancy:'Accountancy',
-  investitori:'Administrare Investitori',contact:'Mesaje Contact',prospecti:'Prospecți Parteneri'
+  investitori:'Administrare Investitori',contact:'Mesaje Contact',prospecti:'Prospecți Parteneri',
+  newsletter:'Newsletter & Abonați'
 };
 
 function showPanel(id){
@@ -3754,6 +3777,7 @@ function showPanel(id) {
   }
   if (id === 'contact') loadMesajeContact();
   if (id === 'prospecti') loadProspecti();
+  if (id === 'newsletter') loadNewsletter();
   if (id === 'audit') loadAuditLog();
 }
 </script>
@@ -3884,6 +3908,55 @@ async function setStatusProspect(id, status) {
     const res = await fetch('/api/admin/prospecti', { method: 'POST', headers, body: JSON.stringify({ action: 'status', id, status }) });
     if (!res.ok) throw new Error((await res.json()).error);
   } catch (e) { alert('Eroare: ' + e.message); loadProspecti(); }
+}
+
+const STATUS_LABEL_NEWSLETTER = { activ: '🟢 Activ', dezabonat: '⚪ Dezabonat' };
+
+async function loadNewsletter() {
+  const el = document.getElementById('newsletter-list');
+  el.textContent = 'Se încarcă...';
+  try {
+    const status = document.getElementById('newsletter-filtru').value;
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/newsletter' + (status ? `?status=${status}` : ''), { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+
+    document.getElementById('newsletter-total').textContent = data.abonati.length + ' înregistrări';
+
+    if (!data.abonati.length) { el.innerHTML = '<div style="padding:20px;text-align:center">Niciun abonat încă.</div>'; return; }
+
+    el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12.5px">
+      <thead><tr style="text-align:left;color:#4A6080;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em">
+        <th style="padding:8px 10px">Email</th><th style="padding:8px 10px">Sursă</th>
+        <th style="padding:8px 10px">Data abonării</th><th style="padding:8px 10px">Status</th><th style="padding:8px 10px">Acțiuni</th>
+      </tr></thead>
+      <tbody>${data.abonati.map(a => `
+        <tr style="border-top:1px solid #2D3F55">
+          <td style="padding:8px 10px;color:#fff;font-weight:600">${escapeHTML(a.email)}</td>
+          <td style="padding:8px 10px;color:#8BA3C0">${escapeHTML(a.sursa || '—')}</td>
+          <td style="padding:8px 10px;color:#8BA3C0">${new Date(a.created_at).toLocaleString('ro-RO')}</td>
+          <td style="padding:8px 10px;color:#8BA3C0">${STATUS_LABEL_NEWSLETTER[a.status] || a.status}</td>
+          <td style="padding:8px 10px">
+            ${a.status === 'activ'
+              ? `<button onclick="setStatusAbonat('${a.id}','dezabonat')" style="font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">Dezabonează</button>`
+              : `<button onclick="setStatusAbonat('${a.id}','activ')" style="font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">Reactivează</button>`}
+          </td>
+        </tr>
+      `).join('')}</tbody>
+    </table>`;
+  } catch (e) {
+    el.innerHTML = `<div style="color:#E57373">Eroare: ${escapeHTML(e.message)}</div>`;
+  }
+}
+
+async function setStatusAbonat(id, status) {
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/newsletter', { method: 'POST', headers, body: JSON.stringify({ id, status }) });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadNewsletter();
+  } catch (e) { alert('Eroare: ' + e.message); }
 }
 </script>
 

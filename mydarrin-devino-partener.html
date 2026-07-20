@@ -1095,16 +1095,21 @@ function submitNewsletter() {
   }
   btnEl.disabled = true;
   btnEl.textContent = 'Se înregistrează...';
-  var supa = window.supabaseClient;
-  var p = supa
-    ? supa.from('newsletter_subscribers').insert({ email: email, gdpr_accepted: true, sursa: 'footer' })
-    : Promise.resolve({ error: null });
-  p.then(function(r) {
+  fetch('/api/public/newsletter', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email, gdpr_accepted: true, sursa: 'footer' })
+  }).then(function(r) {
+    return r.json().then(function(data) { return { httpOk: r.ok, status: r.status, data: data }; });
+  }).then(function(res) {
     btnEl.disabled = false;
     btnEl.textContent = 'Abonează-te ›';
-    if (r && r.error) {
-      msgEl.textContent = r.error.code === '23505' ? '✓ Ești deja abonat!' : '❌ Eroare. Încearcă din nou.';
-      msgEl.className = 'ftr-nl-msg ' + (r.error.code === '23505' ? 'success' : 'error');
+    if (!res.httpOk) {
+      msgEl.textContent = res.status === 429 ? '⚠ Prea multe încercări. Încearcă mai târziu.' : '❌ ' + (res.data.error || 'Eroare. Încearcă din nou.');
+      msgEl.className = 'ftr-nl-msg error';
+    } else if (res.data.deja_abonat) {
+      msgEl.textContent = '✓ Ești deja abonat!';
+      msgEl.className = 'ftr-nl-msg success';
     } else {
       msgEl.textContent = '✅ Mulțumim! Vei primi ofertele noastre săptămânale.';
       msgEl.className = 'ftr-nl-msg success';
