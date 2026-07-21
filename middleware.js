@@ -28,7 +28,7 @@
 // Logs, nu trebuie ghicit din nou.
 
 import { createClient } from '@supabase/supabase-js';
-import { next } from '@vercel/functions';
+import { next, rewrite } from '@vercel/functions';
 
 export const config = {
   runtime: 'nodejs',
@@ -49,8 +49,66 @@ export const config = {
     '/mydarrin-auth-schema.html',
     '/mydarrin-sync-architecture',
     '/mydarrin-sync-architecture.html',
+    // FIX (audit 2026-07-21): rutele curate publice de mai jos erau declarate
+    // în vercel.json → rewrites, dar acel mecanism nu e efectiv folosit când
+    // proiectul are Routing Middleware (cazul de față — fără framework
+    // detectat) — documentația Vercel spune explicit că rescrierea pentru
+    // "alte framework-uri" (non-Next.js) trebuie făcută din middleware, cu
+    // rewrite() din @vercel/functions, nu din vercel.json. De-asta toate
+    // rutele curate (vechi și noi deopotrivă) dădeau 404 în producție,
+    // confirmat printr-un test live. Mutate aici.
+    '/home',
+    '/servicii/:slug',
+    '/materiale/:slug',
+    '/inchiriere/:slug',
+    '/catalog/servicii/:categorie',
+    '/catalog/materiale/:categorie',
+    '/catalog/inchirieri/:categorie',
+    '/catalog/:tip/:categorie/:slug',
+    '/cos',
+    '/partener',
+    '/investitor',
+    '/curier-cartier',
+    '/asigurator',
   ],
 };
+
+// ── Rescrieri publice (fără autentificare) ──
+const PAGINA_STATICA = {
+  '/home': '/mydarrin-v3.html',
+  '/cos': '/mydarrin-checkout.html',
+  '/partener': '/mydarrin-devino-partener.html',
+  '/investitor': '/mydarrin-investitori.html',
+  '/curier-cartier': '/cum-devii-curier-de-cartier.html',
+  '/asigurator': '/ghidul-asiguratorului.html',
+};
+
+// Normalizează "inchirieri" (segment din URL, plural, cerut de business) la
+// "inchiriere" (valoarea internă folosită deja de mydarrin-categorie-servicii.html).
+const TIP_CATEGORIE = { servicii: 'servicii', materiale: 'materiale', inchirieri: 'inchiriere', inchiriere: 'inchiriere' };
+
+function ruteazaPublic(pathname) {
+  if (PAGINA_STATICA[pathname]) {
+    return { destinatie: PAGINA_STATICA[pathname] };
+  }
+
+  let m = pathname.match(/^\/(servicii|materiale|inchiriere)\/([^/]+)$/);
+  if (m) {
+    return { destinatie: '/mydarrin-categorie-servicii.html', query: { type: TIP_CATEGORIE[m[1]], cat: m[2] } };
+  }
+
+  m = pathname.match(/^\/catalog\/(servicii|materiale|inchirieri)\/([^/]+)$/);
+  if (m) {
+    return { destinatie: '/mydarrin-categorie-servicii.html', query: { type: TIP_CATEGORIE[m[1]], cat: m[2] } };
+  }
+
+  m = pathname.match(/^\/catalog\/([^/]+)\/([^/]+)\/([^/]+)$/);
+  if (m) {
+    return { destinatie: '/mydarrin-produs.html', query: { type: m[1], cat: m[2], slug: m[3] } };
+  }
+
+  return null;
+}
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -106,6 +164,19 @@ async function verificaRoluri(supabaseAdmin, userId) {
 }
 
 export default async function middleware(request) {
+  // Rutele publice de mai jos nu au nevoie de nicio autentificare — le
+  // rezolvăm imediat, înainte de orice verificare Supabase, exact ca un
+  // rewrite obișnuit (URL-ul din bara browserului rămâne neschimbat).
+  const url = new URL(request.url);
+  const publicRoute = ruteazaPublic(url.pathname);
+  if (publicRoute) {
+    const dest = new URL(publicRoute.destinatie, request.url);
+    if (publicRoute.query) {
+      for (const [k, v] of Object.entries(publicRoute.query)) dest.searchParams.set(k, v);
+    }
+    return rewrite(dest);
+  }
+
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     // Fail-closed: fără configurare validă nu putem verifica nimic — mai
     // bine blocat decât deschis din greșeală.
