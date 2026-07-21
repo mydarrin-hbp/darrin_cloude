@@ -1253,19 +1253,19 @@ function triggerHeaderSearch(){
       <!-- STEP 1: COȘ -->
       <div id="step-cart" class="reveal">
         <h2 class="text-xl font-bold text-[#003366] mb-5 flex items-center gap-2">
-          <i data-lucide="shopping-cart" class="w-5 h-5"></i>Coșul tău (2 servicii)
+          <i data-lucide="shopping-cart" class="w-5 h-5"></i>Coșul tău (<span id="cart-count-label">2 servicii</span>)
         </h2>
 
-        <!-- Item 1 -->
-        <div class="cart-item mb-3">
+        <!-- Item 1 — suprascris dinamic din sessionStorage (myd_checkout_config), dacă vine de la un flux real de configurare din mydarrin-produs.html -->
+        <div class="cart-item mb-3" id="cart-item-1">
           <div class="flex items-start gap-4">
             <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0 bg-gradient-to-br from-[#EBF4FB] to-[#DDE6F5]"><i data-lucide="zap" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
             <div class="flex-1 min-w-0">
               <div class="flex items-start justify-between gap-2 flex-wrap">
                 <div>
-                  <div class="font-bold text-[#003366] text-[15px]">Instalare tablou electric</div>
+                  <div class="font-bold text-[#003366] text-[15px]" id="ci1-title">Instalare tablou electric</div>
                   <div class="flex flex-wrap gap-2 mt-1.5">
-                    <span class="chip chip-accent text-[10px]">Pachet Aur</span>
+                    <span class="chip chip-accent text-[10px]" id="ci1-tier">Pachet Aur</span>
                     <span class="chip chip-primary text-[10px]">Electro Profesional SRL</span>
                     <span class="chip chip-ai text-[10px]"><span class="pulse-dot mr-1"></span>ANRE Cl.I</span>
                   </div>
@@ -1273,12 +1273,12 @@ function triggerHeaderSearch(){
                 <button onclick="removeItem(1)" class="text-[#8C9BAD] hover:text-red-400 transition p-1 flex-shrink-0"><i data-lucide="x" class="w-4 h-4"></i></button>
               </div>
               <div class="flex flex-wrap items-center gap-4 mt-3 text-sm text-[#6B7A8D]">
-                <span class="flex items-center gap-1.5"><i data-lucide="calendar" class="w-3.5 h-3.5"></i>15 iun. 2026, 10:00–14:00</span>
-                <span class="flex items-center gap-1.5"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i>Str. Victoriei 24, București</span>
+                <span class="flex items-center gap-1.5"><i data-lucide="calendar" class="w-3.5 h-3.5"></i><span id="ci1-date">15 iun. 2026, 10:00–14:00</span></span>
+                <span class="flex items-center gap-1.5"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i><span id="ci1-addr">Str. Victoriei 24, București</span></span>
               </div>
             </div>
             <div class="text-right flex-shrink-0">
-              <div class="font-bold text-xl text-[#003366]">1.240 <span class="text-sm font-normal text-[#8C9BAD]">Lei</span></div>
+              <div class="font-bold text-xl text-[#003366]"><span id="ci1-price">1.240</span> <span class="text-sm font-normal text-[#8C9BAD]">Lei</span></div>
               <div class="text-xs text-[#8C9BAD]">incl. TVA</div>
             </div>
           </div>
@@ -1289,8 +1289,8 @@ function triggerHeaderSearch(){
           </div>
         </div>
 
-        <!-- Item 2 -->
-        <div class="cart-item mb-4">
+        <!-- Item 2 — mock, ascuns automat când avem un flux real cu un singur serviciu configurat (vezi applyChecko​utConfigReal) -->
+        <div class="cart-item mb-4" id="cart-item-2">
           <div class="flex items-start gap-4">
             <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0 bg-gradient-to-br from-[#FFF0D6] to-[#FDE8C4]"><i data-lucide="wrench" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
             <div class="flex-1 min-w-0">
@@ -3337,7 +3337,7 @@ function applyPromo(){
 }
 
 // ── ASIGURARE EXTINSĂ OPȚIONALĂ ──
-const BASE_SUBTOTAL = 1720;
+let BASE_SUBTOTAL = 1720; // suprascris mai jos de applyChecoutConfigReal(), dacă vine dintr-un flux real
 const PROMO_DISCOUNT = 172;
 const INSURANCE_PRICE = 89;
 let PROMO_ACTIVE = false;
@@ -3354,6 +3354,40 @@ function recalcCheckoutTotal(){
   const insuranceChecked = document.getElementById('cb-insurance')?.checked;
   if (insuranceChecked) total += INSURANCE_PRICE;
   document.getElementById('total-price').textContent = total.toLocaleString('ro-RO') + ' Lei';
+}
+
+// Suprascrie mock-ul de 2 servicii cu configurația reală salvată de
+// mydarrin-produs.html (myd_checkout_config, sessionStorage) — fără asta,
+// checkout arăta mereu aceleași 2 servicii fictive și un total fix (1.720
+// Lei), indiferent ce configura clientul efectiv. Dacă nu există nicio
+// configurație salvată (acces direct la /cos, fără să treci prin produs),
+// păstrăm mock-ul existent ca fallback, nu o pagină goală.
+function applyChecoutConfigReal(){
+  let cfg;
+  try { cfg = JSON.parse(sessionStorage.getItem('myd_checkout_config') || 'null'); }
+  catch(e) { cfg = null; }
+  if (!cfg) return;
+
+  BASE_SUBTOTAL = cfg.total || BASE_SUBTOTAL;
+
+  setEl2('ci1-title', cfg.titlu || cfg.slug);
+  setEl2('ci1-tier', cfg.tierLabel || cfg.tier);
+  setEl2('ci1-addr', cfg.addr || 'Adresă necompletată');
+  setEl2('ci1-date', cfg.selDate ? (cfg.selDate + (cfg.selTime ? ' · ' + cfg.selTime : '')) : 'Data va fi confirmată');
+  setEl2('ci1-price', (cfg.total || 0).toLocaleString('ro-RO'));
+
+  const item2 = document.getElementById('cart-item-2');
+  if (item2) item2.style.display = 'none';
+  setEl2('cart-count-label', '1 serviciu');
+
+  recalcCheckoutTotal();
+}
+function setEl2(id, text){ const el = document.getElementById(id); if (el) el.textContent = text; }
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', applyChecoutConfigReal);
+} else {
+  applyChecoutConfigReal();
 }
 function selectPayment(type){
   ["card","transfer","cash"].forEach(t=>{

@@ -765,12 +765,11 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 
 <script>
 // ════ SAFARI iOS NAV FIX — My Darrin ════
-// Calculează base URL corect indiferent de query string
-window.__myd_base = (function() {
-  const href = window.location.href;
-  const base = href.split('?')[0].replace(/[^/]*$/, '');
-  return base;
-})();
+// Bazat pe origine, nu pe path-ul curent: pagina asta poate fi acum accesată
+// și prin ruta curată /catalog/:tip/:categorie/:slug (vercel.json), caz în
+// care un base relativ la path (fostul comportament) ar fi produs URL-uri
+// greșite de tipul /catalog/servicii/x/cos în loc de /cos.
+window.__myd_base = window.location.origin + '/';
 
 function navTo(page) {
   // Funcționează corect pe Safari iOS cu query string params
@@ -782,11 +781,31 @@ function navTo(page) {
   }
 }
 
+// Salvează starea reală configurată (serviciu, nivel, preț calculat, adresă
+// etc.) înainte de a naviga la checkout — fără asta, /cos citea un subtotal
+// hardcodat (BASE_SUBTOTAL), nelegat de ce configura efectiv clientul aici.
+function salveazaStareaCheckout() {
+  try {
+    const titlu = (typeof PRODUCTS_DB !== 'undefined' && PRODUCTS_DB[S.slug]?.title) || S.slug;
+    sessionStorage.setItem('myd_checkout_config', JSON.stringify({
+      titlu, slug: S.slug, type: S.type, tier: S.tier, tierLabel: S.tierLabel,
+      qty: S.qty, unit: S.unit, orderType: S.orderType,
+      ins: S.ins, insPrice: S.insPrice,
+      addr: S.addr, selDate: S.selDate, selTime: S.selTime,
+      total: S.total, basePrice: S.basePrice,
+      salvat_la: Date.now(),
+    }));
+  } catch (e) {
+    console.warn('[checkout-config] nu am putut salva starea în sessionStorage:', e);
+  }
+}
+
 // Suprascriem nextStep pasul 5 → checkout
 const _origNextStep = window.nextStep;
 window.nextStep = function(n) {
   if (n === 5) {
-    navTo('mydarrin-checkout.html');
+    salveazaStareaCheckout();
+    navTo('cos');
     return;
   }
   if (typeof _origNextStep === 'function') _origNextStep(n);

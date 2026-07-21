@@ -9,15 +9,35 @@
 // Titlul/descrierea/URL-ul se citesc automat din pagina curentă
 // (document.title, meta[name="description"], location.href) — nu necesită
 // nicio configurare per pagină dincolo de includerea acestui script.
+//
+// window.MydShare expune și un randator inline (creeazaBlocInline), folosit
+// pentru a plasa un CTA de distribuire în context (ex: în zona de recenzii
+// a unei pagini de serviciu), separat de butonul flotant sitewide.
 
 (function () {
   'use strict';
+
+  // Litere mici + fără caractere speciale ne-encoded: normalizăm host+path
+  // (query/hash rămân neschimbate — pot conține valori sensibile la case),
+  // apoi orice folosire a URL-ului mai jos trece oricum prin
+  // encodeURIComponent, deci nu ajunge niciodată necurățat într-un link.
+  function sanitizeazaUrl(url) {
+    try {
+      const u = new URL(url);
+      u.protocol = u.protocol.toLowerCase();
+      u.hostname = u.hostname.toLowerCase();
+      u.pathname = u.pathname.toLowerCase();
+      return u.toString();
+    } catch (e) {
+      return url;
+    }
+  }
 
   function datePagina() {
     const title = document.title || 'My Darrin';
     const descEl = document.querySelector('meta[name="description"]');
     const text = descEl?.content || '';
-    const url = window.location.href;
+    const url = sanitizeazaUrl(window.location.href);
     return { title, text, url };
   }
 
@@ -43,6 +63,37 @@
     copy: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5A6B7D" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>',
   };
 
+  // Buton de rețea (Facebook/WhatsApp/X/LinkedIn/Email) — comun pentru
+  // panoul flotant și blocul inline din zona de recenzii.
+  function creeazaButonRetea(l, date, stilBtn) {
+    const a = document.createElement('a');
+    a.href = l.href;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.style.cssText = stilBtn;
+    a.innerHTML = `${ICON_SVG[l.icon]}<span>${l.nume}</span>`;
+
+    // Facebook: pe mobil, dacă aplicația e instalată/deschisă, preferăm
+    // meniul nativ (navigator.share) în loc de intent-ul web — deschide
+    // direct în app, nu într-un tab de browser. Pe desktop, unde
+    // navigator.share nu există, deschidem sharer.php într-un pop-up
+    // dedicat (window.open), nu într-un tab nou care schimbă contextul
+    // utilizatorului.
+    if (l.icon === 'facebook') {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (navigator.share) {
+          navigator.share(date).catch(() => {
+            window.open(l.href, 'myd-share-facebook', 'width=580,height=470,noopener,noreferrer');
+          });
+        } else {
+          window.open(l.href, 'myd-share-facebook', 'width=580,height=470,noopener,noreferrer');
+        }
+      });
+    }
+    return a;
+  }
+
   function creeazaWidget() {
     if (document.getElementById('myd-share-fab')) return;
 
@@ -64,14 +115,10 @@
 
     const date = datePagina();
     const linkuri = linkuriShare(date);
+    const stilBtnVertical = 'display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;text-decoration:none;color:#2D2D2D;font-size:13px;font-weight:600;transition:background .15s';
 
     linkuri.forEach((l) => {
-      const a = document.createElement('a');
-      a.href = l.href;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      a.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;text-decoration:none;color:#2D2D2D;font-size:13px;font-weight:600;transition:background .15s';
-      a.innerHTML = `${ICON_SVG[l.icon]}<span>${l.nume}</span>`;
+      const a = creeazaButonRetea(l, date, stilBtnVertical);
       a.onmouseover = () => { a.style.background = '#F4F7F9'; };
       a.onmouseout = () => { a.style.background = ''; };
       panel.appendChild(a);
@@ -116,6 +163,31 @@
       }
     });
   }
+
+  // Bloc inline (orizontal), pentru plasare în context — ex: în zona de
+  // recenzii a unei pagini de serviciu — separat de butonul flotant
+  // sitewide. containerId trebuie să existe deja în pagină.
+  function creeazaBlocInline(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container || container.dataset.mydShareRandat) return;
+    container.dataset.mydShareRandat = '1';
+
+    const date = datePagina();
+    const linkuri = linkuriShare(date);
+    const stilBtnOrizontal = 'display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:99px;border:1px solid #D5DFE8;text-decoration:none;color:#2D2D2D;font-size:12.5px;font-weight:600;transition:background .15s,border-color .15s;background:#fff';
+
+    const rand = document.createElement('div');
+    rand.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px';
+    linkuri.forEach((l) => {
+      const a = creeazaButonRetea(l, date, stilBtnOrizontal);
+      a.onmouseover = () => { a.style.background = '#F4F7F9'; a.style.borderColor = '#003366'; };
+      a.onmouseout = () => { a.style.background = '#fff'; a.style.borderColor = '#D5DFE8'; };
+      rand.appendChild(a);
+    });
+    container.appendChild(rand);
+  }
+
+  window.MydShare = { datePagina, linkuriShare, creeazaBlocInline };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', creeazaWidget);

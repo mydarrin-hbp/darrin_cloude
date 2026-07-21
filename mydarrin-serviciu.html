@@ -1515,6 +1515,20 @@ function triggerHeaderSearch(){
         <button class="w-full mt-4 py-3 rounded-xl border border-[#D5DFE8] text-sm font-semibold text-[#6B7A8D] hover:border-[#003366] hover:text-[#003366] transition">
           Încarcă mai multe recenzii (309 rămase)
         </button>
+
+        <!-- SocialShareCTA — distribuie serviciul, plasat lângă recenzii -->
+        <div class="mt-5 pt-5 border-t border-[#D5DFE8]">
+          <p class="text-sm font-semibold text-[#003366] mb-3">Ți-a fost util? Distribuie acest serviciu:</p>
+          <div id="myd-share-inline-serviciu"></div>
+        </div>
+        <script>
+          // share-widget.js e încărcat cu `defer`, deci rulează garantat
+          // înainte de DOMContentLoaded — de-aia așteptăm acest eveniment
+          // aici, nu apelăm direct (ar rula înaintea lui, MydShare fiind încă undefined).
+          document.addEventListener('DOMContentLoaded', function () {
+            if (window.MydShare) window.MydShare.creeazaBlocInline('myd-share-inline-serviciu');
+          });
+        </script>
       </div>
     </div>
 
