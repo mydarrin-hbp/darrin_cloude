@@ -31,7 +31,13 @@ import { createClient } from '@supabase/supabase-js';
 import { next, rewrite } from '@vercel/functions';
 
 export const config = {
-  runtime: 'nodejs',
+  // TEST (2026-07-21): schimbat de la 'nodejs' la 'edge' (implicit) — cu
+  // runtime nodejs, rewrite() rula fără eroare (confirmat prin logging:
+  // pathname/destinație corect calculate) dar rezultatul tot era 404, în
+  // toate exemplele oficiale Vercel pentru rewrite() runtime-ul e edge,
+  // niciodată nodejs. Logica Supabase de mai jos folosește doar fetch/
+  // process.env, ambele suportate pe Edge — fără dependențe Node reale.
+  runtime: 'edge',
   matcher: [
     '/mydarrin-superadmin',
     '/mydarrin-superadmin.html',
