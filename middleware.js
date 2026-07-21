@@ -169,11 +169,13 @@ export default async function middleware(request) {
   // rewrite obișnuit (URL-ul din bara browserului rămâne neschimbat).
   const url = new URL(request.url);
   const publicRoute = ruteazaPublic(url.pathname);
+  console.log(`[middleware-debug] pathname=${url.pathname} publicRoute=${JSON.stringify(publicRoute)}`);
   if (publicRoute) {
     const dest = new URL(publicRoute.destinatie, request.url);
     if (publicRoute.query) {
       for (const [k, v] of Object.entries(publicRoute.query)) dest.searchParams.set(k, v);
     }
+    console.log(`[middleware-debug] dest=${dest.toString()}`);
     return rewrite(dest);
   }
 
