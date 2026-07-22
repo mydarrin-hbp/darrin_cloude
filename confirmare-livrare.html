@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Confirmă primirea lucrării · My Darrin</title>
+<meta name="description" content="Confirmă primirea serviciului, materialelor sau echipamentului comandat prin My Darrin."/>
+<meta name="robots" content="noindex, nofollow"/>
+<style>
+:root {
+  --navy:#003366; --navy-soft:#EBF4FB; --orange:#FF8C00; --orange-dark:#CC7000;
+  --teal:#0E9E99; --teal-soft:#E0F5F4; --ink:#2D2D2D; --ink-soft:#6B7A8D;
+  --line:#D5DFE8; --bg:#F4F7F9; --surface:#FFFFFF;
+  --ok:#1F7A4D; --ok-bg:#E7F5EC; --warn:#B5750A; --warn-bg:#FBF1DD; --err:#B23A3A; --err-bg:#FBEAEA;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;
+  font-size:15px; line-height:1.5;
+}
+.wrap { max-width:520px; margin:0 auto; padding:0 0 60px; }
+.top { padding:22px 20px 16px; display:flex; align-items:center; gap:10px; }
+.logo-dot { width:34px; height:34px; border-radius:10px; background:var(--navy); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:15px; flex-shrink:0; }
+.top b { font-size:15px; color:var(--navy); }
+.top span { font-size:11.5px; color:var(--ink-soft); display:block; }
+
+.hero { padding:4px 20px 20px; text-align:center; }
+.hero .status-pill { display:inline-flex; align-items:center; gap:6px; background:var(--teal-soft); color:var(--teal); font-size:12px; font-weight:700; padding:6px 14px; border-radius:99px; margin-bottom:14px; }
+.hero h1 { font-size:21px; margin:0 0 6px; color:var(--ink); font-weight:800; }
+.hero p { font-size:13.5px; color:var(--ink-soft); margin:0; max-width:38ch; margin-inline:auto; }
+
+.card { background:var(--surface); border:1px solid var(--line); border-radius:18px; margin:0 16px 16px; padding:18px; }
+.order-row { display:flex; justify-content:space-between; align-items:center; padding-bottom:12px; margin-bottom:12px; border-bottom:1px solid var(--line); }
+.order-row .nr { font-size:11px; color:var(--ink-soft); font-weight:700; letter-spacing:.03em; }
+.order-row .svc { font-size:15px; font-weight:700; color:var(--ink); }
+.partner-chip { display:flex; align-items:center; gap:10px; }
+.partner-avatar { width:38px; height:38px; border-radius:50%; background:var(--orange); color:#fff; font-weight:800; font-size:14px; display:flex; align-items:center; justify-content:center; }
+.partner-name { font-size:13.5px; font-weight:700; }
+.partner-role { font-size:11.5px; color:var(--ink-soft); }
+
+.section-label { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:4px 0 10px; }
+.photo-compare { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:6px; }
+.photo-box { position:relative; border-radius:14px; overflow:hidden; aspect-ratio:1/1; background:#DDE3E8; }
+.photo-box img { width:100%; height:100%; object-fit:cover; display:block; }
+.photo-tag { position:absolute; top:8px; left:8px; background:rgba(0,0,0,.55); color:#fff; font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:99px; letter-spacing:.03em; }
+.photo-meta { position:absolute; bottom:8px; left:8px; right:8px; background:rgba(0,0,0,.5); color:#fff; font-size:9.5px; padding:5px 8px; border-radius:8px; }
+
+.warranty-note { display:flex; gap:10px; align-items:flex-start; background:var(--navy-soft); border-radius:12px; padding:12px 14px; font-size:12px; color:var(--ink-soft); margin-top:12px; }
+.warranty-note b { color:var(--navy); }
+
+.detail-line { display:flex; justify-content:space-between; font-size:13px; padding:7px 0; }
+.detail-line span:first-child { color:var(--ink-soft); }
+.detail-line span:last-child { font-weight:700; }
+.detail-total { border-top:1px solid var(--line); margin-top:4px; padding-top:10px; }
+.detail-total span:last-child { color:var(--orange); font-size:17px; }
+
+.actions { padding:6px 16px 0; }
+.btn-confirm { width:100%; background:var(--orange); color:#fff; border:none; border-radius:16px; padding:16px; font-size:15px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 6px 20px rgba(255,140,0,.3); }
+.btn-confirm:disabled { opacity:.6; cursor:default; }
+.btn-secondary { width:100%; background:transparent; color:var(--ink-soft); border:1.5px solid var(--line); border-radius:16px; padding:13px; font-size:13.5px; font-weight:700; cursor:pointer; margin-top:10px; }
+.expiry-note { text-align:center; font-size:11.5px; color:var(--ink-soft); margin-top:14px; }
+.expiry-note b { color:var(--warn); }
+
+textarea { width:100%; border:1.5px solid var(--line); border-radius:12px; padding:12px; font-size:13.5px; font-family:inherit; resize:vertical; min-height:80px; margin-top:10px; }
+.msg-box { border-radius:12px; padding:12px 14px; font-size:13px; margin:10px 16px; }
+.msg-ok { background:var(--ok-bg); color:var(--ok); }
+.msg-err { background:var(--err-bg); color:var(--err); }
+.msg-warn { background:var(--warn-bg); color:var(--warn); }
+.state-final { text-align:center; padding:60px 24px; }
+.state-final .icon { font-size:42px; margin-bottom:14px; }
+.hidden { display:none !important; }
+.skeleton { background:linear-gradient(90deg,#eee,#f5f5f5,#eee); background-size:200% 100%; animation:sk 1.4s infinite; border-radius:8px; height:14px; }
+@keyframes sk { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="top">
+    <div class="logo-dot">MD</div>
+    <div>
+      <b>My Darrin</b>
+      <span>Confirmare lucrare</span>
+    </div>
+  </div>
+
+  <div id="loading" class="card" style="text-align:center;padding:40px 18px">
+    <div class="skeleton" style="width:60%;margin:0 auto 12px"></div>
+    <div class="skeleton" style="width:40%;margin:0 auto"></div>
+  </div>
+
+  <div id="continut" class="hidden">
+    <div class="hero">
+      <div class="status-pill">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+        Prestatorul a declarat lucrarea finalizată
+      </div>
+      <h1>Confirmă primirea lucrării</h1>
+      <p>Verifică fotografiile de mai jos și confirmă ca să eliberăm plata din escrow.</p>
+    </div>
+
+    <div class="card">
+      <div class="order-row">
+        <div>
+          <div class="nr">COMANDA <span id="nr-comanda"></span></div>
+          <div class="svc">Servicii My Darrin</div>
+        </div>
+      </div>
+      <div class="partner-chip">
+        <div class="partner-avatar" id="partner-avatar">?</div>
+        <div>
+          <div class="partner-name" id="partner-nume">—</div>
+          <div class="partner-role">Partener verificat My Darrin</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Fotografii lucrare</div>
+      <div class="photo-compare" id="photo-compare"></div>
+      <div class="warranty-note">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--navy)" stroke-width="2" style="flex-shrink:0;margin-top:1px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <div>Aceste fotografii sunt păstrate pe toată durata garanției lucrării și pot fi folosite ca dovadă în caz de reclamație.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Sumar plată</div>
+      <div class="detail-line"><span>Manoperă / materiale</span><span id="s-manopera">—</span></div>
+      <div class="detail-line"><span>Transport</span><span id="s-transport">—</span></div>
+      <div class="detail-line"><span>Asigurare</span><span id="s-asigurare">—</span></div>
+      <div class="detail-line detail-total"><span>Total în escrow</span><span id="s-total">—</span></div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-confirm" id="btn-confirma" onclick="confirmaLivrarea()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+        Confirmă primirea și eliberează plata
+      </button>
+      <button class="btn-secondary" id="btn-problema" onclick="toggleFormProblema()">Am o problemă cu lucrarea →</button>
+      <div id="form-problema" class="hidden">
+        <textarea id="motiv-problema" placeholder="Descrie pe scurt problema..."></textarea>
+        <button class="btn-secondary" style="background:var(--err-bg);color:var(--err);border-color:transparent;margin-top:8px" onclick="trimiteProblema()">Trimite contestația</button>
+      </div>
+      <div class="expiry-note">Linkul e valabil <b>7 zile</b> de la finalizare. Dacă nu confirmi și nu semnalezi o problemă în <b>24 de ore</b>, comanda va fi considerată automat confirmată.</div>
+    </div>
+  </div>
+
+  <div id="stare-finala" class="state-final hidden"></div>
+  <div id="mesaj" class="msg-box hidden"></div>
+</div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const token = params.get('token');
+let dateComanda = null;
+
+function formatSuma(val, moneda) {
+  if (val === null || val === undefined) return '—';
+  return Number(val).toLocaleString('ro-RO') + ' ' + (moneda || 'RON');
+}
+
+function afiseazaStareFinala(icon, titlu, text) {
+  document.getElementById('loading').classList.add('hidden');
+  document.getElementById('continut').classList.add('hidden');
+  const el = document.getElementById('stare-finala');
+  el.innerHTML = `<div class="icon">${icon}</div><h2 style="margin:0 0 8px">${titlu}</h2><p style="color:var(--ink-soft)">${text}</p>`;
+  el.classList.remove('hidden');
+}
+
+function afiseazaMesaj(tip, text) {
+  const el = document.getElementById('mesaj');
+  el.className = 'msg-box msg-' + tip;
+  el.textContent = text;
+  el.classList.remove('hidden');
+}
+
+async function incarcaComanda() {
+  if (!token) {
+    afiseazaStareFinala('⚠️', 'Link invalid', 'Lipsește tokenul de confirmare din link.');
+    return;
+  }
+  try {
+    const res = await fetch('/api/public/comanda-token?token=' + encodeURIComponent(token));
+    const data = await res.json();
+    if (!res.ok) {
+      if (data.expirat || res.status === 410) {
+        afiseazaStareFinala('⏱', 'Linkul a expirat', 'Contactează suportul My Darrin dacă mai ai nevoie de acces la această comandă.');
+      } else if (res.status === 404) {
+        afiseazaStareFinala('❓', 'Link invalid', 'Nu am găsit nicio comandă asociată acestui link.');
+      } else {
+        afiseazaStareFinala('⚠️', 'Eroare', data.error || 'Nu am putut încărca detaliile comenzii.');
+      }
+      return;
+    }
+
+    dateComanda = data.comanda;
+
+    if (data.comanda.status === 'confirmata_client') {
+      afiseazaStareFinala('✅', 'Deja confirmată', `Comanda ${data.comanda.nr_comanda} a fost deja confirmată. Mulțumim!`);
+      return;
+    }
+    if (data.comanda.status !== 'finalizata') {
+      afiseazaStareFinala('ℹ️', 'Comandă în alt stadiu', `Status curent: ${data.comanda.status}.`);
+      return;
+    }
+
+    document.getElementById('nr-comanda').textContent = '#' + data.comanda.nr_comanda;
+    document.getElementById('partner-nume').textContent = data.comanda.partener_nume || 'Partener My Darrin';
+    document.getElementById('partner-avatar').textContent = (data.comanda.partener_nume || 'P').trim().charAt(0).toUpperCase();
+    document.getElementById('s-manopera').textContent = formatSuma(data.comanda.suma_manopera, data.comanda.moneda);
+    document.getElementById('s-transport').textContent = formatSuma(data.comanda.suma_transport, data.comanda.moneda);
+    document.getElementById('s-asigurare').textContent = formatSuma(data.comanda.suma_asigurare, data.comanda.moneda);
+    document.getElementById('s-total').textContent = formatSuma(data.comanda.suma_totala_platita, data.comanda.moneda);
+
+    const photoCompare = document.getElementById('photo-compare');
+    const LABEL = { before: 'Înainte', after: 'După' };
+    photoCompare.innerHTML = (data.imagini || []).map((img) => `
+      <div class="photo-box">
+        ${img.url ? `<img src="${img.url}" alt="Fotografie ${LABEL[img.tip] || img.tip}"/>` : ''}
+        <div class="photo-tag">${LABEL[img.tip] || img.tip}</div>
+        <div class="photo-meta">${new Date(img.creat_la).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}</div>
+      </div>
+    `).join('') || '<p style="color:var(--ink-soft);font-size:13px">Nicio fotografie încărcată încă.</p>';
+
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('continut').classList.remove('hidden');
+  } catch (e) {
+    afiseazaStareFinala('⚠️', 'Eroare de conexiune', 'Încearcă să reîncarci pagina.');
+  }
+}
+
+async function confirmaLivrarea() {
+  const btn = document.getElementById('btn-confirma');
+  btn.disabled = true;
+  btn.textContent = 'Se confirmă...';
+  try {
+    const res = await fetch('/api/public/confirma-livrare', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, actiune: 'confirma' }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      afiseazaMesaj('err', data.error || 'Nu am putut confirma.');
+      btn.disabled = false;
+      btn.innerHTML = 'Confirmă primirea și eliberează plata';
+      return;
+    }
+    afiseazaStareFinala('✅', 'Mulțumim!', `Comanda ${data.comanda.nr_comanda} a fost confirmată, iar plata a fost eliberată către partener.`);
+  } catch (e) {
+    afiseazaMesaj('err', 'Eroare de conexiune. Încearcă din nou.');
+    btn.disabled = false;
+    btn.innerHTML = 'Confirmă primirea și eliberează plata';
+  }
+}
+
+function toggleFormProblema() {
+  document.getElementById('form-problema').classList.toggle('hidden');
+}
+
+async function trimiteProblema() {
+  const motiv = document.getElementById('motiv-problema').value.trim();
+  if (!motiv) { afiseazaMesaj('warn', 'Descrie pe scurt problema înainte de a trimite.'); return; }
+  try {
+    const res = await fetch('/api/public/confirma-livrare', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, actiune: 'contesta', motiv }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      afiseazaMesaj('err', data.error || 'Nu am putut trimite contestația.');
+      return;
+    }
+    afiseazaStareFinala('📨', 'Contestație înregistrată', `Ticket ${data.reclamatie.ticket_nr}. Echipa My Darrin va evalua lucrarea — plata rămâne blocată în escrow până la răspuns.`);
+  } catch (e) {
+    afiseazaMesaj('err', 'Eroare de conexiune. Încearcă din nou.');
+  }
+}
+
+incarcaComanda();
+</script>
+</body>
+</html>

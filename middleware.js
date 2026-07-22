@@ -76,6 +76,8 @@ export const config = {
     '/investitor',
     '/curier-cartier',
     '/asigurator',
+    // FIX (Faza 5, 2026-07-22): pagina publică de confirmare livrare/prestare.
+    '/confirmare-livrare',
   ],
 };
 
@@ -87,6 +89,7 @@ const PAGINA_STATICA = {
   '/investitor': '/mydarrin-investitori.html',
   '/curier-cartier': '/cum-devii-curier-de-cartier.html',
   '/asigurator': '/ghidul-asiguratorului.html',
+  '/confirmare-livrare': '/confirmare-livrare.html',
 };
 
 // Normalizează "inchirieri" (segment din URL, plural, cerut de business) la
@@ -175,11 +178,16 @@ export default async function middleware(request) {
   // rewrite obișnuit (URL-ul din bara browserului rămâne neschimbat).
   const url = new URL(request.url);
   const publicRoute = ruteazaPublic(url.pathname);
-  console.log(`[middleware-debug] pathname=${url.pathname} publicRoute=${JSON.stringify(publicRoute)}`);
   if (publicRoute) {
     const dest = new URL(publicRoute.destinatie, request.url);
     if (publicRoute.query) {
       for (const [k, v] of Object.entries(publicRoute.query)) dest.searchParams.set(k, v);
+    } else {
+      // FIX (Faza 5, 2026-07-22): fără o mapare explicită de query (ex.
+      // /confirmare-livrare?token=...), parametrii originali din URL trebuie
+      // păstrați la rescriere — new URL(destinatie, request.url) altfel îi
+      // pierde complet quand destinația e o cale absolută.
+      for (const [k, v] of url.searchParams.entries()) dest.searchParams.set(k, v);
     }
     console.log(`[middleware-debug] dest=${dest.toString()}`);
     return rewrite(dest);
