@@ -8,7 +8,12 @@
 // același nivel de încredere ca restul aplicației — vezi api/partener/gps.js,
 // care folosește exact aceeași convenție pentru poziția partenerului.
 //
-// Body: { comanda_id, tip: 'inainte'|'dupa', imagine_base64, mime_type, gps_lat?, gps_lng?, gps_accuracy? }
+// Body: { comanda_id, tip: 'before'|'after', imagine_base64, mime_type, gps_lat?, gps_lng?, gps_accuracy? }
+//
+// FIX (testat live, 2026-07-22): valorile inițiale (inainte/dupa) nu treceau
+// de comenzi_imagini_tip_check — constraint-ul real (tabelă construită
+// într-o sesiune anterioară) folosește 'before'/'after' (engleză), plus
+// 'in_progres'/'defect_constatat', nefolosite aici.
 
 const crypto = require('crypto');
 const { requireAuth } = require('../../lib/auth-middleware');
@@ -28,8 +33,8 @@ async function handler(req, res, user) {
 
   const { comanda_id, tip, imagine_base64, mime_type, gps_lat = null, gps_lng = null, gps_accuracy = null } = req.body || {};
 
-  if (!comanda_id || !['inainte', 'dupa'].includes(tip)) {
-    return res.status(400).json({ error: 'comanda_id și tip (inainte|dupa) sunt obligatorii' });
+  if (!comanda_id || !['before', 'after'].includes(tip)) {
+    return res.status(400).json({ error: 'comanda_id și tip (before|after) sunt obligatorii' });
   }
   if (!imagine_base64 || !ALLOWED_MIME.has(mime_type)) {
     return res.status(400).json({ error: `mime_type acceptat: ${[...ALLOWED_MIME].join(', ')}` });

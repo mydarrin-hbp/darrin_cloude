@@ -1,7 +1,9 @@
 // /api/partener/finalizeaza-comanda.js
 // Faza 4 — prestatorul declară lucrarea finalizată. Cere cel puțin o
-// fotografie "înainte" și una "după" deja încărcate (dovadă vizuală
+// fotografie "before" și una "after" deja încărcate (dovadă vizuală
 // obligatorie, cf. cerinței de business) înainte să permită finalizarea.
+// Valorile reale ale comenzi_imagini.tip (verificate live, 2026-07-22):
+// 'before'/'after'/'in_progres'/'defect_constatat' — nu inainte/dupa.
 // Generează un token de confirmare (valabil 7 zile) și trimite linkul pe
 // email către client. Pagina publică de confirmare (Faza 5) nu există încă
 // — linkul dă 404 până atunci, așteptat la acest pas, nu un bug.
@@ -60,9 +62,9 @@ async function handler(req, res, user) {
     .eq('comanda_id', comanda_id);
   if (imgErr) return res.status(500).json({ error: 'Eroare la verificarea fotografiilor' });
 
-  const areInainte = (imagini || []).some((i) => i.tip === 'inainte');
-  const areDupa = (imagini || []).some((i) => i.tip === 'dupa');
-  if (!areInainte || !areDupa) {
+  const areBefore = (imagini || []).some((i) => i.tip === 'before');
+  const areAfter = (imagini || []).some((i) => i.tip === 'after');
+  if (!areBefore || !areAfter) {
     return res.status(400).json({ error: 'Sunt necesare cel puțin o fotografie "înainte" și una "după" pentru a finaliza' });
   }
 
