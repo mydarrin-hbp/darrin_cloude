@@ -53,7 +53,7 @@ module.exports = async function handler(req, res) {
   }
 
   if (actiune === 'confirma') {
-    const rezultat = await elibereazaEscrow(comanda.id);
+    const rezultat = await elibereazaEscrow(comanda.id); // null => eliberare automată (confirmare client)
     if (!rezultat.ok) return res.status(rezultat.status || 500).json({ error: rezultat.error });
 
     const { data: updatat, error: updErr } = await supabaseAdmin

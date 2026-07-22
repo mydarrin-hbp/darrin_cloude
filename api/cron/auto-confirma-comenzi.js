@@ -57,7 +57,7 @@ module.exports = async function handler(req, res) {
       sarite++;
       continue;
     }
-    const rezultat = await elibereazaEscrow(comanda.id);
+    const rezultat = await elibereazaEscrow(comanda.id); // null => eliberare automată (confirmare tacită)
     if (!rezultat.ok) {
       erori.push({ comanda_id: comanda.id, nr_comanda: comanda.nr_comanda, error: rezultat.error });
       continue;

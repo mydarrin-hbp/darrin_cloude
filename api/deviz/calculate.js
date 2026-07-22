@@ -1,129 +1,109 @@
 // /api/deviz/calculate.js
-// Rulează formula motorului de deviz și salvează rezultatul în `devize`.
+// Rulează formula motorului de deviz (rețetă multi-partener) și salvează
+// rezultatul în `devize`.
 //
-// FIX SECURITATE (audit 2026-07-10):
-//   - mydarrin_pct, zone_coef, urgency_coef sunt constante SERVER-SIDE
-//     nu mai sunt acceptate din req.body (manipulare de preț)
-//   - tva se citește din tax_configurations (nu mai e hardcodat 0.19)
-//   - Validare strictă pe toți parametrii acceptați din client
+// FIX (2026-07-22): înlocuită formula veche, multiplicativă pe un singur
+// "cost_brut" (MAX(cost_brut,VMC) × coeficienți zonă/urgență × comision),
+// cu suma directă a componentelor de cost — fiecare componentă corespunde
+// unui rol plătit separat la eliberarea escrow (vezi lib/elibereaza-escrow.js
+// + tabela comanda_subcontractori, deja proiectată pentru exact acest model,
+// dar orfană până acum). VMC și coeficienții de zonă/urgență din formula
+// veche NU au echivalent în noua rețetă — eliminați, nu ascunși. Formula
+// propriu-zisă e acum în lib/calculeaza-pret.js (sursă unică, folosită și
+// de api/comenzi/creeaza.js, ca sumele înghețate pe comandă să provină din
+// exact același calcul).
 //
-// Body acceptat: { serviciu_id, cost_brut, tara?, zona?, urgent? }
-// Body REFUZAT:  orice mydarrin_pct / zone_coef / urgency_coef / tva din client
+// FIX SECURITATE (păstrat din audit 2026-07-10): procentele de comision/
+// marketing/mentenanță și TVA sunt constante SERVER-SIDE (citite din
+// backoffice_config / tax_configurations), niciodată acceptate din req.body.
+//
+// Body: { serviciu_id, tara?, nivel?,
+//         cost_baza_servicii?, cost_materiale?, cost_chirie_scule?,
+//         cost_curier?, cost_asigurare?,
+//         cost_brut? }  -- cost_brut e alias legacy pentru cost_baza_servicii,
+//                          păstrat ca să nu rupă apelul existent din
+//                          mydarrin-catalog.html (confirmaEstimareAI()), care
+//                          nu produce încă o defalcare pe componente.
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { calculeazaPret } = require('../../lib/calculeaza-pret');
 
-// ── Constante server-side (nu vin niciodată din client) ──────────
-const VMC = { RO: 100, MD: 400, DE: 25, FR: 25, BG: 40 };
-const INDIRECT   = 0.10;   // 10% costuri indirecte
-const MARKETING  = 0.03;   // 3% marketing
-const PLATFORMA  = 0.03;   // 3% platformă
-const MYDARRIN_PCT = 0.10; // 10% comision My Darrin — NICIODATĂ din client
-
-// Coeficienți de zonă server-side
-const ZONE_COEF = {
-  urban:   1.0,
-  suburban: 1.1,
-  rural:   1.2,
-  remote:  1.5,
-};
-
-// Coeficienți urgență server-side
-const URGENCY_COEF = {
-  normal:  1.0,
-  urgent:  1.3,
-  express: 1.6,
-};
-
-// TVA fallback per țară (dacă DB-ul nu răspunde)
-const TVA_FALLBACK = { RO: 0.21, MD: 0.20, DE: 0.19, FR: 0.20, BG: 0.20 };
+function numarPozitiv(v) {
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 ? n : 0;
+}
 
 async function handler(req, res, user) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // ── Parametri acceptați din client ──────────────────────────────
-  const {
-    serviciu_id,
-    cost_brut,
-    tara   = 'RO',
-    zona   = 'urban',
-    urgent = false,
-    tip_urgenta = 'normal',
-  } = req.body || {};
+  const body = req.body || {};
 
-  // ── Validare: refuză explicit orice multiplicator de preț din body ──
-  const CAMPURI_INTERZISE = ['mydarrin_pct','zone_coef','urgency_coef','tva','INDIRECT','MARKETING','PLATFORMA'];
-  const campInterzisGasit = CAMPURI_INTERZISE.find(c => c in (req.body || {}));
+  // Refuză explicit orice câmp de preț trimis din client — server-side only.
+  const CAMPURI_INTERZISE = [
+    'comision_pct', 'cost_marketing_pct', 'cost_mentenanta_pct', 'tva',
+    'comision_bricolaj_contractat_pct', 'comision_inchiriere_contractat_pct',
+    'mydarrin_pct', 'zone_coef', 'urgency_coef',
+  ];
+  const campInterzisGasit = CAMPURI_INTERZISE.find((c) => c in body);
   if (campInterzisGasit) {
     return res.status(400).json({
-      error: `Câmpul '${campInterzisGasit}' nu este acceptat din client. Parametrii de preț sunt calculați server-side.`
+      error: `Câmpul '${campInterzisGasit}' nu este acceptat din client. Parametrii de preț sunt calculați server-side.`,
     });
   }
 
-  // ── Validare parametri obligatorii ──────────────────────────────
+  const { serviciu_id, tara = 'RO', nivel = null, cost_brut } = body;
+
   if (!serviciu_id || typeof serviciu_id !== 'string' || serviciu_id.length > 200) {
     return res.status(400).json({ error: 'serviciu_id (string, max 200 chars) este obligatoriu' });
   }
-  if (typeof cost_brut !== 'number' || cost_brut < 0 || cost_brut > 1_000_000) {
-    return res.status(400).json({ error: 'cost_brut (numeric, 0–1.000.000) este obligatoriu' });
-  }
-  if (!['RO','MD','DE','FR','BG'].includes(tara)) {
-    return res.status(400).json({ error: `tara invalid. Valori acceptate: RO, MD, DE, FR, BG` });
-  }
-  if (!ZONE_COEF[zona]) {
-    return res.status(400).json({ error: `zona invalid. Valori acceptate: ${Object.keys(ZONE_COEF).join(', ')}` });
+  if (!['RO', 'MD', 'DE', 'FR', 'BG'].includes(tara)) {
+    return res.status(400).json({ error: 'tara invalid. Valori acceptate: RO, MD, DE, FR, BG' });
   }
 
-  // ── Citește TVA din tax_configurations (configurabil din Backoffice) ──
-  let tvaDecimal = TVA_FALLBACK[tara] ?? 0.20;
-  try {
-    const { data: taxData, error: taxErr } = await supabaseAdmin
-      .from('tax_configurations')
-      .select('cota_tva')
-      .eq('tara_cod', tara)
-      .single();
-    if (!taxErr && taxData?.cota_tva != null) {
-      tvaDecimal = Number(taxData.cota_tva) / 100;
-    }
-  } catch (e) {
-    console.warn('[deviz/calculate] fallback TVA pentru', tara, ':', e.message);
+  const costBazaServicii = numarPozitiv(body.cost_baza_servicii ?? cost_brut ?? 0);
+  const costMateriale = numarPozitiv(body.cost_materiale);
+  const costChirieScule = numarPozitiv(body.cost_chirie_scule);
+  const costCurier = numarPozitiv(body.cost_curier);
+  const costAsigurare = numarPozitiv(body.cost_asigurare);
+
+  const subtotalCerut = costBazaServicii + costMateriale + costChirieScule + costCurier + costAsigurare;
+  if (subtotalCerut <= 0) {
+    return res.status(400).json({ error: 'Cel puțin o componentă de cost (servicii/materiale/scule/curier/asigurare) trebuie să fie pozitivă' });
+  }
+  if (subtotalCerut > 1_000_000) {
+    return res.status(400).json({ error: 'Suma componentelor depășește limita acceptată (1.000.000)' });
   }
 
-  // ── Calcul formula deviz ─────────────────────────────────────────
-  // PRET_FINAL = MAX(cost_brut, VMC) × (1 + INDIRECT + MARKETING + PLATFORMA)
-  //              × (1 + MYDARRIN_PCT) × zone_coef × urgency_coef × (1 + TVA)
-  const vmcTara     = VMC[tara] ?? VMC.RO;
-  const costBaza    = Math.max(cost_brut, vmcTara);
-  const urgCoef     = URGENCY_COEF[tip_urgenta] ?? URGENCY_COEF.normal;
-  const zoneCoef    = ZONE_COEF[zona];
+  const calc = await calculeazaPret({
+    cost_baza_servicii: costBazaServicii,
+    cost_materiale: costMateriale,
+    cost_chirie_scule: costChirieScule,
+    cost_curier: costCurier,
+    cost_asigurare: costAsigurare,
+    tara,
+  });
 
-  const pretFinal = Math.round(
-    costBaza
-    * (1 + INDIRECT + MARKETING + PLATFORMA)
-    * (1 + MYDARRIN_PCT)
-    * zoneCoef
-    * urgCoef
-    * (1 + tvaDecimal)
-    * 100
-  ) / 100;
-
-  // ── Salvează devizul ─────────────────────────────────────────────
   const { data, error } = await supabaseAdmin
     .from('devize')
     .insert({
-      client_id:   user.id,
+      client_id: user.id,
       serviciu_id,
-      nivel:       req.body.nivel ?? null,
-      input_json:  { serviciu_id, cost_brut, tara, zona, urgent, tip_urgenta },
-      cost_brut,
-      cost_baza:   costBaza,
-      pret_final:  pretFinal,
-      tara_cod:    tara,
-      zona,
-      urgent:      Boolean(urgent),
-      moneda:      { RO:'RON', MD:'MDL', DE:'EUR', FR:'EUR', BG:'BGN' }[tara] ?? 'RON',
+      nivel,
+      input_json: {
+        serviciu_id, tara,
+        cost_baza_servicii: calc.cost_baza_servicii, cost_materiale: calc.cost_materiale,
+        cost_chirie_scule: calc.cost_chirie_scule, cost_curier: calc.cost_curier, cost_asigurare: calc.cost_asigurare,
+        cost_marketing: calc.cost_marketing, cost_mentenanta: calc.cost_mentenanta,
+        comision_platforma: calc.comision_platforma, tva_pct: calc.tva_pct, tva_suma: calc.tva_suma,
+      },
+      cost_brut: calc.cost_baza_servicii, // păstrat pentru compatibilitate cu rândurile vechi
+      cost_baza: calc.subtotal,
+      pret_final: calc.pret_final,
+      tara_cod: tara,
+      moneda: { RO: 'RON', MD: 'MDL', DE: 'EUR', FR: 'EUR', BG: 'BGN' }[tara] ?? 'RON',
     })
     .select()
     .single();
@@ -133,19 +113,7 @@ async function handler(req, res, user) {
     return res.status(500).json({ error: 'Nu am putut salva devizul' });
   }
 
-  return res.status(200).json({
-    ok: true,
-    deviz: data,
-    _debug: {
-      vmcTara,
-      costBaza,
-      tvaDecimal,
-      zoneCoef,
-      urgCoef,
-      mydarrin_pct: MYDARRIN_PCT,
-    },
-  });
+  return res.status(200).json({ ok: true, deviz: data, _debug: calc });
 }
 
-// orice user autentificat poate cere un deviz
 module.exports = requireAuth([], handler);
