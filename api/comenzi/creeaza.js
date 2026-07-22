@@ -19,21 +19,31 @@
 // auditul extins, secțiunea 3) — comanda e persistată real, dar alocarea
 // automată către un partener rămâne un pas separat, neconstruit.
 //
-// Body: { valoare_totala, adresa, tara_cod?, regiune?, localitate?, suma_asigurare? }
+// Body: { valoare_totala, adresa, tara_cod?, regiune?, localitate?, suma_asigurare?, catalog_serviciu_id? }
 //
 // FIX (T8, 2026-07-20): `comenzi.suma_asigurare` exista deja în schemă
 // (proiectată corect pentru split-ul de asigurare), dar nu era scrisă
 // niciodată — checkout.html calcula prima de asigurare doar în UI, iar
 // suma se topea nediferențiat în valoare_totala. Acum se persistă separat,
 // ca api/financiar/comision.js să poată calcula split-ul real pe 3 părți.
+//
+// FIX (Faza 3, 2026-07-21): `catalog_serviciu_id` exista deja în schemă,
+// dar checkout.html nu-l trimitea niciodată — fără el, motorul de alocare
+// (lib/aloca-partener.js) nu are ce serviciu să caute în
+// partener_servicii_active. Acum e acceptat opțional (comenzile vechi/alte
+// apeluri care nu-l trimit încă rămân neafectate, doar alocarea nu pornește
+// pentru ele). După inserare, se încearcă o alocare automată sincron — nu
+// există infrastructură de cronjob/coadă în acest proiect, deci "automat"
+// înseamnă "imediat, în același request", nu în fundal.
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { incearcaAlocarePartener } = require('../../lib/aloca-partener');
 
 async function handler(req, res, user) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { valoare_totala, adresa, tara_cod = null, regiune = null, localitate = null, suma_asigurare = 0 } = req.body || {};
+  const { valoare_totala, adresa, tara_cod = null, regiune = null, localitate = null, suma_asigurare = 0, catalog_serviciu_id = null } = req.body || {};
 
   if (typeof valoare_totala !== 'number' || !(valoare_totala > 0)) {
     return res.status(400).json({ error: 'valoare_totala (numeric, pozitiv) este obligatorie' });
@@ -84,6 +94,7 @@ async function handler(req, res, user) {
         tara_cod: tara_cod ? String(tara_cod).toUpperCase() : null,
         regiune,
         localitate,
+        catalog_serviciu_id,
         // 'neinitiat', nu 'blocat': acest endpoint nu procesează plăți reale
         // (niciun procesator de plăți nu e integrat — vezi api/financiar/comision.js),
         // deci ar fi incorect să pretindem că suma e deja blocată în escrow.
@@ -93,7 +104,11 @@ async function handler(req, res, user) {
 
     if (error) throw error;
 
-    return res.status(200).json({ ok: true, comanda: data });
+    const alocare = catalog_serviciu_id
+      ? await incearcaAlocarePartener(data.id)
+      : { alocat: false, motiv: 'fara_serviciu_specificat' };
+
+    return res.status(200).json({ ok: true, comanda: data, alocare });
   } catch (err) {
     console.error('[comenzi/creeaza]', err);
     return res.status(500).json({ error: err.message || 'Nu am putut înregistra comanda' });
