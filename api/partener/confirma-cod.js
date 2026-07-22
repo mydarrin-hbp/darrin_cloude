@@ -1,7 +1,10 @@
 // /api/partener/confirma-cod.js
 // Faza 3 — partenerul introduce, la sosire, codul de verificare primit de
 // client pe email (vezi lib/aloca-partener.js). Confirmarea marchează
-// începutul efectiv al lucrării — status 'acceptata' -> 'in_desfasurare'.
+// începutul efectiv al lucrării — status 'acceptata' -> 'in_executie'
+// (valorile reale permise de constraint-ul comenzi_status_check, verificate
+// live: in_cautare_partener, acceptata, in_executie, finalizata,
+// confirmata_client, anulata).
 //
 // Body: { comanda_id, cod }
 
@@ -38,7 +41,7 @@ async function handler(req, res, user) {
 
   const { data, error } = await supabaseAdmin
     .from('comenzi')
-    .update({ cod_verificare_confirmat_la: new Date().toISOString(), status: 'in_desfasurare' })
+    .update({ cod_verificare_confirmat_la: new Date().toISOString(), status: 'in_executie' })
     .eq('id', comanda_id)
     .select()
     .single();
