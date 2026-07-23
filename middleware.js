@@ -1,14 +1,26 @@
 // middleware.js
 // Route Guard real pentru paginile de backoffice (Etapa 4, audit 2026-07-12).
 //
-// Până acum "protecția" era doar client-side (enforceSuperadminBarrier /
-// enforceAdminBarrier din account-system.js, apelate din interiorul
-// mydarrin-superadmin.html / mydarrin-backoffice-serviciu.html) — HTML-ul
-// complet și tot JS-ul paginii se descărcau înainte ca vreo verificare să
-// ruleze; un vizitator neautorizat vedea pagina complet randată timp de o
-// fracțiune de secundă, iar sursa era oricum descărcabilă direct (view-source,
-// curl). Vercel Routing Middleware rulează înaintea servirii fișierului
-// static, deci un vizitator neautorizat nu primește niciodată conținutul.
+// FIX MAJOR (2026-07-23) — Barieră de acces pe TOATĂ platforma:
+// până acum acest fișier proteja doar câteva pagini interne (superadmin,
+// backoffice) și REZOLVA public restul site-ului (homepage, catalog etc.),
+// exact opusul cerinței reale — platforma nu e încă lansată public, deci
+// NIMIC din conținut nu trebuie văzut de nimeni fără acces aprobat explicit.
+// Cerință confirmată explicit: TOT site-ul e blocat implicit, FĂRĂ excepții
+// de conținut (nici homepage, nici catalog) — inclusiv conturile reale
+// (client/partener/furnizor etc.) rămân blocate până nu au un rând ACTIV în
+// `accese_temporare` pentru exact pagina cerută (vezi Punct 11, 2026-07-23).
+//
+// NECESITATE LOGICĂ DE BOOTSTRAP (decizie explicită, nu presupunere tăcută):
+// admin/superadmin trebuie să ocolească bariera — altfel NIMENI nu ar mai
+// putea intra vreodată în mydarrin-superadmin.html ca să acorde acces cuiva,
+// platforma s-ar bloca singură ireversibil. Doar admin/superadmin trec liber;
+// orice alt rol real (client, partener, furnizor, curier, asigurator) e
+// tratat identic cu un vizitator anonim — blocat fără un acces temporar activ.
+//
+// Excepții stricte, tehnice, NU de conținut (altfel nimeni n-ar putea nici
+// măcar ajunge la pagina de login): calea /acces-temporar în sine și
+// fișierele statice (js/css/imagini/fonturi) — vezi `config.matcher`.
 //
 // NOTĂ: acest fișier folosește sintaxă ESM (import/export), spre deosebire
 // de restul proiectului (CommonJS, require/module.exports) — Routing
@@ -16,83 +28,32 @@
 // documentația oficială (inclusiv exemplele cu runtime:'nodejs') folosește
 // exclusiv export/import, niciodată module.exports. Nu schimbă module
 // system-ul restului proiectului (package.json rămâne fără "type":"module").
-//
-// FIX (audit 2026-07-14): directivă explicită — răspunsul pentru un
-// vizitator neautorizat e acum 403 Forbidden (nu 404). De asemenea,
-// verificarea folosea DOAR access_token-ul din cookie — dacă acesta
-// expirase (sesiune veche, tab lăsat deschis ore întregi) și nimic nu-l
-// reîmprospătase, un superadmin real primea 403 nemeritat. Acum încercăm și
-// refresh_token-ul înainte să respingem. Fiecare respingere e logată cu un
-// motiv exact (fără să apară în răspunsul HTTP) — dacă accesul tot pare
-// blocat pentru un cont real, motivul e vizibil direct în Vercel Function
-// Logs, nu trebuie ghicit din nou.
 
 import { createClient } from '@supabase/supabase-js';
 import { next, rewrite } from '@vercel/functions';
 
 export const config = {
-  // TEST (2026-07-21): schimbat de la 'nodejs' la 'edge' (implicit) — cu
-  // runtime nodejs, rewrite() rula fără eroare (confirmat prin logging:
-  // pathname/destinație corect calculate) dar rezultatul tot era 404, în
-  // toate exemplele oficiale Vercel pentru rewrite() runtime-ul e edge,
-  // niciodată nodejs. Logica Supabase de mai jos folosește doar fetch/
-  // process.env, ambele suportate pe Edge — fără dependențe Node reale.
   runtime: 'edge',
+  // Un singur matcher, catch-all: rulează pentru ORICE cale, cu excepția a
+  // trei categorii — API-uri (au deja propria protecție per-endpoint, vezi
+  // lib/auth-middleware.js), pagina de login /acces-temporar în sine
+  // (altfel nimeni n-ar putea ajunge la ea ca să se autentifice), și
+  // fișiere statice identificate după extensie (js/css/imagini/fonturi/etc,
+  // necesare oricărei pagini, inclusiv paginii de login).
   matcher: [
-    '/mydarrin-superadmin',
-    '/mydarrin-superadmin.html',
-    '/mydarrin-backoffice-serviciu',
-    '/mydarrin-backoffice-serviciu.html',
-    // FIX (audit 2026-07-19): mydarrin-deviz-engine.html — pagina de concept
-    // de business intern (formula de preț, comisioane, editor de tarife) —
-    // era servită ca fișier static public, fără nicio verificare, alături de
-    // auth-schema.html și sync-architecture.html (aceeași categorie: doc de
-    // arhitectură internă, zero barieră, nici măcar client-side). Adăugate
-    // aici pe același tipar deja funcțional pentru superadmin/backoffice.
-    '/mydarrin-deviz-engine',
-    '/mydarrin-deviz-engine.html',
-    '/mydarrin-auth-schema',
-    '/mydarrin-auth-schema.html',
-    '/mydarrin-sync-architecture',
-    '/mydarrin-sync-architecture.html',
-    // FIX (audit 2026-07-21): rutele curate publice de mai jos erau declarate
-    // în vercel.json → rewrites, dar acel mecanism nu e efectiv folosit când
-    // proiectul are Routing Middleware (cazul de față — fără framework
-    // detectat) — documentația Vercel spune explicit că rescrierea pentru
-    // "alte framework-uri" (non-Next.js) trebuie făcută din middleware, cu
-    // rewrite() din @vercel/functions, nu din vercel.json. De-asta toate
-    // rutele curate (vechi și noi deopotrivă) dădeau 404 în producție,
-    // confirmat printr-un test live. Mutate aici.
-    '/home',
-    '/servicii/:slug',
-    '/materiale/:slug',
-    '/inchiriere/:slug',
-    '/catalog/servicii/:categorie',
-    '/catalog/materiale/:categorie',
-    '/catalog/inchirieri/:categorie',
-    '/catalog/:tip/:categorie/:slug',
-    '/cos',
-    '/partener',
-    '/investitor',
-    '/curier-cartier',
-    '/asigurator',
-    // FIX (Faza 5, 2026-07-22): pagina publică de confirmare livrare/prestare.
-    '/confirmare-livrare',
-    // Acces temporar cu parolă unică per email (2026-07-23) — pagină publică
-    // de login, gestionată din mydarrin-superadmin.html.
-    '/acces-temporar',
+    '/((?!api/|acces-temporar$|acces-temporar\\.html$|.*\\.(?:js|mjs|css|png|jpe?g|gif|svg|webp|ico|woff2?|ttf|eot|json|map|txt|xml|pdf|mp4|webm)$).*)',
   ],
 };
 
-// ── Rescrieri publice (fără autentificare) ──
+// ── Rescrieri publice (fără autentificare suplimentară — DAR tot supuse
+// barierei generale de mai jos, cu excepția rutelor din PAGINA_STATICA care
+// mapează chiar spre pagina de login) ──
 //
-// TEST (2026-07-23): destinațiile NU mai au extensia .html. Ipoteză: cu
-// `cleanUrls: true` (vercel.json), Vercel tratează un rewrite() către o cale
-// care se termină în `.html` ca pe o cerere ce ar trebui ea însăși
-// "curățată" — de unde rezultatul rămânea 404 (X-Vercel-Error: NOT_FOUND)
-// deși log-urile confirmau destinația corect calculată. cleanUrls
-// presupune deja că `/mydarrin-v3` servește `mydarrin-v3.html` — rewrite()
-// ar trebui să folosească exact acea formă curată, nu calea cu extensie.
+// TEST (2026-07-23): destinațiile NU mai au extensia .html. Ipoteză
+// confirmată live: cu `cleanUrls: true` (vercel.json), un rewrite() către o
+// cale terminată în `.html` era tratat de Vercel ca o cerere ce ar trebui
+// ea însăși "curățată" — de unde rezultatul rămânea 404 (X-Vercel-Error:
+// NOT_FOUND) deși log-urile confirmau destinația corect calculată.
 const PAGINA_STATICA = {
   '/home': '/mydarrin-v3',
   '/cos': '/mydarrin-checkout',
@@ -101,7 +62,6 @@ const PAGINA_STATICA = {
   '/curier-cartier': '/cum-devii-curier-de-cartier',
   '/asigurator': '/ghidul-asiguratorului',
   '/confirmare-livrare': '/confirmare-livrare',
-  '/acces-temporar': '/acces-temporar',
 };
 
 // Normalizează "inchirieri" (segment din URL, plural, cerut de business) la
@@ -176,6 +136,23 @@ function extrageSesiune(cookieHeader) {
   }
 }
 
+// Extrage utilizatorul autentificat din cookie (cu retry pe refresh_token
+// dacă access_token-ul a expirat) — folosit atât de bariera strictă
+// (superadmin/backoffice), cât și de bariera generală a platformei.
+async function obtineUtilizatorAutentificat(request, supabaseAdmin) {
+  const sesiune = extrageSesiune(request.headers.get('cookie'));
+  if (!sesiune || !sesiune.access_token) return null;
+
+  const { data: userData, error: userErr } = await supabaseAdmin.auth.getUser(sesiune.access_token);
+  if (!userErr && userData?.user) return userData.user;
+
+  if (sesiune.refresh_token) {
+    const { data: refreshData, error: refreshErr } = await supabaseAdmin.auth.refreshSession({ refresh_token: sesiune.refresh_token });
+    if (!refreshErr && refreshData?.user) return refreshData.user;
+  }
+  return null;
+}
+
 async function verificaRoluri(supabaseAdmin, userId) {
   // Sursa autoritativă e profiles.roles, nu doar metadatele din JWT — vezi
   // aceeași convenție în lib/auth-middleware.js (corectat audit 2026-07-11).
@@ -184,26 +161,45 @@ async function verificaRoluri(supabaseAdmin, userId) {
   return roles.includes('admin') || roles.includes('superadmin');
 }
 
+// Bariera generală a platformei — vezi comentariul de sus. `true` doar dacă:
+// (a) e admin/superadmin (bypass necesar de bootstrap), SAU
+// (b) există un rând ACTIV, neexpirat, în accese_temporare pentru emailul
+//     userului curent, cu ruta_url exact egală cu pagina cerută (comparate
+//     fără extensia .html, ca să nu conteze forma cu/fără .html a cererii).
+async function treceBarieraPlatforma(request, supabaseAdmin, pathname) {
+  const user = await obtineUtilizatorAutentificat(request, supabaseAdmin);
+  if (!user) return false;
+
+  const areRolPermis = await verificaRoluri(supabaseAdmin, user.id);
+  if (areRolPermis) return true;
+
+  if (!user.email) return false;
+  const rutaCeruta = pathname.replace(/\.html$/, '') || '/';
+
+  const { data: acces } = await supabaseAdmin
+    .from('accese_temporare')
+    .select('ruta_url, expira_la')
+    .eq('email', user.email.toLowerCase())
+    .eq('activ', true)
+    .maybeSingle();
+  if (!acces) return false;
+  if (new Date(acces.expira_la) < new Date()) return false;
+
+  const rutaAcces = acces.ruta_url.replace(/\.html$/, '');
+  return rutaAcces === rutaCeruta;
+}
+
+const PAGINI_STRICTE = [
+  '/mydarrin-superadmin', '/mydarrin-superadmin.html',
+  '/mydarrin-backoffice-serviciu', '/mydarrin-backoffice-serviciu.html',
+  '/mydarrin-deviz-engine', '/mydarrin-deviz-engine.html',
+  '/mydarrin-auth-schema', '/mydarrin-auth-schema.html',
+  '/mydarrin-sync-architecture', '/mydarrin-sync-architecture.html',
+];
+
 export default async function middleware(request) {
-  // Rutele publice de mai jos nu au nevoie de nicio autentificare — le
-  // rezolvăm imediat, înainte de orice verificare Supabase, exact ca un
-  // rewrite obișnuit (URL-ul din bara browserului rămâne neschimbat).
   const url = new URL(request.url);
-  const publicRoute = ruteazaPublic(url.pathname);
-  if (publicRoute) {
-    const dest = new URL(publicRoute.destinatie, request.url);
-    if (publicRoute.query) {
-      for (const [k, v] of Object.entries(publicRoute.query)) dest.searchParams.set(k, v);
-    } else {
-      // FIX (Faza 5, 2026-07-22): fără o mapare explicită de query (ex.
-      // /confirmare-livrare?token=...), parametrii originali din URL trebuie
-      // păstrați la rescriere — new URL(destinatie, request.url) altfel îi
-      // pierde complet quand destinația e o cale absolută.
-      for (const [k, v] of url.searchParams.entries()) dest.searchParams.set(k, v);
-    }
-    console.log(`[middleware-debug] dest=${dest.toString()}`);
-    return rewrite(dest);
-  }
+  const pathname = url.pathname;
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     // Fail-closed: fără configurare validă nu putem verifica nimic — mai
@@ -211,30 +207,38 @@ export default async function middleware(request) {
     return respinge(request, 'lipsesc SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY din mediu');
   }
 
-  const sesiune = extrageSesiune(request.headers.get('cookie'));
-  if (!sesiune || !sesiune.access_token) return respinge(request, 'niciun cookie de sesiune găsit');
-
   const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  let userId = null;
-  const { data: userData, error: userErr } = await supabaseAdmin.auth.getUser(sesiune.access_token);
-  if (!userErr && userData?.user) {
-    userId = userData.user.id;
-  } else if (sesiune.refresh_token) {
-    // access_token expirat/invalid — încercăm o singură dată cu refresh_token
-    // înainte să respingem (browserul reînnoiește automat sesiunea în uz
-    // normal, dar cookie-ul poate fi stale dacă tab-ul stă deschis mult timp).
-    const { data: refreshData, error: refreshErr } = await supabaseAdmin.auth.refreshSession({ refresh_token: sesiune.refresh_token });
-    if (refreshErr || !refreshData?.user) return respinge(request, `access_token invalid și refresh eșuat: ${refreshErr?.message || 'necunoscut'}`);
-    userId = refreshData.user.id;
-  } else {
-    return respinge(request, `access_token invalid, fără refresh_token: ${userErr?.message || 'necunoscut'}`);
+  // Paginile interne stricte (superadmin/backoffice/etc.) rămân pe bariera
+  // veche, neschimbată: DOAR admin/superadmin, niciodată acces temporar.
+  if (PAGINI_STRICTE.includes(pathname)) {
+    const user = await obtineUtilizatorAutentificat(request, supabaseAdmin);
+    if (!user) return respinge(request, 'niciun cookie de sesiune valid');
+    const areRolPermis = await verificaRoluri(supabaseAdmin, user.id);
+    if (!areRolPermis) return respinge(request, `user ${user.id} autentificat dar fără rol admin/superadmin`);
+    return next();
   }
 
-  const areRolPermis = await verificaRoluri(supabaseAdmin, userId);
-  if (!areRolPermis) return respinge(request, `user ${userId} autentificat dar fără rol admin/superadmin`);
+  // Bariera generală a platformei — orice altă pagină din site.
+  const permis = await treceBarieraPlatforma(request, supabaseAdmin, pathname);
+  if (!permis) {
+    console.log(`[middleware-bariera] acces blocat — path=${pathname}, redirect spre /acces-temporar`);
+    return Response.redirect(new URL('/acces-temporar', request.url), 307);
+  }
+
+  const publicRoute = ruteazaPublic(pathname);
+  if (publicRoute) {
+    const dest = new URL(publicRoute.destinatie, request.url);
+    if (publicRoute.query) {
+      for (const [k, v] of Object.entries(publicRoute.query)) dest.searchParams.set(k, v);
+    } else {
+      for (const [k, v] of url.searchParams.entries()) dest.searchParams.set(k, v);
+    }
+    console.log(`[middleware-debug] dest=${dest.toString()}`);
+    return rewrite(dest);
+  }
 
   return next();
 }
