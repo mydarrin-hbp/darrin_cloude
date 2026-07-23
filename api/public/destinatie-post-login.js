@@ -34,12 +34,19 @@ async function handler(req, res, user) {
 
   const { data: acces } = await supabaseAdmin
     .from('accese_temporare')
-    .select('ruta_url, expira_la')
+    .select('ruta_url, expira_la, nda_acceptat')
     .eq('email', user.email.toLowerCase())
     .eq('activ', true)
     .maybeSingle();
 
   if (acces && new Date(acces.expira_la) >= new Date()) {
+    // Acordul de confidențialitate (NDA) e obligatoriu ÎNAINTEA oricărei
+    // pagini reale — un accese_temporare activ, dar fără NDA acceptat încă,
+    // e trimis la /acord-confidentialitate, care îl redirecționează mai
+    // departe la destinația reală abia după bifare (vezi accepta-nda.js).
+    if (!acces.nda_acceptat) {
+      return res.status(200).json({ ok: true, destinatie: '/acord-confidentialitate' });
+    }
     // '*' = acces complet pe tot site-ul public (vezi creeaza-acces-temporar.js
     // și middleware.js) — nu e o rută reală de redirecționat, aterizăm pe
     // homepage ca punct de start; de-acolo poate naviga oriunde public.

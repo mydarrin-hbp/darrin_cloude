@@ -41,7 +41,7 @@ export const config = {
   // fișiere statice identificate după extensie (js/css/imagini/fonturi/etc,
   // necesare oricărei pagini, inclusiv paginii de login).
   matcher: [
-    '/((?!api/|acces-temporar$|acces-temporar\\.html$|.*\\.(?:js|mjs|css|png|jpe?g|gif|svg|webp|ico|woff2?|ttf|eot|json|map|txt|xml|pdf|mp4|webm)$).*)',
+    '/((?!api/|acces-temporar$|acces-temporar\\.html$|acord-confidentialitate$|acord-confidentialitate\\.html$|.*\\.(?:js|mjs|css|png|jpe?g|gif|svg|webp|ico|woff2?|ttf|eot|json|map|txt|xml|pdf|mp4|webm)$).*)',
   ],
 };
 
@@ -171,12 +171,16 @@ async function verificaRoluri(supabaseAdmin, userId) {
 // nu poate ajunge în superadmin/backoffice/deviz-engine sub nicio formă.
 const RUTA_ACCES_COMPLET = '*';
 
-// Bariera generală a platformei — vezi comentariul de sus. `true` doar dacă:
-// (a) e admin/superadmin (bypass necesar de bootstrap), SAU
-// (b) există un rând ACTIV, neexpirat, în accese_temporare pentru emailul
-//     userului curent, cu ruta_url = "*" (acces complet pe tot site-ul
-//     public) sau exact egală cu pagina cerută (comparate fără extensia
-//     .html, ca să nu conteze forma cu/fără .html a cererii).
+// Bariera generală a platformei — vezi comentariul de sus. Returnează:
+//  - true          → acces permis, continuă normal.
+//  - false         → blocat complet, fără niciun acces valid → /acces-temporar.
+//  - 'nda_pending' → acces temporar valid, dar acordul de confidențialitate
+//                    NU e încă acceptat → /acord-confidentialitate (nu la
+//                    login din nou, userul e deja autentificat corect).
+// Permis (true) doar dacă: (a) e admin/superadmin (bypass necesar de
+// bootstrap), SAU (b) există un rând ACTIV, neexpirat, cu NDA acceptat, în
+// accese_temporare pentru emailul curent, cu ruta_url = "*" (acces complet)
+// sau exact egală cu pagina cerută (fără extensia .html).
 async function treceBarieraPlatforma(request, supabaseAdmin, pathname) {
   const user = await obtineUtilizatorAutentificat(request, supabaseAdmin);
   if (!user) return false;
@@ -189,12 +193,13 @@ async function treceBarieraPlatforma(request, supabaseAdmin, pathname) {
 
   const { data: acces } = await supabaseAdmin
     .from('accese_temporare')
-    .select('ruta_url, expira_la')
+    .select('ruta_url, expira_la, nda_acceptat')
     .eq('email', user.email.toLowerCase())
     .eq('activ', true)
     .maybeSingle();
   if (!acces) return false;
   if (new Date(acces.expira_la) < new Date()) return false;
+  if (!acces.nda_acceptat) return 'nda_pending';
 
   if (acces.ruta_url === RUTA_ACCES_COMPLET) return true;
 
@@ -236,6 +241,10 @@ export default async function middleware(request) {
 
   // Bariera generală a platformei — orice altă pagină din site.
   const permis = await treceBarieraPlatforma(request, supabaseAdmin, pathname);
+  if (permis === 'nda_pending') {
+    console.log(`[middleware-bariera] NDA neacceptat — path=${pathname}, redirect spre /acord-confidentialitate`);
+    return Response.redirect(new URL('/acord-confidentialitate', request.url), 307);
+  }
   if (!permis) {
     console.log(`[middleware-bariera] acces blocat — path=${pathname}, redirect spre /acces-temporar`);
     return Response.redirect(new URL('/acces-temporar', request.url), 307);

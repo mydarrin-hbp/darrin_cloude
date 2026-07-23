@@ -57,11 +57,19 @@ function genParola() {
 async function handler(req, res, user) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { email, ore_valabilitate = 24, ruta_url, descriere, parola_custom } = req.body || {};
+  const { email, ore_valabilitate = 24, ruta_url, descriere, parola_custom, nume, prenume } = req.body || {};
 
   if (!email || typeof email !== 'string' || !email.includes('@')) {
     return res.status(400).json({ error: 'Email valid obligatoriu.' });
   }
+  // Nume + prenume identifică real persoana care semnează acordul de
+  // confidențialitate (NDA) — vezi acord-confidentialitate.html. Fără ele,
+  // NDA-ul nu poate identifica cine a acceptat.
+  if (!nume || typeof nume !== 'string' || !nume.trim() || !prenume || typeof prenume !== 'string' || !prenume.trim()) {
+    return res.status(400).json({ error: 'Nume și prenume obligatorii — sunt folosite în acordul de confidențialitate.' });
+  }
+  const numeNorm = nume.trim().slice(0, 100);
+  const prenumeNorm = prenume.trim().slice(0, 100);
   const emailNorm = email.toLowerCase().trim();
   if (!RUTE_PERMISE.includes(ruta_url)) {
     return res.status(400).json({ error: 'Ruta nu este permisă.' });
@@ -148,6 +156,8 @@ async function handler(req, res, user) {
         descriere: descriere ? String(descriere).slice(0, 200) : null,
         creat_de: user.id,
         expira_la,
+        nume: numeNorm,
+        prenume: prenumeNorm,
       });
     if (accesErr) {
       console.error('[creeaza-acces-temporar] insert accese_temporare', accesErr);

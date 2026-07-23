@@ -1754,6 +1754,17 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
           <div>
+            <label style="display:block;font-size:10.5px;color:#8BA3C0;margin-bottom:4px">Prenume *</label>
+            <input id="at-prenume" type="text" placeholder="ex: Mihai" style="width:100%;background:#0F1826;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:13px">
+          </div>
+          <div>
+            <label style="display:block;font-size:10.5px;color:#8BA3C0;margin-bottom:4px">Nume *</label>
+            <input id="at-nume" type="text" placeholder="ex: Popescu" style="width:100%;background:#0F1826;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:13px">
+          </div>
+        </div>
+        <p style="font-size:10.5px;color:#8BA3C0;margin:-4px 0 12px">Numele și prenumele apar în acordul de confidențialitate (NDA) pe care persoana îl acceptă la prima autentificare.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
+          <div>
             <label style="display:block;font-size:10.5px;color:#8BA3C0;margin-bottom:4px">Durată *</label>
             <select id="at-ore" style="width:100%;background:#0F1826;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:13px">
               <option value="1">1 oră</option>
@@ -4065,6 +4076,8 @@ function _statusAcces(a) {
 async function creeazaAcces() {
   const email = document.getElementById('at-email').value.trim();
   const parola_custom = document.getElementById('at-parola').value.trim();
+  const prenume = document.getElementById('at-prenume').value.trim();
+  const nume = document.getElementById('at-nume').value.trim();
   const ore_valabilitate = Number(document.getElementById('at-ore').value);
   const ruta_url = document.getElementById('at-ruta').value;
   const descriere = document.getElementById('at-descriere').value.trim();
@@ -4072,12 +4085,13 @@ async function creeazaAcces() {
   rezEl.innerHTML = '';
 
   if (!email) { rezEl.innerHTML = '<div style="color:#E57373;font-size:12.5px">Emailul este obligatoriu.</div>'; return; }
+  if (!nume || !prenume) { rezEl.innerHTML = '<div style="color:#E57373;font-size:12.5px">Nume și prenume sunt obligatorii — apar în acordul de confidențialitate.</div>'; return; }
 
   try {
     const headers = await _adminAuthHeader();
     const res = await fetch('/api/admin/creeaza-acces-temporar', {
       method: 'POST', headers,
-      body: JSON.stringify({ email, ore_valabilitate, ruta_url, descriere: descriere || undefined, parola_custom: parola_custom || undefined }),
+      body: JSON.stringify({ email, nume, prenume, ore_valabilitate, ruta_url, descriere: descriere || undefined, parola_custom: parola_custom || undefined }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
@@ -4091,6 +4105,8 @@ async function creeazaAcces() {
     </div>`;
     document.getElementById('at-email').value = '';
     document.getElementById('at-parola').value = '';
+    document.getElementById('at-prenume').value = '';
+    document.getElementById('at-nume').value = '';
     document.getElementById('at-descriere').value = '';
     loadAccese();
   } catch (e) {
