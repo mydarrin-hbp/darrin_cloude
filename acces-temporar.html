@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acces temporar · My Darrin</title>
+<meta name="description" content="Pagină de acces temporar cu email și parolă, generată de administrator.">
+<meta name="robots" content="noindex, nofollow">
+<script>
+  window.__ENV__ = {
+    SUPABASE_URL: 'https://aacojyvujhywanaulvuu.supabase.co',
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhY29qeXZ1amh5d2FuYXVsdnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MjAzMzIsImV4cCI6MjA5ODQ5NjMzMn0.iwZnxctvazOL5OU_wqD7AvAKrVoOqLH_uvj1krK8-vs'
+  };
+</script>
+<style>
+:root { --primary:#003366; --accent:#FF8C00; --teal:#0E9E99; }
+*{box-sizing:border-box}
+body{font-family:'Helvetica World','Helvetica Neue',Arial,system-ui,sans-serif;background:#F4F7F9;color:#2D2D2D;margin:0;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+a{text-decoration:none}
+.card{background:#fff;border-radius:20px;box-shadow:0 20px 60px rgba(0,51,102,.12);padding:32px;border:1px solid #EEF2F7;max-width:420px;width:100%}
+.logo{display:flex;align-items:center;gap:9px;margin-bottom:22px}
+.logo-mark{width:34px;height:34px;background:#FF8C00;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff}
+label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5A6B7D;margin-bottom:6px}
+input[type=email],input[type=password]{width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:11px 14px;font-size:13.5px;font-family:inherit;outline:none}
+.field{margin-bottom:14px}
+button.submit{width:100%;background:#FF8C00;color:#fff;border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+button.submit:disabled{opacity:.6;cursor:default}
+#msg{font-size:12.5px;margin-top:12px;text-align:center}
+#msg.err{color:#C0392B}
+#msg.ok{color:#065455}
+.note{font-size:11.5px;color:#8C9BAD;margin-top:18px;text-align:center;line-height:1.5}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <a href="/" class="logo">
+    <div class="logo-mark">D</div>
+    <span style="font-weight:800;font-size:15px;color:#1A2332">My Darrin</span>
+  </a>
+
+  <h1 style="font-size:20px;font-weight:800;margin:0 0 6px;color:#1A2332">Acces temporar</h1>
+  <p style="font-size:13px;color:#5A6B7D;margin:0 0 20px">Introdu emailul și parola temporară primite de la administrator.</p>
+
+  <form id="acces-form" onsubmit="return submitAccesTemporar(event)">
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="acces-email" required autocomplete="username"/>
+    </div>
+    <div class="field">
+      <label>Parolă temporară</label>
+      <input type="password" id="acces-parola" required autocomplete="current-password"/>
+    </div>
+    <button type="submit" id="acces-submit-btn" class="submit">Accesează</button>
+    <div id="msg"></div>
+  </form>
+
+  <p class="note">Accesul e valabil doar pentru durata configurată de administrator și poate fi revocat oricând. Nu distribui aceste credențiale altcuiva.</p>
+</div>
+
+<script type="module" src="lib/supabaseClient.js"></script>
+<script>
+function asteaptaSupabaseClient() {
+  return new Promise((resolve) => {
+    if (window.supabaseClient) return resolve(window.supabaseClient);
+    const iv = setInterval(() => {
+      if (window.supabaseClient) { clearInterval(iv); resolve(window.supabaseClient); }
+    }, 50);
+  });
+}
+
+async function submitAccesTemporar(e) {
+  e.preventDefault();
+  const email = document.getElementById('acces-email').value.trim();
+  const parola = document.getElementById('acces-parola').value;
+  const msgEl = document.getElementById('msg');
+  const btn = document.getElementById('acces-submit-btn');
+  msgEl.className = '';
+  msgEl.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Se verifică...';
+
+  try {
+    // Pasul 1: confirmă că există un acces temporar activ, neexpirat, pentru
+    // acest email — endpoint public, nu verifică parola (asta o face doar
+    // Supabase Auth, la pasul 2).
+    const verifRes = await fetch('/api/public/verifica-acces-temporar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const verifData = await verifRes.json();
+    if (!verifRes.ok) throw new Error(verifData.error || 'Acces invalid.');
+
+    // Pasul 2: autentificare reală Supabase — parola e verificată aici,
+    // niciodată de endpointul de mai sus.
+    const sb = await asteaptaSupabaseClient();
+    const { error: loginErr } = await sb.auth.signInWithPassword({ email, password: parola });
+    if (loginErr) throw new Error('Email sau parolă incorectă.');
+
+    msgEl.className = 'ok';
+    msgEl.textContent = '✓ Autentificat. Te redirecționăm...';
+    setTimeout(() => { window.location.href = verifData.ruta_url; }, 600);
+  } catch (err) {
+    msgEl.className = 'err';
+    msgEl.textContent = err.message || 'Nu am putut verifica accesul.';
+    btn.disabled = false;
+    btn.textContent = 'Accesează';
+  }
+  return false;
+}
+</script>
+</body>
+</html>

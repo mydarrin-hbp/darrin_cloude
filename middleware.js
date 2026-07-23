@@ -78,6 +78,9 @@ export const config = {
     '/asigurator',
     // FIX (Faza 5, 2026-07-22): pagina publică de confirmare livrare/prestare.
     '/confirmare-livrare',
+    // Acces temporar cu parolă unică per email (2026-07-23) — pagină publică
+    // de login, gestionată din mydarrin-superadmin.html.
+    '/acces-temporar',
   ],
 };
 
@@ -90,6 +93,7 @@ const PAGINA_STATICA = {
   '/curier-cartier': '/cum-devii-curier-de-cartier.html',
   '/asigurator': '/ghidul-asiguratorului.html',
   '/confirmare-livrare': '/confirmare-livrare.html',
+  '/acces-temporar': '/acces-temporar.html',
 };
 
 // Normalizează "inchirieri" (segment din URL, plural, cerut de business) la

@@ -567,6 +567,10 @@ window.supabaseClient = _sc;
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
       Newsletter
     </a>
+    <a class="sa-nav-item" onclick="showPanel('acces-temporar')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      Acces Temporar
+    </a>
     <a class="sa-nav-item" href="mydarrin-backoffice-serviciu.html">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
       Backoffice Servicii
@@ -1725,6 +1729,65 @@ window.supabaseClient = _sc;
       <div id="newsletter-list" style="color:#8BA3C0;font-size:13px">Se încarcă...</div>
     </div>
 
+    <!-- ══ ACCES TEMPORAR — parolă unică per email, gestionată de admin (2026-07-23) ══
+         Acces cu credențiale Supabase reale, valabil doar pe durata configurată,
+         scopat la o singură rută whitelist-uită, revocabil instant. -->
+    <div id="panel-acces-temporar" style="display:none;padding:24px">
+      <div style="background:#131B27;border:1px solid #2D3F55;border-radius:14px;padding:18px 20px;margin-bottom:18px">
+        <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:12px">Generează acces nou</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
+          <div>
+            <label style="display:block;font-size:10.5px;color:#8BA3C0;margin-bottom:4px">Email tester *</label>
+            <input id="at-email" type="email" placeholder="tester@exemplu.com" style="width:100%;background:#0F1826;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:13px">
+          </div>
+          <div>
+            <label style="display:block;font-size:10.5px;color:#8BA3C0;margin-bottom:4px">Parolă (opțional — auto-generată dacă e goală)</label>
+            <input id="at-parola" type="text" placeholder="las gol pentru generare automată" style="width:100%;background:#0F1826;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:13px">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
+          <div>
+            <label style="display:block;font-size:10.5px;color:#8BA3C0;margin-bottom:4px">Durată *</label>
+            <select id="at-ore" style="width:100%;background:#0F1826;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:13px">
+              <option value="1">1 oră</option>
+              <option value="2">2 ore</option>
+              <option value="8">8 ore</option>
+              <option value="24" selected>24 ore</option>
+              <option value="48">48 ore</option>
+              <option value="168">7 zile</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block;font-size:10.5px;color:#8BA3C0;margin-bottom:4px">Rută accesibilă *</label>
+            <select id="at-ruta" style="width:100%;background:#0F1826;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:13px">
+              <option value="/mydarrin-v3.html">Homepage</option>
+              <option value="/mydarrin-catalog.html">Catalog</option>
+              <option value="/mydarrin-investitori.html">Investitori</option>
+              <option value="/mydarrin-serviciu.html">Pagină serviciu</option>
+              <option value="/mydarrin-produs.html">Pagină produs</option>
+              <option value="/mydarrin-marketplace.html">Marketplace</option>
+              <option value="/mydarrin-checkout.html">Checkout</option>
+              <option value="/mydarrin-dashboard-client.html">Dashboard Client</option>
+              <option value="/mydarrin-dashboard-partener.html">Dashboard Partener</option>
+              <option value="/mydarrin-dashboard-furnizor.html">Dashboard Furnizor</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="display:block;font-size:10.5px;color:#8BA3C0;margin-bottom:4px">Descriere (intern, opțional)</label>
+          <input id="at-descriere" type="text" placeholder="ex: Review Mihai, Demo investitor BG" style="width:100%;background:#0F1826;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:13px">
+        </div>
+        <button onclick="creeazaAcces()" class="btn-p" style="font-size:13px;padding:10px 18px">+ Creează acces</button>
+        <div id="at-rezultat" style="margin-top:14px"></div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <span style="font-size:14px;font-weight:700;color:#fff">Accese existente</span>
+        <button onclick="loadAccese()" class="btn-p" style="font-size:12px;padding:8px 14px;margin-left:auto">↻ Reîncarcă</button>
+      </div>
+      <div id="acces-list" style="color:#8BA3C0;font-size:13px">Se încarcă...</div>
+    </div>
+
     <div id="panel-comenzi" style="display:none;text-align:center;padding:60px 20px">
       <div style="font-size:48px;margin-bottom:16px">📦</div>
       <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:8px">Comenzi Globale — 247 active</div>
@@ -2154,7 +2217,7 @@ window.supabaseClient = _sc;
 
 <script>
 // ── NAVIGATION ──
-const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding','accountancy','investitori','contact','prospecti','newsletter'];
+const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding','accountancy','investitori','contact','prospecti','newsletter','acces-temporar'];
 const TITLES = {
   dashboard:'Dashboard Global',tari:'Țări & Zone',utilizatori:'Utilizatori & Actori',
   rbac:'Permisiuni RBAC',platforme:'Platforme & Integrări',escrow:'Escrow Global',
@@ -2162,7 +2225,7 @@ const TITLES = {
   comenzi:'Comenzi Globale',audit:'Audit Log',config:'Configurare Sistem',
   branding:'Branding & Design Platformă',accountancy:'Accountancy',
   investitori:'Administrare Investitori',contact:'Mesaje Contact',prospecti:'Prospecți Parteneri',
-  newsletter:'Newsletter & Abonați'
+  newsletter:'Newsletter & Abonați','acces-temporar':'Acces Temporar'
 };
 
 function showPanel(id){
@@ -3956,6 +4019,121 @@ async function setStatusAbonat(id, status) {
     const res = await fetch('/api/admin/newsletter', { method: 'POST', headers, body: JSON.stringify({ id, status }) });
     if (!res.ok) throw new Error((await res.json()).error);
     loadNewsletter();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+</script>
+
+<!-- ══ ACCES TEMPORAR — parolă unică per email, gestionată de admin (2026-07-23) ══ -->
+<script>
+const _origShowPanelAccesTemporar = typeof showPanel === 'function' ? showPanel : null;
+function showPanel(id) {
+  if (_origShowPanelAccesTemporar) _origShowPanelAccesTemporar(id);
+  if (id === 'acces-temporar') loadAccese();
+}
+
+function _statusAcces(a) {
+  if (!a.activ) return { label: '🔴 Revocat', color: '#E57373' };
+  if (new Date(a.expira_la) < new Date()) return { label: '⚪ Expirat', color: '#8BA3C0' };
+  return { label: '🟢 Activ', color: '#4CBE83' };
+}
+
+async function creeazaAcces() {
+  const email = document.getElementById('at-email').value.trim();
+  const parola_custom = document.getElementById('at-parola').value.trim();
+  const ore_valabilitate = Number(document.getElementById('at-ore').value);
+  const ruta_url = document.getElementById('at-ruta').value;
+  const descriere = document.getElementById('at-descriere').value.trim();
+  const rezEl = document.getElementById('at-rezultat');
+  rezEl.innerHTML = '';
+
+  if (!email) { rezEl.innerHTML = '<div style="color:#E57373;font-size:12.5px">Emailul este obligatoriu.</div>'; return; }
+
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/creeaza-acces-temporar', {
+      method: 'POST', headers,
+      body: JSON.stringify({ email, ore_valabilitate, ruta_url, descriere: descriere || undefined, parola_custom: parola_custom || undefined }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+
+    rezEl.innerHTML = `<div style="background:#0F1826;border:1px solid #2D6A4F;border-radius:10px;padding:14px 16px">
+      <div style="font-size:12.5px;color:#8BA3C0;margin-bottom:6px">✅ Acces creat — transmite testerului:</div>
+      <div style="font-size:13px;color:#fff"><b>Link:</b> <code>${escapeHTML(data.link_acces)}</code></div>
+      <div style="font-size:13px;color:#fff"><b>Email:</b> <code>${escapeHTML(data.email)}</code></div>
+      <div style="font-size:13px;color:#fff"><b>Parolă:</b> <code>${escapeHTML(data.parola)}</code></div>
+      <div style="font-size:11.5px;color:#8BA3C0;margin-top:6px">Expiră: ${new Date(data.expira_la).toLocaleString('ro-RO')}</div>
+    </div>`;
+    document.getElementById('at-email').value = '';
+    document.getElementById('at-parola').value = '';
+    document.getElementById('at-descriere').value = '';
+    loadAccese();
+  } catch (e) {
+    rezEl.innerHTML = `<div style="color:#E57373;font-size:12.5px">Eroare: ${escapeHTML(e.message)}</div>`;
+  }
+}
+
+async function loadAccese() {
+  const el = document.getElementById('acces-list');
+  if (!el) return;
+  el.textContent = 'Se încarcă...';
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/listeaza-acces-temporar', { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+
+    if (!data.accese.length) { el.innerHTML = '<div style="padding:20px;text-align:center">Niciun acces creat încă.</div>'; return; }
+
+    el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12.5px">
+      <thead><tr style="text-align:left;color:#4A6080;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em">
+        <th style="padding:8px 10px">Email</th><th style="padding:8px 10px">Descriere</th>
+        <th style="padding:8px 10px">Rută</th><th style="padding:8px 10px">Expiră</th>
+        <th style="padding:8px 10px">Autentificări</th><th style="padding:8px 10px">Status</th><th style="padding:8px 10px">Acțiuni</th>
+      </tr></thead>
+      <tbody>${data.accese.map(a => {
+        const st = _statusAcces(a);
+        return `
+        <tr style="border-top:1px solid #2D3F55">
+          <td style="padding:8px 10px;color:#fff;font-weight:600">${escapeHTML(a.email)}</td>
+          <td style="padding:8px 10px;color:#8BA3C0">${escapeHTML(a.descriere || '—')}</td>
+          <td style="padding:8px 10px;color:#8BA3C0">${escapeHTML(a.ruta_url)}</td>
+          <td style="padding:8px 10px;color:#8BA3C0">${new Date(a.expira_la).toLocaleString('ro-RO')}</td>
+          <td style="padding:8px 10px;color:#8BA3C0">${a.nr_autentificari || 0}${a.ultima_autentificare ? ' · ultima: ' + new Date(a.ultima_autentificare).toLocaleString('ro-RO') : ''}</td>
+          <td style="padding:8px 10px;color:${st.color}">${st.label}</td>
+          <td style="padding:8px 10px;white-space:nowrap">
+            ${a.activ ? `
+              <button onclick="reinnoieAcces('${escapeHTML(a.email)}')" style="font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer;margin-right:6px">Reînnoiește</button>
+              <button onclick="revocaAcces('${escapeHTML(a.email)}')" style="font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid rgba(192,57,43,.4);background:transparent;color:#E57373;cursor:pointer">Revocă</button>
+            ` : ''}
+          </td>
+        </tr>
+      `; }).join('')}</tbody>
+    </table>`;
+  } catch (e) {
+    el.innerHTML = `<div style="color:#E57373">Eroare: ${escapeHTML(e.message)}</div>`;
+  }
+}
+
+async function revocaAcces(email) {
+  const motiv = prompt(`Revoci accesul pentru ${email}. Motiv (opțional):`);
+  if (motiv === null) return; // anulat
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/revoca-acces-temporar', { method: 'POST', headers, body: JSON.stringify({ email, motiv: motiv || undefined }) });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadAccese();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+async function reinnoieAcces(email) {
+  const ore = prompt('Prelungește cu câte ore? (1, 2, 8, 24, 48 sau 168 pentru 7 zile)', '24');
+  if (!ore) return;
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/reinnoieste-acces-temporar', { method: 'POST', headers, body: JSON.stringify({ email, ore_suplimentare: Number(ore) }) });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadAccese();
   } catch (e) { alert('Eroare: ' + e.message); }
 }
 </script>
