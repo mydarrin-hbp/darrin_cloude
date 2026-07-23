@@ -39,8 +39,8 @@ button.submit:disabled{opacity:.6;cursor:default}
     <span style="font-weight:800;font-size:15px;color:#1A2332">My Darrin</span>
   </a>
 
-  <h1 style="font-size:20px;font-weight:800;margin:0 0 6px;color:#1A2332">Acces temporar</h1>
-  <p style="font-size:13px;color:#5A6B7D;margin:0 0 20px">Introdu emailul și parola temporară primite de la administrator.</p>
+  <h1 style="font-size:20px;font-weight:800;margin:0 0 6px;color:#1A2332">Acces platformă</h1>
+  <p style="font-size:13px;color:#5A6B7D;margin:0 0 20px">Platforma e în prelansare — intri cu emailul și parola tale (contul de administrator sau accesul temporar primit).</p>
 
   <form id="acces-form" onsubmit="return submitAccesTemporar(event)">
     <div class="field">
@@ -48,14 +48,14 @@ button.submit:disabled{opacity:.6;cursor:default}
       <input type="email" id="acces-email" required autocomplete="username"/>
     </div>
     <div class="field">
-      <label>Parolă temporară</label>
+      <label>Parolă</label>
       <input type="password" id="acces-parola" required autocomplete="current-password"/>
     </div>
     <button type="submit" id="acces-submit-btn" class="submit">Accesează</button>
     <div id="msg"></div>
   </form>
 
-  <p class="note">Accesul e valabil doar pentru durata configurată de administrator și poate fi revocat oricând. Nu distribui aceste credențiale altcuiva.</p>
+  <p class="note">Dacă ai primit un acces temporar, e valabil doar pentru durata configurată de administrator și poate fi revocat oricând. Nu distribui aceste credențiale altcuiva.</p>
 </div>
 
 <script type="module" src="lib/supabaseClient.js"></script>
@@ -81,26 +81,28 @@ async function submitAccesTemporar(e) {
   btn.textContent = 'Se verifică...';
 
   try {
-    // Pasul 1: confirmă că există un acces temporar activ, neexpirat, pentru
-    // acest email — endpoint public, nu verifică parola (asta o face doar
-    // Supabase Auth, la pasul 2).
-    const verifRes = await fetch('/api/public/verifica-acces-temporar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
-    });
-    const verifData = await verifRes.json();
-    if (!verifRes.ok) throw new Error(verifData.error || 'Acces invalid.');
-
-    // Pasul 2: autentificare reală Supabase — parola e verificată aici,
-    // niciodată de endpointul de mai sus.
+    // Pasul 1: autentificare reală Supabase — funcționează pentru ORICE cont
+    // real (admin/superadmin/client/partener) sau pentru un acces temporar
+    // cu parolă generată de admin. Parola e verificată exclusiv aici.
     const sb = await asteaptaSupabaseClient();
-    const { error: loginErr } = await sb.auth.signInWithPassword({ email, password: parola });
+    const { data: loginData, error: loginErr } = await sb.auth.signInWithPassword({ email, password: parola });
     if (loginErr) throw new Error('Email sau parolă incorectă.');
+
+    // Pasul 2: decide destinația — admin/superadmin merg direct în
+    // backoffice; altfel, dacă există un acces temporar activ pentru acest
+    // email, mergem la ruta alocată; altfel, kicked back cu mesaj clar.
+    const destRes = await fetch('/api/public/destinatie-post-login', {
+      headers: { Authorization: `Bearer ${loginData.session.access_token}` },
+    });
+    const destData = await destRes.json();
+    if (!destRes.ok) {
+      await sb.auth.signOut();
+      throw new Error(destData.error || 'Acest cont nu are încă acces alocat pe platformă.');
+    }
 
     msgEl.className = 'ok';
     msgEl.textContent = '✓ Autentificat. Te redirecționăm...';
-    setTimeout(() => { window.location.href = verifData.ruta_url; }, 600);
+    setTimeout(() => { window.location.href = destData.destinatie; }, 600);
   } catch (err) {
     msgEl.className = 'err';
     msgEl.textContent = err.message || 'Nu am putut verifica accesul.';
