@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Acces temporar · My Darrin</title>
-<meta name="description" content="Pagină de acces temporar cu email și parolă, generată de administrator.">
+<title>Acces platformă · My Darrin</title>
+<meta name="description" content="Solicită acces la platforma My Darrin — primești credențialele direct de la echipa noastră.">
 <meta name="robots" content="noindex, nofollow">
 <script>
   window.__ENV__ = {
@@ -13,52 +13,127 @@
   };
 </script>
 <style>
-:root { --primary:#003366; --accent:#FF8C00; --teal:#0E9E99; }
+:root { --primary:#003366; --primary-dark:#001E3C; --accent:#FF8C00; --teal:#0E9E99; }
 *{box-sizing:border-box}
-body{font-family:'Helvetica World','Helvetica Neue',Arial,system-ui,sans-serif;background:#F4F7F9;color:#2D2D2D;margin:0;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+body{
+  font-family:'Helvetica World','Helvetica Neue',Arial,system-ui,sans-serif;
+  background:#F4F7F9;color:#2D2D2D;margin:0;-webkit-font-smoothing:antialiased;
+  min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
+}
 a{text-decoration:none}
-.card{background:#fff;border-radius:20px;box-shadow:0 20px 60px rgba(0,51,102,.12);padding:32px;border:1px solid #EEF2F7;max-width:420px;width:100%}
-.logo{display:flex;align-items:center;gap:9px;margin-bottom:22px}
-.logo-mark{width:34px;height:34px;background:#FF8C00;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff}
+
+.card{
+  background:#fff;border-radius:22px;overflow:hidden;
+  box-shadow:0 24px 70px rgba(0,30,60,.18);
+  max-width:440px;width:100%;
+}
+
+/* ── Hero: invitația lui Darrin ── */
+.hero{
+  background:radial-gradient(120% 140% at 50% -10%, #0B4C7A 0%, var(--primary) 45%, var(--primary-dark) 100%);
+  padding:34px 30px 28px;text-align:center;color:#fff;position:relative;overflow:hidden;
+}
+.hero::before{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(60% 60% at 85% 0%, rgba(255,140,0,.20), transparent 60%);
+  pointer-events:none;
+}
+.hero-mascot{
+  width:104px;height:104px;border-radius:50%;margin:0 auto 16px;
+  background:#fff;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 10px 26px rgba(0,0,0,.28), 0 0 0 5px rgba(255,255,255,.14);
+  position:relative;
+}
+.hero-mascot img{ width:76px;height:76px;object-fit:contain; }
+.hero-badge{
+  position:absolute;bottom:-3px;right:-3px;width:28px;height:28px;border-radius:50%;
+  background:var(--teal);border:3px solid var(--primary);
+  display:flex;align-items:center;justify-content:center;
+}
+.hero-badge svg{ width:13px;height:13px; }
+.hero h1{
+  font-size:20px;font-weight:800;margin:0 0 8px;letter-spacing:-.01em;position:relative;
+}
+.hero p{
+  font-size:13.5px;line-height:1.6;color:rgba(255,255,255,.82);margin:0;
+  max-width:34ch;margin-inline:auto;position:relative;
+}
+.hero p strong{ color:#fff; }
+
+/* ── Formular ── */
+.form-wrap{ padding:28px 30px 26px; }
+.form-eyebrow{
+  font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;
+  color:var(--teal);margin:0 0 14px;
+}
 label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5A6B7D;margin-bottom:6px}
-input[type=email],input[type=password]{width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:11px 14px;font-size:13.5px;font-family:inherit;outline:none}
+input[type=email],input[type=password]{
+  width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:11px 14px;
+  font-size:13.5px;font-family:inherit;outline:none;transition:border-color .15s;
+}
+input[type=email]:focus,input[type=password]:focus{ border-color:var(--primary); }
 .field{margin-bottom:14px}
-button.submit{width:100%;background:#FF8C00;color:#fff;border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+button.submit{
+  width:100%;background:var(--accent);color:#fff;border:none;border-radius:12px;
+  padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;
+  transition:background .15s;
+}
+button.submit:hover:not(:disabled){ background:#E67E00; }
 button.submit:disabled{opacity:.6;cursor:default}
 #msg{font-size:12.5px;margin-top:12px;text-align:center}
 #msg.err{color:#C0392B}
 #msg.ok{color:#065455}
 .note{font-size:11.5px;color:#8C9BAD;margin-top:18px;text-align:center;line-height:1.5}
+.foot-logo{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:20px;opacity:.7}
+.foot-logo .mark{width:20px;height:20px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:10.5px;color:#fff}
+.foot-logo span{font-size:11.5px;font-weight:700;color:#5A6B7D}
 </style>
 </head>
 <body>
 
 <div class="card">
-  <a href="/" class="logo">
-    <div class="logo-mark">D</div>
-    <span style="font-weight:800;font-size:15px;color:#1A2332">My Darrin</span>
-  </a>
-
-  <h1 style="font-size:20px;font-weight:800;margin:0 0 6px;color:#1A2332">Acces platformă</h1>
-  <p style="font-size:13px;color:#5A6B7D;margin:0 0 20px">Platforma e în prelansare — intri cu emailul și parola tale (contul de administrator sau accesul temporar primit).</p>
-
-  <form id="acces-form" onsubmit="return submitAccesTemporar(event)">
-    <div class="field">
-      <label>Email</label>
-      <input type="email" id="acces-email" required autocomplete="username"/>
+  <div class="hero">
+    <div class="hero-mascot">
+      <!-- Placeholder inline (fără cerere de rețea, fără flash de imagine
+           spartă) — branding-loader.js îl înlocuiește aproape instant cu
+           mascota reală, configurată în backoffice (aceeași sursă folosită
+           de restul site-ului pentru img[alt="Darrin AI"]). -->
+      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI3NiIgaGVpZ2h0PSI3NiIgdmlld0JveD0iMCAwIDc2IDc2Ij48cmVjdCB3aWR0aD0iNzYiIGhlaWdodD0iNzYiIHJ4PSIxOCIgZmlsbD0iI0ZGOEMwMCIvPjx0ZXh0IHg9IjM4IiB5PSI1MyIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjM4IiBmb250LXdlaWdodD0iODAwIiBmaWxsPSIjZmZmZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5EPC90ZXh0Pjwvc3ZnPg==" alt="Darrin AI">
+      <span class="hero-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </span>
     </div>
-    <div class="field">
-      <label>Parolă</label>
-      <input type="password" id="acces-parola" required autocomplete="current-password"/>
-    </div>
-    <button type="submit" id="acces-submit-btn" class="submit">Accesează</button>
-    <div id="msg"></div>
-  </form>
+    <h1>Sunt Darrin, Home&nbsp;Best&nbsp;Pal</h1>
+    <p>Te invit să descoperi platforma care <strong>elimină barierele</strong> unei piețe de servicii nestandardizate. Solicită acces și primești toate credențialele direct de la echipa noastră.</p>
+  </div>
 
-  <p class="note">Dacă ai primit un acces temporar, e valabil doar pentru durata configurată de administrator și poate fi revocat oricând. Nu distribui aceste credențiale altcuiva.</p>
+  <div class="form-wrap">
+    <p class="form-eyebrow">Acces platformă</p>
+
+    <form id="acces-form" onsubmit="return submitAccesTemporar(event)">
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="acces-email" required autocomplete="username"/>
+      </div>
+      <div class="field">
+        <label>Parolă</label>
+        <input type="password" id="acces-parola" required autocomplete="current-password"/>
+      </div>
+      <button type="submit" id="acces-submit-btn" class="submit">Accesează</button>
+      <div id="msg"></div>
+    </form>
+
+    <p class="note">Dacă ai primit un acces temporar, e valabil doar pentru durata configurată de administrator și poate fi revocat oricând. Nu distribui aceste credențiale altcuiva.</p>
+
+    <a href="/" class="foot-logo">
+      <span class="mark">D</span>
+      <span>My Darrin · Home Best Pal</span>
+    </a>
+  </div>
 </div>
 
 <script type="module" src="lib/supabaseClient.js"></script>
+<script src="branding-loader.js"></script>
 <script>
 function asteaptaSupabaseClient() {
   return new Promise((resolve) => {
