@@ -96,12 +96,16 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const PROJECT_REF = SUPABASE_URL ? new URL(SUPABASE_URL).hostname.split('.')[0] : null;
 const COOKIE_PREFIX = PROJECT_REF ? `sb-${PROJECT_REF}-auth-token` : null;
 
+// FIX (2026-07-23): răspundea cu un simplu "403 Forbidden" în text brut —
+// o fundătură reală, fără niciun link către login. Un vizitator (chiar
+// superadminul, dintr-o sesiune expirată) care ajungea aici nu avea de unde
+// să știe că /acces-temporar există. Acum redirecționează acolo, exact ca
+// bariera generală (treceBarieraPlatforma) — un singur loc de intrare,
+// peste tot pe site, indiferent de motivul exact al respingerii (logat sub
+// consolă, nu în răspunsul HTTP, ca înainte).
 function respinge(request, motiv) {
   console.error(`[middleware] acces respins (${motiv}) — path=${new URL(request.url).pathname} host=${request.headers.get('host')}`);
-  return new Response('403 Forbidden', {
-    status: 403,
-    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-  });
+  return Response.redirect(new URL('/acces-temporar', request.url), 307);
 }
 
 // lib/supabaseClient.js salvează sesiunea în cookie-uri fragmentate
