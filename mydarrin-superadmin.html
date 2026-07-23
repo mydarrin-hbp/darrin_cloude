@@ -3839,9 +3839,22 @@ async function saveAllConsConfig() {
 }
 
 // Încarcă automat când se deschide panelul
-var _origShowPanel = typeof showPanel === 'function' ? showPanel : null;
-function showPanel(id) {
-  if(_origShowPanel) _origShowPanel(id);
+//
+// FIX (2026-07-23): era `var _origShowPanel = ...; function showPanel(id){...}`
+// — două bug-uri reale, confirmate direct din consola browserului:
+// (1) `var _origShowPanel` redeclara un identificator deja declarat ca
+// `const _origShowPanel` mai sus (panoul Investitori) — SyntaxError direct
+// ("has already been declared"), care oprea execuția întregului bloc.
+// (2) `function showPanel(id){...}` e o DECLARAȚIE — hoisted la începutul
+// acestui bloc de <script>, deci la linia de mai jos (`typeof showPanel...`)
+// `showPanel` se referea deja la EA ÎNSĂȘI (versiunea nou-hoisted din acest
+// bloc), nu la versiunea anterioară — auto-referință care cauza
+// "RangeError: Maximum call stack size exceeded" la fiecare click.
+// Fix: nume unic + reasignare prin expresie (`window.showPanel = function...`),
+// exact tiparul deja corect folosit de panoul Investitori mai sus.
+const _origShowPanelConsultanta = window.showPanel;
+window.showPanel = function(id) {
+  if (_origShowPanelConsultanta) _origShowPanelConsultanta(id);
   if(id === 'consultanta' && !_consConfigLoaded) {
     setTimeout(loadConsConfig, 300);
   }
@@ -3849,7 +3862,7 @@ function showPanel(id) {
   if (id === 'prospecti') loadProspecti();
   if (id === 'newsletter') loadNewsletter();
   if (id === 'audit') loadAuditLog();
-}
+};
 </script>
 
 <!-- ══ MESAJE CONTACT + PROSPECȚI — adăugat 2026-07-12 ══ -->
@@ -4032,11 +4045,15 @@ async function setStatusAbonat(id, status) {
 
 <!-- ══ ACCES TEMPORAR — parolă unică per email, gestionată de admin (2026-07-23) ══ -->
 <script>
-const _origShowPanelAccesTemporar = typeof showPanel === 'function' ? showPanel : null;
-function showPanel(id) {
+// FIX (2026-07-23): `function showPanel(id){...}` era o DECLARAȚIE — hoisted
+// la începutul acestui bloc, deci se auto-referenția în loc să învelească
+// versiunea anterioară (RangeError: Maximum call stack size exceeded).
+// Fix: reasignare prin expresie, ca la panoul Investitori.
+const _origShowPanelAccesTemporar = window.showPanel;
+window.showPanel = function(id) {
   if (_origShowPanelAccesTemporar) _origShowPanelAccesTemporar(id);
   if (id === 'acces-temporar') loadAccese();
-}
+};
 
 function _statusAcces(a) {
   if (!a.activ) return { label: '🔴 Revocat', color: '#E57373' };
@@ -4311,11 +4328,16 @@ async function incarcaCsvIntegrare(id) {
   }
 }
 
-const _origShowPanelIntegrari = typeof showPanel === 'function' ? showPanel : null;
-function showPanel(id) {
+// FIX (2026-07-23): `function showPanel(id){...}` era o DECLARAȚIE — hoisted
+// la începutul acestui bloc, deci se auto-referenția în loc să învelească
+// versiunea anterioară — exact acest bloc a produs recursia infinită
+// observată live (RangeError: Maximum call stack size exceeded, la
+// showPanel din acest fișier). Fix: reasignare prin expresie.
+const _origShowPanelIntegrari = window.showPanel;
+window.showPanel = function(id) {
   if (_origShowPanelIntegrari) _origShowPanelIntegrari(id);
   if (id === 'platforme') loadIntegrari();
-}
+};
 </script>
 
 </body>
