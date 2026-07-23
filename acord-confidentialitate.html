@@ -57,7 +57,46 @@ a{text-decoration:none}
 .who b{ color:#003366; }
 .who .dot{ width:8px;height:8px;border-radius:50%;background:var(--teal);flex-shrink:0; }
 
-.lang-tabs{ display:flex;gap:6px;margin-bottom:14px; }
+/* ── Documentul NDA — colapsat implicit, ca la Termeni și Condiții;
+     se deschide într-un modal doar la cererea utilizatorului. ── */
+.doc-teaser{
+  display:flex;align-items:center;gap:12px;border:1.5px solid #E3EAF0;border-radius:14px;
+  padding:14px 16px;margin-bottom:16px;background:#FBFCFD;
+}
+.doc-teaser .doc-icon{
+  width:34px;height:34px;border-radius:9px;background:#EAF1F7;color:var(--primary);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;
+}
+.doc-teaser .doc-info{ flex:1;min-width:0; }
+.doc-teaser .doc-title{ font-size:12.5px;font-weight:700;color:#1E2D3D; }
+.doc-teaser .doc-sub{ font-size:11px;color:#8C9BAD;margin-top:1px; }
+.doc-open-btn{
+  border:1.5px solid var(--primary);color:var(--primary);background:#fff;border-radius:9px;
+  padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;
+  white-space:nowrap;transition:.15s;
+}
+.doc-open-btn:hover{ background:var(--primary);color:#fff; }
+
+.modal-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,20,40,.55);
+  z-index:100;align-items:center;justify-content:center;padding:20px;
+}
+.modal-overlay.open{ display:flex; }
+.modal-box{
+  background:#fff;border-radius:18px;max-width:600px;width:100%;max-height:85vh;
+  display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.35);
+}
+.modal-head{
+  display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid #E3EAF0;
+}
+.modal-head .modal-title{ font-size:13.5px;font-weight:800;color:#003366;flex:1; }
+.modal-close{
+  border:none;background:#F4F7F9;color:#5A6B7D;width:28px;height:28px;border-radius:8px;
+  font-size:15px;cursor:pointer;line-height:1;
+}
+.modal-close:hover{ background:#E3EAF0; }
+
+.lang-tabs{ display:flex;gap:6px;padding:14px 20px 0; }
 .lang-tab{
   flex:1;text-align:center;padding:9px 10px;border-radius:10px;border:1.5px solid #D5DFE8;
   font-size:12.5px;font-weight:700;color:#5A6B7D;cursor:pointer;background:#fff;transition:.15s;
@@ -65,8 +104,7 @@ a{text-decoration:none}
 .lang-tab.active{ background:var(--primary);border-color:var(--primary);color:#fff; }
 
 .legal-box{
-  border:1.5px solid #E3EAF0;border-radius:14px;padding:18px 18px 6px;
-  max-height:320px;overflow-y:auto;background:#FBFCFD;margin-bottom:16px;
+  padding:16px 20px 4px;overflow-y:auto;flex:1;
 }
 .legal-box h2{ font-size:13.5px;font-weight:800;color:#003366;margin:0 0 10px; }
 .legal-box h3{ font-size:12px;font-weight:700;color:#003366;margin:16px 0 6px; }
@@ -75,6 +113,11 @@ a{text-decoration:none}
 .legal-box strong{ color:#1E2D3D; }
 .lang-block{ display:none; }
 .lang-block.active{ display:block; }
+.modal-foot{ padding:14px 20px;border-top:1px solid #E3EAF0; }
+.modal-foot button{
+  width:100%;background:var(--primary);color:#fff;border:none;border-radius:10px;
+  padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;
+}
 
 .confirm-box{
   display:flex;gap:10px;align-items:flex-start;background:#FFF7EC;border:1px solid #FFE1B3;
@@ -82,6 +125,7 @@ a{text-decoration:none}
 }
 .confirm-box input[type=checkbox]{ margin-top:2px;width:17px;height:17px;flex-shrink:0;accent-color:var(--accent); }
 .confirm-box label{ font-size:12.5px;line-height:1.55;color:#5A4522;cursor:pointer; }
+.confirm-box label a{ color:#003366;font-weight:700;text-decoration:underline;cursor:pointer; }
 
 button.submit{
   width:100%;background:var(--accent);color:#fff;border:none;border-radius:12px;
@@ -110,7 +154,7 @@ button.submit:disabled{opacity:.5;cursor:default}
       <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI3NiIgaGVpZ2h0PSI3NiIgdmlld0JveD0iMCAwIDc2IDc2Ij48cmVjdCB3aWR0aD0iNzYiIGhlaWdodD0iNzYiIHJ4PSIxOCIgZmlsbD0iI0ZGOEMwMCIvPjx0ZXh0IHg9IjM4IiB5PSI1MyIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjM4IiBmb250LXdlaWdodD0iODAwIiBmaWxsPSIjZmZmZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5EPC90ZXh0Pjwvc3ZnPg==" alt="Darrin AI">
     </div>
     <h1>Acord de confidențialitate · NDA</h1>
-    <p>Ultimul pas înainte de acces. Citește și acceptă termenii de mai jos — durează mai puțin de un minut.</p>
+    <p>Ultimul pas înainte de acces. Poți deschide documentul oricând înainte să accepți — durează mai puțin de un minut.</p>
   </div>
 
   <div class="body-wrap">
@@ -127,13 +171,43 @@ button.submit:disabled{opacity:.5;cursor:default}
         <span>Acest acord este pentru <b id="who-name">—</b>, <span id="who-email">—</span></span>
       </div>
 
-      <div class="lang-tabs">
-        <div class="lang-tab active" id="tab-ro" onclick="setLang('ro')">Română</div>
-        <div class="lang-tab" id="tab-en" onclick="setLang('en')">English</div>
+      <div class="doc-teaser">
+        <span class="doc-icon">📄</span>
+        <div class="doc-info">
+          <div class="doc-title">Acord de Confidențialitate (NDA)</div>
+          <div class="doc-sub">RO + EN · Home Best Pal SRL · valabil 5 ani de la acceptare</div>
+        </div>
+        <button type="button" class="doc-open-btn" onclick="deschideDocument()">Deschide documentul</button>
       </div>
 
-      <div class="legal-box">
-        <div class="lang-block active" id="block-ro">
+      <div class="confirm-box">
+        <input type="checkbox" id="nda-check">
+        <label for="nda-check">Am citit și accept termenii <a onclick="deschideDocument()">Acordului de Confidențialitate (NDA)</a>, inclusiv perioada de 5 ani de confidențialitate de la data acceptării. / I have read and accept the terms of the <a onclick="deschideDocument()">Non-Disclosure Agreement</a>, including the 5-year confidentiality term from the date of acceptance.</label>
+      </div>
+
+      <button type="button" id="nda-submit-btn" class="submit" onclick="acceptaNda()" disabled>Accept și continuă</button>
+      <div id="msg"></div>
+    </div>
+
+    <a href="/" class="foot-logo">
+      <span class="mark">D</span>
+      <span>My Darrin · Home Best Pal</span>
+    </a>
+  </div>
+</div>
+
+<div class="modal-overlay" id="nda-modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span class="modal-title">Acord de Confidențialitate (NDA)</span>
+      <button type="button" class="modal-close" onclick="inchideDocument()">✕</button>
+    </div>
+    <div class="lang-tabs">
+      <div class="lang-tab active" id="tab-ro" onclick="setLang('ro')">Română</div>
+      <div class="lang-tab" id="tab-en" onclick="setLang('en')">English</div>
+    </div>
+    <div class="legal-box">
+      <div class="lang-block active" id="block-ro">
           <h2>ACORD DE CONFIDENȚIALITATE (NDA)</h2>
           <p>Încheiat între <strong>Home Best Pal SRL</strong>, cu sediul în Bacău, România, CUI RO46577229, înregistrată la Registrul Comerțului sub nr. J4/1319/2022 („<strong>Compania</strong>"), și <strong id="ro-nume-inline">persoana identificată mai jos</strong> („<strong>Beneficiarul accesului</strong>"), identificat(ă) prin numele, prenumele și adresa de email furnizate Companiei.</p>
           <p>Prin bifarea căsuței de mai jos și accesarea platformei My Darrin (mydarrin.homebestpal.com), ca urmare a invitației primite din partea Companiei, Beneficiarul accesului confirmă că a citit, a înțeles și este de acord cu următorii termeni:</p>
@@ -163,22 +237,11 @@ button.submit:disabled{opacity:.5;cursor:default}
             <li><strong>Governing law.</strong> This Agreement is governed by Romanian law.</li>
           </ol>
           <p>By checking the box, the Access Recipient declares that they have read, understood and accept the terms above, on their own behalf.</p>
-        </div>
       </div>
-
-      <div class="confirm-box">
-        <input type="checkbox" id="nda-check">
-        <label for="nda-check">Am citit și accept termenii Acordului de confidențialitate de mai sus, inclusiv perioada de 5 ani de confidențialitate de la data acceptării. / I have read and accept the terms of the Non-Disclosure Agreement above, including the 5-year confidentiality term from the date of acceptance.</label>
-      </div>
-
-      <button type="button" id="nda-submit-btn" class="submit" onclick="acceptaNda()" disabled>Accept și continuă</button>
-      <div id="msg"></div>
     </div>
-
-    <a href="/" class="foot-logo">
-      <span class="mark">D</span>
-      <span>My Darrin · Home Best Pal</span>
-    </a>
+    <div class="modal-foot">
+      <button type="button" onclick="inchideDocument()">Am citit — închide</button>
+    </div>
   </div>
 </div>
 
@@ -200,6 +263,19 @@ function setLang(lang) {
   document.getElementById('block-ro').classList.toggle('active', lang === 'ro');
   document.getElementById('block-en').classList.toggle('active', lang === 'en');
 }
+
+function deschideDocument() {
+  document.getElementById('nda-modal').classList.add('open');
+}
+function inchideDocument() {
+  document.getElementById('nda-modal').classList.remove('open');
+}
+document.getElementById('nda-modal')?.addEventListener('click', (e) => {
+  if (e.target.id === 'nda-modal') inchideDocument();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') inchideDocument();
+});
 
 function escapeHTML(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
