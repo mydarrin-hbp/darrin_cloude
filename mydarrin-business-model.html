@@ -190,7 +190,10 @@ body{font-family:var(--fb);background:#F4F7F9;color:#2D2D2D;-webkit-font-smoothi
 </script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-const _sbkey = document.querySelector('meta[name="supabase-key"]')?.content || window.__DARRIN_SUPABASE_KEY__ || "";
+// FIX (2026-07-23): __DARRIN_SUPABASE_KEY__ nu e asignată nicăieri în
+// proiect — cheia era mereu goală. window.__ENV__.SUPABASE_ANON_KEY (setat
+// chiar deasupra) e sursa reală.
+const _sbkey = window.__ENV__?.SUPABASE_ANON_KEY || document.querySelector('meta[name="supabase-key"]')?.content || window.__DARRIN_SUPABASE_KEY__ || "";
 const _sc = createClient("https://aacojyvujhywanaulvuu.supabase.co", _sbkey);
 window.supabaseClient = _sc;
 </script>
