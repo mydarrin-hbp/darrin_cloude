@@ -98,12 +98,10 @@ h1,h2,h3 { font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif; }
       SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhY29qeXZ1amh5d2FuYXVsdnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MjAzMzIsImV4cCI6MjA5ODQ5NjMzMn0.iwZnxctvazOL5OU_wqD7AvAKrVoOqLH_uvj1krK8-vs'
     };
   </script>
-  <script type="module">
-  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-  const _sbkey = (window.__ENV__ && window.__ENV__.SUPABASE_ANON_KEY) || '';
-  const _surl  = (window.__ENV__ && window.__ENV__.SUPABASE_URL)      || 'https://aacojyvujhywanaulvuu.supabase.co';
-  if (_sbkey) window.supabaseClient = createClient(_surl, _sbkey);
-  </script>
+  <!-- FIX (2026-07-23): createClient() local, fără opțiuni, folosea storage-ul
+       IMPLICIT (localStorage), izolat per subdomeniu — nu storage-ul comun pe
+       cookie-uri pe care middleware.js (bariera de acces) îl citește. -->
+  <script type="module" src="lib/supabaseClient.js"></script>
 </head>
 <body class="bg-[#F4F7F9]" style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
 

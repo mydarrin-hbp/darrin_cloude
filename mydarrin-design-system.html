@@ -417,15 +417,11 @@ body { font-family:var(--font-body); background:var(--surface-100); color:var(--
     SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhY29qeXZ1amh5d2FuYXVsdnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MjAzMzIsImV4cCI6MjA5ODQ5NjMzMn0.iwZnxctvazOL5OU_wqD7AvAKrVoOqLH_uvj1krK8-vs'
   };
 </script>
-<script type="module">
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-// FIX (2026-07-23): __DARRIN_SUPABASE_KEY__ nu e asignată nicăieri în
-// proiect — cheia era mereu goală. window.__ENV__.SUPABASE_ANON_KEY (setat
-// chiar deasupra) e sursa reală.
-const _sbkey = window.__ENV__?.SUPABASE_ANON_KEY || document.querySelector('meta[name="supabase-key"]')?.content || window.__DARRIN_SUPABASE_KEY__ || "";
-const _sc = createClient("https://aacojyvujhywanaulvuu.supabase.co", _sbkey);
-window.supabaseClient = _sc;
-</script>
+<!-- FIX (2026-07-23, al doilea bug găsit): createClient() fără opțiuni
+     folosește storage-ul IMPLICIT (localStorage), izolat per subdomeniu,
+     NU storage-ul comun pe cookie-uri (chunkedCookieStorage) folosit la
+     login — sesiunea reală era mereu invizibilă aici, indiferent de cheie. -->
+<script type="module" src="lib/supabaseClient.js"></script>
 <script src="account-system.js"></script>
 <div id="auth-gate-overlay" style="position:fixed;inset:0;background:#0F1923;z-index:99999;display:flex;align-items:center;justify-content:center;color:#8BA3C0;font-family:sans-serif;font-size:14px">
   Se verifică accesul...

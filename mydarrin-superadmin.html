@@ -444,20 +444,19 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
     SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhY29qeXZ1amh5d2FuYXVsdnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MjAzMzIsImV4cCI6MjA5ODQ5NjMzMn0.iwZnxctvazOL5OU_wqD7AvAKrVoOqLH_uvj1krK8-vs'
   };
 </script>
-<script type="module">
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-// FIX (2026-07-23): window.__ENV__.SUPABASE_ANON_KEY e mereu setată chiar
-// deasupra, dar acest client citea dintr-o variabilă (__DARRIN_SUPABASE_KEY__)
-// niciodată asignată nicăieri în tot proiectul — cheia era mereu goală,
-// deci acest client Supabase local nu putea NICIODATĂ valida o sesiune
-// (createClient cu apikey="" respinge orice apel către auth.getUser()).
-// Efect practic: enforceSuperadminBarrier() de mai jos concluziona mereu
-// "nelogat" și redirecționa înapoi la homepage, indiferent de sesiunea
-// reală din cookie-uri — bug independent de bariera din middleware.js.
-const _sbkey = window.__ENV__?.SUPABASE_ANON_KEY || document.querySelector('meta[name="supabase-key"]')?.content || window.__DARRIN_SUPABASE_KEY__ || "";
-const _sc = createClient("https://aacojyvujhywanaulvuu.supabase.co", _sbkey);
-window.supabaseClient = _sc;
-</script>
+<!-- FIX (2026-07-23, al doilea bug găsit în această zonă): acest bloc își
+     crea propriul client Supabase, izolat, în DOUĂ moduri greșite —
+     (1) citea cheia dintr-o variabilă (__DARRIN_SUPABASE_KEY__) niciodată
+     asignată nicăieri în proiect (cheia era mereu goală — fixat inițial),
+     ȘI (2) chiar cu cheia reparată, createClient() fără opțiuni folosește
+     storage-ul IMPLICIT (localStorage), NU storage-ul comun pe cookie-uri
+     (chunkedCookieStorage din lib/supabaseClient.js) — iar localStorage e
+     izolat per subdomeniu, deci sesiunea salvată la login pe domeniul
+     principal era invizibilă aici, indiferent de cheia API. Rezultat
+     combinat: enforceSuperadminBarrier() găsea mereu "nelogat" și
+     redirecționa înapoi la homepage. Fix real: folosește exact același
+     client comun (cookie-uri, .mydarrin.homebestpal.com) ca restul site-ului. -->
+<script type="module" src="lib/supabaseClient.js"></script>
 <script src="account-system.js"></script>
 <div id="auth-gate-overlay" style="position:fixed;inset:0;background:#0F1923;z-index:99999;display:flex;align-items:center;justify-content:center;color:#8BA3C0;font-family:sans-serif;font-size:14px">
   Se verifică accesul...

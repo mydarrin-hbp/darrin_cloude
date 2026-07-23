@@ -694,17 +694,14 @@ footer a:hover { color:#FF8C00; }
     SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhY29qeXZ1amh5d2FuYXVsdnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MjAzMzIsImV4cCI6MjA5ODQ5NjMzMn0.iwZnxctvazOL5OU_wqD7AvAKrVoOqLH_uvj1krK8-vs'
   };
 </script>
-<script type="module">
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-// Cheia vine ÎNTOTDEAUNA din window.__ENV__ (injectat în <head> mai sus)
-const _sbkey = (window.__ENV__ && window.__ENV__.SUPABASE_ANON_KEY) || '';
-const _surl  = (window.__ENV__ && window.__ENV__.SUPABASE_URL)      || 'https://aacojyvujhywanaulvuu.supabase.co';
-if (!_sbkey) { console.warn('[Supabase] ANON_KEY lipsă — verifică window.__ENV__'); }
-else {
-  const _sc = createClient(_surl, _sbkey);
-  window.supabaseClient = _sc;
-}
-</script>
+<!-- FIX (2026-07-23): createClient() local, fără opțiuni, folosea storage-ul
+     IMPLICIT (localStorage) — izolat per subdomeniu — NU storage-ul comun pe
+     cookie-uri (.mydarrin.homebestpal.com) pe care middleware.js (bariera de
+     acces) îl citește. Efect real: cine se loghează prin modalul de mai jos
+     (chiar pe homepage) obținea o sesiune complet invizibilă pentru server —
+     bariera îl trata mereu ca anonim, indiferent că tocmai se autentificase
+     cu succes. Fix: același client comun folosit de restul site-ului. -->
+<script type="module" src="lib/supabaseClient.js"></script>
 <script>
 // Fallback pentru account-system.js — dacă nu se încarcă (ex: file://)
 // creăm un stub minim ca pagina să nu se blocheze
