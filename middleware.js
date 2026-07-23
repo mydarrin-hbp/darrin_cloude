@@ -165,11 +165,18 @@ async function verificaRoluri(supabaseAdmin, userId) {
   return roles.includes('admin') || roles.includes('superadmin');
 }
 
+// Marcaj special pentru "acces complet" — vezi api/admin/creeaza-acces-temporar.js.
+// Valabil DOAR în bariera generală (pagini publice) — bariera STRICTĂ de mai
+// jos (PAGINI_STRICTE) nu-l consultă niciodată, deci un acces temporar "*"
+// nu poate ajunge în superadmin/backoffice/deviz-engine sub nicio formă.
+const RUTA_ACCES_COMPLET = '*';
+
 // Bariera generală a platformei — vezi comentariul de sus. `true` doar dacă:
 // (a) e admin/superadmin (bypass necesar de bootstrap), SAU
 // (b) există un rând ACTIV, neexpirat, în accese_temporare pentru emailul
-//     userului curent, cu ruta_url exact egală cu pagina cerută (comparate
-//     fără extensia .html, ca să nu conteze forma cu/fără .html a cererii).
+//     userului curent, cu ruta_url = "*" (acces complet pe tot site-ul
+//     public) sau exact egală cu pagina cerută (comparate fără extensia
+//     .html, ca să nu conteze forma cu/fără .html a cererii).
 async function treceBarieraPlatforma(request, supabaseAdmin, pathname) {
   const user = await obtineUtilizatorAutentificat(request, supabaseAdmin);
   if (!user) return false;
@@ -188,6 +195,8 @@ async function treceBarieraPlatforma(request, supabaseAdmin, pathname) {
     .maybeSingle();
   if (!acces) return false;
   if (new Date(acces.expira_la) < new Date()) return false;
+
+  if (acces.ruta_url === RUTA_ACCES_COMPLET) return true;
 
   const rutaAcces = acces.ruta_url.replace(/\.html$/, '');
   return rutaAcces === rutaCeruta;

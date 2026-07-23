@@ -22,7 +22,15 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 
+// Marcaj special pentru "acces complet" — toate paginile PUBLICE ale
+// site-ului (nu doar una singură). Verificat explicit în middleware.js
+// (treceBarieraPlatforma) — NU ocolește niciodată bariera STRICTĂ separată
+// (PAGINI_STRICTE: superadmin/backoffice/deviz-engine etc.), care rămâne
+// exclusiv admin/superadmin, indiferent de acces temporar.
+const RUTA_ACCES_COMPLET = '*';
+
 const RUTE_PERMISE = [
+  RUTA_ACCES_COMPLET,
   '/mydarrin-v3.html',
   '/mydarrin-catalog.html',
   '/mydarrin-investitori.html',

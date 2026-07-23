@@ -40,7 +40,11 @@ async function handler(req, res, user) {
     .maybeSingle();
 
   if (acces && new Date(acces.expira_la) >= new Date()) {
-    return res.status(200).json({ ok: true, destinatie: acces.ruta_url });
+    // '*' = acces complet pe tot site-ul public (vezi creeaza-acces-temporar.js
+    // și middleware.js) — nu e o rută reală de redirecționat, aterizăm pe
+    // homepage ca punct de start; de-acolo poate naviga oriunde public.
+    const destinatie = acces.ruta_url === '*' ? '/home' : acces.ruta_url;
+    return res.status(200).json({ ok: true, destinatie });
   }
 
   return res.status(403).json({ error: 'Acest cont nu are încă acces alocat pe platformă. Contactează administratorul.' });
