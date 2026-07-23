@@ -1,10 +1,21 @@
 // /api/admin/revoca-acces-temporar.js
 // Revocare instant: (1) marchează accesul inactiv, (2) forțează sign-out pe
-// TOATE sesiunile active ale userului prin Supabase Admin API — efectul e
-// imediat, nu doar la următoarea expirare de token.
+// TOATE sesiunile active ale userului, (3) invalidează parola temporară.
+//
+// FIX (testat live, 2026-07-23): marcarea accesului ca inactiv blochează
+// DOAR poarta proprie (/api/public/verifica-acces-temporar), pe care pagina
+// de login o apelează înainte de signInWithPassword() — dar contul Supabase
+// Auth în sine rămâne neatins, cu aceeași parolă validă. Verificat live:
+// după "revocare", un apel DIRECT către Supabase (ocolind pagina de login,
+// deci și poarta) încă reușea să autentifice cu parola veche — sign-out-ul
+// global invalidează doar sesiunile deja emise, nu împiedică o autentificare
+// NOUĂ. Fără acest fix, revocarea era cosmetică pentru oricine avea deja
+// parola. Acum parola e suprascrisă cu una aleatoare, necunoscută nimănui,
+// simultan cu marcarea accesului ca inactiv.
 //
 // Body: { email, motiv? }
 
+const crypto = require('crypto');
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 
@@ -50,6 +61,12 @@ async function handler(req, res, user) {
   if (acces.user_id) {
     const { error: signOutErr } = await supabaseAdmin.auth.admin.signOut(acces.user_id, 'global');
     if (signOutErr) console.error('[revoca-acces-temporar] sign-out', signOutErr);
+
+    // Invalidează parola — fără asta, contul rămâne autentificabil direct
+    // cu parola veche, ocolind orice verificare din acest tool.
+    const parolaAleatoare = crypto.randomBytes(24).toString('base64url');
+    const { error: pwErr } = await supabaseAdmin.auth.admin.updateUserById(acces.user_id, { password: parolaAleatoare });
+    if (pwErr) console.error('[revoca-acces-temporar] invalidare parolă', pwErr);
   }
 
   return res.status(200).json({
