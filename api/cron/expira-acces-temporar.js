@@ -13,6 +13,12 @@
 // api/admin/revoca-acces-temporar.js) — aici e varianta ei pentru expirare
 // naturală, nu doar pentru revocare explicită de admin.
 //
+// Nu apelăm auth.admin.signOut(user_id) — API-ul cere un JWT, nu un user
+// ID (confirmat din documentația Supabase); nu există nicio metodă de a
+// invalida forțat un access-token deja emis, doar parola (blochează login
+// NOU) și refresh-token-urile viitoare, vezi comentariul din
+// api/admin/revoca-acces-temporar.js.
+//
 // Rulează pe Vercel Cron (vezi vercel.json → crons), protejat cu
 // CRON_SECRET, exact ca api/cron/auto-confirma-comenzi.js.
 
@@ -43,7 +49,6 @@ module.exports = async function handler(req, res) {
   for (const acces of expirate) {
     try {
       if (acces.user_id) {
-        await supabaseAdmin.auth.admin.signOut(acces.user_id, 'global');
         const parolaAleatoare = crypto.randomBytes(24).toString('base64url');
         await supabaseAdmin.auth.admin.updateUserById(acces.user_id, { password: parolaAleatoare });
       }

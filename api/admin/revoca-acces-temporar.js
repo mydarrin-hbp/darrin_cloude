@@ -1,17 +1,29 @@
 // /api/admin/revoca-acces-temporar.js
-// Revocare instant: (1) marchează accesul inactiv, (2) forțează sign-out pe
-// TOATE sesiunile active ale userului, (3) invalidează parola temporară.
+// Revocare instant: (1) marchează accesul inactiv, (2) invalidează parola
+// temporară.
 //
 // FIX (testat live, 2026-07-23): marcarea accesului ca inactiv blochează
 // DOAR poarta proprie (/api/public/verifica-acces-temporar), pe care pagina
 // de login o apelează înainte de signInWithPassword() — dar contul Supabase
 // Auth în sine rămâne neatins, cu aceeași parolă validă. Verificat live:
 // după "revocare", un apel DIRECT către Supabase (ocolind pagina de login,
-// deci și poarta) încă reușea să autentifice cu parola veche — sign-out-ul
-// global invalidează doar sesiunile deja emise, nu împiedică o autentificare
-// NOUĂ. Fără acest fix, revocarea era cosmetică pentru oricine avea deja
-// parola. Acum parola e suprascrisă cu una aleatoare, necunoscută nimănui,
-// simultan cu marcarea accesului ca inactiv.
+// deci și poarta) încă reușea să autentifice cu parola veche. Fără acest
+// fix, revocarea era cosmetică pentru oricine avea deja parola. Acum parola
+// e suprascrisă cu una aleatoare, necunoscută nimănui, simultan cu marcarea
+// accesului ca inactiv.
+//
+// LIMITĂ REALĂ, confirmată din documentația Supabase (nu presupusă): "There
+// is no way to revoke a user's access token jwt until it expires." Nu există
+// nicio metodă de a invalida forțat un access-token DEJA EMIS, aflat deja în
+// browserul testerului — doar parola (blochează orice login NOU) și
+// refresh-token-urile viitoare. Un tester cu o sesiune activă chiar în
+// momentul revocării rămâne autentificat până la expirarea naturală a
+// token-ului (implicit ~1h la Supabase) — acceptabil pentru acces demo/test,
+// dar semnalat explicit, nu ascuns. (Versiunea anterioară a acestui fișier
+// apela auth.admin.signOut(user_id,...) crezând greșit că acceptă un user
+// ID — API-ul cere de fapt un JWT; apelul eșua mereu în producție cu
+// "invalid JWT: token contains an invalid number of segments", fără să
+// oprească fluxul, dar poluând log-urile cu o eroare falsă. Eliminat.)
 //
 // Body: { email, motiv? }
 
@@ -59,11 +71,10 @@ async function handler(req, res, user) {
   }
 
   if (acces.user_id) {
-    const { error: signOutErr } = await supabaseAdmin.auth.admin.signOut(acces.user_id, 'global');
-    if (signOutErr) console.error('[revoca-acces-temporar] sign-out', signOutErr);
-
     // Invalidează parola — fără asta, contul rămâne autentificabil direct
-    // cu parola veche, ocolind orice verificare din acest tool.
+    // cu parola veche, ocolind orice verificare din acest tool. Blochează
+    // orice autentificare NOUĂ; o sesiune deja activă rămâne validă până la
+    // expirarea naturală a token-ului (limită Supabase, vezi comentariul de sus).
     const parolaAleatoare = crypto.randomBytes(24).toString('base64url');
     const { error: pwErr } = await supabaseAdmin.auth.admin.updateUserById(acces.user_id, { password: parolaAleatoare });
     if (pwErr) console.error('[revoca-acces-temporar] invalidare parolă', pwErr);

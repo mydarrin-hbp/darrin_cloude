@@ -85,15 +85,23 @@ export const config = {
 };
 
 // ── Rescrieri publice (fără autentificare) ──
+//
+// TEST (2026-07-23): destinațiile NU mai au extensia .html. Ipoteză: cu
+// `cleanUrls: true` (vercel.json), Vercel tratează un rewrite() către o cale
+// care se termină în `.html` ca pe o cerere ce ar trebui ea însăși
+// "curățată" — de unde rezultatul rămânea 404 (X-Vercel-Error: NOT_FOUND)
+// deși log-urile confirmau destinația corect calculată. cleanUrls
+// presupune deja că `/mydarrin-v3` servește `mydarrin-v3.html` — rewrite()
+// ar trebui să folosească exact acea formă curată, nu calea cu extensie.
 const PAGINA_STATICA = {
-  '/home': '/mydarrin-v3.html',
-  '/cos': '/mydarrin-checkout.html',
-  '/partener': '/mydarrin-devino-partener.html',
-  '/investitor': '/mydarrin-investitori.html',
-  '/curier-cartier': '/cum-devii-curier-de-cartier.html',
-  '/asigurator': '/ghidul-asiguratorului.html',
-  '/confirmare-livrare': '/confirmare-livrare.html',
-  '/acces-temporar': '/acces-temporar.html',
+  '/home': '/mydarrin-v3',
+  '/cos': '/mydarrin-checkout',
+  '/partener': '/mydarrin-devino-partener',
+  '/investitor': '/mydarrin-investitori',
+  '/curier-cartier': '/cum-devii-curier-de-cartier',
+  '/asigurator': '/ghidul-asiguratorului',
+  '/confirmare-livrare': '/confirmare-livrare',
+  '/acces-temporar': '/acces-temporar',
 };
 
 // Normalizează "inchirieri" (segment din URL, plural, cerut de business) la
@@ -107,17 +115,17 @@ function ruteazaPublic(pathname) {
 
   let m = pathname.match(/^\/(servicii|materiale|inchiriere)\/([^/]+)$/);
   if (m) {
-    return { destinatie: '/mydarrin-categorie-servicii.html', query: { type: TIP_CATEGORIE[m[1]], cat: m[2] } };
+    return { destinatie: '/mydarrin-categorie-servicii', query: { type: TIP_CATEGORIE[m[1]], cat: m[2] } };
   }
 
   m = pathname.match(/^\/catalog\/(servicii|materiale|inchirieri)\/([^/]+)$/);
   if (m) {
-    return { destinatie: '/mydarrin-categorie-servicii.html', query: { type: TIP_CATEGORIE[m[1]], cat: m[2] } };
+    return { destinatie: '/mydarrin-categorie-servicii', query: { type: TIP_CATEGORIE[m[1]], cat: m[2] } };
   }
 
   m = pathname.match(/^\/catalog\/([^/]+)\/([^/]+)\/([^/]+)$/);
   if (m) {
-    return { destinatie: '/mydarrin-produs.html', query: { type: m[1], cat: m[2], slug: m[3] } };
+    return { destinatie: '/mydarrin-produs', query: { type: m[1], cat: m[2], slug: m[3] } };
   }
 
   return null;
