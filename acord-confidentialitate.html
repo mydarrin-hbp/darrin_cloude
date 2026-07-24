@@ -113,13 +113,11 @@ a{text-decoration:none}
   padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;
 }
 
-.confirm-box{
-  display:flex;gap:10px;align-items:flex-start;background:#FFF7EC;border:1px solid #FFE1B3;
-  border-radius:12px;padding:14px 16px;margin-bottom:16px;
-}
-.confirm-box input[type=checkbox]{ margin-top:2px;width:17px;height:17px;flex-shrink:0;accent-color:var(--accent); }
-.confirm-box label{ font-size:12.5px;line-height:1.55;color:#5A4522;cursor:pointer; }
-.confirm-box label a{ color:#003366;font-weight:700;text-decoration:underline;cursor:pointer; }
+.consimtaminte{ display:flex;flex-direction:column;gap:6px;margin:14px 0 18px; }
+.consimtaminte .row{ display:flex;align-items:center;gap:7px; }
+.consimtaminte input[type=checkbox]{ width:15px;height:15px;flex-shrink:0;accent-color:var(--accent); }
+.consimtaminte label{ font-size:12px;color:#45566B;cursor:pointer; }
+.consimtaminte label a{ color:#003366;font-weight:700;text-decoration:underline;cursor:pointer; }
 
 button.submit{
   width:100%;background:var(--accent);color:#fff;border:none;border-radius:12px;
@@ -165,14 +163,15 @@ button.submit:disabled{opacity:.5;cursor:default}
         <span>Acest acord este pentru <b id="who-name">—</b>, <span id="who-email">—</span></span>
       </div>
 
-      <div class="doc-links" style="display:flex;gap:8px;margin-bottom:14px">
-        <a href="mydarrin-termeni.html" target="_blank" rel="noopener" class="doc-open-btn" style="flex:1;text-align:center;text-decoration:none">📄 Termeni și Condiții</a>
-        <button type="button" class="doc-open-btn" style="flex:1" onclick="deschideDocument()">📄 Acord de Confidențialitate (NDA)</button>
-      </div>
-
-      <div class="confirm-box">
-        <input type="checkbox" id="nda-check">
-        <label for="nda-check">Am citit și accept <a href="mydarrin-termeni.html" target="_blank" rel="noopener">Termenii și Condițiile</a> și <a onclick="deschideDocument()">Acordul de Confidențialitate (NDA)</a>, inclusiv perioada de 5 ani de confidențialitate de la data acceptării. / I have read and accept the Terms &amp; Conditions and the Non-Disclosure Agreement, including the 5-year confidentiality term from the date of acceptance.</label>
+      <div class="consimtaminte">
+        <div class="row">
+          <input type="checkbox" id="check-tc">
+          <label for="check-tc">Accept <a href="mydarrin-termeni.html" target="_blank" rel="noopener">T&amp;C</a> (Termeni și Condiții)</label>
+        </div>
+        <div class="row">
+          <input type="checkbox" id="check-nda">
+          <label for="check-nda">Accept <a onclick="deschideDocument()">NDA</a> (Acordul de Confidențialitate)</label>
+        </div>
       </div>
 
       <button type="button" id="nda-submit-btn" class="submit" onclick="acceptaNda()" disabled>Accept și continuă</button>
@@ -300,9 +299,13 @@ async function init() {
   }
 }
 
-document.getElementById('nda-check')?.addEventListener('change', (e) => {
-  document.getElementById('nda-submit-btn').disabled = !e.target.checked;
-});
+function actualizeazaSubmit() {
+  const tc = document.getElementById('check-tc').checked;
+  const nda = document.getElementById('check-nda').checked;
+  document.getElementById('nda-submit-btn').disabled = !(tc && nda);
+}
+document.getElementById('check-tc')?.addEventListener('change', actualizeazaSubmit);
+document.getElementById('check-nda')?.addEventListener('change', actualizeazaSubmit);
 
 async function acceptaNda() {
   const btn = document.getElementById('nda-submit-btn');

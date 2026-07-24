@@ -88,22 +88,12 @@ button.submit:disabled{opacity:.5;cursor:default}
 .foot-logo .mark{width:20px;height:20px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:10.5px;color:#fff}
 .foot-logo span{font-size:11.5px;font-weight:700;color:#5A6B7D}
 
-/* ── Documente (T&C + NDA) — link-uri colapsate, deschise la cerere
-     într-un modal; bifarea rămâne obligatorie înainte de acces. ── */
-.doc-links{ display:flex;gap:8px;margin:16px 0 12px; }
-.doc-link-btn{
-  flex:1;display:flex;align-items:center;gap:7px;border:1.5px solid #D5DFE8;border-radius:10px;
-  padding:9px 10px;font-size:11.5px;font-weight:700;color:#45566B;background:#FBFCFD;
-  cursor:pointer;font-family:inherit;text-decoration:none;transition:.15s;
-}
-.doc-link-btn:hover{ border-color:var(--primary);color:var(--primary); }
-.confirm-box{
-  display:flex;gap:9px;align-items:flex-start;background:#FFF7EC;border:1px solid #FFE1B3;
-  border-radius:11px;padding:12px 14px;margin-bottom:14px;
-}
-.confirm-box input[type=checkbox]{ margin-top:2px;width:16px;height:16px;flex-shrink:0;accent-color:var(--accent); }
-.confirm-box label{ font-size:11.5px;line-height:1.5;color:#5A4522;cursor:pointer; }
-.confirm-box label a{ color:#003366;font-weight:700;text-decoration:underline;cursor:pointer; }
+/* ── Bife T&C + NDA — compacte, fără descriere/butoane suplimentare. ── */
+.consimtaminte{ display:flex;flex-direction:column;gap:6px;margin:14px 0 4px; }
+.consimtaminte .row{ display:flex;align-items:center;gap:7px; }
+.consimtaminte input[type=checkbox]{ width:15px;height:15px;flex-shrink:0;accent-color:var(--accent); }
+.consimtaminte label{ font-size:12px;color:#45566B;cursor:pointer; }
+.consimtaminte label a{ color:#003366;font-weight:700;text-decoration:underline;cursor:pointer; }
 
 .modal-overlay{
   display:none;position:fixed;inset:0;background:rgba(0,20,40,.55);
@@ -167,14 +157,15 @@ button.submit:disabled{opacity:.5;cursor:default}
         <input type="password" id="acces-parola" required autocomplete="current-password"/>
       </div>
 
-      <div class="doc-links">
-        <a href="mydarrin-termeni.html" target="_blank" rel="noopener" class="doc-link-btn">📄 Termeni și Condiții</a>
-        <button type="button" class="doc-link-btn" onclick="deschideDocument()">📄 Acord de Confidențialitate (NDA)</button>
-      </div>
-
-      <div class="confirm-box">
-        <input type="checkbox" id="accept-check">
-        <label for="accept-check">Am citit și accept <a href="mydarrin-termeni.html" target="_blank" rel="noopener">Termenii și Condițiile</a> și <a onclick="deschideDocument()">Acordul de Confidențialitate (NDA)</a>, inclusiv perioada de 5 ani de confidențialitate de la data acceptării. / I have read and accept the Terms &amp; Conditions and the Non-Disclosure Agreement, including the 5-year confidentiality term from the date of acceptance.</label>
+      <div class="consimtaminte">
+        <div class="row">
+          <input type="checkbox" id="check-tc">
+          <label for="check-tc">Accept <a href="mydarrin-termeni.html" target="_blank" rel="noopener">T&amp;C</a> (Termeni și Condiții)</label>
+        </div>
+        <div class="row">
+          <input type="checkbox" id="check-nda">
+          <label for="check-nda">Accept <a onclick="deschideDocument()">NDA</a> (Acordul de Confidențialitate)</label>
+        </div>
       </div>
 
       <button type="submit" id="acces-submit-btn" class="submit" disabled>Accesează</button>
@@ -255,15 +246,19 @@ document.getElementById('nda-modal')?.addEventListener('click', (e) => {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') inchideDocument();
 });
-document.getElementById('accept-check')?.addEventListener('change', (e) => {
-  document.getElementById('acces-submit-btn').disabled = !e.target.checked;
-});
+function actualizeazaSubmit() {
+  const tc = document.getElementById('check-tc').checked;
+  const nda = document.getElementById('check-nda').checked;
+  document.getElementById('acces-submit-btn').disabled = !(tc && nda);
+}
+document.getElementById('check-tc')?.addEventListener('change', actualizeazaSubmit);
+document.getElementById('check-nda')?.addEventListener('change', actualizeazaSubmit);
 
 async function submitAccesTemporar(e) {
   e.preventDefault();
   const email = document.getElementById('acces-email').value.trim();
   const parola = document.getElementById('acces-parola').value;
-  const accepted = document.getElementById('accept-check').checked;
+  const accepted = document.getElementById('check-tc').checked && document.getElementById('check-nda').checked;
   const msgEl = document.getElementById('msg');
   const btn = document.getElementById('acces-submit-btn');
   msgEl.className = '';
@@ -271,7 +266,7 @@ async function submitAccesTemporar(e) {
 
   if (!accepted) {
     msgEl.className = 'err';
-    msgEl.textContent = 'Trebuie să bifezi acceptarea Termenilor și Condițiilor și a Acordului de Confidențialitate.';
+    msgEl.textContent = 'Trebuie să bifezi acceptarea T&C și NDA.';
     return false;
   }
 
