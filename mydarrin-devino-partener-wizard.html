@@ -83,7 +83,7 @@ input:focus,select:focus{border-color:var(--primary)}
   <!-- PASUL 2 — Date companie + cont bancar -->
   <div class="card" id="step-2" style="display:none">
     <h2>Pasul 2 · Date companie și cont bancar</h2>
-    <p class="sub">IBAN-ul este criptat înainte de a fi salvat — nu e stocat niciodată în clar.</p>
+    <p class="sub">Contul bancar e opțional acum — îl poți completa aici sau mai târziu, din profil. Devine obligatoriu abia înainte de a putea prelua prima comandă. IBAN-ul e criptat înainte de a fi salvat — nu e stocat niciodată în clar.</p>
     <div class="grid2">
       <div>
         <label>Tip partener</label>
@@ -361,6 +361,9 @@ async function cautaCUI() {
 async function salveazaPasul2() {
   const msgEl = document.getElementById('s2-msg');
   msgEl.className = 'msg'; msgEl.textContent = '';
+  const iban = document.getElementById('s2-iban').value.trim();
+  const banca = document.getElementById('s2-banca').value.trim();
+  const nume_titular = document.getElementById('s2-titular').value.trim();
   const body = {
     partner_type: document.getElementById('s2-tip').value,
     nume_firma: document.getElementById('s2-firma').value.trim(),
@@ -368,16 +371,21 @@ async function salveazaPasul2() {
     tip_entitate_legala: document.getElementById('s2-entitate').value,
     is_treasury_account: document.getElementById('s2-trezorerie').checked,
     regiune_cod: document.getElementById('s2-regiune').value || null,
-    cont_bancar: {
-      nume_titular: document.getElementById('s2-titular').value.trim(),
-      banca: document.getElementById('s2-banca').value.trim(),
-      iban: document.getElementById('s2-iban').value.trim(),
-      moneda: document.getElementById('s2-moneda').value,
-    },
   };
-  if (!body.nume_firma || !body.cui || !body.cont_bancar.iban || !body.cont_bancar.banca || !body.cont_bancar.nume_titular) {
-    msgEl.className = 'msg err'; msgEl.textContent = 'Completează toate câmpurile obligatorii.';
+  if (!body.nume_firma || !body.cui) {
+    msgEl.className = 'msg err'; msgEl.textContent = 'Completează denumirea firmei și CUI.';
     return;
+  }
+  // Contul bancar e opțional la acest pas — devine obligatoriu abia înainte
+  // de preluarea primei comenzi. Îl trimitem doar dacă utilizatorul a
+  // început să-l completeze; altfel API-ul (wizard-companie.js) sare peste
+  // validare când `cont_bancar` lipsește din body.
+  if (iban || banca || nume_titular) {
+    if (!iban || !banca || !nume_titular) {
+      msgEl.className = 'msg err'; msgEl.textContent = 'Pentru contul bancar completează toate cele 3 câmpuri (titular, IBAN, bancă) — sau lasă-le goale pe toate.';
+      return;
+    }
+    body.cont_bancar = { nume_titular, banca, iban, moneda: document.getElementById('s2-moneda').value };
   }
   try {
     const token = await accessToken();

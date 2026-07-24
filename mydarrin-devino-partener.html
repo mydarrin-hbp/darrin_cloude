@@ -1271,14 +1271,15 @@ function submitNewsletter() {
         <!-- Cont bancar + Zona -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
           <div>
-            <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">IBAN cont încasări * <span id="iban-status" style="font-size:9px"></span></label>
+            <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">IBAN cont încasări <span style="text-transform:none;font-weight:500;color:#8C9BAD">(opțional acum)</span> <span id="iban-status" style="font-size:9px"></span></label>
             <input type="text" id="f-iban" placeholder="RO49RZBR0000060001234567" maxlength="34" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:12px;font-family:monospace;outline:none;transition:border-color .18s;letter-spacing:.04em" onfocus="this.style.borderColor='#003366'" oninput="validateIBAN(this)" onblur="this.style.borderColor='#D5DFE8'"/>
           </div>
           <div>
-            <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Banca *</label>
+            <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Banca <span style="text-transform:none;font-weight:500;color:#8C9BAD">(opțional acum)</span></label>
             <input type="text" id="f-banca" placeholder="Banca Transilvania" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
           </div>
         </div>
+        <p style="font-size:11px;color:#8C9BAD;margin:-4px 0 10px">Poți crea contul și fără datele bancare — le vei completa obligatoriu înainte de a putea prelua prima comandă.</p>
         <div style="margin-bottom:10px">
           <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Regiune / Județ</label>
           <select id="f-judet" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;background:#fff;cursor:pointer" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'">
@@ -2143,16 +2144,12 @@ async function submitRegistration() {
     if (btn) { btn.textContent='Trimite cererea'; btn.disabled=false; }
     return;
   }
-  // FIX (T7, 2026-07-20): IBAN/banca erau colectate și aruncate — acum sunt
-  // trimise efectiv (vezi api/public/partner-register.js), deci trebuie
-  // validate aici înainte de trimitere, nu doar cosmetic la input.
-  if (!iban || !banca) {
-    showToast('Completează IBAN și banca.');
-    if (btn) { btn.textContent='Trimite cererea'; btn.disabled=false; }
-    return;
-  }
-  if (!ibanValid(iban)) {
-    showToast('IBAN invalid — verifică și încearcă din nou.');
+  // IBAN/banca sunt OPȚIONALE la creare cont (api/public/partner-register.js
+  // le acceptă lipsă) — datele bancare devin obligatorii abia înainte de
+  // prima preluare de comandă, nu la înregistrare. Validăm doar formatul,
+  // și doar dacă utilizatorul chiar a completat un IBAN.
+  if (iban && !ibanValid(iban)) {
+    showToast('IBAN invalid — verifică și încearcă din nou, sau lasă câmpul gol.');
     if (btn) { btn.textContent='Trimite cererea'; btn.disabled=false; }
     return;
   }
