@@ -79,7 +79,7 @@ button.submit{
   transition:background .15s;
 }
 button.submit:hover:not(:disabled){ background:#E67E00; }
-button.submit:disabled{opacity:.6;cursor:default}
+button.submit:disabled{opacity:.5;cursor:default}
 #msg{font-size:12.5px;margin-top:12px;text-align:center}
 #msg.err{color:#C0392B}
 #msg.ok{color:#065455}
@@ -87,6 +87,53 @@ button.submit:disabled{opacity:.6;cursor:default}
 .foot-logo{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:20px;opacity:.7}
 .foot-logo .mark{width:20px;height:20px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:10.5px;color:#fff}
 .foot-logo span{font-size:11.5px;font-weight:700;color:#5A6B7D}
+
+/* ── Documente (T&C + NDA) — link-uri colapsate, deschise la cerere
+     într-un modal; bifarea rămâne obligatorie înainte de acces. ── */
+.doc-links{ display:flex;gap:8px;margin:16px 0 12px; }
+.doc-link-btn{
+  flex:1;display:flex;align-items:center;gap:7px;border:1.5px solid #D5DFE8;border-radius:10px;
+  padding:9px 10px;font-size:11.5px;font-weight:700;color:#45566B;background:#FBFCFD;
+  cursor:pointer;font-family:inherit;text-decoration:none;transition:.15s;
+}
+.doc-link-btn:hover{ border-color:var(--primary);color:var(--primary); }
+.confirm-box{
+  display:flex;gap:9px;align-items:flex-start;background:#FFF7EC;border:1px solid #FFE1B3;
+  border-radius:11px;padding:12px 14px;margin-bottom:14px;
+}
+.confirm-box input[type=checkbox]{ margin-top:2px;width:16px;height:16px;flex-shrink:0;accent-color:var(--accent); }
+.confirm-box label{ font-size:11.5px;line-height:1.5;color:#5A4522;cursor:pointer; }
+.confirm-box label a{ color:#003366;font-weight:700;text-decoration:underline;cursor:pointer; }
+
+.modal-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,20,40,.55);
+  z-index:100;align-items:center;justify-content:center;padding:20px;
+}
+.modal-overlay.open{ display:flex; }
+.modal-box{
+  background:#fff;border-radius:18px;max-width:760px;width:100%;max-height:85vh;
+  display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.35);
+}
+.modal-head{
+  display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid #E3EAF0;
+}
+.modal-head .modal-title{ font-size:13.5px;font-weight:800;color:#003366;flex:1; }
+.modal-close{
+  border:none;background:#F4F7F9;color:#5A6B7D;width:28px;height:28px;border-radius:8px;
+  font-size:15px;cursor:pointer;line-height:1;
+}
+.modal-close:hover{ background:#E3EAF0; }
+.legal-cols{ display:grid;grid-template-columns:1fr 1fr;overflow-y:auto;flex:1; }
+.legal-col{ padding:16px 20px;font-size:11.5px;line-height:1.6;color:#3C4A5A; }
+.legal-col + .legal-col{ border-left:1px solid #E3EAF0; }
+.legal-col h2{ font-size:12.5px;font-weight:800;color:#003366;margin:0 0 8px; }
+.legal-col p, .legal-col li{ margin:0 0 8px; }
+.legal-col ol{ padding-left:16px;margin:0 0 6px; }
+.legal-col strong{ color:#1E2D3D; }
+@media (max-width:640px){
+  .legal-cols{ grid-template-columns:1fr; }
+  .legal-col + .legal-col{ border-left:none;border-top:1px solid #E3EAF0; }
+}
 </style>
 </head>
 <body>
@@ -119,7 +166,18 @@ button.submit:disabled{opacity:.6;cursor:default}
         <label>Parolă</label>
         <input type="password" id="acces-parola" required autocomplete="current-password"/>
       </div>
-      <button type="submit" id="acces-submit-btn" class="submit">Accesează</button>
+
+      <div class="doc-links">
+        <a href="mydarrin-termeni.html" target="_blank" rel="noopener" class="doc-link-btn">📄 Termeni și Condiții</a>
+        <button type="button" class="doc-link-btn" onclick="deschideDocument()">📄 Acord de Confidențialitate (NDA)</button>
+      </div>
+
+      <div class="confirm-box">
+        <input type="checkbox" id="accept-check">
+        <label for="accept-check">Am citit și accept <a href="mydarrin-termeni.html" target="_blank" rel="noopener">Termenii și Condițiile</a> și <a onclick="deschideDocument()">Acordul de Confidențialitate (NDA)</a>, inclusiv perioada de 5 ani de confidențialitate de la data acceptării. / I have read and accept the Terms &amp; Conditions and the Non-Disclosure Agreement, including the 5-year confidentiality term from the date of acceptance.</label>
+      </div>
+
+      <button type="submit" id="acces-submit-btn" class="submit" disabled>Accesează</button>
       <div id="msg"></div>
     </form>
 
@@ -129,6 +187,47 @@ button.submit:disabled{opacity:.6;cursor:default}
       <span class="mark">D</span>
       <span>My Darrin · Home Best Pal</span>
     </a>
+  </div>
+</div>
+
+<div class="modal-overlay" id="nda-modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span class="modal-title">Acord de Confidențialitate (NDA)</span>
+      <button type="button" class="modal-close" onclick="inchideDocument()">✕</button>
+    </div>
+    <div class="legal-cols">
+      <div class="legal-col">
+        <h2>ACORD DE CONFIDENȚIALITATE (NDA)</h2>
+        <p>Încheiat între <strong>Home Best Pal SRL</strong>, cu sediul în Bacău, România, CUI RO46577229, înregistrată la Registrul Comerțului sub nr. J4/1319/2022 („<strong>Compania</strong>"), și persoana identificată prin numele, prenumele și adresa de email furnizate Companiei („<strong>Beneficiarul accesului</strong>").</p>
+        <p>Prin bifarea căsuței de mai jos și accesarea platformei My Darrin (mydarrin.homebestpal.com), ca urmare a invitației primite din partea Companiei, Beneficiarul accesului confirmă că a citit, a înțeles și este de acord cu următorii termeni:</p>
+        <ol>
+          <li><strong>Obiect.</strong> Beneficiarul primește acces temporar și limitat la platforma My Darrin, aflată în stadiu de pre-lansare/testare, exclusiv în scopul de a evalua, testa sau consulta funcționalitățile acesteia, la invitația Companiei.</li>
+          <li><strong>Informații confidențiale.</strong> Reprezintă orice informație la care Beneficiarul are acces prin intermediul platformei sau în legătură cu aceasta: funcționalități, arhitectură tehnică, date, modele de preț, strategie de afaceri, documente interne, capturi de ecran, materiale vizuale, precum și existența și conținutul prezentului acord.</li>
+          <li><strong>Obligațiile Beneficiarului.</strong> Beneficiarul se obligă: (a) să nu divulge, publice, distribuie sau facă disponibile informațiile confidențiale niciunei terțe părți, sub nicio formă — text, captură de ecran, înregistrare video, verbal etc.; (b) să nu folosească informațiile confidențiale în niciun alt scop decât cel pentru care a primit acces; (c) să nu distribuie credențialele proprii de acces (email/parolă) niciunei alte persoane; (d) să informeze imediat Compania în cazul unei divulgări accidentale sau al oricărei breșe de securitate de care ia cunoștință.</li>
+          <li><strong>Durata obligației de confidențialitate.</strong> Obligațiile prevăzute în prezentul acord rămân în vigoare timp de <strong>5 (cinci) ani</strong> de la data acceptării acestuia (data bifării căsuței), indiferent de durata efectivă a accesului acordat pe platformă sau de încetarea ori revocarea acestuia.</li>
+          <li><strong>Excepții.</strong> Nu constituie încălcare a prezentului acord divulgarea de informații care: sunt deja publice, fără vina Beneficiarului; erau deja cunoscute în mod legal de Beneficiar înainte de acordarea accesului; sunt solicitate de o autoritate publică sau instanță competentă, în limitele prevăzute de lege.</li>
+          <li><strong>Consecințe.</strong> Nerespectarea prezentului acord poate atrage răspunderea civilă a Beneficiarului pentru prejudiciile cauzate Companiei, potrivit legislației române în vigoare, precum și revocarea imediată a accesului acordat.</li>
+          <li><strong>Legea aplicabilă.</strong> Prezentul acord este guvernat de legea română.</li>
+        </ol>
+        <p>Prin bifare, Beneficiarul declară că a citit, a înțeles și acceptă termenii de mai sus, în nume propriu.</p>
+      </div>
+      <div class="legal-col">
+        <h2>NON-DISCLOSURE AGREEMENT (NDA)</h2>
+        <p>Entered into between <strong>Home Best Pal SRL</strong>, headquartered in Bacău, Romania, Tax Identification No. RO46577229, registered with the Trade Registry under No. J4/1319/2022 („<strong>the Company</strong>"), and the individual identified by the name, surname and email address provided to the Company ("<strong>the Access Recipient</strong>").</p>
+        <p>By checking the box below and accessing the My Darrin platform (mydarrin.homebestpal.com) further to an invitation received from the Company, the Access Recipient confirms having read, understood and agreed to the following terms:</p>
+        <ol>
+          <li><strong>Purpose.</strong> The Access Recipient is granted temporary, limited access to the My Darrin platform, currently in pre-launch/testing stage, solely for the purpose of evaluating, testing or reviewing its features, at the Company's invitation.</li>
+          <li><strong>Confidential Information.</strong> Means any information the Access Recipient obtains through or in connection with the platform: features, technical architecture, data, pricing models, business strategy, internal documents, screenshots, visual materials, as well as the existence and content of this Agreement.</li>
+          <li><strong>Recipient's obligations.</strong> The Access Recipient agrees to: (a) not disclose, publish, distribute or make available the Confidential Information to any third party, in any form — text, screenshot, video recording, verbal, or otherwise; (b) not use the Confidential Information for any purpose other than the one for which access was granted; (c) not share their own access credentials (email/password) with any other person; (d) promptly notify the Company of any accidental disclosure or security breach they become aware of.</li>
+          <li><strong>Term of confidentiality.</strong> The confidentiality obligations under this Agreement remain in force for <strong>five (5) years</strong> from the date of acceptance (the date the box is checked), regardless of the actual duration of the access granted on the platform or its subsequent termination or revocation.</li>
+          <li><strong>Exceptions.</strong> It shall not be a breach of this Agreement to disclose information that: is already public through no fault of the Access Recipient; was already lawfully known to the Access Recipient prior to being granted access; is requested by a competent public authority or court, within the limits provided by law.</li>
+          <li><strong>Consequences.</strong> Failure to comply with this Agreement may give rise to the Access Recipient's civil liability for damages caused to the Company, under applicable Romanian law, as well as immediate revocation of the access granted.</li>
+          <li><strong>Governing law.</strong> This Agreement is governed by Romanian law.</li>
+        </ol>
+        <p>By checking the box, the Access Recipient declares that they have read, understood and accept the terms above, on their own behalf.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -144,14 +243,38 @@ function asteaptaSupabaseClient() {
   });
 }
 
+function deschideDocument() {
+  document.getElementById('nda-modal').classList.add('open');
+}
+function inchideDocument() {
+  document.getElementById('nda-modal').classList.remove('open');
+}
+document.getElementById('nda-modal')?.addEventListener('click', (e) => {
+  if (e.target.id === 'nda-modal') inchideDocument();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') inchideDocument();
+});
+document.getElementById('accept-check')?.addEventListener('change', (e) => {
+  document.getElementById('acces-submit-btn').disabled = !e.target.checked;
+});
+
 async function submitAccesTemporar(e) {
   e.preventDefault();
   const email = document.getElementById('acces-email').value.trim();
   const parola = document.getElementById('acces-parola').value;
+  const accepted = document.getElementById('accept-check').checked;
   const msgEl = document.getElementById('msg');
   const btn = document.getElementById('acces-submit-btn');
   msgEl.className = '';
   msgEl.textContent = '';
+
+  if (!accepted) {
+    msgEl.className = 'err';
+    msgEl.textContent = 'Trebuie să bifezi acceptarea Termenilor și Condițiilor și a Acordului de Confidențialitate.';
+    return false;
+  }
+
   btn.disabled = true;
   btn.textContent = 'Se verifică...';
 
@@ -163,21 +286,40 @@ async function submitAccesTemporar(e) {
     const { data: loginData, error: loginErr } = await sb.auth.signInWithPassword({ email, password: parola });
     if (loginErr) throw new Error('Email sau parolă incorectă.');
 
-    // Pasul 2: decide destinația — admin/superadmin merg direct în
-    // backoffice; altfel, dacă există un acces temporar activ pentru acest
-    // email, mergem la ruta alocată; altfel, kicked back cu mesaj clar.
-    const destRes = await fetch('/api/public/destinatie-post-login', {
-      headers: { Authorization: `Bearer ${loginData.session.access_token}` },
+    const authHeaders = { Authorization: `Bearer ${loginData.session.access_token}` };
+
+    // Pasul 2: dacă acest cont are un acces temporar (nu un cont real
+    // admin/superadmin), bifa din acest formular ÎNSEAMNĂ acceptarea NDA —
+    // o înregistrăm direct aici, fără o pagină separată. Pentru conturile
+    // reale (fără rând în accese_temporare) endpointul răspunde 404 — nu e
+    // o eroare, pur și simplu NDA nu li se aplică.
+    let destinatie = null;
+    const ndaRes = await fetch('/api/public/accepta-nda', {
+      method: 'POST',
+      headers: { ...authHeaders, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accept: true }),
     });
-    const destData = await destRes.json();
-    if (!destRes.ok) {
-      await sb.auth.signOut();
-      throw new Error(destData.error || 'Acest cont nu are încă acces alocat pe platformă.');
+    if (ndaRes.ok) {
+      const ndaData = await ndaRes.json();
+      destinatie = ndaData.destinatie;
+    } else if (ndaRes.status !== 404) {
+      const ndaErr = await ndaRes.json().catch(() => ({}));
+      throw new Error(ndaErr.error || 'Nu am putut înregistra acceptarea acordului.');
+    }
+
+    if (!destinatie) {
+      const destRes = await fetch('/api/public/destinatie-post-login', { headers: authHeaders });
+      const destData = await destRes.json();
+      if (!destRes.ok) {
+        await sb.auth.signOut();
+        throw new Error(destData.error || 'Acest cont nu are încă acces alocat pe platformă.');
+      }
+      destinatie = destData.destinatie;
     }
 
     msgEl.className = 'ok';
     msgEl.textContent = '✓ Autentificat. Te redirecționăm...';
-    setTimeout(() => { window.location.href = destData.destinatie; }, 600);
+    setTimeout(() => { window.location.href = destinatie; }, 600);
   } catch (err) {
     msgEl.className = 'err';
     msgEl.textContent = err.message || 'Nu am putut verifica accesul.';

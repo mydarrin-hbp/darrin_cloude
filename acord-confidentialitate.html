@@ -83,7 +83,7 @@ a{text-decoration:none}
 }
 .modal-overlay.open{ display:flex; }
 .modal-box{
-  background:#fff;border-radius:18px;max-width:600px;width:100%;max-height:85vh;
+  background:#fff;border-radius:18px;max-width:760px;width:100%;max-height:85vh;
   display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.35);
 }
 .modal-head{
@@ -96,23 +96,17 @@ a{text-decoration:none}
 }
 .modal-close:hover{ background:#E3EAF0; }
 
-.lang-tabs{ display:flex;gap:6px;padding:14px 20px 0; }
-.lang-tab{
-  flex:1;text-align:center;padding:9px 10px;border-radius:10px;border:1.5px solid #D5DFE8;
-  font-size:12.5px;font-weight:700;color:#5A6B7D;cursor:pointer;background:#fff;transition:.15s;
+.legal-cols{ display:grid;grid-template-columns:1fr 1fr;overflow-y:auto;flex:1; }
+.legal-col{ padding:16px 20px;font-size:11.5px;line-height:1.6;color:#3C4A5A; }
+.legal-col + .legal-col{ border-left:1px solid #E3EAF0; }
+.legal-col h2{ font-size:12.5px;font-weight:800;color:#003366;margin:0 0 8px; }
+.legal-col p, .legal-col li{ margin:0 0 8px; }
+.legal-col ol{ padding-left:16px;margin:0 0 6px; }
+.legal-col strong{ color:#1E2D3D; }
+@media (max-width:640px){
+  .legal-cols{ grid-template-columns:1fr; }
+  .legal-col + .legal-col{ border-left:none;border-top:1px solid #E3EAF0; }
 }
-.lang-tab.active{ background:var(--primary);border-color:var(--primary);color:#fff; }
-
-.legal-box{
-  padding:16px 20px 4px;overflow-y:auto;flex:1;
-}
-.legal-box h2{ font-size:13.5px;font-weight:800;color:#003366;margin:0 0 10px; }
-.legal-box h3{ font-size:12px;font-weight:700;color:#003366;margin:16px 0 6px; }
-.legal-box p, .legal-box li{ font-size:12.5px;line-height:1.65;color:#3C4A5A;margin:0 0 10px; }
-.legal-box ol{ padding-left:18px;margin:0 0 6px; }
-.legal-box strong{ color:#1E2D3D; }
-.lang-block{ display:none; }
-.lang-block.active{ display:block; }
 .modal-foot{ padding:14px 20px;border-top:1px solid #E3EAF0; }
 .modal-foot button{
   width:100%;background:var(--primary);color:#fff;border:none;border-radius:10px;
@@ -171,18 +165,14 @@ button.submit:disabled{opacity:.5;cursor:default}
         <span>Acest acord este pentru <b id="who-name">—</b>, <span id="who-email">—</span></span>
       </div>
 
-      <div class="doc-teaser">
-        <span class="doc-icon">📄</span>
-        <div class="doc-info">
-          <div class="doc-title">Acord de Confidențialitate (NDA)</div>
-          <div class="doc-sub">RO + EN · Home Best Pal SRL · valabil 5 ani de la acceptare</div>
-        </div>
-        <button type="button" class="doc-open-btn" onclick="deschideDocument()">Deschide documentul</button>
+      <div class="doc-links" style="display:flex;gap:8px;margin-bottom:14px">
+        <a href="mydarrin-termeni.html" target="_blank" rel="noopener" class="doc-open-btn" style="flex:1;text-align:center;text-decoration:none">📄 Termeni și Condiții</a>
+        <button type="button" class="doc-open-btn" style="flex:1" onclick="deschideDocument()">📄 Acord de Confidențialitate (NDA)</button>
       </div>
 
       <div class="confirm-box">
         <input type="checkbox" id="nda-check">
-        <label for="nda-check">Am citit și accept termenii <a onclick="deschideDocument()">Acordului de Confidențialitate (NDA)</a>, inclusiv perioada de 5 ani de confidențialitate de la data acceptării. / I have read and accept the terms of the <a onclick="deschideDocument()">Non-Disclosure Agreement</a>, including the 5-year confidentiality term from the date of acceptance.</label>
+        <label for="nda-check">Am citit și accept <a href="mydarrin-termeni.html" target="_blank" rel="noopener">Termenii și Condițiile</a> și <a onclick="deschideDocument()">Acordul de Confidențialitate (NDA)</a>, inclusiv perioada de 5 ani de confidențialitate de la data acceptării. / I have read and accept the Terms &amp; Conditions and the Non-Disclosure Agreement, including the 5-year confidentiality term from the date of acceptance.</label>
       </div>
 
       <button type="button" id="nda-submit-btn" class="submit" onclick="acceptaNda()" disabled>Accept și continuă</button>
@@ -202,12 +192,8 @@ button.submit:disabled{opacity:.5;cursor:default}
       <span class="modal-title">Acord de Confidențialitate (NDA)</span>
       <button type="button" class="modal-close" onclick="inchideDocument()">✕</button>
     </div>
-    <div class="lang-tabs">
-      <div class="lang-tab active" id="tab-ro" onclick="setLang('ro')">Română</div>
-      <div class="lang-tab" id="tab-en" onclick="setLang('en')">English</div>
-    </div>
-    <div class="legal-box">
-      <div class="lang-block active" id="block-ro">
+    <div class="legal-cols">
+      <div class="legal-col">
           <h2>ACORD DE CONFIDENȚIALITATE (NDA)</h2>
           <p>Încheiat între <strong>Home Best Pal SRL</strong>, cu sediul în Bacău, România, CUI RO46577229, înregistrată la Registrul Comerțului sub nr. J4/1319/2022 („<strong>Compania</strong>"), și <strong id="ro-nume-inline">persoana identificată mai jos</strong> („<strong>Beneficiarul accesului</strong>"), identificat(ă) prin numele, prenumele și adresa de email furnizate Companiei.</p>
           <p>Prin bifarea căsuței de mai jos și accesarea platformei My Darrin (mydarrin.homebestpal.com), ca urmare a invitației primite din partea Companiei, Beneficiarul accesului confirmă că a citit, a înțeles și este de acord cu următorii termeni:</p>
@@ -223,7 +209,7 @@ button.submit:disabled{opacity:.5;cursor:default}
           <p>Prin bifare, Beneficiarul declară că a citit, a înțeles și acceptă termenii de mai sus, în nume propriu.</p>
         </div>
 
-        <div class="lang-block" id="block-en">
+        <div class="legal-col">
           <h2>NON-DISCLOSURE AGREEMENT (NDA)</h2>
           <p>Entered into between <strong>Home Best Pal SRL</strong>, headquartered in Bacău, Romania, Tax Identification No. RO46577229, registered with the Trade Registry under No. J4/1319/2022 („<strong>the Company</strong>"), and the <strong>individual identified below</strong> ("<strong>the Access Recipient</strong>"), identified by the name, surname and email address provided to the Company.</p>
           <p>By checking the box below and accessing the My Darrin platform (mydarrin.homebestpal.com) further to an invitation received from the Company, the Access Recipient confirms having read, understood and agreed to the following terms:</p>
@@ -255,13 +241,6 @@ function asteaptaSupabaseClient() {
       if (window.supabaseClient) { clearInterval(iv); resolve(window.supabaseClient); }
     }, 50);
   });
-}
-
-function setLang(lang) {
-  document.getElementById('tab-ro').classList.toggle('active', lang === 'ro');
-  document.getElementById('tab-en').classList.toggle('active', lang === 'en');
-  document.getElementById('block-ro').classList.toggle('active', lang === 'ro');
-  document.getElementById('block-en').classList.toggle('active', lang === 'en');
 }
 
 function deschideDocument() {
