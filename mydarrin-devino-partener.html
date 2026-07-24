@@ -191,7 +191,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 .hero-tab-panel { animation: heroTabFade .3s ease; }
 @keyframes heroTabFade { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 </style>
-<section class="hero-bg min-h-[580px] flex items-center" style="overflow:hidden;max-width:100vw;box-sizing:border-box">
+<section id="hero-bg-section" class="hero-bg min-h-[580px] flex items-center" style="overflow:hidden;max-width:100vw;box-sizing:border-box">
   <div class="hero-grid"></div>
   <div style="width:100%">
   <div id="hero-intro-content" style="position:relative;z-index:10;max-width:1200px;margin:0 auto;padding:0 20px;padding-top:80px;padding-bottom:80px;width:100%;box-sizing:border-box">
@@ -514,6 +514,12 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 
     var introContent = document.getElementById('hero-intro-content');
     if (introContent) introContent.style.display = (tab === 'intro') ? '' : 'none';
+
+    // Fără conținutul introductiv (grid + robot card), secțiunea hero nu mai
+    // are nevoie de min-height 580px — altfel bara de tab-uri rămâne izolată
+    // într-un gol albastru uriaș, centrat vertical în spațiul gol rămas.
+    var heroSection = document.getElementById('hero-bg-section');
+    if (heroSection) heroSection.style.minHeight = (tab === 'intro') ? '' : '0';
 
     if (tab !== 'intro') {
       setTimeout(function() {
