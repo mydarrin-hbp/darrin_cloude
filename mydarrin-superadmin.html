@@ -2814,10 +2814,12 @@ window.addEventListener('scroll',()=>{});
     const saveBtn = slotEl.querySelector('.branding-btn-save');
     if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Se salvează...'; }
 
-    fetch('/api/branding/upload', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slot: slot, dataUrl: pending.dataUrl }),
+    _adminAuthHeader().then(function (headers) {
+      return fetch('/api/branding/upload', {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({ slot: slot, dataUrl: pending.dataUrl }),
+      });
     })
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
       .then(function (res) {
@@ -2841,10 +2843,12 @@ window.addEventListener('scroll',()=>{});
     const slot = slotEl.dataset.slot;
     if (!confirm('Revii la logo-ul implicit pentru acest slot? Schimbarea se propagă imediat pe toate paginile.')) return;
 
-    fetch('/api/branding/upload', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slot: slot, dataUrl: null }),
+    _adminAuthHeader().then(function (headers) {
+      return fetch('/api/branding/upload', {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({ slot: slot, dataUrl: null }),
+      });
     })
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
       .then(function (res) {
