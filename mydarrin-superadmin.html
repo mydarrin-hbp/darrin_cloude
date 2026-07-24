@@ -529,6 +529,10 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
       Parteneri Globali
     </a>
+    <a class="sa-nav-item" onclick="showPanel('catalog')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      Catalog Servicii/Materiale
+    </a>
     <a class="sa-nav-item" onclick="showPanel('comenzi')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
       Comenzi Globale
@@ -1807,6 +1811,44 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       <div id="acces-list" style="color:#8BA3C0;font-size:13px">Se încarcă...</div>
     </div>
 
+    <!-- ════ CATALOG PUBLIC — servicii/materiale/închirieri ════
+         Scrie direct în catalog_servicii/catalog_niveluri/catalog_preturi,
+         aceleași tabele citite public de mydarrin-catalog.html — un
+         serviciu/material/echipament creat aici apare live pe site,
+         fără nicio modificare de cod. -->
+    <div id="panel-catalog" style="display:none;padding:24px">
+      <div style="background:#131B27;border:1px solid #2D3F55;border-radius:14px;padding:18px 20px;margin-bottom:18px">
+        <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:6px">Catalog public — servicii, materiale, închirieri</div>
+        <p style="font-size:12px;color:#8BA3C0;margin:0 0 14px">Scrie direct în tabelele citite de pagina publică de catalog — orice creezi sau modifici aici apare live pe <code style="background:#0F1826;padding:1px 5px;border-radius:4px">/mydarrin-catalog</code>.</p>
+        <div style="display:flex;gap:8px;margin-bottom:16px" id="cat-tabs">
+          <button class="cat-tab-btn active" data-cat="servicii" onclick="switchCatalogTab('servicii')" style="background:#FF8C00;color:#fff;border:none;padding:8px 16px;border-radius:9px;font-size:12.5px;font-weight:700;cursor:pointer">Servicii</button>
+          <button class="cat-tab-btn" data-cat="materiale" onclick="switchCatalogTab('materiale')" style="background:#0F1826;color:#8BA3C0;border:1px solid #2D3F55;padding:8px 16px;border-radius:9px;font-size:12.5px;font-weight:700;cursor:pointer">Materiale</button>
+          <button class="cat-tab-btn" data-cat="inchirieri" onclick="switchCatalogTab('inchirieri')" style="background:#0F1826;color:#8BA3C0;border:1px solid #2D3F55;padding:8px 16px;border-radius:9px;font-size:12.5px;font-weight:700;cursor:pointer">Închirieri</button>
+        </div>
+
+        <div style="background:#0F1826;border-radius:12px;padding:16px;margin-bottom:16px">
+          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:10px">+ Adaugă intrare nouă</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <input id="cat-id-serviciu" placeholder="ID unic (ex: inst-tv-01)" style="background:#131B27;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:13px">
+            <input id="cat-titlu" placeholder="Titlu afișat public" style="background:#131B27;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:13px">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+            <input id="cat-domeniu" placeholder="Domeniu (ex: Electrice)" style="background:#131B27;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:13px">
+            <input id="cat-nace" placeholder="Cod NACE (opțional)" style="background:#131B27;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:13px">
+            <input id="cat-esco" placeholder="Cod ESCO (opțional)" style="background:#131B27;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:13px">
+          </div>
+          <button onclick="creeazaServiciuCatalog()" class="btn-p" style="font-size:12.5px;padding:9px 16px">+ Creează</button>
+          <div id="cat-creare-msg" style="margin-top:8px;font-size:12px"></div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <span style="font-size:14px;font-weight:700;color:#fff">Intrări existente</span>
+          <button onclick="loadCatalogList()" class="btn-p" style="font-size:12px;padding:8px 14px;margin-left:auto">↻ Reîncarcă</button>
+        </div>
+        <div id="cat-lista" style="color:#8BA3C0;font-size:13px">Se încarcă...</div>
+      </div>
+    </div>
+
     <div id="panel-comenzi" style="display:none;text-align:center;padding:60px 20px">
       <div style="font-size:48px;margin-bottom:16px">📦</div>
       <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:8px">Comenzi Globale — 247 active</div>
@@ -2241,7 +2283,7 @@ const TITLES = {
   dashboard:'Dashboard Global',tari:'Țări & Zone',utilizatori:'Utilizatori & Actori',
   rbac:'Permisiuni RBAC',platforme:'Platforme & Integrări',escrow:'Escrow Global',
   comisioane:'Comisioane & Tarifare',vmc:'VMC per Țară',parteneri:'Parteneri Globali',
-  comenzi:'Comenzi Globale',audit:'Audit Log',config:'Configurare Sistem',
+  comenzi:'Comenzi Globale',catalog:'Catalog Servicii/Materiale/Închirieri',audit:'Audit Log',config:'Configurare Sistem',
   branding:'Branding & Design Platformă',accountancy:'Accountancy',
   investitori:'Administrare Investitori',contact:'Mesaje Contact',prospecti:'Prospecți Parteneri',
   newsletter:'Newsletter & Abonați','acces-temporar':'Acces Temporar'
@@ -4179,6 +4221,192 @@ async function reinnoieAcces(email) {
     const res = await fetch('/api/admin/reinnoieste-acces-temporar', { method: 'POST', headers, body: JSON.stringify({ email, ore_suplimentare: Number(ore) }) });
     if (!res.ok) throw new Error((await res.json()).error);
     loadAccese();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+</script>
+
+<!-- ══ CATALOG PUBLIC (servicii/materiale/închirieri) — CRUD real, 2026-07-24 ══ -->
+<script>
+const _origShowPanelCatalog = window.showPanel;
+window.showPanel = function(id) {
+  if (_origShowPanelCatalog) _origShowPanelCatalog(id);
+  if (id === 'catalog') loadCatalogList();
+};
+
+let CATALOG_TAB_ACTIV = 'servicii';
+
+function switchCatalogTab(cat) {
+  CATALOG_TAB_ACTIV = cat;
+  document.querySelectorAll('.cat-tab-btn').forEach((btn) => {
+    const activ = btn.dataset.cat === cat;
+    btn.style.background = activ ? '#FF8C00' : '#0F1826';
+    btn.style.color = activ ? '#fff' : '#8BA3C0';
+  });
+  loadCatalogList();
+}
+
+async function creeazaServiciuCatalog() {
+  const id_serviciu = document.getElementById('cat-id-serviciu').value.trim();
+  const titlu = document.getElementById('cat-titlu').value.trim();
+  const domeniu = document.getElementById('cat-domeniu').value.trim();
+  const nace = document.getElementById('cat-nace').value.trim();
+  const cod_esco = document.getElementById('cat-esco').value.trim();
+  const msgEl = document.getElementById('cat-creare-msg');
+  msgEl.innerHTML = '';
+
+  if (!id_serviciu || !titlu || !domeniu) {
+    msgEl.innerHTML = '<span style="color:#E57373">ID, titlu și domeniu sunt obligatorii.</span>';
+    return;
+  }
+
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/catalog', {
+      method: 'POST', headers,
+      body: JSON.stringify({
+        action: 'creeaza_serviciu', id_serviciu, categorie: CATALOG_TAB_ACTIV, titlu, domeniu,
+        nace: nace || undefined, cod_esco: cod_esco || undefined,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+
+    msgEl.innerHTML = '<span style="color:#4CBE83">✓ Creat — apare deja pe catalogul public.</span>';
+    ['cat-id-serviciu', 'cat-titlu', 'cat-domeniu', 'cat-nace', 'cat-esco'].forEach((id) => { document.getElementById(id).value = ''; });
+    loadCatalogList();
+  } catch (e) {
+    msgEl.innerHTML = `<span style="color:#E57373">Eroare: ${escapeHTML(e.message)}</span>`;
+  }
+}
+
+async function loadCatalogList() {
+  const el = document.getElementById('cat-lista');
+  if (!el) return;
+  el.textContent = 'Se încarcă...';
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/catalog', { method: 'POST', headers, body: JSON.stringify({ action: 'list', categorie: CATALOG_TAB_ACTIV }) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+
+    if (!data.servicii.length) { el.innerHTML = '<div style="padding:20px;text-align:center">Nicio intrare încă în această categorie.</div>'; return; }
+
+    el.innerHTML = data.servicii.map((s) => `
+      <div style="background:#0F1826;border:1px solid #2D3F55;border-radius:12px;padding:14px 16px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div style="flex:1;min-width:180px">
+            <div style="font-size:13px;font-weight:700;color:#fff">${escapeHTML(s.titlu)}</div>
+            <div style="font-size:11px;color:#8BA3C0">${escapeHTML(s.domeniu)} · <code>${escapeHTML(s.id_serviciu)}</code>${s.nace ? ' · NACE ' + escapeHTML(s.nace) : ''}${s.cod_esco ? ' · ESCO ' + escapeHTML(s.cod_esco) : ''}</div>
+          </div>
+          <span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:99px;background:${s.status_public ? 'rgba(76,190,131,.15)' : 'rgba(229,115,115,.15)'};color:${s.status_public ? '#4CBE83' : '#E57373'}">${s.status_public ? '🟢 Public' : '⚪ Ascuns'}</span>
+          <button onclick="toggleStatusCatalog('${s.id}', ${!s.status_public})" style="font-size:11px;padding:5px 11px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">${s.status_public ? 'Ascunde' : 'Publică'}</button>
+          <button onclick="toggleNiveluriCatalog('${s.id}')" style="font-size:11px;padding:5px 11px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">Niveluri (${s.niveluri.length})</button>
+          <button onclick="stergeServiciuCatalog('${s.id}', '${escapeHTML(s.titlu).replace(/'/g, "\\'")}')" style="font-size:11px;padding:5px 11px;border-radius:7px;border:1px solid rgba(192,57,43,.4);background:transparent;color:#E57373;cursor:pointer">Șterge</button>
+        </div>
+        <div id="cat-niveluri-${s.id}" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid #2D3F55">
+          ${s.niveluri.map((n) => `
+            <div style="background:#131B27;border-radius:9px;padding:10px 12px;margin-bottom:8px">
+              <div style="font-size:12px;font-weight:700;color:#fff">${escapeHTML(n.label || n.nivel)} <span style="color:#8BA3C0;font-weight:400">· complexitate ${n.nivel_complexitate} · ${n.norma_timp}h normă</span></div>
+              <div style="margin-top:6px">
+                ${n.preturi.map((p) => `
+                  <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;background:#0F1826;border-radius:7px;padding:4px 9px;margin:2px 4px 2px 0">
+                    ${escapeHTML(p.tara_cod)}${p.regiune ? '/' + escapeHTML(p.regiune) : ''}: <b style="color:#fff">${p.pret} ${escapeHTML(p.moneda)}</b>
+                    <button onclick="stergePretCatalog('${p.id}', '${s.id}')" style="background:none;border:none;color:#E57373;cursor:pointer;font-size:11px;padding:0">✕</button>
+                  </span>
+                `).join('') || '<span style="font-size:11px;color:#8BA3C0">Niciun preț adăugat</span>'}
+              </div>
+              <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+                <input id="pret-tara-${n.id}" placeholder="Țară (RO)" style="width:70px;background:#0F1826;border:1px solid #2D3F55;border-radius:7px;padding:5px 8px;color:#fff;font-size:11px">
+                <input id="pret-moneda-${n.id}" placeholder="Monedă (Lei)" style="width:80px;background:#0F1826;border:1px solid #2D3F55;border-radius:7px;padding:5px 8px;color:#fff;font-size:11px">
+                <input id="pret-val-${n.id}" placeholder="Preț" type="number" style="width:80px;background:#0F1826;border:1px solid #2D3F55;border-radius:7px;padding:5px 8px;color:#fff;font-size:11px">
+                <button onclick="creeazaPretCatalog('${n.id}', '${s.id}')" style="font-size:11px;padding:5px 10px;border-radius:7px;border:none;background:#FF8C00;color:#fff;cursor:pointer;font-weight:700">+ Preț</button>
+                <button onclick="stergeNivelCatalog('${n.id}', '${s.id}')" style="font-size:11px;padding:5px 10px;border-radius:7px;border:1px solid rgba(192,57,43,.4);background:transparent;color:#E57373;cursor:pointer;margin-left:auto">Șterge nivelul</button>
+              </div>
+            </div>
+          `).join('')}
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+            <input id="nivel-nume-${s.id}" placeholder="Nivel (ex: Bronz)" style="width:100px;background:#131B27;border:1px solid #2D3F55;border-radius:7px;padding:6px 9px;color:#fff;font-size:11px">
+            <input id="nivel-complex-${s.id}" placeholder="Complexitate (1-4)" type="number" style="width:120px;background:#131B27;border:1px solid #2D3F55;border-radius:7px;padding:6px 9px;color:#fff;font-size:11px">
+            <input id="nivel-norma-${s.id}" placeholder="Normă timp (h)" type="number" style="width:110px;background:#131B27;border:1px solid #2D3F55;border-radius:7px;padding:6px 9px;color:#fff;font-size:11px">
+            <button onclick="creeazaNivelCatalog('${s.id}')" style="font-size:11px;padding:6px 12px;border-radius:7px;border:none;background:#0E9E99;color:#fff;cursor:pointer;font-weight:700">+ Nivel nou</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    el.innerHTML = `<div style="color:#E57373">Eroare: ${escapeHTML(e.message)}</div>`;
+  }
+}
+
+function toggleNiveluriCatalog(id) {
+  const el = document.getElementById('cat-niveluri-' + id);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function toggleStatusCatalog(id, nouStatus) {
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/catalog', { method: 'POST', headers, body: JSON.stringify({ action: 'actualizeaza_serviciu', id, status_public: nouStatus }) });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadCatalogList();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+async function stergeServiciuCatalog(id, titlu) {
+  if (!confirm(`Ștergi definitiv „${titlu}" din catalog, împreună cu toate nivelurile și prețurile lui?`)) return;
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/catalog', { method: 'POST', headers, body: JSON.stringify({ action: 'sterge_serviciu', id }) });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadCatalogList();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+async function creeazaNivelCatalog(serviciuId) {
+  const nivel = document.getElementById('nivel-nume-' + serviciuId).value.trim();
+  const nivel_complexitate = Number(document.getElementById('nivel-complex-' + serviciuId).value);
+  const norma_timp = Number(document.getElementById('nivel-norma-' + serviciuId).value);
+  if (!nivel || !nivel_complexitate || !norma_timp) { alert('Completează nivel, complexitate și normă de timp.'); return; }
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/catalog', {
+      method: 'POST', headers,
+      body: JSON.stringify({ action: 'creeaza_nivel', serviciu_id: serviciuId, nivel, nivel_complexitate, norma_timp, label: nivel }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadCatalogList();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+async function stergeNivelCatalog(nivelId) {
+  if (!confirm('Ștergi acest nivel și toate prețurile lui?')) return;
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/catalog', { method: 'POST', headers, body: JSON.stringify({ action: 'sterge_nivel', id: nivelId }) });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadCatalogList();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+async function creeazaPretCatalog(nivelId) {
+  const tara_cod = document.getElementById('pret-tara-' + nivelId).value.trim().toUpperCase();
+  const moneda = document.getElementById('pret-moneda-' + nivelId).value.trim();
+  const pret = Number(document.getElementById('pret-val-' + nivelId).value);
+  if (!tara_cod || !moneda || !pret) { alert('Completează țară, monedă și preț.'); return; }
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/catalog', { method: 'POST', headers, body: JSON.stringify({ action: 'creeaza_pret', nivel_id: nivelId, tara_cod, moneda, pret }) });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadCatalogList();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+async function stergePretCatalog(pretId) {
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/catalog', { method: 'POST', headers, body: JSON.stringify({ action: 'sterge_pret', id: pretId }) });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadCatalogList();
   } catch (e) { alert('Eroare: ' + e.message); }
 }
 </script>
