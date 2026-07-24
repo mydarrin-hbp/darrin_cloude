@@ -674,7 +674,7 @@ function showPanel(id) {
   if (!content) return;
 
   // Router
-  if (id === 'overview')   content.innerHTML = renderOverview();
+  if (id === 'overview')   { content.innerHTML = renderOverview(); loadEscrowReal(); }
   else if (id === 'sarcini')    content.innerHTML = renderSarcini();
   else if (id === 'portofoliu') content.innerHTML = renderPortofoliu();
   else if (id === 'calendar')   content.innerHTML = renderCalendar();
@@ -704,6 +704,7 @@ function renderOverview() {
     ${kpi('Rating','4.97 ⭐','312 recenzii','#0E9E99','⭐')}
     ${kpi('Escrow activ','610 Lei','2 comenzi','#1A5FAD','🔒')}
   </div>
+  ${escrowRealCard()}
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
     <div class="dp-card">
       <div class="dp-card-hdr">
@@ -935,6 +936,7 @@ function renderOverviewCurier() {
     ${kpi('Rating','4.88 ⭐','201 livrări','#0E9E99','⭐')}
     ${kpi('Km parcurși','18.4 km','azi','#1A5FAD','📍')}
   </div>
+  ${escrowRealCard()}
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
     <div class="dp-card">
       <div class="dp-card-hdr">
@@ -1041,6 +1043,7 @@ function renderOverviewAsig() {
     ${kpi('Dosare daune','2','0 în așteptare','#0E9E99','⚠')}
     ${kpi('Polițe expirate','3','necesită reînnoire','#C0392B','❗')}
   </div>
+  ${escrowRealCard()}
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
     <div class="dp-card">
       <div class="dp-card-hdr"><div style="display:flex;align-items:center;gap:7px"><span class="pdot"></span><strong style="color:#1A2332">Polițe emise LIVE</strong></div><button class="btn-p" onclick="showPanel('polite')" style="font-size:11px;padding:6px 12px;background:#1A7A3A">Vezi toate →</button></div>
@@ -1117,6 +1120,57 @@ function renderDaune() {
   <div style="display:flex;flex-direction:column;gap:12px">
     ${Object.keys(DAUNE_DB).map(claimId => renderDaunaCard(claimId)).join('')}
   </div>`;
+}
+
+// Card cu date REALE de escrow (comanda_subcontractori/comisioane), spre
+// deosebire de restul acestei pagini (demo hardcodat) — vezi loadEscrowReal().
+function escrowRealCard(){
+  return `<div class="dp-card" style="margin-bottom:18px">
+    <div class="dp-card-hdr"><strong style="color:#1A2332">🔒 Escrow real — alocările tale</strong><span id="escrow-real-badge" class="chip ch-t">Se încarcă...</span></div>
+    <div class="dp-card-body" id="escrow-real-lista" style="font-size:12.5px;color:#5A6B7D">Se încarcă datele reale din platformă...</div>
+  </div>`;
+}
+
+async function _partenerAuthHeader(){
+  const s = window.supabaseClient ? (await window.supabaseClient.auth.getSession()).data.session : null;
+  return { Authorization: `Bearer ${s?.access_token || ''}` };
+}
+
+async function loadEscrowReal(){
+  const badge = document.getElementById('escrow-real-badge');
+  const lista = document.getElementById('escrow-real-lista');
+  if (!lista) return;
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/escrow-tracker', { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+
+    if (badge) badge.textContent = `${data.total_activ} ${data.moneda} activ · ${data.total_eliberat} ${data.moneda} eliberat`;
+
+    if (!data.alocari.length) {
+      lista.innerHTML = '<div style="padding:8px 0">Nu ai încă nicio alocare reală pe platformă.</div>';
+      return;
+    }
+
+    const rolLabel = { manopera:'Manoperă', materiale:'Materiale', rental_echipament:'Închiriere echipament', curier:'Transport', asigurare:'Asigurare' };
+    lista.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="text-align:left;color:#5A6B7D;font-size:10px;text-transform:uppercase;letter-spacing:.05em">
+        <th style="padding:6px 8px">Comandă</th><th style="padding:6px 8px">Rol</th><th style="padding:6px 8px">Sumă</th><th style="padding:6px 8px">Status</th>
+      </tr></thead>
+      <tbody>${data.alocari.map(a => `
+        <tr style="border-top:1px solid #EEF2F7">
+          <td style="padding:7px 8px;color:#1A2332;font-weight:600">${a.nr_comanda || a.comanda_id.slice(0,8)}</td>
+          <td style="padding:7px 8px;color:#5A6B7D">${rolLabel[a.rol_tip] || a.rol_tip}</td>
+          <td style="padding:7px 8px;font-weight:700;color:#FF8C00">${a.suma} ${data.moneda}</td>
+          <td style="padding:7px 8px"><span class="chip ${a.escrow_eliberat ? 'ch-g' : 'ch-t'}">${a.escrow_eliberat ? '✅ Eliberat' : '🔒 Blocat în escrow'}</span></td>
+        </tr>
+      `).join('')}</tbody>
+    </table>`;
+  } catch (e) {
+    if (badge) badge.textContent = 'Eroare';
+    lista.innerHTML = `<div style="color:#C0392B;padding:8px 0">Nu am putut încărca datele reale: ${e.message}</div>`;
+  }
 }
 
 function kpi(label,val,sub,color,icon){
