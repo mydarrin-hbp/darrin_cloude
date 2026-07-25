@@ -15,6 +15,7 @@
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { requireAuth } = require('../../lib/auth-middleware');
 const { inregistreazaAudit } = require('../../lib/audit-log');
+const { notificaParteneriEligibili } = require('../../lib/notifica-servicii-noi');
 
 const CATEGORII_VALIDE = ['servicii', 'materiale', 'inchirieri'];
 
@@ -93,7 +94,17 @@ async function actionCreeazaServiciu(req, res, user) {
   }
 
   await inregistreazaAudit({ admin: user, req, actiune: 'catalog_creeaza_serviciu', entitate: 'catalog_servicii', entitate_id: data.id, detalii: { id_serviciu, categorie, titlu } });
-  return res.status(200).json({ ok: true, id: data.id });
+
+  // G12: notifică automat partenerii eligibili (profil NACE potrivit) —
+  // best-effort, nu blochează crearea serviciului dacă eșuează.
+  let notificareRezultat = { notificati: 0, motiv: 'fara_incercare' };
+  try {
+    notificareRezultat = await notificaParteneriEligibili({ catalogServiciuId: data.id, nace: nace || null, titlu, categorie });
+  } catch (notifErr) {
+    console.error('[admin/catalog] notificare parteneri eșuată', notifErr);
+  }
+
+  return res.status(200).json({ ok: true, id: data.id, parteneri_notificati: notificareRezultat.notificati });
 }
 
 async function actionActualizeazaServiciu(req, res, user) {

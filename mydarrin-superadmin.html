@@ -4271,7 +4271,8 @@ async function creeazaServiciuCatalog() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
 
-    msgEl.innerHTML = '<span style="color:#4CBE83">✓ Creat — apare deja pe catalogul public.</span>';
+    const notifTxt = data.parteneri_notificati > 0 ? ` · ${data.parteneri_notificati} parteneri eligibili notificați pe email` : '';
+    msgEl.innerHTML = `<span style="color:#4CBE83">✓ Creat — apare deja pe catalogul public.${notifTxt}</span>`;
     ['cat-id-serviciu', 'cat-titlu', 'cat-domeniu', 'cat-nace', 'cat-esco'].forEach((id) => { document.getElementById(id).value = ''; });
     loadCatalogList();
   } catch (e) {
