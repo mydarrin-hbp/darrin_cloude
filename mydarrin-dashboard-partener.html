@@ -676,7 +676,7 @@ function showPanel(id) {
   // Router
   if (id === 'overview')   { content.innerHTML = renderOverview(); loadEscrowReal(); loadHardStopStatus(); }
   else if (id === 'sarcini')    content.innerHTML = renderSarcini();
-  else if (id === 'portofoliu') content.innerHTML = renderPortofoliu();
+  else if (id === 'portofoliu') { content.innerHTML = renderPortofoliu(); loadPortofoliuReal(); }
   else if (id === 'calendar')   content.innerHTML = renderCalendar();
   else if (id === 'venituri')   content.innerHTML = renderVenituri();
   else if (id === 'garantii')   content.innerHTML = renderGarantii();
@@ -771,19 +771,11 @@ function renderPortofoliu() {
   </div>
   <div class="dp-card" style="margin-bottom:16px">
     <div class="dp-card-hdr">
-      <strong style="color:#1A2332">ESCO 7127 · F43.22 · Iași Zona A</strong>
-      <span class="chip ch-t" style="font-size:9px">● Backoffice live</span>
+      <strong style="color:#1A2332">Portofoliu real — bifează ce poți presta</strong>
+      <span class="chip ch-t" style="font-size:9px">● Conectat la catalog</span>
     </div>
-    <table class="dp-table">
-      <thead><tr><th>Serviciu</th><th>Preț bază</th><th>Urgent</th><th>Status</th><th>Rating</th><th>Activare</th></tr></thead>
-      <tbody>
-        ${svcRow('Montaj obiecte sanitare','85 Lei/h','110 Lei/h','active','4.97')}
-        ${svcRow('Reparații apă-canal','85 Lei/h','110 Lei/h','active','4.95')}
-        ${svcRow('Montaj centrală termică','95 Lei/h','123 Lei/h','active','4.92')}
-        ${svcRow('Instalații AC split','110 Lei/h','143 Lei/h','pending','—')}
-        ${svcRow('Desfundare canalizare','120 Lei/interv.','156 Lei/interv.','inactive','—')}
-      </tbody>
-    </table>
+    <div class="dp-card-body" style="font-size:12.5px;color:#5A6B7D;padding-bottom:0">Bifează serviciile/materialele/echipamentele din catalogul My Darrin pe care le poți oferi — comenzile se alocă automat DOAR din lista bifată.</div>
+    <div id="portofoliu-real-lista" style="padding:14px">Se încarcă...</div>
   </div>
   <div class="dp-card">
     <div class="dp-card-hdr"><strong style="color:#1A2332">📸 Portofoliu lucrări recente</strong><button class="btn-s" style="font-size:11px">+ Adaugă poze</button></div>
@@ -1252,6 +1244,53 @@ async function confirmaOtpContract(){
     loadHardStopStatus();
   } catch (e) {
     if (msgEl) { msgEl.style.color = '#C0392B'; msgEl.textContent = e.message; }
+  }
+}
+
+// G10 (25 Iulie 2026) — portofoliu real, conectat la catalog + la tabela
+// EXACTĂ citită de motorul de alocare automată (partener_servicii_active).
+async function loadPortofoliuReal(){
+  const el = document.getElementById('portofoliu-real-lista');
+  if (!el) return;
+  el.textContent = 'Se încarcă...';
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/portofoliu', { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+
+    if (!data.categorie) {
+      el.innerHTML = '<div style="color:#5A6B7D">Tipul tău de partener nu folosește un catalog de bifat — alocarea comenzilor se face pe zonă/disponibilitate.</div>';
+      return;
+    }
+    if (!data.servicii.length) {
+      el.innerHTML = '<div style="color:#5A6B7D">Niciun serviciu public disponibil momentan în această categorie de catalog.</div>';
+      return;
+    }
+
+    el.innerHTML = data.servicii.map((s) => `
+      <label style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid #EEF2F7;cursor:pointer">
+        <input type="checkbox" ${s.bifat ? 'checked' : ''} onchange="togglePortofoliuItem('${s.id}', this.checked, this)" style="width:16px;height:16px;accent-color:#FF8C00">
+        <span style="flex:1"><strong style="color:#1A2332;font-size:13px">${s.titlu}</strong><br><span style="font-size:11px;color:#5A6B7D">${s.domeniu}</span></span>
+      </label>
+    `).join('');
+  } catch (e) {
+    el.innerHTML = `<div style="color:#C0392B">Eroare: ${e.message}</div>`;
+  }
+}
+
+async function togglePortofoliuItem(catalogServiciuId, activ, checkboxEl){
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/portofoliu', {
+      method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'toggle', catalog_serviciu_id: catalogServiciuId, activ }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+  } catch (e) {
+    alert('Eroare: ' + e.message);
+    if (checkboxEl) checkboxEl.checked = !activ; // revert vizual la eroare
   }
 }
 
