@@ -674,7 +674,7 @@ function showPanel(id) {
   if (!content) return;
 
   // Router
-  if (id === 'overview')   { content.innerHTML = renderOverview(); loadEscrowReal(); }
+  if (id === 'overview')   { content.innerHTML = renderOverview(); loadEscrowReal(); loadHardStopStatus(); }
   else if (id === 'sarcini')    content.innerHTML = renderSarcini();
   else if (id === 'portofoliu') content.innerHTML = renderPortofoliu();
   else if (id === 'calendar')   content.innerHTML = renderCalendar();
@@ -698,6 +698,7 @@ function renderOverview() {
 
   const t = TYPES[currentType];
   return `
+  ${hardStopBanner()}
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
     ${kpi('Comenzi azi','3','+1 vs ieri',t.color,'📦')}
     ${kpi('Câștig luna','2.847 Lei','14 comenzi',t.color,'💰')}
@@ -930,6 +931,7 @@ function renderProfil() {
 
 function renderOverviewCurier() {
   return `
+  ${hardStopBanner()}
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
     ${kpi('Curse azi','5','+2 disponibile','#7C3AED','🚴')}
     ${kpi('Câștig azi','312 Lei','8 curse','#7C3AED','💰')}
@@ -1037,6 +1039,7 @@ function renderCursaActiva() {
 
 function renderOverviewAsig() {
   return `
+  ${hardStopBanner()}
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
     ${kpi('Polițe active','47','luna aceasta','#1A7A3A','📄')}
     ${kpi('Comisioane luna','2.840 Lei','15% medie','#1A7A3A','💰')}
@@ -1170,6 +1173,85 @@ async function loadEscrowReal(){
   } catch (e) {
     if (badge) badge.textContent = 'Eroare';
     lista.innerHTML = `<div style="color:#C0392B;padding:8px 0">Nu am putut încărca datele reale: ${e.message}</div>`;
+  }
+}
+
+// G9 (25 Iulie 2026) — banner real al hard-stop-ului la preluarea
+// comenzilor: aprobare Backoffice + cont bancar + contract semnat prin
+// OTP. Vezi api/partener/contract-status.js și accept-comanda.js (gate
+// server-side real — acest banner e doar reflectarea lui în UI).
+function hardStopBanner(){
+  return `<div id="hard-stop-banner" style="display:none;margin-bottom:18px"></div>`;
+}
+
+async function loadHardStopStatus(){
+  const el = document.getElementById('hard-stop-banner');
+  if (!el) return;
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/contract-status', { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+
+    if (data.poate_prelua_comenzi) { el.style.display = 'none'; el.innerHTML = ''; return; }
+
+    el.style.display = 'block';
+    let pasi = '';
+    if (data.status_verificare !== 'approved') {
+      pasi += `<div style="padding:8px 0;color:#5A6B7D">🔲 <b>Aprobare profil</b> — în curs de verificare de echipa My Darrin.</div>`;
+    } else if (!data.are_cont_bancar) {
+      pasi += `<div style="padding:8px 0;color:#5A6B7D">✅ Profil aprobat &nbsp;·&nbsp; 🔲 <b>Cont bancar</b> — adaugă un cont activ din secțiunea Profil &amp; KYC.</div>`;
+    } else if (!data.contract_semnat) {
+      pasi += `<div style="padding:8px 0;color:#5A6B7D">✅ Profil aprobat &nbsp;·&nbsp; ✅ Cont bancar &nbsp;·&nbsp; 🔲 <b>Contract nesemnat</b></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px">
+          <button class="btn-p" onclick="trimiteOtpContract()" id="btn-trimite-otp" style="font-size:12px;padding:8px 14px">Trimite cod pe email</button>
+          <input id="otp-contract-input" placeholder="Cod din email" maxlength="6" style="width:110px;border:1.5px solid #E2DFD6;border-radius:9px;padding:8px 10px;font-size:13px;font-family:monospace">
+          <button class="btn-p" onclick="confirmaOtpContract()" style="font-size:12px;padding:8px 14px;background:#0E9E99">Confirmă &amp; semnează</button>
+        </div>
+        <div id="otp-contract-msg" style="font-size:12px;margin-top:6px"></div>`;
+    }
+
+    el.innerHTML = `<div class="dp-card" style="border-left:4px solid #FF8C00">
+      <div class="dp-card-hdr"><strong style="color:#1A2332">🔒 Preluare comenzi blocată</strong></div>
+      <div class="dp-card-body" style="font-size:13px">${pasi}</div>
+    </div>`;
+  } catch (e) {
+    el.style.display = 'none';
+  }
+}
+
+async function trimiteOtpContract(){
+  const btn = document.getElementById('btn-trimite-otp');
+  const msgEl = document.getElementById('otp-contract-msg');
+  if (btn) { btn.disabled = true; btn.textContent = 'Se trimite...'; }
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/contract-trimite-otp', { method: 'POST', headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (msgEl) { msgEl.style.color = '#1A7A3A'; msgEl.textContent = 'Cod trimis pe ' + (data.trimis_la || 'email') + '.'; }
+  } catch (e) {
+    if (msgEl) { msgEl.style.color = '#C0392B'; msgEl.textContent = e.message; }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Trimite cod pe email'; }
+  }
+}
+
+async function confirmaOtpContract(){
+  const cod = document.getElementById('otp-contract-input')?.value.trim();
+  const msgEl = document.getElementById('otp-contract-msg');
+  if (!cod) { if (msgEl) { msgEl.style.color = '#C0392B'; msgEl.textContent = 'Introdu codul primit pe email.'; } return; }
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/contract-confirma-otp', {
+      method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ cod }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (msgEl) { msgEl.style.color = '#1A7A3A'; msgEl.textContent = '✓ Contract semnat — poți prelua comenzi.'; }
+    loadHardStopStatus();
+  } catch (e) {
+    if (msgEl) { msgEl.style.color = '#C0392B'; msgEl.textContent = e.message; }
   }
 }
 
