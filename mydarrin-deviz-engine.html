@@ -356,6 +356,12 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 </style>
   <!-- DOMPurify — sanitizare XSS (audit 2026-07-10) -->
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <!-- G13 (25 Iulie 2026) — client Supabase comun (cookie-uri, .mydarrin.homebestpal.com),
+       necesar ca fetch-urile Rate Card să trimită sesiunea reală de admin, nu cheia anon.
+       Fără el, RLS ("admin gestioneaza manopera", auth.uid()-based) bloca silențios TOT
+       accesul (citire și scriere) — bug real găsit la investigarea G13, independent de
+       decompunerea cerută. -->
+  <script type="module" src="lib/supabaseClient.js"></script>
   <script>
     // Helper escapeHTML — pentru text pur (mesaje chat, nume, etc.)
     // Folosește textContent intern — niciun risc XSS
@@ -2176,169 +2182,29 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
           <input type="text" placeholder="Caută cod ESCO / meserie..." data-rc-search oninput="filterRC()" style="flex:1;min-width:180px;background:#fff;border:1.5px solid #D5DFE8;border-radius:10px;padding:7px 14px;font-size:12.5px;color:#2D2D2D;outline:none;font-family:inherit"/>
         </div>
 
+        <div style="font-size:11.5px;color:#6B7A8D;line-height:1.6;background:#FFF9EE;border:1px solid #F5DDA8;border-radius:10px;padding:10px 14px;margin-bottom:12px">
+          <strong style="color:#8A5A00">G13 — descompunere granulară (25 Iulie 2026):</strong>
+          pe lângă manoperă/oră, fiecare tarif are acum 4 componente separate — deplasare, uzură scule,
+          consumabile mici, echipament testare. Editabile pe rând, prin „Editează”. Total/oră = suma tuturor.
+        </div>
+
         <div style="overflow-x:auto;border-radius:16px;border:1px solid #D5DFE8">
-          <table style="width:100%;border-collapse:collapse;font-size:12.5px" id="rate-card-table">
+          <table style="width:100%;border-collapse:collapse;font-size:12.5px;min-width:920px" id="rate-card-table">
             <thead style="background:linear-gradient(135deg,#F4F7F9,#EBF4FB)">
               <tr>
                 <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Meserie (ESCO/ISCO)</th>
                 <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Țară</th>
-                <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Zonă</th>
-                <th style="padding:10px 14px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Valoare/oră</th>
-                <th style="padding:10px 14px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Valoare/zi (8h)</th>
-                <th style="padding:10px 14px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Monedă</th>
-                <th style="padding:10px 14px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Status</th>
+                <th style="padding:10px 14px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Manoperă/oră</th>
+                <th style="padding:10px 14px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Deplasare</th>
+                <th style="padding:10px 14px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Uzură scule</th>
+                <th style="padding:10px 14px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Consumabile</th>
+                <th style="padding:10px 14px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Echipament testare</th>
+                <th style="padding:10px 14px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Total/oră</th>
                 <th style="padding:10px 14px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Acțiuni</th>
               </tr>
             </thead>
             <tbody id="rc-body">
-              <!-- Row 1 -->
-              <tr style="border-bottom:1px solid #F4F7F9">
-                <td style="padding:11px 14px">
-                  <div style="font-weight:600;color:#2D2D2D">Instalator termic</div>
-                  <div style="font-family:monospace;font-size:10px;color:#0E9E99">ISCO 7412 · ESCO 7412.1</div>
-                </td>
-                <td style="padding:11px 14px">
-                  <select style="background:#F4F7F9;border:1.5px solid #D5DFE8;border-radius:8px;padding:5px 8px;font-size:12px;color:#2D2D2D;outline:none;cursor:pointer;font-family:inherit">
-                    <option selected>🇷🇴 România</option><option>🇲🇩 Moldova</option><option>🇩🇪 Germania</option>
-                  </select>
-                </td>
-                <td style="padding:11px 14px">
-                  <select style="background:#F4F7F9;border:1.5px solid #D5DFE8;border-radius:8px;padding:5px 8px;font-size:12px;color:#2D2D2D;outline:none;cursor:pointer;font-family:inherit">
-                    <option>Global</option><option selected>Zona 1</option><option>Zona 2</option><option>Zona 3</option>
-                  </select>
-                </td>
-                <td style="padding:11px 14px;text-align:center">
-                  <div style="display:flex;align-items:center;justify-content:center;gap:4px">
-                    <input type="number" value="65" min="0" step="5" id="rc-1-ora" oninput="updateRCDay(1)" style="background:#EBF4FB;border:1.5px solid #1A5FAD;border-radius:8px;padding:5px 8px;font-size:13px;font-weight:700;color:#003366;outline:none;width:70px;text-align:center;font-family:inherit"/>
-                    <span style="color:#6B7A8D;font-size:11px">RON</span>
-                  </div>
-                </td>
-                <td style="padding:11px 14px;text-align:center;font-weight:700;color:#003366" id="rc-1-zi">520 RON</td>
-                <td style="padding:11px 14px;text-align:center"><span style="font-family:monospace;font-size:11px;font-weight:700;color:#0E9E99">RON</span></td>
-                <td style="padding:11px 14px;text-align:center">
-                  <span style="display:inline-flex;align-items:center;gap:4px;font-size:9px;background:#D4EDDA;color:#1A7A3A;padding:3px 10px;border-radius:99px;font-weight:700">
-                    <span style="width:5px;height:5px;border-radius:50%;background:#1A7A3A;display:inline-block"></span>Activ
-                  </span>
-                </td>
-                <td style="padding:11px 14px">
-                  <div style="display:flex;gap:5px;justify-content:center">
-                    <button onclick="saveRC(1)" title="Salvează" style="width:28px;height:28px;background:#003366;border:none;border-radius:7px;cursor:pointer;font-size:13px;color:#fff">💾</button>
-                    <button onclick="dupRC(1)" title="Duplică" style="width:28px;height:28px;background:#EBF4FB;border:1px solid #D6E8F5;border-radius:7px;cursor:pointer;font-size:13px">📋</button>
-                    <button onclick="delRC(1)" title="Șterge" style="width:28px;height:28px;background:#FDECEA;border:1px solid rgba(220,38,38,.2);border-radius:7px;cursor:pointer;font-size:13px">🗑</button>
-                  </div>
-                </td>
-              </tr>
-              <!-- Row 2 -->
-              <tr style="border-bottom:1px solid #F4F7F9;background:#FAFBFD">
-                <td style="padding:11px 14px">
-                  <div style="font-weight:600;color:#2D2D2D">Instalator termic</div>
-                  <div style="font-family:monospace;font-size:10px;color:#0E9E99">ISCO 7412 · ESCO 7412.1</div>
-                </td>
-                <td style="padding:11px 14px">
-                  <select style="background:#F4F7F9;border:1.5px solid #D5DFE8;border-radius:8px;padding:5px 8px;font-size:12px;color:#2D2D2D;outline:none;cursor:pointer;font-family:inherit">
-                    <option>🇷🇴 România</option><option selected>🇩🇪 Germania</option><option>🇫🇷 Franța</option>
-                  </select>
-                </td>
-                <td style="padding:11px 14px">
-                  <select style="background:#F4F7F9;border:1.5px solid #D5DFE8;border-radius:8px;padding:5px 8px;font-size:12px;color:#2D2D2D;outline:none;cursor:pointer;font-family:inherit">
-                    <option selected>Global</option><option>Zona 1</option><option>Zona 2</option>
-                  </select>
-                </td>
-                <td style="padding:11px 14px;text-align:center">
-                  <div style="display:flex;align-items:center;justify-content:center;gap:4px">
-                    <input type="number" value="28" min="0" step="1" id="rc-2-ora" oninput="updateRCDay(2)" style="background:#EBF4FB;border:1.5px solid #1A5FAD;border-radius:8px;padding:5px 8px;font-size:13px;font-weight:700;color:#003366;outline:none;width:70px;text-align:center;font-family:inherit"/>
-                    <span style="color:#6B7A8D;font-size:11px">EUR</span>
-                  </div>
-                </td>
-                <td style="padding:11px 14px;text-align:center;font-weight:700;color:#003366" id="rc-2-zi">224 EUR</td>
-                <td style="padding:11px 14px;text-align:center"><span style="font-family:monospace;font-size:11px;font-weight:700;color:#0E9E99">EUR</span></td>
-                <td style="padding:11px 14px;text-align:center">
-                  <span style="display:inline-flex;align-items:center;gap:4px;font-size:9px;background:#D4EDDA;color:#1A7A3A;padding:3px 10px;border-radius:99px;font-weight:700">
-                    <span style="width:5px;height:5px;border-radius:50%;background:#1A7A3A;display:inline-block"></span>Activ
-                  </span>
-                </td>
-                <td style="padding:11px 14px">
-                  <div style="display:flex;gap:5px;justify-content:center">
-                    <button onclick="saveRC(2)" title="Salvează" style="width:28px;height:28px;background:#003366;border:none;border-radius:7px;cursor:pointer;font-size:13px;color:#fff">💾</button>
-                    <button onclick="dupRC(2)" title="Duplică" style="width:28px;height:28px;background:#EBF4FB;border:1px solid #D6E8F5;border-radius:7px;cursor:pointer;font-size:13px">📋</button>
-                    <button onclick="delRC(2)" title="Șterge" style="width:28px;height:28px;background:#FDECEA;border:1px solid rgba(220,38,38,.2);border-radius:7px;cursor:pointer;font-size:13px">🗑</button>
-                  </div>
-                </td>
-              </tr>
-              <!-- Row 3 -->
-              <tr style="border-bottom:1px solid #F4F7F9">
-                <td style="padding:11px 14px">
-                  <div style="font-weight:600;color:#2D2D2D">Electrician clădiri</div>
-                  <div style="font-family:monospace;font-size:10px;color:#0E9E99">ISCO 7411 · ESCO 7411.2</div>
-                </td>
-                <td style="padding:11px 14px">
-                  <select style="background:#F4F7F9;border:1.5px solid #D5DFE8;border-radius:8px;padding:5px 8px;font-size:12px;color:#2D2D2D;outline:none;cursor:pointer;font-family:inherit">
-                    <option selected>🇷🇴 România</option><option>🇲🇩 Moldova</option>
-                  </select>
-                </td>
-                <td style="padding:11px 14px">
-                  <select style="background:#F4F7F9;border:1.5px solid #D5DFE8;border-radius:8px;padding:5px 8px;font-size:12px;color:#2D2D2D;outline:none;cursor:pointer;font-family:inherit">
-                    <option selected>Global</option><option>Zona 1</option><option>Zona 2</option><option>Zona 3</option>
-                  </select>
-                </td>
-                <td style="padding:11px 14px;text-align:center">
-                  <div style="display:flex;align-items:center;justify-content:center;gap:4px">
-                    <input type="number" value="55" min="0" step="5" id="rc-3-ora" oninput="updateRCDay(3)" style="background:#EBF4FB;border:1.5px solid #1A5FAD;border-radius:8px;padding:5px 8px;font-size:13px;font-weight:700;color:#003366;outline:none;width:70px;text-align:center;font-family:inherit"/>
-                    <span style="color:#6B7A8D;font-size:11px">RON</span>
-                  </div>
-                </td>
-                <td style="padding:11px 14px;text-align:center;font-weight:700;color:#003366" id="rc-3-zi">440 RON</td>
-                <td style="padding:11px 14px;text-align:center"><span style="font-family:monospace;font-size:11px;font-weight:700;color:#0E9E99">RON</span></td>
-                <td style="padding:11px 14px;text-align:center">
-                  <span style="display:inline-flex;align-items:center;gap:4px;font-size:9px;background:#D4EDDA;color:#1A7A3A;padding:3px 10px;border-radius:99px;font-weight:700">
-                    <span style="width:5px;height:5px;border-radius:50%;background:#1A7A3A;display:inline-block"></span>Activ
-                  </span>
-                </td>
-                <td style="padding:11px 14px">
-                  <div style="display:flex;gap:5px;justify-content:center">
-                    <button onclick="saveRC(3)" title="Salvează" style="width:28px;height:28px;background:#003366;border:none;border-radius:7px;cursor:pointer;font-size:13px;color:#fff">💾</button>
-                    <button onclick="dupRC(3)" title="Duplică" style="width:28px;height:28px;background:#EBF4FB;border:1px solid #D6E8F5;border-radius:7px;cursor:pointer;font-size:13px">📋</button>
-                    <button onclick="delRC(3)" title="Șterge" style="width:28px;height:28px;background:#FDECEA;border:1px solid rgba(220,38,38,.2);border-radius:7px;cursor:pointer;font-size:13px">🗑</button>
-                  </div>
-                </td>
-              </tr>
-              <!-- Row 4 -->
-              <tr style="border-bottom:1px solid #F4F7F9;background:#FAFBFD">
-                <td style="padding:11px 14px">
-                  <div style="font-weight:600;color:#2D2D2D">Curățenie profesională</div>
-                  <div style="font-family:monospace;font-size:10px;color:#0E9E99">ISCO 9112 · NACE N81.21</div>
-                </td>
-                <td style="padding:11px 14px">
-                  <select style="background:#F4F7F9;border:1.5px solid #D5DFE8;border-radius:8px;padding:5px 8px;font-size:12px;color:#2D2D2D;outline:none;cursor:pointer;font-family:inherit">
-                    <option selected>🇷🇴 România</option><option>🇲🇩 Moldova</option>
-                  </select>
-                </td>
-                <td style="padding:11px 14px">
-                  <select style="background:#F4F7F9;border:1.5px solid #D5DFE8;border-radius:8px;padding:5px 8px;font-size:12px;color:#2D2D2D;outline:none;cursor:pointer;font-family:inherit">
-                    <option selected>Global</option><option>Zona 1</option><option>Zona 2</option>
-                  </select>
-                </td>
-                <td style="padding:11px 14px;text-align:center">
-                  <div style="display:flex;align-items:center;justify-content:center;gap:4px">
-                    <input type="number" value="35" min="0" step="5" id="rc-4-ora" oninput="updateRCDay(4)" style="background:#EBF4FB;border:1.5px solid #1A5FAD;border-radius:8px;padding:5px 8px;font-size:13px;font-weight:700;color:#003366;outline:none;width:70px;text-align:center;font-family:inherit"/>
-                    <span style="color:#6B7A8D;font-size:11px">RON</span>
-                  </div>
-                </td>
-                <td style="padding:11px 14px;text-align:center;font-weight:700;color:#003366" id="rc-4-zi">280 RON</td>
-                <td style="padding:11px 14px;text-align:center"><span style="font-family:monospace;font-size:11px;font-weight:700;color:#0E9E99">RON</span></td>
-                <td style="padding:11px 14px;text-align:center">
-                  <span style="display:inline-flex;align-items:center;gap:4px;font-size:9px;background:#D4EDDA;color:#1A7A3A;padding:3px 10px;border-radius:99px;font-weight:700">
-                    <span style="width:5px;height:5px;border-radius:50%;background:#1A7A3A;display:inline-block"></span>Activ
-                  </span>
-                </td>
-                <td style="padding:11px 14px">
-                  <div style="display:flex;gap:5px;justify-content:center">
-                    <button onclick="saveRC(4)" style="width:28px;height:28px;background:#003366;border:none;border-radius:7px;cursor:pointer;font-size:13px;color:#fff">💾</button>
-                    <button onclick="dupRC(4)" style="width:28px;height:28px;background:#EBF4FB;border:1px solid #D6E8F5;border-radius:7px;cursor:pointer;font-size:13px">📋</button>
-                    <button onclick="delRC(4)" style="width:28px;height:28px;background:#FDECEA;border:1px solid rgba(220,38,38,.2);border-radius:7px;cursor:pointer;font-size:13px">🗑</button>
-                  </div>
-                </td>
-              </tr>
+              <tr><td colspan="9" style="text-align:center;padding:24px;color:#8C9BAD">Se încarcă din Supabase...</td></tr>
             </tbody>
           </table>
         </div>
@@ -2608,11 +2474,21 @@ let rcData = [];         // toate rândurile din manopera_costuri
 let rcFiltered = [];     // după filtre active
 let escoMeta = {};       // cod_esco → {denumire, cor_code, isco_group, denumire_en}
 
+// G13 (25 Iulie 2026) — folosește sesiunea reală de admin (token din
+// window.supabaseClient, cookie-uri comune), nu cheia anon ca Bearer.
+// Cheia anon nu are auth.uid(), deci politica RLS "admin gestioneaza
+// manopera" o respingea mereu — citirile/scrierile din acest panou
+// eșuau silențios (GET întorcea listă goală, PATCH/POST 401/403).
+async function _devizAuthHeader() {
+  const session = (await window.supabaseClient?.auth.getSession())?.data?.session;
+  return { apikey: SUPA_DEVIZ_ANON, Authorization: `Bearer ${session?.access_token || SUPA_DEVIZ_ANON}` };
+}
+
 async function supaDevizFetch(path, params='') {
   if (!SUPA_DEVIZ_ANON) return null;
   try {
     const r = await fetch(`${SUPA_DEVIZ_URL}/rest/v1/${path}${params}`, {
-      headers: { apikey: SUPA_DEVIZ_ANON, Authorization:`Bearer ${SUPA_DEVIZ_ANON}` }
+      headers: await _devizAuthHeader()
     });
     return r.ok ? r.json() : null;
   } catch { return null; }
@@ -2630,7 +2506,7 @@ async function loadRateCard() {
   ]);
 
   if (!mc) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:#C0392B">⚠ Date indisponibile · Verifică conexiunea Supabase</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#C0392B">Date indisponibile · verifică sesiunea de admin sau conexiunea Supabase</td></tr>';
     return;
   }
 
@@ -2641,39 +2517,45 @@ async function loadRateCard() {
   renderRCTable(rcFiltered);
 }
 
+function _rcTotalOra(r) {
+  return (parseFloat(r.cost_ora)||0) + (parseFloat(r.cost_deplasare)||0) +
+         (parseFloat(r.cost_uzura_scule)||0) + (parseFloat(r.cost_consumabile_mici)||0) +
+         (parseFloat(r.cost_echipament_testare)||0);
+}
+
 function renderRCTable(rows) {
   const tbody = document.getElementById('rc-body');
   if (!tbody) return;
 
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:#8C9BAD">Niciun tarif găsit</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#8C9BAD">Niciun tarif găsit</td></tr>';
     return;
   }
 
+  // Steagurile de țară sunt informație (identifică țara dintr-o privire),
+  // nu decor — restul rândului evită iconițele fără sens propriu (G13: fără
+  // aglomerare vizuală).
   const FLAG = {RO:'🇷🇴',MD:'🇲🇩',DE:'🇩🇪',FR:'🇫🇷',BG:'🇧🇬'};
+  const comp = (v) => `<td style="padding:11px 10px;text-align:center;color:${parseFloat(v)>0?'#2D2D2D':'#B8C4CE'}">${parseFloat(v||0).toFixed(2)}</td>`;
   tbody.innerHTML = rows.map(r => {
     const e = escoMeta[r.cod_esco] || {};
-    const zi = (parseFloat(r.cost_ora) * 8).toFixed(0);
     const flag = FLAG[r.tara_cod] || r.tara_cod;
-    const uniclass = e.cod_uniclass ? `<span style="font-size:9px;color:#7C3AED">📐 ${e.cod_uniclass}</span>` : '';
+    const total = _rcTotalOra(r);
     return `<tr style="border-bottom:1px solid #F4F7F9;transition:background .15s" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background=''">
       <td style="padding:11px 14px">
         <div style="font-weight:600;color:#2D2D2D">${escapeHTML(e.denumire || r.cod_esco)}</div>
-        <div style="font-family:monospace;font-size:10px;color:#0E9E99">ISCO ${r.cod_esco} · COR ${e.cor_code || '—'}</div>
-        ${uniclass}
+        <div style="font-family:monospace;font-size:10px;color:#0E9E99">ISCO ${escapeHTML(r.cod_esco)} · COR ${escapeHTML(e.cor_code || '—')}</div>
       </td>
-      <td style="padding:11px 14px"><span style="font-weight:700">${flag} ${r.tara_cod}</span></td>
-      <td style="padding:11px 14px;color:#8C9BAD;font-size:12px">—</td>
-      <td style="padding:11px 14px;text-align:center">
-        <div style="font-size:16px;font-weight:800;color:#003366">${r.cost_ora} <span style="font-size:10px;color:#8C9BAD;font-weight:400">${r.moneda}/oră</span></div>
-      </td>
-      <td style="padding:11px 14px;text-align:center;font-weight:700;color:#1A5FAD">${zi} ${r.moneda}/zi</td>
-      <td style="padding:11px 14px;text-align:center"><span style="font-family:monospace;font-size:12px">${r.moneda}</span></td>
-      <td style="padding:11px 14px;text-align:center"><span style="background:#D4EDDA;color:#1A7A3A;font-size:10px;padding:3px 9px;border-radius:99px;font-weight:700">✅ Activ</span></td>
+      <td style="padding:11px 14px"><span style="font-weight:700">${flag} ${escapeHTML(r.tara_cod)}</span></td>
+      <td style="padding:11px 10px;text-align:center;font-weight:700;color:#003366">${parseFloat(r.cost_ora).toFixed(2)}</td>
+      ${comp(r.cost_deplasare)}
+      ${comp(r.cost_uzura_scule)}
+      ${comp(r.cost_consumabile_mici)}
+      ${comp(r.cost_echipament_testare)}
+      <td style="padding:11px 14px;text-align:center;font-weight:800;color:#1A5FAD">${total.toFixed(2)} <span style="font-size:9px;color:#8C9BAD;font-weight:400">${escapeHTML(r.moneda)}</span></td>
       <td style="padding:11px 14px;text-align:center">
         <div style="display:flex;gap:6px;justify-content:center">
-          <button onclick="editRC('${r.id}')" style="padding:5px 10px;border-radius:7px;border:1px solid #D5DFE8;background:#F8FAFC;font-size:11px;cursor:pointer">✏️</button>
-          <button onclick="dupRC('${r.id}')" style="padding:5px 10px;border-radius:7px;border:1px solid #D5DFE8;background:#F8FAFC;font-size:11px;cursor:pointer">📋</button>
+          <button onclick="editRC('${r.id}')" style="padding:5px 11px;border-radius:7px;border:1px solid #D5DFE8;background:#F8FAFC;font-size:11px;font-weight:600;color:#003366;cursor:pointer">Editează</button>
         </div>
       </td>
     </tr>`;
@@ -2699,70 +2581,136 @@ function filterRC() {
   renderRCTable(rcFiltered);
 }
 
-function editRC(id) {
-  const r = rcData.find(x => x.id === id);
-  if (!r) return;
-  const noua = prompt(`Tarif nou pentru ${escoMeta[r.cod_esco]?.denumire || r.cod_esco} (${r.tara_cod}):\nCurent: ${r.cost_ora} ${r.moneda}/oră`, r.cost_ora);
-  if (noua === null || isNaN(parseFloat(noua))) return;
-  // PATCH în Supabase
-  fetch(`${SUPA_DEVIZ_URL}/rest/v1/manopera_costuri?id=eq.${id}`, {
-    method:'PATCH',
-    headers:{ apikey:SUPA_DEVIZ_ANON, Authorization:`Bearer ${SUPA_DEVIZ_ANON}`,
-              'Content-Type':'application/json', Prefer:'return=minimal' },
-    body: JSON.stringify({ cost_ora: parseFloat(noua), updated_at: new Date().toISOString() })
-  }).then(res => {
-    if (res.ok) {
-      const row = rcData.find(x => x.id === id);
-      if (row) row.cost_ora = parseFloat(noua);
-      filterRC();
-      showRCToast('✅ Tarif actualizat: ' + noua + ' ' + r.moneda + '/oră');
-    } else {
-      showRCToast('⚠ Eroare actualizare — verifică permisiunile admin');
-    }
-  }).catch(() => showRCToast('⚠ Eroare conexiune'));
+// G13 — modal cu cele 5 componente, în loc de prompt()-uri înlănțuite
+// (5 prompt-uri succesive ar fi fost exact genul de flux confuz/aglomerat
+// pe care cerința explicită de UX cere să-l evităm).
+const RC_MONEDE = {RO:'RON',MD:'MDL',DE:'EUR',FR:'EUR',BG:'BGN'};
+const RC_CAMPURI = [
+  ['cost_ora','Manoperă / oră'],
+  ['cost_deplasare','Deplasare'],
+  ['cost_uzura_scule','Uzură scule'],
+  ['cost_consumabile_mici','Consumabile mici'],
+  ['cost_echipament_testare','Echipament testare'],
+];
+
+function _closeRCModal() {
+  document.getElementById('rc-modal-overlay')?.remove();
 }
 
-function dupRC(id) {
-  showRCToast('📋 Duplicate via API — în dezvoltare');
+function openRCModal(existing) {
+  _closeRCModal();
+  const r = existing || { cod_esco:'', tara_cod:'RO', moneda:'RON', cost_ora:0, cost_deplasare:0, cost_uzura_scule:0, cost_consumabile_mici:0, cost_echipament_testare:0 };
+  const titlu = existing ? `Editează tarif — ${escapeHTML(escoMeta[r.cod_esco]?.denumire || r.cod_esco)} (${escapeHTML(r.tara_cod)})` : 'Adaugă tarif nou';
+
+  const campuriHtml = RC_CAMPURI.map(([key,label]) => `
+    <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:#5A6B7D">
+      ${label}
+      <input type="number" min="0" step="0.5" id="rc-f-${key}" value="${parseFloat(r[key]||0)}"
+             style="background:#F4F7F9;border:1.5px solid #D5DFE8;border-radius:8px;padding:8px 10px;font-size:13px;font-weight:600;color:#2D2D2D;outline:none;font-family:inherit"/>
+    </label>`).join('');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'rc-modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,20,40,.45);z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px';
+  overlay.innerHTML = `
+    <div role="dialog" aria-modal="true" style="background:#fff;border-radius:18px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;font-family:inherit">
+      <div style="font-weight:800;font-size:15px;color:#003366;margin-bottom:4px">${titlu}</div>
+      <div style="font-size:12px;color:#8C9BAD;margin-bottom:16px">Fiecare componentă se adaugă la manoperă pentru totalul/oră.</div>
+      ${existing ? '' : `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:#5A6B7D">Cod ESCO/ISCO
+          <input type="text" id="rc-f-cod_esco" placeholder="ex: 7411" style="background:#F4F7F9;border:1.5px solid #D5DFE8;border-radius:8px;padding:8px 10px;font-size:13px;font-weight:600;color:#2D2D2D;outline:none;font-family:inherit"/>
+        </label>
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:#5A6B7D">Țară
+          <select id="rc-f-tara_cod" onchange="document.getElementById('rc-f-moneda').value = RC_MONEDE[this.value]||'RON'" style="background:#F4F7F9;border:1.5px solid #D5DFE8;border-radius:8px;padding:8px 10px;font-size:13px;font-weight:600;color:#2D2D2D;outline:none;font-family:inherit">
+            <option value="RO">RO — România</option><option value="MD">MD — Moldova</option>
+            <option value="DE">DE — Germania</option><option value="FR">FR — Franța</option><option value="BG">BG — Bulgaria</option>
+          </select>
+        </label>
+      </div>`}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">${campuriHtml}</div>
+      <input type="hidden" id="rc-f-moneda" value="${escapeHTML(r.moneda)}"/>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button onclick="_closeRCModal()" style="padding:9px 16px;border-radius:9px;border:1px solid #D5DFE8;background:#F8FAFC;font-size:12.5px;font-weight:600;color:#5A6B7D;cursor:pointer">Anulează</button>
+        <button onclick="_submitRCModal('${existing ? r.id : ''}')" style="padding:9px 18px;border-radius:9px;border:none;background:#0E9E99;color:#fff;font-size:12.5px;font-weight:700;cursor:pointer">Salvează</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) _closeRCModal(); });
+}
+
+async function _submitRCModal(id) {
+  const valNum = (key) => {
+    const el = document.getElementById(`rc-f-${key}`);
+    const n = parseFloat(el?.value);
+    return Number.isFinite(n) && n >= 0 ? n : 0;
+  };
+  const payload = {
+    cost_ora: valNum('cost_ora'),
+    cost_deplasare: valNum('cost_deplasare'),
+    cost_uzura_scule: valNum('cost_uzura_scule'),
+    cost_consumabile_mici: valNum('cost_consumabile_mici'),
+    cost_echipament_testare: valNum('cost_echipament_testare'),
+  };
+
+  let url, method;
+  if (id) {
+    url = `${SUPA_DEVIZ_URL}/rest/v1/manopera_costuri?id=eq.${id}`;
+    method = 'PATCH';
+    payload.updated_at = new Date().toISOString();
+  } else {
+    const cod = document.getElementById('rc-f-cod_esco')?.value?.trim();
+    const tara = document.getElementById('rc-f-tara_cod')?.value;
+    if (!cod) { showRCToast('Cod ESCO obligatoriu'); return; }
+    url = `${SUPA_DEVIZ_URL}/rest/v1/manopera_costuri`;
+    method = 'POST';
+    payload.cod_esco = cod;
+    payload.tara_cod = tara;
+    payload.moneda = document.getElementById('rc-f-moneda')?.value || RC_MONEDE[tara] || 'RON';
+  }
+
+  const headers = await _devizAuthHeader();
+  const res = await fetch(url, {
+    method,
+    headers: { ...headers, 'Content-Type':'application/json', Prefer:'return=minimal' },
+    body: JSON.stringify(payload),
+  });
+
+  if (res.ok) {
+    _closeRCModal();
+    await loadRateCard();
+    showRCToast(id ? 'Tarif actualizat' : 'Tarif adăugat');
+  } else {
+    showRCToast('Eroare la salvare — verifică sesiunea de admin');
+  }
+}
+
+function editRC(id) {
+  const r = rcData.find(x => x.id === id);
+  if (r) openRCModal(r);
 }
 
 function addRateCard() {
-  const cod  = prompt('Cod ESCO (ex: 7411):');
-  if (!cod) return;
-  const tara = prompt('Țara (RO/MD/DE/FR/BG):');
-  if (!tara) return;
-  const val  = prompt('Valoare/oră:');
-  if (!val || isNaN(parseFloat(val))) return;
-  const MONEDE = {RO:'RON',MD:'MDL',DE:'EUR',FR:'EUR',BG:'BGN'};
-
-  fetch(`${SUPA_DEVIZ_URL}/rest/v1/manopera_costuri`, {
-    method:'POST',
-    headers:{ apikey:SUPA_DEVIZ_ANON, Authorization:`Bearer ${SUPA_DEVIZ_ANON}`,
-              'Content-Type':'application/json', Prefer:'return=minimal' },
-    body: JSON.stringify({ cod_esco:cod, tara_cod:tara.toUpperCase(),
-                           cost_ora:parseFloat(val), moneda:MONEDE[tara.toUpperCase()]||'RON' })
-  }).then(res => {
-    if (res.ok) { loadRateCard(); showRCToast('✅ Rate Card adăugat'); }
-    else showRCToast('⚠ Eroare · verifică că cod_esco există în competente_esco');
-  });
+  openRCModal(null);
 }
 
 function exportRC() {
   if (!rcData.length) { loadRateCard().then(exportRC); return; }
-  const rows = [['cod_esco','denumire_esco','cor_code','tara_cod','cost_ora','moneda']];
+  const rows = [['cod_esco','denumire_esco','cor_code','tara_cod','cost_ora','cost_deplasare','cost_uzura_scule','cost_consumabile_mici','cost_echipament_testare','moneda']];
   rcData.forEach(r => {
     const e = escoMeta[r.cod_esco] || {};
-    rows.push([r.cod_esco, e.denumire||'', e.cor_code||'', r.tara_cod, r.cost_ora, r.moneda]);
+    rows.push([r.cod_esco, e.denumire||'', e.cor_code||'', r.tara_cod, r.cost_ora,
+               r.cost_deplasare||0, r.cost_uzura_scule||0, r.cost_consumabile_mici||0, r.cost_echipament_testare||0, r.moneda]);
   });
   const csv = rows.map(r => r.join(';')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
   a.download = 'rate-card-esco-' + new Date().toISOString().slice(0,10) + '.csv';
   a.click();
-  showRCToast('✅ CSV exportat: ' + rcData.length + ' tarife');
+  showRCToast('CSV exportat: ' + rcData.length + ' tarife');
 }
 
-function importRC() {
+async function importRC() {
   const input = document.createElement('input');
   input.type='file'; input.accept='.csv';
   input.onchange = async e => {
@@ -2770,21 +2718,27 @@ function importRC() {
     if (!file) return;
     const text = await file.text();
     const lines = text.trim().split('\n').slice(1); // skip header
+    const headers = await _devizAuthHeader();
     let imported = 0;
     for (const line of lines) {
-      const [cod_esco,_,__,tara_cod,cost_ora,moneda] = line.split(';');
+      const [cod_esco,_denumire,_cor,tara_cod,cost_ora,cost_deplasare,cost_uzura_scule,cost_consumabile_mici,cost_echipament_testare,moneda] = line.split(';');
       if (!cod_esco || !tara_cod || !cost_ora) continue;
-      await fetch(`${SUPA_DEVIZ_URL}/rest/v1/manopera_costuri`, {
+      const res = await fetch(`${SUPA_DEVIZ_URL}/rest/v1/manopera_costuri`, {
         method:'POST',
-        headers:{ apikey:SUPA_DEVIZ_ANON, Authorization:`Bearer ${SUPA_DEVIZ_ANON}`,
-                  'Content-Type':'application/json', Prefer:'resolution=merge-duplicates' },
-        body: JSON.stringify({ cod_esco:cod_esco.trim(), tara_cod:tara_cod.trim(),
-                               cost_ora:parseFloat(cost_ora), moneda:(moneda||'RON').trim() })
+        headers:{ ...headers, 'Content-Type':'application/json', Prefer:'resolution=merge-duplicates' },
+        body: JSON.stringify({
+          cod_esco:cod_esco.trim(), tara_cod:tara_cod.trim(), moneda:(moneda||'RON').trim(),
+          cost_ora:parseFloat(cost_ora)||0,
+          cost_deplasare:parseFloat(cost_deplasare)||0,
+          cost_uzura_scule:parseFloat(cost_uzura_scule)||0,
+          cost_consumabile_mici:parseFloat(cost_consumabile_mici)||0,
+          cost_echipament_testare:parseFloat(cost_echipament_testare)||0,
+        })
       });
-      imported++;
+      if (res.ok) imported++;
     }
     await loadRateCard();
-    showRCToast('✅ Importate ' + imported + ' tarife');
+    showRCToast('Importate ' + imported + ' tarife');
   };
   input.click();
 }
