@@ -2224,6 +2224,49 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
     </div>
   </div>
 
+  <!-- 7D — MOTOR DE REȚETE (G14, 25 Iulie 2026) -->
+  <div class="card reveal">
+    <div class="card-hdr" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div class="font-bold" style="color:#003366">
+        7D — Motor de rețete Uniclass/ESCO — cost calculat din rețete reale
+      </div>
+      <span class="chip" style="background:rgba(14,158,153,.2);border:1px solid rgba(14,158,153,.3);color:#0E9E99">Doar citire · Admin · SuperAdmin</span>
+    </div>
+    <div class="p-6 space-y-5">
+
+      <div style="font-size:13px;color:#6B7A8D;line-height:1.7;background:#F4F7F9;border-radius:14px;border:1px solid #D5DFE8;padding:16px">
+        Fiecare <strong style="color:#2D2D2D">articol de rețetă</strong> (<code>devize_articole</code>, clasificat Uniclass) consumă
+        resurse (<code>devize_resurse</code>) în cantități fixe (<code>devize_retete.consum_specific</code>). Pentru resursele de
+        manoperă (cod ESCO), costul se calculează real din Rate Card-ul de mai sus (7B) — inclusiv componentele granulare din G13.
+      </div>
+
+      <div style="font-size:11.5px;color:#6B7A8D;line-height:1.6;background:#FFF9EE;border:1px solid #F5DDA8;border-radius:10px;padding:10px 14px">
+        <strong style="color:#8A5A00">Stadiu real (G14):</strong> motorul de calcul de mai jos e conectat la date reale, nu simulate.
+        Rămân două goluri, verificate direct, nu presupuse: (1) niciunul din cele 8 articole nu are încă un serviciu real din catalog
+        asociat (<code>catalog_nivel_id</code>) — legătura articol-de-rețetă → serviciu vândut e o decizie de business care nu s-a
+        luat încă; (2) resursele de materiale/utilaje nu au nicio sursă de tarif conectată azi — apar mai jos ca atare, cu costul lor
+        marcat neconectat, nu estimat.
+      </div>
+
+      <div style="overflow-x:auto;border-radius:16px;border:1px solid #D5DFE8">
+        <table style="width:100%;border-collapse:collapse;font-size:12.5px;min-width:760px" id="recipe-table">
+          <thead style="background:linear-gradient(135deg,#F4F7F9,#EBF4FB)">
+            <tr>
+              <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Articol (Uniclass)</th>
+              <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">U.M.</th>
+              <th style="padding:10px 14px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Manoperă calculată</th>
+              <th style="padding:10px 14px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Nivel catalog asociat</th>
+              <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Resurse neconectate la preț</th>
+            </tr>
+          </thead>
+          <tbody id="recipe-body">
+            <tr><td colspan="5" style="text-align:center;padding:24px;color:#8C9BAD">Se încarcă...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <!-- 7C — PARTENER MULTI-ȚARĂ -->
   <div class="card reveal">
     <div class="card-hdr" style="background:linear-gradient(135deg,#003366,#004D99)">
@@ -2751,10 +2794,54 @@ function showRCToast(msg) {
   setTimeout(() => t.remove(), 3200);
 }
 
+// G14 (25 Iulie 2026) — Motor de rețete: citește costul calculat real din
+// api/admin/deviz-recipe.js (lib/calculeaza-cost-recipe.js), nu Supabase
+// REST direct — e o rută serverless cu logică de agregare, nu un CRUD simplu
+// pe un singur tabel.
+async function loadRecipeEngine() {
+  const tbody = document.getElementById('recipe-body');
+  if (!tbody) return;
+  try {
+    const headers = await _devizAuthHeader();
+    const r = await fetch('/api/admin/deviz-recipe?tara=RO', { headers });
+    const data = await r.json();
+    if (!r.ok || !data.articole) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:#C0392B">Date indisponibile · verifică sesiunea de admin</td></tr>';
+      return;
+    }
+    if (!data.articole.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:#8C9BAD">Niciun articol de rețetă găsit</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.articole.map((a) => {
+      const nivel = a.catalog_nivel_id
+        ? `<span style="font-family:monospace;font-size:11px;color:#0E9E99">${escapeHTML(a.catalog_nivel_id)}</span>`
+        : '<span style="color:#B8C4CE">— neasociat —</span>';
+      const nepretuite = a.resurse_fara_pret?.length
+        ? a.resurse_fara_pret.map((m) => escapeHTML(m.denumire)).join(', ')
+        : '<span style="color:#B8C4CE">niciuna</span>';
+      return `<tr style="border-bottom:1px solid #F4F7F9">
+        <td style="padding:11px 14px">
+          <div style="font-weight:600;color:#2D2D2D">${escapeHTML(a.denumire_articol)}</div>
+          <div style="font-family:monospace;font-size:10px;color:#0E9E99">${escapeHTML(a.uniclass_system_code || '—')}</div>
+        </td>
+        <td style="padding:11px 14px">${escapeHTML(a.unitate_masura || '—')}</td>
+        <td style="padding:11px 14px;text-align:center;font-weight:700;color:#003366">${a.total.toFixed(2)} RON</td>
+        <td style="padding:11px 14px;text-align:center">${nivel}</td>
+        <td style="padding:11px 14px;font-size:11.5px;color:#6B7A8D">${nepretuite}</td>
+      </tr>`;
+    }).join('');
+  } catch {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:#C0392B">Eroare de conexiune</td></tr>';
+  }
+}
+
 // ── Auto-load la DOMContentLoaded ─────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   const rcTable = document.getElementById('rc-body');
   if (rcTable) loadRateCard();
+  const recipeTable = document.getElementById('recipe-body');
+  if (recipeTable) loadRecipeEngine();
 });
 
 // ── MULTI-COUNTRY PARTNER JS ──
