@@ -767,6 +767,18 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
       <span id="loc-currency" style="font-size:10px;color:rgba(255,255,255,.4)">· Lei</span>
       <i data-lucide="chevron-down" class="w-3 h-3 text-white/30"></i>
     </div>
+
+    <!-- Comutator de limbă (pilot i18n, 25 Iulie 2026) — alegerea manuală
+         persistă în localStorage și are prioritate față de detecția din
+         geolocalizare (myd:geo). Vezi i18n-loader.js. -->
+    <select id="lang-switcher" onchange="window.MYD_I18N && window.MYD_I18N.setLanguage(this.value, {persist:true})"
+      style="background:transparent;color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:3px 6px;font-size:11px;cursor:pointer;outline:none">
+      <option value="ro">🇷🇴 RO</option>
+      <option value="en">🇬🇧 EN</option>
+      <option value="de">🇩🇪 DE</option>
+      <option value="fr">🇫🇷 FR</option>
+      <option value="tr">🇹🇷 TR</option>
+    </select>
     <!-- Dropdown țară/monedă -->
     <div id="countryDd" style="display:none;position:absolute;top:100%;right:160px;background:#fff;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.15);padding:8px;min-width:200px;z-index:500">
       <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;padding:4px 8px 8px">Țara serviciului</div>
@@ -849,7 +861,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 
       <div class="mega-wrap">
         <a href="mydarrin-catalog.html" class="nav-lnk flex items-center gap-1">
-          Servicii <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200"></i>
+          <span data-i18n="nav.servicii">Servicii</span> <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200"></i>
         </a>
         <div class="mega-panel" style="width:520px">
           <div class="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-l border-t border-gray-100 rotate-45 z-10"></div>
@@ -873,12 +885,12 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
         </div>
       </div>
 
-      <a href="despre-noi.html" class="nav-lnk">Despre noi</a>
+      <a href="despre-noi.html" class="nav-lnk" data-i18n="nav.despre_noi">Despre noi</a>
 
       <!-- DEVINO PARTENER — mega dropdown -->
       <div class="mega-wrap">
         <a href="mydarrin-devino-partener.html" class="nav-lnk flex items-center gap-1">
-          Devino Partener <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200"></i>
+          <span data-i18n="nav.devino_partener">Devino Partener</span> <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200"></i>
         </a>
         <div class="mega-panel" style="width:460px">
           <div class="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-l border-t border-gray-100 rotate-45 z-10"></div>
@@ -903,7 +915,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
         </div>
       </div>
 
-      <a href="mydarrin-contact.html" class="nav-lnk">Contact</a>
+      <a href="mydarrin-contact.html" class="nav-lnk" data-i18n="nav.contact">Contact</a>
 
             <!-- INVESTITORI — mega dropdown -->
       <div class="mega-wrap">
@@ -1359,13 +1371,13 @@ function triggerHeaderSearch(){
   <div style="max-width:1200px;margin:0 auto;padding:0 20px;padding-top:64px;padding-bottom:64px;position:relative;z-index:10;width:100%;box-sizing:border-box">
 
     <div class="text-center max-w-3xl mx-auto mb-10">
-      <div class="reveal inline-flex items-center gap-2 px-4 py-2 rounded-full mb-5 text-xs font-bold uppercase tracking-widest" style="background:rgba(232,135,26,.15);border:1px solid rgba(232,135,26,.3);color:#FF8C00">
+      <div class="reveal inline-flex items-center gap-2 px-4 py-2 rounded-full mb-5 text-xs font-bold uppercase tracking-widest" style="background:rgba(232,135,26,.15);border:1px solid rgba(232,135,26,.3);color:#FF8C00" data-i18n="home.hero.eyebrow">
         Platforma hibrid clasic & AI
       </div>
-      <h1 class="reveal d1 text-5xl lg:text-6xl font-bold leading-tight text-white mb-5" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">
+      <h1 class="reveal d1 text-5xl lg:text-6xl font-bold leading-tight text-white mb-5" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif" data-i18n-html="home.hero.title">
         Servicii profesionale <br>la tine acasă, <span class="text-[#FF8C00]">rapid & sigur.</span>
       </h1>
-      <p class="reveal d2 text-white/60 text-base leading-relaxed mb-8 max-w-xl mx-auto">
+      <p class="reveal d2 text-white/60 text-base leading-relaxed mb-8 max-w-xl mx-auto" data-i18n="home.hero.subtitle">
         Conectăm clienți cu parteneri verificați prin deviz inteligent generat de AI în 60 secunde. Plată escrow, garanție digitală automată.
       </p>
 
@@ -1376,6 +1388,7 @@ function triggerHeaderSearch(){
             type="text"
             id="hero-search"
             placeholder="Ce ai nevoie? (ex: reparație calorifer, montaj gard, panouri solare...)"
+            data-i18n-attr="placeholder:home.hero.search_placeholder"
             onkeydown="if(event.key==='Enter')triggerDarrinAI()"
             style="flex:1;background:transparent;border:none;outline:none;padding:14px 18px;color:#1A2332;font-size:14.5px;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif"
           >
@@ -1385,7 +1398,7 @@ function triggerHeaderSearch(){
             onmouseover="this.style.background='#0B7A76'"
             onmouseout="this.style.background='#0E9E99'">
             <span style="font-size:18px"><i data-lucide="bot" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>
-            <span class="hidden sm:inline">Darrin AI</span>
+            <span class="hidden sm:inline" data-i18n="home.hero.ai_button">Darrin AI</span>
           </button>
         </div>
       </div>
@@ -1398,7 +1411,7 @@ function triggerHeaderSearch(){
            onmouseover="this.style.background='#CC7000';this.style.transform='translateY(-2px)'"
            onmouseout="this.style.background='#FF8C00';this.style.transform=''">
           <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-          Explorează Catalogul
+          <span data-i18n="home.hero.cta_catalog">Explorează Catalogul</span>
         </a>
         <a href="mydarrin-devino-partener.html"
            class="inline-flex items-center justify-center gap-3 px-9 py-4 rounded-xl font-bold text-lg transition shadow-lg"
@@ -1406,8 +1419,8 @@ function triggerHeaderSearch(){
            onmouseover="this.style.background='#0B7A76';this.style.transform='translateY(-2px)'"
            onmouseout="this.style.background='#0E9E99';this.style.transform=''">
           <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-          Devino Partener
-          <span style="font-size:10px;background:rgba(255,255,255,.22);border-radius:99px;padding:2px 8px;font-weight:700">GRATUIT</span>
+          <span data-i18n="home.hero.cta_partner">Devino Partener</span>
+          <span style="font-size:10px;background:rgba(255,255,255,.22);border-radius:99px;padding:2px 8px;font-weight:700" data-i18n="home.hero.cta_partner_badge">GRATUIT</span>
         </a>
       </div>
 
@@ -3784,5 +3797,6 @@ if(document.readyState==='loading'){
 </script>
 <!-- ════ END GEO MODULE ════ -->
 <script src="share-widget.js" defer></script>
+<script src="i18n-loader.js" defer></script>
 </body>
 </html>
