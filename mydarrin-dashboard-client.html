@@ -788,9 +788,10 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
       document.getElementById('auth-gate-overlay')?.remove();
 
       if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => populateUserData(user));
+        document.addEventListener('DOMContentLoaded', () => { populateUserData(user); loadComenziReale(); });
       } else {
         populateUserData(user);
+        loadComenziReale();
       }
     } catch (e) {
       console.error('[dashboard-client] eroare barieră:', e);
@@ -1400,12 +1401,13 @@ function triggerHeaderSearch(){
         </div>
       </div>
 
-      <!-- ACTIVE ORDERS ALERT -->
-      <div class="reveal bg-[#FFF0D6] border border-[#FFB866] rounded-2xl p-4 flex items-start gap-3">
+      <!-- ACTIVE ORDERS ALERT (G18: real, ascunsă implicit, afișată doar
+           dacă există efectiv comenzi status='finalizata' de confirmat) -->
+      <div id="alerta-confirmari" class="reveal bg-[#FFF0D6] border border-[#FFB866] rounded-2xl p-4 flex items-start gap-3" style="display:none">
         <div class="w-9 h-9 rounded-xl bg-[#FF8C00] flex items-center justify-center flex-shrink-0"><i data-lucide="clock" class="w-4 h-4 text-white"></i></div>
         <div class="flex-1">
-          <div class="font-bold text-[#CC7000] text-sm">2 comenzi necesită confirmare ta!</div>
-          <div class="text-xs text-[#CC7000] mt-0.5 opacity-80">Ai 5 zile să confirmi execuția și să eliberezi Escrow-ul. Expiră pe 20 iun. 2026.</div>
+          <div class="font-bold text-[#CC7000] text-sm" id="alerta-confirmari-text">—</div>
+          <div class="text-xs text-[#CC7000] mt-0.5 opacity-80">Confirmă execuția ca să eliberezi Escrow-ul către partener.</div>
         </div>
         <button onclick="showTab('comenzi')" class="text-[11px] font-bold text-[#CC7000] border border-[#FFB866] px-3 py-1.5 rounded-lg hover:bg-[#FFB866] hover:text-white transition flex-shrink-0">
           Confirmă acum →
@@ -1418,130 +1420,18 @@ function triggerHeaderSearch(){
           <h2 class="text-lg font-bold text-[#003366] flex items-center gap-2">
             <i data-lucide="package" class="w-5 h-5"></i>Comenzile mele
           </h2>
-          <div class="flex gap-2">
-            <button class="text-xs font-bold border border-[#D5DFE8] px-3 py-1.5 rounded-lg text-[#003366] bg-[#EBF4FB]">Toate (12)</button>
-            <button class="text-xs font-semibold border border-[#D5DFE8] px-3 py-1.5 rounded-lg text-[#6B7A8D] hover:border-[#003366] transition">Active (2)</button>
-            <button class="text-xs font-semibold border border-[#D5DFE8] px-3 py-1.5 rounded-lg text-[#6B7A8D] hover:border-[#003366] transition">Finalizate (10)</button>
+          <div class="flex gap-2" id="comenzi-filtre">
+            <button class="text-xs font-bold border border-[#D5DFE8] px-3 py-1.5 rounded-lg text-[#003366] bg-[#EBF4FB]" onclick="filtreazaComenzi('toate', this)" id="filtru-toate">Toate (0)</button>
+            <button class="text-xs font-semibold border border-[#D5DFE8] px-3 py-1.5 rounded-lg text-[#6B7A8D] hover:border-[#003366] transition" onclick="filtreazaComenzi('active', this)" id="filtru-active">Active (0)</button>
+            <button class="text-xs font-semibold border border-[#D5DFE8] px-3 py-1.5 rounded-lg text-[#6B7A8D] hover:border-[#003366] transition" onclick="filtreazaComenzi('finalizate', this)" id="filtru-finalizate">Finalizate (0)</button>
           </div>
         </div>
 
-        <!-- Order 1 — ESCROW ACTIV -->
-        <div class="order-row" onclick="openDrawer(1)">
-          <div class="flex items-start justify-between gap-4 flex-wrap">
-            <div class="flex items-center gap-3">
-              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#EBF4FB] to-[#DDE6F5] flex items-center justify-center text-2xl flex-shrink-0"><i data-lucide="zap" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-              <div>
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="font-bold text-[#003366] text-[14px]">Instalare tablou electric</span>
-                  <span class="status-chip status-escrow">Escrow activ</span>
-                </div>
-                <div class="text-xs text-[#8C9BAD] mt-1 flex flex-wrap gap-3">
-                  <span class="flex items-center gap-1"><i data-lucide="building" class="w-3 h-3"></i>Electro Profesional SRL</span>
-                  <span class="flex items-center gap-1"><i data-lucide="calendar" class="w-3 h-3"></i>15 iun. 2026</span>
-                  <span class="flex items-center gap-1"><i data-lucide="hash" class="w-3 h-3"></i>#MD-20260615-0142</span>
-                </div>
-              </div>
-            </div>
-            <div class="text-right">
-              <div class="font-bold text-lg text-[#003366]">1.240 Lei</div>
-              <div class="text-xs text-[#8C9BAD]">Pachet Aur</div>
-            </div>
-          </div>
-          <!-- Progress bar -->
-          <div class="mt-4">
-            <div class="flex justify-between text-[10.5px] text-[#8C9BAD] mb-1.5">
-              <span>Progres execuție</span><span class="text-[#FF8C00] font-bold">75% — În execuție</span>
-            </div>
-            <div class="h-2 bg-[#F4F7F9] rounded-full overflow-hidden">
-              <div class="h-2 rounded-full bg-gradient-to-r from-[#FF8C00] to-[#FFA033] transition-all duration-700" style="width:75%"></div>
-            </div>
-          </div>
-          <div class="flex justify-between items-center mt-4 pt-3 border-t border-[#F4F7F9]">
-            <div class="flex gap-2">
-              <button class="flex items-center gap-1.5 text-xs font-bold text-[#0E9E99] border border-[#0E9E99]/30 px-3 py-1.5 rounded-lg hover:bg-[#E0F5F4] transition" onclick="event.stopPropagation();alert('Confirmarea eliberează Escrow-ul.')">
-                <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>Confirmă execuția
-              </button>
-              <button class="flex items-center gap-1.5 text-xs font-semibold text-[#6B7A8D] border border-[#D5DFE8] px-3 py-1.5 rounded-lg hover:border-[#003366] transition" onclick="event.stopPropagation();">
-                <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>Contactează
-              </button>
-            </div>
-            <span class="text-xs text-[#8C9BAD] flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i>Expiră: 20 iun.</span>
-          </div>
+        <!-- G18 (26 Iulie 2026) — listă reală, populată din
+             api/client/comenzi-tracker.js, nu machetă. -->
+        <div id="comenzi-reale-list" data-filtru="toate">
+          <div style="text-align:center;padding:28px;color:#8C9BAD;font-size:13px">Se încarcă comenzile tale...</div>
         </div>
-
-        <!-- Order 2 — PROGRAMAT -->
-        <div class="order-row" onclick="openDrawer(2)">
-          <div class="flex items-start justify-between gap-4 flex-wrap">
-            <div class="flex items-center gap-3">
-              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#FFF0D6] to-[#FDE8C4] flex items-center justify-center text-2xl flex-shrink-0"><i data-lucide="wrench" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-              <div>
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="font-bold text-[#003366] text-[14px]">Reparare instalații sanitare</span>
-                  <span class="status-chip status-active">⏰ Programat</span>
-                </div>
-                <div class="text-xs text-[#8C9BAD] mt-1 flex flex-wrap gap-3">
-                  <span class="flex items-center gap-1"><i data-lucide="building" class="w-3 h-3"></i>InstalaȚii Pro SRL</span>
-                  <span class="flex items-center gap-1"><i data-lucide="calendar" class="w-3 h-3"></i>16 iun. 2026</span>
-                  <span class="flex items-center gap-1"><i data-lucide="hash" class="w-3 h-3"></i>#MD-20260616-0087</span>
-                </div>
-              </div>
-            </div>
-            <div class="text-right">
-              <div class="font-bold text-lg text-[#003366]">480 Lei</div>
-              <div class="text-xs text-[#8C9BAD]">Pachet Argint</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Order 3 — FINALIZAT -->
-        <div class="order-row" onclick="openDrawer(3)">
-          <div class="flex items-start justify-between gap-4 flex-wrap">
-            <div class="flex items-center gap-3">
-              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#D4EDDA] to-[#B8DFC4] flex items-center justify-center text-2xl flex-shrink-0"><i data-lucide="paintbrush" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-              <div>
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="font-bold text-[#003366] text-[14px]">Zugrăveli sufragerie</span>
-                  <span class="status-chip status-done">Finalizat</span>
-                </div>
-                <div class="text-xs text-[#8C9BAD] mt-1 flex flex-wrap gap-3">
-                  <span class="flex items-center gap-1"><i data-lucide="building" class="w-3 h-3"></i>Zugravi Expert SRL</span>
-                  <span class="flex items-center gap-1"><i data-lucide="calendar" class="w-3 h-3"></i>3 iun. 2026</span>
-                </div>
-              </div>
-            </div>
-            <div class="text-right">
-              <div class="font-bold text-lg text-[#003366]">720 Lei</div>
-              <div class="text-xs text-[#0E9E99] font-bold">Garanție: 12 luni</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Order 4 — FINALIZAT -->
-        <div class="order-row" onclick="openDrawer(4)">
-          <div class="flex items-start justify-between gap-4 flex-wrap">
-            <div class="flex items-center gap-3">
-              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#E0F5F4] to-[#B3E8E6] flex items-center justify-center text-2xl flex-shrink-0"><i data-lucide="snowflake" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-              <div>
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="font-bold text-[#003366] text-[14px]">Instalare AC split 12000 BTU</span>
-                  <span class="status-chip status-done">Finalizat</span>
-                </div>
-                <div class="text-xs text-[#8C9BAD] mt-1 flex flex-wrap gap-3">
-                  <span class="flex items-center gap-1"><i data-lucide="building" class="w-3 h-3"></i>ClimaTech SRL</span>
-                  <span class="flex items-center gap-1"><i data-lucide="calendar" class="w-3 h-3"></i>21 mai 2026</span>
-                </div>
-              </div>
-            </div>
-            <div class="text-right">
-              <div class="font-bold text-lg text-[#003366]">1.480 Lei</div>
-              <div class="text-xs text-[#0E9E99] font-bold">Garanție: 24 luni</div>
-            </div>
-          </div>
-        </div>
-
-        <button class="w-full py-3 rounded-xl border border-[#D5DFE8] text-sm font-semibold text-[#6B7A8D] hover:border-[#003366] hover:text-[#003366] transition mt-2">
-          Încarcă mai multe comenzi (8 rămase) →
-        </button>
       </div>
 
       <!-- TAB: DEVIZE AI -->
@@ -1732,6 +1622,11 @@ function triggerHeaderSearch(){
 
 <!-- ORDER DRAWER -->
 <div id="drawer-overlay" onclick="closeDrawer()"></div>
+<!-- G18 (26 Iulie 2026) — conținut populat real de renderDrawerContent(),
+     din api/client/comenzi-tracker.js. Fără % execuție/dovezi foto inventate
+     — nu există în schema reală (comenzi.status e enum simplu, verificat
+     direct: in_cautare_partener/acceptata/in_executie/finalizata/
+     confirmata_client/anulata), deci timeline-ul arată doar aceste stări. -->
 <div id="order-drawer">
   <div class="p-6 border-b border-[#F4F7F9] flex items-center justify-between">
     <h3 class="font-bold text-[#003366] text-base" id="drawer-title">Detalii comandă</h3>
@@ -1740,67 +1635,23 @@ function triggerHeaderSearch(){
   <div class="p-6 space-y-5">
     <!-- Status + id -->
     <div class="flex items-center justify-between flex-wrap gap-2">
-      <span class="status-chip status-escrow">Escrow activ</span>
-      <span class="font-mono text-xs text-[#8C9BAD]">#MD-20260615-0142</span>
+      <span class="status-chip status-escrow" id="drawer-status-chip">—</span>
+      <span class="font-mono text-xs text-[#8C9BAD]" id="drawer-nr">—</span>
     </div>
-    <!-- Service info -->
+    <!-- Order info -->
     <div class="bg-[#EBF4FB] rounded-2xl p-4">
-      <div class="flex items-center gap-3 mb-3">
-        <div class="text-3xl"><i data-lucide="zap" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-        <div>
-          <div class="font-bold text-[#003366]">Instalare tablou electric</div>
-          <div class="text-sm text-[#6B7A8D]">Pachet Aur · Electro Profesional SRL</div>
-        </div>
-      </div>
       <div class="grid grid-cols-2 gap-2 text-xs">
-        <div class="bg-white rounded-xl p-2.5"><div class="text-[#8C9BAD]">Data execuție</div><div class="font-bold text-[#2D2D2D] mt-0.5">15 iun. 2026</div></div>
-        <div class="bg-white rounded-xl p-2.5"><div class="text-[#8C9BAD]">Valoare Escrow</div><div class="font-bold text-[#FF8C00] mt-0.5">1.240 Lei</div></div>
+        <div class="bg-white rounded-xl p-2.5"><div class="text-[#8C9BAD]">Data plasării</div><div class="font-bold text-[#2D2D2D] mt-0.5" id="drawer-data">—</div></div>
+        <div class="bg-white rounded-xl p-2.5"><div class="text-[#8C9BAD]">Valoare comandă</div><div class="font-bold text-[#FF8C00] mt-0.5" id="drawer-suma">—</div></div>
       </div>
     </div>
     <!-- Timeline -->
     <div>
-      <div class="text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-3">Timeline execuție</div>
-      <div class="space-y-4">
-        <div class="flex gap-3">
-          <div class="timeline-node" style="background:#D4EDDA;border-color:#1A7A3A;color:#1A7A3A"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-          <div><div class="font-semibold text-sm text-[#2D2D2D]">Comandă plasată</div><div class="text-xs text-[#8C9BAD]">15 iun. 2026, 09:14 · Escrow blocat 1.240 Lei</div></div>
-        </div>
-        <div class="flex gap-3">
-          <div class="timeline-node" style="background:#D4EDDA;border-color:#1A7A3A;color:#1A7A3A"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-          <div><div class="font-semibold text-sm text-[#2D2D2D]">Partener confirmat</div><div class="text-xs text-[#8C9BAD]">15 iun. 2026, 09:45 · Electro Profesional SRL</div></div>
-        </div>
-        <div class="flex gap-3">
-          <div class="timeline-node" style="background:#FFF0D6;border-color:#FF8C00;color:#FF8C00">3</div>
-          <div><div class="font-semibold text-sm text-[#FF8C00]">În execuție (75%)</div><div class="text-xs text-[#8C9BAD]">15 iun. 2026 — Dovezi foto primite · 3 din 4 faze</div></div>
-        </div>
-        <div class="flex gap-3 opacity-40">
-          <div class="timeline-node" style="border-color:#D5DFE8;color:#8C9BAD">4</div>
-          <div><div class="font-semibold text-sm text-[#8C9BAD]">Confirmare finalizare</div><div class="text-xs text-[#8C9BAD]">Pending — tu confirmi execuția</div></div>
-        </div>
-        <div class="flex gap-3 opacity-40">
-          <div class="timeline-node" style="border-color:#D5DFE8;color:#8C9BAD">5</div>
-          <div><div class="font-semibold text-sm text-[#8C9BAD]">Escrow eliberat</div><div class="text-xs text-[#8C9BAD]">Suma netă → Electro Profesional SRL</div></div>
-        </div>
-      </div>
+      <div class="text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-3">Progres comandă</div>
+      <div class="space-y-4" id="drawer-timeline"></div>
     </div>
-    <!-- Dovezi foto -->
-    <div>
-      <div class="text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-2.5">Dovezi foto primite (3/4)</div>
-      <div class="grid grid-cols-3 gap-2">
-        <div class="aspect-square rounded-xl bg-gradient-to-br from-[#EBF4FB] to-[#DDE6F5] flex items-center justify-center text-2xl"><i data-lucide="camera" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-        <div class="aspect-square rounded-xl bg-gradient-to-br from-[#FFF0D6] to-[#FDE8C4] flex items-center justify-center text-2xl"><i data-lucide="camera" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-        <div class="aspect-square rounded-xl bg-gradient-to-br from-[#D4EDDA] to-[#B8DFC4] flex items-center justify-center text-2xl"><i data-lucide="image" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-      </div>
-    </div>
-    <!-- Actions -->
-    <div class="space-y-2.5 pt-2 border-t border-[#F4F7F9]">
-      <button class="w-full py-3.5 rounded-2xl bg-[#0E9E99] text-white font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#0B7A76] transition">
-        <i data-lucide="check-circle" class="w-4 h-4"></i>Confirmă execuția & Eliberează Escrow
-      </button>
-      <button class="w-full py-3 rounded-2xl border border-[#D5DFE8] text-sm font-semibold text-[#6B7A8D] flex items-center justify-center gap-2 hover:border-red-400 hover:text-red-500 transition">
-        <i data-lucide="alert-circle" class="w-4 h-4"></i>Deschide dispută
-      </button>
-    </div>
+    <!-- Actions (afișate doar dacă statusul le permite real) -->
+    <div class="space-y-2.5 pt-2 border-t border-[#F4F7F9]" id="drawer-actions"></div>
   </div>
 </div>
 
@@ -3406,7 +3257,123 @@ function closeInvestorModal(){document.getElementById("investor-modal").classLis
 function selectPartnerType(type){const PM={servicii:{icon:"",title:"Furnizor de Servicii",color:"#FF8C00",bg:"linear-gradient(135deg,#FFF0D6,#FDE8C4)"},materiale:{icon:"",title:"Furnizor de Materiale",color:"#003366",bg:"linear-gradient(135deg,#EBF4FB,#DDE6F5)"},inchirieri:{icon:"",title:"Furnizor de Închirieri",color:"#0E9E99",bg:"linear-gradient(135deg,#E0F5F4,#C5EEEC)"},curier:{icon:"",title:"Curier de Cartier",color:"#D97706",bg:"linear-gradient(135deg,#FEF3C7,#FDE68A)"},asigurari:{icon:"",title:"Furnizor de Asigurări",color:"#0E9E99",bg:"linear-gradient(135deg,#E0F5F4,#B3E8E6)"}};const m=PM[type];if(!m)return;document.getElementById("partner-cards").classList.add("hidden");document.getElementById("partner-form").classList.remove("hidden");document.getElementById("pf-icon").textContent=m.icon;document.getElementById("pf-icon").style.background=m.bg;document.getElementById("pf-title").textContent=m.title;document.getElementById("pf-title").style.color=m.color;}
 function resetPartnerType(){document.getElementById("partner-cards").classList.remove("hidden");document.getElementById("partner-form").classList.add("hidden");}
 
+// ══ G18 (26 Iulie 2026) — TRACKER REAL DE COMENZI ══
+// Înlocuiește lista de 4 comenzi demo (cu nume reale de firme partenere,
+// contrazicând politica de confidențialitate) + timeline-ul cu 75%/dovezi
+// foto inventate. Sursă reală: api/client/comenzi-tracker.js.
+let COMENZI_REALE = [];
+
+const STATUS_INFO = {
+  in_cautare_partener: { label: 'Se caută partener', chip: 'status-active', culoare: '#8C9BAD' },
+  acceptata:           { label: 'Partener alocat',    chip: 'status-active', culoare: '#1A5FAD' },
+  in_executie:         { label: 'În execuție',        chip: 'status-active', culoare: '#FF8C00' },
+  finalizata:          { label: 'Așteaptă confirmarea ta', chip: 'status-escrow', culoare: '#FF8C00' },
+  confirmata_client:   { label: 'Finalizată',         chip: 'status-done',   culoare: '#1A7A3A' },
+  anulata:             { label: 'Anulată',            chip: 'status-done',   culoare: '#C0392B' },
+};
+function _statusInfo(s) { return STATUS_INFO[s] || { label: s, chip: 'status-active', culoare: '#8C9BAD' }; }
+function _fmtData(iso) {
+  if (!iso) return '—';
+  try { return new Date(iso).toLocaleDateString('ro-RO', { day: 'numeric', month: 'short', year: 'numeric' }); }
+  catch { return '—'; }
+}
+function _fmtSuma(c) { return (Number(c.suma_totala_platita) || 0).toLocaleString('ro-RO') + ' ' + (c.moneda || 'RON'); }
+
+async function _clientAuthHeader() {
+  const session = (await window.supabaseClient?.auth.getSession())?.data?.session;
+  return { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` };
+}
+
+async function loadComenziReale() {
+  const listEl = document.getElementById('comenzi-reale-list');
+  try {
+    const headers = await _clientAuthHeader();
+    const res = await fetch('/api/client/comenzi-tracker', { headers });
+    const data = await res.json();
+    COMENZI_REALE = res.ok && data.comenzi ? data.comenzi : [];
+  } catch (e) {
+    console.error('[G18] comenzi-tracker indisponibil:', e);
+    COMENZI_REALE = [];
+  }
+
+  if (listEl && !COMENZI_REALE.length) {
+    listEl.innerHTML = '<div style="text-align:center;padding:28px;color:#8C9BAD;font-size:13px">Nu ai încă nicio comandă plasată.</div>';
+  }
+
+  const active = COMENZI_REALE.filter(c => ['in_cautare_partener','acceptata','in_executie','finalizata'].includes(c.status));
+  const finalizate = COMENZI_REALE.filter(c => ['confirmata_client','anulata'].includes(c.status));
+  setEl2('filtru-toate', 'Toate (' + COMENZI_REALE.length + ')');
+  setEl2('filtru-active', 'Active (' + active.length + ')');
+  setEl2('filtru-finalizate', 'Finalizate (' + finalizate.length + ')');
+
+  const deConfirmat = COMENZI_REALE.filter(c => c.status === 'finalizata');
+  const alerta = document.getElementById('alerta-confirmari');
+  if (alerta) {
+    if (deConfirmat.length) {
+      alerta.style.display = 'flex';
+      setEl2('alerta-confirmari-text', deConfirmat.length + (deConfirmat.length === 1 ? ' comandă necesită confirmarea ta!' : ' comenzi necesită confirmarea ta!'));
+    } else {
+      alerta.style.display = 'none';
+    }
+  }
+
+  renderComenziList(document.getElementById('comenzi-reale-list')?.dataset.filtru || 'toate');
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+function setEl2(id, text) { const el = document.getElementById(id); if (el) el.textContent = text; }
+
+function filtreazaComenzi(filtru, btnEl) {
+  document.querySelectorAll('#comenzi-filtre button').forEach(b => {
+    b.classList.remove('bg-[#EBF4FB]', 'text-[#003366]', 'font-bold');
+    b.classList.add('text-[#6B7A8D]', 'font-semibold');
+  });
+  if (btnEl) { btnEl.classList.add('bg-[#EBF4FB]', 'text-[#003366]', 'font-bold'); btnEl.classList.remove('text-[#6B7A8D]', 'font-semibold'); }
+  renderComenziList(filtru);
+}
+
+function renderComenziList(filtru) {
+  const listEl = document.getElementById('comenzi-reale-list');
+  if (!listEl) return;
+  listEl.dataset.filtru = filtru;
+  if (!COMENZI_REALE.length) return; // mesajul de "nicio comandă" e deja afișat
+
+  const activeStatuses = ['in_cautare_partener','acceptata','in_executie','finalizata'];
+  const filtrate = filtru === 'active' ? COMENZI_REALE.filter(c => activeStatuses.includes(c.status))
+    : filtru === 'finalizate' ? COMENZI_REALE.filter(c => ['confirmata_client','anulata'].includes(c.status))
+    : COMENZI_REALE;
+
+  if (!filtrate.length) {
+    listEl.innerHTML = '<div style="text-align:center;padding:24px;color:#8C9BAD;font-size:13px">Nicio comandă în această categorie.</div>';
+    return;
+  }
+
+  listEl.innerHTML = filtrate.map((c) => {
+    const info = _statusInfo(c.status);
+    return `<div class="order-row" onclick="openDrawer('${c.id}')" style="margin-bottom:12px">
+      <div class="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-bold text-[#003366] text-[14px]">Comandă #${escapeDashHTML(c.nr_comanda)}</span>
+            <span class="status-chip ${info.chip}">${escapeDashHTML(info.label)}</span>
+          </div>
+          <div class="text-xs text-[#8C9BAD] mt-1 flex flex-wrap gap-3">
+            <span class="flex items-center gap-1"><i data-lucide="calendar" class="w-3 h-3"></i>${_fmtData(c.creat_la)}</span>
+            <span class="flex items-center gap-1"><i data-lucide="${c.partener_alocat ? 'user-check' : 'search'}" class="w-3 h-3"></i>${c.partener_alocat ? 'Partener alocat' : 'Se caută partener'}</span>
+          </div>
+        </div>
+        <div class="text-right">
+          <div class="font-bold text-lg text-[#003366]">${_fmtSuma(c)}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+function escapeDashHTML(str) { const d = document.createElement('div'); d.textContent = str == null ? '' : String(str); return d.innerHTML; }
+
 function openDrawer(id) {
+  const c = COMENZI_REALE.find(x => x.id === id);
+  if (c) renderDrawerContent(c);
   document.getElementById("order-drawer").classList.add("open");
   document.getElementById("drawer-overlay").classList.add("show");
   document.body.style.overflow = "hidden";
@@ -3416,6 +3383,91 @@ function closeDrawer() {
   document.getElementById("order-drawer").classList.remove("open");
   document.getElementById("drawer-overlay").classList.remove("show");
   document.body.style.overflow = "";
+}
+
+// Cele 5 stări reale, în ordinea din CHECK constraint-ul comenzi.status —
+// nu procente/dovezi inventate.
+const ORDINE_STATUS = ['in_cautare_partener', 'acceptata', 'in_executie', 'finalizata', 'confirmata_client'];
+function renderDrawerContent(c) {
+  const info = _statusInfo(c.status);
+  setEl2('drawer-nr', '#' + c.nr_comanda);
+  setEl2('drawer-data', _fmtData(c.creat_la));
+  setEl2('drawer-suma', _fmtSuma(c));
+  const chip = document.getElementById('drawer-status-chip');
+  if (chip) { chip.textContent = info.label; chip.className = 'status-chip ' + info.chip; }
+
+  const pasiTimeline = [
+    { cheie: 'in_cautare_partener', titlu: 'Comandă plasată', detaliu: _fmtData(c.creat_la) },
+    { cheie: 'acceptata', titlu: 'Partener alocat', detaliu: c.partener_alocat ? 'Confirmat' : 'În căutare' },
+    { cheie: 'in_executie', titlu: 'În execuție', detaliu: 'Partenerul lucrează la comandă' },
+    { cheie: 'finalizata', titlu: 'Așteaptă confirmarea ta', detaliu: 'Partenerul a marcat lucrarea ca finalizată' },
+    { cheie: 'confirmata_client', titlu: 'Escrow eliberat', detaliu: c.escrow_eliberat ? 'Plată eliberată către partener' : 'În curs' },
+  ];
+  const indexCurent = c.status === 'anulata' ? -1 : ORDINE_STATUS.indexOf(c.status);
+  const timelineEl = document.getElementById('drawer-timeline');
+  if (timelineEl) {
+    timelineEl.innerHTML = c.status === 'anulata'
+      ? '<div class="text-sm text-[#C0392B] font-semibold">Comandă anulată</div>'
+      : pasiTimeline.map((pas, i) => {
+          const atins = i <= indexCurent;
+          const stilNod = atins
+            ? (i === indexCurent ? 'background:#FFF0D6;border-color:#FF8C00;color:#FF8C00' : 'background:#D4EDDA;border-color:#1A7A3A;color:#1A7A3A')
+            : 'border-color:#D5DFE8;color:#8C9BAD';
+          const iconaSauNumar = atins && i < indexCurent
+            ? '<i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i>'
+            : String(i + 1);
+          return `<div class="flex gap-3" style="${atins ? '' : 'opacity:.4'}">
+            <div class="timeline-node" style="${stilNod}">${iconaSauNumar}</div>
+            <div><div class="font-semibold text-sm" style="color:${atins ? '#2D2D2D' : '#8C9BAD'}">${escapeDashHTML(pas.titlu)}</div><div class="text-xs text-[#8C9BAD]">${escapeDashHTML(pas.detaliu)}</div></div>
+          </div>`;
+        }).join('');
+  }
+
+  const actionsEl = document.getElementById('drawer-actions');
+  if (actionsEl) {
+    actionsEl.innerHTML = c.status === 'finalizata' && c.token_confirmare
+      ? `<button class="w-full py-3.5 rounded-2xl bg-[#0E9E99] text-white font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#0B7A76] transition" onclick="confirmaExecutieReal('${c.id}')">
+           <i data-lucide="check-circle" class="w-4 h-4"></i>Confirmă execuția & Eliberează Escrow
+         </button>
+         <button class="w-full py-3 rounded-2xl border border-[#D5DFE8] text-sm font-semibold text-[#6B7A8D] flex items-center justify-center gap-2 hover:border-red-400 hover:text-red-500 transition" onclick="deschideDisputaReal('${c.id}')">
+           <i data-lucide="alert-circle" class="w-4 h-4"></i>Deschide dispută
+         </button>`
+      : '';
+  }
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+async function confirmaExecutieReal(id) {
+  const c = COMENZI_REALE.find(x => x.id === id);
+  if (!c || !c.token_confirmare) return;
+  if (!confirm('Confirmi execuția și eliberezi Escrow-ul către partener?')) return;
+  try {
+    const res = await fetch('/api/public/confirma-livrare', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: c.token_confirmare, actiune: 'confirma' }),
+    });
+    const data = await res.json();
+    if (!res.ok) { alert(data.error || 'Nu am putut confirma comanda.'); return; }
+    closeDrawer();
+    await loadComenziReale();
+  } catch (e) { alert('Eroare de conexiune — încearcă din nou.'); }
+}
+
+async function deschideDisputaReal(id) {
+  const c = COMENZI_REALE.find(x => x.id === id);
+  if (!c || !c.token_confirmare) return;
+  const motiv = prompt('Descrie pe scurt problema întâmpinată:');
+  if (!motiv || !motiv.trim()) return;
+  try {
+    const res = await fetch('/api/public/confirma-livrare', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: c.token_confirmare, actiune: 'contesta', motiv: motiv.trim() }),
+    });
+    const data = await res.json();
+    if (!res.ok) { alert(data.error || 'Nu am putut înregistra contestația.'); return; }
+    alert('Contestație înregistrată — echipa noastră o analizează.');
+    closeDrawer();
+  } catch (e) { alert('Eroare de conexiune — încearcă din nou.'); }
 }
 // Make all tabs visible on init
 document.getElementById("tab-comenzi").classList.remove("hidden");
