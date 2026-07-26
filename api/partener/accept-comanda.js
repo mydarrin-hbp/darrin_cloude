@@ -76,9 +76,14 @@ async function handler(req, res, user) {
   }
 
   // 2. Blochează comanda pe acest partener + marchează restul alocărilor ca expirate
+  // FIX (bug real găsit la testare live, 26 Iulie 2026): update-ul scria o
+  // coloană `updated_at` care nu există pe `comenzi` (verificat direct în
+  // information_schema) — UPDATE-ul eșua mereu aici, DUPĂ ce alocari_fifo
+  // era deja marcat 'acceptat', lăsând comanda blocată etern în
+  // in_cautare_partener, fără partener_id, cu FIFO-ul arătând fals acceptat.
   const { error: updComandaErr } = await supabaseAdmin
     .from('comenzi')
-    .update({ status: 'acceptata', partener_id: user.id, updated_at: new Date().toISOString() })
+    .update({ status: 'acceptata', partener_id: user.id })
     .eq('id', comanda_id)
     .eq('status', 'in_cautare_partener'); // dublă protecție la concurență
 
