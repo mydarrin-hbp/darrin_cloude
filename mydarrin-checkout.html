@@ -2586,22 +2586,43 @@ document.addEventListener('DOMContentLoaded', function() {
 
       const addrEl = document.querySelector('[id*="addr"], [class*="addr"]');
       const adresa = addrEl ? addrEl.textContent.trim() : '';
-      const totalEl = document.getElementById('total-price');
-      const totalText = totalEl ? totalEl.textContent : '0';
-      const valoare_totala = parseFloat(totalText.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
-      // FIX (T8, 2026-07-20): suma de asigurare era calculată doar în UI și
-      // se topea nediferențiat în valoare_totala — acum trimisă separat, ca
-      // api/comenzi/creeaza.js s-o persiste în comenzi.suma_asigurare (deja
-      // exista în schemă, doar nescrisă niciodată).
-      const suma_asigurare = document.getElementById('cb-insurance')?.checked ? INSURANCE_PRICE : 0;
+      // FIX (G15, 25 Iulie 2026): până acum se trimitea un singur număr
+      // (valoare_totala, citit din textul afișat al totalului) — backend-ul
+      // accepta deja componentele itemizate (cost_baza_servicii/cost_asigurare/
+      // etc., vezi api/comenzi/creeaza.js), dar checkout.html nu le trimitea
+      // niciodată, deci cădea mereu pe ramura fallback: comanda_subcontractori
+      // rămânea fără niciun rând real (nici măcar manoperă/asigurare), iar
+      // eliberarea de escrow nu avea din ce împărți suma. Aici avem deja,
+      // separat, cele 2 componente REALE care există azi în acest flux —
+      // cost_baza_servicii (BASE_SUBTOTAL, minus promo dacă activă — exact
+      // formula din recalcCheckoutTotal(), doar descompusă) și cost_asigurare
+      // (bifa opțională din checkout). Materiale/scule/curier rămân la 0 —
+      // onest, nu fabricat: configurarea comenzii nu are încă selectoare
+      // reale conectate la catalog pentru ele (G16, neconstruit).
+      let cost_baza_servicii = BASE_SUBTOTAL;
+      if (PROMO_ACTIVE) cost_baza_servicii -= PROMO_DISCOUNT;
+      const cost_asigurare = document.getElementById('cb-insurance')?.checked ? INSURANCE_PRICE : 0;
+      // Trimisă redundant, ca plasă de siguranță: dacă vreodată suma
+      // componentelor ar ajunge 0 (ex. promo ≥ prețul serviciului, caz
+      // limită), api/comenzi/creeaza.js cade pe ramura veche (valoare_totala)
+      // în loc să respingă comanda cu 400 — nu schimbă nimic în cazul normal,
+      // unde componentele itemizate au prioritate.
+      const valoare_totala = cost_baza_servicii + cost_asigurare;
       const geo = window.MYD_GEO_LAST || {};
 
+      // NU trimitem catalog_serviciu_id: mydarrin-produs.html configurează
+      // azi din PRODUCTS_DB (obiect JS static), nu din catalog_servicii —
+      // slug-ul salvat în sessionStorage nu e un uuid real din acel tabel.
+      // comenzi.catalog_serviciu_id e coloană uuid — a trimite un slug ar
+      // rupe INSERT-ul cu o eroare de tip, nu doar ar rata alocarea. Rămâne
+      // neconectat, la fel ca azi — o legătură reală necesită G16 (selectoare
+      // conectate la catalog în mydarrin-produs.html), nu o mapare inventată aici.
       try {
         const session = (await window.supabaseClient.auth.getSession()).data.session;
         const res = await fetch('/api/comenzi/creeaza', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
-          body: JSON.stringify({ valoare_totala, adresa, tara_cod: geo.cc || null, regiune: geo.region || null, localitate: geo.city || null, suma_asigurare }),
+          body: JSON.stringify({ adresa, tara_cod: geo.cc || null, regiune: geo.region || null, localitate: geo.city || null, cost_baza_servicii, cost_asigurare, valoare_totala }),
         });
         const data = await res.json();
         if (!res.ok) {
