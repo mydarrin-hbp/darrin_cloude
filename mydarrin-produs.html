@@ -792,6 +792,10 @@ function salveazaStareaCheckout() {
       qty: S.qty, unit: S.unit, orderType: S.orderType,
       ins: S.ins, insPrice: S.insPrice,
       addr: S.addr, selDate: S.selDate, selTime: S.selTime,
+      // G27 (26 Iulie 2026) — derivate din geocodarea reală a adresei de
+      // execuție (Nominatim), nu din locația dispozitivului — comanda se
+      // execută la adresa clientului, nu neapărat unde e telefonul lui.
+      tara_cod: S.tara_cod || null, regiune: S.regiune || null, localitate: S.localitate || null,
       total: S.total, basePrice: S.basePrice,
       // G16 (26 Iulie 2026) — componente RAW (pre-TVA/platformă), pentru
       // trimiterea itemizată reală către checkout (vezi mydarrin-checkout.html);
@@ -1557,8 +1561,8 @@ function triggerHeaderSearch(){
         <div style="margin-bottom:16px">
           <label class="f-label">Adresă de execuție / livrare *</label>
           <input type="text" class="f-input" id="addr-input" placeholder="Str. Exemplu nr. 10, Sc. A, Ap. 5, Bacău" oninput="onAddr()"/>
-          <div id="addr-ok" style="display:none;margin-top:6px;font-size:11.5px;color:#1A7A3A;font-weight:600;display:none">
-            Adresă validată · <span id="zone-det">Zona 1 · +5% · Bacău · RO</span> · My Darrin activ
+          <div id="addr-ok" style="display:none;margin-top:6px;font-size:11.5px;color:#1A7A3A;font-weight:600">
+            Adresă validată · <span id="zone-det">se detectează...</span> · My Darrin activ
           </div>
         </div>
 
@@ -1672,7 +1676,7 @@ function triggerHeaderSearch(){
           <div style="font-size:13px">
             <div class="price-row"><span style="color:#6B7A8D">Nivel serviciu</span><span style="font-weight:600" id="dv-nivel">—</span></div>
             <div class="price-row"><span style="color:#6B7A8D">Cantitate</span><span style="font-weight:600" id="dv-qty">—</span></div>
-            <div class="price-row"><span style="color:#6B7A8D">Zonă</span><span style="font-weight:600" id="dv-zone">Zona 1 · +5%</span></div>
+            <div class="price-row"><span style="color:#6B7A8D">Zonă</span><span style="font-weight:600" id="dv-zone">Suprataxă platformă · +5%</span></div>
             <div class="price-row"><span style="color:#6B7A8D">Tip comandă</span><span style="font-weight:600" id="dv-tip">Programat ×1.0</span></div>
             <div class="price-row"><span style="color:#6B7A8D">Asigurare</span><span style="font-weight:600" id="dv-ins">Bază (inclusă)</span></div>
             <div class="price-row"><span style="color:#6B7A8D">Costuri platformă + HBP</span><span style="font-weight:600" id="dv-platform">—</span></div>
@@ -1889,7 +1893,7 @@ function triggerHeaderSearch(){
         <div class="price-row"><span style="color:#6B7A8D">Nivel</span><span style="font-weight:600" id="s-nivel">—</span></div>
         <div class="price-row"><span style="color:#6B7A8D">Cantitate</span><span style="font-weight:600" id="s-qty">—</span></div>
         <div class="price-row"><span style="color:#6B7A8D">Cost bază nivel</span><span style="font-weight:700;color:#003366" id="s-base">—</span></div>
-        <div class="price-row"><span style="color:#6B7A8D">Zonă</span><span style="font-weight:600" id="s-zone">Zona 1 · +5%</span></div>
+        <div class="price-row"><span style="color:#6B7A8D">Zonă</span><span style="font-weight:600" id="s-zone">Suprataxă platformă · +5%</span></div>
         <div class="price-row"><span style="color:#6B7A8D">Tip</span><span style="font-weight:600" id="s-tip">Programat ×1.0</span></div>
         <div class="price-row"><span style="color:#6B7A8D">Asigurare</span><span style="font-weight:600" id="s-ins">Bază (incl.)</span></div>
         <div class="price-row"><span style="color:#6B7A8D">Platformă + HBP</span><span style="font-weight:600" id="s-plat">—</span></div>
@@ -2661,6 +2665,14 @@ const CURRENCIES = {
   DEFAULT: { code:'EUR', symbol:'€', rate:0.2,   label:'EUR (€)',     flag:'' },
 };
 
+// G27 (26 Iulie 2026) — mapare țară -> limbă, limitată la limbile chiar
+// traduse azi (pilot i18n: en/de/fr/tr). Orice altă țară cade pe 'ro'
+// (i18n-loader.js tratează deja acest caz — resetează la RO, sursa reală).
+function _mydLangDinTara(cc){
+  var map = { DE:'de', FR:'fr', TR:'tr', GB:'en', US:'en', IE:'en' };
+  return map[(cc||'').toUpperCase()] || 'ro';
+}
+
 // Zones where platform is ACTIVE
 const ACTIVE_ZONES = ['RO', 'MD', 'DE', 'FR', 'BG'];
 
@@ -3065,6 +3077,11 @@ function applyGeoData(data){
 
   // Event pentru alte componente
   try{ window.dispatchEvent(new CustomEvent('myd-geo-update',{detail:data})); }catch(e){}
+  // G27 (26 Iulie 2026) — emis și cu numele așteptat de i18n-loader.js
+  // (myd:geo, nu myd-geo-update) — până acum pagina asta nu declanșa
+  // niciodată schimbarea de limbă din geolocalizarea dispozitivului,
+  // pentru că evenimentul avea alt nume, deși datele erau corecte.
+  try{ window.dispatchEvent(new CustomEvent('myd:geo',{detail:{lang:_mydLangDinTara(country)}})); }catch(e){}
 
   // Banner zonă indisponibilă
   var ACTIVE=['RO','MD','DE','FR','BG'];
@@ -3393,6 +3410,9 @@ let S = {
   ins:'none',insPrice:0,
   selDate:null,selTime:null,
   addr:'',mentions:'',cardValid:false,
+  // G27 (26 Iulie 2026) — derivate din geocodarea reală a adresei de
+  // execuție (vezi geocodazaAdresaComenzii()), null până se detectează.
+  tara_cod:null,regiune:null,localitate:null,
   // G16 (26 Iulie 2026) — materiale/echipamente alese explicit din catalogul
   // real, în plus față de ce e inclus implicit în pachetul de nivel.
   // Formă: { id, titlu, unitate, preturi:{bronz,argint,aur,platinum}, qty }
@@ -3773,7 +3793,7 @@ function recalc(){
   setEl('s-nivel', tierName.replace(/[]/,'').trim().split('—')[0].trim());
   setEl('s-qty', qty+' '+S.unit);
   setEl('s-base', S.tierPrice.toLocaleString('ro-RO')+' Lei');
-  setEl('s-zone', 'Zona 1 · +5%');
+  setEl('s-zone', 'Suprataxă platformă · +5%');
   setEl('s-tip', typeSym);
   setEl('s-ins', S.insPrice>0?'+'+S.insPrice+' Lei':'Bază (incl.)');
   setEl('s-plat', Math.round(withUrg*PLATFORM_PCT).toLocaleString('ro-RO')+' Lei');
@@ -3784,7 +3804,7 @@ function recalc(){
   setEl('dv-nivel-lbl', tierName.replace(/[]/,'').trim());
   setEl('dv-nivel', tierName);
   setEl('dv-qty', qty+' '+S.unit);
-  setEl('dv-zone', 'Zona 1 · +5%');
+  setEl('dv-zone', 'Suprataxă platformă · +5%');
   setEl('dv-tip', typeSym);
   setEl('dv-ins', INS_LABELS[S.ins]||'Bază');
   setEl('dv-platform', Math.round(withUrg*PLATFORM_PCT).toLocaleString('ro-RO')+' Lei');
@@ -3827,11 +3847,46 @@ function setType(type,btn){
 }
 
 // ══ ADDRESS ══
+// G27 (26 Iulie 2026) — până acum onAddr() doar verifica lungimea textului;
+// adresa de execuție a comenzii (cea mai relevantă pentru zonă/țară — nu
+// locația dispozitivului) nu era niciodată geocodată. Textul afișat lângă
+// checkmark era static în HTML ("Zona 1 · +5% · Bacău · RO"), identic
+// indiferent de ce scria clientul. Acum apelăm geocodare reală (Nominatim,
+// aceeași sursă deja folosită pentru reverse-geocoding GPS mai sus în acest
+// fișier), debounced ca să nu depășim limita de 1 cerere/secundă a
+// serviciului gratuit, și derivăm S.tara_cod/regiune/localitate din adresa
+// reală introdusă — folosite mai departe la trimiterea comenzii (vezi
+// salveazaStareaCheckout()), nu doar afișate.
+let _addrGeocodeTimer=null;
 function onAddr(){
   S.addr=document.getElementById('addr-input')?.value.trim()||'';
   setEl('fin-addr',S.addr||'—');
   const ok=document.getElementById('addr-ok');
+  const zoneEl=document.getElementById('zone-det');
   if(ok){ ok.style.display=S.addr.length>8?'block':'none'; }
+  clearTimeout(_addrGeocodeTimer);
+  if(S.addr.length<=8){ S.tara_cod=null; S.regiune=null; S.localitate=null; return; }
+  if(zoneEl) zoneEl.textContent='se detectează...';
+  _addrGeocodeTimer=setTimeout(()=>geocodeazaAdresaComenzii(S.addr), 900);
+}
+
+async function geocodeazaAdresaComenzii(adresa){
+  const zoneEl=document.getElementById('zone-det');
+  try{
+    const url='https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&q='+encodeURIComponent(adresa);
+    const r=await fetch(url,{headers:{'User-Agent':'MyDarrin/1.0 (homebestpal.com)'}});
+    const rez=await r.json();
+    const hit=rez&&rez[0];
+    if(!hit||!hit.address){ if(zoneEl) zoneEl.textContent='adresă nedetectată — se folosește zona implicită'; return; }
+    const a=hit.address;
+    const oras=a.city||a.town||a.village||a.municipality||'';
+    const judet=a.county||a.state||'';
+    const tara=(a.country_code||'ro').toUpperCase();
+    S.tara_cod=tara; S.regiune=judet||null; S.localitate=oras||null;
+    if(zoneEl) zoneEl.textContent=[oras,tara].filter(Boolean).join(', ')||'—';
+  }catch(e){
+    if(zoneEl) zoneEl.textContent='adresă nedetectată — se folosește zona implicită';
+  }
 }
 
 // ══ AI MENTIONS ══
@@ -4094,6 +4149,10 @@ function switchTab(){}function toggleBasket(){}
 if(typeof lucide!=="undefined") lucide.createIcons();
 </script>
 <script src="branding-loader.js" defer></script>
+<!-- G27 (26 Iulie 2026) — pagina de configurare comandă nu avea deloc
+     i18n — indiferent de limba aleasă în altă parte a site-ului, întregul
+     flux de configurare/plată rămânea 100% română. -->
+<script src="i18n-loader.js" defer></script>
 
 <!-- ════ DARRIN AI — CHAT WIDGET FLOTANT (colț dreapta-jos) ════ -->
 <button id="dai-fab" onclick="toggleDaiChat()" style="position:fixed;bottom:24px;right:24px;width:58px;height:58px;border-radius:50%;background:#1E2E4D;border:none;box-shadow:0 8px 24px rgba(30,46,77,.45);cursor:pointer;z-index:9000;display:flex;align-items:center;justify-content:center;transition:transform .2s" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">

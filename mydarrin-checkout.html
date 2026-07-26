@@ -2625,7 +2625,17 @@ document.addEventListener('DOMContentLoaded', function() {
       // nu schimbă nimic în cazul normal, unde componentele itemizate au
       // prioritate.
       const valoare_totala = cost_baza_servicii + cost_asigurare + cost_materiale + cost_chirie_scule;
+      // G27 (26 Iulie 2026) — până acum tara_cod/regiune/localitate ale
+      // comenzii veneau din geolocalizarea DISPOZITIVULUI (window.MYD_GEO_LAST)
+      // — corect doar dacă clientul comandă chiar din locul unde se execută
+      // lucrarea. mydarrin-produs.html geocodează acum real adresa de
+      // execuție (Nominatim) — folosim acea sursă, mai corectă, cu fallback
+      // pe geolocalizarea dispozitivului doar dacă adresa n-a fost încă
+      // geocodată (ex. acces direct la /cos, fără produs.html).
       const geo = window.MYD_GEO_LAST || {};
+      const taraComanda = MYD_CFG?.tara_cod || geo.cc || null;
+      const regiuneComanda = MYD_CFG?.regiune || geo.region || null;
+      const localitateComanda = MYD_CFG?.localitate || geo.city || null;
 
       // NU trimitem catalog_serviciu_id: mydarrin-produs.html configurează
       // azi din PRODUCTS_DB (obiect JS static), nu din catalog_servicii —
@@ -2640,7 +2650,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const res = await fetch('/api/comenzi/creeaza', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
-          body: JSON.stringify({ adresa, tara_cod: geo.cc || null, regiune: geo.region || null, localitate: geo.city || null, cost_baza_servicii, cost_asigurare, cost_materiale, cost_chirie_scule, valoare_totala }),
+          body: JSON.stringify({ adresa, tara_cod: taraComanda, regiune: regiuneComanda, localitate: localitateComanda, cost_baza_servicii, cost_asigurare, cost_materiale, cost_chirie_scule, valoare_totala }),
         });
         const data = await res.json();
         if (!res.ok) {
@@ -3445,6 +3455,8 @@ function selectPayment(type){
 }
 </script>
 <script src="branding-loader.js" defer></script>
+<!-- G27 (26 Iulie 2026) — checkout-ul nu avea deloc i18n. -->
+<script src="i18n-loader.js" defer></script>
 
 <!-- ════ DARRIN AI — CHAT WIDGET FLOTANT (colț dreapta-jos) ════ -->
 <button id="dai-fab" onclick="toggleDaiChat()" style="position:fixed;bottom:24px;right:24px;width:58px;height:58px;border-radius:50%;background:#1E2E4D;border:none;box-shadow:0 8px 24px rgba(30,46,77,.45);cursor:pointer;z-index:9000;display:flex;align-items:center;justify-content:center;transition:transform .2s" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">

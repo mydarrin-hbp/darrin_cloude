@@ -2187,6 +2187,12 @@ function detectAndApplyCurrency() {
       const cur = CURRENCIES[country] || CURRENCIES.DEFAULT;
       applyCurrency(cur);
 
+      // G27 (26 Iulie 2026) — până acum această pagină detecta țara (pentru
+      // monedă) dar nu emitea niciodată evenimentul myd:geo, deci
+      // i18n-loader.js nu afla niciodată de detecție — limba nu se schimba
+      // automat aici, doar din alegere manuală persistată pe altă pagină.
+      try { window.dispatchEvent(new CustomEvent('myd:geo', { detail: { lang: _mydLangDinTara(country) } })); } catch (e) {}
+
       // Show unavailable zone banner if needed
       if (!isActive) {
         const zoneName = data.country_name || country;
@@ -2199,7 +2205,16 @@ function detectAndApplyCurrency() {
     .catch(() => {
       // Fallback: RO
       applyCurrency(CURRENCIES.RO);
+      try { window.dispatchEvent(new CustomEvent('myd:geo', { detail: { lang: 'ro' } })); } catch (e) {}
     });
+}
+
+// G27 — mapare țară -> limbă, limitată la limbile chiar traduse azi
+// (pilot i18n: en/de/fr/tr). Vezi și mydarrin-produs.html/checkout.html,
+// unde există aceeași funcție (nu partajată azi într-un modul comun).
+function _mydLangDinTara(cc){
+  var map = { DE:'de', FR:'fr', TR:'tr', GB:'en', US:'en', IE:'en' };
+  return map[(cc||'').toUpperCase()] || 'ro';
 }
 
 function applyCurrency(cur) {
