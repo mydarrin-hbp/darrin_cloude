@@ -2586,28 +2586,45 @@ document.addEventListener('DOMContentLoaded', function() {
 
       const addrEl = document.querySelector('[id*="addr"], [class*="addr"]');
       const adresa = addrEl ? addrEl.textContent.trim() : '';
-      // FIX (G15, 25 Iulie 2026): până acum se trimitea un singur număr
-      // (valoare_totala, citit din textul afișat al totalului) — backend-ul
-      // accepta deja componentele itemizate (cost_baza_servicii/cost_asigurare/
-      // etc., vezi api/comenzi/creeaza.js), dar checkout.html nu le trimitea
-      // niciodată, deci cădea mereu pe ramura fallback: comanda_subcontractori
-      // rămânea fără niciun rând real (nici măcar manoperă/asigurare), iar
-      // eliberarea de escrow nu avea din ce împărți suma. Aici avem deja,
-      // separat, cele 2 componente REALE care există azi în acest flux —
-      // cost_baza_servicii (BASE_SUBTOTAL, minus promo dacă activă — exact
-      // formula din recalcCheckoutTotal(), doar descompusă) și cost_asigurare
-      // (bifa opțională din checkout). Materiale/scule/curier rămân la 0 —
-      // onest, nu fabricat: configurarea comenzii nu are încă selectoare
-      // reale conectate la catalog pentru ele (G16, neconstruit).
-      let cost_baza_servicii = BASE_SUBTOTAL;
-      if (PROMO_ACTIVE) cost_baza_servicii -= PROMO_DISCOUNT;
-      const cost_asigurare = document.getElementById('cb-insurance')?.checked ? INSURANCE_PRICE : 0;
+      // FIX (G15, 25 Iulie 2026 · extins G16, 26 Iulie 2026): până acum se
+      // trimitea un singur număr (valoare_totala, citit din textul afișat al
+      // totalului) — backend-ul accepta deja componentele itemizate
+      // (cost_baza_servicii/materiale/chirie_scule/asigurare, vezi
+      // api/comenzi/creeaza.js), dar checkout.html nu le trimitea niciodată.
+      //
+      // G16 a adăugat selectoare reale de materiale/închirieri în
+      // mydarrin-produs.html — dar a scos la iveală o problemă mai veche:
+      // BASE_SUBTOTAL (= cfg.total) e deja majorat cu zonă/urgență/platformă/
+      // TVA de recalc() din produs.html, deci a-l trimite direct ca
+      // cost_baza_servicii ar fi dublat TVA/platforma (calculate încă o dată,
+      // diferit, în lib/calculeaza-pret.js pe server). Corect: folosim
+      // componentele RAW, pre-majorare, salvate acum separat de produs.html
+      // (MYD_CFG.bazaRaw/insPrice/materialePrice/inchirieriPrice) — patru
+      // componente reale, nu una. Curier rămâne 0: nu are încă echivalent de
+      // catalog cu preț propriu (alocare pe zonă/disponibilitate, nu listă).
+      //
+      // Fallback (acces direct la /cos, fără să treci prin produs.html —
+      // MYD_CFG e null): comportamentul de la G15, cu BASE_SUBTOTAL/promo/
+      // bifa de asigurare proprie a checkout-ului.
+      let cost_baza_servicii, cost_asigurare, cost_materiale, cost_chirie_scule;
+      if (MYD_CFG) {
+        cost_baza_servicii = MYD_CFG.bazaRaw ?? BASE_SUBTOTAL;
+        cost_asigurare = MYD_CFG.insPrice || 0;
+        cost_materiale = MYD_CFG.materialePrice || 0;
+        cost_chirie_scule = MYD_CFG.inchirieriPrice || 0;
+      } else {
+        cost_baza_servicii = BASE_SUBTOTAL;
+        if (PROMO_ACTIVE) cost_baza_servicii -= PROMO_DISCOUNT;
+        cost_asigurare = document.getElementById('cb-insurance')?.checked ? INSURANCE_PRICE : 0;
+        cost_materiale = 0;
+        cost_chirie_scule = 0;
+      }
       // Trimisă redundant, ca plasă de siguranță: dacă vreodată suma
-      // componentelor ar ajunge 0 (ex. promo ≥ prețul serviciului, caz
-      // limită), api/comenzi/creeaza.js cade pe ramura veche (valoare_totala)
-      // în loc să respingă comanda cu 400 — nu schimbă nimic în cazul normal,
-      // unde componentele itemizate au prioritate.
-      const valoare_totala = cost_baza_servicii + cost_asigurare;
+      // componentelor ar ajunge 0 (caz limită), api/comenzi/creeaza.js cade
+      // pe ramura veche (valoare_totala) în loc să respingă comanda cu 400 —
+      // nu schimbă nimic în cazul normal, unde componentele itemizate au
+      // prioritate.
+      const valoare_totala = cost_baza_servicii + cost_asigurare + cost_materiale + cost_chirie_scule;
       const geo = window.MYD_GEO_LAST || {};
 
       // NU trimitem catalog_serviciu_id: mydarrin-produs.html configurează
@@ -2615,14 +2632,15 @@ document.addEventListener('DOMContentLoaded', function() {
       // slug-ul salvat în sessionStorage nu e un uuid real din acel tabel.
       // comenzi.catalog_serviciu_id e coloană uuid — a trimite un slug ar
       // rupe INSERT-ul cu o eroare de tip, nu doar ar rata alocarea. Rămâne
-      // neconectat, la fel ca azi — o legătură reală necesită G16 (selectoare
-      // conectate la catalog în mydarrin-produs.html), nu o mapare inventată aici.
+      // neconectat — o legătură reală ar necesita fie migrarea produs.html
+      // pe catalog_servicii ca sursă (schimbare mare, neatinsă aici), fie o
+      // mapare slug→id, niciuna decisă încă ca cerință de business.
       try {
         const session = (await window.supabaseClient.auth.getSession()).data.session;
         const res = await fetch('/api/comenzi/creeaza', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
-          body: JSON.stringify({ adresa, tara_cod: geo.cc || null, regiune: geo.region || null, localitate: geo.city || null, cost_baza_servicii, cost_asigurare, valoare_totala }),
+          body: JSON.stringify({ adresa, tara_cod: geo.cc || null, regiune: geo.region || null, localitate: geo.city || null, cost_baza_servicii, cost_asigurare, cost_materiale, cost_chirie_scule, valoare_totala }),
         });
         const data = await res.json();
         if (!res.ok) {
@@ -3383,11 +3401,18 @@ function recalcCheckoutTotal(){
 // Lei), indiferent ce configura clientul efectiv. Dacă nu există nicio
 // configurație salvată (acces direct la /cos, fără să treci prin produs),
 // păstrăm mock-ul existent ca fallback, nu o pagină goală.
+// G16 (26 Iulie 2026) — configurația completă salvată de mydarrin-produs.html,
+// păstrată la nivel de modul ca hook-ul de submit s-o poată citi direct (nu
+// doar valoarea afișată BASE_SUBTOTAL, care e deja majorată cu TVA/platformă
+// — vezi comentariul din hook-ul de submit).
+let MYD_CFG = null;
+
 function applyChecoutConfigReal(){
   let cfg;
   try { cfg = JSON.parse(sessionStorage.getItem('myd_checkout_config') || 'null'); }
   catch(e) { cfg = null; }
   if (!cfg) return;
+  MYD_CFG = cfg;
 
   BASE_SUBTOTAL = cfg.total || BASE_SUBTOTAL;
 

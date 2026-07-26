@@ -793,6 +793,13 @@ function salveazaStareaCheckout() {
       ins: S.ins, insPrice: S.insPrice,
       addr: S.addr, selDate: S.selDate, selTime: S.selTime,
       total: S.total, basePrice: S.basePrice,
+      // G16 (26 Iulie 2026) — componente RAW (pre-TVA/platformă), pentru
+      // trimiterea itemizată reală către checkout (vezi mydarrin-checkout.html);
+      // `total`/`basePrice` de mai sus rămân neschimbate, doar pentru afișare.
+      bazaRaw: S.bazaRaw,
+      materialePrice: S.materialePrice, inchirieriPrice: S.inchirieriPrice,
+      materiale: S.materiale.map(m => ({ titlu: m.titlu, qty: m.qty, pret: _addonPretNivel(m) })),
+      inchirieri: S.inchirieri.map(m => ({ titlu: m.titlu, qty: m.qty, pret: _addonPretNivel(m) })),
       salvat_la: Date.now(),
     }));
   } catch (e) {
@@ -1572,6 +1579,26 @@ function triggerHeaderSearch(){
         <div id="req-box" style="display:none;background:#FFF5F5;border-radius:14px;border:1px solid rgba(220,38,38,.15);padding:14px;margin-bottom:20px">
           <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#C0392B;margin-bottom:6px">Ce trebuie pregătit</div>
           <div style="font-size:12.5px;color:#6B7A8D;line-height:1.65" id="req-text"></div>
+        </div>
+
+        <!-- ── ADAUGĂ MATERIALE / ECHIPAMENTE (G16, 26 Iulie 2026) ──
+             Din catalogul real (catalog_servicii, categorie=materiale/
+             inchirieri), nu incluse implicit în pachetul de nivel — clientul
+             le alege explicit, la prețul nivelului deja selectat mai sus.
+             Curier rămâne neatins aici: nu are echivalent de catalog cu
+             preț propriu (alocare pe zonă/disponibilitate, nu pe listă) — a
+             adăuga un selector fără o sursă reală de preț ar fi fost inventat. -->
+        <div style="margin-bottom:20px">
+          <label class="f-label" style="margin-bottom:10px">Adaugă materiale sau echipamente (opțional)</label>
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <button type="button" id="addon-tab-materiale" onclick="switchAddonTab('materiale')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid #0E9E99;background:#0E9E99;color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">Materiale</button>
+            <button type="button" id="addon-tab-inchirieri" onclick="switchAddonTab('inchirieri')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid #D5DFE8;background:#fff;color:#6B7A8D;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">Echipamente de închiriat</button>
+          </div>
+          <input type="text" id="addon-search" placeholder="Caută în catalog..." oninput="renderAddonList()" style="width:100%;background:#F4F7F9;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px 14px;font-size:13px;color:#2D2D2D;outline:none;font-family:inherit;margin-bottom:10px"/>
+          <div id="addon-list" style="max-height:220px;overflow-y:auto;border:1px solid #EEF2F7;border-radius:12px">
+            <div style="padding:16px;text-align:center;color:#8C9BAD;font-size:12.5px">Se încarcă din catalog...</div>
+          </div>
+          <div id="addon-selected" style="margin-top:12px"></div>
         </div>
 
         <button class="btn-primary" onclick="completeStep(1)">
@@ -3366,8 +3393,136 @@ let S = {
   ins:'none',insPrice:0,
   selDate:null,selTime:null,
   addr:'',mentions:'',cardValid:false,
+  // G16 (26 Iulie 2026) — materiale/echipamente alese explicit din catalogul
+  // real, în plus față de ce e inclus implicit în pachetul de nivel.
+  // Formă: { id, titlu, unitate, preturi:{bronz,argint,aur,platinum}, qty }
+  materiale:[], inchirieri:[],
+  materialePrice:0, inchirieriPrice:0,
   total:0,doneSteps:new Set(),curStep:1
 };
+
+// ══ CATALOG REAL — MATERIALE / ÎNCHIRIERI (G16) ══
+const SUPA_PROD_URL  = window.__ENV__?.SUPABASE_URL  || 'https://aacojyvujhywanaulvuu.supabase.co';
+const SUPA_PROD_ANON = window.__ENV__?.SUPABASE_ANON_KEY || '';
+let ADDON_DB = { materiale: [], inchirieri: [] };
+let addonActiveTab = 'materiale';
+
+async function loadAddonCatalog() {
+  if (!SUPA_PROD_ANON) return;
+  const qs = 'status_public=eq.true&select=id,titlu,unitate_masura,catalog_niveluri(nivel,catalog_preturi(pret))&order=titlu';
+  try {
+    const [mat, inch] = await Promise.all([
+      fetch(`${SUPA_PROD_URL}/rest/v1/catalog_servicii?categorie=eq.materiale&${qs}`, { headers: { apikey: SUPA_PROD_ANON, Authorization: `Bearer ${SUPA_PROD_ANON}` } }).then(r => r.ok ? r.json() : []),
+      fetch(`${SUPA_PROD_URL}/rest/v1/catalog_servicii?categorie=eq.inchirieri&${qs}`, { headers: { apikey: SUPA_PROD_ANON, Authorization: `Bearer ${SUPA_PROD_ANON}` } }).then(r => r.ok ? r.json() : []),
+    ]);
+    const normalizeaza = (rows) => rows.map((r) => {
+      const preturi = {};
+      (r.catalog_niveluri || []).forEach((n) => { preturi[n.nivel] = n.catalog_preturi?.[0]?.pret ?? null; });
+      return { id: r.id, titlu: r.titlu, unitate: r.unitate_masura || 'buc', preturi };
+    });
+    ADDON_DB.materiale = normalizeaza(mat);
+    ADDON_DB.inchirieri = normalizeaza(inch);
+  } catch (e) {
+    console.warn('[G16] catalog materiale/închirieri indisponibil:', e);
+  }
+  renderAddonList();
+}
+
+function _addonPretNivel(item) {
+  const p = item.preturi?.[S.tier];
+  return typeof p === 'number' ? p : 0;
+}
+
+function switchAddonTab(tab) {
+  addonActiveTab = tab;
+  const tMat = document.getElementById('addon-tab-materiale');
+  const tInc = document.getElementById('addon-tab-inchirieri');
+  const activ = 'flex:1;padding:9px;border-radius:10px;border:1.5px solid #0E9E99;background:#0E9E99;color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit';
+  const inactiv = 'flex:1;padding:9px;border-radius:10px;border:1.5px solid #D5DFE8;background:#fff;color:#6B7A8D;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit';
+  if (tMat) tMat.style.cssText = tab === 'materiale' ? activ : inactiv;
+  if (tInc) tInc.style.cssText = tab === 'inchirieri' ? activ : inactiv;
+  renderAddonList();
+}
+
+function renderAddonList() {
+  const el = document.getElementById('addon-list');
+  if (!el) return;
+  const query = (document.getElementById('addon-search')?.value || '').toLowerCase().trim();
+  const toate = ADDON_DB[addonActiveTab] || [];
+  const filtrate = query ? toate.filter((i) => i.titlu.toLowerCase().includes(query)) : toate;
+
+  if (!toate.length) {
+    el.innerHTML = '<div style="padding:16px;text-align:center;color:#8C9BAD;font-size:12.5px">Catalogul se încarcă sau nu are încă articole publicate în această categorie.</div>';
+    return;
+  }
+  if (!filtrate.length) {
+    el.innerHTML = '<div style="padding:16px;text-align:center;color:#8C9BAD;font-size:12.5px">Niciun rezultat pentru „' + escapeAddonHTML(query) + '"</div>';
+    return;
+  }
+
+  el.innerHTML = filtrate.slice(0, 40).map((item) => {
+    const pret = _addonPretNivel(item);
+    const dejaAdaugat = S[addonActiveTab].some((x) => x.id === item.id);
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #F4F7F9">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;color:#2D2D2D;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeAddonHTML(item.titlu)}</div>
+        <div style="font-size:11px;color:#8C9BAD">${pret} Lei / ${escapeAddonHTML(item.unitate)}</div>
+      </div>
+      <button type="button" onclick="addAddonItem('${addonActiveTab}','${item.id}')" ${dejaAdaugat ? 'disabled' : ''} style="padding:6px 12px;border-radius:8px;border:1px solid #D5DFE8;background:${dejaAdaugat ? '#F4F7F9' : '#EBF4FB'};color:${dejaAdaugat ? '#B8C4CE' : '#003366'};font-size:11.5px;font-weight:700;cursor:${dejaAdaugat ? 'default' : 'pointer'};font-family:inherit;flex-shrink:0">${dejaAdaugat ? 'Adăugat' : '+ Adaugă'}</button>
+    </div>`;
+  }).join('');
+}
+
+function escapeAddonHTML(str) {
+  const d = document.createElement('div');
+  d.textContent = str == null ? '' : String(str);
+  return d.innerHTML;
+}
+
+function addAddonItem(tip, id) {
+  const item = ADDON_DB[tip].find((x) => x.id === id);
+  if (!item || S[tip].some((x) => x.id === id)) return;
+  S[tip].push({ ...item, qty: 1 });
+  renderAddonList();
+  renderAddonSelected();
+  recalc();
+}
+
+function removeAddonItem(tip, id) {
+  S[tip] = S[tip].filter((x) => x.id !== id);
+  renderAddonList();
+  renderAddonSelected();
+  recalc();
+}
+
+function changeAddonQty(tip, id, delta) {
+  const row = S[tip].find((x) => x.id === id);
+  if (!row) return;
+  row.qty = Math.max(1, Math.min(99, row.qty + delta));
+  renderAddonSelected();
+  recalc();
+}
+
+function renderAddonSelected() {
+  const el = document.getElementById('addon-selected');
+  if (!el) return;
+  const toate = [...S.materiale.map((x) => ({ ...x, tip: 'materiale' })), ...S.inchirieri.map((x) => ({ ...x, tip: 'inchirieri' }))];
+  if (!toate.length) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#8C9BAD;margin-bottom:8px">Adăugate la comandă</div>` +
+    toate.map((it) => {
+      const pret = _addonPretNivel(it);
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#F4F7F9;border-radius:10px;margin-bottom:6px">
+        <div style="flex:1;min-width:0;font-size:12.5px;color:#2D2D2D;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeAddonHTML(it.titlu)}</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button type="button" onclick="changeAddonQty('${it.tip}','${it.id}',-1)" style="width:22px;height:22px;border-radius:6px;border:1px solid #D5DFE8;background:#fff;cursor:pointer;font-size:13px;line-height:1">−</button>
+          <span style="font-size:12.5px;font-weight:700;color:#003366;min-width:16px;text-align:center">${it.qty}</span>
+          <button type="button" onclick="changeAddonQty('${it.tip}','${it.id}',1)" style="width:22px;height:22px;border-radius:6px;border:1px solid #D5DFE8;background:#fff;cursor:pointer;font-size:13px;line-height:1">+</button>
+        </div>
+        <div style="font-size:12.5px;font-weight:700;color:#0E9E99;min-width:70px;text-align:right">${(pret * it.qty).toLocaleString('ro-RO')} Lei</div>
+        <button type="button" onclick="removeAddonItem('${it.tip}','${it.id}')" title="Elimină" style="width:22px;height:22px;border-radius:6px;border:1px solid rgba(220,38,38,.25);background:#FDECEA;color:#C0392B;cursor:pointer;font-size:14px;line-height:1;flex-shrink:0">×</button>
+      </div>`;
+    }).join('');
+}
 
 // ══ INIT ══
 document.addEventListener('DOMContentLoaded',()=>{
@@ -3376,6 +3531,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   initReveal();
   selIns('none');
   setType('standard',document.getElementById('btn-std'));
+  loadAddonCatalog();
   updateProgBars();
   openSec(1);
 });
@@ -3570,6 +3726,10 @@ function selectTierCol(tier){
     if(gw) gw.textContent = td.garantie>0 ? 'Garanție digitală '+td.garantie+' luni' : '';
   }
 
+  // G16: prețurile materialelor/închirierilor depind de nivelul curent —
+  // reafișăm listele ca sumele să reflecte imediat noul nivel selectat.
+  renderAddonList();
+  renderAddonSelected();
   recalc();
 }
 
@@ -3579,10 +3739,24 @@ function recalc(){
   S.qty = qty;
   const brut = S.tierPrice * qty;
   const baza = Math.max(brut, VMC);
+  // G16 (26 Iulie 2026) — valoare brută de manoperă (cantitate × tarif nivel,
+  // cu podeaua VMC aplicată), FĂRĂ zonă/urgență/platformă/TVA — acestea sunt
+  // afișate doar client-side (recalculate independent, mai jos, de backend,
+  // în lib/calculeaza-pret.js) și nu au echivalent server-side (eliminate
+  // deliberat din formula reală, nu doar ascunse — vezi api/deviz/calculate.js).
+  // Aceasta e valoarea corectă de trimis ca cost_baza_servicii la checkout,
+  // nu S.total (care ar dubla TVA/platforma — o dată aici, o dată în backend).
+  S.bazaRaw = baza;
   const withZone = baza * ZONE_PCT;
   const withUrg = withZone * S.urgCoeff;
   const withPlat = withUrg * (1+PLATFORM_PCT);
-  const withIns = withPlat + S.insPrice;
+  // G16 (26 Iulie 2026) — materiale/echipamente alese explicit din catalog,
+  // adăugate la fel ca asigurarea: sumă fixă, la prețul nivelului curent,
+  // înainte de TVA (nu majorate de coeficientul de urgență — acela e specific
+  // manoperei, nu costului materialului/închirierii în sine).
+  S.materialePrice = S.materiale.reduce((sum, it) => sum + _addonPretNivel(it) * it.qty, 0);
+  S.inchirieriPrice = S.inchirieri.reduce((sum, it) => sum + _addonPretNivel(it) * it.qty, 0);
+  const withIns = withPlat + S.insPrice + S.materialePrice + S.inchirieriPrice;
   const withTva = withIns * (1+TVA);
   const total = Math.round(withTva);
   S.total = total;
