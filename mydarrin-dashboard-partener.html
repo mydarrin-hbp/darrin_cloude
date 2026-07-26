@@ -739,11 +739,17 @@ function renderOverview() {
   </div>`;
 }
 
+// G-nou (26 Iulie 2026) — Sarcini LIVE reale, din api/partener/sarcini.js.
+// Lanțul de acțiuni (acceptă -> confirmă cod la sosire -> încarcă poze
+// înainte/după -> finalizează -> clientul confirmă) exista deja, complet
+// funcțional în backend (accept-comanda.js, confirma-cod.js,
+// upload-imagine.js, finalizeaza-comanda.js) — doar niciodată conectat la
+// această listă, care afișa 4 sarcini demo fără niciun fetch.
+let SARCINI_REALE = { primite: [], active: [], finalizate: [] };
+
 function renderSarcini() {
-  const t = TYPES[currentType];
-  const tabs = currentType==='curier'
-    ? ['Toate','Disponibile','Preluate','Finalizate']
-    : ['Toate','Primite','Acceptate','În execuție','Finalizate'];
+  const tabs = ['Toate','Primite','Active','Finalizate'];
+  setTimeout(loadSarcini, 0);
   return `
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px">
     <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Sarcini LIVE</h2>
@@ -752,13 +758,156 @@ function renderSarcini() {
     </div>
   </div>
   <div class="dp-card">
-    <div style="padding:14px">
-      ${taskCardFull('#CMD-4821','Înlocuire robinet bucătărie','Maria P. · Str. Păcurari 23 · Sector 3','1h 30min','~180 Lei','pending','Primit','🔧',['Accept','Refuz'])}
-      ${taskCardFull('#CMD-4820','Montaj calorifer Purmo C11','SC Construct SRL · Bd. Unirii 5','2-3h','~320 Lei','active-task','În execuție','🔥',['Finalizează','Problemă'])}
-      ${taskCardFull('#CMD-4819','Reparație scurgere urgentă','Ion V. · Str. Lăpușneanu 7','45min','~120 Lei','urgent','Urgent','⚡',['Accept urgent','Refuz'])}
-      ${taskCardFull('#CMD-4818','Instalație sanitară completă','Elena I. · Calea Victoriei 12','4-5h','~540 Lei','done','Finalizat','✅',['Vezi detalii','Factură'])}
-    </div>
+    <div style="padding:14px" id="sarcini-lista">Se încarcă...</div>
   </div>`;
+}
+
+async function _partenerHeaderReal() {
+  const session = (await window.supabaseClient?.auth.getSession())?.data?.session;
+  return { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` };
+}
+
+async function loadSarcini() {
+  const el = document.getElementById('sarcini-lista');
+  if (!el) return;
+  try {
+    const headers = await _partenerHeaderReal();
+    const res = await fetch('/api/partener/sarcini', { headers });
+    const data = await res.json();
+    if (!res.ok) { el.innerHTML = '<div style="text-align:center;padding:20px;color:#C0392B;font-size:12.5px">Sarcinile nu au putut fi încărcate.</div>'; return; }
+    SARCINI_REALE = data;
+  } catch (e) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:#C0392B;font-size:12.5px">Eroare de conexiune.</div>';
+    return;
+  }
+  renderSarciniFiltrate('toate');
+}
+
+function filterTasks(el, f) {
+  document.querySelectorAll('.dp-tab').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderSarciniFiltrate(f);
+}
+
+function renderSarciniFiltrate(filtru) {
+  const el = document.getElementById('sarcini-lista');
+  if (!el) return;
+  const grupuri = filtru === 'primite' ? [['primite', SARCINI_REALE.primite]]
+    : filtru === 'active' ? [['active', SARCINI_REALE.active]]
+    : filtru === 'finalizate' ? [['finalizate', SARCINI_REALE.finalizate]]
+    : [['primite', SARCINI_REALE.primite], ['active', SARCINI_REALE.active], ['finalizate', SARCINI_REALE.finalizate]];
+
+  const total = grupuri.reduce((n, [, lista]) => n + lista.length, 0);
+  if (!total) { el.innerHTML = '<div style="text-align:center;padding:24px;color:#8C9BAD;font-size:12.5px">Nicio sarcină în această categorie.</div>'; return; }
+
+  el.innerHTML = grupuri.map(([tip, lista]) => lista.map((c) => sarcinaCard(c, tip)).join('')).join('');
+}
+
+function _fmtSumaSarcina(c) { return Math.round(Number(c.suma_totala_platita) || 0) + ' ' + (c.moneda || 'RON'); }
+function _fmtLocSarcina(c) { return [c.localitate, c.regiune].filter(Boolean).join(' · ') || (c.tara_cod || '—'); }
+
+function sarcinaCard(c, tip) {
+  const stareInfo = {
+    primite: { chip: 'ch-o', label: 'Ofertă nouă' },
+    active: { chip: c.status === 'in_executie' ? 'ch-t' : 'ch-o', label: c.status === 'in_executie' ? 'În execuție' : 'Acceptată — confirmă cod la sosire' },
+    finalizate: { chip: c.status === 'confirmata_client' ? 'ch-g' : 'ch-t', label: c.status === 'confirmata_client' ? 'Confirmată de client' : 'Așteaptă confirmarea clientului' },
+  }[tip];
+
+  let butoane = '';
+  if (tip === 'primite') {
+    butoane = `<button class="btn-p" style="flex:1;justify-content:center;font-size:11px;padding:7px 10px" onclick="acceptaSarcinaReal('${c.id}')">Acceptă</button>`;
+  } else if (tip === 'active') {
+    if (c.status === 'acceptata') {
+      butoane = `<button class="btn-p" style="flex:1;justify-content:center;font-size:11px;padding:7px 10px" onclick="confirmaCodReal('${c.id}')">Confirmă cod (la sosire)</button>`;
+    } else {
+      const pozeOk = c.are_poza_before && c.are_poza_after;
+      butoane = `
+        <button class="btn-s" style="flex:1;justify-content:center;font-size:11px;padding:7px 10px" onclick="incarcaPozaReal('${c.id}','before')">${c.are_poza_before ? '✓ Poză înainte' : 'Poză înainte'}</button>
+        <button class="btn-s" style="flex:1;justify-content:center;font-size:11px;padding:7px 10px" onclick="incarcaPozaReal('${c.id}','after')">${c.are_poza_after ? '✓ Poză după' : 'Poză după'}</button>
+        <button class="btn-p" style="flex:1;justify-content:center;font-size:11px;padding:7px 10px" ${pozeOk ? '' : 'disabled style="opacity:.5;cursor:not-allowed"'} onclick="finalizeazaSarcinaReal('${c.id}')">Finalizează</button>`;
+    }
+  }
+
+  return `<div class="task-card" style="margin-bottom:10px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
+      <div><div style="font-size:13px;font-weight:700;color:#1A2332">Comandă #${escapeSarcinaHTML(c.nr_comanda)}</div><div style="font-size:11px;color:#5A6B7D;margin-top:2px">${escapeSarcinaHTML(_fmtLocSarcina(c))}</div></div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span class="chip ${stareInfo.chip}">${stareInfo.label}</span></div>
+    </div>
+    <div style="display:flex;gap:12px;font-size:11.5px;margin-bottom:8px;flex-wrap:wrap">
+      <span style="font-weight:700;color:#FF8C00">${_fmtSumaSarcina(c)}</span>
+    </div>
+    <div style="display:flex;gap:8px">${butoane}</div>
+  </div>`;
+}
+function escapeSarcinaHTML(str) { const d = document.createElement('div'); d.textContent = str == null ? '' : String(str); return d.innerHTML; }
+
+async function acceptaSarcinaReal(comandaId) {
+  try {
+    const headers = await _partenerHeaderReal();
+    const res = await fetch('/api/partener/accept-comanda', { method: 'POST', headers, body: JSON.stringify({ comanda_id: comandaId }) });
+    const data = await res.json();
+    if (!res.ok) { showToast(data.error || 'Nu am putut accepta comanda'); return; }
+    showToast('Comandă acceptată');
+    await loadSarcini();
+  } catch (e) { showToast('Eroare de conexiune'); }
+}
+
+async function confirmaCodReal(comandaId) {
+  const cod = prompt('Introdu codul de verificare primit de client la sosire:');
+  if (!cod) return;
+  try {
+    const headers = await _partenerHeaderReal();
+    const res = await fetch('/api/partener/confirma-cod', { method: 'POST', headers, body: JSON.stringify({ comanda_id: comandaId, cod }) });
+    const data = await res.json();
+    if (!res.ok) { showToast(data.error || 'Cod incorect'); return; }
+    showToast('Cod confirmat — lucrarea a început');
+    await loadSarcini();
+  } catch (e) { showToast('Eroare de conexiune'); }
+}
+
+function incarcaPozaReal(comandaId, tip) {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = 'image/jpeg,image/png,image/webp,image/heic';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const mime = file.type;
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    let gps = {};
+    try {
+      const pos = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 }));
+      gps = { gps_lat: pos.coords.latitude, gps_lng: pos.coords.longitude, gps_accuracy: Math.round(pos.coords.accuracy) };
+    } catch (e) { /* GPS opțional — best-effort, ca la restul platformei */ }
+    try {
+      const headers = await _partenerHeaderReal();
+      const res = await fetch('/api/comenzi/upload-imagine', {
+        method: 'POST', headers,
+        body: JSON.stringify({ comanda_id: comandaId, tip, imagine_base64: base64, mime_type: mime, ...gps }),
+      });
+      const data = await res.json();
+      if (!res.ok) { showToast(data.error || 'Nu am putut încărca poza'); return; }
+      showToast('Poză încărcată');
+      await loadSarcini();
+    } catch (err) { showToast('Eroare de conexiune'); }
+  };
+  input.click();
+}
+
+async function finalizeazaSarcinaReal(comandaId) {
+  if (!confirm('Confirmi finalizarea lucrării? Clientul va primi un link de confirmare pe email.')) return;
+  try {
+    const headers = await _partenerHeaderReal();
+    const res = await fetch('/api/partener/finalizeaza-comanda', { method: 'POST', headers, body: JSON.stringify({ comanda_id: comandaId }) });
+    const data = await res.json();
+    if (!res.ok) { showToast(data.error || 'Nu am putut finaliza comanda'); return; }
+    showToast('Lucrare finalizată — clientul a fost notificat');
+    await loadSarcini();
+  } catch (e) { showToast('Eroare de conexiune'); }
 }
 
 function renderPortofoliu() {
@@ -1307,43 +1456,6 @@ function taskCard(title,sub,price,cls,icon,badge){
   return `<div class="task-card ${cls}" style="cursor:pointer" onclick="showPanel('sarcini')"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px"><div style="font-size:13px;font-weight:700;color:#1A2332">${icon} ${title}</div><span class="chip ${badgeCls}">${badge}</span></div><div style="font-size:11px;color:#5A6B7D;margin-bottom:4px">${sub}</div><div style="font-size:12px;font-weight:700;color:#FF8C00">${price}</div></div>`;
 }
 
-function taskCardFull(id,title,loc,dur,price,cls,status,icon,btns){
-  const statusCls={pending:'ch-o','În execuție':'ch-t',urgent:'ch-r',Finalizat:'ch-g'}[status]||'ch-gr';
-  const isFinalizat = status === 'Finalizat';
-  const allocBadge = status==='pending' ? '<span style="font-size:9.5px;color:#0E9E99;font-weight:700;display:flex;align-items:center;gap:4px;margin-top:2px"><span class="pulse-dot" style="width:5px;height:5px"></span>🤖 Alocat de Darrin AI</span>' : '';
-  const priceNum = parseInt((price||'').replace(/[^\d]/g,''))||0;
-  const garantie  = Math.round(priceNum*0.05);
-  const net       = priceNum - garantie;
-
-  const unlockBanner = !isFinalizat && priceNum>0 ? `
-    <div style="display:flex;align-items:center;gap:7px;padding:7px 11px;background:linear-gradient(135deg,#FFF0D6,#FDE8C4);border-radius:9px;margin-bottom:9px;border:1px solid rgba(255,140,0,.25)">
-      <span style="font-size:16px">💳</span>
-      <div style="font-size:11px;color:#CC7000;line-height:1.5">Finalizarea deblochează <strong style="color:#FF8C00">${priceNum} Lei</strong> pentru facturare<br><span style="color:#5A6B7D">Net ${net} Lei · Garanție 5% = ${garantie} Lei blocat</span></div>
-    </div>` : isFinalizat ? `
-    <div style="display:flex;align-items:center;gap:7px;padding:7px 11px;background:#D4EDDA;border-radius:9px;margin-bottom:9px;border:1px solid rgba(26,122,58,.25)">
-      <span style="font-size:16px">✅</span>
-      <div style="font-size:11px;color:#1A7A3A;line-height:1.5"><strong>${net} Lei deblocați</strong> în balanța facturabilă<br><span style="color:#5A6B7D">Garanție reținută: ${garantie} Lei (eliberat după 24 luni)</span></div>
-    </div>` : '';
-
-  const btnHtml = btns.map((b,i)=>{
-    const isF = b==='Finalizează';
-    const oc  = isF ? `finalizaTask('${id}',${priceNum},5)` : `actionTask('${id}','${b}')`;
-    return `<button class="${i===0?'btn-p':'btn-s'}" style="flex:1;justify-content:center;font-size:11px;padding:7px 10px" onclick="${oc}">${b}</button>`;
-  }).join('');
-
-  return `<div class="task-card ${cls}" style="margin-bottom:10px">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
-      <div><div style="font-size:13px;font-weight:700;color:#1A2332">${icon} ${title}</div><div style="font-size:11px;color:#5A6B7D;margin-top:2px">${loc}</div>${allocBadge}</div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span class="chip ${statusCls}">${status}</span><span style="font-size:10px;color:#5A6B7D;font-family:monospace">${id}</span></div>
-    </div>
-    <div style="display:flex;gap:12px;font-size:11.5px;margin-bottom:8px;flex-wrap:wrap">
-      <span style="color:#5A6B7D">⏱ ${dur}</span><span style="font-weight:700;color:#FF8C00">${price}</span>
-    </div>
-    ${unlockBanner}
-    <div style="display:flex;gap:8px">${btnHtml}</div>
-  </div>`;
-}
-
 function svcRow(label,price,urgent,status,rating){
   const sCls={active:'ch-g',pending:'ch-o',inactive:'ch-gr'}[status];
   const sLbl={active:'Activ',pending:'În aprobare',inactive:'Neactivat'}[status];
@@ -1411,8 +1523,6 @@ function dosarDauna(id,titlu,responsabil,polita,val,status,data){
 }
 
 // ── UTILS ──
-function actionTask(id,action){showToast('Comandă '+id+' · '+action);}
-function filterTasks(el,f){document.querySelectorAll('.dp-tab').forEach(b=>b.classList.remove('active'));el.classList.add('active');showToast('Filtrare: '+f);}
 function filterCurse(f,el){showToast('Filtrare vehicul: '+f);}
 function filterPolite(f,el){document.querySelectorAll('.dp-tab').forEach(b=>b.classList.remove('active'));el?.classList.add('active');showToast('Polițe: '+f);}
 function propuneServiciu(){showToast('📤 Propunere trimisă la Admin pentru aprobare');}
