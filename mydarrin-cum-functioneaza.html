@@ -1875,7 +1875,40 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
 // ── Geo cache ──────────────────────────────────────────────────
 var GEO_CACHE_KEY = GEO_CACHE_KEY || 'myd_geo_v1';
 function geoSave(d){ try{sessionStorage.setItem(GEO_CACHE_KEY,JSON.stringify({...d,ts:Date.now()}));}catch(e){} }
-function geoLoad(){ try{var d=JSON.parse(sessionStorage.getItem(GEO_CACHE_KEY)||'{}'); if(d.ts&&Date.now()-d.ts<1800000)return d;}catch(e){} return null; }
+
+// G31c (27 Iulie 2026): CURRENCIES/applyCurrency restaurate — au fost
+// eliminate din greșeală în G31b odată cu blocurile moarte duplicate,
+// dar applyGeoData() (chemată real de detectFromGPS()/onLocInputChange()
+// de mai jos) depinde de ele. Fără ele, orice folosire a GPS-ului manual
+// sau a inputului de adresă de pe această pagină arunca o eroare JS reală.
+const CURRENCIES = {
+  RO: { code:'RON', symbol:'Lei',  rate:1,       label:'RON (Lei)',   flag:'🇷🇴' },
+  DE: { code:'EUR', symbol:'€',    rate:0.2,     label:'EUR (€)',     flag:'🇩🇪' },
+  FR: { code:'EUR', symbol:'€',    rate:0.2,     label:'EUR (€)',     flag:'🇫🇷' },
+  GB: { code:'GBP', symbol:'£',    rate:0.175,   label:'GBP (£)',     flag:'🇬🇧' },
+  HU: { code:'HUF', symbol:'Ft',   rate:80,      label:'HUF (Ft)',    flag:'🇭🇺' },
+  PL: { code:'PLN', symbol:'zł',   rate:0.92,    label:'PLN (zł)',    flag:'🇵🇱' },
+  MD: { code:'MDL', symbol:'L',    rate:3.9,     label:'MDL (L)',     flag:'🇲🇩' },
+  BG: { code:'BGN', symbol:'лв',   rate:0.39,    label:'BGN (лв)',    flag:'🇧🇬' },
+  DEFAULT: { code:'EUR', symbol:'€', rate:0.2,   label:'EUR (€)',     flag:'' },
+};
+
+// Notă: numit applyCurrencyManual (nu applyCurrency) — GEO MODULE de mai jos
+// în pagină reasignează window.applyCurrency la un no-op ("handled by
+// applyGeo"), ceea ce ar face-o silențios inoperantă pentru fluxurile
+// manuale GPS/text de mai jos dacă ar purta același nume global.
+function applyCurrencyManual(cur) {
+  const lbl = document.getElementById('currency-label');
+  if (lbl) lbl.textContent = cur.flag + ' ' + cur.label;
+  document.querySelectorAll('.dyn-price').forEach(el => {
+    const ron = parseFloat(el.dataset.ron);
+    const converted = Math.round(ron * cur.rate);
+    el.textContent = converted.toLocaleString();
+  });
+  document.querySelectorAll('.dyn-currency').forEach(el => {
+    el.textContent = cur.symbol;
+  });
+}
 
 // ── Aplică date geo în UI ────────────────────────────────────────
 function applyGeoData(data){
@@ -1884,7 +1917,7 @@ function applyGeoData(data){
 
   // Prețuri / monedă
   var cur=CURRENCIES[country]||CURRENCIES.DEFAULT;
-  applyCurrency(cur);
+  applyCurrencyManual(cur);
 
   // Display locație desktop
   var locEl=document.getElementById('loc-display');
@@ -1918,23 +1951,11 @@ function applyGeoData(data){
   geoSave(data);
 }
 
-// ── Nivel 1: IP ──────────────────────────────────────────────────
-function detectFromIP(){
-  var cached=geoLoad();
-  if(cached){ applyGeoData(Object.assign({},cached,{source:'cache'})); return; }
-  var ctrl=new AbortController();
-  var t=setTimeout(function(){ctrl.abort();},4000);
-  fetch('https://ipapi.co/json/',{signal:ctrl.signal})
-    .then(function(r){return r.json();})
-    .then(function(d){
-      clearTimeout(t);
-      applyGeoData({country:d.country_code||'RO',city:d.city||'',region:d.region||'',lat:d.latitude,lng:d.longitude,source:'ip'});
-    })
-    .catch(function(){
-      clearTimeout(t);
-      applyGeoData({country:'RO',city:'România',region:'',source:'ip'});
-    });
-}
+// G31c (27 Iulie 2026): detectFromIP() eliminată — era o a doua detectare IP
+// automată, complet independentă de "GEO MODULE" de mai jos în pagină
+// (window.MYD_GEO/tryIP), care oricum rulează la încărcare. applyGeoData()
+// rămâne, apelată acum doar de cele 2 fluxuri manuale reale (GPS/text) de
+// mai jos.
 
 // ── Nivel 2: GPS browser (3-15m precizie) ────────────────────────
 function detectFromGPS(){
@@ -2016,10 +2037,9 @@ document.addEventListener('DOMContentLoaded',function(){
   }
 });
 
-// ── INIT: pornire cu IP detection ────────────────────────────────
-function detectAndApplyCurrency(){ detectFromIP(); }
-
-detectAndApplyCurrency();
+// G31c (27 Iulie 2026): pornirea automată (IP + GPS) e acum exclusiv
+// responsabilitatea "GEO MODULE" de mai jos în pagină (window.MYD_GEO,
+// start() pe DOMContentLoaded) — nu mai există un al doilea apel automat aici.
 </script>
 <!-- ════ MOBILE BOTTOM NAV BAR (doar pe ecrane < 1024px) ════ -->
 <nav id="mobile-bottom-nav" style="
@@ -2215,6 +2235,11 @@ function applyGeo(d){
 
   // ── Dispatch event ────────────────────────────────────────
   try{window.dispatchEvent(new CustomEvent('myd:geo',{detail:d}));}catch(e){}
+  // G31c (27 Iulie 2026): dispatch suplimentar pentru compatibilitate cu
+  // initCatalogSync()/setZoneLabelReal() de mai sus în pagină, care ascultă
+  // 'myd-geo-update' (nume vechi, folosit de fostul applyGeoData(), acum
+  // eliminat) și citește detail.country (nu detail.cc).
+  try{window.dispatchEvent(new CustomEvent('myd-geo-update',{detail:Object.assign({},d,{country:cc})}));}catch(e){}
 
   cacheSet(d);
 }
