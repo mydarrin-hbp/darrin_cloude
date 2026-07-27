@@ -3337,13 +3337,8 @@ function applyGeoData(data){
   // Event pentru alte componente
   try{ window.dispatchEvent(new CustomEvent('myd-geo-update',{detail:data})); }catch(e){}
 
-  // Banner zonă indisponibilă
-  var ACTIVE=['RO','MD','DE','FR','BG'];
-  if(!ACTIVE.includes(country)){
-    var zn=document.getElementById('unavail-zone');
-    if(zn) zn.textContent=city||country;
-    setTimeout(function(){ document.getElementById('zone-unavailable')?.classList.remove('hidden'); },2000);
-  }
+  // Notă: Investitori trebuie să rămână complet funcțională în orice țară —
+  // niciun banner de „zonă indisponibilă" nu se afișează aici.
 
   // Salvare DB Supabase (fire-and-forget)
   if(data.lat&&data.lng&&window.__ENV__&&window.__ENV__.SUPABASE_ANON_KEY){
@@ -3637,18 +3632,8 @@ function applyGeo(d){
     if(!isNaN(ron))el.textContent=rate===1?ron:Math.round(ron*rate*10)/10;
   });
 
-  // ── Banner zonă inactivă ───────────────────────────────────
-  if(!info.active){
-    var zn=document.getElementById('unavail-zone');
-    if(zn)zn.textContent=info.name;
-    setTimeout(function(){
-      var b=document.getElementById('zone-unavailable');
-      if(b)b.classList.remove('hidden');
-    },500);
-  }else{
-    var b=document.getElementById('zone-unavailable');
-    if(b)b.classList.add('hidden');
-  }
+  // Notă: Investitori rămâne complet funcțională indiferent de țară — fără
+  // banner de „zonă indisponibilă" (info.active rămâne doar pentru monedă).
 
   // ── html lang ─────────────────────────────────────────────
   if(info.lang)document.documentElement.lang=info.lang;

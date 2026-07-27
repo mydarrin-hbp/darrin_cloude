@@ -2735,44 +2735,6 @@ const CURRENCIES = {
   DEFAULT: { code:'EUR', symbol:'€', rate:0.2,   label:'EUR (€)',     flag:'' },
 };
 
-// Zones where platform is ACTIVE
-const ACTIVE_ZONES = ['RO', 'MD', 'DE', 'FR', 'BG'];
-
-function detectAndApplyCurrency() {
-  // Try to get country from IP via free API
-  fetch('https://ipapi.co/json/')
-    .then(r => r.json())
-    .then(data => {
-      const country = data.country_code || 'RO';
-      const city = data.city || '';
-      const region = data.region || '';
-      const isActive = ACTIVE_ZONES.includes(country);
-
-      // Update location display
-      if (city) {
-        document.getElementById('loc-display').textContent = city + (region ? ', ' + region : '');
-        document.getElementById('loc-input').value = city + (region ? ', ' + region : '');
-      }
-
-      // Apply currency
-      const cur = CURRENCIES[country] || CURRENCIES.DEFAULT;
-      applyCurrency(cur);
-
-      // Show unavailable zone banner if needed
-      if (!isActive) {
-        const zoneName = data.country_name || country;
-        document.getElementById('unavail-zone').textContent = zoneName;
-        setTimeout(() => {
-          document.getElementById('zone-unavailable').classList.remove('hidden');
-        }, 2000);
-      }
-    })
-    .catch(() => {
-      // Fallback: RO
-      applyCurrency(CURRENCIES.RO);
-    });
-}
-
 function applyCurrency(cur) {
   // Update label in catalog header
   const lbl = document.getElementById('currency-label');
@@ -2788,28 +2750,6 @@ function applyCurrency(cur) {
     el.textContent = cur.symbol;
   });
 }
-
-// Zone unavailable tabs
-function switchUnavailTab(tab) {
-  document.getElementById('unavail-tab-client').classList.toggle('active', tab==='client');
-  document.getElementById('unavail-tab-furnizor').classList.toggle('active', tab==='furnizor');
-}
-
-function submitUnavail() {
-  const subscribed = document.getElementById('unavail-subscribe').checked;
-  const modal = document.getElementById('zone-unavailable');
-  modal.querySelector('.bg-white').innerHTML = `
-    <div class="p-8 text-center">
-      <div class="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4 text-3xl"><i data-lucide="badge-check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-      <h3 class="font-bold text-xl text-[#2D2D2D] mb-2" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Înregistrat cu succes!</h3>
-      <p class="text-gray-400 text-sm leading-relaxed mb-6">Vei fi printre primii care află când My Darrin lansează în zona ta${subscribed ? ' — vei primi notificări pe email' : ''}.</p>
-      <button onclick="document.getElementById('zone-unavailable').classList.add('hidden')" class="bg-[#FF8C00] text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition">Închide</button>
-    </div>
-  `;
-}
-
-// Init currency detection on page load
-detectAndApplyCurrency();
 
 // ── PARTNER MODAL ──
 const PARTNER_META = {
@@ -3479,19 +3419,9 @@ function setCountry(code, flag, name, currency, currCode){
   var cur = CURRENCIES[code] || CURRENCIES['RO'];
   applyCurrency(cur);
 
-  // Banner zonă inactivă (ES, GB etc.)
-  var ACTIVE = ['RO','MD','DE','FR','BG'];
-  if(!ACTIVE.includes(code)){
-    var zn = document.getElementById('unavail-zone');
-    if(zn) zn.textContent = name;
-    setTimeout(function(){
-      var b = document.getElementById('zone-unavailable');
-      if(b) b.classList.remove('hidden');
-    }, 500);
-  } else {
-    var b = document.getElementById('zone-unavailable');
-    if(b) b.classList.add('hidden');
-  }
+  // Notă: Devino Partener trebuie să fie complet funcțională în orice țară —
+  // niciun banner de „zonă indisponibilă" nu blochează/descurajează pagina.
+  // Doar checkout-ul e condiționat de statusul de țară activă.
 
   // Salvare
   geoSave({code:code, flag:flag, name:name, currency:currency, currCode:currCode});
@@ -3706,63 +3636,40 @@ document.addEventListener('myd-geo-update', function(e) {
   });
 })();
 
-// 2. Bloc zone inactive — utilizatori din afara RO
-(function checkZoneAvailability() {
-  // Citim țara din GEO MODULE
-  var checkGeo = function() {
+// 2. Colectare demand din zone neactive — silențios, fără a bloca/descuraja
+// formularul (Devino Partener trebuie să rămână complet funcțională oriunde).
+(function captureLeadZonaInactiva() {
+  var ACTIVE = ['RO', 'MD', 'DE', 'FR', 'BG'];
+  var trimis = false;
+
+  var trySend = function() {
+    if (trimis) return;
     var geo = window.MYD_GEO && window.MYD_GEO.data;
     if (!geo) return;
     var cc = (geo.cc || '').toUpperCase();
-    var ACTIVE = ['RO', 'MD'];
-    if (ACTIVE.includes(cc)) return; // țară activă
+    if (ACTIVE.includes(cc)) return;
 
-    // Afișăm bannerul de zonă inactivă dacă utilizatorul încearcă să completeze
     var form = document.querySelector('#partner-form, #partnerForm, [data-partner]');
     if (!form) return;
-
-    var existing = document.getElementById('zone-inactive-banner');
-    if (existing) return;
-
-    var banner = document.createElement('div');
-    banner.id = 'zone-inactive-banner';
-    banner.style.cssText = [
-      'background:#E8F0FB','border:1.5px solid rgba(0,51,102,.15)',
-      'border-radius:14px','padding:16px 20px','margin-bottom:20px',
-      'font-size:13px','color:#1A2332','line-height:1.7',
-    ].join(';');
-    banner.innerHTML =
-      '<strong>Darrin nu este disponibil în zona ta încă.</strong><br>' +
-      'Imediat ce suntem live în ' + (geo.name || 'țara ta') +
-      ', te vom anunța prin email. Înregistrează-te acum și vei fi printre primii parteneri activați.<br>' +
-      '<small style="color:#6B7A8D">Mulțumim pentru înțelegere!</small>';
-
-    form.insertBefore(banner, form.firstChild);
-
-    // Colectăm lead-ul (email dacă există deja completat)
     var emailInp = form.querySelector('input[type="email"]');
-    if (emailInp && emailInp.value) {
-      collectLeadFromInactiveZone(emailInp.value, geo.cc, geo.name);
-    }
+    if (!emailInp || !emailInp.value || !emailInp.value.includes('@')) return;
+
+    trimis = true;
+    collectLeadFromInactiveZone(emailInp.value, cc, geo.name);
   };
 
-  // Ascultăm evenimentul geo sau verificăm periodic
-  window.addEventListener('myd:geo', checkGeo);
-  var _t = setInterval(function() {
-    if (window.MYD_GEO && window.MYD_GEO.data) { checkGeo(); clearInterval(_t); }
-  }, 500);
+  window.addEventListener('myd:geo', trySend);
+  document.addEventListener('blur', function(e) {
+    if (e.target && e.target.matches && e.target.matches('input[type="email"]')) trySend();
+  }, true);
 })();
 
 function collectLeadFromInactiveZone(email, cc, tara) {
-  var supa = window.supabaseClient;
-  if (!supa || !email) return;
-  // Stocăm lead pentru strategie expansiune
-  supa.from('leads_zona_inactiva').insert({
-    email: email,
-    tara_cod: cc,
-    tara_nume: tara,
-    pagina: 'devino-partener',
-    creat_la: new Date().toISOString(),
-  }).then(function(){}).catch(function(){});
+  fetch('/api/public/lead-zona', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email, tara_cod: cc, tara_nume: tara }),
+  }).catch(function(){});
 }
 </script>
 
