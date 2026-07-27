@@ -31,20 +31,73 @@ var COUNTRIES = {
   IT: { flag:'🇮🇹', name:'Italia',   currency:'EUR', code:'EUR', lang:'it', active:false },
   HU: { flag:'🇭🇺', name:'Ungaria',  currency:'HUF', code:'HUF', lang:'hu', active:false },
   PL: { flag:'🇵🇱', name:'Polonia',  currency:'PLN', code:'PLN', lang:'pl', active:false },
+  GR: { flag:'🇬🇷', name:'Grecia',   currency:'EUR', code:'EUR', lang:'el', active:false },
+  TR: { flag:'🇹🇷', name:'Turcia',   currency:'Lira', code:'TRY', lang:'tr', active:false },
+  UA: { flag:'🇺🇦', name:'Ucraina',  currency:'Hrivnă', code:'UAH', lang:'uk', active:false },
+  FI: { flag:'🇫🇮', name:'Finlanda', currency:'EUR', code:'EUR', lang:'fi', active:false },
 };
 
 var DEFAULT_CC = 'RO';
 
 // ── State ──────────────────────────────────────────────────────────
 var MYD_GEO = window.MYD_GEO = {
-  data: null,      // { cc, flag, name, currency, currCode, lang, city, region, address, lat, lng, accuracy, source }
+  data: null,      // MYD_GEO.locatie: { cc, flag, name, currency, currCode, lang, city, region, address, lat, lng, accuracy, source }
+  prestare: null,  // MYD_GEO.prestare: { cc, city, region, address, lat, lng } — adresa de EXECUȚIE a serviciului, distinctă de locația curentă
+  checkoutActiv: null,  // bool — dacă țara curentă (MYD_GEO.data.cc) poate finaliza o comandă, din tax_configurations (sursă reală)
+  tariActive: null,     // array coduri țară cu checkout_activ=true, din /api/public/tari-active
   ready: false,
   _listeners: [],
   on: function(fn) { this._listeners.push(fn); if (this.ready && this.data) fn(this.data); },
-  _fire: function(d) { this.data = d; this.ready = true; this._listeners.forEach(function(f){ f(d); }); },
+  _fire: function(d) { this.data = d; this.ready = true; this._listeners.forEach(function(f){ f(d); }); _refreshCheckoutActiv(); },
   refresh: function() { _cache.clear(); _start(); },
-  setManual: function(cc) { _applyCountry(cc, 'manual'); }
+  setManual: function(cc) { _applyCountry(cc, 'manual'); },
+  // Geocodare adresă de execuție (forward-geocoding) — distinctă de detectarea locației curente.
+  // Promovat din mydarrin-produs.html (G27) ca implementare comună.
+  geocodeazaAdresa: function(text, callback) { _geocodeazaPrestare(text, callback); },
 };
+
+// ── Checkout activ — sursă reală tax_configurations, via /api/public/tari-active ──
+function _refreshCheckoutActiv() {
+  fetch('/api/public/tari-active')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var lista = (d && Array.isArray(d.active)) ? d.active : ['RO'];
+      MYD_GEO.tariActive = lista;
+      var cc = (MYD_GEO.data && MYD_GEO.data.cc) || DEFAULT_CC;
+      MYD_GEO.checkoutActiv = lista.indexOf(cc) !== -1;
+      try { window.dispatchEvent(new CustomEvent('myd:geo:checkout', { detail: { checkoutActiv: MYD_GEO.checkoutActiv, tariActive: lista } })); } catch(e) {}
+    })
+    .catch(function(){
+      // Fail-safe: dacă endpoint-ul nu răspunde, presupunem doar RO activ (statusul curent real)
+      MYD_GEO.tariActive = ['RO'];
+      var cc = (MYD_GEO.data && MYD_GEO.data.cc) || DEFAULT_CC;
+      MYD_GEO.checkoutActiv = cc === 'RO';
+    });
+}
+
+// ── Nivel „prestare": forward-geocoding Nominatim pentru adresa de execuție ──
+function _geocodeazaPrestare(text, callback) {
+  if (!text || text.length <= 8) { MYD_GEO.prestare = null; if (callback) callback(null); return; }
+  var url = 'https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&q=' + encodeURIComponent(text);
+  fetch(url, { headers: { 'User-Agent': 'MyDarrin/2.0 (homebestpal.com)' } })
+    .then(function(r){ return r.json(); })
+    .then(function(rez){
+      var hit = rez && rez[0];
+      if (!hit || !hit.address) { if (callback) callback(null); return; }
+      var a = hit.address;
+      var cc = (a.country_code || 'ro').toUpperCase();
+      cc = COUNTRIES[cc] ? cc : DEFAULT_CC;
+      var city = a.city || a.town || a.village || a.municipality || a.suburb || '';
+      var region = a.county || a.state || '';
+      var street = [a.road, a.house_number].filter(Boolean).join(' ');
+      var address = [street, city, region].filter(Boolean).join(', ');
+      var d = { cc: cc, city: city, region: region, address: address, lat: parseFloat(hit.lat), lng: parseFloat(hit.lon) };
+      MYD_GEO.prestare = d;
+      try { window.dispatchEvent(new CustomEvent('myd:geo:prestare', { detail: d })); } catch(e) {}
+      if (callback) callback(d);
+    })
+    .catch(function(){ if (callback) callback(null); });
+}
 
 // ── Cache ──────────────────────────────────────────────────────────
 var _cache = {

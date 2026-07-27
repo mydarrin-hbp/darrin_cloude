@@ -3395,49 +3395,20 @@ function daiSendMessage(){
 // Utilizatorul poate schimba MANUAL țara + limba oricând din topbar.
 // ═══════════════════════════════════════════════════════════════
 
-// Date salvate în localStorage (persistă între sesiuni)
-var GEO_KEY = 'myd_country_v1';
-
-function geoLoad(){
-  try{ return JSON.parse(localStorage.getItem(GEO_KEY)||'null'); }catch(e){ return null; }
-}
-function geoSave(d){
-  try{ localStorage.setItem(GEO_KEY, JSON.stringify(d)); }catch(e){}
-}
-
-// Setează țara + moneda în UI
-function setCountry(code, flag, name, currency, currCode){
-  // Topbar
-  var flagEl = document.getElementById('loc-flag');
-  var nameEl = document.getElementById('loc-display');
-  var curEl  = document.getElementById('loc-currency');
-  if(flagEl) flagEl.textContent = flag;
-  if(nameEl) nameEl.textContent = name;
-  if(curEl)  curEl.textContent  = '· ' + currency;
-
-  // Prețuri
-  var cur = CURRENCIES[code] || CURRENCIES['RO'];
-  applyCurrency(cur);
-
-  // Notă: Devino Partener trebuie să fie complet funcțională în orice țară —
-  // niciun banner de „zonă indisponibilă" nu blochează/descurajează pagina.
-  // Doar checkout-ul e condiționat de statusul de țară activă.
-
-  // Salvare
-  geoSave({code:code, flag:flag, name:name, currency:currency, currCode:currCode});
-
-  // Închide dropdown
-  var dd = document.getElementById('countryDd');
-  if(dd) dd.style.display = 'none';
+// G31 (27 Iulie 2026): detectarea IP proprie (ipapi.co, cache localStorage
+// separat) eliminată — folosește acum myd-geo.js (deja inclus ca <script>
+// pe această pagină, dar neconsumat până acum). setCountry rămâne ca nume
+// de funcție (apelată din dropdown-ul de țară din HTML), dar deleagă la
+// MYD_GEO.setManual în loc să reimplementeze detectarea.
+function setCountry(code){
+  if(window.MYD_GEO) window.MYD_GEO.setManual(code);
 }
 
-// Toggle dropdown țară
 function toggleCountry(){
   var dd = document.getElementById('countryDd');
   if(!dd) return;
   dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
 }
-// Închide la click în afară
 document.addEventListener('click', function(e){
   var btn = document.getElementById('loc-btn');
   var dd  = document.getElementById('countryDd');
@@ -3446,49 +3417,20 @@ document.addEventListener('click', function(e){
   }
 });
 
-// Detectare automată țară din IP (la primul load, fără cache)
-function detectAndApplyCurrency(){
-  // 1. Verifică cache
-  var cached = geoLoad();
-  if(cached && cached.code){
-    setCountry(cached.code, cached.flag, cached.name, cached.currency, cached.currCode);
-    return;
-  }
-
-  // 2. Detectare IP — folosim ipapi.co (free tier, fără API key)
-  var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  var t = setTimeout(function(){
-    if(ctrl) ctrl.abort();
-    // Fallback silențios la RO
-    setCountry('RO','🇷🇴','România','Lei','RON');
-  }, 4000);
-
-  var opts = ctrl ? {signal: ctrl.signal} : {};
-  fetch('https://ipapi.co/json/', opts)
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      clearTimeout(t);
-      var code = d.country_code || 'RO';
-      // Mapare la țările noastre
-      var COUNTRIES = {
-        RO:{flag:'🇷🇴',name:'România',currency:'Lei',currCode:'RON'},
-        MD:{flag:'🇲🇩',name:'Moldova',currency:'Lei',currCode:'MDL'},
-        DE:{flag:'🇩🇪',name:'Germania',currency:'EUR',currCode:'EUR'},
-        FR:{flag:'🇫🇷',name:'Franța',currency:'EUR',currCode:'EUR'},
-        BG:{flag:'🇧🇬',name:'Bulgaria',currency:'BGN',currCode:'BGN'},
-        ES:{flag:'🇪🇸',name:'Spania',currency:'EUR',currCode:'EUR'},
-        GB:{flag:'🇬🇧',name:'UK',currency:'GBP',currCode:'GBP'},
-      };
-      var c = COUNTRIES[code] || COUNTRIES['RO'];
-      setCountry(code, c.flag, c.name, c.currency, c.currCode);
-    })
-    .catch(function(){
-      clearTimeout(t);
-      setCountry('RO','🇷🇴','România','Lei','RON');
-    });
+// Topbar + preț, direct din sursa comună (GPS+IP, cache, evenimente)
+if(window.MYD_GEO){
+  window.MYD_GEO.on(function(d){
+    var flagEl = document.getElementById('loc-flag');
+    var nameEl = document.getElementById('loc-display');
+    var curEl  = document.getElementById('loc-currency');
+    if(flagEl) flagEl.textContent = d.flag;
+    if(nameEl) nameEl.textContent = d.city ? d.city+(d.region?', '+d.region:'') : d.name;
+    if(curEl)  curEl.textContent  = '· ' + d.currency;
+    applyCurrency(CURRENCIES[d.cc] || CURRENCIES['RO']);
+    var dd = document.getElementById('countryDd');
+    if(dd) dd.style.display = 'none';
+  });
 }
-
-detectAndApplyCurrency();
 </script>
 <!-- ════ MOBILE BOTTOM NAV BAR (doar pe ecrane < 1024px) ════ -->
 <nav id="mobile-bottom-nav" style="

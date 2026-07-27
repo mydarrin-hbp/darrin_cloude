@@ -2673,44 +2673,6 @@ function _mydLangDinTara(cc){
   return map[(cc||'').toUpperCase()] || 'ro';
 }
 
-// Zones where platform is ACTIVE
-const ACTIVE_ZONES = ['RO', 'MD', 'DE', 'FR', 'BG'];
-
-function detectAndApplyCurrency() {
-  // Try to get country from IP via free API
-  fetch('https://ipapi.co/json/')
-    .then(r => r.json())
-    .then(data => {
-      const country = data.country_code || 'RO';
-      const city = data.city || '';
-      const region = data.region || '';
-      const isActive = ACTIVE_ZONES.includes(country);
-
-      // Update location display
-      if (city) {
-        document.getElementById('loc-display').textContent = city + (region ? ', ' + region : '');
-        document.getElementById('loc-input').value = city + (region ? ', ' + region : '');
-      }
-
-      // Apply currency
-      const cur = CURRENCIES[country] || CURRENCIES.DEFAULT;
-      applyCurrency(cur);
-
-      // Show unavailable zone banner if needed
-      if (!isActive) {
-        const zoneName = data.country_name || country;
-        document.getElementById('unavail-zone').textContent = zoneName;
-        setTimeout(() => {
-          document.getElementById('zone-unavailable').classList.remove('hidden');
-        }, 2000);
-      }
-    })
-    .catch(() => {
-      // Fallback: RO
-      applyCurrency(CURRENCIES.RO);
-    });
-}
-
 function applyCurrency(cur) {
   // Update label in catalog header
   const lbl = document.getElementById('currency-label');
@@ -2726,28 +2688,6 @@ function applyCurrency(cur) {
     el.textContent = cur.symbol;
   });
 }
-
-// Zone unavailable tabs
-function switchUnavailTab(tab) {
-  document.getElementById('unavail-tab-client').classList.toggle('active', tab==='client');
-  document.getElementById('unavail-tab-furnizor').classList.toggle('active', tab==='furnizor');
-}
-
-function submitUnavail() {
-  const subscribed = document.getElementById('unavail-subscribe').checked;
-  const modal = document.getElementById('zone-unavailable');
-  modal.querySelector('.bg-white').innerHTML = `
-    <div class="p-8 text-center">
-      <div class="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4 text-3xl"><i data-lucide="badge-check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-      <h3 class="font-bold text-xl text-[#2D2D2D] mb-2" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Înregistrat cu succes!</h3>
-      <p class="text-gray-400 text-sm leading-relaxed mb-6">Vei fi printre primii care află când My Darrin lansează în zona ta${subscribed ? ' — vei primi notificări pe email' : ''}.</p>
-      <button onclick="document.getElementById('zone-unavailable').classList.add('hidden')" class="bg-[#FF8C00] text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition">Închide</button>
-    </div>
-  `;
-}
-
-// Init currency detection on page load
-detectAndApplyCurrency();
 
 // ── PARTNER MODAL ──
 
@@ -3083,13 +3023,9 @@ function applyGeoData(data){
   // pentru că evenimentul avea alt nume, deși datele erau corecte.
   try{ window.dispatchEvent(new CustomEvent('myd:geo',{detail:{lang:_mydLangDinTara(country)}})); }catch(e){}
 
-  // Banner zonă indisponibilă
-  var ACTIVE=['RO','MD','DE','FR','BG'];
-  if(!ACTIVE.includes(country)){
-    var zn=document.getElementById('unavail-zone');
-    if(zn) zn.textContent=city||country;
-    setTimeout(function(){ document.getElementById('zone-unavailable')?.classList.remove('hidden'); },2000);
-  }
+  // Notă: pagina de configurare serviciu rămâne complet funcțională indiferent
+  // de țară — doar checkout-ul (mydarrin-checkout.html) e condiționat real de
+  // statusul de țară activă, verificat și server-side în api/comenzi/creeaza.js.
 
   // Salvare DB Supabase (fire-and-forget)
   if(data.lat&&data.lng&&window.__ENV__&&window.__ENV__.SUPABASE_ANON_KEY){
