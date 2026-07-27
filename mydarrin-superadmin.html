@@ -552,6 +552,10 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
       Branding & Design
     </a>
+    <a class="sa-nav-item" onclick="showPanel('seo')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      SEO — Titluri & Descrieri
+    </a>
     <a class="sa-nav-item" onclick="showPanel('accountancy')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
       Accountancy
@@ -1466,6 +1470,51 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       </div>
     </div>
 
+    <!-- ══ PANEL: SEO — Titluri & Descrieri (G22) ══ -->
+    <div id="panel-seo" style="display:none">
+      <div style="margin-bottom:16px">
+        <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">SEO — Titluri & Descrieri</h2>
+        <p style="font-size:12.5px;color:#4A6080">Suprascrie titlul/descrierea afișate pentru paginile publice, fără deploy de cod.</p>
+      </div>
+
+      <div style="margin-bottom:16px;padding:12px 14px;background:rgba(14,158,153,.08);border:1px solid rgba(14,158,153,.25);border-radius:10px;font-size:11.5px;color:#8FA3BD;line-height:1.6">
+        Mecanism: fiecare pagină are deja un titlu/descriere static, scrise direct în fișier — acestea rămân vizibile pentru orice motor de căutare care nu execută JavaScript. Salvarea de mai jos adaugă o suprascriere citită live de pagină, aplicată doar în browser. Paginile individuale de serviciu/produs nu apar aici — nu au încă un identificator stabil în catalogul real (necesită o coloană „slug" dedicată, element separat de plan).
+      </div>
+
+      <div id="seo-status" style="font-size:11.5px;color:#8FA3BD;margin-bottom:10px">Se încarcă...</div>
+
+      <div style="background:#16202E;border:1px solid #2D3F55;border-radius:14px;overflow:hidden">
+        <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+          <thead>
+            <tr style="background:#0F1923;color:#8FA3BD;text-align:left">
+              <th style="padding:10px 14px;font-weight:700">Pagină</th>
+              <th style="padding:10px 14px;font-weight:700">Titlu efectiv</th>
+              <th style="padding:10px 14px;font-weight:700">Stare</th>
+              <th style="padding:10px 14px;font-weight:700"></th>
+            </tr>
+          </thead>
+          <tbody id="seo-tabel-body"></tbody>
+        </table>
+      </div>
+
+      <!-- Formular editare — apare sub tabel când se apasă „Editează" -->
+      <div id="seo-editor" style="display:none;margin-top:16px;background:#16202E;border:1px solid #2D3F55;border-radius:14px;padding:18px">
+        <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:12px">Editează: <span id="seo-editor-path" style="color:#FF8C00"></span></div>
+        <label style="display:block;font-size:11.5px;color:#8FA3BD;margin-bottom:4px">Titlu (afișat în tab-ul browserului și în rezultatele de căutare)</label>
+        <input id="seo-input-title" type="text" maxlength="200" style="width:100%;background:#0F1923;border:1px solid #2D3F55;border-radius:8px;padding:9px 12px;font-size:12.5px;color:#fff;margin-bottom:12px"/>
+        <label style="display:block;font-size:11.5px;color:#8FA3BD;margin-bottom:4px">Descriere (afișată sub titlu în rezultatele de căutare)</label>
+        <textarea id="seo-input-description" maxlength="400" rows="3" style="width:100%;background:#0F1923;border:1px solid #2D3F55;border-radius:8px;padding:9px 12px;font-size:12.5px;color:#fff;margin-bottom:12px;resize:vertical"></textarea>
+        <label style="display:block;font-size:11.5px;color:#8FA3BD;margin-bottom:4px">URL canonic (opțional — lasă gol dacă nu e cazul)</label>
+        <input id="seo-input-canonical" type="text" placeholder="https://mydarrin.homebestpal.com/..." style="width:100%;background:#0F1923;border:1px solid #2D3F55;border-radius:8px;padding:9px 12px;font-size:12.5px;color:#fff;margin-bottom:14px"/>
+        <div id="seo-editor-msg" style="font-size:11.5px;margin-bottom:10px"></div>
+        <div style="display:flex;gap:8px">
+          <button onclick="salveazaSeoOverride()" style="background:#FF8C00;color:#fff;border:none;padding:9px 18px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer">Salvează</button>
+          <button onclick="stergeSeoOverride()" style="background:transparent;color:#E57373;border:1px solid #E57373;padding:9px 18px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer">Șterge suprascrierea</button>
+          <button onclick="inchideSeoEditor()" style="background:transparent;color:#8FA3BD;border:1px solid #2D3F55;padding:9px 18px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer">Anulează</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ══ PANEL: ACCOUNTANCY (restricționat — superadmin sau contabil aprobat) ══ -->
     <div id="panel-accountancy" style="display:none">
       <div id="acc-denied" style="display:none;text-align:center;padding:60px 20px">
@@ -2278,13 +2327,13 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 
 <script>
 // ── NAVIGATION ──
-const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding','accountancy','investitori','contact','prospecti','newsletter','acces-temporar'];
+const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding','seo','accountancy','investitori','contact','prospecti','newsletter','acces-temporar'];
 const TITLES = {
   dashboard:'Dashboard Global',tari:'Țări & Zone',utilizatori:'Utilizatori & Actori',
   rbac:'Permisiuni RBAC',platforme:'Platforme & Integrări',escrow:'Escrow Global',
   comisioane:'Comisioane & Tarifare',vmc:'VMC per Țară',parteneri:'Parteneri Globali',
   comenzi:'Comenzi Globale',catalog:'Catalog Servicii/Materiale/Închirieri',audit:'Audit Log',config:'Configurare Sistem',
-  branding:'Branding & Design Platformă',accountancy:'Accountancy',
+  branding:'Branding & Design Platformă',seo:'SEO — Titluri & Descrieri',accountancy:'Accountancy',
   investitori:'Administrare Investitori',contact:'Mesaje Contact',prospecti:'Prospecți Parteneri',
   newsletter:'Newsletter & Abonați','acces-temporar':'Acces Temporar'
 };
@@ -4587,6 +4636,118 @@ const _origShowPanelIntegrari = window.showPanel;
 window.showPanel = function(id) {
   if (_origShowPanelIntegrari) _origShowPanelIntegrari(id);
   if (id === 'platforme') loadIntegrari();
+};
+</script>
+
+<!-- ══ SEO — Titluri & Descrieri (G22) ══ -->
+<script>
+let _seoConfigCache = [];
+let _seoEditandPath = null;
+
+async function loadSeoConfig(){
+  const statusEl = document.getElementById('seo-status');
+  const bodyEl = document.getElementById('seo-tabel-body');
+  if (!bodyEl) return;
+  statusEl.textContent = 'Se încarcă...';
+  try {
+    const token = await accGetToken();
+    const res = await fetch('/api/admin/seo', { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    _seoConfigCache = data.pagini || [];
+    statusEl.textContent = _seoConfigCache.length + ' pagini publice cunoscute.';
+    bodyEl.innerHTML = _seoConfigCache.map(function(p){
+      const are = !!p.override && (p.override.meta_title || p.override.meta_description);
+      const titluEfectiv = (p.override && p.override.meta_title) ? p.override.meta_title : p.titlu_pagina + ' (implicit din fișier)';
+      return '<tr style="border-top:1px solid #2D3F55">' +
+        '<td style="padding:9px 14px;color:#fff;font-family:monospace;font-size:11.5px">' + p.page_path + '</td>' +
+        '<td style="padding:9px 14px;color:#B9C6D8">' + titluEfectiv + '</td>' +
+        '<td style="padding:9px 14px">' + (are
+          ? '<span style="font-size:10.5px;background:rgba(14,158,153,.2);color:#0E9E99;padding:3px 10px;border-radius:99px;font-weight:700">Suprascris</span>'
+          : '<span style="font-size:10.5px;background:rgba(139,163,192,.15);color:#8FA3BD;padding:3px 10px;border-radius:99px;font-weight:700">Implicit</span>') + '</td>' +
+        '<td style="padding:9px 14px;text-align:right"><button onclick="editeazaSeoPagina(\'' + p.page_path + '\')" style="background:transparent;color:#FF8C00;border:1px solid #FF8C00;padding:5px 12px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">Editează</button></td>' +
+      '</tr>';
+    }).join('');
+  } catch (e) {
+    statusEl.style.color = '#E57373';
+    statusEl.textContent = 'Eroare: ' + e.message;
+  }
+}
+
+function editeazaSeoPagina(pagePath){
+  const pagina = _seoConfigCache.find(function(p){ return p.page_path === pagePath; });
+  if (!pagina) return;
+  _seoEditandPath = pagePath;
+  document.getElementById('seo-editor-path').textContent = pagePath;
+  document.getElementById('seo-input-title').value = (pagina.override && pagina.override.meta_title) || '';
+  document.getElementById('seo-input-description').value = (pagina.override && pagina.override.meta_description) || '';
+  document.getElementById('seo-input-canonical').value = (pagina.override && pagina.override.canonical_url) || '';
+  document.getElementById('seo-editor-msg').textContent = '';
+  document.getElementById('seo-editor').style.display = 'block';
+  document.getElementById('seo-editor').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function inchideSeoEditor(){
+  document.getElementById('seo-editor').style.display = 'none';
+  _seoEditandPath = null;
+}
+
+async function salveazaSeoOverride(){
+  if (!_seoEditandPath) return;
+  const msgEl = document.getElementById('seo-editor-msg');
+  msgEl.style.color = '#8FA3BD';
+  msgEl.textContent = 'Se salvează...';
+  try {
+    const token = await accGetToken();
+    const res = await fetch('/api/admin/seo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        page_path: _seoEditandPath,
+        meta_title: document.getElementById('seo-input-title').value,
+        meta_description: document.getElementById('seo-input-description').value,
+        canonical_url: document.getElementById('seo-input-canonical').value,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    msgEl.style.color = '#0E9E99';
+    msgEl.textContent = 'Salvat.';
+    await loadSeoConfig();
+    setTimeout(inchideSeoEditor, 600);
+  } catch (e) {
+    msgEl.style.color = '#E57373';
+    msgEl.textContent = 'Eroare: ' + e.message;
+  }
+}
+
+async function stergeSeoOverride(){
+  if (!_seoEditandPath) return;
+  const msgEl = document.getElementById('seo-editor-msg');
+  msgEl.style.color = '#8FA3BD';
+  msgEl.textContent = 'Se șterge...';
+  try {
+    const token = await accGetToken();
+    const res = await fetch('/api/admin/seo?page_path=' + encodeURIComponent(_seoEditandPath), {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    msgEl.style.color = '#0E9E99';
+    msgEl.textContent = 'Suprascriere ștearsă — revine la titlul static din fișier.';
+    await loadSeoConfig();
+    setTimeout(inchideSeoEditor, 600);
+  } catch (e) {
+    msgEl.style.color = '#E57373';
+    msgEl.textContent = 'Eroare: ' + e.message;
+  }
+}
+
+const _origShowPanelSeo = window.showPanel;
+window.showPanel = function(id) {
+  if (_origShowPanelSeo) _origShowPanelSeo(id);
+  if (id === 'seo') loadSeoConfig();
 };
 </script>
 
