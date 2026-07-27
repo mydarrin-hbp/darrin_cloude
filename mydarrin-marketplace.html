@@ -740,6 +740,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 };
 </script>
 <script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
+<script src="myd-geo.js"></script>
   <!-- DOMPurify — sanitizare XSS (audit 2026-07-10) -->
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
   <script>
@@ -2655,50 +2656,13 @@ const CURRENCIES = {
   DEFAULT: { code:'EUR', symbol:'€', rate:0.2,   label:'EUR (€)',     flag:'' },
 };
 
-// Zones where platform is ACTIVE
-const ACTIVE_ZONES = ['RO', 'MD', 'DE', 'FR', 'BG'];
-
-function detectAndApplyCurrency() {
-  // Try to get country from IP via free API
-  fetch('https://ipapi.co/json/')
-    .then(r => r.json())
-    .then(data => {
-      const country = data.country_code || 'RO';
-      const city = data.city || '';
-      const region = data.region || '';
-      const isActive = ACTIVE_ZONES.includes(country);
-
-      // Update location display
-      if (city) {
-        document.getElementById('loc-display').textContent = city + (region ? ', ' + region : '');
-        document.getElementById('loc-input').value = city + (region ? ', ' + region : '');
-      }
-
-      // Apply currency
-      const cur = CURRENCIES[country] || CURRENCIES.DEFAULT;
-      applyCurrency(cur);
-
-      // Show unavailable zone banner if needed
-      if (!isActive) {
-        const zoneName = data.country_name || country;
-        document.getElementById('unavail-zone').textContent = zoneName;
-        setTimeout(() => {
-          document.getElementById('zone-unavailable').classList.remove('hidden');
-        }, 2000);
-      }
-    })
-    .catch(() => {
-      // Fallback: RO
-      applyCurrency(CURRENCIES.RO);
-    });
-}
-
+// G31b (27 Iulie 2026): detectarea IP proprie (ipapi.co) + banner-ul de zonă
+// mort (țintea un element inexistent) eliminate — CURRENCIES (mai sus) și
+// applyCurrency rămân, sunt folosite în continuare de setCountry() de mai
+// jos.
 function applyCurrency(cur) {
-  // Update label in catalog header
   const lbl = document.getElementById('currency-label');
   if (lbl) lbl.textContent = cur.flag + ' ' + cur.label;
-
-  // Update all prices
   document.querySelectorAll('.dyn-price').forEach(el => {
     const ron = parseFloat(el.dataset.ron);
     const converted = Math.round(ron * cur.rate);
@@ -2708,28 +2672,6 @@ function applyCurrency(cur) {
     el.textContent = cur.symbol;
   });
 }
-
-// Zone unavailable tabs
-function switchUnavailTab(tab) {
-  document.getElementById('unavail-tab-client').classList.toggle('active', tab==='client');
-  document.getElementById('unavail-tab-furnizor').classList.toggle('active', tab==='furnizor');
-}
-
-function submitUnavail() {
-  const subscribed = document.getElementById('unavail-subscribe').checked;
-  const modal = document.getElementById('zone-unavailable');
-  modal.querySelector('.bg-white').innerHTML = `
-    <div class="p-8 text-center">
-      <div class="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4 text-3xl"><i data-lucide="badge-check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-      <h3 class="font-bold text-xl text-[#2D2D2D] mb-2" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Înregistrat cu succes!</h3>
-      <p class="text-gray-400 text-sm leading-relaxed mb-6">Vei fi printre primii care află când My Darrin lansează în zona ta${subscribed ? ' — vei primi notificări pe email' : ''}.</p>
-      <button onclick="document.getElementById('zone-unavailable').classList.add('hidden')" class="bg-[#FF8C00] text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition">Închide</button>
-    </div>
-  `;
-}
-
-// Init currency detection on page load
-detectAndApplyCurrency();
 
 // ── PARTNER MODAL ──
 
@@ -3004,59 +2946,18 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
 // Utilizatorul poate schimba MANUAL țara + limba oricând din topbar.
 // ═══════════════════════════════════════════════════════════════
 
-// Date salvate în localStorage (persistă între sesiuni)
-var GEO_KEY = 'myd_country_v1';
-
-function geoLoad(){
-  try{ return JSON.parse(localStorage.getItem(GEO_KEY)||'null'); }catch(e){ return null; }
-}
-function geoSave(d){
-  try{ localStorage.setItem(GEO_KEY, JSON.stringify(d)); }catch(e){}
+// G31b (27 Iulie 2026): detectarea IP proprie (ipapi.co) eliminată — folosește
+// myd-geo.js (modulul comun). setCountry rămâne ca nume de funcție (apelată
+// din dropdown-ul de țară din HTML), dar deleagă la MYD_GEO.setManual.
+function setCountry(code){
+  if(window.MYD_GEO) window.MYD_GEO.setManual(code);
 }
 
-// Setează țara + moneda în UI
-function setCountry(code, flag, name, currency, currCode){
-  // Topbar
-  var flagEl = document.getElementById('loc-flag');
-  var nameEl = document.getElementById('loc-display');
-  var curEl  = document.getElementById('loc-currency');
-  if(flagEl) flagEl.textContent = flag;
-  if(nameEl) nameEl.textContent = name;
-  if(curEl)  curEl.textContent  = '· ' + currency;
-
-  // Prețuri
-  var cur = CURRENCIES[code] || CURRENCIES['RO'];
-  applyCurrency(cur);
-
-  // Banner zonă inactivă (ES, GB etc.)
-  var ACTIVE = ['RO','MD','DE','FR','BG'];
-  if(!ACTIVE.includes(code)){
-    var zn = document.getElementById('unavail-zone');
-    if(zn) zn.textContent = name;
-    setTimeout(function(){
-      var b = document.getElementById('zone-unavailable');
-      if(b) b.classList.remove('hidden');
-    }, 500);
-  } else {
-    var b = document.getElementById('zone-unavailable');
-    if(b) b.classList.add('hidden');
-  }
-
-  // Salvare
-  geoSave({code:code, flag:flag, name:name, currency:currency, currCode:currCode});
-
-  // Închide dropdown
-  var dd = document.getElementById('countryDd');
-  if(dd) dd.style.display = 'none';
-}
-
-// Toggle dropdown țară
 function toggleCountry(){
   var dd = document.getElementById('countryDd');
   if(!dd) return;
   dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
 }
-// Închide la click în afară
 document.addEventListener('click', function(e){
   var btn = document.getElementById('loc-btn');
   var dd  = document.getElementById('countryDd');
@@ -3065,49 +2966,19 @@ document.addEventListener('click', function(e){
   }
 });
 
-// Detectare automată țară din IP (la primul load, fără cache)
-function detectAndApplyCurrency(){
-  // 1. Verifică cache
-  var cached = geoLoad();
-  if(cached && cached.code){
-    setCountry(cached.code, cached.flag, cached.name, cached.currency, cached.currCode);
-    return;
-  }
-
-  // 2. Detectare IP — folosim ipapi.co (free tier, fără API key)
-  var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  var t = setTimeout(function(){
-    if(ctrl) ctrl.abort();
-    // Fallback silențios la RO
-    setCountry('RO','🇷🇴','România','Lei','RON');
-  }, 4000);
-
-  var opts = ctrl ? {signal: ctrl.signal} : {};
-  fetch('https://ipapi.co/json/', opts)
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      clearTimeout(t);
-      var code = d.country_code || 'RO';
-      // Mapare la țările noastre
-      var COUNTRIES = {
-        RO:{flag:'🇷🇴',name:'România',currency:'Lei',currCode:'RON'},
-        MD:{flag:'🇲🇩',name:'Moldova',currency:'Lei',currCode:'MDL'},
-        DE:{flag:'🇩🇪',name:'Germania',currency:'EUR',currCode:'EUR'},
-        FR:{flag:'🇫🇷',name:'Franța',currency:'EUR',currCode:'EUR'},
-        BG:{flag:'🇧🇬',name:'Bulgaria',currency:'BGN',currCode:'BGN'},
-        ES:{flag:'🇪🇸',name:'Spania',currency:'EUR',currCode:'EUR'},
-        GB:{flag:'🇬🇧',name:'UK',currency:'GBP',currCode:'GBP'},
-      };
-      var c = COUNTRIES[code] || COUNTRIES['RO'];
-      setCountry(code, c.flag, c.name, c.currency, c.currCode);
-    })
-    .catch(function(){
-      clearTimeout(t);
-      setCountry('RO','🇷🇴','România','Lei','RON');
-    });
+if(window.MYD_GEO){
+  window.MYD_GEO.on(function(d){
+    var flagEl = document.getElementById('loc-flag');
+    var nameEl = document.getElementById('loc-display');
+    var curEl  = document.getElementById('loc-currency');
+    if(flagEl) flagEl.textContent = d.flag;
+    if(nameEl) nameEl.textContent = d.city ? d.city+(d.region?', '+d.region:'') : d.name;
+    if(curEl)  curEl.textContent  = '· ' + d.currency;
+    applyCurrency(CURRENCIES[d.cc] || CURRENCIES['RO']);
+    var dd = document.getElementById('countryDd');
+    if(dd) dd.style.display = 'none';
+  });
 }
-
-detectAndApplyCurrency();
 </script>
 <!-- ════ MOBILE BOTTOM NAV BAR (doar pe ecrane < 1024px) ════ -->
 <nav id="mobile-bottom-nav" style="

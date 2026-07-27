@@ -656,6 +656,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 };
 </script>
 <script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
+<script src="myd-geo.js"></script>
   <!-- DOMPurify — sanitizare XSS (audit 2026-07-10) -->
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
   <script>
@@ -3046,44 +3047,6 @@ const CURRENCIES = {
   DEFAULT: { code:'EUR', symbol:'€', rate:0.2,   label:'EUR (€)',     flag:'' },
 };
 
-// Zones where platform is ACTIVE
-const ACTIVE_ZONES = ['RO', 'MD', 'DE', 'FR', 'BG'];
-
-function detectAndApplyCurrency() {
-  // Try to get country from IP via free API
-  fetch('https://ipapi.co/json/')
-    .then(r => r.json())
-    .then(data => {
-      const country = data.country_code || 'RO';
-      const city = data.city || '';
-      const region = data.region || '';
-      const isActive = ACTIVE_ZONES.includes(country);
-
-      // Update location display
-      if (city) {
-        document.getElementById('loc-display').textContent = city + (region ? ', ' + region : '');
-        document.getElementById('loc-input').value = city + (region ? ', ' + region : '');
-      }
-
-      // Apply currency
-      const cur = CURRENCIES[country] || CURRENCIES.DEFAULT;
-      applyCurrency(cur);
-
-      // Show unavailable zone banner if needed
-      if (!isActive) {
-        const zoneName = data.country_name || country;
-        document.getElementById('unavail-zone').textContent = zoneName;
-        setTimeout(() => {
-          document.getElementById('zone-unavailable').classList.remove('hidden');
-        }, 2000);
-      }
-    })
-    .catch(() => {
-      // Fallback: RO
-      applyCurrency(CURRENCIES.RO);
-    });
-}
-
 function applyCurrency(cur) {
   // Update label in catalog header
   const lbl = document.getElementById('currency-label');
@@ -3100,27 +3063,19 @@ function applyCurrency(cur) {
   });
 }
 
-// Zone unavailable tabs
-function switchUnavailTab(tab) {
-  document.getElementById('unavail-tab-client').classList.toggle('active', tab==='client');
-  document.getElementById('unavail-tab-furnizor').classList.toggle('active', tab==='furnizor');
+// G31 (27 Iulie 2026): detectarea IP proprie (ipapi.co) eliminată — folosește
+// myd-geo.js (modulul comun, GPS+IP, cache, listă de țări sincronizată).
+if (window.MYD_GEO) {
+  window.MYD_GEO.on(function(d){
+    if (d.city) {
+      const dispEl = document.getElementById('loc-display');
+      const inpEl = document.getElementById('loc-input');
+      if (dispEl) dispEl.textContent = d.city + (d.region ? ', ' + d.region : '');
+      if (inpEl) inpEl.value = d.city + (d.region ? ', ' + d.region : '');
+    }
+    applyCurrency(CURRENCIES[d.cc] || CURRENCIES.DEFAULT);
+  });
 }
-
-function submitUnavail() {
-  const subscribed = document.getElementById('unavail-subscribe').checked;
-  const modal = document.getElementById('zone-unavailable');
-  modal.querySelector('.bg-white').innerHTML = `
-    <div class="p-8 text-center">
-      <div class="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4 text-3xl"><i data-lucide="badge-check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-      <h3 class="font-bold text-xl text-[#2D2D2D] mb-2" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Înregistrat cu succes!</h3>
-      <p class="text-gray-400 text-sm leading-relaxed mb-6">Vei fi printre primii care află când My Darrin lansează în zona ta${subscribed ? ' — vei primi notificări pe email' : ''}.</p>
-      <button onclick="document.getElementById('zone-unavailable').classList.add('hidden')" class="bg-[#FF8C00] text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition">Închide</button>
-    </div>
-  `;
-}
-
-// Init currency detection on page load
-detectAndApplyCurrency();
 
 // ── PARTNER MODAL ──
 const PARTNER_META = {
