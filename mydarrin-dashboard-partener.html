@@ -561,6 +561,7 @@ const TYPES = {
       {id:'sarcini',icon:'⚡',label:'Sarcini LIVE',badge:'3',badgeCls:'ch-o'},
       {id:'portofoliu',icon:'🔧',label:'Portofoliu servicii'},
       {id:'calendar',icon:'📅',label:'Calendar'},
+      {id:'program-lucru',icon:'🕐',label:'Program de lucru'},
       {section:'Financiar'},
       {id:'venituri',icon:'💰',label:'Venituri & Plăți'},
       {id:'garantii',icon:'🛡',label:'Garanții execuție'},
@@ -665,7 +666,7 @@ function showPanel(id) {
   const t = TYPES[currentType];
   const panelTitles = {
     overview:'Overview', sarcini:'Sarcini LIVE', portofoliu:'Portofoliu servicii',
-    calendar:'Calendar & Disponibilitate', venituri:'Venituri & Plăți',
+    calendar:'Calendar & Disponibilitate', 'program-lucru':'Program de lucru', venituri:'Venituri & Plăți',
     garantii:'Garanții de execuție', documente:'Documentele mele', profil:'Profil & KYC',
     curse:'Curse disponibile', activ:'Cursă activă',
     polite:'Polițe emise', daune:'Dosare daune',
@@ -681,6 +682,7 @@ function showPanel(id) {
   else if (id === 'sarcini')    content.innerHTML = renderSarcini();
   else if (id === 'portofoliu') { content.innerHTML = renderPortofoliu(); loadPortofoliuReal(); }
   else if (id === 'calendar')   content.innerHTML = renderCalendar();
+  else if (id === 'program-lucru') { content.innerHTML = renderProgramLucru(); loadProgramLucruReal(); }
   else if (id === 'venituri')   content.innerHTML = renderVenituri();
   else if (id === 'garantii')   content.innerHTML = renderGarantii();
   else if (id === 'documente')  content.innerHTML = renderDocumente();
@@ -989,7 +991,73 @@ function renderCalendar() {
   </div>`;
 }
 
+function renderProgramLucru() {
+  return `
+  <div style="margin-bottom:18px">
+    <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Program de lucru</h2>
+    <p style="font-size:12.5px;color:#5A6B7D">Programul tău real, folosit de calendarul clientului ca să propună doar ore când ești efectiv disponibil. Fără un program declarat, ești considerat disponibil 08:00–20:00 în fiecare zi.</p>
+  </div>
+  <div class="dp-card">
+    <div class="dp-card-hdr">
+      <strong style="color:#1A2332">Zilele săptămânii</strong>
+      <button class="btn-p" style="padding:6px 12px;font-size:11px" onclick="salveazaProgramLucru()">Salvează</button>
+    </div>
+    <div id="program-lucru-lista" style="padding:14px">Se încarcă...</div>
+  </div>`;
+}
 
+const ZILE_SAPTAMANA = ['Duminică','Luni','Marți','Miercuri','Joi','Vineri','Sâmbătă'];
+
+async function loadProgramLucruReal(){
+  const el = document.getElementById('program-lucru-lista');
+  if (!el) return;
+  el.textContent = 'Se încarcă...';
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/program-lucru', { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+
+    const nota = data.esteImplicit
+      ? `<div style="margin-bottom:10px;padding:8px 10px;background:#F0F4F8;border-radius:8px;font-size:11.5px;color:#5A6B7D">Nu ai declarat încă un program — mai jos e afișat implicitul (08:00–20:00, toate zilele).</div>`
+      : '';
+
+    el.innerHTML = nota + data.program.map((zi) => `
+      <div data-zi="${zi.zi_saptamana}" style="display:flex;align-items:center;gap:12px;padding:9px 4px;border-bottom:1px solid #EEF2F7">
+        <div class="dp-toggle ${zi.activ ? 'on' : 'off'}" onclick="this.classList.toggle('on');this.classList.toggle('off')" style="flex-shrink:0"></div>
+        <span style="width:80px;font-size:13px;color:#1A2332">${ZILE_SAPTAMANA[zi.zi_saptamana]}</span>
+        <input type="time" class="pl-inceput" value="${zi.ora_inceput.slice(0,5)}" style="border:1px solid #D5DFE8;border-radius:6px;padding:5px 8px;font-size:12.5px">
+        <span style="color:#8C9BAD">–</span>
+        <input type="time" class="pl-sfarsit" value="${zi.ora_sfarsit.slice(0,5)}" style="border:1px solid #D5DFE8;border-radius:6px;padding:5px 8px;font-size:12.5px">
+      </div>
+    `).join('');
+  } catch (e) {
+    el.innerHTML = `<div style="color:#C0392B">Eroare: ${e.message}</div>`;
+  }
+}
+
+async function salveazaProgramLucru(){
+  const el = document.getElementById('program-lucru-lista');
+  if (!el) return;
+  const program = Array.from(el.querySelectorAll('[data-zi]')).map((rand) => ({
+    zi_saptamana: Number(rand.dataset.zi),
+    activ: rand.querySelector('.dp-toggle').classList.contains('on'),
+    ora_inceput: rand.querySelector('.pl-inceput').value + ':00',
+    ora_sfarsit: rand.querySelector('.pl-sfarsit').value + ':00',
+  }));
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/program-lucru', {
+      method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ program }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    showToast('✅ Program de lucru salvat');
+  } catch (e) {
+    alert('Eroare: ' + e.message);
+  }
+}
 
 function renderDocumente() {
   const comision = {servicii:'15%',curier:'12%',asigurari:'—'}[currentType];

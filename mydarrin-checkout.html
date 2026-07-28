@@ -2589,6 +2589,14 @@ document.addEventListener('DOMContentLoaded', function() {
       const regiuneComanda = MYD_CFG?.regiune || geo.region || null;
       const localitateComanda = MYD_CFG?.localitate || geo.city || null;
 
+      // G28 (28 Iulie 2026) — slotul real ales în calendarul din
+      // mydarrin-produs.html (/api/public/sloturi-disponibile), transportat
+      // prin myd_checkout_config; null dacă s-a ajuns direct la /cos fără
+      // să treci prin acel calendar (comanda rămâne neprogramată, ca înainte).
+      const dataProgramata = MYD_CFG?.selDateISO || null;
+      const oraInceputProgramata = MYD_CFG?.selOraInceput || null;
+      const oraSfarsitProgramata = MYD_CFG?.selOraSfarsit || null;
+
       // NU trimitem catalog_serviciu_id: mydarrin-produs.html configurează
       // azi din PRODUCTS_DB (obiect JS static), nu din catalog_servicii —
       // slug-ul salvat în sessionStorage nu e un uuid real din acel tabel.
@@ -2602,7 +2610,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const res = await fetch('/api/comenzi/creeaza', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
-          body: JSON.stringify({ adresa, tara_cod: taraComanda, regiune: regiuneComanda, localitate: localitateComanda, cost_baza_servicii, cost_asigurare, cost_materiale, cost_chirie_scule, valoare_totala }),
+          body: JSON.stringify({ adresa, tara_cod: taraComanda, regiune: regiuneComanda, localitate: localitateComanda, cost_baza_servicii, cost_asigurare, cost_materiale, cost_chirie_scule, valoare_totala, data_programata: dataProgramata, ora_inceput_programata: oraInceputProgramata, ora_sfarsit_programata: oraSfarsitProgramata }),
         });
         const data = await res.json();
         if (!res.ok) {

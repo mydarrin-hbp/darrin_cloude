@@ -19,7 +19,13 @@
 // auditul extins, secțiunea 3) — comanda e persistată real, dar alocarea
 // automată către un partener rămâne un pas separat, neconstruit.
 //
-// Body: { valoare_totala, adresa, tara_cod?, regiune?, localitate?, suma_asigurare?, catalog_serviciu_id? }
+// Body: { valoare_totala, adresa, tara_cod?, regiune?, localitate?, suma_asigurare?, catalog_serviciu_id?, data_programata?, ora_inceput_programata?, ora_sfarsit_programata? }
+//
+// FIX (G28, 28 Iulie 2026): `comenzi` nu avea nicio coloană de dată/oră
+// programată — alegerea din calendarul mydarrin-produs.html (S.selDate/
+// selTime) era reținută doar în sessionStorage, niciodată trimisă aici.
+// Acum acceptate opțional (comenzile fără o programare aleasă, ex. acces
+// direct la /cos, rămân neafectate — coloanele rămân NULL).
 //
 // FIX (T8, 2026-07-20): `comenzi.suma_asigurare` exista deja în schemă
 // (proiectată corect pentru split-ul de asigurare), dar nu era scrisă
@@ -63,7 +69,17 @@ async function handler(req, res, user) {
     valoare_totala, adresa, tara_cod = null, regiune = null, localitate = null,
     suma_asigurare = 0, catalog_serviciu_id = null,
     cost_baza_servicii, cost_materiale, cost_chirie_scule, cost_curier, cost_asigurare,
+    data_programata = null, ora_inceput_programata = null, ora_sfarsit_programata = null,
   } = req.body || {};
+
+  if (data_programata !== null && !/^\d{4}-\d{2}-\d{2}$/.test(data_programata)) {
+    return res.status(400).json({ error: 'data_programata trebuie în format YYYY-MM-DD' });
+  }
+  for (const ora of [ora_inceput_programata, ora_sfarsit_programata]) {
+    if (ora !== null && !/^\d{2}:\d{2}(:\d{2})?$/.test(ora)) {
+      return res.status(400).json({ error: 'ora_inceput_programata/ora_sfarsit_programata trebuie în format HH:MM' });
+    }
+  }
 
   const areComponenteItemizate = [cost_baza_servicii, cost_materiale, cost_chirie_scule, cost_curier, cost_asigurare]
     .some((v) => typeof v === 'number' && v > 0);
@@ -116,6 +132,9 @@ async function handler(req, res, user) {
       regiune,
       localitate,
       catalog_serviciu_id,
+      data_programata,
+      ora_inceput_programata,
+      ora_sfarsit_programata,
       // 'neinitiat', nu 'blocat': acest endpoint nu procesează plăți reale
       // (niciun procesator de plăți nu e integrat — vezi api/financiar/comision.js),
       // deci ar fi incorect să pretindem că suma e deja blocată în escrow.

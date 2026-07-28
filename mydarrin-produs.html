@@ -792,6 +792,7 @@ function salveazaStareaCheckout() {
       qty: S.qty, unit: S.unit, orderType: S.orderType,
       ins: S.ins, insPrice: S.insPrice,
       addr: S.addr, selDate: S.selDate, selTime: S.selTime,
+      selDateISO: S.selDateISO, selOraInceput: S.selOraInceput, selOraSfarsit: S.selOraSfarsit,
       // G27 (26 Iulie 2026) — derivate din geocodarea reală a adresei de
       // execuție (Nominatim), nu din locația dispozitivului — comanda se
       // execută la adresa clientului, nu neapărat unde e telefonul lui.
@@ -1760,13 +1761,14 @@ function triggerHeaderSearch(){
         </div>
         <div id="day-tariff" style="display:none;padding:8px 14px;background:#FFF0D6;border-radius:10px;border:1px solid #FFD980;font-size:12px;color:#CC7000;font-weight:600;margin-bottom:12px"></div>
         <label class="f-label" style="margin-bottom:8px">Interval orar preferat *</label>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px">
-          <div class="time-slot" onclick="selTime('08:00–12:00',this)">08:00 – 12:00</div>
-          <div class="time-slot" onclick="selTime('10:00–14:00',this)">10:00 – 14:00</div>
-          <div class="time-slot" onclick="selTime('12:00–16:00',this)">12:00 – 16:00</div>
-          <div class="time-slot" onclick="selTime('14:00–18:00',this)">14:00 – 18:00</div>
-          <div class="time-slot" onclick="selTime('18:00–22:00',this)">18:00 – 22:00</div>
-          <div class="time-slot" onclick="selTime('22:00–08:00',this)">22:00 – 08:00</div>
+        <!-- G28 (28 Iulie 2026) — sloturile de mai jos erau 6 blocuri fixe de
+        4 ore, parțial suprapuse (08–12 și 10–14 se suprapun pe 10–12),
+        mereu selectabile indiferent de disponibilitatea reală a rețelei de
+        parteneri din zonă — alegerea nici măcar nu ajungea la comandă (vezi
+        api/comenzi/creeaza.js, care nu citea deloc data/ora). Acum populate
+        dinamic din /api/public/sloturi-disponibile, după alegerea zilei. -->
+        <div id="time-slots" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px">
+          <div style="grid-column:1/-1;color:#8C9BAD;font-size:12.5px;padding:8px 0">Selectează mai întâi o zi din calendar.</div>
         </div>
         <div style="display:flex;gap:12px">
           <button class="btn-sec" onclick="goStep(3)">← Înapoi</button>
@@ -3348,6 +3350,10 @@ let S = {
   orderType:'standard',urgCoeff:1.0,
   ins:'none',insPrice:0,
   selDate:null,selTime:null,
+  // G28 (28 Iulie 2026) — derivate real din /api/public/sloturi-disponibile,
+  // trimise mai departe la checkout ca data_programata/ora_*_programata
+  // (vezi salveazaStareaCheckout() și incarcaSloturiDisponibile()).
+  selDateISO:null,selOraInceput:null,selOraSfarsit:null,
   addr:'',mentions:'',cardValid:false,
   // G27 (26 Iulie 2026) — derivate din geocodarea reală a adresei de
   // execuție (vezi geocodazaAdresaComenzii()), null până se detectează.
@@ -3911,10 +3917,13 @@ function renderCal(){
   }
 }
 
+function formatDateISO(d){ return d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0')+'-'+d.getDate().toString().padStart(2,'0'); }
+
 function selDay(d,date,el){
   document.querySelectorAll('.cal-day.cal-sel').forEach(e=>e.classList.remove('cal-sel'));
   el.classList.add('cal-sel');
   S.selDate=date;
+  S.selDateISO=formatDateISO(date);
   const dw=date.getDay();
   const dt=document.getElementById('day-tariff');
   if(dt){
@@ -3925,13 +3934,48 @@ function selDay(d,date,el){
   setEl('sh4-sub',formatDate(date)+(S.selTime?' · '+S.selTime:''));
   setEl('fin-dt',formatDate(date)+(S.selTime?' · '+S.selTime:''));
   recalc();
+  incarcaSloturiDisponibile(date);
 }
 
-function selTime(t,el){
+// G28 (28 Iulie 2026) — înlocuiește cele 6 sloturi statice de mai sus
+// (comentariul de la #time-slots) cu sloturi reale de 2 ore, calculate din
+// disponibilitatea rețelei de parteneri în zona clientului (S.tara_cod/
+// regiune, detectate din adresa geocodată — vezi geocodazaAdresaComenzii()).
+async function incarcaSloturiDisponibile(date){
+  const cont=document.getElementById('time-slots');
+  if(!cont) return;
+  S.selTime=null; S.selOraInceput=null; S.selOraSfarsit=null;
+  cont.innerHTML='<div style="grid-column:1/-1;color:#8C9BAD;font-size:12.5px;padding:8px 0">Se încarcă sloturile disponibile...</div>';
+  try{
+    const params=new URLSearchParams({data:formatDateISO(date)});
+    if(S.tara_cod) params.set('tara',S.tara_cod);
+    if(S.regiune) params.set('regiune',S.regiune);
+    const res=await fetch('/api/public/sloturi-disponibile?'+params.toString());
+    const data=await res.json();
+    if(!res.ok) throw new Error(data.error||'Eroare necunoscută');
+    if(!data.sloturi||!data.sloturi.length){
+      cont.innerHTML='<div style="grid-column:1/-1;color:#8C9BAD;font-size:12.5px;padding:8px 0">Niciun slot disponibil în ziua selectată.</div>';
+      return;
+    }
+    cont.innerHTML=data.sloturi.map(s=>{
+      const label=s.inceput+' – '+s.sfarsit;
+      return s.disponibil
+        ? `<div class="time-slot" onclick="selTime('${s.inceput}','${s.sfarsit}',this)">${label}</div>`
+        : `<div class="time-slot" style="opacity:.4;cursor:not-allowed;pointer-events:none">${label} · ocupat</div>`;
+    }).join('');
+  }catch(e){
+    cont.innerHTML='<div style="grid-column:1/-1;color:#C0392B;font-size:12.5px;padding:8px 0">Nu am putut încărca sloturile disponibile. Încearcă din nou.</div>';
+  }
+}
+
+function selTime(oraInceput,oraSfarsit,el){
   document.querySelectorAll('.time-slot.ts-sel').forEach(e=>e.classList.remove('ts-sel'));
   el.classList.add('ts-sel');
+  const t=oraInceput+' – '+oraSfarsit;
   S.selTime=t;
-  if(t.includes('18:00')||t.includes('22:00')){ S.urgCoeff=Math.max(S.urgCoeff,1.5); }
+  S.selOraInceput=oraInceput+':00';
+  S.selOraSfarsit=oraSfarsit+':00';
+  if(oraInceput>='18:00'){ S.urgCoeff=Math.max(S.urgCoeff,1.5); }
   setEl('sh4-sub',(S.selDate?formatDate(S.selDate)+' · ':'')+t);
   setEl('fin-dt',(S.selDate?formatDate(S.selDate)+' · ':'')+t);
   recalc();
