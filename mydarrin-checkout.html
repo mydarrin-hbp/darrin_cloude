@@ -685,6 +685,34 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 <script src="seo-meta.js"></script>
 <script src="cookie-consent.js" defer></script>
 <script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="analytics-loader.js" defer></script>
+<script>
+// G24b — înregistrează, o singură dată pe încărcare de pagină, că un
+// utilizator autentificat a ajuns pe checkout. Singurul semnal real
+// disponibil pentru email-ul de „coș abandonat" (comenzi nu se creează
+// decât la trimiterea finală) — fire-and-forget, nu blochează nimic dacă
+// eșuează sau dacă utilizatorul nu e autentificat încă.
+(function(){
+  function incearcaInregistrare(incercari){
+    if (!window.supabaseClient) {
+      if (incercari > 0) setTimeout(function(){ incearcaInregistrare(incercari - 1); }, 400);
+      return;
+    }
+    window.supabaseClient.auth.getSession().then(function(r){
+      var sesiune = r.data && r.data.session;
+      if (!sesiune) return; // nu e autentificat — nimic de înregistrat
+      fetch('/api/client/checkout-inceput', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + sesiune.access_token },
+      }).catch(function(){});
+    }).catch(function(){});
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function(){ incearcaInregistrare(8); });
+  } else {
+    incearcaInregistrare(8);
+  }
+})();
+</script>
   <!-- DOMPurify — sanitizare XSS (audit 2026-07-10) -->
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
   <script>
