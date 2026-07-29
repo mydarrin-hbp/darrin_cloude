@@ -27,7 +27,11 @@ async function handlePost(req, res, user) {
     if (comanda.partener_id !== user.id) {
       return res.status(403).json({ error: 'Comanda nu îți este alocată' });
     }
-    if (!['acceptata','in_desfasurare'].includes(comanda.status)) {
+    // FIX (audit Secțiunea 24/36, 28 Iulie 2026): 'in_desfasurare' nu există
+    // în comenzi_status_check (valorile reale: in_cautare_partener,
+    // acceptata, in_executie, finalizata, confirmata_client, anulata) —
+    // gate-ul respingea cu 409 exact comenzile aflate efectiv în execuție.
+    if (!['acceptata', 'in_executie'].includes(comanda.status)) {
       return res.status(409).json({ error: 'Comanda nu e activă' });
     }
   }

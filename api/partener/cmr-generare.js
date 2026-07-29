@@ -42,7 +42,9 @@ async function handler(req, res, user) {
   if (comanda.partener_id !== user.id) {
     return res.status(403).json({ error: 'Comanda nu îți este alocată' });
   }
-  if (!['acceptata','in_desfasurare','finalizata'].includes(comanda.status)) {
+  // FIX (audit Secțiunea 24/36, 28 Iulie 2026): 'in_desfasurare' nu există
+  // în comenzi_status_check (vezi api/partener/gps.js, același bug).
+  if (!['acceptata', 'in_executie', 'finalizata'].includes(comanda.status)) {
     return res.status(409).json({ error: 'Comanda nu se află în starea corectă pentru CMR' });
   }
 

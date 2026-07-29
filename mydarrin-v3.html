@@ -1729,16 +1729,17 @@ function triggerHeaderSearch(){
       <button class="unavail-tab flex-1 py-2.5 rounded-lg text-sm font-semibold transition text-gray-400" id="unavail-tab-furnizor" onclick="switchUnavailTab('furnizor')">Sunt furnizor/partener</button>
     </div>
     <div class="space-y-3 mb-5" id="unavail-form">
-      <input type="text" placeholder="Numele tău" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
-      <input type="email" placeholder="Adresa de email" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
+      <input type="text" id="unavail-nume" placeholder="Numele tău" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
+      <input type="email" id="unavail-email" placeholder="Adresa de email" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition"/>
     </div>
     <!-- Subscribe checkbox -->
-    <label class="flex items-start gap-3 text-left cursor-pointer mb-5">
+    <label class="flex items-start gap-3 text-left cursor-pointer mb-5" id="unavail-subscribe-row">
       <input type="checkbox" id="unavail-subscribe" checked class="mt-0.5 w-4 h-4 accent-[#FF8C00] flex-shrink-0"/>
       <span class="text-xs text-gray-400 leading-relaxed">Accept să primesc notificări prin email când My Darrin lansează în zona mea și informări despre platformă.</span>
     </label>
-    <button class="w-full bg-[#FF8C00] text-white py-3.5 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition mb-3" onclick="submitUnavail()">Creează cont & abonează-te gratuit</button>
-    <p class="text-xs text-gray-400">Fără obligații. Poți dezabona oricând.</p>
+    <div id="unavail-status" class="text-xs mb-3" style="display:none"></div>
+    <button class="w-full bg-[#FF8C00] text-white py-3.5 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition mb-3" id="unavail-submit-btn" onclick="submitUnavail()">Creează cont & abonează-te gratuit</button>
+    <p class="text-xs text-gray-400" id="unavail-footnote">Fără obligații. Poți dezabona oricând.</p>
   </div>
 </div>
 
@@ -3512,6 +3513,12 @@ function applyGeo(d){
   if(!info.active){
     var zn=document.getElementById('unavail-zone');
     if(zn)zn.textContent=info.name;
+    // FIX (audit Secțiunea 24/36, 29 Iulie 2026): submitUnavail() are nevoie
+    // de țara detectată aici — memorată global, altfel nu are cum să știe ce
+    // trimite la /api/public/lead-zona (butonul e apăsat mult mai târziu,
+    // în afara acestui scope).
+    window._unavailCC = cc;
+    window._unavailZoneName = info.name;
     setTimeout(function(){
       var b=document.getElementById('zone-unavailable');
       if(b)b.classList.remove('hidden');
@@ -3534,6 +3541,60 @@ function _t(id,val){
   var el=document.getElementById(id);
   if(el&&val!==undefined)el.textContent=val;
 }
+
+// FIX (audit Secțiunea 24/36, 29 Iulie 2026): switchUnavailTab()/submitUnavail()
+// erau apelate de butoanele modalului „zonă indisponibilă" (mai sus) dar nu
+// existau nicăieri în fișier — click pe oricare bloca cu o eroare JS.
+// switchUnavailTab e strict vizual — un singur formular (nume+email) e comun
+// ambelor tab-uri, tabelul tari_lead_asteptare nu are o coloană „tip"
+// client/furnizor de salvat, deci nu inventăm una aici.
+// Notă: acest modul e un IIFE — trebuie expuse explicit pe window, la fel ca
+// setCountry/applyCurrency mai sus, altfel onclick="..." din HTML (care rulează
+// în scope global) nu le-ar vedea deloc, la fel de rupt ca înainte de fix.
+window.switchUnavailTab=function(tip){
+  document.querySelectorAll('.unavail-tab').forEach(function(b){ b.classList.remove('active'); });
+  var btn=document.getElementById('unavail-tab-'+tip);
+  if(btn)btn.classList.add('active');
+};
+
+window.submitUnavail=function(){
+  var numeEl=document.getElementById('unavail-nume');
+  var emailEl=document.getElementById('unavail-email');
+  var statusEl=document.getElementById('unavail-status');
+  var btnEl=document.getElementById('unavail-submit-btn');
+  var email=(emailEl&&emailEl.value||'').trim();
+  if(!email||email.indexOf('@')===-1){
+    if(statusEl){statusEl.style.display='block';statusEl.style.color='#C0392B';statusEl.textContent='Introdu o adresă de email validă.';}
+    return;
+  }
+  if(btnEl){btnEl.disabled=true;btnEl.style.opacity='0.6';}
+  if(statusEl){statusEl.style.display='block';statusEl.style.color='#8C9BAD';statusEl.textContent='Se trimite...';}
+  fetch('/api/public/lead-zona',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      email:email,
+      nume:(numeEl&&numeEl.value||'').trim()||null,
+      tara_cod:window._unavailCC||null,
+      tara_nume:window._unavailZoneName||null,
+    }),
+  }).then(function(r){return r.json().then(function(d){return {ok:r.ok,data:d};});})
+    .then(function(res){
+      if(!res.ok)throw new Error(res.data&&res.data.error||'Eroare necunoscută');
+      var form=document.getElementById('unavail-form');
+      var subRow=document.getElementById('unavail-subscribe-row');
+      var foot=document.getElementById('unavail-footnote');
+      if(form)form.style.display='none';
+      if(subRow)subRow.style.display='none';
+      if(btnEl)btnEl.style.display='none';
+      if(foot)foot.style.display='none';
+      if(statusEl){statusEl.style.color='#1A7A3A';statusEl.style.fontSize='13px';statusEl.textContent='Mulțumim! Te anunțăm prin email de îndată ce lansăm în zona ta.';}
+    })
+    .catch(function(err){
+      if(btnEl){btnEl.disabled=false;btnEl.style.opacity='1';}
+      if(statusEl){statusEl.style.color='#C0392B';statusEl.textContent=err.message||'Nu am putut înregistra cererea. Încearcă din nou.';}
+    });
+};
 
 function buildData(partial,source){
   var cc=(partial.cc||'RO').toUpperCase();
