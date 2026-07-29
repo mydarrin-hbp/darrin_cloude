@@ -1190,74 +1190,92 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 
     <!-- ══ PANEL: COMISIOANE ══ -->
     <div id="panel-comisioane" style="display:none">
-      <div style="margin-bottom:20px">
-        <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">Comisioane & Tarifare globale</h2>
-        <p style="font-size:12.5px;color:#4A6080">Platform fee · Marketing % · Indirect costs · Configurabile per furnizor</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:12px">
+        <div>
+          <h2 style="font-size:20px;font-weight:800;color:#E2E8F0;margin:0 0 4px">Comisioane & Tarifare globale</h2>
+          <p style="font-size:12px;color:#8BA3C0;margin:0">Procentele reale folosite azi la calculul fiecărei comenzi (<code>lib/calculeaza-pret.js</code>) și la eliberarea escrow (<code>lib/elibereaza-escrow.js</code>) — citite direct din <code>backoffice_config</code>, nu simulate.</p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="saveAllComisioaneConfig()" class="btn-p" style="background:#0E9E99">
+            Salvează tot
+          </button>
+          <button onclick="loadComisioaneConfig()" class="btn-s">
+            Reîncarcă
+          </button>
+        </div>
       </div>
+
+      <!-- SELECTOR ȚARĂ -->
+      <div style="background:#192433;border-radius:12px;border:1px solid #2D3F55;padding:14px;margin-bottom:20px;display:flex;align-items:center;gap:12px">
+        <span style="font-size:12px;font-weight:700;color:#8BA3C0">Configurare pentru țara:</span>
+        <select id="comm-tara-sel" onchange="loadComisioaneConfig()" style="background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:6px 12px;color:#E2E8F0;font-size:12px;font-family:inherit">
+          <option value="ALL">Toate țările (global)</option>
+          <option value="RO">România</option>
+          <option value="MD">Moldova</option>
+          <option value="DE">Germania</option>
+          <option value="FR">Franța</option>
+          <option value="BG">Bulgaria</option>
+        </select>
+        <span id="comm-config-status" style="font-size:11px;color:#8BA3C0"></span>
+      </div>
+
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
-        <!-- Platform fees -->
         <div class="sa-card">
-          <div class="sa-card-hdr"><div style="font-weight:700;color:#1A2332;font-size:13.5px">💰 Structura comisioane platformă</div></div>
+          <div class="sa-card-hdr"><div style="font-weight:700;color:#1A2332;font-size:13.5px">Structura comisioane platformă</div></div>
           <div class="sa-card-body">
             <div style="display:flex;flex-direction:column;gap:14px">
               <div style="background:#FFFFFF;border-radius:12px;padding:14px;border:1px solid #D5DFE8">
-                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:10px">Home Best Pal SRL (Platform fee)</div>
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:10px">Comision My Darrin (per comandă)</div>
                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
-                  <span style="font-size:13px;color:#8BA3C0;min-width:180px">Comision platformă HBP</span>
-                  <input type="number" value="15" min="7" max="20" style="background:#0F1923;border:1px solid #FF8C00;border-radius:7px;padding:6px 10px;color:#FF8C00;font-weight:800;width:70px;font-family:inherit;font-size:14px"/>
-                  <span style="color:#4A6080">%</span>
-                  <span style="font-size:11px;color:#4A6080">(range 7–20%)</span>
-                </div>
-                <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
-                  <span style="font-size:13px;color:#8BA3C0;min-width:180px">Costuri indirecte</span>
-                  <input type="number" value="10" style="background:#0F1923;border:1px solid #2D3F55;border-radius:7px;padding:6px 10px;color:#E2E8F0;font-weight:700;width:70px;font-family:inherit;font-size:14px"/>
+                  <span style="font-size:13px;color:#8BA3C0;min-width:210px">Comision platformă implicit</span>
+                  <input type="number" id="comision-platforma" value="12" min="0" max="100" step="0.5" style="background:#0F1923;border:1px solid #FF8C00;border-radius:7px;padding:6px 10px;color:#FF8C00;font-weight:800;width:80px;font-family:inherit;font-size:14px"/>
                   <span style="color:#4A6080">%</span>
                 </div>
                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
-                  <span style="font-size:13px;color:#8BA3C0;min-width:180px">Marketing</span>
-                  <input type="number" value="3" style="background:#0F1923;border:1px solid #2D3F55;border-radius:7px;padding:6px 10px;color:#E2E8F0;font-weight:700;width:70px;font-family:inherit;font-size:14px"/>
+                  <span style="font-size:13px;color:#8BA3C0;min-width:210px">Cost marketing</span>
+                  <input type="number" id="cost-marketing" value="3" min="0" max="100" step="0.5" style="background:#0F1923;border:1px solid #2D3F55;border-radius:7px;padding:6px 10px;color:#E2E8F0;font-weight:700;width:80px;font-family:inherit;font-size:14px"/>
                   <span style="color:#4A6080">%</span>
                 </div>
                 <div style="display:flex;align-items:center;gap:12px">
-                  <span style="font-size:13px;color:#8BA3C0;min-width:180px">Platform maintenance</span>
-                  <input type="number" value="3" style="background:#0F1923;border:1px solid #2D3F55;border-radius:7px;padding:6px 10px;color:#E2E8F0;font-weight:700;width:70px;font-family:inherit;font-size:14px"/>
+                  <span style="font-size:13px;color:#8BA3C0;min-width:210px">Cost mentenanță platformă</span>
+                  <input type="number" id="cost-mentenanta" value="2" min="0" max="100" step="0.5" style="background:#0F1923;border:1px solid #2D3F55;border-radius:7px;padding:6px 10px;color:#E2E8F0;font-weight:700;width:80px;font-family:inherit;font-size:14px"/>
                   <span style="color:#4A6080">%</span>
                 </div>
               </div>
-              <!-- Marketplace -->
               <div style="background:#FFFFFF;border-radius:12px;padding:14px;border:1px solid #D5DFE8">
-                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:10px">Marketplace Furnizori</div>
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:10px">Reținut din alte roluri (la eliberare escrow)</div>
                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
-                  <span style="font-size:13px;color:#8BA3C0;min-width:180px">Materiale construcții</span>
-                  <input type="number" value="7.5" step="0.5" min="5" max="10" style="background:#0F1923;border:1px solid #2D3F55;border-radius:7px;padding:6px 10px;color:#E2E8F0;font-weight:700;width:70px;font-family:inherit;font-size:14px"/>
-                  <span style="color:#4A6080">% (5–10%)</span>
+                  <span style="font-size:13px;color:#8BA3C0;min-width:210px">Furnizori materiale</span>
+                  <input type="number" id="comision-bricolaj" value="15" min="0" max="100" step="0.5" style="background:#0F1923;border:1px solid #2D3F55;border-radius:7px;padding:6px 10px;color:#E2E8F0;font-weight:700;width:80px;font-family:inherit;font-size:14px"/>
+                  <span style="color:#4A6080">%</span>
                 </div>
                 <div style="display:flex;align-items:center;gap:12px">
-                  <span style="font-size:13px;color:#8BA3C0;min-width:180px">Echipamente închiriere</span>
-                  <input type="number" value="10" step="0.5" min="8" max="12" style="background:#0F1923;border:1px solid #2D3F55;border-radius:7px;padding:6px 10px;color:#E2E8F0;font-weight:700;width:70px;font-family:inherit;font-size:14px"/>
-                  <span style="color:#4A6080">% (8–12%)</span>
+                  <span style="font-size:13px;color:#8BA3C0;min-width:210px">Furnizori închirieri echipamente</span>
+                  <input type="number" id="comision-inchiriere" value="15" min="0" max="100" step="0.5" style="background:#0F1923;border:1px solid #2D3F55;border-radius:7px;padding:6px 10px;color:#E2E8F0;font-weight:700;width:80px;font-family:inherit;font-size:14px"/>
+                  <span style="color:#4A6080">%</span>
                 </div>
               </div>
-              <button class="btn-p" style="width:100%;justify-content:center">Salvează configurație → trigger cache bust</button>
             </div>
           </div>
         </div>
-        <!-- Promo & neg -->
         <div class="sa-card">
-          <div class="sa-card-hdr"><div style="font-weight:700;color:#1A2332;font-size:13.5px">🤝 Negocieri individuale per furnizor</div></div>
+          <div class="sa-card-hdr"><div style="font-weight:700;color:#1A2332;font-size:13.5px">Asigurări</div></div>
           <div class="sa-card-body">
-            <table class="sa-table">
-              <thead><tr><th>Furnizor</th><th>Tip</th><th>Com. negociat</th><th>Promo</th><th>Status</th></tr></thead>
-              <tbody>
-                <tr><td><strong style="color:#E2E8F0">ACA BUSINESS GROUP</strong><div style="font-size:10px;color:#4A6080">CUI 32667674</div></td><td><span class="chip chip-teal">Mat+Ech</span></td><td><span style="color:#FF8C00;font-weight:700">7.5% / 10%</span></td><td><span style="color:#4ADE80;font-size:11px">0% → 13.09.2026</span></td><td><span class="chip chip-green">Activ</span></td></tr>
-                <tr><td><strong style="color:#E2E8F0">Furnizor X SRL</strong><div style="font-size:10px;color:#4A6080">CUI 87654321</div></td><td><span class="chip chip-blue">Materiale</span></td><td><span style="color:#FF8C00;font-weight:700">6%</span></td><td><span style="color:#4A6080;font-size:11px">Fără promo</span></td><td><span class="chip chip-green">Activ</span></td></tr>
-                <tr><td><strong style="color:#E2E8F0">Rental Pro SRL</strong><div style="font-size:10px;color:#4A6080">CUI 11223344</div></td><td><span class="chip chip-orange">Rental</span></td><td><span style="color:#FF8C00;font-weight:700">9%</span></td><td><span style="color:#4ADE80;font-size:11px">0% → 30.06.2026</span></td><td><span class="chip chip-teal">Negociere</span></td></tr>
-              </tbody>
-            </table>
-            <button class="btn-p" style="margin-top:14px;font-size:12px">+ Adaugă negociere</button>
+            <div style="background:#FFFFFF;border-radius:12px;padding:14px;border:1px solid #D5DFE8;margin-bottom:14px">
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:10px">Intermediere poliță</div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="font-size:13px;color:#8BA3C0;min-width:210px">Comision My Darrin din primă</span>
+                <input type="number" id="comision-asigurare" value="15" min="0" max="100" step="0.5" style="background:#0F1923;border:1px solid #2D3F55;border-radius:7px;padding:6px 10px;color:#E2E8F0;font-weight:700;width:80px;font-family:inherit;font-size:14px"/>
+                <span style="color:#4A6080">%</span>
+              </div>
+            </div>
+            <div style="background:#0D1B2A;border-radius:8px;padding:12px;border:1px solid #2D3F55;font-size:11px;color:#8BA3C0;line-height:1.6">
+              Comenzile itemizate (cu componente reale de cost) folosesc procentul „Comision platformă implicit" direct la creare — suma rezultată se îngheață pe comandă (<code>suma_comision_platforma</code>), nu se recalculează ulterior. Comenzile fără componente itemizate (calea legacy) folosesc procentul din coloana <code>comenzi.comision_pct</code> la eliberarea escrow-ului.
+            </div>
           </div>
         </div>
       </div>
+      <div id="comm-save-log" style="margin-top:14px;font-size:11px;color:#8BA3C0;white-space:pre-line"></div>
     </div>
 
     <!-- ══ PANEL: CONFIG SISTEM ══ -->
@@ -4748,6 +4766,86 @@ const _origShowPanelSeo = window.showPanel;
 window.showPanel = function(id) {
   if (_origShowPanelSeo) _origShowPanelSeo(id);
   if (id === 'seo') loadSeoConfig();
+};
+</script>
+
+<script>
+// ══ BACKOFFICE COMISIOANE & TARIFARE ════════════════════════════════
+// Panoul de mai sus era 100% machetă (input-uri hardcodate, fără id, fără
+// niciun fetch/save) — motorul de calcul (lib/calculeaza-pret.js,
+// lib/elibereaza-escrow.js) citea deja real backoffice_config, dar niciun
+// panou nu expunea acele valori editării. Tiparul de mai jos e identic cu
+// panoul Consultanță & Proiectare (loadConsConfig/saveAllConsConfig) —
+// aceeași tabelă, aceeași convenție cheie/sectiune/tara_cod.
+var _commConfigLoaded = false;
+
+async function loadComisioaneConfig() {
+  var tara = document.getElementById('comm-tara-sel')?.value || 'ALL';
+  var status = document.getElementById('comm-config-status');
+  if (status) status.textContent = 'Se încarcă...';
+
+  var r = await supabaseClient
+    .from('backoffice_config')
+    .select('cheie,valoare')
+    .in('sectiune', ['pricing', 'asigurari'])
+    .or('tara_cod.eq.' + tara + ',tara_cod.eq.ALL');
+
+  if (r.error) { if (status) status.textContent = 'Eroare: ' + r.error.message; return; }
+
+  var cfg = {};
+  (r.data || []).forEach(function(row) { cfg[row.cheie] = row.valoare; });
+
+  var map = {
+    'comision-platforma': cfg['comision_platforma_default_pct'] ?? '12',
+    'cost-marketing': cfg['cost_marketing_pct'] ?? '3',
+    'cost-mentenanta': cfg['cost_mentenanta_pct'] ?? '2',
+    'comision-bricolaj': cfg['comision_bricolaj_contractat_pct'] ?? '15',
+    'comision-inchiriere': cfg['comision_inchiriere_contractat_pct'] ?? '15',
+    'comision-asigurare': cfg['comision_intermediere_pct'] ?? '15',
+  };
+  Object.entries(map).forEach(function([id, val]) {
+    var el = document.getElementById(id);
+    if (el) el.value = val;
+  });
+
+  _commConfigLoaded = true;
+  if (status) status.textContent = 'Încărcat (' + Object.keys(cfg).length + ' valori)';
+}
+
+async function saveAllComisioaneConfig() {
+  var tara = document.getElementById('comm-tara-sel')?.value || 'ALL';
+  var log = document.getElementById('comm-save-log');
+  if (log) log.textContent = 'Se salvează...';
+
+  var rows = [
+    { cheie: 'comision_platforma_default_pct', valoare: document.getElementById('comision-platforma')?.value, sectiune: 'pricing', tara_cod: tara, tip: 'number', unitate: '%', eticheta: 'Comision platformă implicit (%)' },
+    { cheie: 'cost_marketing_pct', valoare: document.getElementById('cost-marketing')?.value, sectiune: 'pricing', tara_cod: tara, tip: 'number', unitate: '%', eticheta: 'Cost marketing (%)' },
+    { cheie: 'cost_mentenanta_pct', valoare: document.getElementById('cost-mentenanta')?.value, sectiune: 'pricing', tara_cod: tara, tip: 'number', unitate: '%', eticheta: 'Cost mentenanță platformă (%)' },
+    { cheie: 'comision_bricolaj_contractat_pct', valoare: document.getElementById('comision-bricolaj')?.value, sectiune: 'pricing', tara_cod: tara, tip: 'number', unitate: '%', eticheta: 'Comision reținut — Furnizori Materiale' },
+    { cheie: 'comision_inchiriere_contractat_pct', valoare: document.getElementById('comision-inchiriere')?.value, sectiune: 'pricing', tara_cod: tara, tip: 'number', unitate: '%', eticheta: 'Comision reținut — Furnizori Închirieri' },
+    { cheie: 'comision_intermediere_pct', valoare: document.getElementById('comision-asigurare')?.value, sectiune: 'asigurari', tara_cod: tara, tip: 'number', unitate: '%', eticheta: 'Comision My Darrin din prima de asigurare (%)' },
+  ].filter(function(r) { return r.valoare !== undefined && r.valoare !== null && r.valoare !== ''; })
+   .map(function(r) { return Object.assign({ updated_at: new Date().toISOString(), editabil_de: 'superadmin' }, r); });
+
+  var result = await supabaseClient
+    .from('backoffice_config')
+    .upsert(rows, { onConflict: 'cheie,tara_cod' });
+
+  if (result.error) {
+    if (log) log.textContent = 'Eroare la salvare: ' + result.error.message;
+  } else {
+    var ts = new Date().toLocaleTimeString('ro-RO');
+    if (log) log.textContent = '[' + ts + '] ' + rows.length + ' valori salvate pentru țara: ' + tara + '\n' +
+      rows.map(function(r) { return '  · ' + r.cheie + ' = ' + r.valoare + '%'; }).join('\n');
+  }
+}
+
+const _origShowPanelComisioane = window.showPanel;
+window.showPanel = function(id) {
+  if (_origShowPanelComisioane) _origShowPanelComisioane(id);
+  if (id === 'comisioane' && !_commConfigLoaded) {
+    setTimeout(loadComisioaneConfig, 300);
+  }
 };
 </script>
 
