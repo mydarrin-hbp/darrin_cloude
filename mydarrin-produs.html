@@ -850,6 +850,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 };
 </script>
 <script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
+<script src="format-currency.js"></script>
 <script src="seo-meta.js"></script>
 <script src="cookie-consent.js" defer></script>
 <script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="analytics-loader.js" defer></script>
@@ -3483,7 +3484,7 @@ function renderAddonSelected() {
           <span style="font-size:12.5px;font-weight:700;color:#003366;min-width:16px;text-align:center">${it.qty}</span>
           <button type="button" onclick="changeAddonQty('${it.tip}','${it.id}',1)" style="width:22px;height:22px;border-radius:6px;border:1px solid #D5DFE8;background:#fff;cursor:pointer;font-size:13px;line-height:1">+</button>
         </div>
-        <div style="font-size:12.5px;font-weight:700;color:#0E9E99;min-width:70px;text-align:right">${(pret * it.qty).toLocaleString('ro-RO')} Lei</div>
+        <div style="font-size:12.5px;font-weight:700;color:#0E9E99;min-width:70px;text-align:right">${fmtCurrency(pret * it.qty)}</div>
         <button type="button" onclick="removeAddonItem('${it.tip}','${it.id}')" title="Elimină" style="width:22px;height:22px;border-radius:6px;border:1px solid rgba(220,38,38,.25);background:#FDECEA;color:#C0392B;cursor:pointer;font-size:14px;line-height:1;flex-shrink:0">×</button>
       </div>`;
     }).join('');
@@ -3647,9 +3648,16 @@ function buildTierTable(slug){
     const td = data.tiers[t];
     if(el && td){
       if(td.label==='N/A'||td.price===0&&td.label==='N/A') el.textContent='—';
-      else el.textContent = td.price===0 ? 'Gratuit' : td.price.toLocaleString('ro-RO')+' Lei';
+      else el.textContent = td.price===0 ? 'Gratuit' : fmtCurrency(td.price);
     }
   });
+}
+
+// G38 (audit Secțiunea 36, 29 Iulie 2026) — wrapper subțire peste
+// format-currency.js, cu fallback la comportamentul vechi dacă scriptul nu
+// s-a încărcat (rețea/CDN), ca prețul să nu dispară niciodată de pe pagină.
+function fmtCurrency(suma){
+  return window.formatCurrency ? window.formatCurrency(suma) : suma.toLocaleString('ro-RO')+' Lei';
 }
 
 function selectTierCol(tier){
@@ -3685,7 +3693,7 @@ function selectTierCol(tier){
     dc.style.borderColor = col;
     setEl('tier-detail-icon', TIER_ICONS[tier]);
     setEl('tier-detail-name', TIER_ICONS[tier]+' '+tier.charAt(0).toUpperCase()+tier.slice(1)+' — '+td.label);
-    setEl('tier-detail-price', td.price.toLocaleString('ro-RO')+' Lei');
+    setEl('tier-detail-price', fmtCurrency(td.price));
     setEl('tier-detail-desc', td.desc);
     const gw = document.getElementById('tier-garantie-wrap');
     if(gw) gw.textContent = td.garantie>0 ? 'Garanție digitală '+td.garantie+' luni' : '';
@@ -3737,12 +3745,12 @@ function recalc(){
   // Summary sidebar
   setEl('s-nivel', tierName.replace(/[]/,'').trim().split('—')[0].trim());
   setEl('s-qty', qty+' '+S.unit);
-  setEl('s-base', S.tierPrice.toLocaleString('ro-RO')+' Lei');
+  setEl('s-base', fmtCurrency(S.tierPrice));
   setEl('s-zone', 'Suprataxă platformă · +5%');
   setEl('s-tip', typeSym);
-  setEl('s-ins', S.insPrice>0?'+'+S.insPrice+' Lei':'Bază (incl.)');
-  setEl('s-plat', Math.round(withUrg*PLATFORM_PCT).toLocaleString('ro-RO')+' Lei');
-  setEl('s-tva', Math.round(withIns*TVA).toLocaleString('ro-RO')+' Lei');
+  setEl('s-ins', S.insPrice>0?'+'+fmtCurrency(S.insPrice):'Bază (incl.)');
+  setEl('s-plat', fmtCurrency(Math.round(withUrg*PLATFORM_PCT)));
+  setEl('s-tva', fmtCurrency(Math.round(withIns*TVA)));
   setEl('s-total', total.toLocaleString('ro-RO'));
 
   // Deviz section
@@ -3752,12 +3760,12 @@ function recalc(){
   setEl('dv-zone', 'Suprataxă platformă · +5%');
   setEl('dv-tip', typeSym);
   setEl('dv-ins', INS_LABELS[S.ins]||'Bază');
-  setEl('dv-platform', Math.round(withUrg*PLATFORM_PCT).toLocaleString('ro-RO')+' Lei');
-  setEl('dv-tva', Math.round(withIns*TVA).toLocaleString('ro-RO')+' Lei');
-  setEl('dv-total', total.toLocaleString('ro-RO')+' Lei');
-  setEl('dv-confirm-amt', total.toLocaleString('ro-RO')+' Lei');
-  setEl('esc-amount', total.toLocaleString('ro-RO')+' Lei');
-  setEl('launch-amt', total.toLocaleString('ro-RO')+' Lei');
+  setEl('dv-platform', fmtCurrency(Math.round(withUrg*PLATFORM_PCT)));
+  setEl('dv-tva', fmtCurrency(Math.round(withIns*TVA)));
+  setEl('dv-total', fmtCurrency(total));
+  setEl('dv-confirm-amt', fmtCurrency(total));
+  setEl('esc-amount', fmtCurrency(total));
+  setEl('launch-amt', fmtCurrency(total));
 
   // Final summary
   const prod = PRODUCTS_DB[S.slug];
@@ -3766,7 +3774,7 @@ function recalc(){
   setEl('fin-addr', S.addr||'—');
   setEl('fin-dt', (S.selDate?formatDate(S.selDate):'—')+(S.selTime?' · '+S.selTime:''));
   setEl('fin-ins', INS_LABELS[S.ins]||'Bază');
-  setEl('fin-total', total.toLocaleString('ro-RO')+' Lei');
+  setEl('fin-total', fmtCurrency(total));
 }
 
 function formatDate(d){ return d.getDate()+'.'+(d.getMonth()+1<10?'0':'')+(d.getMonth()+1)+'.'+d.getFullYear(); }
@@ -3867,7 +3875,7 @@ function selIns(type){
   if(sel) sel.classList.add('ins-selected');
   if(selIc){ selIc.textContent=''; selIc.style.background='#0E9E99'; selIc.style.borderColor='#0E9E99'; selIc.style.color='#fff'; }
   S.ins=type; S.insPrice=INS_PRICES[type]||0;
-  setEl('s-ins',S.insPrice>0?'+'+S.insPrice+' Lei':'Bază (incl.)');
+  setEl('s-ins',S.insPrice>0?'+'+fmtCurrency(S.insPrice):'Bază (incl.)');
   setEl('fin-ins',INS_LABELS[type]);
   recalc();
 }
@@ -3993,7 +4001,7 @@ function valCard(){
   S.cardValid=valid;
   const st=document.getElementById('card-st');
   if(st){
-    if(valid){ st.style.display='block';st.style.cssText='display:block;padding:10px 14px;border-radius:10px;margin-bottom:14px;font-size:12.5px;font-weight:600;background:#D4EDDA;color:#1A7A3A;border:1px solid rgba(26,122,58,.2)';st.textContent='Card valid · Fonduri verificate · Suma '+S.total.toLocaleString('ro-RO')+' Lei disponibilă'; }
+    if(valid){ st.style.display='block';st.style.cssText='display:block;padding:10px 14px;border-radius:10px;margin-bottom:14px;font-size:12.5px;font-weight:600;background:#D4EDDA;color:#1A7A3A;border:1px solid rgba(26,122,58,.2)';st.textContent='Card valid · Fonduri verificate · Suma '+fmtCurrency(S.total)+' disponibilă'; }
     else if(n.length>0){ st.style.display='block';st.style.cssText='display:block;padding:10px 14px;border-radius:10px;margin-bottom:14px;font-size:12.5px;font-weight:600;background:#F4F7F9;color:#8C9BAD;border:1px solid #D5DFE8';st.textContent='Completează toate câmpurile cardului...'; }
     else st.style.display='none';
   }

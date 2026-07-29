@@ -682,6 +682,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
      performLogin()/performRegister() local, complet fals (doar sessionStorage). -->
 <script type="module" src="lib/supabaseClient.js"></script>
 <script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
+<script src="format-currency.js"></script>
 <script src="seo-meta.js"></script>
 <script src="cookie-consent.js" defer></script>
 <script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="analytics-loader.js" defer></script>
@@ -3287,7 +3288,7 @@ function recalcCheckoutTotal(){
   if (PROMO_ACTIVE) total -= PROMO_DISCOUNT;
   const insuranceChecked = document.getElementById('cb-insurance')?.checked;
   if (insuranceChecked) total += INSURANCE_PRICE;
-  document.getElementById('total-price').textContent = total.toLocaleString('ro-RO') + ' Lei';
+  document.getElementById('total-price').textContent = window.formatCurrency ? window.formatCurrency(total) : total.toLocaleString('ro-RO') + ' Lei';
 }
 
 // Suprascrie mock-ul de 2 servicii cu configurația reală salvată de

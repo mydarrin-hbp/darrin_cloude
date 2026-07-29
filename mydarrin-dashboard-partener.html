@@ -434,6 +434,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 };
 </script>
 <script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
+<script src="format-currency.js"></script>
 <script src="seo-meta.js"></script>
 <script src="cookie-consent.js" defer></script>
 <script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="analytics-loader.js" defer></script>
@@ -1361,7 +1362,15 @@ async function loadEscrowReal(){
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
 
-    if (badge) badge.textContent = `${data.total_activ} ${data.moneda} activ · ${data.total_eliberat} ${data.moneda} eliberat`;
+    // G38 (29 Iulie 2026) — folosea interpolare brută (fără separator de mii)
+    // + moneda deja dinamică (data.moneda, corect, nu hardcodată) — acum
+    // formatat consistent prin helper-ul comun.
+    if (badge) {
+      const fmtEscrow = window.formatCurrency
+        ? (v) => window.formatCurrency(v, data.moneda)
+        : (v) => `${v} ${data.moneda}`;
+      badge.textContent = `${fmtEscrow(data.total_activ)} activ · ${fmtEscrow(data.total_eliberat)} eliberat`;
+    }
 
     if (!data.alocari.length) {
       lista.innerHTML = '<div style="padding:8px 0">Nu ai încă nicio alocare reală pe platformă.</div>';
