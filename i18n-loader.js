@@ -47,13 +47,21 @@
     opts = opts || {};
     lang = (lang || 'ro').toLowerCase();
 
-    if (lang === 'ro' || SUPPORTED.indexOf(lang) === -1) {
+    if (lang === 'ro') {
       document.documentElement.lang = 'ro';
       if (opts.persist) saveLang('ro');
       _updateSwitcherUI('ro');
       try { window.dispatchEvent(new CustomEvent('myd:lang', { detail: { lang: 'ro' } })); } catch (e) {}
       return;
     }
+
+    // FIX (audit Secțiunea 36, 29 Iulie 2026): o limbă cerută/detectată care
+    // nu e (încă) tradusă cădea aici pe română — greșit pentru un vizitator
+    // internațional dintr-o țară nededicată încă (ex. maghiară/poloneză/
+    // greacă — mapate real în myd-geo.js, dar fără fișier JSON de tradus).
+    // Engleza e presupunerea sigură pentru cine nu vorbește română, nu piața
+    // de bază RO — cerință explicită de business, nu doar o preferință.
+    if (SUPPORTED.indexOf(lang) === -1) lang = 'en';
 
     fetch('/i18n/' + lang + '.json', { cache: 'no-store' })
       .then(function (r) { if (!r.ok) throw new Error('status ' + r.status); return r.json(); })
