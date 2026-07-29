@@ -175,6 +175,36 @@ async function handler(req, res, user) {
       ? await incearcaAlocarePartener(data.id)
       : { alocat: false, motiv: 'fara_serviciu_specificat' };
 
+    // FIX (G6, audit Secțiunea 6/36, 29 Iulie 2026): `invoices` există din
+    // prima trecere de audit (23 Iulie 2026), dar nimic nu insera vreodată o
+    // proformă la creare comandă — tabela era complet goală (0 rânduri live,
+    // verificat direct). Ciclul de viață real (proformă → fiscală) e deja
+    // scris în api/accountancy.js (maybeConvert(), FV-${an}-${secvență} la
+    // confirmarea încasării+livrării) — doar primul pas, emiterea proformei,
+    // lipsea. Izolat în propriul try/catch: o eroare la proformă nu trebuie
+    // să blocheze comanda deja înregistrată cu succes.
+    try {
+      const anProforma = new Date().getFullYear();
+      const { count: countProforma } = await supabaseAdmin
+        .from('invoices')
+        .select('id', { count: 'exact', head: true })
+        .eq('tip', 'proforma')
+        .gte('emisa_la', `${anProforma}-01-01`);
+      const numarProforma = `PF-${anProforma}-${String((countProforma || 0) + 1).padStart(6, '0')}`;
+
+      await supabaseAdmin.from('invoices').insert({
+        tip: 'proforma',
+        numar_document: numarProforma,
+        comanda_id: data.id,
+        client_id: user.id,
+        suma_totala: data.suma_totala_platita,
+        tva: data.tva_suma || 0,
+        moneda: data.moneda,
+      });
+    } catch (invoiceErr) {
+      console.error('[comenzi/creeaza] proformă', invoiceErr);
+    }
+
     return res.status(200).json({ ok: true, comanda: data, alocare });
   } catch (err) {
     console.error('[comenzi/creeaza]', err);
