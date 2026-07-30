@@ -192,6 +192,16 @@ async function handler(req, res, user) {
         .gte('emisa_la', `${anProforma}-01-01`);
       const numarProforma = `PF-${anProforma}-${String((countProforma || 0) + 1).padStart(6, '0')}`;
 
+      // FIX (G1, audit Secțiunea 6/36, 30 Iulie 2026): tara_cod (denormalizat
+      // de pe comandă — util dacă vreodată o proformă există fără comanda_id)
+      // + entitate_emitenta. Singura mapare cunoscută azi, reală (nu
+      // inventată): RO e singura țară cu checkout_activ=true — orice comandă
+      // reală de azi e RO, deci emisă de Home Best Pal SRL (numele folosit
+      // deja, public, în politica de confidențialitate). Pentru orice altă
+      // țară, rămâne NULL până se confirmă entitatea reală (Home Best Pal
+      // LTD sau alta) — nu presupunem.
+      const entitateEmitenta = insertBase.tara_cod === 'RO' ? 'Home Best Pal SRL' : null;
+
       await supabaseAdmin.from('invoices').insert({
         tip: 'proforma',
         numar_document: numarProforma,
@@ -200,6 +210,8 @@ async function handler(req, res, user) {
         suma_totala: data.suma_totala_platita,
         tva: data.tva_suma || 0,
         moneda: data.moneda,
+        tara_cod: insertBase.tara_cod,
+        entitate_emitenta: entitateEmitenta,
       });
     } catch (invoiceErr) {
       console.error('[comenzi/creeaza] proformă', invoiceErr);
