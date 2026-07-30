@@ -71,6 +71,8 @@ const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { incearcaAlocarePartener } = require('../../lib/aloca-partener');
 const { calculeazaPret } = require('../../lib/calculeaza-pret');
+const { renderEmailPrimaComanda, limbaProfilEmailComportamental } = require('../../lib/i18n');
+const { fromHeader } = require('../../lib/email-sender');
 
 async function handler(req, res, user) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -235,6 +237,36 @@ async function handler(req, res, user) {
       });
     } catch (invoiceErr) {
       console.error('[comenzi/creeaza] proformă', invoiceErr);
+    }
+
+    // Email „prima comandă confirmată" (audit Secțiunea 39, 30 Iulie 2026,
+    // gap real: nicio confirmare de comandă la creare). Trimis DOAR la
+    // prima comandă reală a clientului — la fel cum spune textul cerut
+    // explicit ("Mulțumim pentru prima ta comandă") — nu la fiecare comandă;
+    // izolat în propriul try/catch, nu blochează comanda deja înregistrată.
+    try {
+      const { count: nrComenziClient } = await supabaseAdmin
+        .from('comenzi')
+        .select('id', { count: 'exact', head: true })
+        .eq('client_id', user.id);
+      if (nrComenziClient === 1 && process.env.RESEND_API_KEY) {
+        const { data: profilClient } = await supabaseAdmin
+          .from('profiles')
+          .select('email, tara, limba')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (profilClient?.email) {
+          const limba = limbaProfilEmailComportamental(profilClient);
+          const { subiect, html } = renderEmailPrimaComanda(limba, { nume: null, numarComanda: data.nr_comanda || data.id });
+          await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ from: await fromHeader(limba), to: profilClient.email, subject: subiect, html }),
+          });
+        }
+      }
+    } catch (emailErr) {
+      console.error('[comenzi/creeaza] email prima comandă', emailErr);
     }
 
     return res.status(200).json({ ok: true, comanda: data, alocare });

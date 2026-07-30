@@ -582,6 +582,10 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
       Newsletter
     </a>
+    <a class="sa-nav-item" onclick="showPanel('email-gateway')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
+      Email Gateway
+    </a>
     <a class="sa-nav-item" onclick="showPanel('acces-temporar')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
       Acces Temporar
@@ -1807,6 +1811,44 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       <div id="newsletter-list" style="color:#8BA3C0;font-size:13px">Se încarcă...</div>
     </div>
 
+    <!-- ════ NOREPLY & TRANSACTIONAL GATEWAY MANAGER (audit Secțiunea 39, 30 Iulie 2026) ════
+         Monitorizare livrare email-uri noreply@ (sent/delivered/bounced/
+         complained), alimentată de webhook-ul Resend (api/email/webhook-
+         primire.js) — NU date fabricate, tabelă goală până la primul
+         eveniment real primit de la Resend. -->
+    <div id="panel-email-gateway" style="display:none;padding:24px">
+      <div style="background:#131B27;border:1px solid #2D3F55;border-radius:14px;padding:18px 20px;margin-bottom:18px">
+        <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:4px">Sumar livrare — ultimele 30 zile</div>
+        <p style="font-size:11px;color:#8BA3C0;margin:0 0 14px">Populat exclusiv de evenimente reale primite prin webhook Resend. Dacă webhook-ul nu e încă activat în Resend Dashboard (vezi Secțiunea 38), rămâne gol — nu înseamnă „fără probleme", ci „fără monitorizare încă".</p>
+        <div id="email-gw-sumar" style="display:flex;flex-wrap:wrap;gap:10px"></div>
+      </div>
+
+      <div style="background:#131B27;border:1px solid #2D3F55;border-radius:14px;padding:18px 20px;margin-bottom:18px">
+        <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:12px">Nume expeditor per limbă</div>
+        <p style="font-size:11px;color:#8BA3C0;margin:0 0 12px">Adresa rămâne <code>noreply@homebestpal.com</code> (singurul domeniu verificat SPF/DKIM/DMARC azi) — doar numele afișat al expeditorului e configurabil per limbă. Un alias pe alt domeniu per regiune ar necesita verificarea acelui domeniu în Resend (acțiune superadmin, Secțiunea 38).</p>
+        <div id="email-gw-nume-expeditor" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px"></div>
+        <button onclick="salveazaNumeExpeditor()" class="btn-p" style="font-size:12.5px;padding:9px 16px">Salvează</button>
+        <span id="email-gw-salvat" style="font-size:11.5px;color:#4ADE80;margin-left:10px"></span>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <span id="email-gw-total" style="color:#8BA3C0;font-size:12.5px"></span>
+        <select id="email-gw-filtru" onchange="loadEmailGateway()" style="border:1.5px solid #2D3F55;background:#192433;color:#fff;border-radius:9px;padding:8px 12px;font-size:12.5px;font-family:inherit;margin-left:auto">
+          <option value="">Toate evenimentele</option>
+          <option value="email.sent">Trimis</option>
+          <option value="email.delivered">Livrat</option>
+          <option value="email.bounced">Respins (bounce)</option>
+          <option value="email.complained">Plângere spam</option>
+          <option value="email.delivery_delayed">Livrare întârziată</option>
+          <option value="email.opened">Deschis</option>
+          <option value="email.clicked">Click</option>
+          <option value="email.failed">Eșuat</option>
+        </select>
+        <button onclick="loadEmailGateway()" class="btn-p" style="font-size:12px;padding:8px 14px">↻ Reîncarcă</button>
+      </div>
+      <div id="email-gw-list" style="color:#8BA3C0;font-size:13px">Se încarcă...</div>
+    </div>
+
     <!-- ══ ACCES TEMPORAR — parolă unică per email, gestionată de admin (2026-07-23) ══
          Acces cu credențiale Supabase reale, valabil doar pe durata configurată,
          scopat la o singură rută whitelist-uită, revocabil instant. -->
@@ -2345,7 +2387,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 
 <script>
 // ── NAVIGATION ──
-const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding','seo','accountancy','investitori','contact','prospecti','newsletter','acces-temporar'];
+const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding','seo','accountancy','investitori','contact','prospecti','newsletter','email-gateway','acces-temporar'];
 const TITLES = {
   dashboard:'Dashboard Global',tari:'Țări & Zone',utilizatori:'Utilizatori & Actori',
   rbac:'Permisiuni RBAC',platforme:'Platforme & Integrări',escrow:'Escrow Global',
@@ -2353,7 +2395,7 @@ const TITLES = {
   comenzi:'Comenzi Globale',catalog:'Catalog Servicii/Materiale/Închirieri',audit:'Audit Log',config:'Configurare Sistem',
   branding:'Branding & Design Platformă',seo:'SEO — Titluri & Descrieri',accountancy:'Accountancy',
   investitori:'Administrare Investitori',contact:'Mesaje Contact',prospecti:'Prospecți Parteneri',
-  newsletter:'Newsletter & Abonați','acces-temporar':'Acces Temporar'
+  newsletter:'Newsletter & Abonați','email-gateway':'Noreply & Transactional Gateway','acces-temporar':'Acces Temporar'
 };
 
 function showPanel(id){
@@ -3987,6 +4029,7 @@ window.showPanel = function(id) {
   if (id === 'prospecti') loadProspecti();
   if (id === 'newsletter') loadNewsletter();
   if (id === 'audit') loadAuditLog();
+  if (id === 'email-gateway') loadEmailGateway();
 };
 </script>
 
@@ -4164,6 +4207,83 @@ async function setStatusAbonat(id, status) {
     const res = await fetch('/api/admin/newsletter', { method: 'POST', headers, body: JSON.stringify({ id, status }) });
     if (!res.ok) throw new Error((await res.json()).error);
     loadNewsletter();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+// ── NOREPLY & TRANSACTIONAL GATEWAY MANAGER (audit Secțiunea 39, 30 Iulie 2026) ──
+const EMAIL_GW_EVENT_LABEL = {
+  'email.sent':'Trimis','email.delivered':'Livrat','email.bounced':'Respins (bounce)',
+  'email.complained':'Plângere spam','email.delivery_delayed':'Livrare întârziată',
+  'email.opened':'Deschis','email.clicked':'Click','email.failed':'Eșuat',
+};
+const EMAIL_GW_EVENT_COLOR = {
+  'email.delivered':'#4ADE80','email.sent':'#8BA3C0','email.opened':'#4ADE80','email.clicked':'#4ADE80',
+  'email.bounced':'#E57373','email.complained':'#E57373','email.failed':'#E57373','email.delivery_delayed':'#F2B84B',
+};
+
+async function loadEmailGateway() {
+  const el = document.getElementById('email-gw-list');
+  el.textContent = 'Se încarcă...';
+  try {
+    const tip = document.getElementById('email-gw-filtru').value;
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/email-gateway' + (tip ? `?tip=${encodeURIComponent(tip)}` : ''), { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+
+    document.getElementById('email-gw-total').textContent = data.evenimente.length + ' evenimente (ultimele 300)';
+
+    const sumarEl = document.getElementById('email-gw-sumar');
+    const cheiSumar = Object.keys(data.sumar_30_zile);
+    sumarEl.innerHTML = cheiSumar.length ? cheiSumar.map(tip => `
+      <div style="background:#0F1826;border:1px solid #2D3F55;border-radius:10px;padding:10px 14px;min-width:120px">
+        <div style="font-size:19px;font-weight:800;color:${EMAIL_GW_EVENT_COLOR[tip]||'#fff'}">${data.sumar_30_zile[tip]}</div>
+        <div style="font-size:10.5px;color:#8BA3C0;text-transform:uppercase;letter-spacing:.04em">${EMAIL_GW_EVENT_LABEL[tip]||tip}</div>
+      </div>
+    `).join('') : '<div style="font-size:12.5px;color:#8BA3C0">Niciun eveniment încă — webhook-ul Resend nu a trimis nimic (verifică Secțiunea 38 din documentul de lucru).</div>';
+
+    const numeEl = document.getElementById('email-gw-nume-expeditor');
+    numeEl.innerHTML = data.limbi_disponibile.map(l => `
+      <div>
+        <label style="display:block;font-size:10.5px;color:#8BA3C0;margin-bottom:4px">Nume expeditor — ${l.toUpperCase()}</label>
+        <input id="email-gw-nume-${l}" value="${escapeHTML(data.nume_expeditor[l] || 'My Darrin')}" style="width:100%;background:#0F1826;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:13px">
+      </div>
+    `).join('');
+
+    if (!data.evenimente.length) { el.innerHTML = '<div style="padding:20px;text-align:center">Niciun eveniment încă.</div>'; return; }
+
+    el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12.5px">
+      <thead><tr style="text-align:left;color:#4A6080;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em">
+        <th style="padding:8px 10px">Destinatar</th><th style="padding:8px 10px">Subiect</th>
+        <th style="padding:8px 10px">Eveniment</th><th style="padding:8px 10px">Data</th>
+      </tr></thead>
+      <tbody>${data.evenimente.map(e => `
+        <tr style="border-top:1px solid #2D3F55">
+          <td style="padding:8px 10px;color:#fff;font-weight:600">${escapeHTML(e.destinatar || '—')}</td>
+          <td style="padding:8px 10px;color:#8BA3C0">${escapeHTML(e.subiect || '—')}</td>
+          <td style="padding:8px 10px;color:${EMAIL_GW_EVENT_COLOR[e.tip]||'#8BA3C0'};font-weight:600">${EMAIL_GW_EVENT_LABEL[e.tip]||e.tip}</td>
+          <td style="padding:8px 10px;color:#8BA3C0">${new Date(e.creat_la).toLocaleString('ro-RO')}</td>
+        </tr>
+      `).join('')}</tbody>
+    </table>`;
+  } catch (e) {
+    el.innerHTML = `<div style="color:#E57373">Eroare: ${escapeHTML(e.message)}</div>`;
+  }
+}
+
+async function salveazaNumeExpeditor() {
+  const rezultatEl = document.getElementById('email-gw-salvat');
+  rezultatEl.textContent = '';
+  try {
+    const headers = await _adminAuthHeader();
+    for (const l of ['ro','en','it','fr','de','es','tr']) {
+      const input = document.getElementById(`email-gw-nume-${l}`);
+      if (!input) continue;
+      const res = await fetch('/api/admin/email-gateway', { method: 'POST', headers, body: JSON.stringify({ limba: l, nume_expeditor: input.value }) });
+      if (!res.ok) throw new Error((await res.json()).error);
+    }
+    rezultatEl.textContent = '✓ Salvat';
+    setTimeout(() => { rezultatEl.textContent = ''; }, 3000);
   } catch (e) { alert('Eroare: ' + e.message); }
 }
 </script>

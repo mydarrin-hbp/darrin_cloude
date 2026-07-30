@@ -95,6 +95,18 @@ async function performRegister(email, parola, nume, gdprAcceptat) {
     options: { data: { nume, roles: [], gdpr_acceptat: !!gdprAcceptat, tara, limba } },
   });
   if (error) throw error;
+
+  // Email de bun venit client (audit Secțiunea 39, 30 Iulie 2026) — best-
+  // effort, fire-and-forget, la fel ca la parteneri (api/public/partner-
+  // register.js): un eșec aici nu trebuie să blocheze înregistrarea.
+  try {
+    fetch('/api/public/trimite-bun-venit-client', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    }).catch(() => {});
+  } catch (e) {}
+
   return data.user; // status: pending_otp până la verificarea telefonului (pasul 2)
 }
 
