@@ -16,6 +16,7 @@
 // api/cron/email-cont-abandonat.js.
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { esteSuprimat } = require('../../lib/email-suppression');
 
 const PRAG_ORE = 4;
 const TIP_EMAIL = 'cos_abandonat';
@@ -23,6 +24,13 @@ const TIP_EMAIL = 'cos_abandonat';
 async function trimiteEmailCosAbandonat(email) {
   if (!process.env.RESEND_API_KEY) {
     console.warn('[email-cos-abandonat] RESEND_API_KEY lipsă — email netrimis către', email);
+    return;
+  }
+  // Aceeași listă de dezabonare reală ca email-cont-abandonat.js (audit
+  // Secțiunea 38) — footer-ul de mai jos promite exact asta, deci trebuie
+  // respectată și aici, nu doar la celălalt email comportamental.
+  if (await esteSuprimat(email)) {
+    console.log('[email-cos-abandonat] adresă dezabonată, sărim peste:', email);
     return;
   }
   await fetch('https://api.resend.com/emails', {

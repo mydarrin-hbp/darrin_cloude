@@ -70,10 +70,29 @@ async function hasRole(roleKey) {
 // coloana era scrisă în schemă dar nu era populată niciodată de niciun cod).
 // Parametru opțional, cu fallback la `false`, ca să nu rupem apelurile
 // existente din paginile care încă nu au checkbox-ul în UI.
+//
+// tara/limba (audit Secțiunea 38, 30 Iulie 2026): la fel ca la parteneri
+// (api/public/partner-register.js), transportate prin raw_user_meta_data
+// → handle_new_user() le scrie pe profiles la creare — necesar ca emailul
+// comportamental de "cont abandonat" să poată fi trimis în limba corectă,
+// nu doar RO hardcodat. Citite din window.MYD_GEO (myd-geo.js, dacă e
+// inclus pe pagină) — limba SELECTATĂ MANUAL (i18n-loader.js, dacă userul
+// a ales-o explicit) are prioritate față de cea doar detectată din IP.
+function _taraLimbaDetectate() {
+  let tara = null, limba = null;
+  try { tara = (window.MYD_GEO && window.MYD_GEO.data && window.MYD_GEO.data.cc) || null; } catch (e) {}
+  try { limba = localStorage.getItem('myd_lang_v1'); } catch (e) {}
+  if (!limba) {
+    try { limba = (window.MYD_GEO && window.MYD_GEO.data && window.MYD_GEO.data.lang) || null; } catch (e) {}
+  }
+  return { tara, limba };
+}
+
 async function performRegister(email, parola, nume, gdprAcceptat) {
+  const { tara, limba } = _taraLimbaDetectate();
   const { data, error } = await sb().auth.signUp({
     email, password: parola,
-    options: { data: { nume, roles: [], gdpr_acceptat: !!gdprAcceptat } },
+    options: { data: { nume, roles: [], gdpr_acceptat: !!gdprAcceptat, tara, limba } },
   });
   if (error) throw error;
   return data.user; // status: pending_otp până la verificarea telefonului (pasul 2)
