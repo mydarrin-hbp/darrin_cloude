@@ -544,6 +544,16 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 </main>
 </div>
 
+<!-- G34 (30 Iulie 2026) — modal scanare QR, metodă secundară de confirmare
+     a codului de verificare (completează introducerea manuală existentă) -->
+<div id="qr-scan-modal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(13,27,42,.92);align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:20px">
+  <video id="qr-scan-video" style="width:100%;max-width:360px;border-radius:14px;background:#000" muted></video>
+  <canvas id="qr-scan-canvas" style="display:none"></canvas>
+  <div id="qr-scan-status" style="color:#8BA3C0;font-size:13px;text-align:center;max-width:360px"></div>
+  <button class="btn-s" style="padding:8px 20px" onclick="inchideScanareQR()">Anulează</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script>
 // ════════════════════════════════════════════════════════════════
 // DASHBOARD PARTENER — DINAMIC
@@ -824,7 +834,8 @@ function sarcinaCard(c, tip) {
     butoane = `<button class="btn-p" style="flex:1;justify-content:center;font-size:11px;padding:7px 10px" onclick="acceptaSarcinaReal('${c.id}')">Acceptă</button>`;
   } else if (tip === 'active') {
     if (c.status === 'acceptata') {
-      butoane = `<button class="btn-p" style="flex:1;justify-content:center;font-size:11px;padding:7px 10px" onclick="confirmaCodReal('${c.id}')">Confirmă cod (la sosire)</button>`;
+      butoane = `<button class="btn-p" style="flex:1;justify-content:center;font-size:11px;padding:7px 10px" onclick="confirmaCodReal('${c.id}')">Confirmă cod (la sosire)</button>
+        <button class="btn-s" style="flex:1;justify-content:center;font-size:11px;padding:7px 10px" onclick="deschideScanareQR('${c.id}')">Scanează QR</button>`;
     } else {
       const pozeOk = c.are_poza_before && c.are_poza_after;
       butoane = `
@@ -861,14 +872,92 @@ async function acceptaSarcinaReal(comandaId) {
 async function confirmaCodReal(comandaId) {
   const cod = prompt('Introdu codul de verificare primit de client la sosire:');
   if (!cod) return;
+  await trimiteConfirmareCod(comandaId, cod);
+}
+
+// G34 (audit Secțiunea 36, 30 Iulie 2026) — extras din confirmaCodReal(),
+// reutilizat și de fluxul de scanare QR de mai jos, ca să nu existe 2 căi
+// divergente de trimitere a aceluiași cod către server.
+async function trimiteConfirmareCod(comandaId, cod) {
   try {
     const headers = await _partenerHeaderReal();
     const res = await fetch('/api/partener/confirma-cod', { method: 'POST', headers, body: JSON.stringify({ comanda_id: comandaId, cod }) });
     const data = await res.json();
-    if (!res.ok) { showToast(data.error || 'Cod incorect'); return; }
+    if (!res.ok) { showToast(data.error || 'Cod incorect'); return false; }
     showToast('Cod confirmat — lucrarea a început');
     await loadSarcini();
-  } catch (e) { showToast('Eroare de conexiune'); }
+    return true;
+  } catch (e) { showToast('Eroare de conexiune'); return false; }
+}
+
+// ── Scanare QR (metodă secundară de identificare, completează codul
+// numeric existent — vezi lib/aloca-partener.js, care generează acum și un
+// QR pentru același cod, trimis clientului pe email) ──
+let _qrStream = null;
+let _qrScanLoopId = null;
+let _qrComandaId = null;
+
+function deschideScanareQR(comandaId) {
+  _qrComandaId = comandaId;
+  const modal = document.getElementById('qr-scan-modal');
+  const statusEl = document.getElementById('qr-scan-status');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  if (statusEl) { statusEl.textContent = 'Se pornește camera...'; statusEl.style.color = '#8BA3C0'; }
+
+  if (typeof window.jsQR !== 'function') {
+    if (statusEl) { statusEl.textContent = 'Scanerul nu s-a încărcat (verifică rețeaua). Folosește "Confirmă cod" pentru introducere manuală.'; statusEl.style.color = '#C0392B'; }
+    return;
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    if (statusEl) { statusEl.textContent = 'Browserul nu suportă acces la cameră. Folosește "Confirmă cod" pentru introducere manuală.'; statusEl.style.color = '#C0392B'; }
+    return;
+  }
+
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then((stream) => {
+      _qrStream = stream;
+      const video = document.getElementById('qr-scan-video');
+      if (!video) return;
+      video.srcObject = stream;
+      video.setAttribute('playsinline', 'true');
+      video.play();
+      if (statusEl) { statusEl.textContent = 'Îndreaptă camera spre codul QR.'; statusEl.style.color = '#8BA3C0'; }
+      _qrScanLoop();
+    })
+    .catch(() => {
+      if (statusEl) { statusEl.textContent = 'Acces la cameră refuzat sau indisponibil. Folosește "Confirmă cod" pentru introducere manuală.'; statusEl.style.color = '#C0392B'; }
+    });
+}
+
+function _qrScanLoop() {
+  const video = document.getElementById('qr-scan-video');
+  const canvas = document.getElementById('qr-scan-canvas');
+  if (!video || !canvas || video.readyState !== video.HAVE_ENOUGH_DATA) {
+    _qrScanLoopId = requestAnimationFrame(_qrScanLoop);
+    return;
+  }
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const cod = window.jsQR(imageData.data, imageData.width, imageData.height);
+  if (cod && cod.data) {
+    const comandaId = _qrComandaId;
+    inchideScanareQR();
+    trimiteConfirmareCod(comandaId, cod.data.trim());
+    return;
+  }
+  _qrScanLoopId = requestAnimationFrame(_qrScanLoop);
+}
+
+function inchideScanareQR() {
+  const modal = document.getElementById('qr-scan-modal');
+  if (modal) modal.style.display = 'none';
+  if (_qrScanLoopId) { cancelAnimationFrame(_qrScanLoopId); _qrScanLoopId = null; }
+  if (_qrStream) { _qrStream.getTracks().forEach((t) => t.stop()); _qrStream = null; }
+  _qrComandaId = null;
 }
 
 function incarcaPozaReal(comandaId, tip) {
