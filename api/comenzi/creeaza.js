@@ -19,7 +19,17 @@
 // auditul extins, secțiunea 3) — comanda e persistată real, dar alocarea
 // automată către un partener rămâne un pas separat, neconstruit.
 //
-// Body: { valoare_totala, adresa, tara_cod?, regiune?, localitate?, suma_asigurare?, catalog_serviciu_id?, data_programata?, ora_inceput_programata?, ora_sfarsit_programata? }
+// Body: { valoare_totala, adresa, tara_cod?, regiune?, localitate?, suma_asigurare?, catalog_serviciu_id?, data_programata?, ora_inceput_programata?, ora_sfarsit_programata?, masa_totala_kg?, nivel_transport_marfa? }
+//
+// FIX (G2, audit Secțiunea 6/36, 30 Iulie 2026): masa_totala_kg/
+// nivel_transport_marfa — acceptate și persistate DOAR ca informație
+// logistică, fără niciun efect asupra suma_totala_platita. Nicio formulă de
+// preț pentru transport-pe-greutate sau pentru rolul 'ajutor' nu există
+// încă — ar fi necesitat inventarea unor tarife/trepte, decizie de business
+// confirmată explicit ca separată (rămâne alături de G39, neînceput fără
+// reguli reale). Rolurile 'ajutor'/'transportator' există acum în
+// comanda_subcontractori.rol_tip (CHECK extins), dar nimic nu le alocă
+// încă automat — lib/aloca-partener.js/aloca-subcontractori.js neatinse.
 //
 // FIX (G28, 28 Iulie 2026): `comenzi` nu avea nicio coloană de dată/oră
 // programată — alegerea din calendarul mydarrin-produs.html (S.selDate/
@@ -70,7 +80,15 @@ async function handler(req, res, user) {
     suma_asigurare = 0, catalog_serviciu_id = null,
     cost_baza_servicii, cost_materiale, cost_chirie_scule, cost_curier, cost_asigurare,
     data_programata = null, ora_inceput_programata = null, ora_sfarsit_programata = null,
+    masa_totala_kg = null, nivel_transport_marfa = null,
   } = req.body || {};
+
+  if (masa_totala_kg !== null && !(typeof masa_totala_kg === 'number' && masa_totala_kg > 0)) {
+    return res.status(400).json({ error: 'masa_totala_kg trebuie să fie un număr pozitiv' });
+  }
+  if (nivel_transport_marfa !== null && typeof nivel_transport_marfa !== 'string') {
+    return res.status(400).json({ error: 'nivel_transport_marfa trebuie să fie text' });
+  }
 
   if (data_programata !== null && !/^\d{4}-\d{2}-\d{2}$/.test(data_programata)) {
     return res.status(400).json({ error: 'data_programata trebuie în format YYYY-MM-DD' });
@@ -135,6 +153,8 @@ async function handler(req, res, user) {
       data_programata,
       ora_inceput_programata,
       ora_sfarsit_programata,
+      masa_totala_kg,
+      nivel_transport_marfa,
       // 'neinitiat', nu 'blocat': acest endpoint nu procesează plăți reale
       // (niciun procesator de plăți nu e integrat — vezi api/financiar/comision.js),
       // deci ar fi incorect să pretindem că suma e deja blocată în escrow.
