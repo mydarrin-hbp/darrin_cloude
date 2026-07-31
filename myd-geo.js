@@ -19,23 +19,40 @@
 var CACHE_KEY  = 'myd_geo_v3';
 var CACHE_TTL  = 30 * 60 * 1000;  // 30 minute
 
+// FIX (audit Secțiunea 35/36, G35, unificare 31 Iulie 2026): COUNTRIES era
+// dublat aproape identic în 3 surse (acest fișier, lib/i18n.js TARA_LA_LIMBA,
+// plus lipsea complet AT/CH/BE/IE aici deși existau în lib/i18n.js — un
+// vizitator elvețian, de exemplu, era tratat silențios ca România, inclusiv
+// la monedă). Sursă unică acum: tari-config.json, la rădăcina site-ului,
+// citit atât aici (fetch) cât și în lib/i18n.js (fs.readFileSync) — vezi
+// _incarcaConfigTari() mai jos. COUNTRIES rămâne o variabilă locală,
+// POPULATĂ din acel fișier înainte ca _start() să ruleze (nu mai e un
+// literal static) — restul acestui fișier (_applyUI/_buildData/etc.) nu s-a
+// schimbat, citește tot info.flag/info.name/info.currency/info.code/info.lang.
+//
+// Fallback minimal (DOAR RO) dacă fetch-ul eșuează (rețea/fișier lipsă) —
+// mai bine decât să blocheze complet detectarea geo.
 var COUNTRIES = {
-  RO: { flag:'🇷🇴', name:'România',  currency:'Lei', code:'RON', lang:'ro', active:true  },
-  MD: { flag:'🇲🇩', name:'Moldova',  currency:'Lei', code:'MDL', lang:'ro', active:true  },
-  DE: { flag:'🇩🇪', name:'Germania', currency:'EUR', code:'EUR', lang:'de', active:true  },
-  FR: { flag:'🇫🇷', name:'Franța',   currency:'EUR', code:'EUR', lang:'fr', active:true  },
-  BG: { flag:'🇧🇬', name:'Bulgaria', currency:'BGN', code:'BGN', lang:'bg', active:true  },
-  ES: { flag:'🇪🇸', name:'Spania',   currency:'EUR', code:'EUR', lang:'es', active:false },
-  GB: { flag:'🇬🇧', name:'UK',       currency:'GBP', code:'GBP', lang:'en', active:false },
-  US: { flag:'🇺🇸', name:'SUA',      currency:'USD', code:'USD', lang:'en', active:false },
-  IT: { flag:'🇮🇹', name:'Italia',   currency:'EUR', code:'EUR', lang:'it', active:false },
-  HU: { flag:'🇭🇺', name:'Ungaria',  currency:'HUF', code:'HUF', lang:'hu', active:false },
-  PL: { flag:'🇵🇱', name:'Polonia',  currency:'PLN', code:'PLN', lang:'pl', active:false },
-  GR: { flag:'🇬🇷', name:'Grecia',   currency:'EUR', code:'EUR', lang:'el', active:false },
-  TR: { flag:'🇹🇷', name:'Turcia',   currency:'Lira', code:'TRY', lang:'tr', active:false },
-  UA: { flag:'🇺🇦', name:'Ucraina',  currency:'Hrivnă', code:'UAH', lang:'uk', active:false },
-  FI: { flag:'🇫🇮', name:'Finlanda', currency:'EUR', code:'EUR', lang:'fi', active:false },
+  RO: { flag:'🇷🇴', name:'România', currency:'Lei', code:'RON', lang:'ro', active:true },
 };
+
+function _incarcaConfigTari(callback) {
+  fetch('/tari-config.json', { cache: 'no-store' })
+    .then(function(r) { return r.json(); })
+    .then(function(cfg) {
+      var tari = cfg && cfg.tari;
+      if (tari && Object.keys(tari).length) {
+        var noi = {};
+        Object.keys(tari).forEach(function(cc) {
+          var t = tari[cc];
+          noi[cc] = { flag: t.flag, name: t.nume, currency: t.moneda_simbol, code: t.moneda_cod, lang: t.limba, active: !!t.activ_public };
+        });
+        COUNTRIES = noi;
+      }
+      callback();
+    })
+    .catch(function() { callback(); }); // fallback (doar RO) rămâne activ
+}
 
 var DEFAULT_CC = 'RO';
 
@@ -346,10 +363,14 @@ function _start() {
 }
 
 // ── Init la DOMContentLoaded ──────────────────────────────────────
+// _start() rulează abia după ce COUNTRIES e populat din tari-config.json
+// (sau rămâne pe fallback-ul minimal RO, dacă fetch-ul eșuează) — altfel
+// primele detectări ar folosi mereu fallback-ul, indiferent de fișier.
+function _initGeo() { _incarcaConfigTari(_start); }
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', _start);
+  document.addEventListener('DOMContentLoaded', _initGeo);
 } else {
-  _start();
+  _initGeo();
 }
 
 })();
