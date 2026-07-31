@@ -35,8 +35,19 @@ module.exports = async function handler(req, res) {
 
     if (error) throw error;
 
-    // Notificare email prin Resend — best-effort, nu blocăm răspunsul dacă eșuează
-    if (process.env.RESEND_API_KEY) {
+    // Notificare email prin Resend — best-effort, nu blocăm răspunsul dacă eșuează.
+    // FIX (audit 31 Iulie 2026): fallback-ul anterior cădea pe o adresă personală
+    // hardcodată în cod — singurul loc din tot proiectul care făcea asta (restul
+    // fișierelor Resend sar peste trimitere, cu console.warn, dacă lipsește
+    // configurarea — vezi email-cont-abandonat.js/newsletter.js). Lead-ul e oricum
+    // salvat mai sus în investitori_leads indiferent de emailul de notificare —
+    // niciun risc de pierdere de date dacă INVESTOR_LEAD_NOTIFY_EMAIL nu e setat,
+    // doar lipsă de notificare imediată (vezi Secțiunea 38/40 din documentul de
+    // lucru pentru gap-ul aferent: nicio pagină de admin nu listează încă
+    // investitori_leads — email-ul rămâne azi singurul semnal în timp real).
+    if (!process.env.INVESTOR_LEAD_NOTIFY_EMAIL) {
+      console.warn('[investor-lead] INVESTOR_LEAD_NOTIFY_EMAIL lipsă — notificare netrimisă (lead-ul e salvat, doar fără alertă imediată)');
+    } else if (process.env.RESEND_API_KEY) {
       try {
         await fetch('https://api.resend.com/emails', {
           method: 'POST',
@@ -46,7 +57,7 @@ module.exports = async function handler(req, res) {
           },
           body: JSON.stringify({
             from: 'noreply@homebestpal.com',
-            to: process.env.INVESTOR_LEAD_NOTIFY_EMAIL || 'cristianpopaban@gmail.com',
+            to: process.env.INVESTOR_LEAD_NOTIFY_EMAIL,
             subject: `🚀 Cerere nouă investitor: ${prenume || ''} ${nume || ''}`.trim(),
             html: `
               <h3>Cerere nouă de investiție — My Darrin</h3>
