@@ -32,6 +32,7 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { calculeazaPret } = require('../../lib/calculeaza-pret');
+const { verificaIntegrare } = require('../../lib/integrare-gate');
 
 const METODE_VALIDE = ['card', 'ordin_plata'];
 
@@ -58,6 +59,21 @@ async function handler(req, res, user) {
   }
   if (!adresa || typeof adresa !== 'string') {
     return res.status(400).json({ error: 'adresa este obligatorie' });
+  }
+
+  // Plata cu cardul RĂMÂNE parte a fluxului de business (nu se elimină din
+  // metode_plata_config / checkout) — ce lipsește azi e doar procesatorul
+  // real (Secțiunea 40, TODO explicit). Poarta reutilizată aici e EXACT
+  // aceeași folosită de api/plati/proceseaza-card.js (lib/integrare-gate.js,
+  // categoria 'procesatori_carduri') — un singur loc de adevăr: în clipa în
+  // care un admin activează un furnizor real din panoul „Platforme &
+  // Integrări" (deja construit, dintr-o trecere anterioară), ambele căi se
+  // deblochează simultan, fără nicio modificare de cod aici. Până atunci,
+  // orice încercare de a plasa o comandă B2G cu card primește același mesaj
+  // clar „nu este încă activă" — comanda NU se creează într-o stare ambiguă.
+  if (metoda_plata === 'card') {
+    const furnizorCard = await verificaIntegrare(res, 'procesatori_carduri', { tara_cod: tara_cod ? String(tara_cod).toUpperCase() : null });
+    if (!furnizorCard) return; // răspunsul 503 a fost deja trimis de poartă
   }
 
   const areComponenteItemizate = [cost_baza_servicii, cost_materiale, cost_chirie_scule, cost_curier, cost_asigurare]
