@@ -590,6 +590,10 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       Facturare Parteneri
     </a>
+    <a class="sa-nav-item" onclick="showPanel('b2g-plati')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M5 21V7l8-4 8 4v14"/><path d="M9 9h1"/><path d="M9 13h1"/><path d="M14 9h1"/><path d="M14 13h1"/><path d="M9 21v-4a2 2 0 012-2h2a2 2 0 012 2v4"/></svg>
+      B2G &amp; Metode de Plată
+    </a>
     <a class="sa-nav-item" onclick="showPanel('acces-temporar')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
       Acces Temporar
@@ -1879,6 +1883,25 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       <div id="fp-facturi-list" style="color:#8BA3C0;font-size:13px">Se încarcă...</div>
     </div>
 
+    <!-- ════ B2G & METODE DE PLATĂ (audit Secțiunea 43/44, 31 Iulie 2026) ════
+         Comenzi B2G în așteptarea confirmării plății (transfer/OP) + avans
+         configurabil de la caz la caz + configurare metode de plată
+         acceptate per țară/regiune/categorie de serviciu. -->
+    <div id="panel-b2g-plati" style="display:none;padding:24px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <span style="font-size:14px;font-weight:700;color:#fff">Comenzi B2G — în așteptarea plății</span>
+        <button onclick="loadComenziB2G()" class="btn-p" style="font-size:12px;padding:8px 14px;margin-left:auto">↻ Reîncarcă</button>
+      </div>
+      <div id="b2g-comenzi-list" style="color:#8BA3C0;font-size:13px;margin-bottom:22px">Se încarcă...</div>
+
+      <div style="background:#131B27;border:1px solid #2D3F55;border-radius:14px;padding:18px 20px">
+        <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:4px">Metode de plată acceptate</div>
+        <p style="font-size:11px;color:#8BA3C0;margin:0 0 14px">Configurabil per țară/regiune/categorie de serviciu (gol = valabil pentru toate). Un rând complet gol e configurația implicită globală — azi doar „card", identic cu comportamentul curent.</p>
+        <div id="mpc-lista"></div>
+        <button onclick="adaugaRandMetodaPlata()" class="btn-s" style="font-size:11.5px;padding:7px 12px;margin-top:8px">+ Adaugă configurare</button>
+      </div>
+    </div>
+
     <!-- ══ ACCES TEMPORAR — parolă unică per email, gestionată de admin (2026-07-23) ══
          Acces cu credențiale Supabase reale, valabil doar pe durata configurată,
          scopat la o singură rută whitelist-uită, revocabil instant. -->
@@ -2417,7 +2440,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 
 <script>
 // ── NAVIGATION ──
-const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding','seo','accountancy','investitori','contact','prospecti','newsletter','email-gateway','facturare-parteneri','acces-temporar'];
+const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding','seo','accountancy','investitori','contact','prospecti','newsletter','email-gateway','facturare-parteneri','b2g-plati','acces-temporar'];
 const TITLES = {
   dashboard:'Dashboard Global',tari:'Țări & Zone',utilizatori:'Utilizatori & Actori',
   rbac:'Permisiuni RBAC',platforme:'Platforme & Integrări',escrow:'Escrow Global',
@@ -2425,7 +2448,7 @@ const TITLES = {
   comenzi:'Comenzi Globale',catalog:'Catalog Servicii/Materiale/Închirieri',audit:'Audit Log',config:'Configurare Sistem',
   branding:'Branding & Design Platformă',seo:'SEO — Titluri & Descrieri',accountancy:'Accountancy',
   investitori:'Administrare Investitori',contact:'Mesaje Contact',prospecti:'Prospecți Parteneri',
-  newsletter:'Newsletter & Abonați','email-gateway':'Noreply & Transactional Gateway','facturare-parteneri':'Facturare Parteneri','acces-temporar':'Acces Temporar'
+  newsletter:'Newsletter & Abonați','email-gateway':'Noreply & Transactional Gateway','facturare-parteneri':'Facturare Parteneri','b2g-plati':'B2G & Metode de Plată','acces-temporar':'Acces Temporar'
 };
 
 function showPanel(id){
@@ -4061,6 +4084,7 @@ window.showPanel = function(id) {
   if (id === 'audit') loadAuditLog();
   if (id === 'email-gateway') loadEmailGateway();
   if (id === 'facturare-parteneri') { loadEntitatiJuridice(); loadFacturiParteneri(); }
+  if (id === 'b2g-plati') { loadComenziB2G(); loadMetodePlataConfig(); }
 };
 </script>
 
@@ -4430,6 +4454,141 @@ async function confirmaPlataFacturaPartener(id) {
     const res = await fetch('/api/admin/facturi-parteneri', { method: 'POST', headers, body: JSON.stringify({ id, action: 'confirma_plata' }) });
     if (!res.ok) throw new Error((await res.json()).error);
     loadFacturiParteneri();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+// ── B2G & METODE DE PLATĂ (audit Secțiunea 43/44, 31 Iulie 2026) ──
+async function loadComenziB2G() {
+  const el = document.getElementById('b2g-comenzi-list');
+  el.textContent = 'Se încarcă...';
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/comenzi-b2g?status_plata=in_asteptare', { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+
+    if (!data.comenzi.length) { el.innerHTML = '<div style="padding:20px;text-align:center">Nicio comandă B2G în așteptarea plății.</div>'; return; }
+
+    el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12.5px">
+      <thead><tr style="text-align:left;color:#4A6080;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em">
+        <th style="padding:8px 10px">Comandă</th><th style="padding:8px 10px">Instituție</th><th style="padding:8px 10px">CUI</th>
+        <th style="padding:8px 10px">Sumă</th><th style="padding:8px 10px">Metodă</th><th style="padding:8px 10px">Avans</th><th style="padding:8px 10px">Acțiuni</th>
+      </tr></thead>
+      <tbody>${data.comenzi.map(c => `
+        <tr style="border-top:1px solid #2D3F55">
+          <td style="padding:8px 10px;color:#fff;font-weight:600">${escapeHTML(c.nr_comanda || c.id.slice(0,8))}</td>
+          <td style="padding:8px 10px;color:#8BA3C0">${escapeHTML(c.denumire_institutie_b2g || '—')}${c.cont_trezorerie ? ' <span style="color:#F2B84B">🏛 trezorerie</span>' : ''}</td>
+          <td style="padding:8px 10px;color:#8BA3C0">${escapeHTML(c.cui_client_b2g || '—')}</td>
+          <td style="padding:8px 10px;color:#FF8C00;font-weight:700">${c.suma_totala_platita} ${escapeHTML(c.moneda || '')}</td>
+          <td style="padding:8px 10px;color:#8BA3C0">${c.metoda_plata === 'ordin_plata' ? 'Ordin de plată' : 'Card'}</td>
+          <td style="padding:8px 10px;color:#8BA3C0">${c.procent_avans ? c.procent_avans + '%' : `<button onclick="setareAvansB2G('${c.id}')" class="btn-s" style="font-size:10.5px;padding:4px 8px">Setează</button>`}</td>
+          <td style="padding:8px 10px"><button onclick="certificaPlataB2G('${c.id}')" class="btn-p" style="font-size:11px;padding:5px 10px">Certifică plata</button></td>
+        </tr>
+      `).join('')}</tbody>
+    </table>`;
+  } catch (e) {
+    el.innerHTML = `<div style="color:#E57373">Eroare: ${escapeHTML(e.message)}</div>`;
+  }
+}
+
+async function setareAvansB2G(comanda_id) {
+  const procent = prompt('Procent avans (0-100), stabilit de la caz la caz pentru această comandă:');
+  if (!procent) return;
+  const numeric = Number(procent);
+  if (!Number.isFinite(numeric) || numeric <= 0 || numeric > 100) { alert('Procent invalid.'); return; }
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/comenzi-b2g', { method: 'POST', headers, body: JSON.stringify({ comanda_id, action: 'seteaza_avans', procent_avans: numeric }) });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadComenziB2G();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+async function certificaPlataB2G(comanda_id) {
+  if (!confirm('Confirmi că plata (transfer bancar / ordin de plată) a fost verificată real, pe extrasul de cont al platformei? Sistemul va relua automat alocarea către un partener.')) return;
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/comenzi-b2g', { method: 'POST', headers, body: JSON.stringify({ comanda_id, action: 'certifica_plata' }) });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadComenziB2G();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+async function loadMetodePlataConfig() {
+  const el = document.getElementById('mpc-lista');
+  el.textContent = 'Se încarcă...';
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/metode-plata-config', { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    renderMetodePlata(data.configurari.length ? data.configurari : [{ tara_cod: '', regiune: '', categorie_serviciu_slug: '', metode_acceptate: ['card'], permite_avans: false }]);
+  } catch (e) {
+    el.innerHTML = `<div style="color:#E57373">Eroare: ${escapeHTML(e.message)}</div>`;
+  }
+}
+
+function randMetodaPlataHTML(c) {
+  return `
+    <div class="mpc-rand" data-id="${c.id || ''}" style="display:grid;grid-template-columns:70px 100px 140px 1fr 90px 70px;gap:8px;margin-bottom:8px;align-items:center">
+      <input class="mpc-tara" value="${escapeHTML(c.tara_cod || '')}" placeholder="Toate" maxlength="2" style="background:#0F1826;border:1px solid #2D3F55;border-radius:8px;padding:7px 9px;color:#fff;font-size:12px;text-transform:uppercase">
+      <input class="mpc-regiune" value="${escapeHTML(c.regiune || '')}" placeholder="Toate" style="background:#0F1826;border:1px solid #2D3F55;border-radius:8px;padding:7px 9px;color:#fff;font-size:12px">
+      <input class="mpc-categorie" value="${escapeHTML(c.categorie_serviciu_slug || '')}" placeholder="Toate categoriile" style="background:#0F1826;border:1px solid #2D3F55;border-radius:8px;padding:7px 9px;color:#fff;font-size:12px">
+      <div style="display:flex;gap:12px;font-size:11.5px;color:#8BA3C0">
+        <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" class="mpc-card" ${(c.metode_acceptate || []).includes('card') ? 'checked' : ''}> Card</label>
+        <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" class="mpc-op" ${(c.metode_acceptate || []).includes('ordin_plata') ? 'checked' : ''}> Ordin de plată</label>
+      </div>
+      <label style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:#8BA3C0"><input type="checkbox" class="mpc-avans" ${c.permite_avans ? 'checked' : ''}> Avans</label>
+      <div style="display:flex;gap:4px">
+        <button onclick="salveazaMetodaPlata(this)" class="btn-p" style="font-size:10.5px;padding:5px 8px">Salvează</button>
+        ${c.id ? `<button onclick="stergeMetodaPlata('${c.id}')" class="btn-s" style="font-size:10.5px;padding:5px 8px">✕</button>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function renderMetodePlata(configurari) {
+  document.getElementById('mpc-lista').innerHTML = configurari.map(randMetodaPlataHTML).join('');
+}
+
+function adaugaRandMetodaPlata() {
+  document.getElementById('mpc-lista').insertAdjacentHTML('beforeend', randMetodaPlataHTML({ tara_cod: '', regiune: '', categorie_serviciu_slug: '', metode_acceptate: [], permite_avans: false }));
+}
+
+async function salveazaMetodaPlata(btn) {
+  const rand = btn.closest('.mpc-rand');
+  const metode_acceptate = [];
+  if (rand.querySelector('.mpc-card').checked) metode_acceptate.push('card');
+  if (rand.querySelector('.mpc-op').checked) metode_acceptate.push('ordin_plata');
+  if (!metode_acceptate.length) { alert('Selectează cel puțin o metodă de plată.'); return; }
+
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/metode-plata-config', {
+      method: 'POST', headers,
+      body: JSON.stringify({
+        action: 'salveaza',
+        id: rand.dataset.id || undefined,
+        tara_cod: rand.querySelector('.mpc-tara').value.trim() || null,
+        regiune: rand.querySelector('.mpc-regiune').value.trim() || null,
+        categorie_serviciu_slug: rand.querySelector('.mpc-categorie').value.trim() || null,
+        metode_acceptate,
+        permite_avans: rand.querySelector('.mpc-avans').checked,
+        activ: true,
+      }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadMetodePlataConfig();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+async function stergeMetodaPlata(id) {
+  if (!confirm('Ștergi această configurare de metode de plată?')) return;
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/metode-plata-config', { method: 'POST', headers, body: JSON.stringify({ action: 'sterge', id }) });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadMetodePlataConfig();
   } catch (e) { alert('Eroare: ' + e.message); }
 }
 </script>

@@ -1399,6 +1399,35 @@ function triggerHeaderSearch(){
           <i data-lucide="credit-card" class="w-5 h-5"></i>Metodă de plată
         </h2>
 
+        <!-- ════ FLUX B2G — companii/instituții guvernamentale (audit Secțiunea 43/44, 31 Iulie 2026) ════
+             Flux SECUNDAR, izolat prin toggle — implicit OFF, fluxul B2C de mai jos rămâne complet neschimbat.
+             Comanda B2G nu se trimite prin api/comenzi/creeaza (neatins) — vezi submitOrderB2G(). -->
+        <div class="bg-white rounded-2xl border border-[#D5DFE8] p-5 mb-5">
+          <label class="flex items-center gap-2.5 cursor-pointer">
+            <input type="checkbox" id="b2g-toggle" class="w-4 h-4 accent-[#003366]" onchange="toggleB2G()"/>
+            <span class="font-bold text-sm text-[#003366]">Comand în numele unei companii sau instituții (B2G)</span>
+          </label>
+          <div id="b2g-fields" class="hidden mt-4 space-y-3">
+            <div>
+              <label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Denumire instituție/companie</label>
+              <input type="text" id="b2g-denumire" placeholder="ex: Primăria Municipiului..." class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">CUI</label>
+              <input type="text" id="b2g-cui" placeholder="RO12345678" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white uppercase"/>
+            </div>
+            <label class="flex items-center gap-2.5 cursor-pointer">
+              <input type="checkbox" id="b2g-trezorerie" class="w-4 h-4 accent-[#003366]"/>
+              <span class="text-xs text-[#6B7A8D]">Plata se face dintr-un cont de trezorerie a statului</span>
+            </label>
+            <div id="b2g-metode-plata" class="space-y-2 pt-2">
+              <div class="text-xs text-[#8C9BAD]">Se încarcă metodele de plată disponibile...</div>
+            </div>
+            <div class="text-[11px] text-[#6B7A8D] bg-[#F4F7F9] rounded-lg p-3">Comanda va fi înregistrată și va aștepta confirmarea plății — alocarea către un partener începe abia după ce plata e confirmată.</div>
+          </div>
+        </div>
+
+        <div id="b2c-payment-block">
         <!-- ESCROW EXPLICAT VIZUAL -->
         <div class="bg-white rounded-2xl border border-[#D5DFE8] p-6 mb-5">
           <div class="flex items-center gap-2 mb-5">
@@ -1469,6 +1498,7 @@ function triggerHeaderSearch(){
             <span class="text-xs text-[#6B7A8D]">Salvează cardul pentru comenzile viitoare (securizat PCI-DSS)</span>
           </label>
         </div>
+        </div><!-- /b2c-payment-block -->
 
         <div class="flex gap-3">
           <button onclick="goToStep('details')" class="btn-ghost flex-shrink-0" style="padding:12px 20px;font-size:13px">← Înapoi</button>
@@ -2472,7 +2502,7 @@ function saveGuestOrder(orderData) {
 // indiferent de comanda reală. Motorul de matching care ar aloca un
 // partener real nu există încă (vezi auditul extins). Ecranul de mai jos
 // confirmă doar ce s-a întâmplat cu adevărat: comanda a fost înregistrată.
-function showComandaInregistrataScreen(numarComanda) {
+function showComandaInregistrataScreen(numarComanda, mesajCustom) {
   const overlay = document.createElement('div');
   overlay.id = 'order-confirm-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:800;display:flex;align-items:center;justify-content:center;padding:20px';
@@ -2485,8 +2515,12 @@ function showComandaInregistrataScreen(numarComanda) {
       </div>
       <div style="padding:22px">
         <div style="background:#F0F4F8;border-radius:14px;padding:16px;text-align:center;margin-bottom:16px;border:1px solid #D5DFE8">
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:6px">Căutăm un partener disponibil</div>
-          <div style="font-size:13px;color:#5A6B7D">Vei fi notificat de îndată ce un partener acceptă comanda.</div>
+          ${mesajCustom ? `
+            <div style="font-size:13px;color:#5A6B7D">${escapeHTML(mesajCustom)}</div>
+          ` : `
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:6px">Căutăm un partener disponibil</div>
+            <div style="font-size:13px;color:#5A6B7D">Vei fi notificat de îndată ce un partener acceptă comanda.</div>
+          `}
         </div>
         <div style="font-size:11.5px;color:#5A6B7D;text-align:center;margin-bottom:14px">
           Urmărești comanda cu: <strong style="color:#003366;font-family:monospace">${escapeHTML(numarComanda)}</strong>
@@ -2608,10 +2642,24 @@ document.addEventListener('DOMContentLoaded', function() {
       // mapare slug→id, niciuna decisă încă ca cerință de business.
       try {
         const session = (await window.supabaseClient.auth.getSession()).data.session;
-        const res = await fetch('/api/comenzi/creeaza', {
+        const corpComun = { adresa, tara_cod: taraComanda, regiune: regiuneComanda, localitate: localitateComanda, cost_baza_servicii, cost_asigurare, cost_materiale, cost_chirie_scule, valoare_totala, data_programata: dataProgramata, ora_inceput_programata: oraInceputProgramata, ora_sfarsit_programata: oraSfarsitProgramata };
+
+        // Flux B2G (audit Secțiunea 43/44, 31 Iulie 2026) — endpoint SEPARAT,
+        // api/comenzi/creeaza.js (calea B2C de mai jos, else) rămâne neatins.
+        const esteB2G = document.getElementById('b2g-toggle')?.checked;
+        const endpoint = esteB2G ? '/api/comenzi/creeaza-b2g' : '/api/comenzi/creeaza';
+        const corp = esteB2G ? {
+          ...corpComun,
+          denumire_institutie_b2g: document.getElementById('b2g-denumire')?.value.trim(),
+          cui_client_b2g: document.getElementById('b2g-cui')?.value.trim(),
+          cont_trezorerie: !!document.getElementById('b2g-trezorerie')?.checked,
+          metoda_plata: (document.querySelector('input[name="b2g-metoda"]:checked')?.value) || 'card',
+        } : corpComun;
+
+        const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
-          body: JSON.stringify({ adresa, tara_cod: taraComanda, regiune: regiuneComanda, localitate: localitateComanda, cost_baza_servicii, cost_asigurare, cost_materiale, cost_chirie_scule, valoare_totala, data_programata: dataProgramata, ora_inceput_programata: oraInceputProgramata, ora_sfarsit_programata: oraSfarsitProgramata }),
+          body: JSON.stringify(corp),
         });
         const data = await res.json();
         if (!res.ok) {
@@ -2622,7 +2670,11 @@ document.addEventListener('DOMContentLoaded', function() {
           }
           throw new Error(data.error || 'Eroare la plasarea comenzii');
         }
-        showComandaInregistrataScreen(data.comanda.nr_comanda);
+        if (esteB2G) {
+          showComandaInregistrataScreen(data.comanda.nr_comanda, data.mesaj);
+        } else {
+          showComandaInregistrataScreen(data.comanda.nr_comanda);
+        }
       } catch (err) {
         showToastCheckout('' + (err.message || 'Comanda nu a putut fi înregistrată'));
       }
@@ -3338,6 +3390,36 @@ function selectPayment(type){
   });
   document.getElementById("pm-"+type).classList.add("selected");
   document.getElementById("card-form").style.display=type==="card"?"block":"none";
+}
+
+// ── Flux B2G (audit Secțiunea 43/44, 31 Iulie 2026) — izolat, nu atinge selectPayment() de mai sus ──
+const METODA_PLATA_LABEL = { card: 'Card bancar', ordin_plata: 'Ordin de plată (transfer bancar)' };
+
+function toggleB2G(){
+  const activ = document.getElementById('b2g-toggle').checked;
+  document.getElementById('b2g-fields').classList.toggle('hidden', !activ);
+  document.getElementById('b2c-payment-block').classList.toggle('hidden', activ);
+  if (activ) incarcaMetodePlataB2G();
+}
+
+async function incarcaMetodePlataB2G(){
+  const el = document.getElementById('b2g-metode-plata');
+  el.innerHTML = '<div class="text-xs text-[#8C9BAD]">Se încarcă metodele de plată disponibile...</div>';
+  try {
+    const geo = window.MYD_GEO_LAST || {};
+    const taraComanda = (typeof MYD_CFG !== 'undefined' && MYD_CFG?.tara_cod) || geo.cc || '';
+    const res = await fetch(`/api/public/metode-plata-disponibile?tara_cod=${encodeURIComponent(taraComanda)}`);
+    const data = await res.json();
+    const metode = (data.metode_acceptate && data.metode_acceptate.length) ? data.metode_acceptate : ['card'];
+    el.innerHTML = metode.map((m, i) => `
+      <label class="flex items-center gap-2.5 cursor-pointer">
+        <input type="radio" name="b2g-metoda" value="${m}" ${i === 0 ? 'checked' : ''} class="w-4 h-4 accent-[#003366]">
+        <span class="text-sm text-[#003366]">${METODA_PLATA_LABEL[m] || m}</span>
+      </label>
+    `).join('');
+  } catch (e) {
+    el.innerHTML = '<label class="flex items-center gap-2.5"><input type="radio" name="b2g-metoda" value="card" checked class="w-4 h-4 accent-[#003366]"><span class="text-sm text-[#003366]">Card bancar</span></label>';
+  }
 }
 </script>
 <script src="branding-loader.js" defer></script>
