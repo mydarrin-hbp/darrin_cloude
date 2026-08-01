@@ -586,6 +586,10 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
       Email Gateway
     </a>
+    <a class="sa-nav-item" onclick="showPanel('facturare-parteneri')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Facturare Parteneri
+    </a>
     <a class="sa-nav-item" onclick="showPanel('acces-temporar')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
       Acces Temporar
@@ -1849,6 +1853,32 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       <div id="email-gw-list" style="color:#8BA3C0;font-size:13px">Se încarcă...</div>
     </div>
 
+    <!-- ════ FACTURARE PARTENERI (audit Secțiunea 41/42, 31 Iulie 2026) ════
+         Facturi emise de parteneri către platformă, pentru alocări reale
+         eliberate din escrow + entități juridice per țară (destinatarul
+         facturilor). Plata rămâne manuală, prin transfer bancar real. -->
+    <div id="panel-facturare-parteneri" style="display:none;padding:24px">
+      <div style="background:#131B27;border:1px solid #2D3F55;border-radius:14px;padding:18px 20px;margin-bottom:18px">
+        <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:4px">Entități juridice per țară</div>
+        <p style="font-size:11px;color:#8BA3C0;margin:0 0 14px">Identitatea juridică/fiscală a platformei, per țară — destinatarul facturilor emise de parteneri. Necompletat (CUI/adresă/IBAN) până confirmi datele reale — nu presupunem nimic.</p>
+        <div id="fp-entitati-lista"></div>
+        <button onclick="adaugaRandEntitate()" class="btn-s" style="font-size:11.5px;padding:7px 12px;margin-top:8px">+ Adaugă țară</button>
+        <button onclick="salveazaEntitati()" class="btn-p" style="font-size:12.5px;padding:9px 16px;margin-top:8px;margin-left:8px">Salvează toate</button>
+        <span id="fp-entitati-salvat" style="font-size:11.5px;color:#4ADE80;margin-left:10px"></span>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <span id="fp-facturi-total" style="color:#8BA3C0;font-size:12.5px"></span>
+        <select id="fp-facturi-filtru" onchange="loadFacturiParteneri()" style="border:1.5px solid #2D3F55;background:#192433;color:#fff;border-radius:9px;padding:8px 12px;font-size:12.5px;font-family:inherit;margin-left:auto">
+          <option value="">Toate</option>
+          <option value="emisa">Emisă, neplătită</option>
+          <option value="platita">Plătită</option>
+        </select>
+        <button onclick="loadFacturiParteneri()" class="btn-p" style="font-size:12px;padding:8px 14px">↻ Reîncarcă</button>
+      </div>
+      <div id="fp-facturi-list" style="color:#8BA3C0;font-size:13px">Se încarcă...</div>
+    </div>
+
     <!-- ══ ACCES TEMPORAR — parolă unică per email, gestionată de admin (2026-07-23) ══
          Acces cu credențiale Supabase reale, valabil doar pe durata configurată,
          scopat la o singură rută whitelist-uită, revocabil instant. -->
@@ -2387,7 +2417,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 
 <script>
 // ── NAVIGATION ──
-const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding','seo','accountancy','investitori','contact','prospecti','newsletter','email-gateway','acces-temporar'];
+const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding','seo','accountancy','investitori','contact','prospecti','newsletter','email-gateway','facturare-parteneri','acces-temporar'];
 const TITLES = {
   dashboard:'Dashboard Global',tari:'Țări & Zone',utilizatori:'Utilizatori & Actori',
   rbac:'Permisiuni RBAC',platforme:'Platforme & Integrări',escrow:'Escrow Global',
@@ -2395,7 +2425,7 @@ const TITLES = {
   comenzi:'Comenzi Globale',catalog:'Catalog Servicii/Materiale/Închirieri',audit:'Audit Log',config:'Configurare Sistem',
   branding:'Branding & Design Platformă',seo:'SEO — Titluri & Descrieri',accountancy:'Accountancy',
   investitori:'Administrare Investitori',contact:'Mesaje Contact',prospecti:'Prospecți Parteneri',
-  newsletter:'Newsletter & Abonați','email-gateway':'Noreply & Transactional Gateway','acces-temporar':'Acces Temporar'
+  newsletter:'Newsletter & Abonați','email-gateway':'Noreply & Transactional Gateway','facturare-parteneri':'Facturare Parteneri','acces-temporar':'Acces Temporar'
 };
 
 function showPanel(id){
@@ -4030,6 +4060,7 @@ window.showPanel = function(id) {
   if (id === 'newsletter') loadNewsletter();
   if (id === 'audit') loadAuditLog();
   if (id === 'email-gateway') loadEmailGateway();
+  if (id === 'facturare-parteneri') { loadEntitatiJuridice(); loadFacturiParteneri(); }
 };
 </script>
 
@@ -4284,6 +4315,121 @@ async function salveazaNumeExpeditor() {
     }
     rezultatEl.textContent = '✓ Salvat';
     setTimeout(() => { rezultatEl.textContent = ''; }, 3000);
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+// ── FACTURARE PARTENERI (audit Secțiunea 41/42, 31 Iulie 2026) ──
+async function loadEntitatiJuridice() {
+  const el = document.getElementById('fp-entitati-lista');
+  el.textContent = 'Se încarcă...';
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/entitati-juridice', { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    renderEntitati(data.entitati.length ? data.entitati : [{ tara_cod: 'RO', denumire: '', cui: '', nr_reg_com: '', adresa: '', iban: '', activa: false }]);
+  } catch (e) {
+    el.innerHTML = `<div style="color:#E57373">Eroare: ${escapeHTML(e.message)}</div>`;
+  }
+}
+
+function renderEntitati(entitati) {
+  const el = document.getElementById('fp-entitati-lista');
+  el.innerHTML = entitati.map((e, i) => `
+    <div class="fp-rand-entitate" style="display:grid;grid-template-columns:70px 1fr 110px 110px 1fr 160px 70px;gap:8px;margin-bottom:8px;align-items:center">
+      <input class="fp-tara" value="${escapeHTML(e.tara_cod || '')}" placeholder="RO" maxlength="2" style="background:#0F1826;border:1px solid #2D3F55;border-radius:8px;padding:7px 9px;color:#fff;font-size:12px;text-transform:uppercase">
+      <input class="fp-denumire" value="${escapeHTML(e.denumire || '')}" placeholder="Denumire firmă" style="background:#0F1826;border:1px solid #2D3F55;border-radius:8px;padding:7px 9px;color:#fff;font-size:12px">
+      <input class="fp-cui" value="${escapeHTML(e.cui || '')}" placeholder="CUI" style="background:#0F1826;border:1px solid #2D3F55;border-radius:8px;padding:7px 9px;color:#fff;font-size:12px">
+      <input class="fp-regcom" value="${escapeHTML(e.nr_reg_com || '')}" placeholder="Nr. Reg. Com." style="background:#0F1826;border:1px solid #2D3F55;border-radius:8px;padding:7px 9px;color:#fff;font-size:12px">
+      <input class="fp-adresa" value="${escapeHTML(e.adresa || '')}" placeholder="Adresă" style="background:#0F1826;border:1px solid #2D3F55;border-radius:8px;padding:7px 9px;color:#fff;font-size:12px">
+      <input class="fp-iban" value="${escapeHTML(e.iban || '')}" placeholder="IBAN" style="background:#0F1826;border:1px solid #2D3F55;border-radius:8px;padding:7px 9px;color:#fff;font-size:12px">
+      <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:#8BA3C0"><input type="checkbox" class="fp-activa" ${e.activa ? 'checked' : ''}> Activă</label>
+    </div>
+  `).join('');
+}
+
+function adaugaRandEntitate() {
+  const randuriCurente = citesteRanduriEntitati();
+  randuriCurente.push({ tara_cod: '', denumire: '', cui: '', nr_reg_com: '', adresa: '', iban: '', activa: false });
+  renderEntitati(randuriCurente);
+}
+
+function citesteRanduriEntitati() {
+  return Array.from(document.querySelectorAll('.fp-rand-entitate')).map(rand => ({
+    tara_cod: rand.querySelector('.fp-tara').value.trim().toUpperCase(),
+    denumire: rand.querySelector('.fp-denumire').value.trim(),
+    cui: rand.querySelector('.fp-cui').value.trim(),
+    nr_reg_com: rand.querySelector('.fp-regcom').value.trim(),
+    adresa: rand.querySelector('.fp-adresa').value.trim(),
+    iban: rand.querySelector('.fp-iban').value.trim(),
+    activa: rand.querySelector('.fp-activa').checked,
+  }));
+}
+
+async function salveazaEntitati() {
+  const rezultatEl = document.getElementById('fp-entitati-salvat');
+  rezultatEl.textContent = '';
+  try {
+    const headers = await _adminAuthHeader();
+    for (const rand of citesteRanduriEntitati()) {
+      if (!rand.tara_cod) continue;
+      const res = await fetch('/api/admin/entitati-juridice', { method: 'POST', headers, body: JSON.stringify(rand) });
+      if (!res.ok) throw new Error((await res.json()).error);
+    }
+    rezultatEl.textContent = '✓ Salvat';
+    setTimeout(() => { rezultatEl.textContent = ''; }, 3000);
+    loadEntitatiJuridice();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+const STATUS_FACTURA_PARTENER_LABEL = { emisa: 'Emisă, neplătită', platita: 'Plătită' };
+
+async function loadFacturiParteneri() {
+  const el = document.getElementById('fp-facturi-list');
+  el.textContent = 'Se încarcă...';
+  try {
+    const status = document.getElementById('fp-facturi-filtru').value;
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/facturi-parteneri' + (status ? `?status=${status}` : ''), { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+
+    document.getElementById('fp-facturi-total').textContent = data.facturi.length + ' facturi';
+
+    if (!data.facturi.length) { el.innerHTML = '<div style="padding:20px;text-align:center">Nicio factură emisă încă de parteneri.</div>'; return; }
+
+    el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12.5px">
+      <thead><tr style="text-align:left;color:#4A6080;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em">
+        <th style="padding:8px 10px">Partener</th><th style="padding:8px 10px">Nr. factură</th>
+        <th style="padding:8px 10px">Sumă</th><th style="padding:8px 10px">Status</th><th style="padding:8px 10px">Emisă</th><th style="padding:8px 10px">Acțiuni</th>
+      </tr></thead>
+      <tbody>${data.facturi.map(f => `
+        <tr style="border-top:1px solid #2D3F55">
+          <td style="padding:8px 10px;color:#fff;font-weight:600">${escapeHTML(f.partener_email || f.partener_id.slice(0,8))}</td>
+          <td style="padding:8px 10px;color:#8BA3C0">${escapeHTML(f.numar_factura_partener)}</td>
+          <td style="padding:8px 10px;color:#FF8C00;font-weight:700">${f.suma} ${escapeHTML(f.moneda)}</td>
+          <td style="padding:8px 10px;color:${f.status === 'platita' ? '#4ADE80' : '#8BA3C0'}">${STATUS_FACTURA_PARTENER_LABEL[f.status] || f.status}</td>
+          <td style="padding:8px 10px;color:#8BA3C0">${new Date(f.creat_la).toLocaleDateString('ro-RO')}</td>
+          <td style="padding:8px 10px">
+            ${f.status === 'emisa'
+              ? `<button onclick="confirmaPlataFacturaPartener('${f.id}')" class="btn-p" style="font-size:11px;padding:5px 10px">Confirmă plată (transfer bancar)</button>`
+              : `<span style="font-size:11px;color:#4ADE80">✓ ${f.metoda_plata || ''}</span>`}
+          </td>
+        </tr>
+      `).join('')}</tbody>
+    </table>`;
+  } catch (e) {
+    el.innerHTML = `<div style="color:#E57373">Eroare: ${escapeHTML(e.message)}</div>`;
+  }
+}
+
+async function confirmaPlataFacturaPartener(id) {
+  if (!confirm('Confirmi că ai efectuat real transferul bancar către acest partener?')) return;
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/facturi-parteneri', { method: 'POST', headers, body: JSON.stringify({ id, action: 'confirma_plata' }) });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadFacturiParteneri();
   } catch (e) { alert('Eroare: ' + e.message); }
 }
 </script>

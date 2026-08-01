@@ -689,7 +689,7 @@ function showPanel(id) {
   if (!content) return;
 
   // Router
-  if (id === 'overview')   { content.innerHTML = renderOverview(); loadEscrowReal(); loadHardStopStatus(); }
+  if (id === 'overview')   { content.innerHTML = renderOverview(); loadEscrowReal(); loadFacturareParteneri(); loadHardStopStatus(); }
   else if (id === 'sarcini')    content.innerHTML = renderSarcini();
   else if (id === 'portofoliu') { content.innerHTML = renderPortofoliu(); loadPortofoliuReal(); }
   else if (id === 'calendar')   content.innerHTML = renderCalendar();
@@ -722,6 +722,7 @@ function renderOverview() {
     ${kpi('Escrow activ','610 Lei','2 comenzi','#1A5FAD','🔒')}
   </div>
   ${escrowRealCard()}
+  ${facturareParteneriCard()}
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
     <div class="dp-card">
       <div class="dp-card-hdr">
@@ -1241,6 +1242,7 @@ function renderOverviewCurier() {
     ${kpi('Km parcurși','18.4 km','azi','#1A5FAD','📍')}
   </div>
   ${escrowRealCard()}
+  ${facturareParteneriCard()}
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
     <div class="dp-card">
       <div class="dp-card-hdr">
@@ -1349,6 +1351,7 @@ function renderOverviewAsig() {
     ${kpi('Polițe expirate','3','necesită reînnoire','#C0392B','❗')}
   </div>
   ${escrowRealCard()}
+  ${facturareParteneriCard()}
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
     <div class="dp-card">
       <div class="dp-card-hdr"><div style="display:flex;align-items:center;gap:7px"><span class="pdot"></span><strong style="color:#1A2332">Polițe emise LIVE</strong></div><button class="btn-p" onclick="showPanel('polite')" style="font-size:11px;padding:6px 12px;background:#1A7A3A">Vezi toate →</button></div>
@@ -1436,6 +1439,32 @@ function escrowRealCard(){
   </div>`;
 }
 
+// Facturare către Home Best Pal (audit Secțiunea 41/42, 31 Iulie 2026) —
+// pentru alocări reale deja eliberate din escrow, fără factură emisă încă.
+// Partenerul urcă propria factură (PDF/imagine) — platforma nu o generează,
+// doar o înregistrează și urmărește plata (transfer bancar, manual).
+function facturareParteneriCard(){
+  return `<div class="dp-card" style="margin-bottom:18px">
+    <div class="dp-card-hdr"><strong style="color:#1A2332">🧾 Facturare către Home Best Pal</strong></div>
+    <div class="dp-card-body" id="facturare-lista" style="font-size:12.5px;color:#5A6B7D">Se încarcă...</div>
+  </div>
+  <div id="modal-emite-factura" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:14px;padding:22px;max-width:420px;width:92%">
+      <div style="font-weight:700;font-size:15px;margin-bottom:10px;color:#1A2332">Emite factură</div>
+      <div id="mef-detalii" style="font-size:12.5px;color:#5A6B7D;margin-bottom:12px"></div>
+      <label style="display:block;font-size:11px;color:#5A6B7D;margin-bottom:4px">Număr factură (propriul tău număr)</label>
+      <input id="mef-numar" style="width:100%;border:1.5px solid #E2DFD6;border-radius:9px;padding:9px 11px;font-size:13px;margin-bottom:10px">
+      <label style="display:block;font-size:11px;color:#5A6B7D;margin-bottom:4px">Fișier factură (PDF/JPG/PNG, max 5MB)</label>
+      <input id="mef-fisier" type="file" accept="application/pdf,image/jpeg,image/png" style="width:100%;margin-bottom:14px">
+      <div id="mef-eroare" style="font-size:12px;color:#C0392B;margin-bottom:8px"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn-s" onclick="inchideModalEmiteFactura()" style="font-size:12px;padding:8px 14px">Anulează</button>
+        <button class="btn-p" id="mef-submit" onclick="submitEmiteFactura()" style="font-size:12px;padding:8px 14px">Trimite factura</button>
+      </div>
+    </div>
+  </div>`;
+}
+
 async function _partenerAuthHeader(){
   const s = window.supabaseClient ? (await window.supabaseClient.auth.getSession()).data.session : null;
   return { Authorization: `Bearer ${s?.access_token || ''}` };
@@ -1483,6 +1512,119 @@ async function loadEscrowReal(){
   } catch (e) {
     if (badge) badge.textContent = 'Eroare';
     lista.innerHTML = `<div style="color:#C0392B;padding:8px 0">Nu am putut încărca datele reale: ${e.message}</div>`;
+  }
+}
+
+// ── Facturare parteneri → Home Best Pal (audit Secțiunea 41/42, 31 Iulie 2026) ──
+const STATUS_FACTURA_LABEL = { emisa: '📤 Emisă, în așteptarea plății', platita: '✅ Plătită (transfer bancar)' };
+let _facturareCache = null;
+
+async function loadFacturareParteneri(){
+  const el = document.getElementById('facturare-lista');
+  if (!el) return;
+  el.textContent = 'Se încarcă...';
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/facturi', { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    _facturareCache = data;
+
+    const fmt = window.formatCurrency ? (v, m) => window.formatCurrency(v, m) : (v, m) => `${v} ${m}`;
+    let html = '';
+
+    if (data.facturabile.length) {
+      html += `<div style="font-weight:700;color:#1A2332;margin-bottom:6px">De facturat (${data.facturabile.length})</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px">
+          <tbody>${data.facturabile.map(f => `
+            <tr style="border-top:1px solid #EEF2F7">
+              <td style="padding:7px 8px;color:#1A2332;font-weight:600">${f.nr_comanda || f.comanda_id.slice(0,8)}</td>
+              <td style="padding:7px 8px;color:#5A6B7D">${f.rol_tip}</td>
+              <td style="padding:7px 8px;font-weight:700;color:#FF8C00">${fmt(f.suma, f.moneda)}</td>
+              <td style="padding:7px 8px;color:#5A6B7D">${f.entitate_beneficiara ? f.entitate_beneficiara.denumire : '⚠️ Entitate neconfigurată încă'}</td>
+              <td style="padding:7px 8px"><button class="btn-p" style="font-size:11px;padding:5px 10px" onclick="deschideModalEmiteFactura('${f.comanda_subcontractor_id}')" ${f.entitate_beneficiara ? '' : 'disabled'}>Emite factură</button></td>
+            </tr>
+          `).join('')}</tbody>
+        </table>`;
+    } else {
+      html += `<div style="padding:8px 0;margin-bottom:12px">Nicio alocare eliberată, nefacturată încă.</div>`;
+    }
+
+    if (data.facturi.length) {
+      html += `<div style="font-weight:700;color:#1A2332;margin-bottom:6px">Facturi emise (${data.facturi.length})</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <tbody>${data.facturi.map(f => `
+            <tr style="border-top:1px solid #EEF2F7">
+              <td style="padding:7px 8px;color:#1A2332;font-weight:600">${f.numar_factura_partener}</td>
+              <td style="padding:7px 8px;font-weight:700;color:#FF8C00">${fmt(f.suma, f.moneda)}</td>
+              <td style="padding:7px 8px"><span class="chip ${f.status === 'platita' ? 'ch-g' : 'ch-t'}">${STATUS_FACTURA_LABEL[f.status] || f.status}</span></td>
+            </tr>
+          `).join('')}</tbody>
+        </table>`;
+    }
+
+    el.innerHTML = html;
+  } catch (e) {
+    el.innerHTML = `<div style="color:#C0392B;padding:8px 0">Nu am putut încărca facturarea: ${e.message}</div>`;
+  }
+}
+
+function deschideModalEmiteFactura(comandaSubcontractorId){
+  const alocare = (_facturareCache?.facturabile || []).find(f => f.comanda_subcontractor_id === comandaSubcontractorId);
+  if (!alocare) return;
+  const fmt = window.formatCurrency ? (v, m) => window.formatCurrency(v, m) : (v, m) => `${v} ${m}`;
+  document.getElementById('mef-detalii').innerHTML = `Comandă <b>${alocare.nr_comanda || alocare.comanda_id.slice(0,8)}</b> · Sumă <b>${fmt(alocare.suma, alocare.moneda)}</b><br>Către: <b>${alocare.entitate_beneficiara?.denumire || '—'}</b>`;
+  document.getElementById('mef-numar').value = '';
+  document.getElementById('mef-fisier').value = '';
+  document.getElementById('mef-eroare').textContent = '';
+  document.getElementById('modal-emite-factura').dataset.comandaSubcontractorId = comandaSubcontractorId;
+  document.getElementById('modal-emite-factura').style.display = 'flex';
+}
+
+function inchideModalEmiteFactura(){
+  document.getElementById('modal-emite-factura').style.display = 'none';
+}
+
+function _fisierLaBase64(fisier){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(fisier);
+  });
+}
+
+async function submitEmiteFactura(){
+  const modal = document.getElementById('modal-emite-factura');
+  const comandaSubcontractorId = modal.dataset.comandaSubcontractorId;
+  const numar = document.getElementById('mef-numar').value.trim();
+  const fisierInput = document.getElementById('mef-fisier');
+  const fisier = fisierInput.files[0];
+  const eroareEl = document.getElementById('mef-eroare');
+  const btn = document.getElementById('mef-submit');
+
+  if (!numar) { eroareEl.textContent = 'Numărul facturii este obligatoriu.'; return; }
+  if (!fisier) { eroareEl.textContent = 'Atașează fișierul facturii.'; return; }
+  if (fisier.size > 5 * 1024 * 1024) { eroareEl.textContent = 'Fișierul depășește 5MB.'; return; }
+
+  btn.disabled = true; btn.textContent = 'Se trimite...';
+  eroareEl.textContent = '';
+  try {
+    const fisier_base64 = await _fisierLaBase64(fisier);
+    const headers = await _partenerAuthHeader();
+    headers['Content-Type'] = 'application/json';
+    const res = await fetch('/api/partener/facturi', {
+      method: 'POST', headers,
+      body: JSON.stringify({ comanda_subcontractor_id: comandaSubcontractorId, numar_factura_partener: numar, fisier_base64, mime_type: fisier.type }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    inchideModalEmiteFactura();
+    loadFacturareParteneri();
+  } catch (e) {
+    eroareEl.textContent = e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Trimite factura';
   }
 }
 
