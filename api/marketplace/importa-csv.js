@@ -77,6 +77,9 @@ async function handler(req, res, user) {
 
   const eroriLot = [];
   let salvateLot = 0;
+  let randuriEsuateLot = 0; // FIX (testat live): randuri_erori trebuie să numere RÂNDURI eșuate,
+                            // nu mesaje de eroare — un rând cu 2 câmpuri invalide simultan
+                            // umfla eronat randuri_erori la 2 pentru un singur rând respins.
 
   for (let i = 0; i < lot.length; i++) {
     const rand = lot[i];
@@ -84,12 +87,14 @@ async function handler(req, res, user) {
     const { furnizorId, eroare: eroareFurnizor } = await rezolvaFurnizorPentruRand(rand, job);
     if (eroareFurnizor) {
       eroriLot.push({ rand: numarRand, produs: rand.denumire || '(fără denumire)', camp: 'cui_furnizor', mesaj: eroareFurnizor });
+      randuriEsuateLot++;
       continue;
     }
 
     const { data: furnizor } = await supabaseAdmin.from('partners').select('id').eq('id', furnizorId).maybeSingle();
     if (!furnizor) {
       eroriLot.push({ rand: numarRand, produs: rand.denumire || '(fără denumire)', camp: 'furnizor_id', mesaj: 'Furnizorul nu există.' });
+      randuriEsuateLot++;
       continue;
     }
 
@@ -99,6 +104,7 @@ async function handler(req, res, user) {
       for (const e of rezultat.erori) {
         eroriLot.push({ rand: numarRand, produs: rand.denumire || '(fără denumire)', camp: e.camp, mesaj: e.mesaj });
       }
+      randuriEsuateLot++;
       continue;
     }
 
@@ -114,13 +120,14 @@ async function handler(req, res, user) {
       .upsert(payload, { onConflict: 'furnizor_id,cod_produs_furnizor' });
     if (upsertErr) {
       eroriLot.push({ rand: numarRand, produs: rand.denumire || '(fără denumire)', camp: '-', mesaj: upsertErr.message });
+      randuriEsuateLot++;
       continue;
     }
     salvateLot++;
   }
 
   const randuriProcesate = job.randuri_procesate + lot.length;
-  const randuriErori = job.randuri_erori + eroriLot.length;
+  const randuriErori = job.randuri_erori + randuriEsuateLot;
   const eroriDetaliiComplet = [...(job.erori_detalii || []), ...eroriLot];
   const gata = end >= randuri.length;
   const statusNou = gata ? (randuriErori > 0 ? 'completat_cu_erori' : 'completat') : 'procesare';
