@@ -1215,13 +1215,20 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
           <h2 style="font-size:20px;font-weight:800;color:#E2E8F0;margin:0 0 4px">Comisioane & Tarifare globale</h2>
           <p style="font-size:12px;color:#8BA3C0;margin:0">Procentele reale folosite azi la calculul fiecărei comenzi (<code>lib/calculeaza-pret.js</code>) și la eliberarea escrow (<code>lib/elibereaza-escrow.js</code>) — citite direct din <code>backoffice_config</code>, nu simulate.</p>
         </div>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button onclick="saveAllComisioaneConfig()" class="btn-p" style="background:#0E9E99">
             Salvează tot
           </button>
           <button onclick="loadComisioaneConfig()" class="btn-s">
             Reîncarcă
           </button>
+          <button onclick="exportaComisioaneCSV()" class="btn-s" title="Descarcă valorile curente într-un fișier CSV, editabil în Excel/Sheets">
+            Exportă CSV
+          </button>
+          <button onclick="document.getElementById('comm-csv-file').click()" class="btn-s" title="Încarcă un CSV completat cu valori reale — nu mai trece prin Claude">
+            Importă CSV
+          </button>
+          <input type="file" id="comm-csv-file" accept=".csv,text/csv" style="display:none" onchange="importaComisioaneCSV(this.files[0])">
         </div>
       </div>
 
@@ -5523,6 +5530,152 @@ async function saveAllComisioaneConfig() {
     var ts = new Date().toLocaleTimeString('ro-RO');
     if (log) log.textContent = '[' + ts + '] ' + rows.length + ' valori salvate pentru țara: ' + tara + '\n' +
       rows.map(function(r) { return '  · ' + r.cheie + ' = ' + r.valoare + '%'; }).join('\n');
+  }
+}
+
+// ── UTILITAR CSV PARTAJAT (2 August 2026) ──
+// Cerință explicită: „Importă CSV" trebuie să existe, cu aceeași regulă, în
+// orice secțiune de backoffice care necesită încărcare de date — nu doar în
+// Comisioane. Parser-ul + generatorul de CSV sunt scrise O SINGURĂ DATĂ aici
+// (RFC4180 minimal: câmpuri între ghilimele, virgule/ghilimele escapate „""",
+// CRLF/LF, BOM eliminat) și expuse pe `window._mydCSV` — orice alt panou
+// (viitor) le poate reutiliza direct, fără să reimplementeze parsarea.
+window._mydCSV = {
+  parse(text) {
+    const clean = text.replace(/^﻿/, '').replace(/\r\n/g, '\n');
+    const rows = [];
+    let row = [], field = '', inQuotes = false;
+    for (let i = 0; i < clean.length; i++) {
+      const c = clean[i];
+      if (inQuotes) {
+        if (c === '"') {
+          if (clean[i + 1] === '"') { field += '"'; i++; } else { inQuotes = false; }
+        } else { field += c; }
+      } else if (c === '"') {
+        inQuotes = true;
+      } else if (c === ',') {
+        row.push(field); field = '';
+      } else if (c === '\n') {
+        row.push(field); rows.push(row); row = []; field = '';
+      } else {
+        field += c;
+      }
+    }
+    if (field.length || row.length) { row.push(field); rows.push(row); }
+    if (!rows.length) return { header: [], records: [] };
+    const header = rows[0].map((h) => h.trim().toLowerCase());
+    const records = rows.slice(1)
+      .filter((r) => r.some((v) => v !== ''))
+      .map((r) => { const o = {}; header.forEach((h, idx) => { o[h] = (r[idx] ?? '').trim(); }); return o; });
+    return { header, records };
+  },
+  toCSV(headers, records) {
+    const esc = (v) => {
+      const s = v === null || v === undefined ? '' : String(v);
+      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+    const lines = [headers.join(',')];
+    for (const r of records) lines.push(headers.map((h) => esc(r[h])).join(','));
+    return lines.join('\n');
+  },
+  download(filename, headers, records) {
+    const blob = new Blob(['﻿' + window._mydCSV.toCSV(headers, records)], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  },
+};
+
+// ── EXPORT / IMPORT CSV — panoul Comisioane ──
+const COMISIOANE_CHEI = {
+  comision_platforma_default_pct: { domId: 'comision-platforma', sectiune: 'pricing', eticheta: 'Comision platformă implicit' },
+  cost_marketing_pct: { domId: 'cost-marketing', sectiune: 'pricing', eticheta: 'Cost marketing' },
+  cost_mentenanta_pct: { domId: 'cost-mentenanta', sectiune: 'pricing', eticheta: 'Cost mentenanță platformă' },
+  comision_bricolaj_contractat_pct: { domId: 'comision-bricolaj', sectiune: 'pricing', eticheta: 'Comision reținut — Furnizori Materiale' },
+  comision_inchiriere_contractat_pct: { domId: 'comision-inchiriere', sectiune: 'pricing', eticheta: 'Comision reținut — Furnizori Închirieri' },
+  comision_intermediere_pct: { domId: 'comision-asigurare', sectiune: 'asigurari', eticheta: 'Comision My Darrin din prima de asigurare' },
+};
+
+function exportaComisioaneCSV() {
+  const tara = document.getElementById('comm-tara-sel')?.value || 'ALL';
+  const records = Object.keys(COMISIOANE_CHEI).map((cheie) => {
+    const meta = COMISIOANE_CHEI[cheie];
+    const el = document.getElementById(meta.domId);
+    return {
+      sectiune: meta.sectiune, cheie, eticheta: meta.eticheta,
+      valoare_curenta: el ? el.value : '', unitate: '%', tara_cod: tara,
+      valoare_noua: '', observatii: '',
+    };
+  });
+  window._mydCSV.download(
+    `comisioane-mydarrin-${tara}-${new Date().toISOString().slice(0, 10)}.csv`,
+    ['sectiune', 'cheie', 'eticheta', 'valoare_curenta', 'unitate', 'tara_cod', 'valoare_noua', 'observatii'],
+    records
+  );
+}
+
+async function importaComisioaneCSV(file) {
+  const log = document.getElementById('comm-save-log');
+  if (!file) return;
+  if (log) log.textContent = 'Se citește ' + file.name + '...';
+
+  let records;
+  try {
+    const text = await file.text();
+    records = window._mydCSV.parse(text).records;
+  } catch (e) {
+    if (log) log.textContent = 'Eroare la citirea fișierului: ' + e.message;
+    return;
+  }
+  if (!records.length) { if (log) log.textContent = 'CSV gol sau needitat — nimic de importat.'; return; }
+
+  const rowsDeSalvat = [];
+  const rapoarte = [];
+  for (const rec of records) {
+    const cheie = (rec.cheie || '').trim();
+    const meta = COMISIOANE_CHEI[cheie];
+    if (!meta) { rapoarte.push(`✕ „${cheie || '(gol)'}" — cheie necunoscută în panoul Comisioane, ignorat`); continue; }
+
+    // Acceptă fie „valoare_noua" (formatul de completat manual), fie
+    // „valoare" (formatul rezultat dintr-un export anterior) — oricare e
+    // completat câștigă; dacă ambele sunt goale, rândul e sărit.
+    const bruta = (rec.valoare_noua || rec.valoare || '').trim();
+    if (bruta === '') { rapoarte.push(`— „${meta.eticheta}" — fără valoare nouă, neschimbat`); continue; }
+
+    const numeric = Number(bruta.replace(',', '.'));
+    if (!Number.isFinite(numeric) || numeric < 0 || numeric > 100) {
+      rapoarte.push(`✕ „${meta.eticheta}" — valoare invalidă („${bruta}"), trebuie 0-100, ignorat`);
+      continue;
+    }
+
+    const tara = (rec.tara_cod || document.getElementById('comm-tara-sel')?.value || 'ALL').trim().toUpperCase() || 'ALL';
+    rowsDeSalvat.push({
+      cheie, valoare: String(numeric), sectiune: meta.sectiune, tara_cod: tara,
+      tip: 'number', unitate: '%', eticheta: meta.eticheta,
+      updated_at: new Date().toISOString(), editabil_de: 'superadmin',
+    });
+    rapoarte.push(`✓ „${meta.eticheta}" → ${numeric}% (${tara})`);
+
+    // Reflectă imediat pe ecran, dacă rândul e pentru țara curent selectată.
+    if (tara === (document.getElementById('comm-tara-sel')?.value || 'ALL')) {
+      const el = document.getElementById(meta.domId);
+      if (el) el.value = numeric;
+    }
+  }
+
+  if (!rowsDeSalvat.length) {
+    if (log) log.textContent = 'Niciun rând valid de importat:\n' + rapoarte.join('\n');
+    return;
+  }
+
+  const result = await supabaseClient.from('backoffice_config').upsert(rowsDeSalvat, { onConflict: 'cheie,tara_cod' });
+  const ts = new Date().toLocaleTimeString('ro-RO');
+  if (result.error) {
+    if (log) log.textContent = `[${ts}] Eroare la salvarea importului: ${result.error.message}`;
+  } else if (log) {
+    log.textContent = `[${ts}] Import din „${file.name}" — ${rowsDeSalvat.length} valori salvate:\n` + rapoarte.join('\n');
   }
 }
 
