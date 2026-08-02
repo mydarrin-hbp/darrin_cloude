@@ -101,8 +101,11 @@ async function handler(req, res, user) {
     }
   }
 
+  // G2, partea 2 — o greutate itemizată declanșează și ea calculul real
+  // (lib/calculeaza-pret.js), chiar dacă niciun alt cost_* nu e trimis —
+  // altfel formula de transport n-ar avea niciodată ocazia să ruleze.
   const areComponenteItemizate = [cost_baza_servicii, cost_materiale, cost_chirie_scule, cost_curier, cost_asigurare]
-    .some((v) => typeof v === 'number' && v > 0);
+    .some((v) => typeof v === 'number' && v > 0) || (typeof masa_totala_kg === 'number' && masa_totala_kg > 0);
 
   if (!areComponenteItemizate) {
     if (typeof valoare_totala !== 'number' || !(valoare_totala > 0)) {
@@ -167,6 +170,7 @@ async function handler(req, res, user) {
           const calc = await calculeazaPret({
             cost_baza_servicii, cost_materiale, cost_chirie_scule, cost_curier, cost_asigurare,
             tara: insertBase.tara_cod || 'RO',
+            masa_totala_kg, nivel_transport_marfa,
           });
           return {
             ...insertBase,
@@ -175,6 +179,7 @@ async function handler(req, res, user) {
             suma_materiale: calc.cost_materiale,
             suma_chirie_scule: calc.cost_chirie_scule,
             suma_transport: calc.cost_curier,
+            suma_transport_greutate: calc.cost_transport_greutate,
             suma_asigurare: calc.cost_asigurare,
             suma_marketing: calc.cost_marketing,
             suma_mentenanta: calc.cost_mentenanta,

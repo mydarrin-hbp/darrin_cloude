@@ -594,6 +594,14 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M5 21V7l8-4 8 4v14"/><path d="M9 9h1"/><path d="M9 13h1"/><path d="M14 9h1"/><path d="M14 13h1"/><path d="M9 21v-4a2 2 0 012-2h2a2 2 0 012 2v4"/></svg>
       B2G &amp; Metode de Plată
     </a>
+    <a class="sa-nav-item" onclick="showPanel('preturi-niveluri')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      Niveluri de Preț
+    </a>
+    <a class="sa-nav-item" onclick="showPanel('tarife-transport')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+      Tarife Transport
+    </a>
     <a class="sa-nav-item" onclick="showPanel('acces-temporar')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
       Acces Temporar
@@ -1902,6 +1910,48 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       </div>
     </div>
 
+    <!-- ════ NIVELURI DE PREȚ (cerință explicită 31 Iulie 2026) ════
+         Niveluri de preț generale (distincte de catalog_niveluri, care e
+         complexitate de serviciu) pe matricea nivel × țară/monedă. Pornesc
+         cu 5 niveluri generice, fără prețuri reale — completate aici. -->
+    <div id="panel-preturi-niveluri" style="display:none;padding:24px">
+      <div style="background:#131B27;border:1px solid #2D3F55;border-radius:14px;padding:18px 20px;margin-bottom:18px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+          <span style="font-size:14px;font-weight:700;color:#fff">Niveluri de preț</span>
+          <button onclick="loadNiveluriPret()" class="btn-p" style="font-size:12px;padding:8px 14px;margin-left:auto">↻ Reîncarcă</button>
+        </div>
+        <p style="font-size:11px;color:#8BA3C0;margin:0 0 14px">Minimum 5 niveluri, extensibile dinamic. Fiecare nivel primește prețuri separat, pe fiecare țară/monedă din matricea de mai jos.</p>
+        <div id="np-niveluri-lista"></div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <input id="np-nivel-cheie" type="text" placeholder="cheie (ex: nivel_6)" style="flex:1;background:#0F1826;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:12.5px">
+          <input id="np-nivel-nume" type="text" placeholder="nume afișat (ex: Nivel 6)" style="flex:1;background:#0F1826;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:12.5px">
+          <button onclick="creeazaNivelPret()" class="btn-s" style="font-size:11.5px;padding:7px 14px;white-space:nowrap">+ Nivel nou</button>
+        </div>
+      </div>
+
+      <div style="background:#131B27;border:1px solid #2D3F55;border-radius:14px;padding:18px 20px">
+        <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:4px">Matrice preț × țară</div>
+        <p style="font-size:11px;color:#8BA3C0;margin:0 0 14px">Necompletat = nivelul nu are încă un preț setat pentru acea țară — nu se presupune nicio valoare implicită.</p>
+        <div id="np-matrice" style="overflow-x:auto"></div>
+      </div>
+    </div>
+
+    <!-- ════ TARIFE TRANSPORT — G2, partea 2 (cerință explicită 31 Iulie 2026) ════
+         Grila reală de tarife transport-după-greutate + cost ajutor,
+         cuplată direct în lib/calculeaza-pret.js. Pornește goală — 0 impact
+         asupra prețului final până la configurarea unui rând real aici. -->
+    <div id="panel-tarife-transport" style="display:none;padding:24px">
+      <div style="background:#131B27;border:1px solid #2D3F55;border-radius:14px;padding:18px 20px;margin-bottom:18px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+          <span style="font-size:14px;font-weight:700;color:#fff">Grilă tarife transport</span>
+          <button onclick="loadTarifeTransport()" class="btn-p" style="font-size:12px;padding:8px 14px;margin-left:auto">↻ Reîncarcă</button>
+        </div>
+        <p style="font-size:11px;color:#8BA3C0;margin:0 0 14px">Prag de greutate (kg) → tarif per kg SAU tarif fix, plus un cost ajutor opțional. Țară/nivel gol = valabil pentru toate. Câmpul e legat direct de formula de preț — orice rând activ afectează imediat suma_totala_platita la comenzile cu masă declarată.</p>
+        <div id="tt-lista"></div>
+        <button onclick="adaugaRandTarifTransport()" class="btn-s" style="font-size:11.5px;padding:7px 12px;margin-top:8px">+ Adaugă tarif</button>
+      </div>
+    </div>
+
     <!-- ══ ACCES TEMPORAR — parolă unică per email, gestionată de admin (2026-07-23) ══
          Acces cu credențiale Supabase reale, valabil doar pe durata configurată,
          scopat la o singură rută whitelist-uită, revocabil instant. -->
@@ -2440,7 +2490,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 
 <script>
 // ── NAVIGATION ──
-const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding','seo','accountancy','investitori','contact','prospecti','newsletter','email-gateway','facturare-parteneri','b2g-plati','acces-temporar'];
+const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding','seo','accountancy','investitori','contact','prospecti','newsletter','email-gateway','facturare-parteneri','b2g-plati','preturi-niveluri','tarife-transport','acces-temporar'];
 const TITLES = {
   dashboard:'Dashboard Global',tari:'Țări & Zone',utilizatori:'Utilizatori & Actori',
   rbac:'Permisiuni RBAC',platforme:'Platforme & Integrări',escrow:'Escrow Global',
@@ -2448,7 +2498,7 @@ const TITLES = {
   comenzi:'Comenzi Globale',catalog:'Catalog Servicii/Materiale/Închirieri',audit:'Audit Log',config:'Configurare Sistem',
   branding:'Branding & Design Platformă',seo:'SEO — Titluri & Descrieri',accountancy:'Accountancy',
   investitori:'Administrare Investitori',contact:'Mesaje Contact',prospecti:'Prospecți Parteneri',
-  newsletter:'Newsletter & Abonați','email-gateway':'Noreply & Transactional Gateway','facturare-parteneri':'Facturare Parteneri','b2g-plati':'B2G & Metode de Plată','acces-temporar':'Acces Temporar'
+  newsletter:'Newsletter & Abonați','email-gateway':'Noreply & Transactional Gateway','facturare-parteneri':'Facturare Parteneri','b2g-plati':'B2G & Metode de Plată','preturi-niveluri':'Niveluri de Preț','tarife-transport':'Tarife Transport','acces-temporar':'Acces Temporar'
 };
 
 function showPanel(id){
@@ -4085,6 +4135,8 @@ window.showPanel = function(id) {
   if (id === 'email-gateway') loadEmailGateway();
   if (id === 'facturare-parteneri') { loadEntitatiJuridice(); loadFacturiParteneri(); }
   if (id === 'b2g-plati') { loadComenziB2G(); loadMetodePlataConfig(); }
+  if (id === 'preturi-niveluri') loadNiveluriPret();
+  if (id === 'tarife-transport') loadTarifeTransport();
 };
 </script>
 
@@ -4589,6 +4641,215 @@ async function stergeMetodaPlata(id) {
     const res = await fetch('/api/admin/metode-plata-config', { method: 'POST', headers, body: JSON.stringify({ action: 'sterge', id }) });
     if (!res.ok) throw new Error((await res.json()).error);
     loadMetodePlataConfig();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+// ── NIVELURI DE PREȚ (cerință explicită 31 Iulie 2026) ──
+let _npState = { niveluri: [], preturi: [], tari: [] };
+
+async function loadNiveluriPret() {
+  const elNiveluri = document.getElementById('np-niveluri-lista');
+  const elMatrice = document.getElementById('np-matrice');
+  elNiveluri.textContent = 'Se încarcă...';
+  elMatrice.textContent = '';
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/niveluri-pret', { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    _npState = { niveluri: data.niveluri || [], preturi: data.preturi || [], tari: data.tari_reale || [] };
+    renderNiveluriLista();
+    renderMatricePreturi();
+  } catch (e) {
+    elNiveluri.innerHTML = `<div style="color:#E57373">Eroare: ${escapeHTML(e.message)}</div>`;
+  }
+}
+
+function renderNiveluriLista() {
+  document.getElementById('np-niveluri-lista').innerHTML = _npState.niveluri.map((n) => `
+    <div class="np-nivel-rand" data-id="${n.id}" style="display:grid;grid-template-columns:110px 1fr 70px 90px 70px 40px;gap:8px;margin-bottom:8px;align-items:center">
+      <span style="color:#8BA3C0;font-size:11px;font-family:monospace">${escapeHTML(n.cheie)}</span>
+      <input class="np-nivel-nume" value="${escapeHTML(n.nume)}" style="background:#0F1826;border:1px solid #2D3F55;border-radius:8px;padding:7px 9px;color:#fff;font-size:12px">
+      <input class="np-nivel-ordine" type="number" value="${n.ordine ?? 0}" title="Ordine afișare" style="background:#0F1826;border:1px solid #2D3F55;border-radius:8px;padding:7px 9px;color:#fff;font-size:12px">
+      <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#8BA3C0"><input type="checkbox" class="np-nivel-activ" ${n.activ !== false ? 'checked' : ''}> Activ</label>
+      <button onclick="salveazaNivelPret(this)" class="btn-p" style="font-size:10.5px;padding:5px 8px">Salvează</button>
+      <button onclick="stergeNivelPret('${n.id}')" class="btn-s" style="font-size:10.5px;padding:5px 8px">✕</button>
+    </div>
+  `).join('');
+}
+
+async function creeazaNivelPret() {
+  const cheie = document.getElementById('np-nivel-cheie').value.trim();
+  const nume = document.getElementById('np-nivel-nume').value.trim();
+  if (!cheie || !nume) { alert('Completează cheia și numele noului nivel.'); return; }
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/niveluri-pret', {
+      method: 'POST', headers,
+      body: JSON.stringify({ action: 'creeaza_nivel', cheie, nume, ordine: _npState.niveluri.length }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error);
+    document.getElementById('np-nivel-cheie').value = '';
+    document.getElementById('np-nivel-nume').value = '';
+    loadNiveluriPret();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+async function salveazaNivelPret(btn) {
+  const rand = btn.closest('.np-nivel-rand');
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/niveluri-pret', {
+      method: 'POST', headers,
+      body: JSON.stringify({
+        action: 'editeaza_nivel',
+        id: rand.dataset.id,
+        nume: rand.querySelector('.np-nivel-nume').value.trim(),
+        ordine: Number(rand.querySelector('.np-nivel-ordine').value) || 0,
+        activ: rand.querySelector('.np-nivel-activ').checked,
+      }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadNiveluriPret();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+async function stergeNivelPret(id) {
+  if (!confirm('Ștergi acest nivel de preț? Se șterg și toate prețurile lui din matrice (pe toate țările).')) return;
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/niveluri-pret', { method: 'POST', headers, body: JSON.stringify({ action: 'sterge_nivel', id }) });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadNiveluriPret();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+function renderMatricePreturi() {
+  const el = document.getElementById('np-matrice');
+  if (!_npState.tari.length) { el.innerHTML = '<div style="color:#8BA3C0;font-size:12px">Nicio țară configurată în tax_configurations.</div>'; return; }
+  const lookup = {};
+  for (const p of _npState.preturi) lookup[`${p.nivel_id}|${p.tara_cod}`] = p;
+
+  const header = `<th style="text-align:left;padding:8px;color:#8BA3C0;font-size:11px;font-weight:600">Nivel</th>` +
+    _npState.tari.map((t) => `<th style="text-align:center;padding:8px;color:#8BA3C0;font-size:11px;font-weight:600">${escapeHTML(t.tara_cod)}<br><span style="font-weight:400">${escapeHTML(t.moneda || '')}</span></th>`).join('');
+
+  const rows = _npState.niveluri.map((n) => {
+    const cells = _npState.tari.map((t) => {
+      const p = lookup[`${n.id}|${t.tara_cod}`];
+      return `<td style="padding:6px;text-align:center">
+        <input class="np-cell" data-nivel="${n.id}" data-tara="${escapeHTML(t.tara_cod)}" data-moneda="${escapeHTML(t.moneda || 'RON')}"
+          type="number" step="0.01" min="0" value="${p && p.pret != null ? p.pret : ''}" placeholder="—"
+          onblur="salveazaPretMatrice(this)"
+          style="width:90px;background:#0F1826;border:1px solid #2D3F55;border-radius:7px;padding:6px 7px;color:#fff;font-size:12px;text-align:center">
+      </td>`;
+    }).join('');
+    return `<tr><td style="padding:6px;color:#fff;font-size:12.5px;white-space:nowrap">${escapeHTML(n.nume)}</td>${cells}</tr>`;
+  }).join('');
+
+  el.innerHTML = `<table style="border-collapse:collapse;min-width:100%"><thead><tr>${header}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+async function salveazaPretMatrice(input) {
+  const nivel_id = input.dataset.nivel;
+  const tara_cod = input.dataset.tara;
+  const moneda = input.dataset.moneda;
+  const val = input.value.trim();
+  const pret = val === '' ? null : Number(val);
+  if (pret !== null && (!Number.isFinite(pret) || pret < 0)) { alert('Preț invalid.'); return; }
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/niveluri-pret', {
+      method: 'POST', headers,
+      body: JSON.stringify({ action: 'salveaza_pret', nivel_id, tara_cod, moneda, pret }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error);
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+// ── TARIFE TRANSPORT — G2, partea 2 ──
+async function loadTarifeTransport() {
+  const el = document.getElementById('tt-lista');
+  el.textContent = 'Se încarcă...';
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/tarife-transport', { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    renderTarifeTransport(data.tarife || []);
+  } catch (e) {
+    el.innerHTML = `<div style="color:#E57373">Eroare: ${escapeHTML(e.message)}</div>`;
+  }
+}
+
+function randTarifTransportHTML(t) {
+  const inputStyle = 'background:#0F1826;border:1px solid #2D3F55;border-radius:7px;padding:6px 7px;color:#fff;font-size:11.5px;width:100%';
+  return `
+    <div class="tt-rand" data-id="${t.id || ''}" style="display:grid;grid-template-columns:55px 100px 75px 75px 85px 75px 80px 55px 55px 65px;gap:5px;margin-bottom:8px;align-items:center">
+      <input class="tt-tara" value="${escapeHTML(t.tara_cod || '')}" placeholder="Toate" maxlength="2" style="${inputStyle};text-transform:uppercase">
+      <input class="tt-nivel" value="${escapeHTML(t.nivel_transport_marfa || '')}" placeholder="Toate" style="${inputStyle}">
+      <input class="tt-prag-min" type="number" step="0.01" min="0" value="${t.prag_kg_min ?? 0}" placeholder="min kg" style="${inputStyle}">
+      <input class="tt-prag-max" type="number" step="0.01" value="${t.prag_kg_max ?? ''}" placeholder="max kg" style="${inputStyle}">
+      <input class="tt-tarif-kg" type="number" step="0.01" value="${t.tarif_ron_per_kg ?? ''}" placeholder="RON/kg" style="${inputStyle}">
+      <input class="tt-tarif-fix" type="number" step="0.01" value="${t.tarif_fix ?? ''}" placeholder="tarif fix" style="${inputStyle}">
+      <input class="tt-cost-ajutor" type="number" step="0.01" value="${t.cost_ajutor ?? 0}" placeholder="cost ajutor" style="${inputStyle}">
+      <input class="tt-moneda" value="${escapeHTML(t.moneda || 'RON')}" maxlength="3" style="${inputStyle};text-transform:uppercase">
+      <label style="display:flex;align-items:center;gap:3px;font-size:10px;color:#8BA3C0"><input type="checkbox" class="tt-activ" ${t.activ !== false ? 'checked' : ''}> Activ</label>
+      <div style="display:flex;gap:4px">
+        <button onclick="salveazaTarifTransport(this)" class="btn-p" style="font-size:10px;padding:5px 6px">Salv.</button>
+        ${t.id ? `<button onclick="stergeTarifTransport('${t.id}')" class="btn-s" style="font-size:10px;padding:5px 6px">✕</button>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function renderTarifeTransport(tarife) {
+  const header = `
+    <div style="display:grid;grid-template-columns:55px 100px 75px 75px 85px 75px 80px 55px 55px 65px;gap:5px;margin-bottom:6px;font-size:10px;color:#8BA3C0">
+      <span>Țară</span><span>Nivel marfă</span><span>Prag min kg</span><span>Prag max kg</span><span>RON/kg</span><span>Tarif fix</span><span>Cost ajutor</span><span>Monedă</span><span>Activ</span><span></span>
+    </div>`;
+  document.getElementById('tt-lista').innerHTML = header + tarife.map(randTarifTransportHTML).join('');
+}
+
+function adaugaRandTarifTransport() {
+  document.getElementById('tt-lista').insertAdjacentHTML('beforeend', randTarifTransportHTML({}));
+}
+
+async function salveazaTarifTransport(btn) {
+  const rand = btn.closest('.tt-rand');
+  const pragMinRaw = rand.querySelector('.tt-prag-min').value;
+  const pragMaxRaw = rand.querySelector('.tt-prag-max').value.trim();
+  const tarifKgRaw = rand.querySelector('.tt-tarif-kg').value.trim();
+  const tarifFixRaw = rand.querySelector('.tt-tarif-fix').value.trim();
+
+  const body = {
+    action: 'salveaza',
+    id: rand.dataset.id || undefined,
+    tara_cod: rand.querySelector('.tt-tara').value.trim() || null,
+    nivel_transport_marfa: rand.querySelector('.tt-nivel').value.trim() || null,
+    prag_kg_min: Number(pragMinRaw) || 0,
+    prag_kg_max: pragMaxRaw === '' ? null : Number(pragMaxRaw),
+    tarif_ron_per_kg: tarifKgRaw === '' ? null : Number(tarifKgRaw),
+    tarif_fix: tarifFixRaw === '' ? null : Number(tarifFixRaw),
+    cost_ajutor: Number(rand.querySelector('.tt-cost-ajutor').value) || 0,
+    moneda: rand.querySelector('.tt-moneda').value.trim().toUpperCase() || 'RON',
+    activ: rand.querySelector('.tt-activ').checked,
+  };
+
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/tarife-transport', { method: 'POST', headers, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadTarifeTransport();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+async function stergeTarifTransport(id) {
+  if (!confirm('Ștergi acest tarif de transport?')) return;
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/tarife-transport', { method: 'POST', headers, body: JSON.stringify({ action: 'sterge', id }) });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadTarifeTransport();
   } catch (e) { alert('Eroare: ' + e.message); }
 }
 </script>
