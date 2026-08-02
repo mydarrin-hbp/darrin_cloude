@@ -592,6 +592,7 @@ function showPanel(id){
     alerte:      renderAlerte,
   };
   c.innerHTML = (panels[id]||(()=>'<div class="f-card"><div class="f-card-body">Coming soon</div></div>'))();
+  if (id === 'produse') loadProduseLive();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -705,20 +706,48 @@ function renderProduse(){
   return `
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
     <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Produse active în Marketplace</h2>
-    <div style="display:flex;gap:8px"><button class="btn-s" onclick="showPanel('import')">⬆ Import CSV</button><button class="btn-p">+ Adaugă produs</button></div>
+    <div style="display:flex;gap:8px">
+      <a href="mydarrin-marketplace.html#mp-tabs-section" class="btn-s" style="text-decoration:none">⬆ Import CSV</a>
+      <a href="mydarrin-marketplace.html#mp-tabs-section" class="btn-p" style="text-decoration:none">+ Adaugă produs</a>
+    </div>
   </div>
   <div class="f-card">
     <table class="f-table">
-      <thead><tr><th>Produs</th><th>Categorie</th><th>Preț</th><th>Stoc</th><th>Vizibilitate</th><th>Rating</th><th>Acțiuni</th></tr></thead>
-      <tbody>
-        ${prodRow('Calorifer Purmo C11','Termice','310 Lei/buc',48,'active','4.9')}
-        ${prodRow('Parchet stratificat 8mm','Finisaje','45 Lei/m²',240,'active','4.8')}
-        ${prodRow('Vopsea Caparol 15L','Finisaje','65 Lei','3','alert','4.7')}
-        ${prodRow('Cablu NYY 3×2.5mm²','Electrice','12 Lei/ml',85,'active','4.8')}
-        ${prodRow('Ciment CEM II 42.5R','Construcții','28 Lei/sac',150,'active','4.9')}
-      </tbody>
+      <thead><tr><th>Produs</th><th>Cod</th><th>Preț</th><th>Stoc</th><th>Status</th></tr></thead>
+      <tbody id="produse-live-tbody"><tr><td colspan="5" style="text-align:center;color:#8C9BAD;padding:20px">Se încarcă...</td></tr></tbody>
     </table>
   </div>`;
+}
+
+// FIX (audit 2 August 2026): tabelul de mai sus era 5 rânduri hardcodate
+// (Calorifer Purmo, Parchet, Vopsea...) — fake, la fel ca FINANCIAL_STATE.
+// Adăugarea/importul de produse se fac acum real din mydarrin-marketplace.html
+// (api/marketplace/produse.js); acest tabel doar le AFIȘEAZĂ, real, din
+// aceeași sursă — nu duplică formularul de adăugare.
+async function loadProduseLive(){
+  const tbody = document.getElementById('produse-live-tbody');
+  if (!tbody) return;
+  try {
+    const { data: sessionData } = await window.supabaseClient.auth.getSession();
+    const session = sessionData?.session;
+    if (!session) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#8C9BAD;padding:20px">Autentifică-te pentru a vedea produsele.</td></tr>'; return; }
+    const tip = currentType === 'inchirieri' ? 'echipamente' : 'materiale';
+    const res = await fetch('/api/marketplace/produse?tip=' + tip, { headers: { Authorization: 'Bearer ' + session.access_token } });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'eroare necunoscută');
+    const produse = json.produse || [];
+    if (!produse.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#8C9BAD;padding:20px">Niciun produs încă — adaugă din pagina Marketplace.</td></tr>'; return; }
+    const STATUS_CHIP = { in_asteptare: ['ch-o', 'În așteptare'], live: ['ch-g', 'Live'], respins: ['ch-r', 'Respins'], suspendat: ['ch-r', 'Suspendat'] };
+    tbody.innerHTML = produse.map((p) => {
+      const pretAfisat = tip === 'materiale' ? `${p.pret_fara_tva} ${p.moneda}/${p.unitate_masura}` : `${p.tarif_zi} ${p.moneda}/zi`;
+      const stocAfisat = tip === 'materiale' ? p.stoc_disponibil : p.buc_disponibile;
+      const [chipCls, chipLabel] = STATUS_CHIP[p.status] || ['ch-o', p.status];
+      return `<tr><td style="font-weight:600">${escapeHTML(p.denumire)}</td><td style="color:#5A6B7D">${escapeHTML(p.cod_produs_furnizor || '—')}</td><td style="color:#8C9BAD">${escapeHTML(String(pretAfisat))}</td><td>${escapeHTML(String(stocAfisat))}</td><td><span class="chip ${chipCls}">${escapeHTML(chipLabel)}</span></td></tr>`;
+    }).join('');
+  } catch (e) {
+    console.error('[dashboard-furnizor] loadProduseLive', e);
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#C0392B;padding:20px">Eroare: ${escapeHTML(e.message)}</td></tr>`;
+  }
 }
 
 function renderImport(){
@@ -738,15 +767,13 @@ function renderImport(){
           <div><span style="color:#1A5FAD">lead_time_zile</span> · număr</div>
           <div><span style="color:#7C3AED">tip</span> · material/rental</div>
         </div>
-        <div style="border:2px dashed #D5DFE8;border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:all .2s" onclick="this.querySelector('input').click()" onmouseover="this.style.borderColor='#003366'" onmouseout="this.style.borderColor='#D5DFE8'">
-          <input type="file" accept=".csv,.xlsx" style="display:none" onchange="handleImport(this)"/>
+        <div style="border:2px dashed #D5DFE8;border-radius:12px;padding:20px;text-align:center">
           <div style="font-size:28px;margin-bottom:8px">📎</div>
-          <div style="font-size:13px;font-weight:600;color:#5A6B7D">Drag & drop sau click</div>
-          <div style="font-size:11px;color:#8C9BAD;margin-top:4px">.csv · .xlsx · Max 10MB · 10.000 produse</div>
+          <div style="font-size:13px;font-weight:600;color:#5A6B7D">Import-ul CSV real se face din pagina Marketplace</div>
+          <div style="font-size:11px;color:#8C9BAD;margin-top:4px">Aici doar vizualizezi produsele deja importate.</div>
         </div>
-        <div style="display:flex;gap:10px;margin-top:12px">
-          <button class="btn-s" style="flex:1;justify-content:center" onclick="showToast('⬇ Template CSV descărcat')">⬇ Template CSV</button>
-          <button class="btn-p" style="flex:1;justify-content:center" onclick="showToast('⬆ CSV procesat · Notificare în 30 min')">⬆ Importă</button>
+        <div style="margin-top:12px">
+          <a href="mydarrin-marketplace.html#mp-tabs-section" class="btn-p" style="width:100%;justify-content:center;text-decoration:none">Deschide Marketplace → Import CSV</a>
         </div>
       </div>
     </div>
@@ -1095,7 +1122,6 @@ function marchezaExpediat(id){
 function solicitaTransport(){
   showToast('🚐 Sarcină transport generată automat pentru Curieri Cartier din zonă');
 }
-function handleImport(inp){if(inp.files[0])showToast('📊 '+inp.files[0].name+' · Procesare în curs...');}
 function toggleCalDay(el){
   const states=['cal-av','cal-res','cal-na'];
   const cur=states.find(s=>el.classList.contains(s))||'cal-av';

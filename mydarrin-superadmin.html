@@ -458,6 +458,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
      client comun (cookie-uri, .mydarrin.homebestpal.com) ca restul site-ului. -->
 <script type="module" src="lib/supabaseClient.js"></script>
 <script src="account-system.js"></script>
+<script src="/myd-csv.js"></script>
 <div id="auth-gate-overlay" style="position:fixed;inset:0;background:#0F1923;z-index:99999;display:flex;align-items:center;justify-content:center;color:#8BA3C0;font-family:sans-serif;font-size:14px">
   Se verifică accesul...
 </div>
@@ -601,6 +602,10 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
     <a class="sa-nav-item" onclick="showPanel('tarife-transport')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
       Tarife Transport
+    </a>
+    <a class="sa-nav-item" onclick="showPanel('marketplace-aprobari')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      Marketplace — Aprobări
     </a>
     <a class="sa-nav-item" onclick="showPanel('acces-temporar')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
@@ -1959,6 +1964,31 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       </div>
     </div>
 
+    <!-- ════ MARKETPLACE — APROBĂRI (audit + implementare, 2 August 2026) ════
+         Furnizori/documente KYC/produse în așteptare — completează o buclă
+         deja pe jumătate construită (api/admin/verifica-document.js exista
+         deja, dar nicio UI nu-l apela vreodată; parteneri rămâneau blocați
+         la infinit pe „verificare în curs"). Admin poate corecta orice
+         produs, indiferent de furnizor. -->
+    <div id="panel-marketplace-aprobari" style="display:none;padding:24px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <span style="font-size:12px;color:#8BA3C0">Aprobă/respinge furnizori, documente KYC și produse — reutilizează exact fluxul existent din <code>api/admin/verifica-document.js</code>.</span>
+        <button onclick="loadMarketplaceAprobari()" class="btn-p" style="font-size:12px;padding:8px 14px;margin-left:auto">↻ Reîncarcă</button>
+      </div>
+
+      <div style="font-size:14px;font-weight:700;color:#fff;margin:18px 0 10px">Furnizori în așteptare de aprobare</div>
+      <div id="mp-apr-furnizori" style="color:#8BA3C0;font-size:13px">Se încarcă...</div>
+
+      <div style="font-size:14px;font-weight:700;color:#fff;margin:22px 0 10px">Documente KYC în verificare</div>
+      <div id="mp-apr-documente" style="color:#8BA3C0;font-size:13px">Se încarcă...</div>
+
+      <div style="font-size:14px;font-weight:700;color:#fff;margin:22px 0 10px">Materiale în așteptare</div>
+      <div id="mp-apr-materiale" style="color:#8BA3C0;font-size:13px">Se încarcă...</div>
+
+      <div style="font-size:14px;font-weight:700;color:#fff;margin:22px 0 10px">Echipamente în așteptare</div>
+      <div id="mp-apr-echipamente" style="color:#8BA3C0;font-size:13px">Se încarcă...</div>
+    </div>
+
     <!-- ══ ACCES TEMPORAR — parolă unică per email, gestionată de admin (2026-07-23) ══
          Acces cu credențiale Supabase reale, valabil doar pe durata configurată,
          scopat la o singură rută whitelist-uită, revocabil instant. -->
@@ -2497,7 +2527,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 
 <script>
 // ── NAVIGATION ──
-const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding','seo','accountancy','investitori','contact','prospecti','newsletter','email-gateway','facturare-parteneri','b2g-plati','preturi-niveluri','tarife-transport','acces-temporar'];
+const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding','seo','accountancy','investitori','contact','prospecti','newsletter','email-gateway','facturare-parteneri','b2g-plati','preturi-niveluri','tarife-transport','marketplace-aprobari','acces-temporar'];
 const TITLES = {
   dashboard:'Dashboard Global',tari:'Țări & Zone',utilizatori:'Utilizatori & Actori',
   rbac:'Permisiuni RBAC',platforme:'Platforme & Integrări',escrow:'Escrow Global',
@@ -2505,7 +2535,7 @@ const TITLES = {
   comenzi:'Comenzi Globale',catalog:'Catalog Servicii/Materiale/Închirieri',audit:'Audit Log',config:'Configurare Sistem',
   branding:'Branding & Design Platformă',seo:'SEO — Titluri & Descrieri',accountancy:'Accountancy',
   investitori:'Administrare Investitori',contact:'Mesaje Contact',prospecti:'Prospecți Parteneri',
-  newsletter:'Newsletter & Abonați','email-gateway':'Noreply & Transactional Gateway','facturare-parteneri':'Facturare Parteneri','b2g-plati':'B2G & Metode de Plată','preturi-niveluri':'Niveluri de Preț','tarife-transport':'Tarife Transport','acces-temporar':'Acces Temporar'
+  newsletter:'Newsletter & Abonați','email-gateway':'Noreply & Transactional Gateway','facturare-parteneri':'Facturare Parteneri','b2g-plati':'B2G & Metode de Plată','preturi-niveluri':'Niveluri de Preț','tarife-transport':'Tarife Transport','marketplace-aprobari':'Marketplace — Aprobări','acces-temporar':'Acces Temporar'
 };
 
 function showPanel(id){
@@ -4144,6 +4174,7 @@ window.showPanel = function(id) {
   if (id === 'b2g-plati') { loadComenziB2G(); loadMetodePlataConfig(); }
   if (id === 'preturi-niveluri') loadNiveluriPret();
   if (id === 'tarife-transport') loadTarifeTransport();
+  if (id === 'marketplace-aprobari') loadMarketplaceAprobari();
 };
 </script>
 
@@ -4859,6 +4890,86 @@ async function stergeTarifTransport(id) {
     loadTarifeTransport();
   } catch (e) { alert('Eroare: ' + e.message); }
 }
+
+// ── MARKETPLACE — APROBĂRI (2 August 2026) ──
+async function loadMarketplaceAprobari() {
+  const elFurnizori = document.getElementById('mp-apr-furnizori');
+  const elDocumente = document.getElementById('mp-apr-documente');
+  const elMateriale = document.getElementById('mp-apr-materiale');
+  const elEchipamente = document.getElementById('mp-apr-echipamente');
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/marketplace-aprobari', { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+
+    elFurnizori.innerHTML = !data.furnizori_pending.length
+      ? '<div style="padding:14px 0">Niciun furnizor în așteptare.</div>'
+      : data.furnizori_pending.map((f) => `
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #2D3F55">
+          <div style="flex:1"><div style="color:#fff;font-weight:600;font-size:12.5px">${escapeHTML(f.nume_firma)}</div>
+            <div style="color:#8BA3C0;font-size:11px">CUI ${escapeHTML(f.cui || '—')} · ${escapeHTML(f.partner_type)}</div></div>
+          <button onclick="decideFurnizor('${f.id}','aprobat')" class="btn-p" style="font-size:11px;padding:6px 12px;background:#0E9E99">Aprobă</button>
+          <button onclick="decideFurnizor('${f.id}','respins')" class="btn-s" style="font-size:11px;padding:6px 12px">Respinge</button>
+        </div>`).join('');
+
+    elDocumente.innerHTML = !data.documente_pending.length
+      ? '<div style="padding:14px 0">Niciun document în verificare.</div>'
+      : data.documente_pending.map((d) => `
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #2D3F55">
+          <div style="flex:1"><div style="color:#fff;font-weight:600;font-size:12.5px">${escapeHTML(d.tip_document)}</div>
+            <div style="color:#8BA3C0;font-size:11px">Furnizor: ${escapeHTML(d.partener_id)} · <a href="${escapeHTML(d.storage_path)}" target="_blank" style="color:#7AB3E0">vezi calea fișierului</a></div></div>
+          <button onclick="decideDocument('${d.id}','aprobat')" class="btn-p" style="font-size:11px;padding:6px 12px;background:#0E9E99">Aprobă</button>
+          <button onclick="decideDocument('${d.id}','respins')" class="btn-s" style="font-size:11px;padding:6px 12px">Respinge</button>
+        </div>`).join('');
+
+    const randProdus = (p, tip) => `
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #2D3F55">
+          <div style="flex:1"><div style="color:#fff;font-weight:600;font-size:12.5px">${escapeHTML(p.denumire)}</div>
+            <div style="color:#8BA3C0;font-size:11px">${tip === 'materiale' ? escapeHTML(String(p.pret_fara_tva)) : escapeHTML(String(p.tarif_zi))} ${escapeHTML(p.moneda)} · furnizor ${escapeHTML(p.furnizor_id)}</div></div>
+          <button onclick="decideProdus('${tip}','${p.id}','aprobat')" class="btn-p" style="font-size:11px;padding:6px 12px;background:#0E9E99">Aprobă</button>
+          <button onclick="decideProdus('${tip}','${p.id}','respins')" class="btn-s" style="font-size:11px;padding:6px 12px">Respinge</button>
+        </div>`;
+
+    elMateriale.innerHTML = !data.produse_pending.materiale.length
+      ? '<div style="padding:14px 0">Niciun material în așteptare.</div>'
+      : data.produse_pending.materiale.map((p) => randProdus(p, 'materiale')).join('');
+
+    elEchipamente.innerHTML = !data.produse_pending.echipamente.length
+      ? '<div style="padding:14px 0">Niciun echipament în așteptare.</div>'
+      : data.produse_pending.echipamente.map((p) => randProdus(p, 'echipamente')).join('');
+  } catch (e) {
+    elFurnizori.innerHTML = elDocumente.innerHTML = elMateriale.innerHTML = elEchipamente.innerHTML = `<div style="color:#E57373">Eroare: ${escapeHTML(e.message)}</div>`;
+  }
+}
+
+async function decideFurnizor(id, decizie) {
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/verifica-document', { method: 'POST', headers, body: JSON.stringify({ tip: 'partener', id, decizie }) });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadMarketplaceAprobari();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+async function decideDocument(id, decizie) {
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/verifica-document', { method: 'POST', headers, body: JSON.stringify({ tip: 'document', id, decizie }) });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadMarketplaceAprobari();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+async function decideProdus(produsTip, id, decizie) {
+  const motiv = decizie === 'respins' ? prompt('Motiv respingere (opțional):') || null : null;
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/marketplace-aprobari', { method: 'POST', headers, body: JSON.stringify({ tip: 'produs', produs_tip: produsTip, id, decizie, motiv }) });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadMarketplaceAprobari();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
 </script>
 
 <!-- ══ ACCES TEMPORAR — parolă unică per email, gestionată de admin (2026-07-23) ══ -->
@@ -5533,60 +5644,11 @@ async function saveAllComisioaneConfig() {
   }
 }
 
-// ── UTILITAR CSV PARTAJAT (2 August 2026) ──
-// Cerință explicită: „Importă CSV" trebuie să existe, cu aceeași regulă, în
-// orice secțiune de backoffice care necesită încărcare de date — nu doar în
-// Comisioane. Parser-ul + generatorul de CSV sunt scrise O SINGURĂ DATĂ aici
-// (RFC4180 minimal: câmpuri între ghilimele, virgule/ghilimele escapate „""",
-// CRLF/LF, BOM eliminat) și expuse pe `window._mydCSV` — orice alt panou
-// (viitor) le poate reutiliza direct, fără să reimplementeze parsarea.
-window._mydCSV = {
-  parse(text) {
-    const clean = text.replace(/^﻿/, '').replace(/\r\n/g, '\n');
-    const rows = [];
-    let row = [], field = '', inQuotes = false;
-    for (let i = 0; i < clean.length; i++) {
-      const c = clean[i];
-      if (inQuotes) {
-        if (c === '"') {
-          if (clean[i + 1] === '"') { field += '"'; i++; } else { inQuotes = false; }
-        } else { field += c; }
-      } else if (c === '"') {
-        inQuotes = true;
-      } else if (c === ',') {
-        row.push(field); field = '';
-      } else if (c === '\n') {
-        row.push(field); rows.push(row); row = []; field = '';
-      } else {
-        field += c;
-      }
-    }
-    if (field.length || row.length) { row.push(field); rows.push(row); }
-    if (!rows.length) return { header: [], records: [] };
-    const header = rows[0].map((h) => h.trim().toLowerCase());
-    const records = rows.slice(1)
-      .filter((r) => r.some((v) => v !== ''))
-      .map((r) => { const o = {}; header.forEach((h, idx) => { o[h] = (r[idx] ?? '').trim(); }); return o; });
-    return { header, records };
-  },
-  toCSV(headers, records) {
-    const esc = (v) => {
-      const s = v === null || v === undefined ? '' : String(v);
-      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-    };
-    const lines = [headers.join(',')];
-    for (const r of records) lines.push(headers.map((h) => esc(r[h])).join(','));
-    return lines.join('\n');
-  },
-  download(filename, headers, records) {
-    const blob = new Blob(['﻿' + window._mydCSV.toCSV(headers, records)], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click(); a.remove();
-    URL.revokeObjectURL(url);
-  },
-};
+// ── UTILITAR CSV PARTAJAT — mutat în /myd-csv.js (2 August 2026) ──
+// window._mydCSV era scris inline aici; extras într-un fișier static,
+// încărcat în <head> (<script src="/myd-csv.js">), ca mydarrin-marketplace.html
+// și mydarrin-dashboard-furnizor.html să-l poată reutiliza fără duplicare —
+// cerință explicită: „aceeași regulă peste tot", nu doar în Comisioane.
 
 // ── EXPORT / IMPORT CSV — panoul Comisioane ──
 const COMISIOANE_CHEI = {
