@@ -55,12 +55,9 @@ async function handleSalveaza(req, res, user, admin) {
   if (!TABEL[tip]) return res.status(400).json({ error: "tip trebuie să fie 'materiale' sau 'echipamente'" });
   const tabel = TABEL[tip];
 
-  const furnizorId = rezolvaFurnizorId(req, user, admin);
-  const { data: furnizor } = await supabaseAdmin.from('partners').select('id').eq('id', furnizorId).maybeSingle();
-  if (!furnizor) return res.status(404).json({ error: 'Furnizorul specificat nu există.' });
-
   // Rând existent — necesar pentru izolare (furnizorul nu poate corecta
-  // produsul altui furnizor) și pentru fluxul "resubmit după respingere".
+  // produsul altui furnizor), pentru fluxul "resubmit după respingere" și
+  // ca implicit pentru furnizor_id la UPDATE (vezi bug fixat mai jos).
   let randExistent = null;
   if (id) {
     const { data } = await supabaseAdmin.from(tabel).select('furnizor_id, status').eq('id', id).maybeSingle();
@@ -70,6 +67,17 @@ async function handleSalveaza(req, res, user, admin) {
       return res.status(403).json({ error: 'Nu poți edita un produs care nu îți aparține.' });
     }
   }
+
+  // FIX (testat live, 2 August 2026): la UPDATE, dacă admin-ul corectează
+  // un produs FĂRĂ să specifice explicit furnizor_id, trebuie păstrat
+  // proprietarul EXISTENT al rândului — altfel rezolvaFurnizorId() cădea pe
+  // fallback-ul „user.id" (contul adminului, care nu e neapărat furnizor),
+  // producând un fals „Furnizorul specificat nu există."
+  const furnizorId = id
+    ? ((admin && (req.body.furnizor_id || req.query.furnizor_id)) || randExistent.furnizor_id)
+    : rezolvaFurnizorId(req, user, admin);
+  const { data: furnizor } = await supabaseAdmin.from('partners').select('id').eq('id', furnizorId).maybeSingle();
+  if (!furnizor) return res.status(404).json({ error: 'Furnizorul specificat nu există.' });
 
   const { data: profilFurnizor } = await supabaseAdmin.from('profiles').select('tara').eq('id', furnizorId).maybeSingle();
   const ctx = await incarcaContextValidare(profilFurnizor?.tara || 'RO');
