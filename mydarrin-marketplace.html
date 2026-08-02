@@ -3551,10 +3551,12 @@ async function incarcaDocumenteKyc(input) {
   const user = sessionData?.session?.user;
   if (!user) { showToast('Autentifică-te mai întâi (verifică emailul pentru link-ul de setare a parolei).', 'warn'); return; }
 
+  // Valorile reale acceptate de documente_partener_tip_document_check
+  // (verificate direct în baza live, 2 August 2026) — nu cele presupuse inițial.
   const TIP_DUPA_NUME = [
-    { match: /cert|inreg/i, tip: 'certificat_inregistrare' },
-    { match: /cui|cif/i, tip: 'cui_cif' },
-    { match: /ci_|identit|buletin|card/i, tip: 'act_identitate_administrator' },
+    { match: /cert|inreg/i, tip: 'certificat' },
+    { match: /cui|cif/i, tip: 'cui' },
+    { match: /ci_|identit|buletin|card/i, tip: 'ci' },
   ];
 
   for (const f of files) {

@@ -22,7 +22,7 @@ async function handleGet(req, res) {
     supabaseAdmin.from('partners').select('id, nume_firma, cui, partner_type, status_verificare, creata_la')
       .in('partner_type', TIPURI_FURNIZOR).eq('status_verificare', 'pending_review'),
     supabaseAdmin.from('documente_partener').select('id, partener_id, tip_document, storage_path, status, uploaded_at')
-      .eq('status', 'in_verificare'),
+      .eq('status', 'pending'),
     supabaseAdmin.from('marketplace_materiale').select('id, furnizor_id, denumire, pret_fara_tva, moneda, status, creat_la')
       .eq('status', 'in_asteptare'),
     supabaseAdmin.from('marketplace_echipamente').select('id, furnizor_id, denumire, tarif_zi, moneda, status, creat_la')

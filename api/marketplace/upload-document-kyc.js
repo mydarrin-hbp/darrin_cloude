@@ -13,7 +13,15 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 
-const TIPURI_VALIDE = ['certificat_inregistrare', 'cui_cif', 'act_identitate_administrator'];
+// FIX (testat live, 2 August 2026): valorile inventate inițial
+// ('certificat_inregistrare'/'cui_cif'/'act_identitate_administrator') nu
+// existau — constrângerea reală (`documente_partener_tip_document_check`,
+// verificată direct din baza live) e: 'ci','licenta','licenta_arr',
+// 'cazier_judiciar','asigurare','certificat','cui','contract'. Folosim
+// doar subsetul relevant pentru KYC de marketplace. La fel, `status`
+// inițial e 'pending' (englez), NU 'in_verificare' — constrângerea reală
+// e ['pending','aprobat','respins'], verificată direct, nu presupusă.
+const TIPURI_VALIDE = ['certificat', 'cui', 'ci'];
 const ROLURI = ['partener_materiale', 'partener_inchirieri'];
 
 async function handler(req, res, user) {
@@ -46,7 +54,7 @@ async function handler(req, res, user) {
   try {
     const { data, error } = await supabaseAdmin
       .from('documente_partener')
-      .insert({ partener_id: user.id, tip_document, storage_path, status: 'in_verificare' })
+      .insert({ partener_id: user.id, tip_document, storage_path, status: 'pending' })
       .select()
       .single();
     if (error) throw error;
