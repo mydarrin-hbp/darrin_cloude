@@ -12,15 +12,15 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const [{ data: clase, error: e1 }, { data: sectiuni, error: e2 }] = await Promise.all([
-      supabaseAdmin.from('nace_reference').select('cod, denumire_ro, cod_parinte').eq('nivel', 'clasa').order('cod'),
-      supabaseAdmin.from('nace_sectiuni').select('litera, denumire_ro').order('litera'),
-    ]);
+    // Doar cod+denumire (cod = valoare de formular, niciodată afișat vizual
+    // singur; denumire_ro = eticheta văzută de utilizator) — cod_parinte și
+    // sectiuni[] eliminate, confirmat neconsumate de niciun apelant.
+    const { data: clase, error: e1 } = await supabaseAdmin
+      .from('nace_reference').select('cod, denumire_ro').eq('nivel', 'clasa').order('cod');
     if (e1) throw e1;
-    if (e2) throw e2;
 
     res.setHeader('Cache-Control', 'public, max-age=3600');
-    return res.status(200).json({ ok: true, clase: clase || [], sectiuni: sectiuni || [] });
+    return res.status(200).json({ ok: true, clase: clase || [] });
   } catch (err) {
     console.error('[nace-lista]', err);
     return res.status(500).json({ error: 'Nu am putut încărca lista NACE' });

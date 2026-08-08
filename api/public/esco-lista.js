@@ -12,9 +12,14 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
+    // Doar câmpurile folosite de wizard (cod_esco = valoare de formular,
+    // niciodată afișată vizual; denumire/domeniu = eticheta văzută de
+    // utilizator) — nace_code/certificare_ro eliminate, neconsumate de
+    // niciun apelant, regulă de vizibilitate coduri (nu se expune public
+    // mai mult decât e strict necesar funcțional).
     const { data, error } = await supabaseAdmin
       .from('competente_esco')
-      .select('cod_esco, denumire, domeniu, nace_code, certificare_ro')
+      .select('cod_esco, denumire, domeniu')
       .order('domeniu')
       .order('denumire');
     if (error) throw error;

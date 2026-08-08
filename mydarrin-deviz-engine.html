@@ -356,12 +356,25 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 </style>
   <!-- DOMPurify — sanitizare XSS (audit 2026-07-10) -->
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <!-- Barieră de securitate (adăugată — pagina nu avea NICIO poartă de
+       autentificare: se randa liber pentru orice vizitator neautentificat,
+       deși conține tarife/coduri ESCO/NACE/Uniclass de back-office. Mirror
+       exact al tiparului din mydarrin-superadmin.html. Bonus: __ENV__ era
+       nedefinit aici, deci SUPA_DEVIZ_ANON (linia ~2513) era mereu string
+       gol — reparat implicit de acest fix. -->
+  <script>
+    window.__ENV__ = {
+      SUPABASE_URL: 'https://aacojyvujhywanaulvuu.supabase.co',
+      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhY29qeXZ1amh5d2FuYXVsdnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MjAzMzIsImV4cCI6MjA5ODQ5NjMzMn0.iwZnxctvazOL5OU_wqD7AvAKrVoOqLH_uvj1krK8-vs'
+    };
+  </script>
   <!-- G13 (25 Iulie 2026) — client Supabase comun (cookie-uri, .mydarrin.homebestpal.com),
        necesar ca fetch-urile Rate Card să trimită sesiunea reală de admin, nu cheia anon.
        Fără el, RLS ("admin gestioneaza manopera", auth.uid()-based) bloca silențios TOT
        accesul (citire și scriere) — bug real găsit la investigarea G13, independent de
        decompunerea cerută. -->
   <script type="module" src="lib/supabaseClient.js"></script>
+  <script src="account-system.js"></script>
   <script>
     // Helper escapeHTML — pentru text pur (mesaje chat, nume, etc.)
     // Folosește textContent intern — niciun risc XSS
@@ -380,6 +393,21 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
   </script>
 </head>
 <body>
+
+<div id="auth-gate-overlay" style="position:fixed;inset:0;background:#0F1923;z-index:99999;display:flex;align-items:center;justify-content:center;color:#8BA3C0;font-family:sans-serif;font-size:14px">
+  Se verifică accesul...
+</div>
+<script type="module">
+  (async function () {
+    try {
+      const ok = await window.MyDarrinAuth.enforceAdminBarrier();
+      if (ok) document.getElementById('auth-gate-overlay')?.remove();
+    } catch (e) {
+      console.error('Eroare la verificarea accesului:', e);
+      window.location.href = 'https://mydarrin.homebestpal.com';
+    }
+  })();
+</script>
 
 <!-- ════ MINI NAV BAR — My Darrin Standard ════ -->
 <div style="background:#003366;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,51,102,.25)">

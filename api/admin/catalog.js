@@ -237,6 +237,107 @@ async function actionStergePret(req, res, user) {
   return res.status(200).json({ ok: true });
 }
 
+// Vertical A (pilot construcții/instalații) — generare automată de servicii
+// (Montaj/Înlocuire/Reparație/Mentenanță) dintr-un material de referință
+// (materiale_referinta_ai), pe baza șabloanelor definite o singură dată per
+// categorie (catalog_servicii_template), nu per produs. Declanșată EXPLICIT
+// de admin (buton dedicat) — niciodată automat la crearea unui material.
+const NIVELURI_STANDARD = [
+  { nivel: 'Bronze', nivel_complexitate: 1 },
+  { nivel: 'Silver', nivel_complexitate: 2 },
+  { nivel: 'Gold', nivel_complexitate: 3 },
+  { nivel: 'Platinum', nivel_complexitate: 4 },
+];
+
+async function actionGenereazaServiciiDinMaterial(req, res, user) {
+  const { material_id } = req.body || {};
+  if (!material_id) return res.status(400).json({ error: 'material_id obligatoriu.' });
+
+  const { data: material, error: errMaterial } = await supabaseAdmin
+    .from('materiale_referinta_ai')
+    .select('id, categorie, denumire')
+    .eq('id', material_id)
+    .maybeSingle();
+  if (errMaterial) { console.error('[admin/catalog] genereaza_servicii_din_material', errMaterial); return res.status(500).json({ error: 'Nu am putut încărca materialul.' }); }
+  if (!material) return res.status(404).json({ error: 'Materialul nu există.' });
+
+  const { data: sabloane, error: errSabloane } = await supabaseAdmin
+    .from('catalog_servicii_template')
+    .select('id, categorie, tip_serviciu, titlu_pattern, domeniu, cod_esco, nace, cod_uniclass, indicator_id, activ')
+    .eq('categorie', material.categorie)
+    .eq('activ', true);
+  if (errSabloane) { console.error('[admin/catalog] genereaza_servicii_din_material', errSabloane); return res.status(500).json({ error: 'Nu am putut încărca șabloanele.' }); }
+  if (!sabloane || !sabloane.length) {
+    return res.status(400).json({ error: `Nu există șabloane active pentru categoria "${material.categorie}".` });
+  }
+
+  const { data: existente } = await supabaseAdmin
+    .from('materiale_referinta_ai_servicii')
+    .select('tip_serviciu')
+    .eq('material_id', material_id);
+  const tipuriExistente = new Set((existente || []).map((r) => r.tip_serviciu));
+
+  const rezultate = [];
+  let parteneriNotificatiTotal = 0;
+
+  for (const sablon of sabloane) {
+    if (tipuriExistente.has(sablon.tip_serviciu)) {
+      rezultate.push({ tip_serviciu: sablon.tip_serviciu, status: 'deja_generat' });
+      continue;
+    }
+
+    const idServiciu = `mat-${material.id.slice(0, 8)}-${sablon.tip_serviciu}`;
+    const titlu = sablon.titlu_pattern.includes('{denumire}')
+      ? sablon.titlu_pattern.replace('{denumire}', material.denumire)
+      : `${sablon.titlu_pattern} ${material.denumire}`;
+
+    const { data: serviciuNou, error: errServiciu } = await supabaseAdmin
+      .from('catalog_servicii')
+      .insert({
+        id_serviciu: idServiciu, categorie: 'servicii', domeniu: sablon.domeniu, titlu,
+        nace: sablon.nace || null, cod_esco: sablon.cod_esco || null, cod_uniclass: sablon.cod_uniclass || null,
+        status_public: true, creat_de_tip: 'admin', creat_de: user.id,
+      })
+      .select('id')
+      .single();
+    if (errServiciu) {
+      console.error('[admin/catalog] genereaza_servicii_din_material — creare serviciu', errServiciu);
+      rezultate.push({ tip_serviciu: sablon.tip_serviciu, status: 'eroare', detaliu: errServiciu.message });
+      continue;
+    }
+
+    for (const niv of NIVELURI_STANDARD) {
+      await supabaseAdmin.from('catalog_niveluri').insert({
+        serviciu_id: serviciuNou.id, nivel: niv.nivel, nivel_complexitate: niv.nivel_complexitate,
+        norma_timp: 1, // placeholder — de confirmat de admin, schema nu permite NULL
+        descriere: 'Normă de timp generată automat, placeholder — de confirmat de admin înainte de publicare tarif.',
+      });
+    }
+
+    await supabaseAdmin.from('materiale_referinta_ai_servicii').insert({
+      material_id, catalog_serviciu_id: serviciuNou.id, tip_serviciu: sablon.tip_serviciu,
+    });
+
+    let notificati = 0;
+    try {
+      const r = await notificaParteneriEligibili({ catalogServiciuId: serviciuNou.id, nace: sablon.nace || null, titlu, categorie: 'servicii' });
+      notificati = r.notificati || 0;
+    } catch (notifErr) {
+      console.error('[admin/catalog] genereaza_servicii_din_material — notificare eșuată', notifErr);
+    }
+    parteneriNotificatiTotal += notificati;
+
+    rezultate.push({ tip_serviciu: sablon.tip_serviciu, status: 'creat', catalog_serviciu_id: serviciuNou.id, id_serviciu: idServiciu });
+  }
+
+  await inregistreazaAudit({
+    admin: user, req, actiune: 'catalog_genereaza_servicii_material', entitate: 'materiale_referinta_ai', entitate_id: material_id,
+    detalii: { categorie: material.categorie, denumire: material.denumire, rezultate },
+  });
+
+  return res.status(200).json({ ok: true, material_id, rezultate, parteneri_notificati: parteneriNotificatiTotal });
+}
+
 const ACTIUNI = {
   list: actionList,
   creeaza_serviciu: actionCreeazaServiciu,
@@ -248,6 +349,7 @@ const ACTIUNI = {
   creeaza_pret: actionCreeazaPret,
   actualizeaza_pret: actionActualizeazaPret,
   sterge_pret: actionStergePret,
+  genereaza_servicii_din_material: actionGenereazaServiciiDinMaterial,
 };
 
 async function handler(req, res, user) {
