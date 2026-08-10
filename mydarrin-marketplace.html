@@ -3250,6 +3250,7 @@ async function incarcaCategoriiMp() {
     const { data, error } = await window.supabaseClient
       .from('categorii').select('id,title,category_type')
       .in('category_type', ['materiale', 'inchiriere'])
+      .is('parent_id', null)
       .order('display_order', { ascending: true });
     if (error) throw error;
     mpCategoriiMateriale = (data || []).filter((c) => c.category_type === 'materiale');

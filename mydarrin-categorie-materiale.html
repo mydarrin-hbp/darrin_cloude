@@ -200,6 +200,8 @@ h1,h2,h3 { font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif; }
     </div>
   </div>
 
+  <div id="subcat-grid" style="display:none;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:28px"></div>
+
   <div id="sub-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:18px"></div>
 
   <div id="empty-state" style="display:none;text-align:center;padding:60px 20px;color:#8C9BAD">
@@ -780,6 +782,7 @@ async function loadCategory(){
 
   if (curated) {
     // Conținut curatoriat local — servicii cu articole reale deja scrise.
+    renderSubcatTiles([], curated.tab);
     document.title = curated.title + ' · My Darrin';
     const iconEl = document.getElementById('cat-icon');
     if (iconEl) iconEl.innerHTML = curated.icon;
@@ -799,18 +802,29 @@ async function loadCategory(){
   // Fără conținut curatoriat local — preluăm metadatele categoriei din
   // Supabase (tabel categorii) și afișăm un mesaj clar, nu o pagină goală.
   let meta = null;
+  let subcategorii = [];
   try {
     if (window.supabaseClient) {
       const { data } = await window.supabaseClient
         .from('categorii')
-        .select('title,icon_name,description,category_type')
+        .select('id,title,icon_name,description,category_type')
         .eq('slug', slug)
         .maybeSingle();
       meta = data;
+      if (meta?.id) {
+        const { data: children } = await window.supabaseClient
+          .from('categorii')
+          .select('title,slug,icon_name,description')
+          .eq('parent_id', meta.id)
+          .order('display_order', { ascending: true });
+        subcategorii = children || [];
+      }
     }
   } catch (e) {
     console.warn('[categorii] eroare la încărcare metadate:', e);
   }
+
+  renderSubcatTiles(subcategorii, type);
 
   const title = meta?.title || slug;
   document.title = title + ' · My Darrin';
@@ -877,6 +891,25 @@ function detectUserAddress(){
 function openLocModal(){
   alert('Schimbarea adresei se face din pagina principală My Darrin.\nVei fi redirecționat acolo.');
   window.location.href='/';
+}
+
+function renderSubcatTiles(list, type){
+  const grid = document.getElementById('subcat-grid');
+  if (!grid) return;
+  if (!list || list.length === 0) { grid.style.display = 'none'; grid.innerHTML = ''; return; }
+  grid.style.display = 'grid';
+  grid.innerHTML = list.map(function(c){
+    const icon = c.icon_name
+      ? '<i data-lucide="'+c.icon_name+'" style="width:22px;height:22px;color:#FF8C00"></i>'
+      : '';
+    return '<a href="mydarrin-categorie-materiale.html?type='+encodeURIComponent(type)+'&cat='+encodeURIComponent(c.slug)+'" '+
+      'style="display:flex;align-items:center;gap:12px;padding:16px;border-radius:12px;background:#fff;border:1px solid #E4EDF0;text-decoration:none;transition:box-shadow .15s" '+
+      'onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,51,102,.1)\'" onmouseout="this.style.boxShadow=\'none\'">'+
+      icon+
+      '<span style="font-size:14px;font-weight:600;color:#003366">'+c.title+'</span>'+
+      '</a>';
+  }).join('');
+  if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 function renderGrid(items, tab){

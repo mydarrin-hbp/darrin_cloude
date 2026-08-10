@@ -1948,6 +1948,7 @@ async function loadCategoryTiles() {
     var resp = await client
       .from('categorii')
       .select('title,slug,icon_name,description,category_type,display_order')
+      .is('parent_id', null)
       .order('category_type').order('display_order');
     if (resp.error) throw resp.error;
     var data = resp.data || [];
