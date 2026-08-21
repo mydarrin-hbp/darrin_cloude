@@ -2642,7 +2642,12 @@ document.addEventListener('DOMContentLoaded', function() {
       // mapare slug→id, niciuna decisă încă ca cerință de business.
       try {
         const session = (await window.supabaseClient.auth.getSession()).data.session;
-        const corpComun = { adresa, tara_cod: taraComanda, regiune: regiuneComanda, localitate: localitateComanda, cost_baza_servicii, cost_asigurare, cost_materiale, cost_chirie_scule, valoare_totala, data_programata: dataProgramata, ora_inceput_programata: oraInceputProgramata, ora_sfarsit_programata: oraSfarsitProgramata };
+        // Bug #23 (audit 19 August 2026): selectorul de metodă de plată doar
+        // comuta o clasă CSS, alegerea nu ajungea niciodată în corpul cererii.
+        // Mapare pe convenția deja folosită de fluxul B2G (metoda-plata-config.js,
+        // METODA_PLATA_LABEL): 'transfer' (UI) → 'ordin_plata' (backend).
+        const metodaPlataB2C = selectedPaymentMethod === 'transfer' ? 'ordin_plata' : selectedPaymentMethod;
+        const corpComun = { adresa, tara_cod: taraComanda, regiune: regiuneComanda, localitate: localitateComanda, cost_baza_servicii, cost_asigurare, cost_materiale, cost_chirie_scule, valoare_totala, data_programata: dataProgramata, ora_inceput_programata: oraInceputProgramata, ora_sfarsit_programata: oraSfarsitProgramata, metoda_plata: metodaPlataB2C };
 
         // Flux B2G (audit Secțiunea 43/44, 31 Iulie 2026) — endpoint SEPARAT,
         // api/comenzi/creeaza.js (calea B2C de mai jos, else) rămâne neatins.
@@ -3383,6 +3388,7 @@ if (document.readyState === 'loading') {
 } else {
   applyChecoutConfigReal();
 }
+let selectedPaymentMethod = 'card';
 function selectPayment(type){
   ["card","transfer","cash"].forEach(t=>{
     const el=document.getElementById("pm-"+t);
@@ -3390,6 +3396,7 @@ function selectPayment(type){
   });
   document.getElementById("pm-"+type).classList.add("selected");
   document.getElementById("card-form").style.display=type==="card"?"block":"none";
+  selectedPaymentMethod = type;
 }
 
 // ── Flux B2G (audit Secțiunea 43/44, 31 Iulie 2026) — izolat, nu atinge selectPayment() de mai sus ──

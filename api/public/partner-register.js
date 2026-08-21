@@ -73,7 +73,7 @@ module.exports = async function handler(req, res) {
   if (!allowed) return res.status(429).json({ error: 'Prea multe cereri. Încearcă din nou mai târziu.' });
 
   const {
-    nume, email, tip, nume_firma, cui, tara,
+    nume, prenume, telefon, email, tip, nume_firma, cui, tara,
     tip_entitate_legala, is_treasury_account, regiune_cod, iban, banca,
   } = req.body || {};
 
@@ -110,7 +110,7 @@ module.exports = async function handler(req, res) {
   try {
     // 1. Invitație reală — creează contul Supabase Auth cu rolul corect în metadate
     const { data: invited, error: inviteErr } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      data: { role, nume: nume || '' },
+      data: { role, nume: nume || '', prenume: prenume || '' },
     });
     if (inviteErr) throw inviteErr;
     invitedUserId = invited.user.id;
@@ -153,8 +153,11 @@ module.exports = async function handler(req, res) {
     // cunoaște, deci le completăm separat pe rândul din profiles deja creat
     // de trigger. Limba determină ulterior în ce limbă primește partenerul
     // emailuri/notificări; utilizatorul o poate schimba oricând din cont.
-    if (tara) {
-      await supabaseAdmin.from('profiles').update({ tara, limba }).eq('id', invited.user.id);
+    if (tara || telefon) {
+      const profileUpdate = {};
+      if (tara) { profileUpdate.tara = tara; profileUpdate.limba = limba; }
+      if (telefon) profileUpdate.phone = telefon;
+      await supabaseAdmin.from('profiles').update(profileUpdate).eq('id', invited.user.id);
     }
 
     // 4. Email de bun venit, în limba dedusă din țară — best-effort.

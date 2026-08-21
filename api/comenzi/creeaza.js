@@ -83,7 +83,17 @@ async function handler(req, res, user) {
     cost_baza_servicii, cost_materiale, cost_chirie_scule, cost_curier, cost_asigurare,
     data_programata = null, ora_inceput_programata = null, ora_sfarsit_programata = null,
     masa_totala_kg = null, nivel_transport_marfa = null,
+    metoda_plata = 'card',
   } = req.body || {};
+
+  // FIX (bug #23, audit 19 August 2026): selectorul din mydarrin-checkout.html
+  // comuta doar o clasă CSS — alegerea clientului nu ajungea niciodată aici.
+  // comenzi.metoda_plata există în schemă de la introducerea ei (nu era
+  // niciodată scrisă). Validare minimă, nu presupune un enum DB strict.
+  const METODE_PLATA_VALIDE = ['card', 'ordin_plata', 'cash'];
+  if (!METODE_PLATA_VALIDE.includes(metoda_plata)) {
+    return res.status(400).json({ error: `metoda_plata trebuie să fie una din: ${METODE_PLATA_VALIDE.join(', ')}` });
+  }
 
   if (masa_totala_kg !== null && !(typeof masa_totala_kg === 'number' && masa_totala_kg > 0)) {
     return res.status(400).json({ error: 'masa_totala_kg trebuie să fie un număr pozitiv' });
@@ -160,6 +170,7 @@ async function handler(req, res, user) {
       ora_sfarsit_programata,
       masa_totala_kg,
       nivel_transport_marfa,
+      metoda_plata,
       // 'neinitiat', nu 'blocat': acest endpoint nu procesează plăți reale
       // (niciun procesator de plăți nu e integrat — vezi api/financiar/comision.js),
       // deci ar fi incorect să pretindem că suma e deja blocată în escrow.

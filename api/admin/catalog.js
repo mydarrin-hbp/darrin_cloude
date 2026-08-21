@@ -16,6 +16,8 @@ const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { requireAuth } = require('../../lib/auth-middleware');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 const { notificaParteneriEligibili } = require('../../lib/notifica-servicii-noi');
+const { calculeazaCostNivel } = require('../../lib/calculeaza-cost-recipe');
+const { calculeazaPret } = require('../../lib/calculeaza-pret');
 
 const CATEGORII_VALIDE = ['servicii', 'materiale', 'inchirieri'];
 
@@ -237,6 +239,76 @@ async function actionStergePret(req, res, user) {
   return res.status(200).json({ ok: true });
 }
 
+// Motor real cost→preț (19 August 2026) — leagă catalogul tehnic de deviz
+// (devize_articole/devize_retete/devize_resurse, via catalog_nivel_id) de
+// catalog_preturi, prin lib/calculeaza-cost-recipe.js (manoperă+materiale+
+// utilaje) + lib/calculeaza-pret.js (%-le platformei + TVA, funcție deja
+// folosită live la crearea comenzilor — nemodificată aici). Regulă fermă:
+// nu se scrie NICIODATĂ un preț calculat pe resurse incomplete (fără tarif)
+// ca și cum ar fi real — dacă există resurse_fara_pret, endpoint-ul refuză
+// scrierea, exceptând cazul explicit forteaza:true.
+async function actionRecalculeazaPret(req, res, user) {
+  const { nivel_id, tara_cod, forteaza = false } = req.body || {};
+  if (!nivel_id || !tara_cod) {
+    return res.status(400).json({ error: 'nivel_id și tara_cod sunt obligatorii.' });
+  }
+
+  let cost;
+  try {
+    cost = await calculeazaCostNivel({ nivelId: nivel_id, taraCod: tara_cod });
+  } catch (err) {
+    console.error('[admin/catalog] recalculeaza_pret cost', err);
+    return res.status(500).json({ error: 'Nu am putut calcula costul din rețeta tehnică.' });
+  }
+
+  if (cost.resurse_fara_pret.length && !forteaza) {
+    return res.status(200).json({
+      ok: true, scris: false, motiv: 'resurse_fara_pret',
+      cost, resurse_fara_pret: cost.resurse_fara_pret,
+    });
+  }
+
+  const { data: taraCfg } = await supabaseAdmin
+    .from('tax_configurations').select('moneda').eq('tara_cod', tara_cod).maybeSingle();
+  const moneda = taraCfg?.moneda || 'RON';
+
+  const calc = await calculeazaPret({
+    cost_baza_servicii: cost.cost_baza_servicii,
+    cost_materiale: cost.cost_materiale,
+    cost_chirie_scule: cost.cost_utilaj, // slot existent reutilizat pentru costul de utilaje din devize
+    tara: tara_cod,
+  });
+
+  const { data: existing } = await supabaseAdmin
+    .from('catalog_preturi').select('id')
+    .eq('nivel_id', nivel_id).eq('tara_cod', tara_cod)
+    .is('regiune', null).is('localitate', null).maybeSingle();
+
+  let id;
+  if (existing) {
+    const { error } = await supabaseAdmin
+      .from('catalog_preturi')
+      .update({ moneda, pret: calc.pret_final, activ: true, updated_at: new Date().toISOString(), updated_by: user.id })
+      .eq('id', existing.id);
+    if (error) { console.error('[admin/catalog] recalculeaza_pret update', error); return res.status(500).json({ error: 'Nu am putut actualiza prețul.' }); }
+    id = existing.id;
+  } else {
+    const { data, error } = await supabaseAdmin
+      .from('catalog_preturi')
+      .insert({ nivel_id, tara_cod, regiune: null, localitate: null, moneda, pret: calc.pret_final, activ: true, updated_by: user.id })
+      .select('id').single();
+    if (error) { console.error('[admin/catalog] recalculeaza_pret insert', error); return res.status(500).json({ error: 'Nu am putut crea prețul.' }); }
+    id = data.id;
+  }
+
+  await inregistreazaAudit({
+    admin: user, req, actiune: 'catalog_recalculeaza_pret', entitate: 'catalog_preturi', entitate_id: id,
+    detalii: { nivel_id, tara_cod, pret_final: calc.pret_final, forteaza, resurse_fara_pret_count: cost.resurse_fara_pret.length },
+  });
+
+  return res.status(200).json({ ok: true, scris: true, id, pret: calc, cost, resurse_fara_pret: cost.resurse_fara_pret });
+}
+
 // Vertical A (pilot construcții/instalații) — generare automată de servicii
 // (Montaj/Înlocuire/Reparație/Mentenanță) dintr-un material de referință
 // (materiale_referinta_ai), pe baza șabloanelor definite o singură dată per
@@ -349,6 +421,7 @@ const ACTIUNI = {
   creeaza_pret: actionCreeazaPret,
   actualizeaza_pret: actionActualizeazaPret,
   sterge_pret: actionStergePret,
+  recalculeaza_pret: actionRecalculeazaPret,
   genereaza_servicii_din_material: actionGenereazaServiciiDinMaterial,
 };
 

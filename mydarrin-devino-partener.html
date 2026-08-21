@@ -2128,6 +2128,8 @@ async function submitRegistration() {
   if (btn) { btn.textContent='⏳ Se procesează...'; btn.disabled=true; }
 
   const nume       = document.getElementById('f-nume')?.value || '';
+  const prenume    = document.getElementById('f-prenume')?.value || '';
+  const telefon    = document.getElementById('f-tel')?.value || '';
   const email      = document.getElementById('f-email')?.value || '';
   const nume_firma = document.getElementById('f-firma')?.value || '';
   const cui        = document.getElementById('f-cui')?.value || '';
@@ -2166,7 +2168,7 @@ async function submitRegistration() {
     const res = await fetch('/api/public/partner-register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nume, email, tip: selectedPartnerType, nume_firma, cui, tara, iban, banca, tip_entitate_legala, is_treasury_account, regiune_cod }),
+      body: JSON.stringify({ nume, prenume, telefon, email, tip: selectedPartnerType, nume_firma, cui, tara, iban, banca, tip_entitate_legala, is_treasury_account, regiune_cod }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
