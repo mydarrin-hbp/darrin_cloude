@@ -5194,6 +5194,17 @@ async function loadCatalogList() {
                 <button onclick="creeazaPretCatalog('${n.id}', '${s.id}')" style="font-size:11px;padding:5px 10px;border-radius:7px;border:none;background:#FF8C00;color:#fff;cursor:pointer;font-weight:700">+ Preț</button>
                 <button onclick="stergeNivelCatalog('${n.id}', '${s.id}')" style="font-size:11px;padding:5px 10px;border-radius:7px;border:1px solid rgba(192,57,43,.4);background:transparent;color:#E57373;cursor:pointer;margin-left:auto">Șterge nivelul</button>
               </div>
+              <div style="margin-top:8px;padding-top:8px;border-top:1px dashed #2D3F55">
+                <button onclick="toggleRetetaNivel('${n.id}')" style="font-size:10.5px;padding:4px 9px;border-radius:6px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">Rețetă tehnică (D2a) — articole legate ▾</button>
+                <div id="reteta-nivel-${n.id}" style="display:none;margin-top:8px">
+                  <div id="reteta-lista-${n.id}" style="font-size:11px;color:#8BA3C0">Se încarcă...</div>
+                  <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+                    <input id="reteta-cauta-${n.id}" placeholder="Caută articol (nume sau cod indicator)" style="flex:1;min-width:160px;background:#131B27;border:1px solid #2D3F55;border-radius:7px;padding:6px 9px;color:#fff;font-size:11px">
+                    <button onclick="cautaArticolePentruNivel('${n.id}')" style="font-size:11px;padding:6px 10px;border-radius:7px;border:none;background:#0E9E99;color:#fff;cursor:pointer;font-weight:700">Caută</button>
+                  </div>
+                  <div id="reteta-rezultate-${n.id}" style="margin-top:6px"></div>
+                </div>
+              </div>
             </div>
           `).join('')}
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
@@ -5257,6 +5268,85 @@ async function stergeNivelCatalog(nivelId) {
     const res = await fetch('/api/admin/catalog', { method: 'POST', headers, body: JSON.stringify({ action: 'sterge_nivel', id: nivelId }) });
     if (!res.ok) throw new Error((await res.json()).error);
     loadCatalogList();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+// D2a (21 August 2026) — panou minim pentru legarea devize_articole.
+// catalog_nivel_id, gaura tehnică semnalată în audit (endpoint fără UI e
+// inutilizabil în practică, tipar deja văzut la alte gap-uri).
+function toggleRetetaNivel(nivelId) {
+  const el = document.getElementById('reteta-nivel-' + nivelId);
+  if (!el) return;
+  const deschis = el.style.display !== 'none';
+  el.style.display = deschis ? 'none' : 'block';
+  if (!deschis) loadArticoleNivel(nivelId);
+}
+
+async function loadArticoleNivel(nivelId) {
+  const el = document.getElementById('reteta-lista-' + nivelId);
+  if (!el) return;
+  el.textContent = 'Se încarcă...';
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/catalog', { method: 'POST', headers, body: JSON.stringify({ action: 'listeaza_articole_nivel', catalog_nivel_id: nivelId }) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    el.innerHTML = data.articole.length
+      ? data.articole.map((a) => `
+          <div style="display:flex;align-items:center;gap:8px;background:#0F1826;border-radius:7px;padding:5px 9px;margin-bottom:4px">
+            <span style="flex:1"><code>${escapeHTML(a.indicator_id)}</code> ${escapeHTML(a.denumire_articol)} <span style="color:#5A6B82">(${escapeHTML(a.unitate_masura)})</span></span>
+            <button onclick="dezleagaArticolDeNivel(${a.articol_id}, '${nivelId}')" style="background:none;border:none;color:#E57373;cursor:pointer;font-size:11px;padding:0">✕ dezleagă</button>
+          </div>
+        `).join('')
+      : '<span style="color:#5A6B82">Niciun articol legat încă — rețeta tehnică e goală pentru acest nivel.</span>';
+  } catch (e) {
+    el.innerHTML = `<span style="color:#E57373">Eroare: ${escapeHTML(e.message)}</span>`;
+  }
+}
+
+async function cautaArticolePentruNivel(nivelId) {
+  const termen = document.getElementById('reteta-cauta-' + nivelId).value.trim();
+  const el = document.getElementById('reteta-rezultate-' + nivelId);
+  el.textContent = 'Se caută...';
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/catalog', { method: 'POST', headers, body: JSON.stringify({ action: 'cauta_articole', termen }) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    el.innerHTML = data.articole.length
+      ? data.articole.map((a) => `
+          <div style="display:flex;align-items:center;gap:8px;background:#131B27;border-radius:7px;padding:5px 9px;margin-bottom:4px">
+            <span style="flex:1"><code>${escapeHTML(a.indicator_id)}</code> ${escapeHTML(a.denumire_articol)} ${a.catalog_nivel_id ? '<span style="color:#FF8C00">· deja legat în altă parte</span>' : ''}</span>
+            <button onclick="leagaArticolLaNivel(${a.articol_id}, '${nivelId}')" style="font-size:11px;padding:3px 9px;border-radius:6px;border:none;background:#0E9E99;color:#fff;cursor:pointer;font-weight:700">Leagă</button>
+          </div>
+        `).join('')
+      : '<span style="color:#5A6B82">Niciun rezultat.</span>';
+  } catch (e) {
+    el.innerHTML = `<span style="color:#E57373">Eroare: ${escapeHTML(e.message)}</span>`;
+  }
+}
+
+async function leagaArticolLaNivel(articolId, nivelId, forteaza) {
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/catalog', { method: 'POST', headers, body: JSON.stringify({ action: 'leaga_articol_nivel', articol_id: articolId, catalog_nivel_id: nivelId, forteaza: !!forteaza }) });
+    const data = await res.json();
+    if (!res.ok) {
+      if (res.status === 409 && confirm(data.error + '\n\nÎl muți aici?')) return leagaArticolLaNivel(articolId, nivelId, true);
+      throw new Error(data.error || 'Eroare necunoscută');
+    }
+    if (data.avertisment) alert('⚠ ' + data.avertisment);
+    loadArticoleNivel(nivelId);
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+async function dezleagaArticolDeNivel(articolId, nivelId) {
+  if (!confirm('Dezlegi acest articol de la nivel? Rețeta tehnică va exclude linia asta din calculul de preț.')) return;
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/catalog', { method: 'POST', headers, body: JSON.stringify({ action: 'dezleaga_articol_nivel', articol_id: articolId }) });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadArticoleNivel(nivelId);
   } catch (e) { alert('Eroare: ' + e.message); }
 }
 

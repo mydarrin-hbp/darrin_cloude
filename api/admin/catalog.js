@@ -410,6 +410,108 @@ async function actionGenereazaServiciiDinMaterial(req, res, user) {
   return res.status(200).json({ ok: true, material_id, rezultate, parteneri_notificati: parteneriNotificatiTotal });
 }
 
+// D2a, gaură tehnică decizie-agnostică (audit 21 August 2026) — devize_articole.
+// catalog_nivel_id nu avea niciun endpoint de scriere, doar citire (confirmat
+// „gol genuin" în lib/calculeaza-cost-recipe.js) — orice serviciu nou rămânea
+// definitiv fără cost-normă tehnică reală, indiferent câte se creau.
+// Relație N:1 (articole→nivel), nu 1:1 — FK-ul nu are unicitate, iar
+// calculeazaCostNivel() era deja proiectată pentru mai multe articole per
+// nivel (azi mereu 1 în practică). Un articol e legat de UN SINGUR nivel
+// simultan (coloană scalară, nu tabelă-punte) — reutilizarea aceleiași linii
+// tehnice pe mai multe servicii nu e posibilă azi, semnalat, nu rezolvat aici.
+async function actionLeagaArticolNivel(req, res, user) {
+  const { articol_id, catalog_nivel_id, forteaza = false } = req.body || {};
+  if (!articol_id || !catalog_nivel_id) {
+    return res.status(400).json({ error: 'articol_id și catalog_nivel_id sunt obligatorii.' });
+  }
+
+  const { data: articol, error: errArticol } = await supabaseAdmin
+    .from('devize_articole')
+    .select('articol_id, indicator_id, catalog_nivel_id')
+    .eq('articol_id', articol_id)
+    .maybeSingle();
+  if (errArticol) { console.error('[admin/catalog] leaga_articol_nivel articol', errArticol); return res.status(500).json({ error: 'Nu am putut încărca articolul.' }); }
+  if (!articol) return res.status(404).json({ error: 'Articolul nu există.' });
+  if (articol.catalog_nivel_id && articol.catalog_nivel_id !== catalog_nivel_id && !forteaza) {
+    return res.status(409).json({
+      error: 'Articolul e deja legat de alt nivel — retrimite cu forteaza:true ca să-l muți.',
+      catalog_nivel_id_curent: articol.catalog_nivel_id,
+    });
+  }
+
+  const { data: nivel, error: errNivel } = await supabaseAdmin
+    .from('catalog_niveluri')
+    .select('id, nivel, serviciu_id')
+    .eq('id', catalog_nivel_id)
+    .maybeSingle();
+  if (errNivel) { console.error('[admin/catalog] leaga_articol_nivel nivel', errNivel); return res.status(500).json({ error: 'Nu am putut încărca nivelul.' }); }
+  if (!nivel) return res.status(404).json({ error: 'Nivelul nu există.' });
+
+  // Avertisment neblocant — nicio regulă DB reală de potrivire domeniu azi,
+  // doar un tipar semantic observat (cod NACE indicator vs. cod NACE
+  // serviciu). Nu blocăm legarea, doar semnalăm admin-ului.
+  let avertisment = null;
+  const [{ data: indicator }, { data: serviciu }] = await Promise.all([
+    supabaseAdmin.from('devize_indicatoare').select('nace_cod').eq('indicator_id', articol.indicator_id).maybeSingle(),
+    supabaseAdmin.from('catalog_servicii').select('nace, titlu').eq('id', nivel.serviciu_id).maybeSingle(),
+  ]);
+  if (indicator?.nace_cod && serviciu?.nace && indicator.nace_cod !== serviciu.nace) {
+    avertisment = `Cod NACE al articolului (${indicator.nace_cod}) diferă de cel al serviciului „${serviciu.titlu}" (${serviciu.nace}) — verifică dacă legarea e corectă.`;
+  }
+
+  const { error: errUpdate } = await supabaseAdmin
+    .from('devize_articole')
+    .update({ catalog_nivel_id })
+    .eq('articol_id', articol_id);
+  if (errUpdate) { console.error('[admin/catalog] leaga_articol_nivel update', errUpdate); return res.status(500).json({ error: 'Nu am putut lega articolul.' }); }
+
+  await inregistreazaAudit({
+    admin: user, req, actiune: 'catalog_leaga_articol_nivel', entitate: 'devize_articole', entitate_id: String(articol_id),
+    detalii: { catalog_nivel_id, nivel: nivel.nivel, serviciu_id: nivel.serviciu_id, avertisment },
+  });
+
+  return res.status(200).json({ ok: true, avertisment });
+}
+
+async function actionDezleagaArticolNivel(req, res, user) {
+  const { articol_id } = req.body || {};
+  if (!articol_id) return res.status(400).json({ error: 'articol_id obligatoriu.' });
+
+  const { error } = await supabaseAdmin
+    .from('devize_articole')
+    .update({ catalog_nivel_id: null })
+    .eq('articol_id', articol_id);
+  if (error) { console.error('[admin/catalog] dezleaga_articol_nivel', error); return res.status(500).json({ error: 'Nu am putut dezlega articolul.' }); }
+
+  await inregistreazaAudit({ admin: user, req, actiune: 'catalog_dezleaga_articol_nivel', entitate: 'devize_articole', entitate_id: String(articol_id) });
+  return res.status(200).json({ ok: true });
+}
+
+async function actionListeazaArticoleNivel(req, res) {
+  const { catalog_nivel_id } = req.body || {};
+  if (!catalog_nivel_id) return res.status(400).json({ error: 'catalog_nivel_id obligatoriu.' });
+  const { data, error } = await supabaseAdmin
+    .from('devize_articole')
+    .select('articol_id, indicator_id, denumire_articol, unitate_masura')
+    .eq('catalog_nivel_id', catalog_nivel_id)
+    .order('articol_id');
+  if (error) { console.error('[admin/catalog] listeaza_articole_nivel', error); return res.status(500).json({ error: 'Nu am putut încărca articolele legate.' }); }
+  return res.status(200).json({ ok: true, articole: data || [] });
+}
+
+async function actionCautaArticole(req, res) {
+  const { termen = '' } = req.body || {};
+  let q = supabaseAdmin
+    .from('devize_articole')
+    .select('articol_id, indicator_id, denumire_articol, unitate_masura, catalog_nivel_id')
+    .limit(30)
+    .order('articol_id');
+  if (termen) q = q.or(`denumire_articol.ilike.%${termen}%,indicator_id.ilike.%${termen}%`);
+  const { data, error } = await q;
+  if (error) { console.error('[admin/catalog] cauta_articole', error); return res.status(500).json({ error: 'Nu am putut căuta articolele.' }); }
+  return res.status(200).json({ ok: true, articole: data || [] });
+}
+
 const ACTIUNI = {
   list: actionList,
   creeaza_serviciu: actionCreeazaServiciu,
@@ -423,6 +525,10 @@ const ACTIUNI = {
   sterge_pret: actionStergePret,
   recalculeaza_pret: actionRecalculeazaPret,
   genereaza_servicii_din_material: actionGenereazaServiciiDinMaterial,
+  leaga_articol_nivel: actionLeagaArticolNivel,
+  dezleaga_articol_nivel: actionDezleagaArticolNivel,
+  listeaza_articole_nivel: actionListeazaArticoleNivel,
+  cauta_articole: actionCautaArticole,
 };
 
 async function handler(req, res, user) {
