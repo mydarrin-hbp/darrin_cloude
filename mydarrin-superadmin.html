@@ -2090,9 +2090,10 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
           <div id="cat-creare-msg" style="margin-top:8px;font-size:12px"></div>
         </div>
 
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
           <span style="font-size:14px;font-weight:700;color:#fff">Intrări existente</span>
-          <button onclick="loadCatalogList()" class="btn-p" style="font-size:12px;padding:8px 14px;margin-left:auto">↻ Reîncarcă</button>
+          <input id="cat-filtru" placeholder="Caută după titlu sau domeniu (ex: grădinărit)" oninput="filtreazaCatalogList()" style="flex:1;min-width:200px;background:#131B27;border:1px solid #2D3F55;border-radius:9px;padding:8px 11px;color:#fff;font-size:12.5px">
+          <button onclick="loadCatalogList()" class="btn-p" style="font-size:12px;padding:8px 14px">↻ Reîncarcă</button>
         </div>
         <div id="cat-lista" style="color:#8BA3C0;font-size:13px">Se încarcă...</div>
       </div>
@@ -5151,6 +5152,12 @@ async function creeazaServiciuCatalog() {
   }
 }
 
+// D2a Prioritate 2 (21 august 2026, aprobat) — cache local pentru filtrare
+// client-side pe titlu/domeniu ("un admin care caută 'grădinărit' trebuie
+// să găsească serviciul, fără să știe codul") — distinctă de căutarea
+// tehnică reteta-cauta (devize_articole, deja acceptă nume, neatinsă aici).
+let CATALOG_SERVICII_CACHE = [];
+
 async function loadCatalogList() {
   const el = document.getElementById('cat-lista');
   if (!el) return;
@@ -5161,9 +5168,30 @@ async function loadCatalogList() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
 
-    if (!data.servicii.length) { el.innerHTML = '<div style="padding:20px;text-align:center">Nicio intrare încă în această categorie.</div>'; return; }
+    CATALOG_SERVICII_CACHE = data.servicii || [];
+    const filtruEl = document.getElementById('cat-filtru');
+    if (filtruEl) filtruEl.value = '';
+    renderCatalogList(CATALOG_SERVICII_CACHE);
+  } catch (e) {
+    el.innerHTML = `<div style="color:#E57373">Eroare: ${escapeHTML(e.message)}</div>`;
+  }
+}
 
-    el.innerHTML = data.servicii.map((s) => `
+function filtreazaCatalogList() {
+  const termen = (document.getElementById('cat-filtru')?.value || '').trim().toLowerCase();
+  if (!termen) { renderCatalogList(CATALOG_SERVICII_CACHE); return; }
+  const filtrate = CATALOG_SERVICII_CACHE.filter((s) =>
+    (s.titlu || '').toLowerCase().includes(termen) || (s.domeniu || '').toLowerCase().includes(termen));
+  renderCatalogList(filtrate);
+}
+
+function renderCatalogList(servicii) {
+  const el = document.getElementById('cat-lista');
+  if (!el) return;
+  try {
+    if (!servicii.length) { el.innerHTML = '<div style="padding:20px;text-align:center">Nicio intrare găsită.</div>'; return; }
+
+    el.innerHTML = servicii.map((s) => `
       <div style="background:#0F1826;border:1px solid #2D3F55;border-radius:12px;padding:14px 16px;margin-bottom:10px">
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <div style="flex:1;min-width:180px">
@@ -5195,7 +5223,12 @@ async function loadCatalogList() {
                 <button onclick="stergeNivelCatalog('${n.id}', '${s.id}')" style="font-size:11px;padding:5px 10px;border-radius:7px;border:1px solid rgba(192,57,43,.4);background:transparent;color:#E57373;cursor:pointer;margin-left:auto">Șterge nivelul</button>
               </div>
               <div style="margin-top:8px;padding-top:8px;border-top:1px dashed #2D3F55">
-                <button onclick="toggleRetetaNivel('${n.id}')" style="font-size:10.5px;padding:4px 9px;border-radius:6px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">Rețetă tehnică (D2a) — articole legate ▾</button>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                  <button onclick="toggleRetetaNivel('${n.id}')" style="font-size:10.5px;padding:4px 9px;border-radius:6px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">Rețetă tehnică (D2a) — articole legate ▾</button>
+                  <input id="recalc-tara-${n.id}" value="RO" style="width:44px;background:#0F1826;border:1px solid #2D3F55;border-radius:6px;padding:4px 6px;color:#fff;font-size:10.5px;text-transform:uppercase">
+                  <button onclick="recalculeazaPretNivel('${n.id}')" style="font-size:10.5px;padding:4px 9px;border-radius:6px;border:none;background:#FF8C00;color:#fff;cursor:pointer;font-weight:700">Recalculează preț</button>
+                </div>
+                <div id="recalc-rezultat-${n.id}" style="font-size:11px;margin-top:6px"></div>
                 <div id="reteta-nivel-${n.id}" style="display:none;margin-top:8px">
                   <div id="reteta-lista-${n.id}" style="font-size:11px;color:#8BA3C0">Se încarcă...</div>
                   <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
@@ -5348,6 +5381,33 @@ async function dezleagaArticolDeNivel(articolId, nivelId) {
     if (!res.ok) throw new Error((await res.json()).error);
     loadArticoleNivel(nivelId);
   } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+// D2a Prioritate 2 (21 august 2026, aprobat) — actiunea recalculeaza_pret
+// exista deja, testata, in api/admin/catalog.js, dar nu avea niciun buton
+// in UI care s-o declanseze (gap confirmat in auditul precedent). Nu
+// ascunde refuzul motorului (resurse_fara_pret) -- il afiseaza clar, exact
+// comportamentul corect deja existent in API.
+async function recalculeazaPretNivel(nivelId) {
+  const tara_cod = (document.getElementById('recalc-tara-' + nivelId)?.value || 'RO').trim().toUpperCase();
+  const el = document.getElementById('recalc-rezultat-' + nivelId);
+  if (el) el.innerHTML = '<span style="color:#8BA3C0">Se calculează...</span>';
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/catalog', { method: 'POST', headers, body: JSON.stringify({ action: 'recalculeaza_pret', nivel_id: nivelId, tara_cod }) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+
+    if (!data.scris) {
+      const lista = (data.resurse_fara_pret || []).map((r) => escapeHTML(r.denumire || r.resursa_id || String(r))).join(', ');
+      if (el) el.innerHTML = `<span style="color:#E5A83D">⚠ Nu s-a scris niciun preț — resurse fără tarif: ${lista || 'necunoscute'}.</span>`;
+      return;
+    }
+    if (el) el.innerHTML = `<span style="color:#4CBE83">✓ Preț nou calculat: <b>${data.pret.pret_final} ${escapeHTML(tara_cod)}</b></span>`;
+    loadCatalogList();
+  } catch (e) {
+    if (el) el.innerHTML = `<span style="color:#E57373">Eroare: ${escapeHTML(e.message)}</span>`;
+  }
 }
 
 async function creeazaPretCatalog(nivelId) {
