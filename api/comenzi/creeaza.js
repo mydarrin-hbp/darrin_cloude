@@ -71,6 +71,7 @@ const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { incearcaAlocarePartener } = require('../../lib/aloca-partener');
 const { calculeazaPret, citestePragMinimComanda } = require('../../lib/calculeaza-pret');
+const { calculeazaCostNivel } = require('../../lib/calculeaza-cost-recipe');
 const { renderEmailPrimaComanda, limbaProfilEmailComportamental } = require('../../lib/i18n');
 const { fromHeader } = require('../../lib/email-sender');
 
@@ -84,7 +85,26 @@ async function handler(req, res, user) {
     data_programata = null, ora_inceput_programata = null, ora_sfarsit_programata = null,
     masa_totala_kg = null, nivel_transport_marfa = null,
     metoda_plata = 'card',
+    nivel_id = null, cantitate = null,
   } = req.body || {};
+
+  // „Preț per cantitate reală comandată", pașii 1-3 (22 august 2026, aprobat,
+  // funcțional doar pe cele 5 servicii pilot cu rețetă tehnică legată —
+  // devize_articole.catalog_nivel_id). Când apelantul trimite nivel_id,
+  // prețul NU mai vine din client (cost_*/valoare_totala trimise sunt
+  // ignorate pe această cale) — se calculează integral server-side, din
+  // rețeta reală, la cantitatea cerută, exact ca /api/public/calculeaza-pret-nivel.js.
+  const areNivelId = typeof nivel_id === 'string' && nivel_id.length > 0;
+  if (nivel_id !== null && !areNivelId) {
+    return res.status(400).json({ error: 'nivel_id trebuie să fie un uuid (text).' });
+  }
+  let cantitateNivel = 1;
+  if (areNivelId) {
+    cantitateNivel = cantitate === null ? 1 : Number(cantitate);
+    if (!Number.isFinite(cantitateNivel) || cantitateNivel <= 0) {
+      return res.status(400).json({ error: 'cantitate trebuie să fie un număr pozitiv.' });
+    }
+  }
 
   // FIX (bug #23, audit 19 August 2026): selectorul din mydarrin-checkout.html
   // comuta doar o clasă CSS — alegerea clientului nu ajungea niciodată aici.
@@ -117,7 +137,7 @@ async function handler(req, res, user) {
   const areComponenteItemizate = [cost_baza_servicii, cost_materiale, cost_chirie_scule, cost_curier, cost_asigurare]
     .some((v) => typeof v === 'number' && v > 0) || (typeof masa_totala_kg === 'number' && masa_totala_kg > 0);
 
-  if (!areComponenteItemizate) {
+  if (!areComponenteItemizate && !areNivelId) {
     if (typeof valoare_totala !== 'number' || !(valoare_totala > 0)) {
       return res.status(400).json({ error: 'valoare_totala (numeric, pozitiv) este obligatorie' });
     }
@@ -148,6 +168,30 @@ async function handler(req, res, user) {
     }
   }
 
+  // Calculul de preț pe nivel_id se face ÎNAINTE de try-ul principal, ca un
+  // refuz (rețetă incompletă) să întoarcă 400 clar, nu 500 generic — spre
+  // deosebire de calea itemizată de mai jos, unde clientul deja a calculat
+  // (greșit sau nu) sumele, aici serverul e singura sursă de adevăr.
+  let nivelCalculat = null;
+  if (areNivelId) {
+    const taraCalcul = tara_cod ? String(tara_cod).toUpperCase() : 'RO';
+    const cost = await calculeazaCostNivel({ nivelId: nivel_id, taraCod: taraCalcul, cantitate: cantitateNivel });
+    if (cost.resurse_fara_pret.length) {
+      return res.status(400).json({
+        error: 'Rețeta tehnică a acestui serviciu nu are toate resursele tarifate — comanda nu poate fi calculată automat.',
+        code: 'RETETA_INCOMPLETA',
+        resurse_fara_pret: cost.resurse_fara_pret.map((r) => ({ denumire: r.denumire, tip: r.tip, unitate: r.unitate })),
+      });
+    }
+    const calc = await calculeazaPret({
+      cost_baza_servicii: cost.cost_baza_servicii,
+      cost_materiale: cost.cost_materiale,
+      cost_chirie_scule: cost.cost_utilaj,
+      tara: taraCalcul,
+    });
+    nivelCalculat = { cantitate: cantitateNivel, calc };
+  }
+
   try {
     const year = new Date().getFullYear();
     const { count } = await supabaseAdmin
@@ -176,7 +220,25 @@ async function handler(req, res, user) {
       // deci ar fi incorect să pretindem că suma e deja blocată în escrow.
     };
 
-    const insertPayload = areComponenteItemizate
+    const insertPayload = areNivelId
+      ? {
+          ...insertBase,
+          nivel_id,
+          cantitate: nivelCalculat.cantitate,
+          suma_totala_platita: nivelCalculat.calc.pret_final,
+          suma_manopera: nivelCalculat.calc.cost_baza_servicii,
+          suma_materiale: nivelCalculat.calc.cost_materiale,
+          suma_chirie_scule: nivelCalculat.calc.cost_chirie_scule,
+          suma_transport: nivelCalculat.calc.cost_curier,
+          suma_transport_greutate: nivelCalculat.calc.cost_transport_greutate,
+          suma_asigurare: nivelCalculat.calc.cost_asigurare,
+          suma_marketing: nivelCalculat.calc.cost_marketing,
+          suma_mentenanta: nivelCalculat.calc.cost_mentenanta,
+          suma_comision_platforma: nivelCalculat.calc.comision_platforma,
+          tva_pct: nivelCalculat.calc.tva_pct,
+          tva_suma: nivelCalculat.calc.tva_suma,
+        }
+      : areComponenteItemizate
       ? await (async () => {
           const calc = await calculeazaPret({
             cost_baza_servicii, cost_materiale, cost_chirie_scule, cost_curier, cost_asigurare,
