@@ -2647,7 +2647,18 @@ document.addEventListener('DOMContentLoaded', function() {
         // Mapare pe convenția deja folosită de fluxul B2G (metoda-plata-config.js,
         // METODA_PLATA_LABEL): 'transfer' (UI) → 'ordin_plata' (backend).
         const metodaPlataB2C = selectedPaymentMethod === 'transfer' ? 'ordin_plata' : selectedPaymentMethod;
-        const corpComun = { adresa, tara_cod: taraComanda, regiune: regiuneComanda, localitate: localitateComanda, cost_baza_servicii, cost_asigurare, cost_materiale, cost_chirie_scule, valoare_totala, data_programata: dataProgramata, ora_inceput_programata: oraInceputProgramata, ora_sfarsit_programata: oraSfarsitProgramata, metoda_plata: metodaPlataB2C };
+        // Mod pilot (22 august 2026, aprobat) — nivel_id trimis de
+        // mydarrin-produs.html (myd_checkout_config) doar pentru cele 5
+        // servicii cu rețetă tehnică legată. Pe această cale NU trimitem
+        // deloc cost_baza_servicii/cost_materiale/cost_chirie_scule/
+        // valoare_totala — api/comenzi/creeaza.js calculează integral
+        // server-side din rețeta reală, ignoră orice cost ar trimite
+        // clientul (integritate, nu doar comoditate — vezi FIX din aceeași
+        // zi pe calea itemizată). Restul comenzilor (orice alt produs)
+        // rămân neatinse, pe corpComun de mai jos.
+        const corpComun = MYD_CFG?.nivel_id
+          ? { adresa, tara_cod: taraComanda, regiune: regiuneComanda, localitate: localitateComanda, nivel_id: MYD_CFG.nivel_id, cantitate: MYD_CFG.cantitate || 1, data_programata: dataProgramata, ora_inceput_programata: oraInceputProgramata, ora_sfarsit_programata: oraSfarsitProgramata, metoda_plata: metodaPlataB2C }
+          : { adresa, tara_cod: taraComanda, regiune: regiuneComanda, localitate: localitateComanda, cost_baza_servicii, cost_asigurare, cost_materiale, cost_chirie_scule, valoare_totala, data_programata: dataProgramata, ora_inceput_programata: oraInceputProgramata, ora_sfarsit_programata: oraSfarsitProgramata, metoda_plata: metodaPlataB2C };
 
         // Flux B2G (audit Secțiunea 43/44, 31 Iulie 2026) — endpoint SEPARAT,
         // api/comenzi/creeaza.js (calea B2C de mai jos, else) rămâne neatins.
@@ -3378,6 +3389,27 @@ function applyChecoutConfigReal(){
   const item2 = document.getElementById('cart-item-2');
   if (item2) item2.style.display = 'none';
   setEl2('cart-count-label', '1 serviciu');
+
+  // Mod pilot (22 august 2026) — pe calea nivel_id, api/comenzi/creeaza.js
+  // calculează prețul EXCLUSIV din rețeta tehnică (nivel_id+cantitate),
+  // ignorând orice alt cost trimis. B2G, promo și asigurarea extinsă din
+  // checkout (distinctă de cea din produs.html) n-au echivalent pe această
+  // cale — dezactivate explicit aici ca prețul afișat să nu difere niciodată
+  // de ce se încasează efectiv. Rămân itemi separați, cu aprobare proprie.
+  if (cfg.nivel_id) {
+    const b2gToggle = document.getElementById('b2g-toggle');
+    if (b2gToggle) { b2gToggle.checked = false; b2gToggle.disabled = true; }
+    const b2gLabel = b2gToggle?.closest('label');
+    if (b2gLabel) b2gLabel.title = 'Indisponibil pentru acest serviciu (mod pilot).';
+
+    const cbIns = document.getElementById('cb-insurance');
+    if (cbIns) { cbIns.checked = false; cbIns.disabled = true; }
+    const cbInsLabel = cbIns?.closest('label');
+    if (cbInsLabel) cbInsLabel.title = 'Indisponibil pentru acest serviciu (mod pilot).';
+
+    const promoInput = document.getElementById('promo-input');
+    if (promoInput) { promoInput.disabled = true; promoInput.placeholder = 'Indisponibil pentru acest serviciu'; }
+  }
 
   recalcCheckoutTotal();
 }

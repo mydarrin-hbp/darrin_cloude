@@ -786,7 +786,9 @@ function navTo(page) {
 // hardcodat (BASE_SUBTOTAL), nelegat de ce configura efectiv clientul aici.
 function salveazaStareaCheckout() {
   try {
-    const titlu = (typeof PRODUCTS_DB !== 'undefined' && PRODUCTS_DB[S.slug]?.title) || S.slug;
+    const titlu = S.pilotMode
+      ? (document.getElementById('prod-title')?.textContent || S.slug)
+      : ((typeof PRODUCTS_DB !== 'undefined' && PRODUCTS_DB[S.slug]?.title) || S.slug);
     sessionStorage.setItem('myd_checkout_config', JSON.stringify({
       titlu, slug: S.slug, type: S.type, tier: S.tier, tierLabel: S.tierLabel,
       qty: S.qty, unit: S.unit, orderType: S.orderType,
@@ -805,6 +807,12 @@ function salveazaStareaCheckout() {
       materialePrice: S.materialePrice, inchirieriPrice: S.inchirieriPrice,
       materiale: S.materiale.map(m => ({ titlu: m.titlu, qty: m.qty, pret: _addonPretNivel(m) })),
       inchirieri: S.inchirieri.map(m => ({ titlu: m.titlu, qty: m.qty, pret: _addonPretNivel(m) })),
+      // Mod pilot (22 august 2026) — nivel_id+cantitate, singurele câmpuri
+      // citite de calea nouă din api/comenzi/creeaza.js; null pentru orice
+      // alt produs (calea veche, cost_*, neatinsă).
+      nivel_id: S.pilotMode ? S.pilotNivelId : null,
+      cantitate: S.pilotMode ? S.qty : null,
+      pilotPretConfirmat: S.pilotMode ? _pilotPretConfirmat : null,
       salvat_la: Date.now(),
     }));
   } catch (e) {
@@ -1596,7 +1604,7 @@ function triggerHeaderSearch(){
              Curier rămâne neatins aici: nu are echivalent de catalog cu
              preț propriu (alocare pe zonă/disponibilitate, nu pe listă) — a
              adăuga un selector fără o sursă reală de preț ar fi fost inventat. -->
-        <div style="margin-bottom:20px">
+        <div style="margin-bottom:20px" id="addon-section-wrap">
           <label class="f-label" style="margin-bottom:10px">Adaugă materiale sau echipamente (opțional)</label>
           <div style="display:flex;gap:8px;margin-bottom:10px">
             <button type="button" id="addon-tab-materiale" onclick="switchAddonTab('materiale')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid #0E9E99;background:#0E9E99;color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">Materiale</button>
@@ -3363,7 +3371,11 @@ let S = {
   // Formă: { id, titlu, unitate, preturi:{bronz,argint,aur,platinum}, qty }
   materiale:[], inchirieri:[],
   materialePrice:0, inchirieriPrice:0,
-  total:0,doneSteps:new Set(),curStep:1
+  total:0,doneSteps:new Set(),curStep:1,
+  // Mod pilot (22 august 2026, aprobat) — preț calculat integral server-side
+  // din rețeta tehnică reală, pentru cele 5 servicii cu catalog_nivel_id
+  // legat. Vezi initPilotProdus()/recalcPilot() mai jos.
+  pilotMode:false, pilotServiciuId:null, pilotNiveluri:[], pilotNivelId:null,
 };
 
 // ══ CATALOG REAL — MATERIALE / ÎNCHIRIERI (G16) ══
@@ -3489,9 +3501,217 @@ function renderAddonSelected() {
     }).join('');
 }
 
+// ══ MOD PILOT — conectare la motorul de preț real (22 august 2026, aprobat) ══
+// Cele 5 servicii cu rețetă tehnică legată (devize_articole.catalog_nivel_id),
+// testate deja live prin API în lib/calculeaza-cost-recipe.js +
+// api/public/calculeaza-pret-nivel.js + api/comenzi/creeaza.js (calea
+// nivel_id). Aici doar conectarea front-end-ului, scop STRICT la aceste 5 —
+// nicio schimbare pe PRODUCTS_DB/TIER_DB sau pe restul catalogului.
+//
+// Mapare slug (= catalog_servicii.id_serviciu, vezi comentariul din
+// mydarrin-catalog.html „Cardurile din DB au slug-ul = id_serviciu") →
+// catalog_servicii.id (uuid). NU mapăm direct la nivel_id: numărul de
+// niveluri reale per serviciu variază și poate crește în timp (principiul
+// „Serviciu de Bază + Tiers", A+Δ, aprobat 22 august 2026) — front-end-ul
+// citește live câte niveluri au preț real calculabil, fără să presupună un
+// număr fix. Corecție explicită a utilizatorului (22 august 2026): NICIUN
+// nivel nu se afișează dezactivat/„în curând" — doar cele cu preț real intră
+// în grilă; dacă e unul singur, nu se mai arată nicio grilă de comparație.
+const PILOT_SERVICII_MAP = {
+  'gradinărit-agri': '581ee944-f0fc-434c-8d46-7b1f7cb21826',
+  'servicii-mutari': '0893a391-b386-456b-a367-23c0eebf4116',
+  'reparatii-utilaje-agricole': '5db12c3f-1b62-4966-97e8-297107de772e',
+  'service-moto': '87fd92b3-caf4-438f-abe7-87b567c193cb',
+  'livrare-turnare-betoane': '67b064da-70b2-47be-9e62-e852f931efc4',
+};
+const NIVEL_RANG = { Bronze: 0, Silver: 1, Gold: 2, Platinum: 3 };
+const NIVEL_LABEL = { Bronze: 'BRONZ', Silver: 'ARGINT', Gold: 'AUR', Platinum: 'PLATINUM' };
+const NIVEL_COLOR = { Bronze: '#CD7F32', Silver: '#8BA3C0', Gold: '#FF8C00', Platinum: '#7AB3E0' };
+let _pilotPretConfirmat = false;
+let _pilotDebounce = null;
+
+async function initPilotProdus(slug) {
+  const serviciuId = PILOT_SERVICII_MAP[slug];
+  if (!serviciuId || !SUPA_PROD_ANON) return false;
+
+  let servRow, niveluriRows;
+  try {
+    const headers = { apikey: SUPA_PROD_ANON, Authorization: `Bearer ${SUPA_PROD_ANON}` };
+    const [servRes, nivRes] = await Promise.all([
+      fetch(`${SUPA_PROD_URL}/rest/v1/catalog_servicii?id=eq.${serviciuId}&select=id,titlu,domeniu`, { headers }).then(r => r.ok ? r.json() : []),
+      fetch(`${SUPA_PROD_URL}/rest/v1/catalog_niveluri?serviciu_id=eq.${serviciuId}&select=id,nivel,descriere`, { headers }).then(r => r.ok ? r.json() : []),
+    ]);
+    servRow = servRes[0]; niveluriRows = nivRes;
+  } catch (e) {
+    console.warn('[pilot] nu am putut citi catalog_servicii/niveluri:', e);
+    return false;
+  }
+  if (!servRow || !niveluriRows?.length) return false;
+
+  const taraCod = S.tara_cod || 'RO';
+  const preturiReale = [];
+  for (const n of niveluriRows) {
+    try {
+      const res = await fetch('/api/public/calculeaza-pret-nivel', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nivel_id: n.id, cantitate: 1, tara_cod: taraCod }),
+      });
+      const data = await res.json();
+      if (data?.ok && data.disponibil) {
+        preturiReale.push({ nivel_id: n.id, nivel: n.nivel, descriere: n.descriere, pret_final: data.pret_final });
+      }
+    } catch (e) {
+      console.warn('[pilot] calcul preț eșuat pentru nivel', n.id, e);
+    }
+  }
+  // Onest: dacă niciun nivel nu are azi preț real calculabil (rețetă
+  // incompletă), pagina cade pe calea veche (fallback „în lucru" din
+  // buildFallbackProduct) — nu forțează un mod pilot fără nimic real de arătat.
+  if (!preturiReale.length) return false;
+
+  preturiReale.sort((a, b) => (NIVEL_RANG[a.nivel] ?? 9) - (NIVEL_RANG[b.nivel] ?? 9));
+
+  S.pilotMode = true;
+  S.pilotServiciuId = serviciuId;
+  S.pilotNiveluri = preturiReale;
+  S.pilotNivelId = preturiReale[0].nivel_id;
+  S.type = 'serviciu'; S.unit = 'ore';
+
+  document.title = servRow.titlu + ' | My Darrin';
+  setEl('bc-title', servRow.titlu);
+  setEl('bc-cat', 'Servicii');
+  setEl('prod-title', servRow.titlu);
+  setEl('prod-desc', 'Serviciu furnizat de parteneri verificați · Preț calculat live din rețeta tehnică reală');
+  setEl('prod-rating', 'Nou · preț calculat live');
+  setEl('prod-type-chip', 'Serviciu');
+  const prodImgEl = document.getElementById('prod-img');
+  if (prodImgEl) { prodImgEl.style.backgroundImage = ''; prodImgEl.textContent = ''; }
+  const sumIcon = document.getElementById('sum-icon'); if (sumIcon) sumIcon.textContent = '';
+  setEl('sum-title', servRow.titlu);
+  setEl('sum-sub', 'Serviciu');
+  setEl('qty-label-lbl', 'Cantitate (ore)');
+  setEl('unit-lbl', 'ore');
+  setEl('sec1-ttl', 'Configurare serviciu');
+  const reqBox = document.getElementById('req-box'); if (reqBox) reqBox.style.display = 'none';
+
+  renderPilotTierUI();
+
+  // Integritate (nu doar comoditate): materialele/închirierile adăugate
+  // manual (G16) folosesc un preț per tier vechi, static (item.preturi[S.tier])
+  // — incompatibil cu calea nivel_id din api/comenzi/creeaza.js, care nu
+  // acceptă azi cost_materiale/cost_chirie_scule trimise de client pe această
+  // cale. Ascunse aici ca să nu apară în UI un cost pe care comanda reală
+  // l-ar ignora silențios — de reluat separat, cu aprobare proprie, când
+  // calea nivel_id va accepta și aceste componente.
+  const addonWrap = document.getElementById('addon-section-wrap');
+  if (addonWrap) addonWrap.style.display = 'none';
+  // Același motiv: extinderile de asigurare (Standard/Premium) n-au
+  // echivalent pe calea nivel_id (calculeazaPret nu primește cost_asigurare
+  // acolo) — rămâne vizibilă doar polița de bază, gratuită.
+  const insStd = document.getElementById('ins-standard'); if (insStd) insStd.style.display = 'none';
+  const insPrem = document.getElementById('ins-premium'); if (insPrem) insPrem.style.display = 'none';
+
+  recalcPilot();
+  return true;
+}
+
+function renderPilotTierUI() {
+  const niv = S.pilotNiveluri;
+  const tierSection = document.getElementById('tier-section');
+  if (niv.length <= 1) {
+    // Un singur nivel real — fără grilă de comparație (corecție explicită:
+    // niciodată coloane goale/dezactivate/„în curând").
+    if (tierSection) tierSection.style.display = 'none';
+    return;
+  }
+  if (tierSection) tierSection.style.display = '';
+  const theadRow = document.querySelector('#tier-table thead tr');
+  const tbody = document.getElementById('tier-tbody');
+  const tfootRow = document.querySelector('#tier-table tfoot tr');
+  if (!theadRow || !tbody || !tfootRow) return;
+
+  theadRow.innerHTML = '<th style="text-align:left;min-width:160px">NIVEL</th>' +
+    niv.map((n, i) => `<th class="tier-col-header${i === 0 ? ' selected-col' : ''}" data-pilot-nivel="${n.nivel_id}" style="color:${NIVEL_COLOR[n.nivel] || '#8BA3C0'};cursor:pointer">${NIVEL_LABEL[n.nivel] || String(n.nivel || '').toUpperCase()}</th>`).join('');
+  tbody.innerHTML = `<tr><td style="text-align:left">Descriere</td>${niv.map(n => `<td>${n.descriere || '—'}</td>`).join('')}</tr>`;
+  tfootRow.innerHTML = '<td style="color:#4A6080;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:12px 16px">Preț (Lei)</td>' +
+    niv.map(n => `<td style="text-align:center;font-weight:800;color:${NIVEL_COLOR[n.nivel] || '#8BA3C0'};font-size:14px" data-pilot-price="${n.nivel_id}">${n.pret_final}</td>`).join('');
+
+  theadRow.querySelectorAll('[data-pilot-nivel]').forEach((th) => {
+    th.onclick = () => selectPilotNivel(th.dataset.pilotNivel);
+  });
+  const dc = document.getElementById('tier-detail-card'); if (dc) dc.style.display = 'none';
+}
+
+function selectPilotNivel(nivelId) {
+  S.pilotNivelId = nivelId;
+  document.querySelectorAll('#tier-table thead [data-pilot-nivel]').forEach((th) => {
+    th.classList.toggle('selected-col', th.dataset.pilotNivel === nivelId);
+  });
+  recalcPilot();
+}
+
+function recalcPilot() {
+  const qty = parseInt(document.getElementById('qty-input')?.value || 1) || 1;
+  S.qty = qty;
+  clearTimeout(_pilotDebounce);
+  _pilotDebounce = setTimeout(() => _recalcPilotNow(qty), 350);
+}
+
+async function _recalcPilotNow(qty) {
+  const nivelId = S.pilotNivelId;
+  if (!nivelId) return;
+  const taraCod = S.tara_cod || 'RO';
+  const contBtn = document.querySelector('#sec-1 .btn-primary');
+  let data;
+  try {
+    const res = await fetch('/api/public/calculeaza-pret-nivel', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nivel_id: nivelId, cantitate: qty, tara_cod: taraCod }),
+    });
+    data = await res.json();
+  } catch (e) {
+    _pilotPretConfirmat = false;
+    setEl('s-total', 'Eroare — reîncearcă');
+    if (contBtn) contBtn.disabled = true;
+    return;
+  }
+  if (!data?.ok || !data.disponibil) {
+    _pilotPretConfirmat = false;
+    setEl('s-total', 'Indisponibil');
+    setEl('dv-total', 'Indisponibil');
+    if (contBtn) contBtn.disabled = true;
+    return;
+  }
+  _pilotPretConfirmat = true;
+  if (contBtn) contBtn.disabled = false;
+
+  S.total = data.pret_final;
+  S.basePrice = data.subtotal_variabil;
+  S.bazaRaw = data.subtotal_variabil;
+  S.tierPrice = data.subtotal_variabil;
+
+  const nivelSel = S.pilotNiveluri.find((n) => n.nivel_id === nivelId);
+  setEl('s-nivel', nivelSel ? (NIVEL_LABEL[nivelSel.nivel] || nivelSel.nivel) : 'Standard');
+  setEl('s-qty', qty + ' ' + S.unit);
+  setEl('s-base', fmtCurrency(data.subtotal_variabil));
+  setEl('s-zone', 'Preț calculat live din rețetă');
+  setEl('s-tip', '');
+  setEl('s-ins', 'Bază (inclusă)');
+  setEl('s-plat', '—');
+  setEl('s-tva', '—');
+  setEl('s-total', data.pret_final.toLocaleString('ro-RO'));
+
+  setEl('dv-total', fmtCurrency(data.pret_final));
+  setEl('dv-confirm-amt', fmtCurrency(data.pret_final));
+  setEl('esc-amount', fmtCurrency(data.pret_final));
+  setEl('launch-amt', fmtCurrency(data.pret_final));
+  setEl('fin-svc', (document.getElementById('prod-title')?.textContent || S.slug));
+  setEl('fin-qty', qty + ' ' + S.unit);
+}
+
 // ══ INIT ══
-document.addEventListener('DOMContentLoaded',()=>{
-  loadFromURL();
+document.addEventListener('DOMContentLoaded',async ()=>{
+  await loadFromURL();
   initCal();
   initReveal();
   selIns('none');
@@ -3530,11 +3750,24 @@ function buildFallbackProduct(slug, type) {
   };
 }
 
-function loadFromURL(){
+async function loadFromURL(){
   const p = new URLSearchParams(window.location.search);
   const slug = p.get('slug')||'inlocuire-calorifer';
   const urlType = p.get('type');
   S.slug = slug;
+
+  // Mod pilot (22 august 2026, aprobat) — scop STRICT la cele 5 servicii cu
+  // rețetă tehnică legată (PILOT_SERVICII_MAP, definit mai jos). Dacă
+  // reușește (există măcar un nivel cu preț real calculabil), preia complet
+  // configurarea paginii și oprește execuția aici — restul catalogului
+  // (PRODUCTS_DB/TIER_DB, ~26 produse + fallback-ul de categorie) rămâne pe
+  // calea veche, neatinsă. Dacă eșuează (rețea, sau slug pilot fără niciun
+  // nivel disponibil azi), cade pe calea veche ca înainte de acest fix.
+  if (PILOT_SERVICII_MAP[slug]) {
+    const ok = await initPilotProdus(slug);
+    if (ok) return;
+  }
+
   const prod = PRODUCTS_DB[slug] || buildFallbackProduct(slug, urlType);
   // Pre-fill from consultanta redirect
   const urlAddr = p.get('addr')||'';
@@ -3706,6 +3939,9 @@ function selectTierCol(tier){
 
 // ══ RECALC ══
 function recalc(){
+  // Mod pilot: prețul e calculat integral server-side (rețetă reală), nu
+  // client-side ca mai jos — vezi recalcPilot()/_recalcPilotNow().
+  if (S.pilotMode) { recalcPilot(); return; }
   const qty = parseInt(document.getElementById('qty-input')?.value||1)||1;
   S.qty = qty;
   const brut = S.tierPrice * qty;
@@ -3835,6 +4071,9 @@ async function geocodeazaAdresaComenzii(adresa){
     const tara=(a.country_code||'ro').toUpperCase();
     S.tara_cod=tara; S.regiune=judet||null; S.localitate=oras||null;
     if(zoneEl) zoneEl.textContent=[oras,tara].filter(Boolean).join(', ')||'—';
+    // Mod pilot: pragul minim/TVA sunt per țară — recalculăm cu tara_cod real
+    // odată detectată adresa (până atunci, calculul inițial folosise fallback 'RO').
+    if (S.pilotMode) recalcPilot();
   }catch(e){
     if(zoneEl) zoneEl.textContent='adresă nedetectată — se folosește zona implicită';
   }
