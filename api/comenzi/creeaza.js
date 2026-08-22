@@ -70,7 +70,7 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { incearcaAlocarePartener } = require('../../lib/aloca-partener');
-const { calculeazaPret } = require('../../lib/calculeaza-pret');
+const { calculeazaPret, citestePragMinimComanda } = require('../../lib/calculeaza-pret');
 const { renderEmailPrimaComanda, limbaProfilEmailComportamental } = require('../../lib/i18n');
 const { fromHeader } = require('../../lib/email-sender');
 
@@ -199,12 +199,13 @@ async function handler(req, res, user) {
             tva_suma: calc.tva_suma,
           };
         })()
-      // FIX (gaură de integritate, audit 22 august 2026): calea neitemizată
-      // nu trece deloc prin lib/calculeaza-pret.js (deja reparat acolo pentru
-      // calea itemizată) — valoare_totala vine direct din body, neverificată.
-      // Același prag minim (VMC=100), aplicat acum și aici, ca nicio comandă
-      // să nu ocolească pragul doar alegând calea neitemizată.
-      : { ...insertBase, suma_totala_platita: Math.max(valoare_totala, 100), suma_asigurare };
+      // FIX (gaură de integritate, 22 august 2026): calea neitemizată nu
+      // trece deloc prin lib/calculeaza-pret.js — valoare_totala vine direct
+      // din body, neverificată. Același prag minim, citit acum dinamic per
+      // țară (tax_configurations.prag_minim_comanda, ca la TVA — extensia
+      // din aceeași zi), nu mai hardcodat, ca nicio comandă să nu ocolească
+      // pragul doar alegând calea neitemizată.
+      : { ...insertBase, suma_totala_platita: Math.max(valoare_totala, await citestePragMinimComanda(insertBase.tara_cod || 'RO')), suma_asigurare };
 
     const { data, error } = await supabaseAdmin
       .from('comenzi')

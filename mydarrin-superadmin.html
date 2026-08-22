@@ -1625,7 +1625,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
           <div class="sa-card-hdr"><div style="font-weight:700;color:#1A2332;font-size:13.5px">⚖ Cote TVA & Impozite per țară</div></div>
           <div class="sa-card-body" style="padding:0">
             <table class="sa-table">
-              <thead><tr><th>Țară</th><th>Monedă</th><th>TVA %</th><th>Impozit venit %</th><th>Acțiune</th></tr></thead>
+              <thead><tr><th>Țară</th><th>Monedă</th><th>TVA %</th><th>Impozit venit %</th><th>Prag minim comandă</th><th>Acțiune</th></tr></thead>
               <tbody id="acc-tax-tbody"></tbody>
             </table>
           </div>
@@ -3551,6 +3551,7 @@ async function accLoadTaxConfig(){
       <td>${t.moneda}</td>
       <td><input type="number" step="0.1" value="${t.cota_tva}" id="acc-tva-${t.tara_cod}" style="width:70px;padding:4px 8px;border:1px solid #D5DFE8;border-radius:6px;font-family:inherit"></td>
       <td><input type="number" step="0.1" value="${t.cota_impozit_venit || 0}" id="acc-imp-${t.tara_cod}" style="width:70px;padding:4px 8px;border:1px solid #D5DFE8;border-radius:6px;font-family:inherit"></td>
+      <td><input type="number" step="1" min="0" placeholder="implicit 100" value="${t.prag_minim_comanda ?? ''}" id="acc-prag-${t.tara_cod}" style="width:90px;padding:4px 8px;border:1px solid #D5DFE8;border-radius:6px;font-family:inherit" title="Cost minim de intervenție, în ${t.moneda}. Gol = fallback 100."></td>
       <td><button class="btn-s" style="font-size:11px;padding:5px 10px" onclick="accSaveTaxConfig('${t.tara_cod}')">Salvează</button></td>
     </tr>`).join('');
 
@@ -3566,11 +3567,16 @@ async function accLoadTaxConfig(){
 async function accSaveTaxConfig(tara_cod){
   const cota_tva = parseFloat(document.getElementById(`acc-tva-${tara_cod}`).value);
   const cota_impozit_venit = parseFloat(document.getElementById(`acc-imp-${tara_cod}`).value);
+  // Prag minim comandă (22 august 2026) — gol înseamnă explicit "necompletat
+  // încă", nu 0; trimis ca null, ca motorul de preț să cadă pe fallback-ul
+  // hardcodat (100), nu pe un prag de 0 care ar dezactiva de fapt pragul.
+  const pragRaw = document.getElementById(`acc-prag-${tara_cod}`).value;
+  const prag_minim_comanda = pragRaw === '' ? null : parseFloat(pragRaw);
   const token = await accGetToken();
   const res = await fetch('/api/accountancy', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ action: 'update_tax_config', tara_cod, cota_tva, cota_impozit_venit }),
+    body: JSON.stringify({ action: 'update_tax_config', tara_cod, cota_tva, cota_impozit_venit, prag_minim_comanda }),
   });
   if (res.ok) showToast(`✓ Cote actualizate pentru ${tara_cod}`);
   else showToast('✗ Eroare la salvare');

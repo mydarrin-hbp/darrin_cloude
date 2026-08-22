@@ -82,17 +82,27 @@ async function maybeConvert(res, invoice_id) {
 }
 
 async function actionUpdateTaxConfig(req, res, user) {
-  const { tara_cod, cota_tva, cota_impozit_venit, cota_impozit_salarii } = req.body;
+  const { tara_cod, cota_tva, cota_impozit_venit, cota_impozit_salarii, prag_minim_comanda } = req.body;
+  // prag_minim_comanda (22 august 2026, extensie configurabilă per țară a
+  // fix-ului de integritate din aceeași zi) — undefined (câmp netrimis de
+  // apelanți vechi) rămâne neatins; null (câmp gol în UI) explicit șters,
+  // ca motorul de preț să cadă pe fallback-ul hardcodat (100), nu pe 0.
+  const update = { cota_tva, cota_impozit_venit, cota_impozit_salarii, updated_at: new Date().toISOString() };
+  if (prag_minim_comanda !== undefined) {
+    update.prag_minim_comanda = (prag_minim_comanda === null || Number.isNaN(Number(prag_minim_comanda)))
+      ? null
+      : Number(prag_minim_comanda);
+  }
   const { data, error } = await supabaseAdmin
     .from('tax_configurations')
-    .update({ cota_tva, cota_impozit_venit, cota_impozit_salarii, updated_at: new Date().toISOString() })
+    .update(update)
     .eq('tara_cod', tara_cod)
     .select()
     .single();
   if (error) return res.status(500).json({ error: 'Eroare la actualizare' });
   await inregistreazaAudit({
     admin: user, req, actiune: 'actualizare_cote_fiscale', entitate: 'tax_configurations', entitate_id: tara_cod,
-    detalii: { cota_tva, cota_impozit_venit, cota_impozit_salarii },
+    detalii: { cota_tva, cota_impozit_venit, cota_impozit_salarii, prag_minim_comanda: update.prag_minim_comanda },
   });
   return res.status(200).json({ ok: true, config: data });
 }
