@@ -199,7 +199,12 @@ async function handler(req, res, user) {
             tva_suma: calc.tva_suma,
           };
         })()
-      : { ...insertBase, suma_totala_platita: valoare_totala, suma_asigurare };
+      // FIX (gaură de integritate, audit 22 august 2026): calea neitemizată
+      // nu trece deloc prin lib/calculeaza-pret.js (deja reparat acolo pentru
+      // calea itemizată) — valoare_totala vine direct din body, neverificată.
+      // Același prag minim (VMC=100), aplicat acum și aici, ca nicio comandă
+      // să nu ocolească pragul doar alegând calea neitemizată.
+      : { ...insertBase, suma_totala_platita: Math.max(valoare_totala, 100), suma_asigurare };
 
     const { data, error } = await supabaseAdmin
       .from('comenzi')
