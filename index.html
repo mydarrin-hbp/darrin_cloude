@@ -771,17 +771,13 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
       <i data-lucide="chevron-down" class="w-3 h-3 text-white/30"></i>
     </div>
 
-    <!-- Comutator de limbă (pilot i18n, 25 Iulie 2026) — alegerea manuală
-         persistă în localStorage și are prioritate față de detecția din
-         geolocalizare (myd:geo). Vezi i18n-loader.js. -->
-    <select id="lang-switcher" onchange="window.MYD_I18N && window.MYD_I18N.setLanguage(this.value, {persist:true})"
-      style="background:transparent;color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:3px 6px;font-size:11px;cursor:pointer;outline:none">
-      <option value="ro">🇷🇴 RO</option>
-      <option value="en">🇬🇧 EN</option>
-      <option value="de">🇩🇪 DE</option>
-      <option value="fr">🇫🇷 FR</option>
-      <option value="tr">🇹🇷 TR</option>
-    </select>
+    <!-- Consolidare 23 august 2026: exista aici un al doilea selector de
+         limbă, redundant (`#lang-switcher`, `<select>` simplu, era singurul
+         cu adevărat funcțional pe această pagină) — dublura vizuală de mai
+         jos (`#langDd`), consistentă cu mydarrin-catalog.html/despre-noi.html,
+         era 100% decorativă. Acum `#langDd` e reparat (vezi setLang() mai
+         jos) și rămâne singurul selector real, ca pe celelalte pagini —
+         `<select>`-ul redundant a fost eliminat. -->
     <!-- Dropdown țară/monedă -->
     <div id="countryDd" style="display:none;position:absolute;top:100%;right:160px;background:#fff;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.15);padding:8px;min-width:200px;z-index:500">
       <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;padding:4px 8px 8px">Țara serviciului</div>
@@ -809,6 +805,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
         <div class="lang-opt" onclick="setLang('en','🇬🇧','English')"><span>🇬🇧</span> English</div>
         <div class="lang-opt" onclick="setLang('de','🇩🇪','Deutsch')"><span>🇩🇪</span> Deutsch</div>
         <div class="lang-opt" onclick="setLang('fr','🇫🇷','Français')"><span>🇫🇷</span> Français</div>
+        <div class="lang-opt" onclick="setLang('tr','🇹🇷','Türkçe')"><span>🇹🇷</span> Türkçe</div>
         <div class="lang-opt" onclick="setLang('hu','🇭🇺','Magyar')"><span>🇭🇺</span> Magyar</div>
         <div class="lang-opt" onclick="setLang('pl','🇵🇱','Polski')"><span>🇵🇱</span> Polski</div>
       </div>
@@ -2455,7 +2452,17 @@ function setLang(code,flag,label){
   document.querySelectorAll('.lang-opt').forEach(o=>o.classList.remove('active'));
   event.target.closest('.lang-opt').classList.add('active');
   document.getElementById('langDd').classList.remove('open');
-  // In real app: reload page with locale
+  // G20 (26 Iulie 2026, aplicat deja pe mydarrin-catalog.html/despre-noi.html,
+  // lipsă aici — consolidare 23 august 2026): selectorul era 100% decorativ
+  // ("In real app: reload page with locale" — niciodată implementat).
+  // Traduce real doar limbile din pilot (en/de/fr/tr) — hu/pl rămân doar
+  // vizual selectate până sunt traduse (28 aprobate, netraduse încă), ca să
+  // nu arate text greșit/gol.
+  if (window.MYD_I18N && window.MYD_I18N.SUPPORTED.indexOf(code) !== -1) {
+    window.MYD_I18N.setLanguage(code, {persist:true});
+  } else if (code === 'ro') {
+    window.MYD_I18N && window.MYD_I18N.setLanguage('ro', {persist:true});
+  }
 }
 document.addEventListener('click',e=>{
   if(!document.getElementById('langDd').contains(e.target))

@@ -925,6 +925,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
         <div class="lang-opt" onclick="setLang('en','🇬🇧','English')"><span>🇬🇧</span> English</div>
         <div class="lang-opt" onclick="setLang('de','🇩🇪','Deutsch')"><span>🇩🇪</span> Deutsch</div>
         <div class="lang-opt" onclick="setLang('fr','🇫🇷','Français')"><span>🇫🇷</span> Français</div>
+        <div class="lang-opt" onclick="setLang('tr','🇹🇷','Türkçe')"><span>🇹🇷</span> Türkçe</div>
         <div class="lang-opt" onclick="setLang('hu','🇭🇺','Magyar')"><span>🇭🇺</span> Magyar</div>
         <div class="lang-opt" onclick="setLang('pl','🇵🇱','Polski')"><span>🇵🇱</span> Polski</div>
       </div>
@@ -2446,7 +2447,14 @@ function setLang(code,flag,label){
   document.querySelectorAll('.lang-opt').forEach(o=>o.classList.remove('active'));
   event.target.closest('.lang-opt').classList.add('active');
   document.getElementById('langDd').classList.remove('open');
-  // In real app: reload page with locale
+  // G20, consolidare 23 august 2026 (aliniat cu mydarrin-catalog.html/
+  // despre-noi.html/index.html/checkout.html): traduce real doar limbile
+  // din pilot (en/de/fr/tr) — hu/pl rămân doar vizual selectate, netraduse.
+  if (window.MYD_I18N && window.MYD_I18N.SUPPORTED.indexOf(code) !== -1) {
+    window.MYD_I18N.setLanguage(code, {persist:true});
+  } else if (code === 'ro') {
+    window.MYD_I18N && window.MYD_I18N.setLanguage('ro', {persist:true});
+  }
 }
 document.addEventListener('click',e=>{
   if(!document.getElementById('langDd').contains(e.target))
