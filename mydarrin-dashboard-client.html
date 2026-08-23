@@ -1653,6 +1653,10 @@ function triggerHeaderSearch(){
       <div class="text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-3">Progres comandă</div>
       <div class="space-y-4" id="drawer-timeline"></div>
     </div>
+    <!-- Detaliere cost (D2a Prioritate 3, 23 august 2026) — doar pentru
+         comenzile cu componente itemizate reale, vezi breakdown.disponibil
+         din api/client/comenzi-tracker.js; onest, nu ascunde tăcut. -->
+    <div class="pt-2 border-t border-[#F4F7F9]" id="drawer-breakdown"></div>
     <!-- Actions (afișate doar dacă statusul le permite real) -->
     <div class="space-y-2.5 pt-2 border-t border-[#F4F7F9]" id="drawer-actions"></div>
   </div>
@@ -3234,6 +3238,8 @@ function renderDrawerContent(c) {
         }).join('');
   }
 
+  renderDrawerBreakdown(c);
+
   const actionsEl = document.getElementById('drawer-actions');
   if (actionsEl) {
     actionsEl.innerHTML = c.status === 'finalizata' && c.token_confirmare
@@ -3246,6 +3252,38 @@ function renderDrawerContent(c) {
       : '';
   }
   if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+// D2a Prioritate 3 (23 august 2026) — breakdown real din
+// api/client/comenzi-tracker.js. Onest: comenzile vechi (dinainte de motorul
+// aditiv, 22 iulie 2026) nu au componente itemizate — mesaj clar, nu un
+// breakdown fals cu zerouri. Include marketing/mentenanță/comision
+// platformă — spre deosebire de Partener (unde pret_unitar rămâne intern),
+// aici componentele se adună exact la suma_totala_platita deja afișată sus.
+const _LABEL_COMPONENTA = {
+  manopera: 'Manoperă', materiale: 'Materiale', utilaje: 'Chirie scule/utilaje',
+  transport: 'Transport', asigurare: 'Asigurare', marketing: 'Marketing',
+  mentenanta: 'Mentenanță platformă', comision_platforma: 'Comision platformă',
+};
+function renderDrawerBreakdown(c) {
+  const el = document.getElementById('drawer-breakdown');
+  if (!el) return;
+  const b = c.breakdown;
+  if (!b || !b.disponibil) {
+    el.innerHTML = '<div class="text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-2">Detaliere cost</div><div class="text-xs text-[#8C9BAD]">Detaliere indisponibilă pentru această comandă.</div>';
+    return;
+  }
+  const randuri = Object.keys(_LABEL_COMPONENTA)
+    .filter((k) => Number(b[k]) > 0)
+    .map((k) => `<div class="flex justify-between text-xs py-1"><span class="text-[#6B7A8D]">${_LABEL_COMPONENTA[k]}</span><span class="font-semibold text-[#2D2D2D]">${fmtCurrencyDash(b[k], c.moneda)}</span></div>`)
+    .join('');
+  const randTva = b.tva_suma > 0
+    ? `<div class="flex justify-between text-xs py-1 border-t border-[#F4F7F9] mt-1 pt-1.5"><span class="text-[#6B7A8D]">TVA (${b.tva_pct}%)</span><span class="font-semibold text-[#2D2D2D]">${fmtCurrencyDash(b.tva_suma, c.moneda)}</span></div>`
+    : '';
+  el.innerHTML = `<div class="text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-2">Detaliere cost</div>${randuri}${randTva}`;
+}
+function fmtCurrencyDash(suma, moneda) {
+  return (window.formatCurrency ? window.formatCurrency(Number(suma) || 0) : (Number(suma) || 0).toLocaleString('ro-RO') + ' ' + (moneda || 'RON'));
 }
 
 async function confirmaExecutieReal(id) {
