@@ -37,7 +37,7 @@ async function handler(req, res, admin) {
 
     const { data: factura, error: selErr } = await supabaseAdmin
       .from('facturi_parteneri')
-      .select('id, status')
+      .select('id, status, comanda_subcontractor_id')
       .eq('id', id)
       .maybeSingle();
     if (selErr) return res.status(500).json({ error: selErr.message });
@@ -51,6 +51,17 @@ async function handler(req, res, admin) {
       .select()
       .single();
     if (error) return res.status(500).json({ error: error.message });
+
+    // D2c (24 august 2026): status-ul LIVE pe comanda_subcontractori trebuie
+    // să reflecte plata reală — rămânea blocat la 'alocat' chiar și după ce
+    // factura era plătită (verificat live, toate rândurile reale stuck).
+    if (factura.comanda_subcontractor_id) {
+      const { error: statusErr } = await supabaseAdmin
+        .from('comanda_subcontractori')
+        .update({ status: 'platit' })
+        .eq('id', factura.comanda_subcontractor_id);
+      if (statusErr) console.error('[admin/facturi-parteneri] status→platit', statusErr);
+    }
 
     await inregistreazaAudit({ admin, req, actiune: 'confirmare_plata_factura_partener', entitate: 'facturi_parteneri', entitate_id: id });
     return res.status(200).json({ ok: true, factura: data });

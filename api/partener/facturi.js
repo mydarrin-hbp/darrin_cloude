@@ -166,6 +166,20 @@ async function handlePost(req, res, user) {
     return res.status(500).json({ error: 'Nu am putut înregistra factura' });
   }
 
+  // D2c (24 august 2026): status-ul de pe comanda_subcontractori trebuie să
+  // reflecte LIVE starea reală — rândul rămânea blocat la 'alocat' pentru
+  // totdeauna, deși schema permite alocat→executat→facturat→platit (verificat
+  // live: toate rândurile reale erau stuck la 'alocat'). 'executat' rămâne
+  // neatins aici — rândul se creează abia la eliberarea escrow-ului
+  // (lib/elibereaza-escrow.js), moment care survine DUPĂ execuția fizică
+  // reală, deci nu există niciun declanșator real pentru acea tranziție în
+  // acest flux.
+  const { error: statusErr } = await supabaseAdmin
+    .from('comanda_subcontractori')
+    .update({ status: 'facturat' })
+    .eq('id', comanda_subcontractor_id);
+  if (statusErr) console.error('[partener/facturi] status→facturat', statusErr);
+
   return res.status(200).json({ ok: true, factura: inserted });
 }
 
