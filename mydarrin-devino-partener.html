@@ -135,6 +135,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 <body>
 
 <!-- ════ HEADER SIMPLU — fără elemente homepage ════ -->
+<style id="lang-dd-css">.lang-dd.open .lang-panel { display:block !important; }</style>
 <header style="position:sticky; top:0; z-index:200; background:#fff; border-bottom:1px solid #EEF2F7; box-shadow:0 2px 10px rgba(0,51,102,.06); font-family:'Inter',sans-serif;">
   <div style="max-width:1200px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between;gap:16px">
     <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0">
@@ -151,6 +152,28 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
       <a href="mydarrin-investitori.html" style="padding:8px 14px;border-radius:9px;font-size:13px;font-weight:500;color:#4A5568;text-decoration:none" onmouseover="this.style.background='#F0F4F8'" onmouseout="this.style.background=''" data-i18n="nav.investitori">Investitori</a>
     </nav>
     <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+      <!-- Consolidare selector limbă (23 august 2026) — pagina încarcă
+           i18n-loader.js dar n-avea nicio marcare HTML pentru selector (cod
+           JS orfan, vezi setLang()/toggleLang() mai jos). Design nou, aliniat
+           la header-ul cu temă deschisă al acestei pagini (culorile deja
+           folosite în nav: #4A5568/#F0F4F8/#EEF2F7), nu copiat din paginile
+           cu temă închisă. -->
+      <div class="lang-dd" id="langDd" style="position:relative">
+        <div onclick="toggleLang()" style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;padding:8px 6px;color:#4A5568" onmouseover="this.style.background='#F0F4F8'" onmouseout="this.style.background=''">
+          <span id="lang-flag">🇷🇴</span>
+          <span id="lang-label" style="font-weight:500">RO</span>
+          <i data-lucide="chevron-down" class="w-3 h-3" style="opacity:.5"></i>
+        </div>
+        <div class="lang-panel" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:#fff;border-radius:12px;border:1px solid #EEF2F7;box-shadow:0 8px 30px rgba(26,38,64,.12);min-width:140px;overflow:hidden;z-index:210">
+          <div class="lang-opt active" onclick="setLang('ro','🇷🇴','Română')" style="display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:13px;font-weight:700;color:#003366;cursor:pointer"><span>🇷🇴</span> Română</div>
+          <div class="lang-opt" onclick="setLang('en','🇬🇧','English')" style="display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:13px;font-weight:500;color:#2D2D2D;cursor:pointer" onmouseover="this.style.background='#F0F4F8'" onmouseout="this.style.background=''"><span>🇬🇧</span> English</div>
+          <div class="lang-opt" onclick="setLang('de','🇩🇪','Deutsch')" style="display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:13px;font-weight:500;color:#2D2D2D;cursor:pointer" onmouseover="this.style.background='#F0F4F8'" onmouseout="this.style.background=''"><span>🇩🇪</span> Deutsch</div>
+          <div class="lang-opt" onclick="setLang('fr','🇫🇷','Français')" style="display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:13px;font-weight:500;color:#2D2D2D;cursor:pointer" onmouseover="this.style.background='#F0F4F8'" onmouseout="this.style.background=''"><span>🇫🇷</span> Français</div>
+          <div class="lang-opt" onclick="setLang('tr','🇹🇷','Türkçe')" style="display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:13px;font-weight:500;color:#2D2D2D;cursor:pointer" onmouseover="this.style.background='#F0F4F8'" onmouseout="this.style.background=''"><span>🇹🇷</span> Türkçe</div>
+          <div class="lang-opt" onclick="setLang('hu','🇭🇺','Magyar')" style="display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:13px;font-weight:500;color:#2D2D2D;cursor:pointer" onmouseover="this.style.background='#F0F4F8'" onmouseout="this.style.background=''"><span>🇭🇺</span> Magyar</div>
+          <div class="lang-opt" onclick="setLang('pl','🇵🇱','Polski')" style="display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:13px;font-weight:500;color:#2D2D2D;cursor:pointer" onmouseover="this.style.background='#F0F4F8'" onmouseout="this.style.background=''"><span>🇵🇱</span> Polski</div>
+        </div>
+      </div>
       <a href="#partner-types" onclick="event.preventDefault();document.getElementById('partner-types').scrollIntoView({behavior:'smooth'})" style="display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:11px;background:linear-gradient(135deg,#FF8C00,#CC7000);color:#fff;font-weight:700;font-size:13px;text-decoration:none;white-space:nowrap">
         Înregistrare gratuită <span style="font-size:10px;background:rgba(255,255,255,.2);border-radius:99px;padding:2px 7px;font-weight:700">0 LEI</span>
       </a>
@@ -2508,7 +2531,14 @@ function setLang(code,flag,label){
   document.querySelectorAll('.lang-opt').forEach(o=>o.classList.remove('active'));
   event.target.closest('.lang-opt').classList.add('active');
   document.getElementById('langDd').classList.remove('open');
-  // In real app: reload page with locale
+  // G20, consolidare 23 august 2026 (aliniat cu celelalte pagini): traduce
+  // real doar limbile din pilot (en/de/fr/tr) — hu/pl rămân doar vizual
+  // selectate, netraduse încă.
+  if (window.MYD_I18N && window.MYD_I18N.SUPPORTED.indexOf(code) !== -1) {
+    window.MYD_I18N.setLanguage(code, {persist:true});
+  } else if (code === 'ro') {
+    window.MYD_I18N && window.MYD_I18N.setLanguage('ro', {persist:true});
+  }
 }
 document.addEventListener('click',e=>{
   if(!document.getElementById('langDd').contains(e.target))
