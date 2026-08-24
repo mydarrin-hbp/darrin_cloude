@@ -63,7 +63,7 @@ module.exports = async function handler(req, res) {
     const emailNormalizat = email.trim().toLowerCase();
     const { data, error } = await supabaseAdmin
       .from('newsletter_subscribers')
-      .insert({ email: emailNormalizat, gdpr_accepted: true, sursa: sursa || null, status: 'in_asteptare_confirmare' })
+      .insert({ email: emailNormalizat, gdpr_accepted: true, sursa: sursa || null, status: 'in_asteptare_confirmare', limba: limbaEfectiva })
       .select('token_confirmare')
       .single();
 

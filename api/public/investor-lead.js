@@ -4,6 +4,28 @@
 // în baza de date + trimite notificare email prin Resend.
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { renderEmailInvestitorBunVenit, limbaDinTara } = require('../../lib/i18n');
+const { fromHeader } = require('../../lib/email-sender');
+
+// Email de bun venit (24 august 2026) — gap real: acest endpoint trimitea
+// doar o notificare INTERNĂ către admin; investitorul care completa
+// formularul nu primea niciodată vreun răspuns. Best-effort, izolat.
+async function trimiteEmailBunVenitInvestitor(email, limba) {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('[investor-lead] RESEND_API_KEY lipsă — email de bun venit netrimis către', email);
+    return;
+  }
+  try {
+    const { subiect, html } = renderEmailInvestitorBunVenit(limba);
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: await fromHeader(limba), to: email, subject: subiect, html }),
+    });
+  } catch (err) {
+    console.error('[investor-lead] email bun venit', err);
+  }
+}
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -12,7 +34,7 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { prenume, nume, email, telefon, ticket_size, instrument, nda_acceptat } = req.body || {};
+  const { prenume, nume, email, telefon, ticket_size, instrument, nda_acceptat, tara, limba } = req.body || {};
 
   if (!email || typeof email !== 'string' || !email.includes('@')) {
     return res.status(400).json({ error: 'Adresă de email validă, obligatorie.' });
@@ -34,6 +56,9 @@ module.exports = async function handler(req, res) {
       .single();
 
     if (error) throw error;
+
+    const limbaEfectiva = limba || (tara ? limbaDinTara(tara) : 'ro');
+    await trimiteEmailBunVenitInvestitor(email, limbaEfectiva);
 
     // Notificare email prin Resend — best-effort, nu blocăm răspunsul dacă eșuează.
     // FIX (audit 31 Iulie 2026): fallback-ul anterior cădea pe o adresă personală
