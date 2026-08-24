@@ -4,8 +4,11 @@
 // e criptat exact ca IBAN-ul (cripteaza_camp/decripteaza_camp, migrația
 // partner_wizard_8_pasi_schema_si_criptare) — niciodată stocat în clar.
 //
-// GET  → angajații înregistrați (CNP mascat, nu decriptat integral)
-// POST { angajati: [{ nume, cnp, cod_esco }, ...] }  (înlocuire completă)
+// GET   → angajații înregistrați (CNP mascat, nu decriptat integral)
+// POST  { angajati: [{ nume, cnp, cod_esco }, ...] }  (înlocuire completă)
+// PATCH { id, disponibil }  (24 august 2026, aprobat — toggle rapid tip
+//         Uber/Bolt, distinct de POST-ul de mai sus care înlocuiește tot
+//         roster-ul; folosit de lib/aloca-partener.js la alocare)
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
@@ -14,7 +17,7 @@ async function handler(req, res, user) {
   if (req.method === 'GET') {
     const { data, error } = await supabaseAdmin
       .from('partner_angajati')
-      .select('id, nume, cod_esco, cnp_criptat, activ, creat_la')
+      .select('id, nume, cod_esco, cnp_criptat, disponibil, activ, creat_la')
       .eq('partner_id', user.id)
       .eq('activ', true);
     if (error) return res.status(500).json({ error: error.message });
@@ -25,9 +28,28 @@ async function handler(req, res, user) {
         const { data: cnp } = await supabaseAdmin.rpc('decripteaza_camp', { valoare_criptata: a.cnp_criptat });
         cnp_mascat = cnp ? `${cnp.slice(0, 1)}••••••••${cnp.slice(-2)}` : null;
       }
-      return { id: a.id, nume: a.nume, cod_esco: a.cod_esco, cnp_mascat, creat_la: a.creat_la };
+      return { id: a.id, nume: a.nume, cod_esco: a.cod_esco, cnp_mascat, disponibil: a.disponibil, creat_la: a.creat_la };
     }));
-    return res.status(200).json({ ok: true, angajati });
+    const totalDisponibili = angajati.filter((a) => a.disponibil).length;
+    return res.status(200).json({ ok: true, angajati, total: angajati.length, total_disponibili: totalDisponibili });
+  }
+
+  if (req.method === 'PATCH') {
+    const { id, disponibil } = req.body || {};
+    if (!id || typeof disponibil !== 'boolean') {
+      return res.status(400).json({ error: 'id și disponibil (boolean) sunt obligatorii' });
+    }
+    const { data, error } = await supabaseAdmin
+      .from('partner_angajati')
+      .update({ disponibil })
+      .eq('id', id)
+      .eq('partner_id', user.id) // gardă: doar propriul angajat
+      .eq('activ', true)
+      .select('id, nume, disponibil')
+      .maybeSingle();
+    if (error) return res.status(500).json({ error: error.message });
+    if (!data) return res.status(404).json({ error: 'Angajatul nu există sau nu-ți aparține' });
+    return res.status(200).json({ ok: true, angajat: data });
   }
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });

@@ -571,6 +571,7 @@ const TYPES = {
       {id:'overview',icon:'▦',label:'Overview'},
       {id:'sarcini',icon:'⚡',label:'Sarcini LIVE',badge:'3',badgeCls:'ch-o'},
       {id:'portofoliu',icon:'🔧',label:'Portofoliu servicii'},
+      {id:'echipa',icon:'👥',label:'Echipa mea'},
       {id:'calendar',icon:'📅',label:'Calendar'},
       {id:'program-lucru',icon:'🕐',label:'Program de lucru'},
       {section:'Financiar'},
@@ -677,6 +678,7 @@ function showPanel(id) {
   const t = TYPES[currentType];
   const panelTitles = {
     overview:'Overview', sarcini:'Sarcini LIVE', portofoliu:'Portofoliu servicii',
+    echipa:'Echipa mea',
     calendar:'Calendar & Disponibilitate', 'program-lucru':'Program de lucru', venituri:'Venituri & Plăți',
     garantii:'Garanții de execuție', documente:'Documentele mele', profil:'Profil & KYC',
     curse:'Curse disponibile', activ:'Cursă activă',
@@ -692,6 +694,7 @@ function showPanel(id) {
   if (id === 'overview')   { content.innerHTML = renderOverview(); loadEscrowReal(); loadFacturareParteneri(); loadHardStopStatus(); }
   else if (id === 'sarcini')    content.innerHTML = renderSarcini();
   else if (id === 'portofoliu') { content.innerHTML = renderPortofoliu(); loadPortofoliuReal(); }
+  else if (id === 'echipa')     { content.innerHTML = renderEchipa(); loadEchipaReal(); }
   else if (id === 'calendar')   content.innerHTML = renderCalendar();
   else if (id === 'program-lucru') { content.innerHTML = renderProgramLucru(); loadProgramLucruReal(); }
   else if (id === 'venituri')   content.innerHTML = renderVenituri();
@@ -1768,6 +1771,72 @@ async function togglePortofoliuItem(catalogServiciuId, activ, checkboxEl){
   } catch (e) {
     alert('Eroare: ' + e.message);
     if (checkboxEl) checkboxEl.checked = !activ; // revert vizual la eroare
+  }
+}
+
+// ── ECHIPA MEA (24 august 2026, aprobat) — Varianta 1 "partener unic cu
+// echipă proprie": listă angajați (deja colectați azi doar prin wizard-ul
+// de 8 pași, api/partener/wizard-angajati.js) + status de disponibilitate
+// live, tip Uber/Bolt, folosit real de lib/aloca-partener.js la alocare. ──
+function renderEchipa() {
+  return `
+  <div style="margin-bottom:18px">
+    <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Echipa mea</h2>
+    <p style="font-size:12.5px;color:#5A6B7D;margin-top:4px">Marchează cine e disponibil acum — doar membrii disponibili sunt luați în calcul la alocarea comenzilor noi.</p>
+  </div>
+  <div class="dp-card" style="margin-bottom:16px">
+    <div id="echipa-sumar" style="font-size:13px;font-weight:700;color:#1A2332;margin-bottom:12px">Se încarcă...</div>
+    <div id="echipa-real-lista" style="color:#5A6B7D">Se încarcă...</div>
+  </div>`;
+}
+
+async function loadEchipaReal(){
+  const sumar = document.getElementById('echipa-sumar');
+  const el = document.getElementById('echipa-real-lista');
+  if (!el) return;
+  el.textContent = 'Se încarcă...';
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/wizard-angajati', { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+
+    if (sumar) sumar.textContent = data.total
+      ? `${data.total_disponibili} din ${data.total} membri disponibili acum`
+      : 'Nu ai încă nicio echipă înregistrată';
+
+    if (!data.angajati.length) {
+      el.innerHTML = '<div style="color:#5A6B7D">Echipa se înregistrează azi din wizard-ul de înregistrare partener (Pasul 5). Dacă lucrezi solo, nu ai nevoie de nimic aici — alocarea comenzilor rămâne neschimbată.</div>';
+      return;
+    }
+
+    el.innerHTML = data.angajati.map((a) => `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid #EEF2F7">
+        <div class="dp-toggle ${a.disponibil ? 'on' : 'off'}" onclick="toggleDisponibilitateAngajat('${a.id}', ${!a.disponibil}, this)" style="flex-shrink:0"></div>
+        <span style="flex:1"><strong style="color:#1A2332;font-size:13px">${a.nume}</strong><br><span style="font-size:11px;color:#5A6B7D">${a.cod_esco || 'fără cod ESCO'} · CNP ${a.cnp_mascat || '—'}</span></span>
+        <span class="chip ${a.disponibil ? 'ch-g' : 'ch-gr'}" style="font-size:10.5px">${a.disponibil ? 'Disponibil' : 'Indisponibil'}</span>
+      </div>
+    `).join('');
+  } catch (e) {
+    el.innerHTML = `<div style="color:#C0392B">Eroare: ${e.message}</div>`;
+  }
+}
+
+async function toggleDisponibilitateAngajat(angajatId, disponibilNou, toggleEl){
+  // Optimist: schimbă vizual imediat, revine dacă serverul respinge.
+  if (toggleEl) { toggleEl.classList.toggle('on'); toggleEl.classList.toggle('off'); }
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/wizard-angajati', {
+      method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: angajatId, disponibil: disponibilNou }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    loadEchipaReal(); // resincronizează sumarul "X din Y disponibili"
+  } catch (e) {
+    alert('Eroare: ' + e.message);
+    if (toggleEl) { toggleEl.classList.toggle('on'); toggleEl.classList.toggle('off'); } // revert
   }
 }
 
