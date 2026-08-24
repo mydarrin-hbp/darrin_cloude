@@ -173,6 +173,19 @@ async function handler(req, res, user) {
   // deosebire de calea itemizată de mai jos, unde clientul deja a calculat
   // (greșit sau nu) sumele, aici serverul e singura sursă de adevăr.
   let nivelCalculat = null;
+  // Varianta 2 "Echipă" (24 august 2026) — catalog_serviciu_id rezolvat
+  // server-side din nivel_id (catalog_niveluri.serviciu_id), nu din client.
+  // FIX conex, descoperit la implementarea asta: mydarrin-checkout.html NU
+  // trimite niciodată catalog_serviciu_id pe calea nivel_id (comentariu
+  // vechi în acel fișier, din era pre-pilot, când slug-ul din PRODUCTS_DB nu
+  // era încă un uuid real) — însemna că lib/aloca-partener.js nu pornea
+  // NICIODATĂ pentru comenzile reale pe cele 2 servicii pilot deja live
+  // (Grădinărit, Service Moto), rămânând înghețate la 'in_cautare_partener'.
+  // Rezolvarea server-side, din nivel_id (sursă de adevăr, nefalsificabilă
+  // de client), repară acest gap și e precondiția ca esco-ul principal de
+  // mai jos să poată fi determinat.
+  let catalogServiciuIdEfectiv = catalog_serviciu_id;
+  let manoperaEscoBreakdown = null;
   if (areNivelId) {
     const taraCalcul = tara_cod ? String(tara_cod).toUpperCase() : 'RO';
     const cost = await calculeazaCostNivel({ nivelId: nivel_id, taraCod: taraCalcul, cantitate: cantitateNivel });
@@ -190,6 +203,38 @@ async function handler(req, res, user) {
       tara: taraCalcul,
     });
     nivelCalculat = { cantitate: cantitateNivel, calc };
+
+    const { data: nivelRow } = await supabaseAdmin
+      .from('catalog_niveluri')
+      .select('serviciu_id')
+      .eq('id', nivel_id)
+      .maybeSingle();
+    catalogServiciuIdEfectiv = nivelRow?.serviciu_id || null;
+
+    const escoIntrari = Object.entries(cost.manopera_per_esco || {});
+    if (escoIntrari.length) {
+      let escoPrincipal = null;
+      if (catalogServiciuIdEfectiv) {
+        const { data: servRow } = await supabaseAdmin
+          .from('catalog_servicii')
+          .select('cod_esco')
+          .eq('id', catalogServiciuIdEfectiv)
+          .maybeSingle();
+        escoPrincipal = servRow?.cod_esco || null;
+      }
+      manoperaEscoBreakdown = escoIntrari.map(([cod_esco, suma]) => ({
+        cod_esco,
+        suma,
+        principal: cod_esco === escoPrincipal,
+      }));
+      // Dacă niciun cod nu se potrivește cu esco-ul declarat al serviciului
+      // (sau serviciul n-are unul setat), marchează primul ca principal —
+      // trebuie mereu exact un rând principal pentru split-ul din
+      // lib/elibereaza-escrow.js.
+      if (!manoperaEscoBreakdown.some((b) => b.principal)) {
+        manoperaEscoBreakdown[0].principal = true;
+      }
+    }
   }
 
   try {
@@ -208,7 +253,7 @@ async function handler(req, res, user) {
       tara_cod: tara_cod ? String(tara_cod).toUpperCase() : null,
       regiune,
       localitate,
-      catalog_serviciu_id,
+      catalog_serviciu_id: catalogServiciuIdEfectiv,
       data_programata,
       ora_inceput_programata,
       ora_sfarsit_programata,
@@ -225,6 +270,7 @@ async function handler(req, res, user) {
           ...insertBase,
           nivel_id,
           cantitate: nivelCalculat.cantitate,
+          manopera_esco_breakdown: manoperaEscoBreakdown,
           suma_totala_platita: nivelCalculat.calc.pret_final,
           suma_manopera: nivelCalculat.calc.cost_baza_servicii,
           suma_materiale: nivelCalculat.calc.cost_materiale,
@@ -277,7 +323,7 @@ async function handler(req, res, user) {
 
     if (error) throw error;
 
-    const alocare = catalog_serviciu_id
+    const alocare = catalogServiciuIdEfectiv
       ? await incearcaAlocarePartener(data.id)
       : { alocat: false, motiv: 'fara_serviciu_specificat' };
 
