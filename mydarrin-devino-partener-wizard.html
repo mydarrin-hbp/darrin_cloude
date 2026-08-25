@@ -44,8 +44,12 @@ input:focus,select:focus{border-color:var(--primary)}
 .nace-row{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:8px;font-size:12.5px}
 .nace-row:hover{background:#F4F7F9}
 .nace-row input{width:auto;margin:0}
-.equip-row{display:grid;grid-template-columns:2fr 1fr 90px 100px 36px;gap:8px;margin-bottom:10px;align-items:center}
+.equip-row{display:grid;grid-template-columns:2fr 1fr 90px 100px 36px;gap:8px;align-items:center}
 .equip-row input{margin-bottom:0}
+.equip-row-wrap{margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #EEF2F7}
+.equip-row-ext{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.equip-row-ext input,.equip-row-ext select{flex:1 1 110px;min-width:100px;margin-bottom:0}
+.equip-row-ext-label{font-size:10.5px;color:#8C9BAD;text-transform:uppercase;letter-spacing:.05em;margin:8px 0 4px}
 .rm-btn{background:#FDECEA;color:#C0392B;border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:15px}
 .gate-banner{background:#C0392B;color:#fff;padding:14px 20px;border-radius:12px;font-size:13px;font-weight:700;text-align:center;margin-bottom:20px}
 .upcoming-card{background:#F8FAFC;border:1.5px dashed #D5DFE8;border-radius:14px;padding:16px;margin-bottom:12px}
@@ -486,27 +490,68 @@ async function salveazaPasul3() {
 }
 
 // ── PASUL 4 ──
+// Extindere taxonomie flotă (25 august 2026) — capacitate/dimensiuni/tip
+// suprastructură, relevante pentru vehicule de curierat și utilaje de
+// închiriat. Toate opționale — un utilaj mic (ex. o mixer de mână) nu are
+// nevoie de aceste câmpuri, un camion de mutări sau o autobetonieră da.
+const TIPURI_SUPRASTRUCTURA = [
+  { val: '', label: 'Tip suprastructură (opțional)' },
+  { val: 'bena_deschisa', label: 'Benă deschisă' },
+  { val: 'bena_inchisa_carosata', label: 'Benă închisă / carosată' },
+  { val: 'prelata', label: 'Prelată' },
+  { val: 'cisterna_alimentara', label: 'Cisternă alimentară' },
+  { val: 'cisterna_chimica', label: 'Cisternă chimică' },
+  { val: 'cisterna_petroliera', label: 'Cisternă petrolieră' },
+  { val: 'macara_pe_bena', label: 'Macara pe benă' },
+  { val: 'autobetoniera', label: 'Autobetonieră' },
+  { val: 'pompa_beton_sapa', label: 'Pompă beton/șapă' },
+  { val: 'nacela', label: 'Nacelă' },
+  { val: 'manitou_telehandler', label: 'Manitou / telehandler' },
+  { val: 'electrostivuitor', label: 'Electrostivuitor' },
+  { val: 'utilaj_dezapezire_maturat', label: 'Utilaj dezăpezire/măturat' },
+  { val: 'altul', label: 'Altul' },
+];
+
 function adaugaRandUtilaj() {
   const rows = document.getElementById('s4-rows');
-  const div = document.createElement('div');
-  div.className = 'equip-row';
-  div.innerHTML = `
-    <input type="text" placeholder="Denumire (ex: Excavator JCB)" class="eq-denumire">
-    <input type="text" placeholder="Tip" class="eq-tip">
-    <input type="number" placeholder="Cant." min="1" value="1" class="eq-cantitate">
-    <input type="number" placeholder="An fabr." class="eq-an">
-    <button class="rm-btn" onclick="this.parentElement.remove()"></button>`;
-  rows.appendChild(div);
+  const wrap = document.createElement('div');
+  wrap.className = 'equip-row-wrap';
+  wrap.innerHTML = `
+    <div class="equip-row">
+      <input type="text" placeholder="Denumire (ex: Excavator JCB)" class="eq-denumire">
+      <input type="text" placeholder="Tip" class="eq-tip">
+      <input type="number" placeholder="Cant." min="1" value="1" class="eq-cantitate">
+      <input type="number" placeholder="An fabr." class="eq-an">
+      <button class="rm-btn" onclick="this.closest('.equip-row-wrap').remove()"></button>
+    </div>
+    <div class="equip-row-ext-label">Detalii tehnice (opțional — pentru vehicule de transport/utilaje)</div>
+    <div class="equip-row-ext">
+      <input type="text" placeholder="Marcă" class="eq-marca">
+      <input type="text" placeholder="Model" class="eq-model">
+      <input type="number" placeholder="Capacitate (kg)" min="0" class="eq-capacitate">
+      <input type="number" placeholder="Lungime utilă (cm)" min="0" class="eq-lungime">
+      <input type="number" placeholder="Lățime utilă (cm)" min="0" class="eq-latime">
+      <input type="number" placeholder="Înălțime utilă (cm)" min="0" class="eq-inaltime">
+      <select class="eq-suprastructura">${TIPURI_SUPRASTRUCTURA.map(t => `<option value="${t.val}">${t.label}</option>`).join('')}</select>
+    </div>`;
+  rows.appendChild(wrap);
 }
 
 async function salveazaPasul4() {
   const msgEl = document.getElementById('s4-msg');
   msgEl.className = 'msg'; msgEl.textContent = '';
-  const utilaje = Array.from(document.querySelectorAll('#s4-rows .equip-row')).map(row => ({
+  const utilaje = Array.from(document.querySelectorAll('#s4-rows .equip-row-wrap')).map(row => ({
     denumire: row.querySelector('.eq-denumire').value.trim(),
     tip: row.querySelector('.eq-tip').value.trim(),
     cantitate: parseInt(row.querySelector('.eq-cantitate').value, 10) || 1,
     an_fabricatie: parseInt(row.querySelector('.eq-an').value, 10) || null,
+    marca: row.querySelector('.eq-marca').value.trim() || null,
+    model: row.querySelector('.eq-model').value.trim() || null,
+    capacitate_kg: parseFloat(row.querySelector('.eq-capacitate').value) || null,
+    lungime_utila_cm: parseFloat(row.querySelector('.eq-lungime').value) || null,
+    latime_utila_cm: parseFloat(row.querySelector('.eq-latime').value) || null,
+    inaltime_utila_cm: parseFloat(row.querySelector('.eq-inaltime').value) || null,
+    tip_suprastructura: row.querySelector('.eq-suprastructura').value || null,
   })).filter(u => u.denumire);
 
   if (!utilaje.length) { msgEl.className = 'msg err'; msgEl.textContent = 'Adaugă cel puțin un utilaj.'; return; }

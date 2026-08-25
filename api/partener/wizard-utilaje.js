@@ -2,11 +2,33 @@
 // Wizard partener în 8 pași (Etapa 4, audit 2026-07-13) — Pasul 4:
 // declarație utilaje/echipamente.
 //
+// EXTINDERE (25 august 2026) — taxonomie flotă (Curier de cartier +
+// Închirieri/Utilaje), cerută explicit: capacitate/dimensiuni/tip
+// suprastructură structurate, în loc de text liber. Scop aprobat explicit:
+// DOAR structura de date acum — fără catalog curatoriat marcă/model, fără
+// extragere automată din CIV (ambele rămân itemi separați, neaprobați).
+//
 // GET  → utilajele declarate curent
-// POST { utilaje: [{ denumire, tip?, cantitate?, an_fabricatie? }, ...] }
+// POST { utilaje: [{ denumire, tip?, cantitate?, an_fabricatie?, marca?,
+//                     model?, capacitate_kg?, lungime_utila_cm?,
+//                     latime_utila_cm?, inaltime_utila_cm?,
+//                     tip_suprastructura? }, ...] }
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+
+const TIPURI_SUPRASTRUCTURA = [
+  'bena_deschisa', 'bena_inchisa_carosata', 'prelata',
+  'cisterna_alimentara', 'cisterna_chimica', 'cisterna_petroliera',
+  'macara_pe_bena', 'autobetoniera', 'pompa_beton_sapa', 'nacela',
+  'manitou_telehandler', 'electrostivuitor', 'utilaj_dezapezire_maturat', 'altul',
+];
+
+function numarPozitivSauNull(v) {
+  if (v === null || v === undefined || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : undefined; // undefined = invalid, distinct de "lipsă"
+}
 
 async function handler(req, res, user) {
   if (req.method === 'GET') {
@@ -29,6 +51,14 @@ async function handler(req, res, user) {
     if (!u.denumire || typeof u.denumire !== 'string') {
       return res.status(400).json({ error: 'Fiecare utilaj trebuie să aibă o denumire' });
     }
+    if (u.tip_suprastructura && !TIPURI_SUPRASTRUCTURA.includes(u.tip_suprastructura)) {
+      return res.status(400).json({ error: `Tip suprastructură necunoscut pentru „${u.denumire}": ${u.tip_suprastructura}` });
+    }
+    for (const camp of ['capacitate_kg', 'lungime_utila_cm', 'latime_utila_cm', 'inaltime_utila_cm']) {
+      if (u[camp] !== undefined && u[camp] !== null && u[camp] !== '' && numarPozitivSauNull(u[camp]) === undefined) {
+        return res.status(400).json({ error: `${camp} trebuie să fie un număr pozitiv pentru „${u.denumire}"` });
+      }
+    }
   }
 
   try {
@@ -41,6 +71,13 @@ async function handler(req, res, user) {
       tip: u.tip || null,
       cantitate: Number.isFinite(u.cantitate) && u.cantitate > 0 ? u.cantitate : 1,
       an_fabricatie: Number.isFinite(u.an_fabricatie) ? u.an_fabricatie : null,
+      marca: u.marca || null,
+      model: u.model || null,
+      capacitate_kg: numarPozitivSauNull(u.capacitate_kg) || null,
+      lungime_utila_cm: numarPozitivSauNull(u.lungime_utila_cm) || null,
+      latime_utila_cm: numarPozitivSauNull(u.latime_utila_cm) || null,
+      inaltime_utila_cm: numarPozitivSauNull(u.inaltime_utila_cm) || null,
+      tip_suprastructura: u.tip_suprastructura || null,
     }));
     const { error: insErr } = await supabaseAdmin.from('partner_utilaje').insert(randuri);
     if (insErr) throw insErr;
