@@ -675,32 +675,28 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 
     <!-- ══ PANEL: DASHBOARD GLOBAL ══ -->
     <div id="panel-dashboard">
-      <!-- KPI Grid -->
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px">
+      <!-- KPI Grid — date reale (audit 25 august 2026; "Rating mediu" eliminat,
+           tabela recenzii nu există în schemă, nu se poate calcula onest) -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px">
         <div class="kpi-card kpi-orange">
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:8px">Comenzi active</div>
-          <div style="font-size:28px;font-weight:800;color:#FF8C00;line-height:1">247</div>
-          <div style="font-size:11px;color:#4A6080;margin-top:4px">↑ +18 față de ieri</div>
+          <div id="dash-comenzi-active" style="font-size:28px;font-weight:800;color:#FF8C00;line-height:1">—</div>
+          <div style="font-size:11px;color:#4A6080;margin-top:4px">in_cautare_partener / acceptata / in_executie</div>
         </div>
         <div class="kpi-card kpi-teal">
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:8px">Parteneri live</div>
-          <div style="font-size:28px;font-weight:800;color:#0E9E99;line-height:1">1.834</div>
-          <div style="font-size:11px;color:#4A6080;margin-top:4px">În aplicație acum</div>
+          <div id="dash-parteneri-live" style="font-size:28px;font-weight:800;color:#0E9E99;line-height:1">—</div>
+          <div style="font-size:11px;color:#4A6080;margin-top:4px">status_verificare = approved</div>
         </div>
         <div class="kpi-card kpi-blue">
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:8px">Escrow blocat</div>
-          <div style="font-size:28px;font-weight:800;color:#7AB3E0;line-height:1">284K</div>
-          <div style="font-size:11px;color:#4A6080;margin-top:4px">Lei · 5 țări</div>
+          <div id="dash-escrow-blocat" style="font-size:28px;font-weight:800;color:#7AB3E0;line-height:1">—</div>
+          <div style="font-size:11px;color:#4A6080;margin-top:4px">Lei · escrow_eliberat = false</div>
         </div>
         <div class="kpi-card kpi-green">
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:8px">Venituri luna</div>
-          <div style="font-size:28px;font-weight:800;color:#4ADE80;line-height:1">48.2K</div>
+          <div id="dash-venituri-luna" style="font-size:28px;font-weight:800;color:#4ADE80;line-height:1">—</div>
           <div style="font-size:11px;color:#4A6080;margin-top:4px">Lei · comisioane HBP</div>
-        </div>
-        <div class="kpi-card kpi-teal">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:8px">Rating mediu</div>
-          <div style="font-size:28px;font-weight:800;color:#0E9E99;line-height:1">4.87</div>
-          <div style="font-size:11px;color:#4A6080;margin-top:4px">⭐ din 3.240 rec.</div>
         </div>
       </div>
 
@@ -719,39 +715,10 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
           <div class="sa-card-body" style="padding:0">
             <table class="sa-table">
               <thead><tr>
-                <th>Țară</th><th>Comenzi</th><th>Escrow</th><th>Status</th>
+                <th>Țară</th><th>Comenzi</th><th>Valoare</th><th>Checkout</th>
               </tr></thead>
-              <tbody>
-                <tr>
-                  <td><span style="font-size:16px">🇷🇴</span> <strong style="color:#E2E8F0">România</strong></td>
-                  <td style="font-weight:700;color:#FF8C00">187</td>
-                  <td style="color:#7AB3E0">214.500 Lei</td>
-                  <td><span class="chip chip-green">✓ Activ</span></td>
-                </tr>
-                <tr>
-                  <td><span style="font-size:16px">🇲🇩</span> <strong style="color:#E2E8F0">Moldova</strong></td>
-                  <td style="font-weight:700;color:#FF8C00">31</td>
-                  <td style="color:#7AB3E0">42.200 MDL</td>
-                  <td><span class="chip chip-green">✓ Activ</span></td>
-                </tr>
-                <tr>
-                  <td><span style="font-size:16px">🇩🇪</span> <strong style="color:#E2E8F0">Germania</strong></td>
-                  <td style="font-weight:700;color:#FF8C00">18</td>
-                  <td style="color:#7AB3E0">8.450 EUR</td>
-                  <td><span class="chip chip-teal">Beta</span></td>
-                </tr>
-                <tr>
-                  <td><span style="font-size:16px">🇫🇷</span> <strong style="color:#E2E8F0">Franța</strong></td>
-                  <td style="font-weight:700;color:#4A6080">8</td>
-                  <td style="color:#4A6080">2.100 EUR</td>
-                  <td><span class="chip chip-orange">Pilot</span></td>
-                </tr>
-                <tr>
-                  <td><span style="font-size:16px">🇧🇬</span> <strong style="color:#E2E8F0">Bulgaria</strong></td>
-                  <td style="font-weight:700;color:#4A6080">3</td>
-                  <td style="color:#4A6080">380 BGN</td>
-                  <td><span class="chip chip-orange">Pilot</span></td>
-                </tr>
+              <tbody id="dash-tara-tbody">
+                <tr><td colspan="4" style="color:#4A6080;text-align:center;padding:16px">Se încarcă...</td></tr>
               </tbody>
             </table>
           </div>
@@ -2753,12 +2720,47 @@ function openAddCountry(){showToast('+ Formular adăugare țară nouă → în B
 function selectCountry(code){showToast('Țară selectată: '+code.toUpperCase()+' · Configurare detaliată');}
 function markChanged(el){el.style.borderColor='#FF8C00';}
 
+// ── Dashboard Global — date reale (audit 25 august 2026) ──
+const DASH_TARA_FLAG = { RO:'🇷🇴', MD:'🇲🇩', DE:'🇩🇪', FR:'🇫🇷', BG:'🇧🇬', GB:'🇬🇧', IT:'🇮🇹', ES:'🇪🇸', GR:'🇬🇷', TR:'🇹🇷', HU:'🇭🇺', RS:'🇷🇸' };
+async function incarcaDashboardStats(){
+  try {
+    const token = await accGetToken();
+    const res = await fetch('/api/admin/dashboard-stats', { headers: { Authorization: `Bearer ${token}` } });
+    const d = await res.json();
+    if (!res.ok || !d.ok) return;
+    const fmt = n => (n || 0).toLocaleString('ro-RO', { maximumFractionDigits: 2 });
+    document.getElementById('dash-comenzi-active').textContent = fmt(d.comenzi_active);
+    document.getElementById('dash-parteneri-live').textContent = fmt(d.parteneri_live);
+    document.getElementById('dash-escrow-blocat').textContent = fmt(d.escrow_blocat);
+    document.getElementById('dash-venituri-luna').textContent = fmt(d.venituri_luna);
+
+    const tbody = document.getElementById('dash-tara-tbody');
+    if (!d.comenzi_per_tara.length) {
+      tbody.innerHTML = '<tr><td colspan="4" style="color:#4A6080;text-align:center;padding:16px">Nicio comandă înregistrată încă</td></tr>';
+      return;
+    }
+    tbody.innerHTML = d.comenzi_per_tara.map(r => {
+      const flag = DASH_TARA_FLAG[r.tara_cod] || '🌍';
+      const statusChip = r.checkout_activ === true ? '<span class="chip chip-green">✓ Checkout activ</span>'
+        : r.checkout_activ === false ? '<span class="chip chip-orange">Checkout inactiv</span>'
+        : '<span class="chip">—</span>';
+      return `<tr>
+        <td><span style="font-size:16px">${flag}</span> <strong style="color:#E2E8F0">${String(r.tara_cod || '').replace(/[^A-Za-z0-9]/g,'')}</strong></td>
+        <td style="font-weight:700;color:#FF8C00">${r.comenzi}</td>
+        <td style="color:#7AB3E0">${fmt(r.valoare)} Lei</td>
+        <td>${statusChip}</td>
+      </tr>`;
+    }).join('');
+  } catch (e) { console.error('[dashboard-stats]', e); }
+}
+
 // ── INIT ──
 document.addEventListener('DOMContentLoaded',()=>{
   renderPerms();
   renderUsers(SAMPLE_USERS);
   renderFlags();
   showPanel('dashboard');
+  incarcaDashboardStats();
   if(typeof lucide!=='undefined') lucide.createIcons();
 });
 window.addEventListener('scroll',()=>{});

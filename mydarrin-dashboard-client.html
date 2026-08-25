@@ -1368,39 +1368,27 @@ function triggerHeaderSearch(){
         </div>
       </div>
 
-      <!-- KPI CARDS -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 reveal">
+      <!-- KPI CARDS — date reale, calculate din COMENZI_REALE deja încărcate
+           (audit 25 august 2026: "12"/"1.720 (2 active)"/"8"/"9.840 (Top 5%)"
+           erau hardcodate literal, fără nicio legătură cu comenzile clientului.
+           "Garanții digitale" și "Lei economisiți (AI)" eliminate din UI, nu
+           înlocuite cu 0 — garantii_lucrari nu e conectată nicăieri în flux,
+           iar "economii AI" n-are niciun model de calcul real în cod. -->
+      <div class="grid grid-cols-2 gap-4 reveal">
         <div class="kpi-card">
           <div class="flex items-start justify-between mb-2">
             <div class="w-9 h-9 rounded-xl bg-[#EBF4FB] flex items-center justify-center"><i data-lucide="package" class="w-4 h-4 text-[#003366]"></i></div>
-            <span class="kpi-delta kpi-up">+3 lună</span>
           </div>
-          <div class="kpi-val">12</div>
+          <div class="kpi-val" id="dc-kpi-comenzi-total">—</div>
           <div class="kpi-label">Comenzi totale</div>
         </div>
         <div class="kpi-card">
           <div class="flex items-start justify-between mb-2">
             <div class="w-9 h-9 rounded-xl bg-[#FFF0D6] flex items-center justify-center"><i data-lucide="lock" class="w-4 h-4 text-[#FF8C00]"></i></div>
-            <span class="kpi-delta" style="background:#FFF0D6;color:#CC7000">2 active</span>
+            <span class="kpi-delta" id="dc-kpi-escrow-active-badge" style="background:#FFF0D6;color:#CC7000">—</span>
           </div>
-          <div class="kpi-val" style="color:#FF8C00">1.720</div>
+          <div class="kpi-val" style="color:#FF8C00" id="dc-kpi-escrow-suma">—</div>
           <div class="kpi-label">Lei în Escrow activ</div>
-        </div>
-        <div class="kpi-card">
-          <div class="flex items-start justify-between mb-2">
-            <div class="w-9 h-9 rounded-xl bg-[#E0F5F4] flex items-center justify-center"><i data-lucide="shield-check" class="w-4 h-4 text-[#0E9E99]"></i></div>
-            <span class="kpi-delta kpi-up">+1 azi</span>
-          </div>
-          <div class="kpi-val" style="color:#0E9E99">8</div>
-          <div class="kpi-label">Garanții digitale</div>
-        </div>
-        <div class="kpi-card">
-          <div class="flex items-start justify-between mb-2">
-            <div class="w-9 h-9 rounded-xl bg-[#D4EDDA] flex items-center justify-center"><i data-lucide="trending-up" class="w-4 h-4 text-[#1A7A3A]"></i></div>
-            <span class="kpi-delta kpi-up">Top 5%</span>
-          </div>
-          <div class="kpi-val" style="color:#1A7A3A">9.840</div>
-          <div class="kpi-label">Lei economisiți (AI)</div>
         </div>
       </div>
 
@@ -3120,6 +3108,14 @@ async function loadComenziReale() {
   setEl2('filtru-toate', 'Toate (' + COMENZI_REALE.length + ')');
   setEl2('filtru-active', 'Active (' + active.length + ')');
   setEl2('filtru-finalizate', 'Finalizate (' + finalizate.length + ')');
+
+  // KPI cards reale (audit 25 august 2026) — derivate din COMENZI_REALE
+  // deja încărcat mai sus, fără cerere suplimentară.
+  const inEscrow = COMENZI_REALE.filter(c => !c.escrow_eliberat);
+  const sumaEscrow = inEscrow.reduce((s, c) => s + (Number(c.suma_totala_platita) || 0), 0);
+  setEl2('dc-kpi-comenzi-total', String(COMENZI_REALE.length));
+  setEl2('dc-kpi-escrow-suma', sumaEscrow.toLocaleString('ro-RO', { maximumFractionDigits: 2 }));
+  setEl2('dc-kpi-escrow-active-badge', inEscrow.length + (inEscrow.length === 1 ? ' activă' : ' active'));
 
   const deConfirmat = COMENZI_REALE.filter(c => c.status === 'finalizata');
   const alerta = document.getElementById('alerta-confirmari');

@@ -1455,11 +1455,10 @@ function triggerHeaderSearch(){
     </div>
 
     <!-- Stats -->
-    <div class="reveal mt-12 grid grid-cols-2 lg:grid-cols-4 gap-6 max-w-3xl mx-auto">
-      <div class="text-center"><div class="font-bold text-3xl text-white counter" data-target="12400" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">0</div><div class="text-white/40 text-xs mt-1">Clienți activi</div></div>
-      <div class="text-center"><div class="font-bold text-3xl text-[#FF8C00] counter" data-target="1840" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">0</div><div class="text-white/40 text-xs mt-1">Parteneri verificați</div></div>
-      <div class="text-center"><div class="font-bold text-3xl text-[#0E9E99] counter" data-target="1834" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">0</div><div class="text-white/40 text-xs mt-1">Devize AI / lună</div></div>
-      <div class="text-center"><div class="font-bold text-3xl text-white counter" data-target="487" data-decimal="true" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">0</div><div class="text-white/40 text-xs mt-1">Rating mediu</div></div>
+    <div class="reveal mt-12 grid grid-cols-3 gap-6 max-w-3xl mx-auto">
+      <div class="text-center"><div id="stat-clienti" class="font-bold text-3xl text-white counter" data-target="0" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">0</div><div class="text-white/40 text-xs mt-1">Clienți activi</div></div>
+      <div class="text-center"><div id="stat-parteneri" class="font-bold text-3xl text-[#FF8C00] counter" data-target="0" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">0</div><div class="text-white/40 text-xs mt-1">Parteneri verificați</div></div>
+      <div class="text-center"><div id="stat-devize-ai" class="font-bold text-3xl text-[#0E9E99] counter" data-target="0" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">0</div><div class="text-white/40 text-xs mt-1">Devize AI / lună</div></div>
     </div>
     <!-- ════ CARUSEL CATEGORII — slide stânga→dreapta, 10 carduri ════ -->
     <div class="reveal d5 mt-10" style="max-width:100%">
@@ -2821,6 +2820,19 @@ function animateCounter(el){
 }
 const cobs=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting&&!x.target.dataset.done){x.target.dataset.done='1';animateCounter(x.target);}}),{threshold:.3});
 document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
+
+// Statistici reale (audit 25 august 2026, gap real: contoarele de mai sus
+// erau hardcodate, "12.400 clienți"/"1.840 parteneri" fixe, fără nicio
+// legătură cu DB). "Rating mediu" eliminat din UI, nu înlocuit cu 0 —
+// tabela recenzii nu există încă în schemă, nu se poate calcula onest.
+fetch('/api/public/statistici-homepage').then(r=>r.json()).then(d=>{
+  if(!d.ok)return;
+  const map={'stat-clienti':d.clienti_activi,'stat-parteneri':d.parteneri_verificati,'stat-devize-ai':d.devize_ai_luna};
+  Object.entries(map).forEach(([id,val])=>{
+    const el=document.getElementById(id);
+    if(el)el.dataset.target=String(val||0);
+  });
+}).catch(()=>{});
 </script>
 
 <script>
