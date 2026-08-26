@@ -148,32 +148,64 @@ create policy "partener vede propriile comisioane" on public.comisioane
   for select using (auth.uid() = partener_id);
 
 -- ── 9. KYC INVESTITORI (Etapa 3.3) ──────────────────────────────
+-- CORECTAT 26 august 2026 — versiunea de mai jos NU corespundea schemei live
+-- (schema drift, aplicat direct pe DB, niciodată reflectat aici — descoperit
+-- la auditul Etapa INV). Redactat acum ca să reflecte exact realitatea live:
+-- schema originală (investitor_id/profil_risc/document_identitate_url/pep)
+-- a fost înlocuită direct pe Supabase cu o versiune bazată pe OCR de CI +
+-- CNP hash-uit, fără ca api/investitori/kyc.js să fie vreodată actualizat
+-- să scrie în noile coloane — endpoint-ul e azi complet nefuncțional
+-- (0 apelanți reali, verificat), semnalat separat pentru decizie de design.
 create table if not exists public.investitori_kyc (
   id uuid primary key default uuid_generate_v4(),
-  investitor_id uuid references auth.users(id) unique,
-  profil_risc jsonb,               -- răspunsuri chestionar
-  document_identitate_url text,
-  pep boolean default false,       -- Persoană Expusă Politic
+  user_id uuid references auth.users(id) unique,
+  ci_ocr_json jsonb,                -- date extrase din CI prin OCR
+  cnp_hash text,                     -- NICIODATĂ CNP în clar — doar hash
+  pep_check boolean default false,   -- Persoană Expusă Politic
+  scor_risc integer,
   status text default 'in_verificare', -- in_verificare|aprobat|respins
-  verificat_de uuid references auth.users(id),
-  created_at timestamptz default now()
+  submitted_at timestamptz default now(),
+  reviewed_at timestamptz,
+  reviewed_by uuid references auth.users(id)
 );
 alter table public.investitori_kyc enable row level security;
 create policy "investitorul vede propriul KYC" on public.investitori_kyc
-  for select using (auth.uid() = investitor_id);
+  for select using (auth.uid() = user_id);
 
+-- CORECTAT 26 august 2026 — aceeași corecție de schema drift ca mai sus.
 create table if not exists public.investitori_portofoliu (
   id uuid primary key default uuid_generate_v4(),
-  investitor_id uuid references auth.users(id),
-  actiuni numeric not null,
-  suma_investita numeric not null,
-  roi_curent numeric default 0,
-  dividende_incasate numeric default 0,
+  user_id uuid references auth.users(id),
+  actiuni integer not null,
+  valoare_investita numeric not null,
+  roi_estimat numeric,
+  ultima_evaluare timestamptz,
+  oras text,
+  consimtamant_public boolean default false,
+  exit_estimat_luni integer,
+  email text,
   created_at timestamptz default now()
 );
 alter table public.investitori_portofoliu enable row level security;
 create policy "investitorul vede propriul portofoliu" on public.investitori_portofoliu
-  for select using (auth.uid() = investitor_id);
+  for select using (auth.uid() = user_id);
+
+-- NOU 26 august 2026 — tabelă lipsă complet din DB (0 rezultate la query),
+-- deși api/investitori/exit.js scria deja în ea de la introducerea endpoint-ului
+-- (Etapa 3.3) — orice cerere de exit eșua cu eroare 500. Creată acum, consistentă
+-- cu convenția `user_id` deja reală pe cele 2 tabele de mai sus.
+create table if not exists public.investitori_exit (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references auth.users(id),
+  tip text check (tip in ('buyback','piata_secundara')),
+  numar_actiuni integer not null,
+  suma_calculata numeric,          -- populat abia când se implementează calculul (TODO în exit.js)
+  status text default 'in_procesare', -- in_procesare|aprobat|respins|finalizat
+  created_at timestamptz default now()
+);
+alter table public.investitori_exit enable row level security;
+create policy "investitorul vede propriile cereri de exit" on public.investitori_exit
+  for select using (auth.uid() = user_id);
 
 create table if not exists public.investitori_exit (
   id uuid primary key default uuid_generate_v4(),

@@ -3,6 +3,14 @@
 // evaluarea curentă, conform README), fie listare pe Piața Secundară internă.
 //
 // Body: { tip: 'buyback' | 'piata_secundara', numar_actiuni }
+//
+// FIX (Etapa INV, audit 26 august 2026): endpoint-ul citea/scria pe coloana
+// investitor_id, dar schema reală (drift, aplicat direct pe DB, corectat
+// acum în schema.sql) are user_id — orice cerere eșua. Tabela investitori_exit
+// nici nu exista în DB — creată acum (vezi schema.sql). Calculul sumei de
+// buyback și listarea pe piața secundară rămân TODO neimplementate — fac
+// parte din mecanismul de lichiditate mai amplu (drept de preemțiune,
+// termene de 30 zile), în așteptarea revizuirii juridice a mecanismului.
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
@@ -19,7 +27,7 @@ async function handler(req, res, user) {
   const { data: portofoliu, error: portErr } = await supabaseAdmin
     .from('investitori_portofoliu')
     .select('actiuni')
-    .eq('investitor_id', user.id);
+    .eq('user_id', user.id);
   if (portErr) return res.status(500).json({ error: 'Eroare la citirea portofoliului' });
 
   const totalActiuni = (portofoliu || []).reduce((sum, r) => sum + Number(r.actiuni), 0);
@@ -29,7 +37,7 @@ async function handler(req, res, user) {
 
   const { data, error } = await supabaseAdmin
     .from('investitori_exit')
-    .insert({ investitor_id: user.id, tip, numar_actiuni, status: 'in_procesare' })
+    .insert({ user_id: user.id, tip, numar_actiuni, status: 'in_procesare' })
     .select()
     .single();
 
