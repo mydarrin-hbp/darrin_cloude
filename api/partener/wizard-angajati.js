@@ -5,10 +5,22 @@
 // partner_wizard_8_pasi_schema_si_criptare) — niciodată stocat în clar.
 //
 // GET   → angajații înregistrați (CNP mascat, nu decriptat integral)
-// POST  { angajati: [{ nume, cnp, cod_esco }, ...] }  (înlocuire completă)
+// POST  { angajati: [{ nume, cnp, cod_esco }, ...] }  (ADAUGĂ la roster —
+//         vezi FIX 26 august 2026 mai jos)
 // PATCH { id, disponibil }  (24 august 2026, aprobat — toggle rapid tip
-//         Uber/Bolt, distinct de POST-ul de mai sus care înlocuiește tot
-//         roster-ul; folosit de lib/aloca-partener.js la alocare)
+//         Uber/Bolt, folosit de lib/aloca-partener.js la alocare)
+// DELETE { id }  (26 august 2026 — dezactivează un singur angajat, nu tot roster-ul)
+//
+// FIX (26 august 2026, Etapa 2/2i) — POST înlocuia ÎNTREGUL roster (ștergea
+// tot, apoi insera lista nouă primită). Corect pentru fluxul vechi (wizard
+// de 8 pași, orfan — un singur ecran "declară tot deodată"), dar incompatibil
+// cu noua secțiune de dashboard "Echipa mea", unde partenerul adaugă un
+// membru pe rând, DUPĂ aprobare. CNP-ul e criptat — GET-ul întoarce doar
+// cnp_mascat, deci clientul n-ar putea reconstitui lista completă (cu CNP-uri
+// reale) ca s-o retrimită la fiecare adăugare, fără risc de ștergere
+// accidentală a restului echipei. POST devine acum strict adăugare.
+// Wizard-ul de 8 pași fiind orfan (0 apelanți reali), schimbarea de semantică
+// e sigură — nimic din cod nu se mai bazează pe comportamentul vechi.
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
@@ -52,6 +64,21 @@ async function handler(req, res, user) {
     return res.status(200).json({ ok: true, angajat: data });
   }
 
+  if (req.method === 'DELETE') {
+    const { id } = req.body || {};
+    if (!id) return res.status(400).json({ error: 'id este obligatoriu' });
+    const { data, error } = await supabaseAdmin
+      .from('partner_angajati')
+      .update({ activ: false })
+      .eq('id', id)
+      .eq('partner_id', user.id)
+      .select('id')
+      .maybeSingle();
+    if (error) return res.status(500).json({ error: error.message });
+    if (!data) return res.status(404).json({ error: 'Angajatul nu există sau nu-ți aparține' });
+    return res.status(200).json({ ok: true });
+  }
+
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { angajati } = req.body || {};
@@ -72,11 +99,6 @@ async function handler(req, res, user) {
       const invalide = coduri.filter((c) => !codValidSet.has(c));
       if (invalide.length) return res.status(400).json({ error: `Coduri ESCO necunoscute: ${invalide.join(', ')}` });
     }
-
-    // Dezactivăm angajații existenți în loc să-i ștergem — partner_certificari
-    // și partner_alocari_sarcini pot referenția deja angajat_id-uri existente.
-    const { error: dezErr } = await supabaseAdmin.from('partner_angajati').update({ activ: false }).eq('partner_id', user.id);
-    if (dezErr) throw dezErr;
 
     const randuri = [];
     for (const a of angajati) {

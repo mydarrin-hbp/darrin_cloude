@@ -13,8 +13,9 @@
 // (profiles.tara). `tip_certificare` e chiar textul `nume_certificare` din
 // acel tabel — validat live, nu contra unei liste fixe în cod.
 //
-// GET  → certificările înregistrate + cerințele reale pentru țara partenerului
-// POST { tip_certificare, document_path, angajat_id?, data_expirare? }
+// GET    → certificările înregistrate + cerințele reale pentru țara partenerului
+// POST   { tip_certificare, document_path, angajat_id?, data_expirare? }
+// DELETE { id }  (26 august 2026 — șterge o singură certificare din dashboard)
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
@@ -42,6 +43,21 @@ async function handler(req, res, user) {
 
     const cerinte = await incarcaCerinteTara(tara);
     return res.status(200).json({ ok: true, certificari: data || [], cerinte, tara });
+  }
+
+  if (req.method === 'DELETE') {
+    const { id } = req.body || {};
+    if (!id) return res.status(400).json({ error: 'id este obligatoriu' });
+    const { data, error } = await supabaseAdmin
+      .from('partner_certificari')
+      .delete()
+      .eq('id', id)
+      .eq('partner_id', user.id)
+      .select('id')
+      .maybeSingle();
+    if (error) return res.status(500).json({ error: error.message });
+    if (!data) return res.status(404).json({ error: 'Certificarea nu există sau nu-ți aparține' });
+    return res.status(200).json({ ok: true });
   }
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });

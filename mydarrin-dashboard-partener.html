@@ -572,6 +572,9 @@ const TYPES = {
       {id:'sarcini',icon:'⚡',label:'Sarcini LIVE',badge:'3',badgeCls:'ch-o'},
       {id:'portofoliu',icon:'🔧',label:'Portofoliu servicii'},
       {id:'echipa',icon:'👥',label:'Echipa mea'},
+      {id:'utilaje',icon:'🚚',label:'Utilajele mele'},
+      {id:'certificari',icon:'📜',label:'Certificările mele'},
+      {id:'status-aplicare',icon:'🧭',label:'Status aplicare'},
       {id:'calendar',icon:'📅',label:'Calendar'},
       {id:'program-lucru',icon:'🕐',label:'Program de lucru'},
       {section:'Financiar'},
@@ -678,7 +681,8 @@ function showPanel(id) {
   const t = TYPES[currentType];
   const panelTitles = {
     overview:'Overview', sarcini:'Sarcini LIVE', portofoliu:'Portofoliu servicii',
-    echipa:'Echipa mea',
+    echipa:'Echipa mea', utilaje:'Utilajele mele', certificari:'Certificările mele',
+    'status-aplicare':'Status aplicare partener',
     calendar:'Calendar & Disponibilitate', 'program-lucru':'Program de lucru', venituri:'Venituri & Plăți',
     garantii:'Garanții de execuție', documente:'Documentele mele', profil:'Profil & KYC',
     curse:'Curse disponibile', activ:'Cursă activă',
@@ -695,6 +699,9 @@ function showPanel(id) {
   else if (id === 'sarcini')    content.innerHTML = renderSarcini();
   else if (id === 'portofoliu') { content.innerHTML = renderPortofoliu(); loadPortofoliuReal(); }
   else if (id === 'echipa')     { content.innerHTML = renderEchipa(); loadEchipaReal(); }
+  else if (id === 'utilaje')    { content.innerHTML = renderUtilaje(); loadUtilajeReal(); }
+  else if (id === 'certificari'){ content.innerHTML = renderCertificari(); loadCertificariReal(); }
+  else if (id === 'status-aplicare') { content.innerHTML = renderStatusAplicare(); loadStatusAplicareReal(); }
   else if (id === 'calendar')   content.innerHTML = renderCalendar();
   else if (id === 'program-lucru') { content.innerHTML = renderProgramLucru(); loadProgramLucruReal(); }
   else if (id === 'venituri')   content.innerHTML = renderVenituri();
@@ -1778,6 +1785,14 @@ async function togglePortofoliuItem(catalogServiciuId, activ, checkboxEl){
 // echipă proprie": listă angajați (deja colectați azi doar prin wizard-ul
 // de 8 pași, api/partener/wizard-angajati.js) + status de disponibilitate
 // live, tip Uber/Bolt, folosit real de lib/aloca-partener.js la alocare. ──
+// ── Echipa mea / Utilajele mele / Certificările mele (Etapa 2/2i, 26 august
+// 2026) — extindere directă a secțiunii "Echipa mea" (D2b-extensie, 24
+// august), acum cu adăugare reală. Wizard-ul de 8 pași care colecta aceste
+// date la înregistrare e orfan (0 apelanți reali, verificat live) — asta e
+// singurul loc unde un partener poate azi să-și declare echipa/utilajele/
+// certificările, mutat deliberat DUPĂ aprobarea inițială, ca înregistrarea
+// (5 pași) să rămână simplă. ──
+
 function renderEchipa() {
   return `
   <div style="margin-bottom:18px">
@@ -1787,7 +1802,29 @@ function renderEchipa() {
   <div class="dp-card" style="margin-bottom:16px">
     <div id="echipa-sumar" style="font-size:13px;font-weight:700;color:#1A2332;margin-bottom:12px">Se încarcă...</div>
     <div id="echipa-real-lista" style="color:#5A6B7D">Se încarcă...</div>
+  </div>
+  <div class="dp-card">
+    <div style="font-size:13px;font-weight:700;color:#1A2332;margin-bottom:10px">Adaugă membru nou</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end">
+      <div><label style="font-size:10.5px;color:#8C9BAD">Nume</label><input id="ang-nume" type="text" style="width:100%;padding:8px;border:1px solid #D5DFE8;border-radius:8px;font-size:13px"/></div>
+      <div><label style="font-size:10.5px;color:#8C9BAD">CNP (13 cifre)</label><input id="ang-cnp" type="text" maxlength="13" style="width:100%;padding:8px;border:1px solid #D5DFE8;border-radius:8px;font-size:13px"/></div>
+      <div><label style="font-size:10.5px;color:#8C9BAD">Cod ESCO (opțional)</label><select id="ang-esco" style="width:100%;padding:8px;border:1px solid #D5DFE8;border-radius:8px;font-size:13px"><option value="">—</option></select></div>
+      <button class="btn-primary" style="padding:9px 16px;font-size:12.5px" onclick="adaugaAngajat()">+ Adaugă</button>
+    </div>
+    <div id="ang-msg" style="font-size:12px;margin-top:8px"></div>
   </div>`;
+}
+
+async function _incarcaEscoSelect(elId){
+  const sel = document.getElementById(elId);
+  if (!sel) return;
+  try {
+    const res = await fetch('/api/public/esco-lista');
+    const data = await res.json();
+    if (res.ok && data.ocupatii) {
+      sel.innerHTML = '<option value="">—</option>' + data.ocupatii.map(o => `<option value="${o.cod_esco}">${o.denumire}</option>`).join('');
+    }
+  } catch (e) { /* rămâne doar "—", neblocant */ }
 }
 
 async function loadEchipaReal(){
@@ -1795,6 +1832,7 @@ async function loadEchipaReal(){
   const el = document.getElementById('echipa-real-lista');
   if (!el) return;
   el.textContent = 'Se încarcă...';
+  _incarcaEscoSelect('ang-esco');
   try {
     const headers = await _partenerAuthHeader();
     const res = await fetch('/api/partener/wizard-angajati', { headers });
@@ -1806,7 +1844,7 @@ async function loadEchipaReal(){
       : 'Nu ai încă nicio echipă înregistrată';
 
     if (!data.angajati.length) {
-      el.innerHTML = '<div style="color:#5A6B7D">Echipa se înregistrează azi din wizard-ul de înregistrare partener (Pasul 5). Dacă lucrezi solo, nu ai nevoie de nimic aici — alocarea comenzilor rămâne neschimbată.</div>';
+      el.innerHTML = '<div style="color:#5A6B7D">Dacă lucrezi solo, nu ai nevoie de nimic aici — alocarea comenzilor rămâne neschimbată. Dacă ai o echipă, adaug-o mai jos.</div>';
       return;
     }
 
@@ -1815,6 +1853,7 @@ async function loadEchipaReal(){
         <div class="dp-toggle ${a.disponibil ? 'on' : 'off'}" onclick="toggleDisponibilitateAngajat('${a.id}', ${!a.disponibil}, this)" style="flex-shrink:0"></div>
         <span style="flex:1"><strong style="color:#1A2332;font-size:13px">${a.nume}</strong><br><span style="font-size:11px;color:#5A6B7D">${a.cod_esco || 'fără cod ESCO'} · CNP ${a.cnp_mascat || '—'}</span></span>
         <span class="chip ${a.disponibil ? 'ch-g' : 'ch-gr'}" style="font-size:10.5px">${a.disponibil ? 'Disponibil' : 'Indisponibil'}</span>
+        <button class="btn-ghost" style="padding:5px 10px;font-size:11px;color:#C0392B" onclick="stergeAngajat('${a.id}')">Șterge</button>
       </div>
     `).join('');
   } catch (e) {
@@ -1837,6 +1876,296 @@ async function toggleDisponibilitateAngajat(angajatId, disponibilNou, toggleEl){
   } catch (e) {
     alert('Eroare: ' + e.message);
     if (toggleEl) { toggleEl.classList.toggle('on'); toggleEl.classList.toggle('off'); } // revert
+  }
+}
+
+async function adaugaAngajat(){
+  const msgEl = document.getElementById('ang-msg');
+  const nume = document.getElementById('ang-nume')?.value.trim();
+  const cnp = document.getElementById('ang-cnp')?.value.trim();
+  const cod_esco = document.getElementById('ang-esco')?.value || null;
+  if (!nume || !/^\d{13}$/.test(cnp || '')) {
+    if (msgEl) { msgEl.textContent = 'Nume și CNP valid (13 cifre) sunt obligatorii.'; msgEl.style.color = '#C0392B'; }
+    return;
+  }
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/wizard-angajati', {
+      method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ angajati: [{ nume, cnp, cod_esco }] }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    document.getElementById('ang-nume').value = '';
+    document.getElementById('ang-cnp').value = '';
+    if (msgEl) { msgEl.textContent = 'Adăugat.'; msgEl.style.color = '#1A7A3A'; }
+    loadEchipaReal();
+  } catch (e) {
+    if (msgEl) { msgEl.textContent = 'Eroare: ' + e.message; msgEl.style.color = '#C0392B'; }
+  }
+}
+
+async function stergeAngajat(id){
+  if (!confirm('Ștergi acest membru din echipă?')) return;
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/wizard-angajati', {
+      method: 'DELETE', headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    loadEchipaReal();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+// ── Utilajele mele ──
+const TIPURI_SUPRASTRUCTURA_LABEL = {
+  bena_deschisa:'Benă deschisă', bena_inchisa_carosata:'Benă închisă/carosată', prelata:'Prelată',
+  cisterna_alimentara:'Cisternă alimentară', cisterna_chimica:'Cisternă chimică', cisterna_petroliera:'Cisternă petrolieră',
+  macara_pe_bena:'Macara pe benă', autobetoniera:'Autobetonieră', pompa_beton_sapa:'Pompă beton/șapă',
+  nacela:'Nacelă', manitou_telehandler:'Manitou/telehandler', electrostivuitor:'Electrostivuitor',
+  utilaj_dezapezire_maturat:'Utilaj dezăpezire/măturat', altul:'Altul',
+};
+
+function renderUtilaje() {
+  const optiuni = Object.entries(TIPURI_SUPRASTRUCTURA_LABEL).map(([v,l]) => `<option value="${v}">${l}</option>`).join('');
+  return `
+  <div style="margin-bottom:18px">
+    <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Utilajele mele</h2>
+    <p style="font-size:12.5px;color:#5A6B7D;margin-top:4px">Vehicule și utilaje declarate — relevant pentru curieri de cartier și furnizori de închirieri.</p>
+  </div>
+  <div class="dp-card" style="margin-bottom:16px">
+    <div id="utilaje-real-lista" style="color:#5A6B7D">Se încarcă...</div>
+  </div>
+  <div class="dp-card">
+    <div style="font-size:13px;font-weight:700;color:#1A2332;margin-bottom:10px">Adaugă utilaj/vehicul</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div><label style="font-size:10.5px;color:#8C9BAD">Denumire</label><input id="ut-denumire" type="text" placeholder="ex: Camion mutări" style="width:100%;padding:8px;border:1px solid #D5DFE8;border-radius:8px;font-size:13px"/></div>
+      <div><label style="font-size:10.5px;color:#8C9BAD">Tip</label><input id="ut-tip" type="text" style="width:100%;padding:8px;border:1px solid #D5DFE8;border-radius:8px;font-size:13px"/></div>
+      <div><label style="font-size:10.5px;color:#8C9BAD">Marcă</label><input id="ut-marca" type="text" style="width:100%;padding:8px;border:1px solid #D5DFE8;border-radius:8px;font-size:13px"/></div>
+      <div><label style="font-size:10.5px;color:#8C9BAD">Model</label><input id="ut-model" type="text" style="width:100%;padding:8px;border:1px solid #D5DFE8;border-radius:8px;font-size:13px"/></div>
+      <div><label style="font-size:10.5px;color:#8C9BAD">Capacitate (kg)</label><input id="ut-capacitate" type="number" min="0" style="width:100%;padding:8px;border:1px solid #D5DFE8;border-radius:8px;font-size:13px"/></div>
+      <div><label style="font-size:10.5px;color:#8C9BAD">Tip suprastructură</label><select id="ut-suprastructura" style="width:100%;padding:8px;border:1px solid #D5DFE8;border-radius:8px;font-size:13px"><option value="">—</option>${optiuni}</select></div>
+    </div>
+    <button class="btn-primary" style="padding:9px 16px;font-size:12.5px;margin-top:10px" onclick="adaugaUtilaj()">+ Adaugă</button>
+    <div id="ut-msg" style="font-size:12px;margin-top:8px"></div>
+  </div>`;
+}
+
+async function loadUtilajeReal(){
+  const el = document.getElementById('utilaje-real-lista');
+  if (!el) return;
+  el.textContent = 'Se încarcă...';
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/wizard-utilaje', { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!data.utilaje.length) { el.innerHTML = '<div style="color:#5A6B7D">Niciun utilaj declarat încă.</div>'; return; }
+    el.innerHTML = data.utilaje.map((u) => `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid #EEF2F7">
+        <span style="flex:1"><strong style="color:#1A2332;font-size:13px">${u.denumire}</strong><br><span style="font-size:11px;color:#5A6B7D">${[u.marca, u.model].filter(Boolean).join(' ') || u.tip || '—'}${u.capacitate_kg ? ' · ' + u.capacitate_kg + ' kg' : ''}${u.tip_suprastructura ? ' · ' + (TIPURI_SUPRASTRUCTURA_LABEL[u.tip_suprastructura] || u.tip_suprastructura) : ''}</span></span>
+        <button class="btn-ghost" style="padding:5px 10px;font-size:11px;color:#C0392B" onclick="stergeUtilaj('${u.id}')">Șterge</button>
+      </div>
+    `).join('');
+  } catch (e) {
+    el.innerHTML = `<div style="color:#C0392B">Eroare: ${e.message}</div>`;
+  }
+}
+
+async function adaugaUtilaj(){
+  const msgEl = document.getElementById('ut-msg');
+  const denumire = document.getElementById('ut-denumire')?.value.trim();
+  if (!denumire) { if (msgEl) { msgEl.textContent = 'Denumirea e obligatorie.'; msgEl.style.color = '#C0392B'; } return; }
+  const utilaj = {
+    denumire,
+    tip: document.getElementById('ut-tip')?.value.trim() || null,
+    marca: document.getElementById('ut-marca')?.value.trim() || null,
+    model: document.getElementById('ut-model')?.value.trim() || null,
+    capacitate_kg: document.getElementById('ut-capacitate')?.value || null,
+    tip_suprastructura: document.getElementById('ut-suprastructura')?.value || null,
+  };
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/wizard-utilaje', {
+      method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ utilaje: [utilaj] }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    ['ut-denumire','ut-tip','ut-marca','ut-model','ut-capacitate'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+    if (msgEl) { msgEl.textContent = 'Adăugat.'; msgEl.style.color = '#1A7A3A'; }
+    loadUtilajeReal();
+  } catch (e) {
+    if (msgEl) { msgEl.textContent = 'Eroare: ' + e.message; msgEl.style.color = '#C0392B'; }
+  }
+}
+
+async function stergeUtilaj(id){
+  if (!confirm('Ștergi acest utilaj?')) return;
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/wizard-utilaje', {
+      method: 'DELETE', headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    loadUtilajeReal();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+// ── Certificările mele ──
+function renderCertificari() {
+  return `
+  <div style="margin-bottom:18px">
+    <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Certificările mele</h2>
+    <p style="font-size:12.5px;color:#5A6B7D;margin-top:4px">Documentele sunt private — vizibile doar echipei My Darrin, pentru verificare.</p>
+  </div>
+  <div class="dp-card" style="margin-bottom:16px">
+    <div id="cert-real-lista" style="color:#5A6B7D">Se încarcă...</div>
+  </div>
+  <div class="dp-card">
+    <div style="font-size:13px;font-weight:700;color:#1A2332;margin-bottom:10px">Adaugă certificare</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end">
+      <div><label style="font-size:10.5px;color:#8C9BAD">Tip certificare</label><select id="cert-tip" style="width:100%;padding:8px;border:1px solid #D5DFE8;border-radius:8px;font-size:13px"><option value="">Se încarcă...</option></select></div>
+      <div><label style="font-size:10.5px;color:#8C9BAD">Document (PDF/imagine)</label><input id="cert-fisier" type="file" accept="application/pdf,image/*" style="width:100%;font-size:12px"/></div>
+    </div>
+    <button class="btn-primary" style="padding:9px 16px;font-size:12.5px;margin-top:10px" onclick="adaugaCertificare()">+ Adaugă</button>
+    <div id="cert-msg" style="font-size:12px;margin-top:8px"></div>
+  </div>`;
+}
+
+async function loadCertificariReal(){
+  const el = document.getElementById('cert-real-lista');
+  const selTip = document.getElementById('cert-tip');
+  if (!el) return;
+  el.textContent = 'Se încarcă...';
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/wizard-certificari', { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+
+    if (selTip) {
+      selTip.innerHTML = data.cerinte.length
+        ? data.cerinte.map(c => `<option value="${c.nume_certificare}">${c.nume_certificare}${c.obligatorie ? ' (obligatorie)' : ''}</option>`).join('')
+        : '<option value="">Nicio cerință configurată pentru țara ta</option>';
+    }
+
+    if (!data.certificari.length) { el.innerHTML = '<div style="color:#5A6B7D">Nicio certificare încărcată încă.</div>'; return; }
+    el.innerHTML = data.certificari.map((c) => `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid #EEF2F7">
+        <span style="flex:1"><strong style="color:#1A2332;font-size:13px">${c.tip_certificare}</strong>${c.data_expirare ? `<br><span style="font-size:11px;color:#5A6B7D">Expiră: ${c.data_expirare}</span>` : ''}</span>
+        <button class="btn-ghost" style="padding:5px 10px;font-size:11px;color:#C0392B" onclick="stergeCertificare('${c.id}')">Șterge</button>
+      </div>
+    `).join('');
+  } catch (e) {
+    el.innerHTML = `<div style="color:#C0392B">Eroare: ${e.message}</div>`;
+  }
+}
+
+async function adaugaCertificare(){
+  const msgEl = document.getElementById('cert-msg');
+  const tip = document.getElementById('cert-tip')?.value;
+  const fisier = document.getElementById('cert-fisier')?.files?.[0];
+  if (!tip || !fisier) { if (msgEl) { msgEl.textContent = 'Alege tipul de certificare și un fișier.'; msgEl.style.color = '#C0392B'; } return; }
+  try {
+    const { data: { user } } = await window.supabaseClient.auth.getUser();
+    const ext = (fisier.name.split('.').pop() || 'pdf').toLowerCase();
+    const path = `${user.id}/certificari/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { error: upErr } = await window.supabaseClient.storage.from('partner-certificari').upload(path, fisier, { contentType: fisier.type });
+    if (upErr) throw upErr;
+
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/wizard-certificari', {
+      method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tip_certificare: tip, document_path: path }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    document.getElementById('cert-fisier').value = '';
+    if (msgEl) { msgEl.textContent = 'Adăugată.'; msgEl.style.color = '#1A7A3A'; }
+    loadCertificariReal();
+  } catch (e) {
+    if (msgEl) { msgEl.textContent = 'Eroare: ' + (e.message || e); msgEl.style.color = '#C0392B'; }
+  }
+}
+
+async function stergeCertificare(id){
+  if (!confirm('Ștergi această certificare?')) return;
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/wizard-certificari', {
+      method: 'DELETE', headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    loadCertificariReal();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+// ── Status aplicare partener (Etapa 2/2i, 26 august 2026) ──
+// Reflectă starea REALĂ, verificată live: partners.status_verificare
+// (pending_review/approved/rejected) + documente_partener.status pentru
+// "documente suplimentare necesare". Rol Darrin AI — poartă dezactivată
+// implicit (backoffice_config), afișată doar dacă e activată; niciun mesaj
+// de "Darrin AI verifică" fără ca acel audit să existe cu adevărat.
+function renderStatusAplicare() {
+  return `
+  <div style="margin-bottom:18px">
+    <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Status aplicare partener</h2>
+    <p style="font-size:12.5px;color:#5A6B7D;margin-top:4px">Stadiul real al dosarului tău — actualizat automat, oglindit și pe email.</p>
+  </div>
+  <div class="dp-card" id="status-aplicare-card">Se încarcă...</div>`;
+}
+
+const STATUS_APLICARE_META = {
+  pending_review: { label: 'În verificare', color: '#CC7000', bg: '#FFF0D6', text: 'Dosarul tău e în curs de verificare de echipa My Darrin. Te anunțăm imediat ce avem un răspuns.' },
+  documente_necesare: { label: 'Documente suplimentare necesare', color: '#C0392B', bg: '#FDECEA', text: 'Unul sau mai multe documente au fost respinse — vezi observațiile de mai jos și reîncarcă-le din secțiunea Certificările mele.' },
+  approved: { label: 'Aprobat', color: '#1A7A3A', bg: '#D4EDDA', text: 'Contul tău a fost aprobat! Ai acces complet la panoul de partener.' },
+  rejected: { label: 'Respins', color: '#C0392B', bg: '#FDECEA', text: 'Dosarul tău a fost respins. Pentru detalii, contactează-ne la contact@homebestpal.com.' },
+};
+
+async function loadStatusAplicareReal(){
+  const el = document.getElementById('status-aplicare-card');
+  if (!el) return;
+  el.textContent = 'Se încarcă...';
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/status-aplicare', { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+
+    const meta = STATUS_APLICARE_META[data.status] || STATUS_APLICARE_META.pending_review;
+    let html = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <span class="chip" style="background:${meta.bg};color:${meta.color};font-size:12px;padding:6px 14px">${meta.label}</span>
+      </div>
+      <div style="font-size:13.5px;color:#3D4656;line-height:1.6">${meta.text}</div>`;
+
+    if (data.documente_respinse?.length) {
+      html += `<div style="margin-top:14px;padding-top:14px;border-top:1px solid #EEF2F7">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#8C9BAD;margin-bottom:8px">Documente de reîncărcat</div>
+        ${data.documente_respinse.map(d => `<div style="font-size:12.5px;color:#3D4656;margin-bottom:4px">• ${d.tip_certificare}${d.observatii ? ' — ' + d.observatii : ''}</div>`).join('')}
+      </div>`;
+    }
+
+    // Poarta Darrin AI — afișată DOAR dacă backend-ul confirmă că e activată
+    // (backoffice_config). Fără flag activ, secțiunea nu apare deloc — nicio
+    // mențiune falsă de "AI verifică" pentru o componentă neconstruită încă.
+    if (data.darrin_ai_activ && data.darrin_ai_raport) {
+      html += `<div style="margin-top:14px;padding-top:14px;border-top:1px solid #EEF2F7">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#8C9BAD;margin-bottom:8px">Raport Darrin AI</div>
+        <div style="font-size:12.5px;color:#3D4656">${data.darrin_ai_raport}</div>
+      </div>`;
+    }
+
+    el.innerHTML = html;
+  } catch (e) {
+    el.innerHTML = `<div style="color:#C0392B">Eroare: ${e.message}</div>`;
   }
 }
 

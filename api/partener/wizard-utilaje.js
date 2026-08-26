@@ -8,11 +8,17 @@
 // DOAR structura de date acum — fără catalog curatoriat marcă/model, fără
 // extragere automată din CIV (ambele rămân itemi separați, neaprobați).
 //
-// GET  → utilajele declarate curent
-// POST { utilaje: [{ denumire, tip?, cantitate?, an_fabricatie?, marca?,
-//                     model?, capacitate_kg?, lungime_utila_cm?,
-//                     latime_utila_cm?, inaltime_utila_cm?,
-//                     tip_suprastructura? }, ...] }
+// GET    → utilajele declarate curent
+// POST   { utilaje: [{ denumire, tip?, cantitate?, an_fabricatie?, marca?,
+//                       model?, capacitate_kg?, lungime_utila_cm?,
+//                       latime_utila_cm?, inaltime_utila_cm?,
+//                       tip_suprastructura? }, ...] }  (ADAUGĂ — vezi FIX mai jos)
+// DELETE { id }  (26 august 2026 — șterge un singur utilaj)
+//
+// FIX (26 august 2026, Etapa 2/2i) — aceeași corecție ca la wizard-angajati.js:
+// POST înlocuia tot ce era declarat, potrivit doar pentru wizard-ul de 8
+// pași (orfan, 0 apelanți reali) — devine acum strict adăugare, pentru noua
+// secțiune de dashboard "Utilajele mele".
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
@@ -41,6 +47,21 @@ async function handler(req, res, user) {
     return res.status(200).json({ ok: true, utilaje: data || [] });
   }
 
+  if (req.method === 'DELETE') {
+    const { id } = req.body || {};
+    if (!id) return res.status(400).json({ error: 'id este obligatoriu' });
+    const { data, error } = await supabaseAdmin
+      .from('partner_utilaje')
+      .delete()
+      .eq('id', id)
+      .eq('partner_id', user.id)
+      .select('id')
+      .maybeSingle();
+    if (error) return res.status(500).json({ error: error.message });
+    if (!data) return res.status(404).json({ error: 'Utilajul nu există sau nu-ți aparține' });
+    return res.status(200).json({ ok: true });
+  }
+
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { utilaje } = req.body || {};
@@ -62,9 +83,6 @@ async function handler(req, res, user) {
   }
 
   try {
-    const { error: delErr } = await supabaseAdmin.from('partner_utilaje').delete().eq('partner_id', user.id);
-    if (delErr) throw delErr;
-
     const randuri = utilaje.map((u) => ({
       partner_id: user.id,
       denumire: u.denumire,
