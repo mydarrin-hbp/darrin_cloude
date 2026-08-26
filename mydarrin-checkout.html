@@ -3423,10 +3423,37 @@ function applyChecoutConfigReal(){
 }
 function setEl2(id, text){ const el = document.getElementById(id); if (el) el.textContent = text; }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', applyChecoutConfigReal);
-} else {
+// Etapa 1 (26 august 2026) — dacă sessionStorage nu are nimic (tab nou,
+// revenire după închiderea browserului, sau login pe alt dispozitiv),
+// încearcă restaurarea din backup-ul server-side (api/client/cos), înainte
+// de a rula applyChecoutConfigReal(). Best-effort — dacă eșuează sau nu
+// există nimic salvat, comportamentul rămâne identic cu înainte (fallback
+// pe mock-ul existent).
+async function initChecoutConfigCuRestaurare(){
+  if (!sessionStorage.getItem('myd_checkout_config')) {
+    try {
+      const session = (await window.supabaseClient?.auth.getSession())?.data?.session;
+      let url = '/api/client/cos';
+      const headers = {};
+      if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+      else {
+        const guestToken = localStorage.getItem('myd_guest_token');
+        if (guestToken) url += `?sesiune_token=${encodeURIComponent(guestToken)}`;
+      }
+      const res = await fetch(url, { headers });
+      const data = await res.json();
+      if (data?.ok && data.configurare) {
+        sessionStorage.setItem('myd_checkout_config', JSON.stringify(data.configurare));
+      }
+    } catch (e) { /* best-effort — rămâne pe fallback-ul existent */ }
+  }
   applyChecoutConfigReal();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initChecoutConfigCuRestaurare);
+} else {
+  initChecoutConfigCuRestaurare();
 }
 let selectedPaymentMethod = 'card';
 function selectPayment(type){

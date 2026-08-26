@@ -781,7 +781,47 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
       if (iNume) iNume.value = numeDeFamilie || '—';
       if (iEmail) iEmail.value = user.email;
       if (iTelefon) iTelefon.value = user.phone || '—';
+
+      // Bug #27 — starea vine direct din user.phone_confirmed_at (Supabase
+      // Auth nativ), fără fetch suplimentar.
+      const ptvVerificatEl = document.getElementById('ptv-verificat');
+      const ptvFormEl = document.getElementById('ptv-form');
+      if (user.phone_confirmed_at) {
+        if (ptvVerificatEl) ptvVerificatEl.classList.remove('hidden');
+      } else if (ptvFormEl) {
+        ptvFormEl.classList.remove('hidden');
+        const ptvTelefonEl = document.getElementById('ptv-telefon');
+        if (ptvTelefonEl && user.phone) ptvTelefonEl.value = user.phone;
+      }
     }
+
+    window.ptvTrimiteCod = async function () {
+      const msgEl = document.getElementById('ptv-msg');
+      const telefon = document.getElementById('ptv-telefon')?.value.trim();
+      if (!telefon) { if (msgEl) { msgEl.textContent = 'Introdu numărul de telefon.'; msgEl.style.color = '#C0392B'; } return; }
+      try {
+        await window.MyDarrinAuth.trimiteCodTelefon(telefon);
+        document.getElementById('ptv-pas2')?.classList.remove('hidden');
+        if (msgEl) { msgEl.textContent = 'Cod trimis prin SMS.'; msgEl.style.color = '#1A7A3A'; }
+      } catch (e) {
+        if (msgEl) { msgEl.textContent = e.message || 'Nu am putut trimite codul.'; msgEl.style.color = '#C0392B'; }
+      }
+    };
+
+    window.ptvVerificaCod = async function () {
+      const msgEl = document.getElementById('ptv-msg');
+      const telefon = document.getElementById('ptv-telefon')?.value.trim();
+      const cod = document.getElementById('ptv-cod')?.value.trim();
+      if (!cod) { if (msgEl) { msgEl.textContent = 'Introdu codul primit prin SMS.'; msgEl.style.color = '#C0392B'; } return; }
+      try {
+        await window.MyDarrinAuth.verificaCodTelefon(telefon, cod);
+        document.getElementById('ptv-form')?.classList.add('hidden');
+        document.getElementById('ptv-verificat')?.classList.remove('hidden');
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+      } catch (e) {
+        if (msgEl) { msgEl.textContent = e.message || 'Cod invalid.'; msgEl.style.color = '#C0392B'; }
+      }
+    };
 
     try {
       let tries = 0;
@@ -1603,6 +1643,24 @@ function triggerHeaderSearch(){
             <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Nume</label><input type="text" id="profil-input-nume" value="" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm bg-[#F4F7F9]" readonly/></div>
             <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Email</label><input type="email" id="profil-input-email" value="" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm bg-[#F4F7F9]" readonly/></div>
             <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Telefon</label><input type="tel" id="profil-input-telefon" value="—" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm bg-[#F4F7F9]" readonly/></div>
+          </div>
+          <!-- Bug #27 (26 august 2026) — verificare telefon, opțională, din
+               dashboard. Nu blochează nimic — user.phone_confirmed_at vine
+               direct din obiectul Auth deja încărcat mai sus, fără fetch nou. -->
+          <div class="mt-5 pt-5 border-t border-[#F4F7F9]" id="profil-telefon-verif">
+            <div class="text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-2">Verificare telefon</div>
+            <div id="ptv-verificat" class="hidden text-sm text-[#1A7A3A] flex items-center gap-1.5"><i data-lucide="badge-check" class="w-4 h-4"></i>Telefon verificat</div>
+            <div id="ptv-form" class="hidden">
+              <div id="ptv-pas1" class="flex gap-2 flex-wrap items-center">
+                <input type="tel" id="ptv-telefon" placeholder="+40 7xx xxx xxx" class="border border-[#D5DFE8] rounded-xl px-3 py-2 text-sm" style="max-width:220px"/>
+                <button class="btn-ghost" style="padding:8px 14px;font-size:12px" onclick="ptvTrimiteCod()">Trimite cod SMS</button>
+              </div>
+              <div id="ptv-pas2" class="hidden flex gap-2 flex-wrap items-center mt-2">
+                <input type="text" id="ptv-cod" placeholder="Cod din SMS" class="border border-[#D5DFE8] rounded-xl px-3 py-2 text-sm" style="max-width:140px"/>
+                <button class="btn-ghost" style="padding:8px 14px;font-size:12px" onclick="ptvVerificaCod()">Verifică</button>
+              </div>
+              <div id="ptv-msg" class="text-xs mt-2"></div>
+            </div>
           </div>
         </div>
       </div>

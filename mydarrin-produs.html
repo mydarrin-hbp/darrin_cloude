@@ -784,12 +784,23 @@ function navTo(page) {
 // Salvează starea reală configurată (serviciu, nivel, preț calculat, adresă
 // etc.) înainte de a naviga la checkout — fără asta, /cos citea un subtotal
 // hardcodat (BASE_SUBTOTAL), nelegat de ce configura efectiv clientul aici.
+// Etapa 1 (26 august 2026) — token de guest persistent (localStorage,
+// supraviețuiește închiderii tab-ului, spre deosebire de sessionStorage),
+// folosit doar ca identitate pentru backup-ul server-side de mai jos.
+function _guestToken() {
+  try {
+    let t = localStorage.getItem('myd_guest_token');
+    if (!t) { t = crypto.randomUUID(); localStorage.setItem('myd_guest_token', t); }
+    return t;
+  } catch (e) { return null; }
+}
+
 function salveazaStareaCheckout() {
   try {
     const titlu = S.pilotMode
       ? (document.getElementById('prod-title')?.textContent || S.slug)
       : ((typeof PRODUCTS_DB !== 'undefined' && PRODUCTS_DB[S.slug]?.title) || S.slug);
-    sessionStorage.setItem('myd_checkout_config', JSON.stringify({
+    const config = {
       titlu, slug: S.slug, type: S.type, tier: S.tier, tierLabel: S.tierLabel,
       qty: S.qty, unit: S.unit, orderType: S.orderType,
       ins: S.ins, insPrice: S.insPrice,
@@ -814,7 +825,24 @@ function salveazaStareaCheckout() {
       cantitate: S.pilotMode ? S.qty : null,
       pilotPretConfirmat: S.pilotMode ? _pilotPretConfirmat : null,
       salvat_la: Date.now(),
-    }));
+    };
+    sessionStorage.setItem('myd_checkout_config', JSON.stringify(config));
+
+    // Etapa 1 — backup server-side, best-effort, nu blochează navigarea la
+    // checkout dacă eșuează (sessionStorage rămâne sursa reală pentru
+    // sesiunea curentă).
+    (async () => {
+      try {
+        const session = (await window.supabaseClient?.auth.getSession())?.data?.session;
+        const body = { configurare: config };
+        if (!session?.access_token) body.sesiune_token = _guestToken();
+        await fetch('/api/client/cos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) },
+          body: JSON.stringify(body),
+        });
+      } catch (e) { /* best-effort */ }
+    })();
   } catch (e) {
     console.warn('[checkout-config] nu am putut salva starea în sessionStorage:', e);
   }

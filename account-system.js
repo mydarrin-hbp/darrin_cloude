@@ -110,13 +110,23 @@ async function performRegister(email, parola, nume, gdprAcceptat) {
   return data.user; // status: pending_otp până la verificarea telefonului (pasul 2)
 }
 
-/* ── Pasul 2 — OTP telefon (apelează /api/auth/verify-otp) ── */
-async function verifyPhoneOtp(telefon, cod) {
+/* ── Verificare telefon — protocol nativ Supabase Auth (Bug #27, reparat
+   26 august 2026). Vechea funcție unică verifyPhoneOtp(telefon, cod) trimitea
+   codul direct către /api/auth/verify-otp, care nu-l citea niciodată — acel
+   endpoint doar marchează profilul, DUPĂ ce verificarea reală s-a făcut prin
+   apelurile native de mai jos. De-aia sunt acum 2 pași separați, ca la orice
+   flux real de OTP telefonic. ── */
+async function trimiteCodTelefon(telefon) {
+  const { error } = await sb().auth.updateUser({ phone: telefon });
+  if (error) throw error;
+}
+async function verificaCodTelefon(telefon, cod) {
+  const { error: otpErr } = await sb().auth.verifyOtp({ phone: telefon, token: cod, type: 'phone_change' });
+  if (otpErr) throw otpErr;
   const session = (await sb().auth.getSession()).data.session;
   const res = await fetch('/api/auth/verify-otp', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
-    body: JSON.stringify({ telefon, cod }),
   });
   if (!res.ok) throw new Error((await res.json()).error || 'Verificare OTP eșuată');
   return res.json();
@@ -331,7 +341,7 @@ async function renderActiveRolesBadge(containerId) {
 
 window.MyDarrinAuth = {
   getCurrentUser, getUserRoles, hasRole,
-  performRegister, verifyPhoneOtp, performLogin, performLogout,
+  performRegister, trimiteCodTelefon, verificaCodTelefon, performLogin, performLogout,
   enforceSuperadminBarrier, enforceAdminBarrier, enforceSuperadminOrPermission,
   inviteSecondaryAdmin, renderActiveRolesBadge,
   resetPasswordForEmail, emailDejaInregistrat, injecteazaLinkRecuperareParola,
