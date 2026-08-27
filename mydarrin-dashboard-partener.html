@@ -574,6 +574,7 @@ const TYPES = {
       {id:'echipa',icon:'👥',label:'Echipa mea'},
       {id:'utilaje',icon:'🚚',label:'Utilajele mele'},
       {id:'certificari',icon:'📜',label:'Certificările mele'},
+      {id:'cont-bancar',icon:'🏦',label:'Cont bancar'},
       {id:'status-aplicare',icon:'🧭',label:'Status aplicare'},
       {id:'calendar',icon:'📅',label:'Calendar'},
       {id:'program-lucru',icon:'🕐',label:'Program de lucru'},
@@ -682,6 +683,7 @@ function showPanel(id) {
   const panelTitles = {
     overview:'Overview', sarcini:'Sarcini LIVE', portofoliu:'Portofoliu servicii',
     echipa:'Echipa mea', utilaje:'Utilajele mele', certificari:'Certificările mele',
+    'cont-bancar':'Cont bancar',
     'status-aplicare':'Status aplicare partener',
     calendar:'Calendar & Disponibilitate', 'program-lucru':'Program de lucru', venituri:'Venituri & Plăți',
     garantii:'Garanții de execuție', documente:'Documentele mele', profil:'Profil & KYC',
@@ -701,6 +703,7 @@ function showPanel(id) {
   else if (id === 'echipa')     { content.innerHTML = renderEchipa(); loadEchipaReal(); }
   else if (id === 'utilaje')    { content.innerHTML = renderUtilaje(); loadUtilajeReal(); }
   else if (id === 'certificari'){ content.innerHTML = renderCertificari(); loadCertificariReal(); }
+  else if (id === 'cont-bancar'){ content.innerHTML = renderContBancar(); loadContBancarReal(); }
   else if (id === 'status-aplicare') { content.innerHTML = renderStatusAplicare(); loadStatusAplicareReal(); }
   else if (id === 'calendar')   content.innerHTML = renderCalendar();
   else if (id === 'program-lucru') { content.innerHTML = renderProgramLucru(); loadProgramLucruReal(); }
@@ -1679,7 +1682,7 @@ async function loadHardStopStatus(){
     if (data.status_verificare !== 'approved') {
       pasi += `<div style="padding:8px 0;color:#5A6B7D">🔲 <b>Aprobare profil</b> — în curs de verificare de echipa My Darrin.</div>`;
     } else if (!data.are_cont_bancar) {
-      pasi += `<div style="padding:8px 0;color:#5A6B7D">✅ Profil aprobat &nbsp;·&nbsp; 🔲 <b>Cont bancar</b> — adaugă un cont activ din secțiunea Profil &amp; KYC.</div>`;
+      pasi += `<div style="padding:8px 0;color:#5A6B7D">✅ Profil aprobat &nbsp;·&nbsp; 🔲 <b>Cont bancar</b> — adaugă un cont activ din secțiunea <a href="#" onclick="showPanel('cont-bancar');return false" style="color:#0E9E99;font-weight:700">Cont bancar</a>.</div>`;
     } else if (!data.contract_semnat) {
       pasi += `<div style="padding:8px 0;color:#5A6B7D">✅ Profil aprobat &nbsp;·&nbsp; ✅ Cont bancar &nbsp;·&nbsp; 🔲 <b>Contract nesemnat</b></div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px">
@@ -2104,6 +2107,98 @@ async function stergeCertificare(id){
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
     loadCertificariReal();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+// ── Cont bancar (27 august 2026) — descoperit la pregătirea reminder-ului
+// de profil incomplet: dashboard-ul avea deja un mesaj real care trimitea
+// partenerul spre "Profil & KYC" pentru a adăuga un cont bancar — secțiune
+// 100% machetă, fără niciun input real. wizard-companie.js (singurul
+// endpoint care scria conturi) e parte a wizard-ului de 8 pași, confirmat
+// orfan. Secțiune nouă, dedicată, pe endpoint nou (api/partener/conturi-bancare.js),
+// urmând exact tiparul Echipă/Utilaje/Certificări.
+function renderContBancar() {
+  return `
+  <div style="margin-bottom:18px">
+    <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Cont bancar</h2>
+    <p style="font-size:12.5px;color:#5A6B7D;margin-top:4px">Necesar pentru semnarea contractului și încasarea plăților — IBAN-ul e criptat, niciodată vizibil integral.</p>
+  </div>
+  <div class="dp-card" style="margin-bottom:16px">
+    <div id="cb-real-lista" style="color:#5A6B7D">Se încarcă...</div>
+  </div>
+  <div class="dp-card">
+    <div style="font-size:13px;font-weight:700;color:#1A2332;margin-bottom:10px">Adaugă cont bancar</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div><label style="font-size:10.5px;color:#8C9BAD">Titular cont</label><input id="cb-titular" type="text" style="width:100%;padding:8px;border:1px solid #D5DFE8;border-radius:8px;font-size:13px"/></div>
+      <div><label style="font-size:10.5px;color:#8C9BAD">IBAN</label><input id="cb-iban" type="text" placeholder="RO49RZBR0000060001234567" style="width:100%;padding:8px;border:1px solid #D5DFE8;border-radius:8px;font-size:13px;font-family:monospace"/></div>
+      <div><label style="font-size:10.5px;color:#8C9BAD">Bancă</label><input id="cb-banca" type="text" style="width:100%;padding:8px;border:1px solid #D5DFE8;border-radius:8px;font-size:13px"/></div>
+      <div><label style="font-size:10.5px;color:#8C9BAD">Monedă</label><select id="cb-moneda" style="width:100%;padding:8px;border:1px solid #D5DFE8;border-radius:8px;font-size:13px"><option value="RON">RON</option><option value="EUR">EUR</option><option value="MDL">MDL</option><option value="BGN">BGN</option></select></div>
+      <div style="grid-column:span 2"><label style="font-size:10.5px;color:#8C9BAD">SWIFT (opțional)</label><input id="cb-swift" type="text" style="width:100%;padding:8px;border:1px solid #D5DFE8;border-radius:8px;font-size:13px"/></div>
+    </div>
+    <button class="btn-primary" style="padding:9px 16px;font-size:12.5px;margin-top:10px" onclick="adaugaContBancar()">+ Adaugă</button>
+    <div id="cb-msg" style="font-size:12px;margin-top:8px"></div>
+  </div>`;
+}
+
+async function loadContBancarReal(){
+  const el = document.getElementById('cb-real-lista');
+  if (!el) return;
+  el.textContent = 'Se încarcă...';
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/conturi-bancare', { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!data.conturi.length) { el.innerHTML = '<div style="color:#5A6B7D">Niciun cont bancar adăugat încă.</div>'; return; }
+    el.innerHTML = data.conturi.map((c) => `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid #EEF2F7">
+        <span style="flex:1"><strong style="color:#1A2332;font-size:13px">${c.nume_titular}</strong><br><span style="font-size:11px;color:#5A6B7D;font-family:monospace">${c.iban_mascat || '—'}</span> <span style="font-size:11px;color:#5A6B7D"> · ${c.banca} · ${c.moneda}</span></span>
+        <button class="btn-ghost" style="padding:5px 10px;font-size:11px;color:#C0392B" onclick="stergeContBancar('${c.id}')">Șterge</button>
+      </div>
+    `).join('');
+  } catch (e) {
+    el.innerHTML = `<div style="color:#C0392B">Eroare: ${e.message}</div>`;
+  }
+}
+
+async function adaugaContBancar(){
+  const msgEl = document.getElementById('cb-msg');
+  const nume_titular = document.getElementById('cb-titular')?.value.trim();
+  const iban = document.getElementById('cb-iban')?.value.trim();
+  const banca = document.getElementById('cb-banca')?.value.trim();
+  const moneda = document.getElementById('cb-moneda')?.value;
+  const swift = document.getElementById('cb-swift')?.value.trim();
+  if (!nume_titular || !iban || !banca) {
+    if (msgEl) { msgEl.textContent = 'Titular, IBAN și bancă sunt obligatorii.'; msgEl.style.color = '#C0392B'; }
+    return;
+  }
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/conturi-bancare', {
+      method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nume_titular, iban, banca, moneda, swift: swift || null }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    ['cb-titular','cb-iban','cb-banca','cb-swift'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+    if (msgEl) { msgEl.textContent = 'Adăugat.'; msgEl.style.color = '#1A7A3A'; }
+    loadContBancarReal();
+  } catch (e) {
+    if (msgEl) { msgEl.textContent = 'Eroare: ' + e.message; msgEl.style.color = '#C0392B'; }
+  }
+}
+
+async function stergeContBancar(id){
+  if (!confirm('Ștergi acest cont bancar?')) return;
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/conturi-bancare', {
+      method: 'DELETE', headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    loadContBancarReal();
   } catch (e) { alert('Eroare: ' + e.message); }
 }
 
