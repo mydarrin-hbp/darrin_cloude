@@ -207,6 +207,24 @@ alter table public.investitori_exit enable row level security;
 create policy "investitorul vede propriile cereri de exit" on public.investitori_exit
   for select using (auth.uid() = user_id);
 
+-- NOU 26 august 2026 — al 2-lea caz de schema drift documentat în această
+-- secțiune (după categorii/ierarhie): tabela exista deja live, folosită real
+-- de api/admin/pitch-deck.js (draft/publică), dar nu apărea deloc în acest
+-- fișier. Adăugată acum ca documentație a realității, fără nicio schimbare
+-- de comportament.
+create table if not exists public.pitch_deck_versiuni (
+  id uuid primary key default uuid_generate_v4(),
+  slide_uri jsonb not null,        -- array de slide-uri (structura consumată de mydarrin-pitch-deck.html)
+  aprobat boolean default false,   -- true = versiunea live, publică
+  aprobat_de uuid references auth.users(id),
+  aprobat_la timestamptz,
+  creat_de uuid references auth.users(id),
+  creat_la timestamptz default now()
+);
+alter table public.pitch_deck_versiuni enable row level security;
+create policy "oricine poate citi versiunea aprobată" on public.pitch_deck_versiuni
+  for select using (aprobat = true);
+
 create table if not exists public.investitori_exit (
   id uuid primary key default uuid_generate_v4(),
   investitor_id uuid references auth.users(id),

@@ -33,6 +33,7 @@ body{font-family:'Helvetica World','Helvetica Neue',Arial,system-ui,sans-serif;b
 .point-d{font-size:13px;color:rgba(255,255,255,.55);line-height:1.5}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;text-align:left}
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;text-align:left}
+.grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;text-align:left}
 .card-mini{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px}
 .card-mini .k{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,.4);margin-bottom:6px}
 .card-mini .v{font-size:22px;font-weight:800;color:var(--orange)}
@@ -53,7 +54,7 @@ body{font-family:'Helvetica World','Helvetica Neue',Arial,system-ui,sans-serif;b
 .dots{display:flex;gap:6px}
 .dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.2);cursor:pointer;transition:background .2s}
 .dot.active{background:var(--orange)}
-@media (max-width:720px){ .grid2,.grid3{grid-template-columns:1fr} .team-row{flex-direction:column;align-items:center} }
+@media (max-width:720px){ .grid2,.grid3,.grid4{grid-template-columns:1fr} .team-row{flex-direction:column;align-items:center} }
 @media print {
   .topbar,.nav-bar{display:none}
   body{overflow:visible;background:#fff;color:#000}
@@ -67,7 +68,7 @@ body{font-family:'Helvetica World','Helvetica Neue',Arial,system-ui,sans-serif;b
 <div class="topbar">
   <a href="mydarrin-investitori.html">&larr; Înapoi la Investitori</a>
   <div class="actions">
-    <span class="counter" id="slide-counter">1 / 15</span>
+    <span class="counter" id="slide-counter">1 / 18</span>
     <button class="btn-top" onclick="window.print()">Descarcă / Printează</button>
   </div>
 </div>
@@ -87,64 +88,111 @@ body{font-family:'Helvetica World','Helvetica Neue',Arial,system-ui,sans-serif;b
 <script type="module" src="lib/supabaseClient.js"></script>
 <script>
 // Conținut de rezervă — folosit dacă nicio versiune aprobată nu există încă
-// în pitch_deck_versiuni (backoffice). Cifrele rundei (500.000 EUR / 20%
-// equity / 2.5M EUR pre-money) sunt cele deja live pe mydarrin-investitori.html
-// — sursa de adevăr pentru cifre financiare rămâne pagina de investiții, nu
-// draftul de pitch deck primit (acolo apăreau valori diferite și
-// contradictorii între ele: 500k vs 1.3M vs 26% equity).
+// în pitch_deck_versiuni (backoffice); azi (26 august 2026) tabela are 0
+// rânduri, deci acest array E conținutul real, live, văzut de orice vizitator.
+//
+// STRUCTURĂ FIXATĂ OFICIAL, 26 august 2026 — 18 slide-uri (Copertă→Contact),
+// sursă unică de adevăr (înlocuiește embed-ul de 6 slide-uri din
+// mydarrin-investitori.html și textul static „32 slide-uri" din aceeași
+// pagină, ambele eliminate). Cifrele financiare ale Rundei I sunt cele
+// confirmate explicit de utilizator: 500.000 EUR pentru 12,5%, evaluare
+// POST-money 4.000.000 EUR (pre-money 3.500.000 EUR), 4.000 acțiuni ×
+// 1.000 EUR/acțiune. Slide-urile 11 (Roadmap), 13 (Marketing) și 17
+// (Exit & ROI) nu aveau niciun conținut sursă anterior — construite acum:
+// 11 din istoricul real, auditat, al implementării platformei (nu marketing
+// generic); 13 și 17 din conținutul furnizat explicit de utilizator.
 const SLIDES_REZERVA = [
-  { tip:'titlu', eyebrow:'Seed Pitch · 2026', titlu:'MY DARRIN', subtitlu:'Standardizarea viitorului în mentenanța și serviciile tehnice.', text:'Antreprenorul General Digital: eficiență AI-native pentru o piață de peste 40 Mld. €.' },
+  // 1. Copertă
+  { tip:'titlu', eyebrow:'Runda I · 2026', titlu:'MY DARRIN', subtitlu:'Standardizarea viitorului în mentenanța și serviciile tehnice.', text:'Antreprenorul General Digital: eficiență AI-native pentru o piață de peste 40 Mld. €.' },
+  // 2. Misiune și Viziune
+  { tip:'titlu', eyebrow:'Misiune & Viziune', titlu:'De la mentenanță reactivă la mentenanță predictivă', subtitlu:'Misiune: să digitalizăm infrastructura serviciilor tehnice pentru siguranța fiecărui cămin și business.', text:'Viziune: cel mai mare furnizor de servicii din Europa fără să deținem o singură mașină sau unealtă — model asset-light.' },
+  // 3. Problema
   { tip:'puncte', eyebrow:'Problema', titlu:'O piață fragmentată și ineficientă', puncte:[
     {h:'Lipsa de încredere', d:'Selecție bazată pe recomandări nesigure și prețuri arbitrare.'},
     {h:'Ineficiență operațională', d:'Timpi de așteptare mari și lipsă de trasabilitate.'},
     {h:'Economie informală', d:'Servicii nefiscalizate, fără garanție sau suport post-intervenție.'},
   ]},
-  { tip:'puncte', eyebrow:'Soluția', titlu:'Ecosistemul de încredere My Darrin', puncte:[
-    {h:'Soluție unică integrată', d:'Totul de la diagnoză la garanție, într-o singură platformă.'},
+  // 4. Soluția
+  { tip:'puncte', eyebrow:'Soluția', titlu:'My Darrin — Antreprenor General Digital', puncte:[
+    {h:'Nu intermediar, ci Antreprenor General', d:'Platforma preia responsabilitatea contractuală și garantează calitatea execuției la cheie — nu doar conectează părți.'},
     {h:'Standardizare radicală', d:'Prețuri fixe, procese auditate și furnizori verificați (KYC/KYB).'},
-    {h:'Garanție integrată', d:'My Darrin își asumă responsabilitatea execuției — Escrow și asigurare.'},
+    {h:'Garanție integrată', d:'Escrow real și asigurare — My Darrin își asumă execuția, nu doar recomandarea ei.'},
   ]},
+  // 5. Produsul
   { tip:'puncte', eyebrow:'Produsul', titlu:'Tehnologie care elimină eroarea umană', puncte:[
     {h:'AI multimodal', d:'Diagnoză instantanee prin text, audio sau video.'},
     {h:'Motor de deviz inteligent', d:'Generare automată de devize și necesar de materiale.'},
-    {h:'Dispatch inteligent', d:'Alocare în sub 15 minute, bazată pe proximitate și rating.'},
+    {h:'Dispatch inteligent', d:'Alocare bazată pe disponibilitate și competențe reale ale partenerilor.'},
   ]},
-  { tip:'titlu', eyebrow:'Misiune & Viziune', titlu:'De la mentenanță reactivă la mentenanță predictivă', subtitlu:'Misiune: să digitalizăm infrastructura serviciilor tehnice pentru siguranța fiecărui cămin și business.', text:'Viziune: cel mai mare furnizor de servicii din Europa fără să deținem o singură mașină sau unealtă — model asset-light.' },
-  { tip:'tam', eyebrow:'Oportunitatea de piață', titlu:'O piață masivă, pregătită pentru disrupție', tam:'40 Mld. €+', sam:'500 Mil. €', som:'39.7 Mil. €', tamL:'TAM — piața UE de mentenanță și servicii reziden.', samL:'SAM — mediul urban digitalizat din România', somL:'SOM — obiectiv de penetrare, Faza 1 (RO & UE select)' },
-  { tip:'grid', eyebrow:'Sectoare & servicii vizate', titlu:'Acoperire multi-verticală', carduri:[
-    {k:'Home & Garden', v:'Instalații, electrice, mentenanță curte'},
-    {k:'Mobility', v:'Service auto mobil și asistență rutieră'},
-    {k:'Business', v:'Property management pentru centre comerciale și HoReCa'},
+  // 6. Servicii și Sectoare
+  { tip:'grid', eyebrow:'Servicii & Sectoare', titlu:'Acoperire multi-verticală, B2B · B2C · B2G', carduri:[
+    {k:'Rezidențial & Home&Garden', v:'Instalații, electrice, mentenanță, curățenie, grădinărit'},
+    {k:'Mobilitate', v:'Service auto/moto/velo mobil, asistență rutieră, ambarcațiuni'},
+    {k:'Business & Instituțional', v:'Property management, HoReCa, imobiliare, spitale, școli — B2B și B2G'},
+    {k:'Industrial & Agricol', v:'Reparații utilaje agricole, mentenanță industrială, inginerie'},
     {k:'Logistică', v:'Transport, mutări, închirieri utilaje'},
   ]},
-  { tip:'planuri', eyebrow:'Model de business', titlu:'Monetizare și scalabilitate', text:'Comision pe tranzacție: 22–30% · Abonamente SaaS recurente · Marketplace materiale.' },
-  { tip:'puncte', eyebrow:'Model operațional', titlu:'Asset-light: scalare fără limite fizice', puncte:[
-    {h:'Fără active fixe', d:'Nu deținem flote sau sedii logistice.'},
-    {h:'Onboarding automatizat', d:'Scalare rapidă a bazei de furnizori prin KYC digital.'},
-    {h:'Eficiență marginală', d:'Costul de a adăuga un oraș nou tinde spre zero.'},
-  ]},
+  // 7. Piața (TAM, SAM, SOM)
+  { tip:'tam', eyebrow:'Oportunitatea de piață', titlu:'O piață masivă, pregătită pentru disrupție', tam:'40 Mld. €+', sam:'500 Mil. €', som:'39.7 Mil. €', tamL:'TAM — piața UE de mentenanță și servicii tehnice', samL:'SAM — mediul urban digitalizat din România', somL:'SOM — obiectiv de penetrare, Faza 1 (RO & piețe select)' },
+  // 8. Tracțiune și Validare
   { tip:'puncte', eyebrow:'Tracțiune & validare', titlu:'Dovezi de creștere și product-market fit', puncte:[
     {h:'Lansare pilot', d:'Validare în 7 hub-uri regionale: Bacău (sediu central), București, Cluj, Iași, Timișoara, Brașov, Constanța.'},
     {h:'Parteneriate strategice', d:'Acorduri prealabile cu asigurători și dezvoltatori.'},
-    {h:'Unit economics', d:'LTV/CAC optimizat prin rețeaua B2B și B2G.'},
+    {h:'Fundație tehnică live', d:'Motor de preț, alocare multi-partener și escrow deja funcționale și testate pe platformă.'},
   ]},
-  { tip:'echipa', eyebrow:'Echipa', titlu:'Experiență demonstrată în execuție', membri:[
-    {n:'Cristian Popa', r:'CEO', d:'Expert în management operațional și servicii.'},
-    {n:'Andreea Popa', r:'CMO', d:'Strategie de brand și achiziție utilizatori.'},
-    {n:'Theo Barca', r:'CTO', d:'Arhitect AI și sisteme scalabile.'},
+  // 9. Scalabilitate
+  { tip:'puncte', eyebrow:'Scalabilitate', titlu:'Asset-light: scalare fără limite fizice', puncte:[
+    {h:'Fără active fixe', d:'Nu deținem flote sau sedii logistice — rețeaua de parteneri e proprietarul echipamentelor.'},
+    {h:'Onboarding automatizat', d:'Scalare rapidă a bazei de furnizori prin KYC digital.'},
+    {h:'Eficiență marginală', d:'Costul de a adăuga un oraș sau o țară nouă tinde spre zero.'},
   ]},
+  // 10. Business Model
+  { tip:'puncte', eyebrow:'Business Model', titlu:'Monetizare pe mai multe fluxuri', puncte:[
+    {h:'Comision tranzacțional', d:'22–30% comision pe fiecare comandă finalizată prin platformă, ca Antreprenor General.'},
+    {h:'Abonamente SaaS recurente', d:'Planuri lunare pentru clienți și parteneri Business/Instituțional (B2B/B2G).'},
+    {h:'Marketplace materiale & închirieri', d:'Comision pe vânzarea de materiale și închirierea de utilaje prin rețeaua de furnizori.'},
+  ]},
+  // 11. Program Implementare (Roadmap) — construit din istoricul real, auditat
+  { tip:'puncte', eyebrow:'Program Implementare', titlu:'De la fundație tehnică la scalare', puncte:[
+    {h:'Fundație live', d:'Motor de preț și cost tehnic, alocare multi-partener, escrow și split de plată — construite, testate și în producție.'},
+    {h:'Onboarding & conformitate', d:'Flux de înregistrare parteneri (5 pași), verificare KYC/documente, contract semnat electronic — în extindere activă.'},
+    {h:'Expansiune internațională', d:'Faza 1: România + Moldova. Faza 2: 12 piețe suplimentare (UK/Irlanda, Grecia, Italia, Germania, Franța, Bulgaria, Spania, Ungaria, Balcani, Turcia, Ucraina, Olanda/Belgia) — configurare tehnică per țară (TVA, monedă, limbă) în lucru.'},
+    {h:'Guvernanță & lansare publică', d:'Platforma rulează azi în spatele unei bariere de acces controlate, până la finalizarea testărilor de securitate și a integrărilor externe (plăți, e-Factură, asigurări) — decizie de lansare publică, la latitudinea echipei fondatoare.'},
+  ]},
+  // 12. Concurența
   { tip:'puncte', eyebrow:'Concurența', titlu:'Poziționare: dincolo de "anunțuri"', puncte:[
     {h:'Plată garantată', d:'Escrow real, nu doar un anunț fără urmărire.'},
     {h:'Diagnostic AI', d:'Structurare tehnică automată, nu descrieri libere.'},
     {h:'Garanție & scalabilitate', d:'Responsabilitate asumată de platformă, model replicabil pe orice oraș nou.'},
   ]},
-  { tip:'titlu', eyebrow:'Proiecții financiare', titlu:'Calea către creștere susținută', subtitlu:'Anul 1–2: fază de investiție și validare, break-even România estimat în Anul 2.', text:'Anul 3–5: expansiune UE. Marjă EBITDA proiectată 12–14% în Anul 5.' },
-  { tip:'ask', eyebrow:'The Ask', titlu:'Runda Pre-Seed 2026', suma:'500.000 EUR', equity:'20%', premoney:'2.500.000 EUR', alocare:[
+  // 13. Strategie de Marketing
+  { tip:'puncte', eyebrow:'Strategie de Marketing', titlu:'Achiziție direcționată, retenție prin structură', puncte:[
+    {h:'Achiziție B2B directă & parteneriate strategice', d:'Campanii orientate către companii de construcții, dezvoltatori imobiliari, administratori de active, spitale și instituții publice cu nevoi recurente de mentenanță.'},
+    {h:'Canale digitale & ecosistemul Darrin AI', d:'Optimizare SEO tehnică pe sectoare de nișă, campanii de performanță geo-localizate per țară de operare, atragere automatizată a partenerilor calificați.'},
+    {h:'Retenție și creștere organică', d:'Programe de fidelizare a partenerilor bazate pe volumul de lucrări asigurat de poziția de Antreprenor General a platformei.'},
+  ]},
+  // 14. Echipa
+  { tip:'echipa', eyebrow:'Echipa', titlu:'Experiență demonstrată în execuție', membri:[
+    {n:'Cristian Popa', r:'CEO', d:'Expert în management operațional și servicii.'},
+    {n:'Andreea Popa', r:'CMO', d:'Strategie de brand și achiziție utilizatori.'},
+    {n:'Theo Barca', r:'CTO', d:'Arhitect AI și sisteme scalabile.'},
+  ]},
+  // 15. Proiecții Financiare
+  { tip:'titlu', eyebrow:'Proiecții financiare', titlu:'Calea către creștere susținută', subtitlu:'Anul 1–2: fază de investiție și validare, break-even România estimat în Anul 2.', text:'Anul 3–5: expansiune internațională. Marjă EBITDA proiectată 12–14% în Anul 5.' },
+  // 16. Cerere de Investiție — cifre oficiale, fixate 26 august 2026
+  { tip:'ask', eyebrow:'Cererea de Investiție', titlu:'Runda I · 2026', suma:'500.000 EUR', equity:'12,5%', premoney:'3.500.000 EUR', postmoney:'4.000.000 EUR', structura:'4.000 acțiuni × 1.000 EUR/acțiune · 1% = 40.000 EUR · investiție minimă 1.000 EUR = 1 acțiune (0,025%)', alocare:[
     {label:'IT & AI — platformă, algoritmi, deploy, mentenanță', pct:35},
     {label:'Marketing — achiziție utilizatori, onboarding parteneri', pct:45},
     {label:'Operațiuni & Echipă — nucleu operațional, expansiune regională', pct:15},
     {label:'Rezerve', pct:5},
   ]},
+  // 17. EXIT și ROI
+  { tip:'puncte', eyebrow:'EXIT & ROI', titlu:'Orizont 3–5 ani', puncte:[
+    {h:'Achiziție strategică (Trade Sale)', d:'Cumpărarea platformei de către un jucător major european din PropTech, Facility Management sau Construcții Industriale.'},
+    {h:'Rundă de finanțare instituțională (Seria A/B)', d:'Atragerea unui fond internațional de Venture Capital odată cu atingerea pragului de expansiune multi-țară.'},
+    {h:'Multiplicator de randament estimat', d:'De la evaluarea Post-Money de 4M EUR (Runda I) la o țintă de 25–40M EUR la orizontul de 4 ani — multiplu estimat 6×–10× pe capitalul investit din Runda I.'},
+  ]},
+  // 18. Contact
   { tip:'contact', eyebrow:'Contact', titlu:'Să construim viitorul împreună', subtitlu:'Contactați-ne pentru a accesa Data Room-ul complet.', contacte:['Cristian Popa, CEO','contact@homebestpal.com','investor@homebestpal.com','mydarrin.homebestpal.com'] },
 ];
 
@@ -188,11 +236,13 @@ function randSlide(s){
     let acc = 0;
     const stops = s.alocare.map((a,i)=>{ const start=acc; acc+=a.pct; return `${colors[i%colors.length]} ${start}% ${acc}%`; }).join(',');
     inner = `<div class="eyebrow">${esc(s.eyebrow)}</div><h1 style="font-size:clamp(22px,3.4vw,36px)">${esc(s.titlu)}</h1>
-      <div class="slide-body grid3" style="margin-bottom:20px">
-        <div class="card-mini" style="text-align:center"><div class="k">Valoare rundă</div><div class="v">${esc(s.suma)}</div></div>
-        <div class="card-mini" style="text-align:center"><div class="k">Equity oferit</div><div class="v" style="color:var(--teal)">${esc(s.equity)}</div></div>
-        <div class="card-mini" style="text-align:center"><div class="k">Pre-money</div><div class="v" style="color:#fff;font-size:18px">${esc(s.premoney)}</div></div>
+      <div class="slide-body grid4" style="margin-bottom:14px">
+        <div class="card-mini" style="text-align:center"><div class="k">Valoare rundă</div><div class="v" style="font-size:18px">${esc(s.suma)}</div></div>
+        <div class="card-mini" style="text-align:center"><div class="k">Equity oferit</div><div class="v" style="color:var(--teal);font-size:18px">${esc(s.equity)}</div></div>
+        <div class="card-mini" style="text-align:center"><div class="k">Pre-money</div><div class="v" style="color:#fff;font-size:16px">${esc(s.premoney)}</div></div>
+        <div class="card-mini" style="text-align:center"><div class="k">Post-money</div><div class="v" style="color:#fff;font-size:16px">${esc(s.postmoney||'')}</div></div>
       </div>
+      ${s.structura ? `<p class="subtitlu" style="margin-bottom:20px;font-size:12.5px">${esc(s.structura)}</p>` : ''}
       <div class="slide-body donut-wrap">
         <div style="width:150px;height:150px;border-radius:50%;background:conic-gradient(${stops})"></div>
         <div style="text-align:left">${s.alocare.map((a,i)=>`<div class="legend-row"><span class="legend-dot" style="background:${colors[i%colors.length]}"></span>${a.pct}% — ${esc(a.label)}</div>`).join('')}</div>
