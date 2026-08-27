@@ -31,7 +31,7 @@ const RUTA_ACCES_COMPLET = '*';
 
 const RUTE_PERMISE = [
   RUTA_ACCES_COMPLET,
-  '/mydarrin-v3.html',
+  '/index.html',
   '/mydarrin-catalog.html',
   '/mydarrin-investitori.html',
   '/mydarrin-serviciu.html',

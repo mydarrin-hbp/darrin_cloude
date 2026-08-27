@@ -11,7 +11,7 @@
 
 | Fișier | Rol | Dimensiune |
 |--------|-----|-----------|
-| `mydarrin-v3.html` | Homepage · Hero 3 CTA · Counter animation · Zone check | 141 KB |
+| `mydarrin-v3.html` | RETRAS DIN UZ (27 aug 2026) — redirect real spre `index.html`, sursa reală de adevăr a homepage-ului. Abandonat 10 aug, dar `vercel.json` trimitea greșit domeniul rădăcină aici — corectat. | — |
 | `mydarrin-catalog.html` | Catalog 26 servicii · Filtru urgent · goToService fix | 314 KB |
 | `mydarrin-produs.html` | Pagina produs · Flux 6 pași · Safari iOS fix · Modal nivele | 210 KB |
 | `mydarrin-checkout.html` | Checkout · Escrow · ETA meșter · Guest save · Edit adresă | 131 KB |
