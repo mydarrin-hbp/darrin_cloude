@@ -3717,8 +3717,11 @@ function renderInvKpis(k) {
   s('ia-profit-net',   `€${fmtA(k.profit_net_ytd, 2)}`);
   s('ia-comisioane-ytd', k.profit_net_ytd > 0 ? `€${fmtA(k.profit_net_ytd / 0.70, 2)}` : '—');
 
-  // Progress bar rundă
-  const pct = Math.min(((k.capital_strans_eur || 0) / (k.valoare_companie_target_eur || 500000)) * 100, 100);
+  // Progress bar rundă — FIX (26 august 2026): folosea greșit valoarea
+  // companiei (valoare_companie_target_eur) ca numitor pentru progresul
+  // rundei — la 100% din rundă strânsă (500.000 EUR), bara ar fi arătat
+  // doar 12,5% (500k/4M), nu 100%. Numitorul corect e volumul rundei.
+  const pct = Math.min(((k.capital_strans_eur || 0) / (k.volum_runda_eur || 500000)) * 100, 100);
   const bar = document.getElementById('ia-runda-progress');
   const lbl = document.getElementById('ia-runda-pct-label');
   if (bar) bar.style.width = pct.toFixed(1) + '%';
