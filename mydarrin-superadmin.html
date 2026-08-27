@@ -557,6 +557,10 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       SEO — Titluri & Descrieri
     </a>
+    <a class="sa-nav-item" onclick="showPanel('manual')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      Manual de Funcționare
+    </a>
     <a class="sa-nav-item" onclick="showPanel('accountancy')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
       Accountancy
@@ -1532,6 +1536,168 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       </div>
     </div>
 
+    <!-- ══ PANEL: MANUAL DE FUNCȚIONARE (27 august 2026) ══
+         Secțiune doar-afișare, cerută explicit de utilizator, ca alternativă
+         la artifact extern (claude.ai) — conținutul e static, scris direct
+         în acest fișier, nu citit dintr-o tabelă DB. Fără editor, fără
+         upload de capturi, fără versionare — variantă minimă aprobată
+         explicit ("Secțiune simplă, doar afișare"), nu §1.2 din structura
+         inițială (CMS complet cu permisiuni pe capitol) — acela rămâne
+         neconstruit, semnalat separat ca proiect propriu, mult mai mare. -->
+    <div id="panel-manual" style="display:none">
+      <div style="margin-bottom:20px">
+        <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">📖 Manual de Funcționare — Platforma My Darrin</h2>
+        <p style="font-size:12.5px;color:#4A6080">Ghid pe module, aliniat strict cu starea reală, verificată live — nu cu funcționalități intenționate sau planificate, decât acolo unde e marcat explicit ca atare. Conținut static, actualizat manual la fiecare revizuire majoră.</p>
+      </div>
+
+      <div style="margin-bottom:18px;padding:12px 14px;background:rgba(14,158,153,.08);border:1px solid rgba(14,158,153,.25);border-radius:10px;font-size:11.5px;color:#8FA3BD;line-height:1.6">
+        Versiune completă, cu ghiduri pas cu pas extinse și marcaje interactive, disponibilă și ca <a href="https://claude.ai/code/artifact/f53b2efc-08c6-4192-9da1-8afa9a35a7c6" target="_blank" rel="noopener" style="color:#0E9E99;font-weight:700">document separat (v2)</a>. Secțiunea de față e varianta din back-office — doar afișare, fără editor.
+      </div>
+
+      <div id="manual-toc" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px">
+        <a href="#man-cap1" style="font-size:11.5px;color:#8FA3BD;background:#16202E;border:1px solid #2D3F55;padding:6px 12px;border-radius:8px;text-decoration:none">01 Introducere</a>
+        <a href="#man-cap2" style="font-size:11.5px;color:#8FA3BD;background:#16202E;border:1px solid #2D3F55;padding:6px 12px;border-radius:8px;text-decoration:none">02 Back-Office</a>
+        <a href="#man-cap3" style="font-size:11.5px;color:#8FA3BD;background:#16202E;border:1px solid #2D3F55;padding:6px 12px;border-radius:8px;text-decoration:none">03 Public</a>
+        <a href="#man-cap4" style="font-size:11.5px;color:#8FA3BD;background:#16202E;border:1px solid #2D3F55;padding:6px 12px;border-radius:8px;text-decoration:none">04 Mobil</a>
+        <a href="#man-cap5" style="font-size:11.5px;color:#8FA3BD;background:#16202E;border:1px solid #2D3F55;padding:6px 12px;border-radius:8px;text-decoration:none">05 Depanare</a>
+        <a href="#man-cap6" style="font-size:11.5px;color:#8FA3BD;background:#16202E;border:1px solid #2D3F55;padding:6px 12px;border-radius:8px;text-decoration:none">06 Ghiduri</a>
+      </div>
+
+      <style>
+        #panel-manual .man-sec{background:#16202E;border:1px solid #2D3F55;border-radius:14px;padding:22px 24px;margin-bottom:16px}
+        #panel-manual .man-sec h3{font-size:15px;font-weight:800;color:#fff;margin:0 0 10px}
+        #panel-manual .man-sec h4{font-size:13px;font-weight:700;color:#DCE6F2;margin:18px 0 6px}
+        #panel-manual .man-sec p, #panel-manual .man-sec li{font-size:12.3px;line-height:1.7;color:#B7C4D6}
+        #panel-manual .man-sec ul,#panel-manual .man-sec ol{padding-left:20px;margin:6px 0 10px}
+        #panel-manual .man-sec code{background:#0F1923;color:#4FD1C5;padding:1px 6px;border-radius:5px;font-size:11.5px}
+        #panel-manual .man-badge{display:inline-flex;align-items:center;gap:5px;font-size:9.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:2px 9px;border-radius:99px;margin-left:8px;vertical-align:middle}
+        #panel-manual .m-live{background:rgba(76,190,131,.15);color:#4CBE83}
+        #panel-manual .m-partial{background:rgba(255,140,0,.15);color:#FFB266}
+        #panel-manual .m-mock{background:rgba(229,115,115,.15);color:#E57373}
+        #panel-manual .m-plan{background:rgba(155,140,229,.15);color:#B0A0F0}
+        #panel-manual .man-callout{border-radius:10px;padding:11px 14px;margin:10px 0;font-size:11.8px;line-height:1.6;display:flex;gap:9px}
+        #panel-manual .c-note{background:rgba(79,209,197,.08);border:1px solid rgba(79,209,197,.25);color:#8FD9D0}
+        #panel-manual .c-warn{background:rgba(255,140,0,.08);border:1px solid rgba(255,140,0,.25);color:#FFB266}
+        #panel-manual .c-danger{background:rgba(229,115,115,.08);border:1px solid rgba(229,115,115,.25);color:#F0A0A0}
+        #panel-manual table{width:100%;border-collapse:collapse;font-size:11.8px;margin:10px 0}
+        #panel-manual th{text-align:left;color:#6B7F99;font-size:9.5px;font-weight:700;text-transform:uppercase;padding:7px 9px;border-bottom:1px solid #2D3F55}
+        #panel-manual td{padding:8px 9px;border-bottom:1px solid #1D2A3D;color:#B7C4D6;vertical-align:top}
+        #panel-manual .man-steps{list-style:none;padding:0;margin:10px 0}
+        #panel-manual .man-steps li{position:relative;padding:0 0 12px 30px;font-size:12px;line-height:1.6;color:#B7C4D6}
+        #panel-manual .man-steps{counter-reset:mstep}
+        #panel-manual .man-steps li{counter-increment:mstep}
+        #panel-manual .man-steps li::before{content:counter(mstep);position:absolute;left:0;top:0;width:20px;height:20px;border-radius:50%;background:#0E9E99;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
+        #panel-manual .ui-lbl{background:rgba(79,209,197,.12);color:#4FD1C5;padding:1px 7px;border-radius:5px;font-weight:650}
+      </style>
+
+      <div class="man-sec" id="man-cap1">
+        <h3>01 · Introducere &amp; Arhitectură</h3>
+        <p>My Darrin <strong style="color:#fff">nu</strong> e compus din module tehnic separate — e un singur monolit de pagini <code>.html</code> statice + funcții serverless <code>/api/*</code> (Vercel), diferențiat exclusiv prin control de acces (roluri + <code>middleware.js</code>), nu prin aplicații distincte.</p>
+        <h4>Arhitectura reală <span class="man-badge m-live">live</span></h4>
+        <ul>
+          <li><strong>Hosting &amp; API</strong> — Vercel: pagini statice + funcții serverless Node.js. Cron-uri programate (<code>vercel.json</code>) pentru sarcini repetitive.</li>
+          <li><strong>Bază de date &amp; Auth</strong> — Supabase (Postgres + Auth + Storage + RPC), sursa unică de adevăr.</li>
+          <li><strong>Email tranzacțional</strong> — Resend, domeniu <code>homebestpal.com</code>. Șabloane centralizate în <code>lib/i18n.js</code>, logo inclus automat (<code>api/branding/logo-image.js</code>).</li>
+          <li><strong>Servicii externe gratuite</strong> — Nominatim (geocodare), ipapi.co (geo IP), ANAF/VIES (lookup CUI/TVA).</li>
+        </ul>
+        <div class="man-callout c-note">📘 Niciun procesator de plăți card, provider e-Factură sau asigurător real conectat — toate trec prin <code>lib/integrare-gate.js</code>, care refuză curat cu 503 în loc să simuleze o funcționare inexistentă.</div>
+        <h4>Modulul de administrare a manualului <span class="man-badge m-plan">planificat</span></h4>
+        <p>Un editor intern complet (permisiuni pe capitol, upload capturi, versionare/publicare) <strong style="color:#fff">nu există</strong> — secțiunea de față e varianta minimă aprobată explicit ("doar afișare"), nu acel CMS. Rămâne proiect separat, de aprobat distinct.</p>
+        <h4>Glosar</h4>
+        <table>
+          <tr><th>Termen</th><th>Sens în cod</th></tr>
+          <tr><td><strong>Escrow</strong></td><td>Sumă blocată la comandă, eliberată către parteneri abia după confirmare (<code>lib/elibereaza-escrow.js</code>).</td></tr>
+          <tr><td><strong>Poartă / Gate</strong></td><td>Tiparul <code>lib/integrare-gate.js</code> — verifică o integrare reală înainte de a proceda; altfel refuză curat, nu simulează succes.</td></tr>
+          <tr><td><strong>Rol vs. Permisiune</strong></td><td>Rolul dă acces la o secțiune întreagă. Permisiunile granulare (<code>admin_permissions</code>) ar restrânge pe secțiune funcțională — tabel existent, 0 rânduri live azi.</td></tr>
+        </table>
+      </div>
+
+      <div class="man-sec" id="man-cap2">
+        <h3>02 · Modulul Back-Office</h3>
+        <h4>Roluri, autentificare, securitate <span class="man-badge m-partial">parțial</span></h4>
+        <p>RBAC real, verificat server-side (<code>middleware.js</code>, fail-closed) și client-side. Roluri reale: <code>client</code>, <code>partener_servicii/curier/materiale/inchirieri/asigurari</code>, <code>investor</code>, <code>admin</code>, <code>superadmin</code>.</p>
+        <div class="man-callout c-danger">🛑 Nu există 2FA. Nu există rol de „admin zonal RO/MD" — permisiunile granulare sunt pe <strong>secțiune funcțională</strong>, nu geografic, și <code>admin_permissions</code> are 0 rânduri live: cei doi admini reali au acces direct prin rol.</div>
+        <h4>Catalogul de servicii <span class="man-badge m-partial">parțial</span></h4>
+        <table>
+          <tr><th>Interfață</th><th>Stare</th><th>Ce face</th></tr>
+          <tr><td>Acest panou (<code>panel-catalog</code>)</td><td><span class="man-badge m-live">live</span></td><td>Singura interfață funcțională real — creare/editare, niveluri, legare rețetă tehnică, recalculare preț.</td></tr>
+          <tr><td><code>mydarrin-backoffice-serviciu.html</code></td><td><span class="man-badge m-mock">machetă</span></td><td>9 tab-uri, zero <code>fetch()</code> — butonul „Salvează" doar animă vizual. A nu se folosi ca sursă de adevăr.</td></tr>
+        </table>
+        <h4>Integrări externe <span class="man-badge m-plan">majoritatea în așteptare</span></h4>
+        <p>Toate trec prin <code>lib/integrare-gate.js</code> — verifică furnizor activ, altfel <code>503</code>. Stare live: niciun procesator de plăți, provider e-Factură sau asigurător real conectat.</p>
+      </div>
+
+      <div class="man-sec" id="man-cap3">
+        <h3>03 · Modulul Public</h3>
+        <h4>Rute publice și filtrare regională <span class="man-badge m-partial">parțial</span></h4>
+        <p>Navigare catalog, căutare — reale. <strong style="color:#fff">Catalogul public nu filtrează deloc după țară</strong> azi — orice vizitator vede același catalog, indiferent de origine.</p>
+        <div class="man-callout c-warn">⚠️ Bariera de pre-lansare rămâne activă deliberat pe toată platforma publică, indiferent de cele de mai sus, până la decizia explicită a superadminului.</div>
+        <h4>Tranzacții <span class="man-badge m-partial">parțial</span></h4>
+        <p>Checkout, escrow și motorul de preț real funcționează — dar prețul calculat din rețeta tehnică reală e conectat azi doar pe 2 din 5 servicii pilot (Grădinărit, Service Moto); restul catalogului încă pe preț static.</p>
+      </div>
+
+      <div class="man-sec" id="man-cap4">
+        <h3>04 · Aplicații Mobile (iOS &amp; Android) <span class="man-badge m-plan">planificat, neînceput</span></h3>
+        <div class="man-callout c-danger">🛑 Nu există nicio aplicație mobilă nativă azi. Ce există, ca precondiție tehnică: rutele <code>api/partener/*.js</code> sunt stateless, JSON, fără dependență de <code>sessionStorage</code> — pregătite pentru o aplicație viitoare, dar aplicația însăși nu există.</div>
+        <p>Notificările push, sincronizarea în fundal și modul offline depind de o decizie externă neluată încă (canal de notificare timp real) — semnalată în roadmap-ul de implementare.</p>
+      </div>
+
+      <div class="man-sec" id="man-cap5">
+        <h3>05 · Depanare, Securitate și Întreținere</h3>
+        <table>
+          <tr><th>Simptom</th><th>Cauză probabilă</th></tr>
+          <tr><td>Comandă blocată la „în căutare partener"</td><td>Niciun partener eligibil (competență ESCO/NACE sau disponibilitate echipă) — <code>lib/aloca-partener.js</code></td></tr>
+          <tr><td>Endpoint răspunde <code>503</code>, <code>INTEGRARE_IN_ASTEPTARE</code></td><td>Comportament corect — nicio integrare activă pentru acea categorie</td></tr>
+          <tr><td>Partener nu poate semna contractul</td><td>Lipsă cont bancar activ sau document neaprobat</td></tr>
+          <tr><td>Vizitator redirecționat la <code>/acces-temporar</code></td><td>Comportament corect — bariera globală de pre-lansare, activă deliberat</td></tr>
+        </table>
+        <h4>GDPR &amp; securitate <span class="man-badge m-live">live</span></h4>
+        <p>Banner de consimțământ GDPR real pe majoritatea paginilor publice, GA4 condiționat explicit de consimțământ. CNP-uri și IBAN-uri criptate (nu doar mascate) în tabelele care le stochează.</p>
+      </div>
+
+      <div class="man-sec" id="man-cap6">
+        <h3>06 · Ghiduri Pas cu Pas</h3>
+        <div class="man-callout c-warn">⚠️ Capturile de ecran nu sunt incluse — acest mediu de generare nu are acces la un browser real. Pașii de mai jos folosesc etichetele exacte ale butoanelor/tab-urilor, verificate direct în cod.</div>
+
+        <h4>Cum aprobă un admin un partener nou / un document KYC</h4>
+        <ol class="man-steps">
+          <li>Meniul „Operațional" → <span class="ui-lbl">Marketplace — Aprobări</span>.</li>
+          <li>Click <span class="ui-lbl">↻ Reîncarcă</span> dacă lista nu s-a populat.</li>
+          <li>Pentru fiecare intrare, click <span class="ui-lbl">Aprobă</span> sau <span class="ui-lbl">Respinge</span> — se scrie imediat în <code>partners.status_verificare</code>/<code>documente_partener.status</code>.</li>
+        </ol>
+
+        <h4>Cum editează un admin catalogul și recalculează prețul</h4>
+        <ol class="man-steps">
+          <li>Meniul „Operațional" → <span class="ui-lbl">Catalog Servicii/Materiale</span>.</li>
+          <li>Deschide cardul unui nivel → secțiunea <span class="ui-lbl">Rețetă tehnică (D2a)</span>.</li>
+          <li>Click <span class="ui-lbl">Recalculează preț</span> — refuză să scrie un preț incomplet, afișează resursele fără tarif.</li>
+        </ol>
+
+        <h4>Cum urcă un admin sigla oficială My Darrin</h4>
+        <ol class="man-steps">
+          <li>Meniul „Sistem" → <span class="ui-lbl">Branding &amp; Design</span> (panoul de mai sus în acest meniu).</li>
+          <li>Alege imaginea (max 2MB) pentru slotul dorit, confirmă încărcarea.</li>
+          <li>Se propagă automat pe paginile publice și în toate emailurile tranzacționale — fără pas suplimentar.</li>
+        </ol>
+
+        <h4>Cum își completează un partener profilul 100%</h4>
+        <ol class="man-steps">
+          <li>Dashboard partener → <span class="ui-lbl">Cont bancar</span> → completează Titular/IBAN/Bancă/Monedă → <span class="ui-lbl">+ Adaugă</span>.</li>
+          <li>Dashboard partener → <span class="ui-lbl">Portofoliu servicii</span> → bifează cel puțin un serviciu.</li>
+          <li>La completarea ambelor, se trimite automat, o singură dată, emailul de confirmare.</li>
+        </ol>
+
+        <h4>Cum plasează un client o comandă</h4>
+        <ol class="man-steps">
+          <li>Catalog public → alege serviciu → pagina de produs (doar niveluri cu preț real afișate).</li>
+          <li>Configurează cantitatea (recalcul live, verificat server-side) → Checkout.</li>
+          <li>Completează adresa, metoda de plată, bifează cele 3 confirmări obligatorii → finalizează. Suma e blocată în escrow.</li>
+        </ol>
+
+        <p style="margin-top:14px;font-size:11px;color:#6B7F99">Ghidurile complete (7 fluxuri, inclusiv semnare contract și urmărire comandă) sunt în <a href="https://claude.ai/code/artifact/f53b2efc-08c6-4192-9da1-8afa9a35a7c6" target="_blank" rel="noopener" style="color:#0E9E99">versiunea extinsă (v2)</a>.</p>
+      </div>
+    </div>
+
     <!-- ══ PANEL: ACCOUNTANCY (restricționat — superadmin sau contabil aprobat) ══ -->
     <div id="panel-accountancy" style="display:none">
       <div id="acc-denied" style="display:none;text-align:center;padding:60px 20px">
@@ -2495,13 +2661,13 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 
 <script>
 // ── NAVIGATION ──
-const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding','seo','accountancy','investitori','contact','prospecti','newsletter','email-gateway','facturare-parteneri','b2g-plati','preturi-niveluri','tarife-transport','marketplace-aprobari','acces-temporar'];
+const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding','seo','manual','accountancy','investitori','contact','prospecti','newsletter','email-gateway','facturare-parteneri','b2g-plati','preturi-niveluri','tarife-transport','marketplace-aprobari','acces-temporar'];
 const TITLES = {
   dashboard:'Dashboard Global',tari:'Țări & Zone',utilizatori:'Utilizatori & Actori',
   rbac:'Permisiuni RBAC',platforme:'Platforme & Integrări',escrow:'Escrow Global',
   comisioane:'Comisioane & Tarifare',vmc:'VMC per Țară',parteneri:'Parteneri Globali',
   comenzi:'Comenzi Globale',catalog:'Catalog Servicii/Materiale/Închirieri',audit:'Audit Log',config:'Configurare Sistem',
-  branding:'Branding & Design Platformă',seo:'SEO — Titluri & Descrieri',accountancy:'Accountancy',
+  branding:'Branding & Design Platformă',seo:'SEO — Titluri & Descrieri',manual:'Manual de Funcționare',accountancy:'Accountancy',
   investitori:'Administrare Investitori',contact:'Mesaje Contact',prospecti:'Prospecți Parteneri',
   newsletter:'Newsletter & Abonați','email-gateway':'Noreply & Transactional Gateway','facturare-parteneri':'Facturare Parteneri','b2g-plati':'B2G & Metode de Plată','preturi-niveluri':'Niveluri de Preț','tarife-transport':'Tarife Transport','marketplace-aprobari':'Marketplace — Aprobări','acces-temporar':'Acces Temporar'
 };
