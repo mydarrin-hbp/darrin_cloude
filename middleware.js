@@ -55,7 +55,7 @@ export const config = {
 // ea însăși "curățată" — de unde rezultatul rămânea 404 (X-Vercel-Error:
 // NOT_FOUND) deși log-urile confirmau destinația corect calculată.
 const PAGINA_STATICA = {
-  '/home': '/mydarrin-v3',
+  '/home': '/index',
   '/cos': '/mydarrin-checkout',
   '/partener': '/mydarrin-devino-partener',
   '/investitor': '/mydarrin-investitori',
@@ -215,6 +215,14 @@ const PAGINI_STRICTE = [
   '/mydarrin-sync-architecture', '/mydarrin-sync-architecture.html',
 ];
 
+// FIX (27 august 2026) — Etapa LANSARE: cerere explicită a fondatorului de a
+// restricționa backoffice-ul (indiferent de domeniu — vezi și
+// vercel.json:"admin.mydarrin.homebestpal.com") la UN SINGUR cont, nu la
+// oricine are rolul admin/superadmin. Configurabil prin variabilă de mediu
+// (rotabil fără redeploy de cod), cu fallback la emailul confirmat explicit
+// de fondator — funcțional corect chiar dacă variabila nu e setată în Vercel.
+const SUPERADMIN_EMAIL = (process.env.SUPERADMIN_EMAIL || 'cristianpopaban@gmail.com').toLowerCase();
+
 export default async function middleware(request) {
   const url = new URL(request.url);
   const pathname = url.pathname;
@@ -236,6 +244,9 @@ export default async function middleware(request) {
     if (!user) return respinge(request, 'niciun cookie de sesiune valid');
     const areRolPermis = await verificaRoluri(supabaseAdmin, user.id);
     if (!areRolPermis) return respinge(request, `user ${user.id} autentificat dar fără rol admin/superadmin`);
+    if (!user.email || user.email.toLowerCase() !== SUPERADMIN_EMAIL) {
+      return respinge(request, `user ${user.id} (${user.email || 'fără email'}) are rol admin/superadmin dar nu e contul unic autorizat`);
+    }
     return next();
   }
 

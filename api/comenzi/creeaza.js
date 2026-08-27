@@ -84,7 +84,7 @@ async function handler(req, res, user) {
     cost_baza_servicii, cost_materiale, cost_chirie_scule, cost_curier, cost_asigurare,
     data_programata = null, ora_inceput_programata = null, ora_sfarsit_programata = null,
     masa_totala_kg = null, nivel_transport_marfa = null,
-    metoda_plata = 'card',
+    metoda_plata = 'ordin_plata',
     nivel_id = null, cantitate = null,
   } = req.body || {};
 
@@ -110,9 +110,17 @@ async function handler(req, res, user) {
   // comuta doar o clasă CSS — alegerea clientului nu ajungea niciodată aici.
   // comenzi.metoda_plata există în schemă de la introducerea ei (nu era
   // niciodată scrisă). Validare minimă, nu presupune un enum DB strict.
-  const METODE_PLATA_VALIDE = ['card', 'ordin_plata', 'cash'];
+  //
+  // RESTRICȚIE (Etapa LANSARE, 27 august 2026): 'card' se accepta aici fără
+  // nicio verificare de procesator real (spre deosebire de creeaza-b2g.js,
+  // care cheamă verificaIntegrare('procesatori_carduri')) — un client putea
+  // selecta "Card bancar" și comanda se crea normal, fără ca vreo plată să
+  // fie procesată sau blocată. Cerere explicită a fondatorului: până la
+  // integrarea unui procesator real, singura metodă acceptată e ordinul de
+  // plată — închide gaura de integritate, nu doar restrânge opțiunile.
+  const METODE_PLATA_VALIDE = ['ordin_plata'];
   if (!METODE_PLATA_VALIDE.includes(metoda_plata)) {
-    return res.status(400).json({ error: `metoda_plata trebuie să fie una din: ${METODE_PLATA_VALIDE.join(', ')}` });
+    return res.status(400).json({ error: `metoda_plata trebuie să fie una din: ${METODE_PLATA_VALIDE.join(', ')} (card/cash indisponibile până la integrarea unui procesator real).` });
   }
 
   if (masa_totala_kg !== null && !(typeof masa_totala_kg === 'number' && masa_totala_kg > 0)) {

@@ -1451,53 +1451,22 @@ function triggerHeaderSearch(){
           </div>
         </div>
 
-        <!-- Payment methods -->
-        <div class="space-y-3 mb-5">
-          <div class="payment-method selected" id="pm-card" onclick="selectPayment('card')">
+        <!-- Payment method — restricționat la ordin de plată (Etapa LANSARE,
+             27 august 2026): card/cash eliminate din UI, nu doar dezactivate
+             — până acum "Card bancar" era selectabil și trimitea comanda mai
+             departe fără nicio verificare reală de procesator (gaură de
+             integritate reparată în api/comenzi/creeaza.js în același commit).
+             Formularul de card (fals, fără procesator real în spate) eliminat
+             odată cu opțiunea, nu doar ascuns. -->
+        <div class="mb-5">
+          <div class="payment-method selected" id="pm-transfer">
             <div class="pm-radio selected"></div>
-            <div class="text-2xl"><i data-lucide="credit-card" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-            <div class="flex-1">
-              <div class="font-bold text-sm text-[#003366]">Card bancar</div>
-              <div class="text-xs text-[#6B7A8D] mt-0.5">Visa, Mastercard, American Express · 3D Secure</div>
-            </div>
-            <div class="flex gap-2">
-              <span class="text-xs bg-[#EBF4FB] text-[#1A5FAD] px-2 py-1 rounded-lg font-bold">VISA</span>
-              <span class="text-xs bg-[#FFF0D6] text-[#CC7000] px-2 py-1 rounded-lg font-bold">MC</span>
-            </div>
-          </div>
-          <div class="payment-method" id="pm-transfer" onclick="selectPayment('transfer')">
-            <div class="pm-radio"></div>
             <div class="text-2xl"><i data-lucide="landmark" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
             <div class="flex-1">
-              <div class="font-bold text-sm text-[#003366]">Transfer bancar</div>
-              <div class="text-xs text-[#6B7A8D] mt-0.5">Procesare în 1–2 zile lucrătoare</div>
+              <div class="font-bold text-sm text-[#003366]">Ordin de plată (transfer bancar)</div>
+              <div class="text-xs text-[#6B7A8D] mt-0.5">Singura metodă disponibilă momentan · procesare în 1–2 zile lucrătoare · plata cu cardul urmează după integrarea unui procesator</div>
             </div>
           </div>
-          <div class="payment-method" id="pm-cash" onclick="selectPayment('cash')">
-            <div class="pm-radio"></div>
-            <div class="text-2xl"><i data-lucide="banknote" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-            <div class="flex-1">
-              <div class="font-bold text-sm text-[#003366]">Numerar la execuție</div>
-              <div class="text-xs text-[#6B7A8D] mt-0.5">Plata în cash direct partenerului · Escrow dezactivat</div>
-            </div>
-            <span class="text-[10px] bg-[#FFF0D6] text-[#CC7000] px-2 py-1 rounded-lg font-bold">Fără garanție</span>
-          </div>
-        </div>
-
-        <!-- Card form -->
-        <div id="card-form" class="bg-white rounded-2xl border border-[#D5DFE8] p-6 space-y-4 mb-5">
-          <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Număr card</label>
-            <input type="text" placeholder="4242 4242 4242 4242" maxlength="19" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white font-mono tracking-wider"/>
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Valabilitate</label><input type="text" placeholder="MM / YY" maxlength="7" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white font-mono"/></div>
-            <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">CVV</label><input type="text" placeholder="•••" maxlength="4" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white font-mono"/></div>
-          </div>
-          <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Titular card</label><input type="text" placeholder="PRENUME NUME" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white uppercase tracking-wide"/></div>
-          <label class="flex items-center gap-2.5 cursor-pointer">
-            <input type="checkbox" class="w-4 h-4 accent-[#003366]"/>
-            <span class="text-xs text-[#6B7A8D]">Salvează cardul pentru comenzile viitoare (securizat PCI-DSS)</span>
-          </label>
         </div>
         </div><!-- /b2c-payment-block -->
 
@@ -3455,16 +3424,10 @@ if (document.readyState === 'loading') {
 } else {
   initChecoutConfigCuRestaurare();
 }
-let selectedPaymentMethod = 'card';
-function selectPayment(type){
-  ["card","transfer","cash"].forEach(t=>{
-    const el=document.getElementById("pm-"+t);
-    if(el)el.classList.remove("selected");
-  });
-  document.getElementById("pm-"+type).classList.add("selected");
-  document.getElementById("card-form").style.display=type==="card"?"block":"none";
-  selectedPaymentMethod = type;
-}
+// Restricționat la ordin de plată (Etapa LANSARE, 27 august 2026) — singura
+// metodă acceptată de api/comenzi/creeaza.js până la integrarea unui
+// procesator real; selectPayment()/pm-card/pm-cash eliminate odată cu UI-ul.
+const selectedPaymentMethod = 'transfer';
 
 // ── Flux B2G (audit Secțiunea 43/44, 31 Iulie 2026) — izolat, nu atinge selectPayment() de mai sus ──
 const METODA_PLATA_LABEL = { card: 'Card bancar', ordin_plata: 'Ordin de plată (transfer bancar)' };
