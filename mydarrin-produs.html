@@ -747,10 +747,6 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 .chip-g{background:#D4EDDA;color:#1A7A3A}
 
 /* ── DISPATCH MODAL ── */
-#dispatch-modal{position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px}
-.dispatch-inner{background:#fff;border-radius:28px;max-width:560px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,.25);overflow:hidden;animation:slideUp .4s ease}
-.dp-row{display:flex;align-items:center;gap:12px;padding:11px 14px;background:#F4F7F9;border-radius:12px;border:1px solid #D5DFE8;font-size:12.5px;transition:all .4s}
-.dp-av{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
 
 /* ── TOAST ── */
 .toast{position:fixed;bottom:24px;right:24px;background:#003366;color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,51,102,.3);animation:slideUp .3s ease;max-width:300px;line-height:1.5}
@@ -1898,18 +1894,18 @@ function triggerHeaderSearch(){
         <div class="ai-bubble" style="margin-bottom:20px">
           <div class="ai-av"><i data-lucide="bot" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
           <div>
-            <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#0E9E99;margin-bottom:6px">Ce se întâmplă după lansare</div>
+            <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#0E9E99;margin-bottom:6px">Ce se întâmplă după finalizare</div>
             <div style="font-size:12.5px;color:#2D2D2D;line-height:1.75">
-              <strong>Darrin AI</strong> notifică simultan toți partenerii eligibili (pe componente: manoperă, materiale, transport, asigurare) din zona ta pe WhatsApp, SMS, Email, Push și Web.<br>
-              <strong>Primul care acceptă</strong> pe fiecare componentă preia sarcina.<br>
-              <strong>Toți actorii</strong> (tu, partenerii, backoffice) urmăresc statusul în timp real.
+              Platforma caută un partener eligibil din zona ta, pe baza competențelor și disponibilității declarate.<br>
+              <strong>Suma e blocată în Escrow</strong> până la confirmarea execuției — nu e transferată direct.<br>
+              Poți urmări statusul comenzii oricând din contul tău.
             </div>
           </div>
         </div>
         <button class="btn-primary" onclick="launchOrder()" style="font-size:16px;padding:18px;margin-bottom:10px">
-          Lansează comanda · <span id="launch-amt">—</span>
+          Continuă spre finalizare · <span id="launch-amt">—</span>
         </button>
-        <p style="text-align:center;font-size:11.5px;color:#8C9BAD">Prin lansare confirmi toate condițiile acceptate. Suma va fi blocată în Escrow.</p>
+        <p style="text-align:center;font-size:11.5px;color:#8C9BAD">Următorul pas: confirmi adresa, termenii și metoda de plată pe pagina de finalizare.</p>
       </div>
     </div>
 
@@ -1971,45 +1967,6 @@ function triggerHeaderSearch(){
 </div><!-- /main-grid -->
 
 <!-- ════ DISPATCH MODAL ════ -->
-<div id="dispatch-modal" style="display:none;position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px">
-  <div class="dispatch-inner">
-    <div style="background:linear-gradient(135deg,#001E3C,#003366);padding:26px 28px 22px;text-align:center">
-      <div style="font-size:52px;margin-bottom:10px" id="dp-icon"><i data-lucide="rocket" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-      <div style="font-weight:800;color:#fff;font-size:20px;margin-bottom:4px">Comanda lansată!</div>
-      <div style="color:rgba(255,255,255,.6);font-size:13px" id="dp-sub">Darrin AI caută echipa ta...</div>
-      <div style="font-family:monospace;font-size:11px;color:rgba(255,255,255,.3);margin-top:8px" id="dp-ref">Ref: #MD-XXXX</div>
-    </div>
-    <div style="padding:22px 26px">
-      <div style="margin-bottom:20px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD">Darrin AI Dispatch — live</div>
-          <div style="display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;color:#0E9E99"><span class="pulse-dot" style="width:5px;height:5px"></span>Live</div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:8px" id="dp-rows"></div>
-      </div>
-      <!-- Channels -->
-      <div style="background:#F4F7F9;border-radius:12px;padding:11px 14px;margin-bottom:18px">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:7px">Canale notificare active</div>
-        <div style="display:flex;gap:7px;flex-wrap:wrap">
-          <span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:99px;background:#D4EDDA;color:#1A7A3A">WhatsApp</span>
-          <span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:99px;background:#D4EDDA;color:#1A7A3A">SMS</span>
-          <span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:99px;background:#D4EDDA;color:#1A7A3A">Push App</span>
-          <span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:99px;background:#D4EDDA;color:#1A7A3A">Email</span>
-          <span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:99px;background:#D4EDDA;color:#1A7A3A">Web App</span>
-        </div>
-      </div>
-      <div id="dp-msg" style="padding:12px 16px;background:#E0F5F4;border-radius:12px;border:1px solid rgba(14,158,153,.25);font-size:12.5px;color:#0B7A76;line-height:1.65;margin-bottom:18px;display:flex;align-items:flex-start;gap:8px">
-        <span class="pulse-dot" style="flex-shrink:0;margin-top:3px"></span>
-        <span id="dp-msg-txt">Darrin AI notifică simultan toți partenerii eligibili din zona ta...</span>
-      </div>
-      <div style="display:flex;gap:12px">
-        <button onclick="window.open('mydarrin-dashboard-client.html','_blank');closeDispatch()" style="flex:1;padding:14px;border-radius:14px;background:#003366;color:#fff;border:none;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;transition:background .2s" onmouseover="this.style.background='#1A5FAD'" onmouseout="this.style.background='#003366'">Urmărire live →</button>
-        <button onclick="closeDispatch()" style="padding:14px 18px;border-radius:14px;background:#F4F7F9;color:#6B7A8D;border:1px solid #D5DFE8;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Continuă</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <footer style="background:#1E2E4D;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
 
 <style>
@@ -4348,51 +4305,19 @@ function updateProgBars(){
 }
 
 // ══ LAUNCH ══
+// FIX (27 august 2026, categoria D din inventarul "Cod/Schemă Orfană") —
+// acest buton nu crea niciodată o comandă reală: anima o secvență falsă cu
+// 4 parteneri ficțivi (Darius/Roxana/George/Laura) și canale de notificare
+// inexistente (WhatsApp/SMS/Push), apoi afișa "Escrow blocat" fără să fi
+// blocat vreodată ceva. Config-ul comenzii e deja salvat corect în acest
+// punct (salveazaStareaCheckout(), apelat la tranziția către pasul 5) —
+// singurul lucru care lipsea era pasul real: predarea către
+// mydarrin-checkout.html, care deja știe să citească acest config și să
+// creeze comanda real (inclusiv calea nivel_id pentru serviciile pilot).
 function launchOrder(){
-  const modal=document.getElementById('dispatch-modal');
-  if(modal){ modal.style.display='flex'; document.body.style.overflow='hidden'; }
-  const ref='#MD-'+new Date().getFullYear().toString().slice(2)+String(new Date().getMonth()+1).padStart(2,'0')+String(new Date().getDate()).padStart(2,'0')+'-'+Math.floor(1000+Math.random()*9000);
-  setEl('dp-ref','Ref: '+ref);
-  animateDispatch();
+  salveazaStareaCheckout();
+  window.location.href = 'mydarrin-checkout.html';
 }
-
-function animateDispatch(){
-  const partners=[
-    {role:'Instalator / Executant principal',icon:'',name:'Darius',code:'#448D2',color:'#FF8C00',delay:900,accept:true},
-    {role:'Furnizor materiale (ACA Business Group)',icon:'',name:'Roxana',code:'#772R9',color:'#1A5FAD',delay:2400,accept:true},
-    {role:'Curier cartier (transport materiale)',icon:'',name:'George',code:'#119G5',color:'#D97706',delay:3800,accept:true},
-    {role:'Furnizor asigurări (poliță lucrare)',icon:'',name:'Laura',code:'#335L1',color:'#0E9E99',delay:5200,accept:true},
-  ];
-  const cont=document.getElementById('dp-rows');
-  if(!cont) return;
-  cont.innerHTML='';
-  partners.forEach((p,i)=>{
-    const row=document.createElement('div');
-    row.className='dp-row'; row.style.opacity='0.4';
-    row.innerHTML=`<div class="dp-av" style="background:${p.color}">${p.icon}</div>
-      <div style="flex:1"><div style="font-weight:600;color:#2D2D2D">${p.name} <span style="font-family:monospace;font-size:10px;color:#8C9BAD">${p.code}</span></div>
-      <div style="font-size:11px;color:#8C9BAD">${p.role}</div></div>
-      <div style="font-size:9.5px;font-weight:700;padding:3px 10px;border-radius:99px;background:rgba(45,63,85,.1);color:#8C9BAD" id="pst-${i}">Notificat</div>`;
-    cont.appendChild(row);
-    setTimeout(()=>{ row.style.opacity='1'; },200+i*280);
-    setTimeout(()=>{
-      const st=document.getElementById('pst-'+i);
-      if(st){ st.textContent='Acceptat'; st.style.background='rgba(14,158,153,.15)'; st.style.color='#0E9E99'; }
-      row.style.borderColor='#0E9E99'; row.style.background='#F0FBF9';
-    },p.delay);
-  });
-  const msgs=[
-    [0,'Darrin AI broadcast activ · 4 componente notificate simultan...'],
-    [900+600,'Instalatorul a dat claim! Echipa de manoperă confirmată...'],
-    [2400+500,'Furnizorul de materiale a confirmat · Stoc disponibil...'],
-    [3800+500,'Curierul de cartier este în drum · ETA 25 min...'],
-    [5200+800,'Echipa completă alocată! Toate componentele confirmate · Escrow blocat.'],
-  ];
-  msgs.forEach(([delay,msg])=>setTimeout(()=>setEl('dp-msg-txt',msg),delay));
-  setTimeout(()=>{ setEl('dp-sub','Echipa alocată · Urmărire live disponibilă'); document.getElementById('dp-icon').textContent=''; },6200);
-}
-
-function closeDispatch(){ const m=document.getElementById('dispatch-modal'); if(m) m.style.display='none'; document.body.style.overflow=''; }
 
 // ══ UTILS ══
 function setEl(id,val){ const e=document.getElementById(id); if(e) e.textContent=val; }

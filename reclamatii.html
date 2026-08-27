@@ -1711,13 +1711,13 @@ function triggerHeaderSearch(){
   <div class="chat-hdr">
     <div class="chat-hdr-ico"><i data-lucide="bot" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
     <div>
-      <div style="font-size:13px;font-weight:800;color:#fff">Darrin AI</div>
-      <div style="font-size:10.5px;color:rgba(255,255,255,.5)">Asistent reclamații · Online</div>
+      <div style="font-size:13px;font-weight:800;color:#fff">Ajutor reclamații</div>
+      <div style="font-size:10.5px;color:rgba(255,255,255,.5)">Asistent automat indisponibil momentan</div>
     </div>
     <button onclick="toggleChat()" style="margin-left:auto;background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:18px;line-height:1">×</button>
   </div>
   <div class="chat-msgs" id="chat-msgs">
-    <div class="msg ai">Bună! Sunt Darrin AI, asistentul tău pentru reclamații. Pot să te ajut să înregistrezi o spetă sau să verifici statusul unei reclamații existente.<br><br>Cu ce te pot ajuta?</div>
+    <div class="msg ai">Bună! Chat-ul automat nu e disponibil momentan. Completează formularul de reclamație de mai sus sau scrie-ne direct la <a href="mailto:support@homebestpal.com" style="color:inherit;text-decoration:underline">support@homebestpal.com</a> — răspundem în 24-48 ore.</div>
   </div>
   <div style="padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid #F4F7F9">
     <button onclick="chatQuick('Vreau să înregistrez o reclamație')" style="font-size:11px;padding:5px 11px;border-radius:99px;border:1px solid #E8F0FB;background:#fff;cursor:pointer;color:#6B7A8D;font-family:inherit;transition:all .15s" onmouseover="this.style.background='#E9F7F6'" onmouseout="this.style.background='#fff'">Înregistrez reclamație</button>
@@ -2389,6 +2389,15 @@ function chatQuick(msg) {
   document.getElementById('chat-input').value = msg;
   sendChat();
 }
+// FIX (27 august 2026, categoria D din inventarul "Cod/Schemă Orfană") —
+// acest chat încerca un apel real către Anthropic direct din browser, fără
+// nicio cheie API (ar fi expusă tuturor vizitatorilor dacă exista) și cu un
+// identificator de model inexistent ("claude-sonnet-4-6") — eșua mereu,
+// ascuns în spatele unui indicator fals de "Darrin scrie...". Conform
+// deciziei de secvențiere a modulului Darrin AI (implementat ultimul), nu
+// se conectează un asistent AI real aici acum — se elimină încercarea
+// falsă și se arată direct, onest, alternativele reale care există deja pe
+// această pagină: formularul de reclamație și adresa de suport.
 function sendChat() {
   var inp = document.getElementById('chat-input');
   var txt = inp.value.trim();
@@ -2402,41 +2411,11 @@ function sendChat() {
   msgs.appendChild(userMsg);
   msgs.scrollTop = msgs.scrollHeight;
 
-  // Typing indicator
-  var typing = document.createElement('div');
-  typing.className = 'msg ai';
-  typing.innerHTML = '<span style="opacity:.5">Darrin scrie...</span>';
-  msgs.appendChild(typing);
+  var aiMsg = document.createElement('div');
+  aiMsg.className = 'msg ai';
+  aiMsg.textContent = 'Chat-ul automat nu e disponibil momentan. Te rog să completezi formularul de reclamație de mai sus sau să ne scrii direct la support@homebestpal.com — răspundem în 24-48 ore.';
+  msgs.appendChild(aiMsg);
   msgs.scrollTop = msgs.scrollHeight;
-
-  // Call Anthropic API
-  fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1000,
-      system: 'Ești Darrin AI, asistentul de reclamații al platformei My Darrin (operată de Home Best Pal). Ajuți utilizatorii să înregistreze reclamații, să verifice statusul lor și să înțeleagă procesul de soluționare. Ești concis, empatic și profesionist. Răspunzi în română. Dacă cineva vrea să înregistreze o reclamație, îndrumă-l să completeze formularul de pe pagină. Termenul de soluționare standard este 24-48 ore. Categoriile de reclamații sunt: calitate serviciu, materiale livrate, echipament/utilaj, factură/plată, garanție, CMR/transport, compliance/audit, clauze contractuale, poliță asigurare.',
-      messages: [{ role: 'user', content: txt }]
-    })
-  })
-  .then(function(res) { return res.json(); })
-  .then(function(data) {
-    typing.remove();
-    var aiMsg = document.createElement('div');
-    aiMsg.className = 'msg ai';
-    aiMsg.textContent = data.content && data.content[0] ? data.content[0].text : 'Îmi pare rău, a apărut o eroare. Încearcă din nou.';
-    msgs.appendChild(aiMsg);
-    msgs.scrollTop = msgs.scrollHeight;
-  })
-  .catch(function() {
-    typing.remove();
-    var aiMsg = document.createElement('div');
-    aiMsg.className = 'msg ai';
-    aiMsg.textContent = 'Momentan nu pot procesa cererea. Te rog să completezi formularul de reclamație sau să ne contactezi la support@homebestpal.com.';
-    msgs.appendChild(aiMsg);
-    msgs.scrollTop = msgs.scrollHeight;
-  });
 }
 </script>
 </body>
