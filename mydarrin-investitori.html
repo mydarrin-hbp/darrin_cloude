@@ -2511,14 +2511,14 @@ function updateStep4Summary() {
     </div>
     <div style="background:#FFF8EE;border-radius:12px;padding:13px;border:1.5px solid rgba(255,140,0,.25);margin-bottom:14px">
       <div style="font-size:11px;font-weight:700;color:#CC7000;margin-bottom:6px">Contract & Semnătură digitală</div>
-      <div style="font-size:11.5px;color:#5A6B7D;line-height:1.7">Prin finalizarea subscrierii, vei semna electronic (eIDAS Qualified) un <strong>Shareholders Agreement</strong> care include: drepturi de vot, clauze anti-diluare, preferință la lichidare 1×, clauze tag-along și drag-along. Documentul va fi disponibil în portofoliul tău.</div>
+      <div style="font-size:11.5px;color:#5A6B7D;line-height:1.7">Prin trimiterea cererii, aceasta e înregistrată pentru procesare. Vei primi separat, pe email, <strong>Shareholders Agreement</strong>-ul (drepturi de vot, clauze anti-diluare, preferință la lichidare 1×, tag-along și drag-along) pentru semnare electronică — subscrierea nu e finalizată legal la acest pas.</div>
     </div>
     <div style="background:#FFF0F0;border-radius:12px;padding:11px;border:1px solid rgba(192,57,43,.2);margin-bottom:14px">
       <div style="font-size:10.5px;color:#C0392B;font-weight:700">Avertisment obligatoriu MiFID II</div>
       <div style="font-size:10.5px;color:#5A6B7D;margin-top:3px;line-height:1.6">Investițiile în companii la stadiu incipient (start-up) implică riscul pierderii totale a capitalului investit. Instrumentele financiare nu sunt garantate de FGDB. My Darrin nu oferă consultanță de investiții.</div>
     </div>
     <button onclick="finalizeazaSubscriere()" style="width:100%;padding:14px;border-radius:13px;border:none;background:linear-gradient(135deg,#003366,#1A5FAD);color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit">
-      Semnează & Finalizează subscrierea
+      Trimite cererea de subscriere
     </button>`;
 }
 
@@ -2612,15 +2612,19 @@ function selectMifid(btn, q, v) {
   checkKYCComplete();
 }
 
+// FIX (27 august 2026, categoria D din inventarul "Cod/Schemă Orfană") —
+// afișa un rezultat de verificare complet fabricat ("CI verificat · Radu
+// Ionescu · RO · Valabil 2031 · Nicio sancțiune detectată") indiferent de
+// fișierul real încărcat sau de identitatea reală a utilizatorului — nici
+// OCR, nici verificare de sancțiuni nu rulează de fapt. Fluxul real de
+// KYC automatizat (OCR + hash CNP) rămâne deliberat neconstruit — decizie
+// deja confirmată, api/investitori/kyc.js se reconstruiește de la zero
+// când acel flux intră în producție. Până atunci, starea afișată e onestă:
+// fișierul a fost selectat, verificarea o face echipa, manual.
 function handleKYCDoc(input, type) {
   if(input.files.length > 0) {
-    if (typeof setKYCUploading === 'function') setKYCUploading(true);
-    document.getElementById('kyc-ci-status').innerHTML='<span style="color:#1A7A3A;font-weight:600">'+input.files[0].name+' · OCR procesare... 88% scor identitate</span>';
-    setTimeout(()=>{
-      document.getElementById('kyc-ci-status').innerHTML='<span style="color:#1A7A3A;font-weight:600">CI verificat · Radu Ionescu · RO · Valabil 2031 · Nicio sancțiune detectată</span>';
-      checkKYCComplete();
-      if (typeof setKYCUploading === 'function') setKYCUploading(false);
-    }, 1500);
+    document.getElementById('kyc-ci-status').innerHTML='<span style="color:#5A6B7D;font-weight:600">'+input.files[0].name+' — selectat. Verificarea identității se face manual de echipa noastră, după trimiterea cererii.</span>';
+    checkKYCComplete();
   }
 }
 
@@ -2637,7 +2641,7 @@ function finalizeKYC() {
   const profil = MIFID_SCORE <= 2 ? 'Conservator' : MIFID_SCORE <= 5 ? 'Moderat' : 'Agresiv';
   document.getElementById('kyc-overlay')?.remove();
   document.body.style.overflow = '';
-  showToastInv(`KYC Finalizat · MIFID Profil: ${profil} · Poți continua subscrierea`);
+  showToastInv(`Chestionar MIFID complet · Profil: ${profil} · Poți continua subscrierea`);
   goStep(2);
 }
 
@@ -2647,16 +2651,48 @@ function finalizeKYC() {
 
 let INV_PORTFOLIO = null;
 
-function finalizeazaSubscriere() {
+// FIX (27 august 2026, categoria D din inventarul "Cod/Schemă Orfană") —
+// funcția scria subscrierea DOAR în sessionStorage, genera un ID local fals
+// ("INV-" + Date.now()) și afișa direct un "Dashboard Investitor" cu badge
+// "eIDAS Semnat" — un investitor real ar fi crezut că a semnat legal o
+// subscriere, deși nimic nu ajungea vreodată în baza de date. Endpoint-ul
+// real (api/public/investitori-subscrie.js) exista deja, dar front-end-ul
+// nu fusese niciodată legat la el. Reparat acum: cerere reală, ID-ul vine
+// din rândul chiar creat în investitori_portofoliu, badge-ul fals eliminat.
+async function finalizeazaSubscriere() {
   if (!INV_ACCOUNT || !INV_ACCOUNT.iban) {
     alert('Datele de cont (inclusiv IBAN) nu sunt completate. Te rugăm să revii la Pasul 1.');
     goStep(1);
     return;
   }
   const alo = calcAlocare(INV_STATE.suma_eur, INV_STATE.instrument);
-  const orderId = 'INV-' + Date.now();
+
+  const btn = document.querySelector('[onclick="finalizeazaSubscriere()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Se înregistrează...'; }
+
+  let raspuns;
+  try {
+    const res = await fetch('/api/public/investitori-subscrie', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: INV_ACCOUNT.email,
+        suma_eur: INV_STATE.suma_eur,
+        actiuni: alo.actiuni,
+        instrument: INV_STATE.instrument,
+        consimtamant_public: false,
+      }),
+    });
+    raspuns = await res.json();
+    if (!res.ok) throw new Error(raspuns.error || 'Eroare la înregistrarea subscrierii');
+  } catch (e) {
+    alert('Nu am putut înregistra subscrierea: ' + e.message + '\nTe rugăm să încerci din nou sau să ne scrii la investor@homebestpal.com.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Trimite cererea de subscriere'; }
+    return;
+  }
+
   INV_PORTFOLIO = {
-    id: orderId,
+    id: raspuns.portofoliu.id,
     data: new Date().toLocaleDateString('ro-RO'),
     suma_eur: INV_STATE.suma_eur,
     instrument: INV_STATE.instrument,
@@ -2664,7 +2700,7 @@ function finalizeazaSubscriere() {
     pct: alo.pct,
     pret_achizitie: EVAL_PARAMS.pret_actiune_eur,
     val_initiala_eur: INV_STATE.suma_eur,
-    runda: 'Pre-Seed 2026',
+    runda: 'Runda I · 2026',
     cont: INV_ACCOUNT,
   };
   try { sessionStorage.setItem('myd_investor', JSON.stringify(INV_PORTFOLIO)); } catch(e) {}
@@ -2739,7 +2775,7 @@ function renderDashboardInvestitor() {
       <div style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;margin-bottom:18px;overflow:hidden">
         <div style="padding:14px 18px;border-bottom:1px solid #EEF2F7;background:#F8FAFC;display:flex;align-items:center;justify-content:space-between">
           <strong style="color:#1A2332">Portofoliu acțiuni</strong>
-          <span style="font-size:10px;background:#D4EDDA;color:#1A7A3A;border-radius:99px;padding:3px 10px;font-weight:700;border:1px solid rgba(26,122,58,.2)">eIDAS Semnat · Shareholders Agreement</span>
+          <span style="font-size:10px;background:#FFF4E0;color:#8A5A00;border-radius:99px;padding:3px 10px;font-weight:700;border:1px solid rgba(255,140,0,.2)">Cerere înregistrată — în procesare</span>
         </div>
         <table style="width:100%;border-collapse:collapse">
           <thead><tr style="background:#F8FAFC"><th style="padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;text-align:left">Instrument</th><th style="padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;text-align:right">Acțiuni</th><th style="padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;text-align:right">% Companie</th><th style="padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;text-align:right">Val. inițială</th><th style="padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;text-align:right">Val. curentă</th><th style="padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;text-align:right">ROI</th></tr></thead>
@@ -3200,7 +3236,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <span style="font-size:22px"><i data-lucide="bot" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>
       <div>
         <div style="color:#fff;font-weight:800;font-size:13.5px">Darrin AI</div>
-        <div style="color:rgba(255,255,255,.6);font-size:10.5px;display:flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:50%;background:#22D3A6;display:inline-block"></span>Online · răspuns instant</div>
+        <div style="color:rgba(255,255,255,.6);font-size:10.5px;display:flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:50%;background:#8C9BAD;display:inline-block"></span>Asistent rapid · răspunsuri predefinite</div>
       </div>
     </div>
     <button onclick="toggleDaiChat()" style="background:rgba(255,255,255,.15);border:none;width:28px;height:28px;border-radius:8px;color:#fff;cursor:pointer;font-size:16px">×</button>
