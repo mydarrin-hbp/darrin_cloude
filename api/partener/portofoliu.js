@@ -15,6 +15,7 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { verificaSiNotificaProfilComplet } = require('../../lib/verifica-profil-complet-partener');
 
 const ROLURI_PARTENER = [
   'partener_curier', 'partener_servicii', 'partener_materiale',
@@ -91,6 +92,10 @@ async function actionToggle(req, res, user) {
       .insert({ partener_id: user.id, catalog_serviciu_id, activ });
     if (error) { console.error('[portofoliu] insert', error); return res.status(500).json({ error: 'Nu am putut salva.' }); }
   }
+
+  // Doar la activare (nu la dezactivare) — vezi lib/verifica-profil-complet-partener.js.
+  // Așteptat (nu fire-and-forget), din același motiv ca în conturi-bancare.js.
+  if (activ) await verificaSiNotificaProfilComplet(user.id);
 
   return res.status(200).json({ ok: true });
 }

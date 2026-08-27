@@ -24,6 +24,7 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { validateIBAN } = require('../../lib/iban');
+const { verificaSiNotificaProfilComplet } = require('../../lib/verifica-profil-complet-partener');
 
 async function handler(req, res, user) {
   if (req.method === 'GET') {
@@ -78,6 +79,11 @@ async function handler(req, res, user) {
       partner_id: user.id, nume_titular, iban_criptat: cripted, swift: swift || null, banca, moneda,
     }).select('id').single();
     if (insErr) throw insErr;
+    // Așteptat (nu fire-and-forget): serverless functions pot fi înghețate
+    // imediat după ce răspunsul e trimis — un apel neașteptat ar risca să nu
+    // apuce să trimită emailul de finalizare. Funcția e best-effort intern
+    // (nu aruncă niciodată), deci nu întârzie răspunsul cu vreo eroare reală.
+    await verificaSiNotificaProfilComplet(user.id);
     return res.status(200).json({ ok: true, cont });
   } catch (err) {
     console.error('[conturi-bancare]', err);
