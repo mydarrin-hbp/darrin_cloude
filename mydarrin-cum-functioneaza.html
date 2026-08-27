@@ -2944,8 +2944,16 @@ function submitNewsletter() {
 lucide.createIcons();
 
 // Reveal
-const obs=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('visible');}),{threshold:.1});
-document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+// FIX (27 august 2026) — a doua instanță a acestui observer, redenumită
+// aici la obs2: două declarații `const obs` la nivel de top, în blocuri
+// <script> separate ale aceleiași pagini, aruncă SyntaxError real într-un
+// browser (identificatorul e deja declarat în scriptul global) — oprea
+// execuția întregului bloc care le conține (bara de progres scroll +
+// umbra header-ului, de mai jos). Nu e duplicat inutil de eliminat: acest
+// observator re-scanează elementele `.reveal` prezente la acest punct din
+// pagină, distinct de prima instanță de mai sus în fișier.
+const obs2=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('visible');}),{threshold:.1});
+document.querySelectorAll('.reveal').forEach(el=>obs2.observe(el));
 
 // Scroll progress + header shadow
 window.addEventListener('scroll',()=>{
@@ -3089,8 +3097,10 @@ function animateCounter(el){
     if(t<1)requestAnimationFrame(tick);
   })(performance.now());
 }
-const cobs=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting&&!x.target.dataset.done){x.target.dataset.done='1';animateCounter(x.target);}}),{threshold:.5});
-document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
+// FIX (27 august 2026) — aceeași coliziune ca la obs/obs2 de mai sus,
+// aceeași cauză (a doua instanță, redenumită aici la cobs2).
+const cobs2=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting&&!x.target.dataset.done){x.target.dataset.done='1';animateCounter(x.target);}}),{threshold:.5});
+document.querySelectorAll('.counter').forEach(el=>cobs2.observe(el));
 </script>
 <script src="share-widget.js" defer></script>
 </body>
