@@ -307,6 +307,10 @@ input:valid:not(:placeholder-shown):not([type="checkbox"]) {
 <meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Dashboard Partener · My Darrin</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#003366">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="My Darrin">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -483,6 +487,13 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
           const btn = document.getElementById(tabReal === 'curier' ? 'tb-cur' : 'tb-asig');
           if (btn) switchType(tabReal, btn);
         }
+        // Etapa LANSARE, Faza H (27 august 2026): "Partenerul aprobat va
+        // primi permisiunea de a descărca aplicația mobilă" — bannerul de
+        // instalare PWA apare DOAR după status_verificare='approved', nu
+        // pentru orice cont logat.
+        if (data?.status === 'approved' && typeof initPwaInstallPrompt === 'function') {
+          initPwaInstallPrompt();
+        }
       } catch (e) {
         console.warn('[dashboard-partener] nu am putut determina tipul real de partener, rămâne pe implicit:', e);
       }
@@ -491,6 +502,59 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
       window.location.href = 'https://mydarrin.homebestpal.com';
     }
   })();
+</script>
+
+<script>
+// Etapa LANSARE, Faza H (27 august 2026) — PWA instalabilă, prim pas de
+// "aplicație mobilă" (nativă rămâne proiect separat, decizie confirmată de
+// fondator). Service worker înregistrat necondiționat (nu afișează nimic
+// singur — doar activează instalabilitatea în Chrome/Android); bannerul
+// vizibil e apelat DOAR pentru parteneri aprobați (vezi auth-gate de mai sus).
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
+let _pwaDeferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  _pwaDeferredPrompt = e;
+});
+
+function initPwaInstallPrompt() {
+  if (sessionStorage.getItem('pwa-banner-inchis')) return;
+  if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) return; // deja instalată
+
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const banner = document.createElement('div');
+  banner.id = 'pwa-install-banner';
+  banner.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;z-index:9998;background:#003366;color:#fff;border-radius:16px;padding:16px 18px;box-shadow:0 12px 34px rgba(0,0,0,.3);display:flex;align-items:center;gap:12px;max-width:420px;margin:0 auto';
+  banner.innerHTML = `
+    <div style="flex:1">
+      <div style="font-weight:800;font-size:13.5px;margin-bottom:3px">Instalează My Darrin pe telefon</div>
+      <div style="font-size:11.5px;color:rgba(255,255,255,.75)" id="pwa-banner-txt">${isIOS
+        ? 'Apasă pe Distribuie (⬆) din Safari, apoi "Adaugă pe ecranul principal".'
+        : 'Acces rapid la comenzi, direct de pe ecranul principal.'}</div>
+    </div>
+    ${isIOS ? '' : '<button id="pwa-install-btn" style="background:#FF8C00;color:#1A1A1A;border:none;border-radius:10px;padding:9px 14px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap">Instalează</button>'}
+    <button id="pwa-close-btn" style="background:transparent;border:none;color:rgba(255,255,255,.5);font-size:18px;cursor:pointer;padding:4px" aria-label="Închide">×</button>
+  `;
+  document.body.appendChild(banner);
+
+  document.getElementById('pwa-close-btn').onclick = () => {
+    banner.remove();
+    sessionStorage.setItem('pwa-banner-inchis', '1');
+  };
+  const installBtn = document.getElementById('pwa-install-btn');
+  if (installBtn) {
+    installBtn.onclick = async () => {
+      if (!_pwaDeferredPrompt) return;
+      _pwaDeferredPrompt.prompt();
+      await _pwaDeferredPrompt.userChoice;
+      _pwaDeferredPrompt = null;
+      banner.remove();
+    };
+  }
+}
 </script>
 <div class="dp-layout" id="dp-root">
 
