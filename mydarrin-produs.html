@@ -3379,7 +3379,19 @@ let addonActiveTab = 'materiale';
 
 async function loadAddonCatalog() {
   if (!SUPA_PROD_ANON) return;
-  const qs = 'status_public=eq.true&select=id,titlu,unitate_masura,catalog_niveluri(nivel,catalog_preturi(pret))&order=titlu';
+  // Etapa CAT-2a (28 august 2026, cerere fondator): înainte, această listă
+  // arăta TOT catalogul de materiale/închirieri (ex. piese auto pe o pagină
+  // HVAC) — dump nefiltrat, fără nicio legătură cu serviciul curent.
+  // Filtrare reală, verificată live: catalog_servicii are deja un cod NACE
+  // real per rând (ex. "F 43.22" pentru materiale sanitare/termice) —
+  // filtrăm exact pe codul serviciului curent (S.nace). Verificat: filtrare
+  // exactă reduce semnificativ rezultatele (59/122 pentru F 43.22), spre
+  // deosebire de un prefix larg ("F 43", 120/122 — echivalent cu "tot").
+  // Onestitate: dacă serviciul curent n-are niciun material cu același cod
+  // NACE (sau n-are deloc cod NACE — produse de fallback), lista rămâne
+  // goală cu un mesaj clar, NU cade înapoi pe tot catalogul nefiltrat.
+  const naceFilter = S.nace ? `&nace=eq.${encodeURIComponent(S.nace)}` : '&nace=eq.__fara_potrivire__';
+  const qs = `status_public=eq.true${naceFilter}&select=id,titlu,unitate_masura,catalog_niveluri(nivel,catalog_preturi(pret))&order=titlu`;
   try {
     const [mat, inch] = await Promise.all([
       fetch(`${SUPA_PROD_URL}/rest/v1/catalog_servicii?categorie=eq.materiale&${qs}`, { headers: { apikey: SUPA_PROD_ANON, Authorization: `Bearer ${SUPA_PROD_ANON}` } }).then(r => r.ok ? r.json() : []),
@@ -3422,7 +3434,7 @@ function renderAddonList() {
   const filtrate = query ? toate.filter((i) => i.titlu.toLowerCase().includes(query)) : toate;
 
   if (!toate.length) {
-    el.innerHTML = '<div style="padding:16px;text-align:center;color:#8C9BAD;font-size:12.5px">Catalogul se încarcă sau nu are încă articole publicate în această categorie.</div>';
+    el.innerHTML = '<div style="padding:16px;text-align:center;color:#8C9BAD;font-size:12.5px">Niciun material/echipament specific acestui serviciu, momentan.</div>';
     return;
   }
   if (!filtrate.length) {
@@ -3768,6 +3780,10 @@ async function loadFromURL(){
   if(urlAddr){ setTimeout(()=>{ const ai=document.getElementById('addr-input'); if(ai){ ai.value=urlAddr; onAddr(); } },200); }
   if(urlDesc){ setTimeout(()=>{ const mi=document.getElementById('mentions-input'); if(mi){ mi.value=urlDesc; onMentions(); } },200); }
   S.type = prod.type; S.unit = prod.unit;
+  // Etapa CAT-2a (28 august 2026): sursa reală de filtrare pentru selectorul
+  // de materiale/închirieri de mai jos — nu era niciodată păstrată pe S
+  // (doar afișată static undeva, dacă era, nu propagată în starea paginii).
+  S.nace = prod.nace || '';
 
   // Dacă serviciul are niveluri custom (tiers), actualizăm tabelul de comparație dinamic.
   // Sursa reală de date e TIER_DB (separată de PRODUCTS_DB) — o normalizăm aici,
