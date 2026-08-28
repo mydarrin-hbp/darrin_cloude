@@ -458,6 +458,34 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
       const sbName = document.getElementById('sb-partner-name');
       if (sbAvatar) sbAvatar.textContent = initiala;
       if (sbName) sbName.textContent = nume;
+
+      // FIX (27 august 2026, Etapa LANSARE, Faza E): dashboard-ul pornea
+      // mereu pe tab-ul hardcodat 'servicii', indiferent de tipul real al
+      // contului logat — găsit la auditul de dimineață. api/partener/
+      // status-aplicare.js (deja apelat de tab-ul "Status aplicare",
+      // extins azi cu partner_type) e sursa reală. servicii_tehnice/
+      // curier_utilitara/asigurari au tab propriu aici; furnizor_materiale/
+      // inchirieri_utilaje NU au tab în acest fișier (au dashboard propriu,
+      // mydarrin-dashboard-furnizor.html) — redirect real, nu tab greșit.
+      try {
+        const { data: { session } } = await window.supabaseClient.auth.getSession();
+        const res = await fetch('/api/partener/status-aplicare', {
+          headers: { Authorization: `Bearer ${session?.access_token || ''}` },
+        });
+        const data = await res.json();
+        const TIP_LA_TAB = { servicii_tehnice: 'servicii', curier_utilitara: 'curier', asigurari: 'asigurari' };
+        const tabReal = data?.partner_type ? TIP_LA_TAB[data.partner_type] : null;
+        if (data?.partner_type === 'furnizor_materiale' || data?.partner_type === 'inchirieri_utilaje') {
+          window.location.href = 'mydarrin-dashboard-furnizor.html';
+          return;
+        }
+        if (tabReal && tabReal !== 'servicii') {
+          const btn = document.getElementById(tabReal === 'curier' ? 'tb-cur' : 'tb-asig');
+          if (btn) switchType(tabReal, btn);
+        }
+      } catch (e) {
+        console.warn('[dashboard-partener] nu am putut determina tipul real de partener, rămâne pe implicit:', e);
+      }
     } catch (e) {
       console.error('[dashboard-partener] eroare barieră:', e);
       window.location.href = 'https://mydarrin.homebestpal.com';

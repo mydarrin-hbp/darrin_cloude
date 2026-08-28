@@ -24,7 +24,7 @@ async function handler(req, res, user) {
   try {
     const { data: partener, error: perr } = await supabaseAdmin
       .from('partners')
-      .select('status_verificare')
+      .select('status_verificare, partner_type')
       .eq('id', user.id)
       .maybeSingle();
     if (perr) throw perr;
@@ -57,6 +57,7 @@ async function handler(req, res, user) {
     return res.status(200).json({
       ok: true,
       status,
+      partner_type: partener.partner_type || null,
       documente_respinse,
       darrin_ai_activ,
       darrin_ai_raport: null, // pregătit pentru integrarea ulterioară, neconstruit încă
