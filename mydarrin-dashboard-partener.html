@@ -689,6 +689,7 @@ const TYPES = {
       {id:'overview',icon:'▦',label:'Overview'},
       {id:'curse',icon:'📍',label:'Curse disponibile',badge:'5',badgeCls:'ch-p'},
       {id:'activ',icon:'🚴',label:'Cursă activă'},
+      {id:'zona-acoperire',icon:'🗺',label:'Zona de acoperire'},
       {section:'Financiar'},
       {id:'venituri',icon:'💰',label:'Venituri & Plăți'},
       {section:'Cont'},
@@ -707,6 +708,7 @@ const TYPES = {
       {id:'overview',icon:'▦',label:'Overview'},
       {id:'polite',icon:'📄',label:'Polițe emise',badge:'12',badgeCls:'ch-g'},
       {id:'daune',icon:'⚠',label:'Dosare daune',badge:'2',badgeCls:'ch-r'},
+      {id:'tipuri-polita',icon:'📝',label:'Tipuri de poliță'},
       {section:'Financiar'},
       {id:'venituri',icon:'💰',label:'Comisioane & Plăți'},
       {section:'Cont'},
@@ -781,6 +783,7 @@ function showPanel(id) {
     garantii:'Garanții de execuție', documente:'Documentele mele', profil:'Profil & KYC',
     curse:'Curse disponibile', activ:'Cursă activă',
     polite:'Polițe emise', daune:'Dosare daune',
+    'zona-acoperire':'Zona de acoperire', 'tipuri-polita':'Tipuri de poliță',
   };
   document.getElementById('dp-page-title').textContent = panelTitles[id] || id;
   renderNav(currentType);
@@ -807,6 +810,8 @@ function showPanel(id) {
   else if (id === 'activ')      content.innerHTML = renderCursaActiva();
   else if (id === 'polite')     content.innerHTML = renderPolite();
   else if (id === 'daune')      content.innerHTML = renderDaune();
+  else if (id === 'zona-acoperire') { content.innerHTML = renderZonaCurier(); loadZonaCurierReal(); }
+  else if (id === 'tipuri-polita')  { content.innerHTML = renderTipuriPolita(); loadTipuriPolitaReal(); }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2291,6 +2296,181 @@ async function stergeContBancar(id){
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
     loadContBancarReal();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+// ── Zona de acoperire — curier (Etapa CAT-3b, 28 august 2026) ──
+// Niciun mecanism nu exista pentru asta inainte de azi — curierul nu avea
+// cum sa-si declare real zona/raza de livrare (regiune_cod de pe partners e
+// un singur cod, nu o lista de zone reale). Necesar pentru testarea reala a
+// contului inainte de campania de atragere parteneri.
+function renderZonaCurier() {
+  return `
+  <div style="margin-bottom:18px">
+    <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Zona de acoperire</h2>
+    <p style="font-size:12.5px;color:#5A6B7D;margin-top:4px">Zonele și raza de livrare pe care le poți acoperi — folosite de motorul de alocare a curselor.</p>
+  </div>
+  <div class="dp-card" style="margin-bottom:16px">
+    <div id="zc-real-lista" style="color:#5A6B7D">Se încarcă...</div>
+  </div>
+  <div class="dp-card">
+    <div style="font-size:13px;font-weight:700;color:#1A2332;margin-bottom:10px">Adaugă zonă</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      <div><label style="font-size:10.5px;color:#8C9BAD">Țară</label><select id="zc-tara" style="width:100%;padding:8px;border:1px solid #D5DFE8;border-radius:8px;font-size:13px"><option value="RO">România</option><option value="MD">Moldova</option></select></div>
+      <div><label style="font-size:10.5px;color:#8C9BAD">Regiune/Județ</label><input id="zc-regiune" type="text" placeholder="Ex: Iași" style="width:100%;padding:8px;border:1px solid #D5DFE8;border-radius:8px;font-size:13px"/></div>
+      <div><label style="font-size:10.5px;color:#8C9BAD">Localitate (opțional)</label><input id="zc-localitate" type="text" style="width:100%;padding:8px;border:1px solid #D5DFE8;border-radius:8px;font-size:13px"/></div>
+      <div style="grid-column:span 3"><label style="font-size:10.5px;color:#8C9BAD">Rază de livrare (km, opțional)</label><input id="zc-raza" type="number" min="1" style="width:100%;padding:8px;border:1px solid #D5DFE8;border-radius:8px;font-size:13px"/></div>
+    </div>
+    <button class="btn-primary" style="padding:9px 16px;font-size:12.5px;margin-top:10px" onclick="adaugaZonaCurier()">+ Adaugă zonă</button>
+    <div id="zc-msg" style="font-size:12px;margin-top:8px"></div>
+  </div>`;
+}
+
+async function loadZonaCurierReal(){
+  const el = document.getElementById('zc-real-lista');
+  if (!el) return;
+  el.textContent = 'Se încarcă...';
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/zona-curier', { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!data.zone.length) { el.innerHTML = '<div style="color:#5A6B7D">Nicio zonă de acoperire adăugată încă.</div>'; return; }
+    el.innerHTML = data.zone.map((z) => `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid #EEF2F7">
+        <span style="flex:1"><strong style="color:#1A2332;font-size:13px">${z.tara_cod}${z.regiune_cod ? ' · ' + z.regiune_cod : ''}${z.localitate ? ' · ' + z.localitate : ''}</strong>${z.raza_livrare_km ? `<br><span style="font-size:11px;color:#5A6B7D">Rază: ${z.raza_livrare_km} km</span>` : ''}</span>
+        <button class="btn-ghost" style="padding:5px 10px;font-size:11px;color:#C0392B" onclick="stergeZonaCurier('${z.id}')">Șterge</button>
+      </div>
+    `).join('');
+  } catch (e) {
+    el.innerHTML = `<div style="color:#C0392B">Eroare: ${e.message}</div>`;
+  }
+}
+
+async function adaugaZonaCurier(){
+  const msgEl = document.getElementById('zc-msg');
+  const tara_cod = document.getElementById('zc-tara')?.value;
+  const regiune_cod = document.getElementById('zc-regiune')?.value.trim();
+  const localitate = document.getElementById('zc-localitate')?.value.trim();
+  const razaVal = document.getElementById('zc-raza')?.value;
+  const raza_livrare_km = razaVal ? Number(razaVal) : null;
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/zona-curier', {
+      method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tara_cod, regiune_cod: regiune_cod || null, localitate: localitate || null, raza_livrare_km }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    ['zc-regiune','zc-localitate','zc-raza'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+    if (msgEl) { msgEl.textContent = 'Adăugată.'; msgEl.style.color = '#1A7A3A'; }
+    loadZonaCurierReal();
+  } catch (e) {
+    if (msgEl) { msgEl.textContent = 'Eroare: ' + e.message; msgEl.style.color = '#C0392B'; }
+  }
+}
+
+async function stergeZonaCurier(id){
+  if (!confirm('Ștergi această zonă de acoperire?')) return;
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/zona-curier', {
+      method: 'DELETE', headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    loadZonaCurierReal();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+// ── Tipuri de poliță — asigurări (Etapa CAT-3b, 28 august 2026) ──
+// Diferit de "Polițe emise" (machetă, polițe deja emise pe comenzi reale) —
+// aici asigurătorul își declară CE tipuri de poliță oferă, cu ce limită de
+// acoperire și comision. Niciun mecanism nu exista pentru asta inainte de
+// azi. Necesar pentru testarea reala a contului inainte de campanie.
+function renderTipuriPolita() {
+  return `
+  <div style="margin-bottom:18px">
+    <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Tipuri de poliță</h2>
+    <p style="font-size:12.5px;color:#5A6B7D;margin-top:4px">Tipurile de poliță pe care le oferi, cu limita de acoperire și comisionul negociat — distinct de „Polițe emise" (istoricul polițelor deja active pe comenzi).</p>
+  </div>
+  <div class="dp-card" style="margin-bottom:16px">
+    <div id="tp-real-lista" style="color:#5A6B7D">Se încarcă...</div>
+  </div>
+  <div class="dp-card">
+    <div style="font-size:13px;font-weight:700;color:#1A2332;margin-bottom:10px">Adaugă tip de poliță</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      <div style="grid-column:span 3"><label style="font-size:10.5px;color:#8C9BAD">Tip poliță</label><input id="tp-tip" type="text" placeholder="Ex: RC Profesională, All Risk, Work Guarantee" style="width:100%;padding:8px;border:1px solid #D5DFE8;border-radius:8px;font-size:13px"/></div>
+      <div><label style="font-size:10.5px;color:#8C9BAD">Limită acoperire (EUR, opțional)</label><input id="tp-limita" type="number" min="1" style="width:100%;padding:8px;border:1px solid #D5DFE8;border-radius:8px;font-size:13px"/></div>
+      <div><label style="font-size:10.5px;color:#8C9BAD">Comision (%, opțional)</label><input id="tp-comision" type="number" min="0" max="100" step="0.1" style="width:100%;padding:8px;border:1px solid #D5DFE8;border-radius:8px;font-size:13px"/></div>
+    </div>
+    <button class="btn-primary" style="padding:9px 16px;font-size:12.5px;margin-top:10px" onclick="adaugaTipPolita()">+ Adaugă tip</button>
+    <div id="tp-msg" style="font-size:12px;margin-top:8px"></div>
+  </div>`;
+}
+
+async function loadTipuriPolitaReal(){
+  const el = document.getElementById('tp-real-lista');
+  if (!el) return;
+  el.textContent = 'Se încarcă...';
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/tipuri-polita', { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!data.tipuri.length) { el.innerHTML = '<div style="color:#5A6B7D">Niciun tip de poliță adăugat încă.</div>'; return; }
+    el.innerHTML = data.tipuri.map((t) => `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid #EEF2F7">
+        <span style="flex:1"><strong style="color:#1A2332;font-size:13px">${t.tip_polita}</strong><br><span style="font-size:11px;color:#5A6B7D">${t.limita_acoperire_eur ? 'Limită: €' + t.limita_acoperire_eur : 'Fără limită declarată'}${t.comision_pct != null ? ' · Comision: ' + t.comision_pct + '%' : ''}</span></span>
+        <button class="btn-ghost" style="padding:5px 10px;font-size:11px;color:#C0392B" onclick="stergeTipPolita('${t.id}')">Șterge</button>
+      </div>
+    `).join('');
+  } catch (e) {
+    el.innerHTML = `<div style="color:#C0392B">Eroare: ${e.message}</div>`;
+  }
+}
+
+async function adaugaTipPolita(){
+  const msgEl = document.getElementById('tp-msg');
+  const tip_polita = document.getElementById('tp-tip')?.value.trim();
+  const limitaVal = document.getElementById('tp-limita')?.value;
+  const comisionVal = document.getElementById('tp-comision')?.value;
+  if (!tip_polita) {
+    if (msgEl) { msgEl.textContent = 'Tipul de poliță este obligatoriu.'; msgEl.style.color = '#C0392B'; }
+    return;
+  }
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/tipuri-polita', {
+      method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tip_polita,
+        limita_acoperire_eur: limitaVal ? Number(limitaVal) : null,
+        comision_pct: comisionVal ? Number(comisionVal) : null,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    ['tp-tip','tp-limita','tp-comision'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+    if (msgEl) { msgEl.textContent = 'Adăugat.'; msgEl.style.color = '#1A7A3A'; }
+    loadTipuriPolitaReal();
+  } catch (e) {
+    if (msgEl) { msgEl.textContent = 'Eroare: ' + e.message; msgEl.style.color = '#C0392B'; }
+  }
+}
+
+async function stergeTipPolita(id){
+  if (!confirm('Ștergi acest tip de poliță?')) return;
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/tipuri-polita', {
+      method: 'DELETE', headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    loadTipuriPolitaReal();
   } catch (e) { alert('Eroare: ' + e.message); }
 }
 
