@@ -17,7 +17,7 @@ module.exports = async function handler(req, res) {
   const allowed = await checkRateLimit(req, { key: 'lead-zona', limit: 5, windowSeconds: 600 });
   if (!allowed) return res.status(429).json({ error: 'Prea multe cereri. Încearcă din nou mai târziu.' });
 
-  const { email, nume, tara_cod, tara_nume } = req.body || {};
+  const { email, nume, tara_cod, tara_nume, mesaj } = req.body || {};
   if (!email || typeof email !== 'string' || !email.includes('@')) {
     return res.status(400).json({ error: 'Email valid obligatoriu.' });
   }
@@ -28,6 +28,9 @@ module.exports = async function handler(req, res) {
       nume: nume ? String(nume).trim().slice(0, 200) : null,
       tara_cod: tara_cod ? String(tara_cod).trim().slice(0, 8).toUpperCase() : null,
       tara_nume: tara_nume ? String(tara_nume).trim().slice(0, 100) : null,
+      // Etapa LANSARE, Faza C (27 august 2026): "menționează nevoia sau
+      // problema sa" — câmp liber opțional, coloană nouă tari_lead_asteptare.mesaj.
+      mesaj: mesaj ? String(mesaj).trim().slice(0, 1000) : null,
     });
     if (error) throw error;
     return res.status(200).json({ ok: true });

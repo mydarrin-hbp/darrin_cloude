@@ -6868,13 +6868,68 @@ function closeCart(){
   document.body.style.overflow='';
 }
 
+// Etapa LANSARE, Faza C (27 august 2026): ridicat de la un toast simplu la
+// un modal real cu formular de abonare — cerere explicită a fondatorului:
+// "invitat să se aboneze ca client și să menționeze nevoia sau problema sa".
+// Reutilizează api/public/lead-zona.js (deja real, deja folosit în alte 2
+// puncte din UI), extins azi cu câmpul opțional mesaj.
 function showZoneError(){
-  // Platforma nu este activă în zona detectată
-  const msg = document.createElement('div');
-  msg.style.cssText='position:fixed;bottom:24px;right:24px;background:#003366;color:#fff;padding:14px 20px;border-radius:14px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 28px rgba(0,51,102,.3);max-width:320px;line-height:1.6';
-  msg.innerHTML = '<strong>My Darrin nu este activ în zona ta</strong><br><span style="font-weight:400;opacity:.8">Platforma este disponibilă doar în zonele unde avem furnizori verificați. Revino în curând!</span>';
-  document.body.appendChild(msg);
-  setTimeout(()=>msg.remove(), 4000);
+  if(document.getElementById('zone-modal-overlay')) return;
+  const geo = window.MYD_GEO && window.MYD_GEO.data;
+  const cc = geo?.cc || '';
+  const taraNume = geo?.name || cc || '';
+
+  const overlay = document.createElement('div');
+  overlay.id = 'zone-modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(26,38,64,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:20px;max-width:420px;width:100%;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#FF8C00;margin-bottom:8px">Zonă neactivă momentan</div>
+      <h3 style="font-family:'Syne',sans-serif;font-size:19px;font-weight:800;color:#003366;margin-bottom:10px">My Darrin nu este activ încă în zona ta</h3>
+      <p style="font-size:13px;color:#6B7A8D;line-height:1.6;margin-bottom:18px">Abonează-te ca și client — te anunțăm imediat ce lansăm în zona ta, iar dacă ne spui ce nevoie ai, pregătim din timp partenerii potriviți.</p>
+      <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:6px">Email</label>
+      <input type="email" id="zm-email" placeholder="tu@email.com" style="width:100%;border:1.5px solid #D5DFE8;border-radius:10px;padding:10px 13px;font-size:13px;font-family:inherit;box-sizing:border-box;outline:none;margin-bottom:12px"/>
+      <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:6px">Nevoia ta (opțional)</label>
+      <textarea id="zm-mesaj" rows="3" maxlength="1000" placeholder="Ex: am nevoie de un instalator pentru o reparație de urgență" style="width:100%;border:1.5px solid #D5DFE8;border-radius:10px;padding:10px 13px;font-size:13px;font-family:inherit;box-sizing:border-box;outline:none;resize:vertical;margin-bottom:16px"></textarea>
+      <button id="zm-submit" onclick="submitZoneLead()" style="width:100%;background:#003366;color:#fff;border:none;border-radius:12px;padding:12px;font-size:13.5px;font-weight:700;cursor:pointer">Abonează-mă</button>
+      <p id="zm-status" style="text-align:center;font-size:11.5px;color:#8C9BAD;margin-top:10px"></p>
+      <button onclick="document.getElementById('zone-modal-overlay').remove()" style="width:100%;background:transparent;border:none;color:#8C9BAD;font-size:12px;margin-top:6px;cursor:pointer;padding:6px">Închide</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.dataset.cc = cc;
+  overlay.dataset.taraNume = taraNume;
+}
+
+async function submitZoneLead(){
+  const overlay = document.getElementById('zone-modal-overlay');
+  const email = document.getElementById('zm-email').value.trim();
+  const mesaj = document.getElementById('zm-mesaj').value.trim();
+  const status = document.getElementById('zm-status');
+  const btn = document.getElementById('zm-submit');
+  if(!email || !email.includes('@')){
+    status.textContent = 'Introdu un email valid.';
+    status.style.color = '#DC2626';
+    return;
+  }
+  btn.disabled = true; btn.textContent = 'Se trimite...';
+  try{
+    const res = await fetch('/api/public/lead-zona', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email, mesaj: mesaj || undefined, tara_cod: overlay.dataset.cc || undefined, tara_nume: overlay.dataset.taraNume || undefined }),
+    });
+    const data = await res.json();
+    if(!res.ok || !data.ok){
+      status.textContent = data.error || 'Nu am putut înregistra cererea.';
+      status.style.color = '#DC2626';
+      btn.disabled = false; btn.textContent = 'Abonează-mă';
+      return;
+    }
+    overlay.querySelector('div').innerHTML = '<div style="text-align:center;padding:12px 0"><div style="font-size:32px;margin-bottom:10px">✓</div><h3 style="font-family:\'Syne\',sans-serif;font-size:17px;font-weight:800;color:#003366;margin-bottom:8px">Te-am înregistrat!</h3><p style="font-size:13px;color:#6B7A8D;margin-bottom:16px">Te anunțăm pe email imediat ce My Darrin devine activ în zona ta.</p><button onclick="document.getElementById(\'zone-modal-overlay\').remove()" style="background:#003366;color:#fff;border:none;border-radius:12px;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer">Închide</button></div>';
+  }catch(e){
+    status.textContent = 'Eroare de rețea — încearcă din nou.';
+    status.style.color = '#DC2626';
+    btn.disabled = false; btn.textContent = 'Abonează-mă';
+  }
 }
 
 // ── CART ──

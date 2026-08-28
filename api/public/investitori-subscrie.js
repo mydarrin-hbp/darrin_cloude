@@ -40,6 +40,11 @@ module.exports = async function handler(req, res) {
       oras: oras ? String(oras).trim().slice(0, 100) : null,
       exit_estimat_luni: Number.isFinite(exit_estimat_luni) ? exit_estimat_luni : null,
       consimtamant_public: !!consimtamant_public,
+      // Etapa LANSARE, Faza F (27 august 2026): "Fluxul de subscrieri este
+      // preluat automat, dar este supus aprobării finale din partea
+      // superadminului" — orice subscriere publică pornește neaprobată;
+      // vezi api/admin/investitori-aprobare.js pentru fluxul de aprobare.
+      status: 'in_asteptare',
     }).select().single();
     if (error) throw error;
 
