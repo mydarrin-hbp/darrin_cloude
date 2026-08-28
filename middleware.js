@@ -255,6 +255,7 @@ const PAGINI_PUBLICE = new Set([
   '/mydarrin-devino-partener', '/mydarrin-devino-partener.html',
   '/mydarrin-investitori', '/mydarrin-investitori.html',
   '/mydarrin-pitch-deck', '/mydarrin-pitch-deck.html',
+  '/mydarrin-creeaza-deviz', '/mydarrin-creeaza-deviz.html',
   '/mydarrin-contact', '/mydarrin-contact.html',
   '/despre-noi', '/despre-noi.html',
   '/mydarrin-cum-functioneaza', '/mydarrin-cum-functioneaza.html',
