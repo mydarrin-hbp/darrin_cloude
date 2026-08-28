@@ -157,11 +157,15 @@ async function obtineUtilizatorAutentificat(request, supabaseAdmin) {
   return null;
 }
 
-async function verificaRoluri(supabaseAdmin, userId) {
+async function obtineRoluri(supabaseAdmin, userId) {
   // Sursa autoritativă e profiles.roles, nu doar metadatele din JWT — vezi
   // aceeași convenție în lib/auth-middleware.js (corectat audit 2026-07-11).
   const { data: profile } = await supabaseAdmin.from('profiles').select('roles').eq('id', userId).single();
-  const roles = Array.isArray(profile?.roles) ? profile.roles : [];
+  return Array.isArray(profile?.roles) ? profile.roles : [];
+}
+
+async function verificaRoluri(supabaseAdmin, userId) {
+  const roles = await obtineRoluri(supabaseAdmin, userId);
   return roles.includes('admin') || roles.includes('superadmin');
 }
 
@@ -177,16 +181,22 @@ const RUTA_ACCES_COMPLET = '*';
 //  - 'nda_pending' → acces temporar valid, dar acordul de confidențialitate
 //                    NU e încă acceptat → /acord-confidentialitate (nu la
 //                    login din nou, userul e deja autentificat corect).
-// Permis (true) doar dacă: (a) e admin/superadmin (bypass necesar de
-// bootstrap), SAU (b) există un rând ACTIV, neexpirat, cu NDA acceptat, în
-// accese_temporare pentru emailul curent, cu ruta_url = "*" (acces complet)
-// sau exact egală cu pagina cerută (fără extensia .html).
+// Permis (true) doar dacă: (a) e admin/superadmin, SAU (a2) e autentificat
+// cu un cont real de business — verificat prin ABSENȚA unui rând în
+// accese_temporare (vezi FIX 27 august 2026 de mai sus: un cont creat prin
+// api/public/partner-register.js sau account-system.js::signUp() nu are
+// niciodată un rând acolo — acel tabel e populat exclusiv de
+// api/admin/creeaza-acces-temporar.js, pentru testeri fără cont propriu),
+// SAU (b) are un rând ACTIV, neexpirat, cu NDA acceptat, în accese_temporare
+// pentru emailul curent, cu ruta_url = "*" (acces complet) sau exact egală
+// cu pagina cerută (fără extensia .html) — ramâne scopat la ruta acordată,
+// exact ca înainte, pentru conturile de tip tester/demo.
 async function treceBarieraPlatforma(request, supabaseAdmin, pathname) {
   const user = await obtineUtilizatorAutentificat(request, supabaseAdmin);
   if (!user) return false;
 
-  const areRolPermis = await verificaRoluri(supabaseAdmin, user.id);
-  if (areRolPermis) return true;
+  const roluri = await obtineRoluri(supabaseAdmin, user.id);
+  if (roluri.includes('admin') || roluri.includes('superadmin')) return true;
 
   if (!user.email) return false;
   const rutaCeruta = pathname.replace(/\.html$/, '') || '/';
@@ -197,7 +207,13 @@ async function treceBarieraPlatforma(request, supabaseAdmin, pathname) {
     .eq('email', user.email.toLowerCase())
     .eq('activ', true)
     .maybeSingle();
-  if (!acces) return false;
+
+  // Niciun rând în accese_temporare = cont real de business (client/partener/
+  // investitor, creat prin fluxul propriu de înregistrare, nu prin
+  // api/admin/creeaza-acces-temporar.js) — trece liber, indiferent de
+  // roles[] (poate fi gol, ex. client simplu — vezi FIX de mai sus).
+  if (!acces) return true;
+
   if (new Date(acces.expira_la) < new Date()) return false;
   if (!acces.nda_acceptat) return 'nda_pending';
 
@@ -214,6 +230,54 @@ const PAGINI_STRICTE = [
   '/mydarrin-auth-schema', '/mydarrin-auth-schema.html',
   '/mydarrin-sync-architecture', '/mydarrin-sync-architecture.html',
 ];
+
+// FIX (27 august 2026, Etapa LANSARE, Faza A) — cerere explicită a
+// fondatorului: prima ridicare, scopită, a barierei globale de pre-lansare
+// (activă din 23 iulie 2026, vezi comentariul de sus). Provizoriu — vezi
+// notă de memorie „Etapa LANSARE provizorie": varianta finală, cu totul
+// activat, urmează după ce un număr de parteneri au conturi aprobate și au
+// descărcat aplicația mobilă dedicată. Listă construită prin audit direct al
+// întregului arbore de linkuri pornite din index.html (27 august 2026) —
+// exclude deliberat cele 3 dashboard-uri (client/partener/furnizor — rămân
+// gatate de treceBarieraPlatforma(), dar acum reachable de orice cont real
+// autentificat, vezi FIX-ul de mai jos din acea funcție), toate cele 5 din
+// PAGINI_STRICTE, și
+// mydarrin-app-mobile.html (rămâne mockup static, de revizuit la Faza H).
+// mydarrin-v3.html rămâne inclus deliberat — fișierul e azi doar stub-ul de
+// redirect real (retras din uz 27 august), trebuie să rămână reachable ca
+// plasă de siguranță pentru orice link extern/bookmark vechi.
+const PAGINI_PUBLICE = new Set([
+  '/', '/index', '/index.html',
+  '/mydarrin-catalog', '/mydarrin-catalog.html',
+  '/mydarrin-produs', '/mydarrin-produs.html',
+  '/mydarrin-categorie-servicii', '/mydarrin-categorie-servicii.html',
+  '/mydarrin-checkout', '/mydarrin-checkout.html',
+  '/mydarrin-devino-partener', '/mydarrin-devino-partener.html',
+  '/mydarrin-investitori', '/mydarrin-investitori.html',
+  '/mydarrin-pitch-deck', '/mydarrin-pitch-deck.html',
+  '/mydarrin-contact', '/mydarrin-contact.html',
+  '/despre-noi', '/despre-noi.html',
+  '/mydarrin-cum-functioneaza', '/mydarrin-cum-functioneaza.html',
+  '/mydarrin-marketplace', '/mydarrin-marketplace.html',
+  '/mydarrin-termeni', '/mydarrin-termeni.html',
+  '/mydarrin-politica-confidentialitate', '/mydarrin-politica-confidentialitate.html',
+  '/cum-devii-partenerul-nostru', '/cum-devii-partenerul-nostru.html',
+  '/cum-devii-furnizor-materiale', '/cum-devii-furnizor-materiale.html',
+  '/cum-devii-operator-inchirieri', '/cum-devii-operator-inchirieri.html',
+  '/cum-devii-curier-de-cartier', '/cum-devii-curier-de-cartier.html',
+  '/cum-programez-serviciu', '/cum-programez-serviciu.html',
+  '/servicii-urgente', '/servicii-urgente.html',
+  '/ghidul-asiguratorului', '/ghidul-asiguratorului.html',
+  '/reclamatii', '/reclamatii.html',
+  '/intrebari-frecvente-clienti', '/intrebari-frecvente-clienti.html',
+  '/intrebari-frecvente-parteneri', '/intrebari-frecvente-parteneri.html',
+  '/cum-comanzi', '/cum-comanzi.html',
+  '/cum-platesc', '/cum-platesc.html',
+  '/cum-prestam-livram', '/cum-prestam-livram.html',
+  '/garantii-si-asigurari', '/garantii-si-asigurari.html',
+  '/confirmare-livrare', '/confirmare-livrare.html',
+  '/mydarrin-v3', '/mydarrin-v3.html',
+]);
 
 // FIX (27 august 2026) — Etapa LANSARE: cerere explicită a fondatorului de a
 // restricționa backoffice-ul (indiferent de domeniu — vezi și
@@ -250,7 +314,29 @@ export default async function middleware(request) {
     return next();
   }
 
-  // Bariera generală a platformei — orice altă pagină din site.
+  // Pagini publice (Etapa LANSARE, Faza A) — ocolesc complet bariera
+  // generală, indiferent de autentificare. ruteazaPublic() e verificat aici
+  // (nu doar PAGINI_PUBLICE) pentru că scurtăturile ("/home", "/partener" —
+  // vezi PAGINA_STATICA) și rutele de categorie/produs ("/servicii/:slug"
+  // etc.) trebuie rezolvate ÎNAINTE de bariera generală — toate destinațiile
+  // lui ruteazaPublic() sunt, prin construcție, pagini din PAGINI_PUBLICE.
+  const publicRoute = ruteazaPublic(pathname);
+  if (PAGINI_PUBLICE.has(pathname) || publicRoute) {
+    if (publicRoute) {
+      const dest = new URL(publicRoute.destinatie, request.url);
+      if (publicRoute.query) {
+        for (const [k, v] of Object.entries(publicRoute.query)) dest.searchParams.set(k, v);
+      } else {
+        for (const [k, v] of url.searchParams.entries()) dest.searchParams.set(k, v);
+      }
+      console.log(`[middleware-debug] dest=${dest.toString()}`);
+      return rewrite(dest);
+    }
+    return next();
+  }
+
+  // Bariera generală a platformei — orice altă pagină din site (dashboard-uri
+  // client/partener/furnizor, orice rută neenumerată explicit mai sus).
   const permis = await treceBarieraPlatforma(request, supabaseAdmin, pathname);
   if (permis === 'nda_pending') {
     console.log(`[middleware-bariera] NDA neacceptat — path=${pathname}, redirect spre /acord-confidentialitate`);
@@ -259,18 +345,6 @@ export default async function middleware(request) {
   if (!permis) {
     console.log(`[middleware-bariera] acces blocat — path=${pathname}, redirect spre /acces-temporar`);
     return Response.redirect(new URL('/acces-temporar', request.url), 307);
-  }
-
-  const publicRoute = ruteazaPublic(pathname);
-  if (publicRoute) {
-    const dest = new URL(publicRoute.destinatie, request.url);
-    if (publicRoute.query) {
-      for (const [k, v] of Object.entries(publicRoute.query)) dest.searchParams.set(k, v);
-    } else {
-      for (const [k, v] of url.searchParams.entries()) dest.searchParams.set(k, v);
-    }
-    console.log(`[middleware-debug] dest=${dest.toString()}`);
-    return rewrite(dest);
   }
 
   return next();
