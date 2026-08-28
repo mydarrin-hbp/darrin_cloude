@@ -851,8 +851,27 @@ function renderGrid(items, tab){
 
 // ─────────────────────────────────────────────────────────
 // Click pe card → pagina de produs aprobată (produs.html)
+//
+// FIX (Etapa CAT, 28 august 2026): card-urile curatoriate de aici (titlu/
+// descriere/preț reale) se pierdeau complet la navigare — mydarrin-produs.html
+// nu are o intrare PRODUCTS_DB pentru orice slug curatoriat doar aici (ex.
+// toaletare-copaci, vopsit-exterior-fatada), deci cădea pe fallback-ul gol
+// "în lucru", deși datele reale existau chiar pe pagina de unde a pornit
+// click-ul. Reparat cu exact tiparul deja folosit de mydarrin-categorie-
+// materiale.html/-inchirieri.html (myd-fallback-product-<slug> în
+// sessionStorage, citit de buildFallbackProduct() în produs.html) — nu s-a
+// inventat un mecanism nou.
 // ─────────────────────────────────────────────────────────
 function openProductPage(slug, type){
+  const it = CURRENT_ITEMS.find((x) => x.slug === slug);
+  if (it) {
+    try {
+      sessionStorage.setItem('myd-fallback-product-' + slug, JSON.stringify({
+        title: it.title, desc: it.desc, price: it.price,
+        unit: it.unit, img: it.img, rating: it.rating,
+      }));
+    } catch (e) { /* sessionStorage indisponibil — navigarea continuă oricum */ }
+  }
   window.location.href = `mydarrin-produs.html?slug=${slug}&type=${type}`;
 }
 
