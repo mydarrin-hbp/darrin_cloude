@@ -2635,8 +2635,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // clientul (integritate, nu doar comoditate — vezi FIX din aceeași
         // zi pe calea itemizată). Restul comenzilor (orice alt produs)
         // rămân neatinse, pe corpComun de mai jos.
+        // Faza 2/3 CAT (29 august 2026) — materiale/echipamente opționale
+        // (id_serviciu + cantitate DOAR, niciodată preț) — server-ul
+        // (lib/rezolva-addon-materiale.js) rezolvă prețul real, identic cum
+        // a fost previzualizat live în mydarrin-produs.html.
+        const addonMateriale = [...(MYD_CFG.materiale || []), ...(MYD_CFG.inchirieri || [])].map(m => ({ id: m.id, qty: m.qty }));
         const corpComun = MYD_CFG?.nivel_id
-          ? { adresa, tara_cod: taraComanda, regiune: regiuneComanda, localitate: localitateComanda, nivel_id: MYD_CFG.nivel_id, cantitate: MYD_CFG.cantitate || 1, data_programata: dataProgramata, ora_inceput_programata: oraInceputProgramata, ora_sfarsit_programata: oraSfarsitProgramata, metoda_plata: metodaPlataB2C }
+          ? { adresa, tara_cod: taraComanda, regiune: regiuneComanda, localitate: localitateComanda, nivel_id: MYD_CFG.nivel_id, cantitate: MYD_CFG.cantitate || 1, addon_materiale: addonMateriale, data_programata: dataProgramata, ora_inceput_programata: oraInceputProgramata, ora_sfarsit_programata: oraSfarsitProgramata, metoda_plata: metodaPlataB2C }
           : { adresa, tara_cod: taraComanda, regiune: regiuneComanda, localitate: localitateComanda, cost_baza_servicii, cost_asigurare, cost_materiale, cost_chirie_scule, valoare_totala, data_programata: dataProgramata, ora_inceput_programata: oraInceputProgramata, ora_sfarsit_programata: oraSfarsitProgramata, metoda_plata: metodaPlataB2C };
 
         // Flux B2G (audit Secțiunea 43/44, 31 Iulie 2026) — endpoint SEPARAT,

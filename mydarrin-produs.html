@@ -812,8 +812,12 @@ function salveazaStareaCheckout() {
       // `total`/`basePrice` de mai sus rămân neschimbate, doar pentru afișare.
       bazaRaw: S.bazaRaw,
       materialePrice: S.materialePrice, inchirieriPrice: S.inchirieriPrice,
-      materiale: S.materiale.map(m => ({ titlu: m.titlu, qty: m.qty, pret: _addonPretNivel(m) })),
-      inchirieri: S.inchirieri.map(m => ({ titlu: m.titlu, qty: m.qty, pret: _addonPretNivel(m) })),
+      // Faza 2/3 CAT (29 august 2026) — `id` (catalog_servicii.id) e câmpul
+      // pe care checkout.html îl trimite mai departe ca `addon_materiale` pe
+      // calea nivel_id; `pret` de aici rămâne DOAR pentru afișare locală —
+      // serverul (rezolvaAddonMateriale) nu-l citește niciodată.
+      materiale: S.materiale.map(m => ({ id: m.id, titlu: m.titlu, qty: m.qty, pret: _addonPretNivel(m) })),
+      inchirieri: S.inchirieri.map(m => ({ id: m.id, titlu: m.titlu, qty: m.qty, pret: _addonPretNivel(m) })),
       // Mod pilot (22 august 2026) — nivel_id+cantitate, singurele câmpuri
       // citite de calea nouă din api/comenzi/creeaza.js; null pentru orice
       // alt produs (calea veche, cost_*, neatinsă).
@@ -3391,13 +3395,20 @@ async function loadAddonCatalog() {
   // NACE (sau n-are deloc cod NACE — produse de fallback), lista rămâne
   // goală cu un mesaj clar, NU cade înapoi pe tot catalogul nefiltrat.
   const naceFilter = S.nace ? `&nace=eq.${encodeURIComponent(S.nace)}` : '&nace=eq.__fara_potrivire__';
-  const qs = `status_public=eq.true${naceFilter}&select=id,titlu,unitate_masura,catalog_niveluri(nivel,catalog_preturi(pret))&order=titlu`;
+  const qs = `status_public=eq.true${naceFilter}&select=id,id_serviciu,titlu,unitate_masura,catalog_niveluri(nivel,catalog_preturi(pret))&order=titlu`;
+  // Faza 2/3 CAT (29 august 2026): "Montaj Parchet Laminat" are propriul
+  // parchet (AC3/AC4/AC5) deja inclus în fiecare tier al configuratorului —
+  // bundle-ul generic "Parchet & Pardoseli" (mat-parchet, Vertical A) ar
+  // duplica exact acel cost, confuz pentru client. Exclus doar aici, doar
+  // pentru acest slug — rămâne vizibil normal pe orice alt serviciu.
+  const EXCLUSE_PER_SLUG = { 'montaj-parchet-laminat': ['mat-parchet'] };
+  const excluse = EXCLUSE_PER_SLUG[S.slug] || [];
   try {
     const [mat, inch] = await Promise.all([
       fetch(`${SUPA_PROD_URL}/rest/v1/catalog_servicii?categorie=eq.materiale&${qs}`, { headers: { apikey: SUPA_PROD_ANON, Authorization: `Bearer ${SUPA_PROD_ANON}` } }).then(r => r.ok ? r.json() : []),
       fetch(`${SUPA_PROD_URL}/rest/v1/catalog_servicii?categorie=eq.inchirieri&${qs}`, { headers: { apikey: SUPA_PROD_ANON, Authorization: `Bearer ${SUPA_PROD_ANON}` } }).then(r => r.ok ? r.json() : []),
     ]);
-    const normalizeaza = (rows) => rows.map((r) => {
+    const normalizeaza = (rows) => rows.filter((r) => !excluse.includes(r.id_serviciu)).map((r) => {
       const preturi = {};
       (r.catalog_niveluri || []).forEach((n) => { preturi[n.nivel] = n.catalog_preturi?.[0]?.pret ?? null; });
       return { id: r.id, titlu: r.titlu, unitate: r.unitate_masura || 'buc', preturi };
@@ -3585,6 +3596,12 @@ async function initPilotProdus(slug) {
   S.pilotServiciuId = serviciuId;
   S.pilotNiveluri = preturiReale;
   S.pilotNivelId = preturiReale[0].nivel_id;
+  // Faza 2/3 CAT (29 august 2026) — bug real găsit la un-hide-ul selectorului
+  // de addon-uri: S.tier nu era NICIODATĂ setat în mod pilot (doar de calea
+  // veche, setType/selTier) — _addonPretNivel(item) citește item.preturi[S.tier],
+  // deci ar fi afișat mereu 0 Lei pentru orice addon, silențios. Sincronizat
+  // aici + în selectPilotNivel() de mai jos, cu numele real al nivelului.
+  S.tier = preturiReale[0].nivel;
   // Bug real găsit la testarea „Montaj Parchet Laminat" (29 august 2026):
   // cele 5 servicii pilot anterioare erau toate pe oră — unitatea era
   // hardcodată. Primul serviciu pilot facturat pe altă unitate (mp) ar fi
@@ -3612,15 +3629,12 @@ async function initPilotProdus(slug) {
 
   renderPilotTierUI();
 
-  // Integritate (nu doar comoditate): materialele/închirierile adăugate
-  // manual (G16) folosesc un preț per tier vechi, static (item.preturi[S.tier])
-  // — incompatibil cu calea nivel_id din api/comenzi/creeaza.js, care nu
-  // acceptă azi cost_materiale/cost_chirie_scule trimise de client pe această
-  // cale. Ascunse aici ca să nu apară în UI un cost pe care comanda reală
-  // l-ar ignora silențios — de reluat separat, cu aprobare proprie, când
-  // calea nivel_id va accepta și aceste componente.
+  // Faza 2/3 CAT (29 august 2026, cerere fondator — "te-ai abătut de la
+  // conceptul paginii de configurare"): calea nivel_id acceptă acum
+  // addon_materiale (lib/rezolva-addon-materiale.js) — selectorul rămâne
+  // vizibil pentru toate serviciile pilot, nu doar cel de parchet.
   const addonWrap = document.getElementById('addon-section-wrap');
-  if (addonWrap) addonWrap.style.display = 'none';
+  if (addonWrap) addonWrap.style.display = '';
   // Același motiv: extinderile de asigurare (Standard/Premium) n-au
   // echivalent pe calea nivel_id (calculeazaPret nu primește cost_asigurare
   // acolo) — rămâne vizibilă doar polița de bază, gratuită.
@@ -3660,9 +3674,12 @@ function renderPilotTierUI() {
 
 function selectPilotNivel(nivelId) {
   S.pilotNivelId = nivelId;
+  const nivelObj = S.pilotNiveluri.find((n) => n.nivel_id === nivelId);
+  if (nivelObj) S.tier = nivelObj.nivel;
   document.querySelectorAll('#tier-table thead [data-pilot-nivel]').forEach((th) => {
     th.classList.toggle('selected-col', th.dataset.pilotNivel === nivelId);
   });
+  renderAddonList();
   recalcPilot();
 }
 
@@ -3678,11 +3695,17 @@ async function _recalcPilotNow(qty) {
   if (!nivelId) return;
   const taraCod = S.tara_cod || 'RO';
   const contBtn = document.querySelector('#sec-1 .btn-primary');
+  // Faza 2/3 CAT (29 august 2026) — materialele/echipamentele opționale
+  // adăugate din selector merg în previzualizarea live, identic cum vor fi
+  // recalculate la creare comandă (aceeași sursă de adevăr, vezi
+  // lib/rezolva-addon-materiale.js) — altfel prețul afișat n-ar coincide cu
+  // cel efectiv încasat.
+  const addonMateriale = [...S.materiale, ...S.inchirieri].map(m => ({ id: m.id, qty: m.qty }));
   let data;
   try {
     const res = await fetch('/api/public/calculeaza-pret-nivel', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nivel_id: nivelId, cantitate: qty, tara_cod: taraCod }),
+      body: JSON.stringify({ nivel_id: nivelId, cantitate: qty, tara_cod: taraCod, addon_materiale: addonMateriale }),
     });
     data = await res.json();
   } catch (e) {
@@ -3693,7 +3716,7 @@ async function _recalcPilotNow(qty) {
   }
   if (!data?.ok || !data.disponibil) {
     _pilotPretConfirmat = false;
-    setEl('s-total', 'Indisponibil');
+    setEl('s-total', data?.motiv === 'addon_fara_pret' ? (data.mesaj || 'Material indisponibil') : 'Indisponibil');
     setEl('dv-total', 'Indisponibil');
     if (contBtn) contBtn.disabled = true;
     return;

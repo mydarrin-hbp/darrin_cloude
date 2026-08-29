@@ -72,6 +72,7 @@ const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { incearcaAlocarePartener } = require('../../lib/aloca-partener');
 const { calculeazaPret, citestePragMinimComanda } = require('../../lib/calculeaza-pret');
 const { calculeazaCostNivel } = require('../../lib/calculeaza-cost-recipe');
+const { rezolvaAddonMateriale } = require('../../lib/rezolva-addon-materiale');
 const { renderEmailPrimaComanda, limbaProfilEmailComportamental } = require('../../lib/i18n');
 const { fromHeader } = require('../../lib/email-sender');
 
@@ -86,6 +87,7 @@ async function handler(req, res, user) {
     masa_totala_kg = null, nivel_transport_marfa = null,
     metoda_plata = 'ordin_plata',
     nivel_id = null, cantitate = null,
+    addon_materiale = [],
   } = req.body || {};
 
   // „Preț per cantitate reală comandată", pașii 1-3 (22 august 2026, aprobat,
@@ -194,6 +196,7 @@ async function handler(req, res, user) {
   // mai jos să poată fi determinat.
   let catalogServiciuIdEfectiv = catalog_serviciu_id;
   let manoperaEscoBreakdown = null;
+  let addonMaterialeSelectate = [];
   if (areNivelId) {
     const taraCalcul = tara_cod ? String(tara_cod).toUpperCase() : 'RO';
     const cost = await calculeazaCostNivel({ nivelId: nivel_id, taraCod: taraCalcul, cantitate: cantitateNivel });
@@ -204,20 +207,40 @@ async function handler(req, res, user) {
         resurse_fara_pret: cost.resurse_fara_pret.map((r) => ({ denumire: r.denumire, tip: r.tip, unitate: r.unitate })),
       });
     }
-    const calc = await calculeazaPret({
-      cost_baza_servicii: cost.cost_baza_servicii,
-      cost_materiale: cost.cost_materiale,
-      cost_chirie_scule: cost.cost_utilaj,
-      tara: taraCalcul,
-    });
-    nivelCalculat = { cantitate: cantitateNivel, calc };
 
     const { data: nivelRow } = await supabaseAdmin
       .from('catalog_niveluri')
-      .select('serviciu_id')
+      .select('serviciu_id, nivel')
       .eq('id', nivel_id)
       .maybeSingle();
     catalogServiciuIdEfectiv = nivelRow?.serviciu_id || null;
+
+    // Faza 2/3 (29 august 2026, cerere fondator — corecție "te-ai abătut de
+    // la conceptul paginii de configurare"): materiale/accesorii OPȚIONALE
+    // (ex. plintă PVC, profil de trecere) selectate de client din selectorul
+    // de addon-uri (catalog_servicii, filtrat NACE — CAT-2a). Integritate,
+    // exact ca la restul căii nivel_id: clientul trimite DOAR id+cantitate —
+    // niciun preț venit din client nu e folosit; rezolvat identic ca în
+    // /api/public/calculeaza-pret-nivel.js (helper comun), altfel prețul
+    // previzualizat n-ar mai coincide cu cel efectiv încasat.
+    let addonRezultat;
+    try {
+      addonRezultat = await rezolvaAddonMateriale(addon_materiale, nivelRow?.nivel || null, taraCalcul);
+    } catch (e) {
+      if (e.code === 'ADDON_FARA_PRET' || e.code === 'ADDON_INVALID') {
+        return res.status(400).json({ error: e.message, code: e.code });
+      }
+      throw e;
+    }
+    addonMaterialeSelectate = addonRezultat.itemi;
+
+    const calc = await calculeazaPret({
+      cost_baza_servicii: cost.cost_baza_servicii,
+      cost_materiale: cost.cost_materiale + addonRezultat.cost_materiale,
+      cost_chirie_scule: cost.cost_utilaj + addonRezultat.cost_utilaj,
+      tara: taraCalcul,
+    });
+    nivelCalculat = { cantitate: cantitateNivel, calc };
 
     const escoIntrari = Object.entries(cost.manopera_per_esco || {});
     if (escoIntrari.length) {
@@ -279,6 +302,7 @@ async function handler(req, res, user) {
           nivel_id,
           cantitate: nivelCalculat.cantitate,
           manopera_esco_breakdown: manoperaEscoBreakdown,
+          addon_materiale_selectate: addonMaterialeSelectate.length ? addonMaterialeSelectate : null,
           suma_totala_platita: nivelCalculat.calc.pret_final,
           suma_manopera: nivelCalculat.calc.cost_baza_servicii,
           suma_materiale: nivelCalculat.calc.cost_materiale,
