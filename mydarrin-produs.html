@@ -3368,6 +3368,11 @@ let S = {
   // Formă: { id, titlu, unitate, preturi:{bronz,argint,aur,platinum}, qty }
   materiale:[], inchirieri:[],
   materialePrice:0, inchirieriPrice:0,
+  // Faza 2/3 CAT extensie (29 august 2026) — { addon_id: consum_specific }
+  // pentru materialele cu bază tehnică reală (parchet/folie) — cantitatea lor
+  // în S.materiale/S.inchirieri e calculată automat (S.qty × consum_specific),
+  // needitabilă, vezi catalog_materiale_recomandate.
+  consumRecomandat:{},
   total:0,doneSteps:new Set(),curStep:1,
   // Mod pilot (22 august 2026, aprobat) — preț calculat integral server-side
   // din rețeta tehnică reală, pentru cele 5 servicii cu catalog_nivel_id
@@ -3396,11 +3401,11 @@ async function loadAddonCatalog() {
   // goală cu un mesaj clar, NU cade înapoi pe tot catalogul nefiltrat.
   const naceFilter = S.nace ? `&nace=eq.${encodeURIComponent(S.nace)}` : '&nace=eq.__fara_potrivire__';
   const qs = `status_public=eq.true${naceFilter}&select=id,id_serviciu,titlu,unitate_masura,catalog_niveluri(nivel,catalog_preturi(pret))&order=titlu`;
-  // Faza 2/3 CAT (29 august 2026): "Montaj Parchet Laminat" are propriul
-  // parchet (AC3/AC4/AC5) deja inclus în fiecare tier al configuratorului —
-  // bundle-ul generic "Parchet & Pardoseli" (mat-parchet, Vertical A) ar
-  // duplica exact acel cost, confuz pentru client. Exclus doar aici, doar
-  // pentru acest slug — rămâne vizibil normal pe orice alt serviciu.
+  // Faza 2/3 CAT-fix (29 august 2026): parchetul propriu-zis (AC3/AC4/AC5)
+  // NU mai e inclus în tier — bundle-ul generic "Parchet & Pardoseli"
+  // (mat-parchet, Vertical A) tot rămâne exclus aici, ca să nu dubleze cele
+  // 3 intrări dedicate, mai precise (mat-parchet-laminat-ac3/4/5), create
+  // special pentru acest serviciu.
   const EXCLUSE_PER_SLUG = { 'montaj-parchet-laminat': ['mat-parchet'] };
   const excluse = EXCLUSE_PER_SLUG[S.slug] || [];
   try {
@@ -3417,6 +3422,21 @@ async function loadAddonCatalog() {
     ADDON_DB.inchirieri = normalizeaza(inch);
   } catch (e) {
     console.warn('[G16] catalog materiale/închirieri indisponibil:', e);
+  }
+  // Faza 2/3 CAT extensie (29 august 2026, cerere fondator — "consumul...
+  // trebuie să reprezinte consumul generat de rețetă"): materialele cu bază
+  // tehnică reală (parchet/folie) au cantitatea calculată automat din
+  // cantitate_comandată × consum_specific, NU aleasă manual — vezi
+  // catalog_materiale_recomandate. Doar în mod pilot (are sens doar acolo,
+  // unde există o "cantitate comandată" reală de serviciu de bază).
+  S.consumRecomandat = {};
+  if (S.pilotMode && S.pilotServiciuId) {
+    try {
+      const rec = await fetch(`${SUPA_PROD_URL}/rest/v1/catalog_materiale_recomandate?serviciu_id=eq.${S.pilotServiciuId}&select=addon_serviciu_id,consum_specific`, { headers: { apikey: SUPA_PROD_ANON, Authorization: `Bearer ${SUPA_PROD_ANON}` } }).then(r => r.ok ? r.json() : []);
+      rec.forEach((r) => { S.consumRecomandat[r.addon_serviciu_id] = parseFloat(r.consum_specific) || 0; });
+    } catch (e) {
+      console.warn('[CAT-3c] consum recomandat indisponibil:', e);
+    }
   }
   renderAddonList();
 }
@@ -3475,10 +3495,34 @@ function escapeAddonHTML(str) {
 function addAddonItem(tip, id) {
   const item = ADDON_DB[tip].find((x) => x.id === id);
   if (!item || S[tip].some((x) => x.id === id)) return;
-  S[tip].push({ ...item, qty: 1 });
+  // Faza 2/3 CAT extensie (29 august 2026) — materiale cu bază tehnică reală
+  // (parchet/folie): cantitatea NU pornește de la 1, se calculează din
+  // rețetă (cantitate_comandată × consum_specific), needitabilă.
+  const consum = S.consumRecomandat[id];
+  const blocat = typeof consum === 'number' && consum > 0;
+  const qty = blocat ? Math.round((S.qty || 1) * consum * 100) / 100 : 1;
+  S[tip].push({ ...item, qty, blocatCantitate: blocat });
   renderAddonList();
   renderAddonSelected();
   recalc();
+}
+
+// Faza 2/3 CAT extensie (29 august 2026) — reajustează cantitatea materialelor
+// cu bază tehnică reală (parchet/folie) de fiecare dată când clientul schimbă
+// cantitatea comandată a serviciului de bază — rămân mereu în sincron cu
+// rețeta, nu pot rămâne "în urmă" la o cantitate veche.
+function sincronizeazaCantitatiRecomandate() {
+  let schimbat = false;
+  for (const tip of ['materiale', 'inchirieri']) {
+    for (const it of S[tip]) {
+      if (!it.blocatCantitate) continue;
+      const consum = S.consumRecomandat[it.id];
+      if (typeof consum !== 'number' || consum <= 0) continue;
+      const qtyNoua = Math.round((S.qty || 1) * consum * 100) / 100;
+      if (qtyNoua !== it.qty) { it.qty = qtyNoua; schimbat = true; }
+    }
+  }
+  if (schimbat) renderAddonSelected();
 }
 
 function removeAddonItem(tip, id) {
@@ -3490,7 +3534,7 @@ function removeAddonItem(tip, id) {
 
 function changeAddonQty(tip, id, delta) {
   const row = S[tip].find((x) => x.id === id);
-  if (!row) return;
+  if (!row || row.blocatCantitate) return;
   row.qty = Math.max(1, Math.min(99, row.qty + delta));
   renderAddonSelected();
   recalc();
@@ -3504,13 +3548,17 @@ function renderAddonSelected() {
   el.innerHTML = `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#8C9BAD;margin-bottom:8px">Adăugate la comandă</div>` +
     toate.map((it) => {
       const pret = _addonPretNivel(it);
+      // Faza 2/3 CAT extensie (29 august 2026) — materiale cu bază tehnică
+      // reală (parchet/folie): cantitate blocată, fără +/-, cu notă explicită
+      // de unde vine numărul — nu se poate confunda cu o estimare a clientului.
+      const cantitateUI = it.blocatCantitate
+        ? `<span title="Calculat automat din rețeta tehnică (cantitate × consum specific) — needitabil" style="font-size:12.5px;font-weight:700;color:#003366;min-width:34px;text-align:center">${it.qty}<span style="display:block;font-size:9px;font-weight:600;color:#8C9BAD;text-transform:uppercase;letter-spacing:.02em">din rețetă</span></span>`
+        : `<button type="button" onclick="changeAddonQty('${it.tip}','${it.id}',-1)" style="width:22px;height:22px;border-radius:6px;border:1px solid #D5DFE8;background:#fff;cursor:pointer;font-size:13px;line-height:1">−</button>
+          <span style="font-size:12.5px;font-weight:700;color:#003366;min-width:16px;text-align:center">${it.qty}</span>
+          <button type="button" onclick="changeAddonQty('${it.tip}','${it.id}',1)" style="width:22px;height:22px;border-radius:6px;border:1px solid #D5DFE8;background:#fff;cursor:pointer;font-size:13px;line-height:1">+</button>`;
       return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#F4F7F9;border-radius:10px;margin-bottom:6px">
         <div style="flex:1;min-width:0;font-size:12.5px;color:#2D2D2D;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeAddonHTML(it.titlu)}</div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <button type="button" onclick="changeAddonQty('${it.tip}','${it.id}',-1)" style="width:22px;height:22px;border-radius:6px;border:1px solid #D5DFE8;background:#fff;cursor:pointer;font-size:13px;line-height:1">−</button>
-          <span style="font-size:12.5px;font-weight:700;color:#003366;min-width:16px;text-align:center">${it.qty}</span>
-          <button type="button" onclick="changeAddonQty('${it.tip}','${it.id}',1)" style="width:22px;height:22px;border-radius:6px;border:1px solid #D5DFE8;background:#fff;cursor:pointer;font-size:13px;line-height:1">+</button>
-        </div>
+        <div style="display:flex;align-items:center;gap:6px">${cantitateUI}</div>
         <div style="font-size:12.5px;font-weight:700;color:#0E9E99;min-width:70px;text-align:right">${fmtCurrency(pret * it.qty)}</div>
         <button type="button" onclick="removeAddonItem('${it.tip}','${it.id}')" title="Elimină" style="width:22px;height:22px;border-radius:6px;border:1px solid rgba(220,38,38,.25);background:#FDECEA;color:#C0392B;cursor:pointer;font-size:14px;line-height:1;flex-shrink:0">×</button>
       </div>`;
@@ -3691,6 +3739,10 @@ function selectPilotNivel(nivelId) {
 function recalcPilot() {
   const qty = parseInt(document.getElementById('qty-input')?.value || 1) || 1;
   S.qty = qty;
+  // Faza 2/3 CAT extensie (29 august 2026) — reține sincronizarea materialelor
+  // cu bază tehnică reală (parchet/folie) la fiecare schimbare de cantitate,
+  // înainte de recalculul de preț (care oricum citește S.materiale/S.inchirieri).
+  sincronizeazaCantitatiRecomandate();
   clearTimeout(_pilotDebounce);
   _pilotDebounce = setTimeout(() => _recalcPilotNow(qty), 350);
 }
