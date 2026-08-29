@@ -607,6 +607,10 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
       Tarife Transport
     </a>
+    <a class="sa-nav-item" onclick="showPanel('tarife-manopera')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Tarife Manoperă (ESCO)
+    </a>
     <a class="sa-nav-item" onclick="showPanel('marketplace-aprobari')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
       Marketplace — Aprobări
@@ -2097,6 +2101,55 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       </div>
     </div>
 
+    <!-- ════ TARIFE MANOPERĂ (ESCO) — CAT-3a, 29 august 2026 ════
+         manopera_costuri exista deja, citit de lib/calculeaza-cost-recipe.js
+         (motorul real de preț), dar fără niciun endpoint de scriere — orice
+         cost_ora lipsă bloca legarea unui articol tehnic de un nivel public.
+         Cost_ora × cod ESCO × țară alimentează direct calculeazaCostNivel(). -->
+    <div id="panel-tarife-manopera" style="display:none;padding:24px">
+      <div style="background:#131B27;border:1px solid #2D3F55;border-radius:14px;padding:18px 20px;margin-bottom:18px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap">
+          <span style="font-size:14px;font-weight:700;color:#fff">Cost orar de manoperă, pe cod ESCO și țară</span>
+          <select id="tm-tara" onchange="loadTarifeManopera()" style="background:#0F1826;border:1px solid #2D3F55;border-radius:8px;padding:6px 10px;color:#fff;font-size:12px"></select>
+          <button onclick="loadTarifeManopera()" class="btn-p" style="font-size:12px;padding:8px 14px;margin-left:auto">↻ Reîncarcă</button>
+        </div>
+        <p style="font-size:11px;color:#8BA3C0;margin:0 0 14px">Alimentează direct motorul real de preț (<code style="background:#0F1826;padding:1px 5px;border-radius:4px">calculeazaCostNivel</code>) — un cod ESCO fără cost_ora aici înseamnă că orice articol tehnic care-l folosește rămâne blocat, nu poate fi legat la un preț public. Câmpurile de cost extra (deplasare/uzură scule/consumabile/echipament testare) sunt opționale.</p>
+        <div id="tm-lista"></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+          <button onclick="adaugaRandTarifManopera()" class="btn-s" style="font-size:11.5px;padding:7px 12px">+ Adaugă tarif</button>
+          <span style="font-size:10.5px;color:#8BA3C0">Sugestii cod ESCO (din auditul CAT-3a, coduri fără tarif RO azi) în lista derulantă a câmpului.</span>
+        </div>
+        <datalist id="tm-esco-sugestii">
+          <option value="9313.1" label="muncitor construcții clădiri">
+          <option value="7126.8" label="instalator/instalatoare">
+          <option value="7412.3" label="lucrător calificat electromecanic">
+          <option value="9312.1.1" label="lucrător drenare canale">
+          <option value="3112.1.7" label="tehnician sisteme incendiu">
+          <option value="7127.1" label="instalator încălzire/ventilație">
+          <option value="7112.1" label="zidar">
+          <option value="7222.3" label="lăcătuș">
+          <option value="7115.1" label="dulgher">
+          <option value="COR-712902" label="pavator">
+          <option value="7411.1" label="electrician">
+          <option value="3132.7" label="tehnician tratare/epurare apă">
+          <option value="7413.1.1" label="lucrător montaj cabluri subterane">
+          <option value="9613.1" label="lucrător salubrizare căi publice">
+          <option value="7114.1" label="finisor beton">
+          <option value="7212.3" label="sudor">
+          <option value="7122.2" label="montator parchet">
+          <option value="7114.2" label="montator mozaic terase">
+          <option value="8342.6" label="lucrător drumuri">
+          <option value="3114.1" label="tehnician electronist">
+          <option value="7124.1" label="lucrător izolații">
+          <option value="7213.4" label="tinichigiu">
+          <option value="7214.3" label="fierar betonist">
+          <option value="8342.3" label="operator excavator">
+          <option value="7122.4" label="montator gresie-faianță">
+          <option value="7125.1" label="montator geamuri">
+        </datalist>
+      </div>
+    </div>
+
     <!-- ════ MARKETPLACE — APROBĂRI (audit + implementare, 2 August 2026) ════
          Furnizori/documente KYC/produse în așteptare — completează o buclă
          deja pe jumătate construită (api/admin/verifica-document.js exista
@@ -2661,7 +2714,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 
 <script>
 // ── NAVIGATION ──
-const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding','seo','manual','accountancy','investitori','contact','prospecti','newsletter','email-gateway','facturare-parteneri','b2g-plati','preturi-niveluri','tarife-transport','marketplace-aprobari','acces-temporar'];
+const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding','seo','manual','accountancy','investitori','contact','prospecti','newsletter','email-gateway','facturare-parteneri','b2g-plati','preturi-niveluri','tarife-transport','tarife-manopera','marketplace-aprobari','acces-temporar'];
 const TITLES = {
   dashboard:'Dashboard Global',tari:'Țări & Zone',utilizatori:'Utilizatori & Actori',
   rbac:'Permisiuni RBAC',platforme:'Platforme & Integrări',escrow:'Escrow Global',
@@ -2669,7 +2722,7 @@ const TITLES = {
   comenzi:'Comenzi Globale',catalog:'Catalog Servicii/Materiale/Închirieri',audit:'Audit Log',config:'Configurare Sistem',
   branding:'Branding & Design Platformă',seo:'SEO — Titluri & Descrieri',manual:'Manual de Funcționare',accountancy:'Accountancy',
   investitori:'Administrare Investitori',contact:'Mesaje Contact',prospecti:'Prospecți Parteneri',
-  newsletter:'Newsletter & Abonați','email-gateway':'Noreply & Transactional Gateway','facturare-parteneri':'Facturare Parteneri','b2g-plati':'B2G & Metode de Plată','preturi-niveluri':'Niveluri de Preț','tarife-transport':'Tarife Transport','marketplace-aprobari':'Marketplace — Aprobări','acces-temporar':'Acces Temporar'
+  newsletter:'Newsletter & Abonați','email-gateway':'Noreply & Transactional Gateway','facturare-parteneri':'Facturare Parteneri','b2g-plati':'B2G & Metode de Plată','preturi-niveluri':'Niveluri de Preț','tarife-transport':'Tarife Transport','tarife-manopera':'Tarife Manoperă (ESCO)','marketplace-aprobari':'Marketplace — Aprobări','acces-temporar':'Acces Temporar'
 };
 
 function showPanel(id){
@@ -4352,6 +4405,7 @@ window.showPanel = function(id) {
   if (id === 'b2g-plati') { loadComenziB2G(); loadMetodePlataConfig(); }
   if (id === 'preturi-niveluri') loadNiveluriPret();
   if (id === 'tarife-transport') loadTarifeTransport();
+  if (id === 'tarife-manopera') loadTarifeManopera();
   if (id === 'marketplace-aprobari') loadMarketplaceAprobari();
 };
 </script>
@@ -5066,6 +5120,113 @@ async function stergeTarifTransport(id) {
     const res = await fetch('/api/admin/tarife-transport', { method: 'POST', headers, body: JSON.stringify({ action: 'sterge', id }) });
     if (!res.ok) throw new Error((await res.json()).error);
     loadTarifeTransport();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+// ── TARIFE MANOPERĂ (ESCO) — CAT-3a, 29 august 2026 ──
+const TM_TARI = [
+  ['RO','RON'],['AT','EUR'],['BE','EUR'],['BG','EUR'],['CY','EUR'],['CZ','CZK'],['DE','EUR'],['DK','DKK'],
+  ['EE','EUR'],['ES','EUR'],['FI','EUR'],['FR','EUR'],['GB','GBP'],['GR','EUR'],['HR','EUR'],['HU','HUF'],
+  ['IE','EUR'],['IT','EUR'],['LT','EUR'],['LU','EUR'],['LV','EUR'],['MD','MDL'],['MT','EUR'],['NL','EUR'],
+  ['PL','PLN'],['PT','EUR'],['SE','SEK'],['SI','EUR'],['SK','EUR'],['TR','TRY'],
+];
+function initTarifeManoperaTaraSelect() {
+  const sel = document.getElementById('tm-tara');
+  if (!sel || sel.options.length) return;
+  sel.innerHTML = TM_TARI.map(([cod]) => `<option value="${cod}">${cod}</option>`).join('');
+}
+
+async function loadTarifeManopera() {
+  initTarifeManoperaTaraSelect();
+  const el = document.getElementById('tm-lista');
+  el.textContent = 'Se încarcă...';
+  try {
+    const tara = document.getElementById('tm-tara').value || 'RO';
+    const headers = await _adminAuthHeader();
+    const res = await fetch(`/api/admin/tarife-manopera?tara=${tara}`, { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    renderTarifeManopera(data.tarife || []);
+  } catch (e) {
+    el.innerHTML = `<div style="color:#E57373">Eroare: ${escapeHTML(e.message)}</div>`;
+  }
+}
+
+function randTarifManoperaHTML(t) {
+  const inputStyle = 'background:#0F1826;border:1px solid #2D3F55;border-radius:7px;padding:6px 7px;color:#fff;font-size:11.5px;width:100%';
+  const taraCurenta = document.getElementById('tm-tara')?.value || 'RO';
+  const monedaImplicita = (TM_TARI.find(x => x[0] === taraCurenta) || ['','RON'])[1];
+  return `
+    <div class="tm-rand" data-id="${t.id || ''}" style="display:grid;grid-template-columns:110px 1fr 75px 75px 75px 75px 75px 55px 55px 65px;gap:5px;margin-bottom:8px;align-items:center">
+      <input class="tm-esco" list="tm-esco-sugestii" value="${escapeHTML(t.cod_esco || '')}" placeholder="cod ESCO" style="${inputStyle}">
+      <span style="font-size:10.5px;color:#8BA3C0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHTML(t.denumire_esco || '')}</span>
+      <input class="tm-tara-r" value="${escapeHTML(t.tara_cod || taraCurenta)}" maxlength="2" style="${inputStyle};text-transform:uppercase">
+      <input class="tm-cost-ora" type="number" step="0.01" min="0" value="${t.cost_ora ?? ''}" placeholder="RON/oră *" style="${inputStyle}">
+      <input class="tm-deplasare" type="number" step="0.01" value="${t.cost_deplasare ?? ''}" placeholder="deplasare" style="${inputStyle}">
+      <input class="tm-uzura" type="number" step="0.01" value="${t.cost_uzura_scule ?? ''}" placeholder="uzură scule" style="${inputStyle}">
+      <input class="tm-consumabile" type="number" step="0.01" value="${t.cost_consumabile_mici ?? ''}" placeholder="consumabile" style="${inputStyle}">
+      <input class="tm-moneda" value="${escapeHTML(t.moneda || monedaImplicita)}" maxlength="3" style="${inputStyle};text-transform:uppercase">
+      <span style="font-size:9.5px;color:#8BA3C0">${t.updated_at ? new Date(t.updated_at).toLocaleDateString('ro-RO') : ''}</span>
+      <div style="display:flex;gap:4px">
+        <button onclick="salveazaTarifManopera(this)" class="btn-p" style="font-size:10px;padding:5px 6px">Salv.</button>
+        ${t.id ? `<button onclick="stergeTarifManopera('${t.id}')" class="btn-s" style="font-size:10px;padding:5px 6px">✕</button>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function renderTarifeManopera(tarife) {
+  const header = `
+    <div style="display:grid;grid-template-columns:110px 1fr 75px 75px 75px 75px 75px 55px 55px 65px;gap:5px;margin-bottom:6px;font-size:10px;color:#8BA3C0">
+      <span>Cod ESCO</span><span>Meserie</span><span>Țară</span><span>Cost/oră *</span><span>Deplasare</span><span>Uzură scule</span><span>Consumabile</span><span>Monedă</span><span>Actualizat</span><span></span>
+    </div>`;
+  document.getElementById('tm-lista').innerHTML = header + (tarife.length
+    ? tarife.map(randTarifManoperaHTML).join('')
+    : `<div style="color:#8BA3C0;font-size:12px;padding:10px 0">Niciun tarif salvat pentru această țară încă.</div>`);
+}
+
+function adaugaRandTarifManopera() {
+  const gol = document.getElementById('tm-lista').querySelector('.tm-rand[data-id=""]');
+  if (gol) { gol.querySelector('.tm-esco').focus(); return; }
+  document.getElementById('tm-lista').insertAdjacentHTML('beforeend', randTarifManoperaHTML({}));
+}
+
+async function salveazaTarifManopera(btn) {
+  const rand = btn.closest('.tm-rand');
+  const codEsco = rand.querySelector('.tm-esco').value.trim();
+  const taraCod = rand.querySelector('.tm-tara-r').value.trim().toUpperCase();
+  const costOraRaw = rand.querySelector('.tm-cost-ora').value.trim();
+  if (!codEsco) return alert('Codul ESCO este obligatoriu');
+  if (costOraRaw === '' || Number(costOraRaw) <= 0) return alert('Cost/oră trebuie să fie un număr pozitiv');
+
+  const numOrNull = (v) => (v.trim() === '' ? null : Number(v));
+  const body = {
+    action: 'salveaza',
+    id: rand.dataset.id || undefined,
+    cod_esco: codEsco,
+    tara_cod: taraCod,
+    cost_ora: Number(costOraRaw),
+    cost_deplasare: numOrNull(rand.querySelector('.tm-deplasare').value),
+    cost_uzura_scule: numOrNull(rand.querySelector('.tm-uzura').value),
+    cost_consumabile_mici: numOrNull(rand.querySelector('.tm-consumabile').value),
+    moneda: rand.querySelector('.tm-moneda').value.trim().toUpperCase() || 'RON',
+  };
+
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/tarife-manopera', { method: 'POST', headers, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadTarifeManopera();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+async function stergeTarifManopera(id) {
+  if (!confirm('Ștergi acest tarif de manoperă?')) return;
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/tarife-manopera', { method: 'POST', headers, body: JSON.stringify({ action: 'sterge', id }) });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadTarifeManopera();
   } catch (e) { alert('Eroare: ' + e.message); }
 }
 
