@@ -47,10 +47,16 @@ async function handler(req, res, admin) {
     }
 
     const tara = req.query.tara ? String(req.query.tara).toUpperCase() : 'RO';
+    // Descoperire live, 29 august 2026: ambele tabele au deja mii de rânduri
+    // schelet pre-existente (cross-join vechi devize_resurse×tax_configurations,
+    // pret_unitar NULL peste tot — 4.937 doar pentru RO în tarife_materiale).
+    // Filtrăm explicit doar rândurile cu preț real — altfel panoul ar afișa
+    // zgomot (1000, plafonul implicit PostgREST), nu tarifele efectiv setate.
     const { data: tarife, error } = await supabaseAdmin
       .from(tabela)
       .select('*')
       .eq('tara_cod', tara)
+      .not('pret_unitar', 'is', null)
       .order('updated_at', { ascending: false });
     if (error) return res.status(500).json({ error: error.message });
 
