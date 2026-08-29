@@ -611,6 +611,10 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       Tarife Manoperă (ESCO)
     </a>
+    <a class="sa-nav-item" onclick="showPanel('tarife-resurse')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41L13.42 20.58a2 2 0 01-2.83 0L2.83 12.83a2 2 0 010-2.83l7.17-7.17a2 2 0 012.83 0l7.76 7.76a2 2 0 010 2.83z"/><line x1="7.5" y1="7.5" x2="7.51" y2="7.51"/></svg>
+      Tarife Materiale &amp; Utilaje
+    </a>
     <a class="sa-nav-item" onclick="showPanel('marketplace-aprobari')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
       Marketplace — Aprobări
@@ -2150,6 +2154,34 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       </div>
     </div>
 
+    <!-- ════ TARIFE MATERIALE & UTILAJE — CAT-3a, 29 august 2026 ════
+         tarife_materiale (4.938 resurse)/tarife_resurse (242 resurse) exista
+         deja, dar 0 tarife RO, dincolo de manoperă — gol total, confirmat
+         la scara întregului catalog. Admin-only, strict — clientul vede
+         doar prețul final calculat, niciodată costul intern de resursă. -->
+    <div id="panel-tarife-resurse" style="display:none;padding:24px">
+      <div style="background:#131B27;border:1px solid #2D3F55;border-radius:14px;padding:18px 20px;margin-bottom:18px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap">
+          <span style="font-size:14px;font-weight:700;color:#fff">Preț unitar materiale / utilaje, pe țară</span>
+          <select id="tr-tip" onchange="loadTarifeResurse()" style="background:#0F1826;border:1px solid #2D3F55;border-radius:8px;padding:6px 10px;color:#fff;font-size:12px">
+            <option value="M">Materiale</option>
+            <option value="U">Utilaje</option>
+          </select>
+          <select id="tr-tara" onchange="loadTarifeResurse()" style="background:#0F1826;border:1px solid #2D3F55;border-radius:8px;padding:6px 10px;color:#fff;font-size:12px"></select>
+          <button onclick="loadTarifeResurse()" class="btn-p" style="font-size:12px;padding:8px 14px;margin-left:auto">↻ Reîncarcă</button>
+        </div>
+        <p style="font-size:11px;color:#8BA3C0;margin:0 0 14px">Strict admin/superadmin — clientul nu vede niciodată aceste costuri, doar prețul final calculat. 0 tarife reale azi pe niciuna din cele 4.938 materiale + 242 utilaje (audit CAT-3a) — populare treptată, pe măsură ce ai cifre reale.</p>
+
+        <div style="background:#0F1826;border-radius:12px;padding:14px;margin-bottom:16px">
+          <div style="font-size:12.5px;font-weight:700;color:#fff;margin-bottom:8px">Caută o resursă nouă de tarifat</div>
+          <input id="tr-cauta" placeholder="denumire sau cod resursă (ex: beton, BET-01)" oninput="cautaResursaFizica(this.value)" style="width:100%;background:#131B27;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:13px">
+          <div id="tr-cauta-rezultate" style="margin-top:8px"></div>
+        </div>
+
+        <div id="tr-lista"></div>
+      </div>
+    </div>
+
     <!-- ════ MARKETPLACE — APROBĂRI (audit + implementare, 2 August 2026) ════
          Furnizori/documente KYC/produse în așteptare — completează o buclă
          deja pe jumătate construită (api/admin/verifica-document.js exista
@@ -2714,7 +2746,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 
 <script>
 // ── NAVIGATION ──
-const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding','seo','manual','accountancy','investitori','contact','prospecti','newsletter','email-gateway','facturare-parteneri','b2g-plati','preturi-niveluri','tarife-transport','tarife-manopera','marketplace-aprobari','acces-temporar'];
+const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding','seo','manual','accountancy','investitori','contact','prospecti','newsletter','email-gateway','facturare-parteneri','b2g-plati','preturi-niveluri','tarife-transport','tarife-manopera','tarife-resurse','marketplace-aprobari','acces-temporar'];
 const TITLES = {
   dashboard:'Dashboard Global',tari:'Țări & Zone',utilizatori:'Utilizatori & Actori',
   rbac:'Permisiuni RBAC',platforme:'Platforme & Integrări',escrow:'Escrow Global',
@@ -2722,7 +2754,7 @@ const TITLES = {
   comenzi:'Comenzi Globale',catalog:'Catalog Servicii/Materiale/Închirieri',audit:'Audit Log',config:'Configurare Sistem',
   branding:'Branding & Design Platformă',seo:'SEO — Titluri & Descrieri',manual:'Manual de Funcționare',accountancy:'Accountancy',
   investitori:'Administrare Investitori',contact:'Mesaje Contact',prospecti:'Prospecți Parteneri',
-  newsletter:'Newsletter & Abonați','email-gateway':'Noreply & Transactional Gateway','facturare-parteneri':'Facturare Parteneri','b2g-plati':'B2G & Metode de Plată','preturi-niveluri':'Niveluri de Preț','tarife-transport':'Tarife Transport','tarife-manopera':'Tarife Manoperă (ESCO)','marketplace-aprobari':'Marketplace — Aprobări','acces-temporar':'Acces Temporar'
+  newsletter:'Newsletter & Abonați','email-gateway':'Noreply & Transactional Gateway','facturare-parteneri':'Facturare Parteneri','b2g-plati':'B2G & Metode de Plată','preturi-niveluri':'Niveluri de Preț','tarife-transport':'Tarife Transport','tarife-manopera':'Tarife Manoperă (ESCO)','tarife-resurse':'Tarife Materiale & Utilaje','marketplace-aprobari':'Marketplace — Aprobări','acces-temporar':'Acces Temporar'
 };
 
 function showPanel(id){
@@ -4406,6 +4438,7 @@ window.showPanel = function(id) {
   if (id === 'preturi-niveluri') loadNiveluriPret();
   if (id === 'tarife-transport') loadTarifeTransport();
   if (id === 'tarife-manopera') loadTarifeManopera();
+  if (id === 'tarife-resurse') loadTarifeResurse();
   if (id === 'marketplace-aprobari') loadMarketplaceAprobari();
 };
 </script>
@@ -5227,6 +5260,127 @@ async function stergeTarifManopera(id) {
     const res = await fetch('/api/admin/tarife-manopera', { method: 'POST', headers, body: JSON.stringify({ action: 'sterge', id }) });
     if (!res.ok) throw new Error((await res.json()).error);
     loadTarifeManopera();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+// ── TARIFE MATERIALE & UTILAJE — CAT-3a, 29 august 2026 ──
+function initTarifeResurseTaraSelect() {
+  const sel = document.getElementById('tr-tara');
+  if (!sel || sel.options.length) return;
+  sel.innerHTML = TM_TARI.map(([cod]) => `<option value="${cod}">${cod}</option>`).join('');
+}
+
+async function loadTarifeResurse() {
+  initTarifeResurseTaraSelect();
+  const el = document.getElementById('tr-lista');
+  el.textContent = 'Se încarcă...';
+  try {
+    const tip = document.getElementById('tr-tip').value;
+    const tara = document.getElementById('tr-tara').value || 'RO';
+    const headers = await _adminAuthHeader();
+    const res = await fetch(`/api/admin/tarife-resurse-fizice?tip=${tip}&tara=${tara}`, { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    renderTarifeResurse(data.tarife || []);
+  } catch (e) {
+    el.innerHTML = `<div style="color:#E57373">Eroare: ${escapeHTML(e.message)}</div>`;
+  }
+}
+
+let trCautaTimer = null;
+async function cautaResursaFizica(text) {
+  clearTimeout(trCautaTimer);
+  const el = document.getElementById('tr-cauta-rezultate');
+  if (!text || text.trim().length < 2) { el.innerHTML = ''; return; }
+  trCautaTimer = setTimeout(async () => {
+    try {
+      const tip = document.getElementById('tr-tip').value;
+      const headers = await _adminAuthHeader();
+      const res = await fetch(`/api/admin/tarife-resurse-fizice?tip=${tip}&cauta=${encodeURIComponent(text.trim())}`, { headers });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      if (!data.resurse.length) { el.innerHTML = '<div style="font-size:11.5px;color:#8BA3C0">Nicio resursă găsită</div>'; return; }
+      el.innerHTML = data.resurse.map(r => `
+        <div onclick="adaugaRandTarifResursa(${r.resursa_id}, '${escapeHTML(r.denumire_resursa).replace(/'/g, "\\'")}', '${escapeHTML(r.unitate_masura || '')}')"
+             style="padding:6px 9px;background:#131B27;border:1px solid #2D3F55;border-radius:7px;margin-bottom:4px;font-size:11.5px;color:#E2E8F0;cursor:pointer">
+          <b>${escapeHTML(r.cod_resursa || '')}</b> — ${escapeHTML(r.denumire_resursa)} <span style="color:#8BA3C0">(${escapeHTML(r.unitate_masura || '')})</span>
+        </div>`).join('');
+    } catch (e) { el.innerHTML = `<div style="color:#E57373;font-size:11px">${escapeHTML(e.message)}</div>`; }
+  }, 350);
+}
+
+function randTarifResursaHTML(t) {
+  const inputStyle = 'background:#0F1826;border:1px solid #2D3F55;border-radius:7px;padding:6px 7px;color:#fff;font-size:11.5px;width:100%';
+  const taraCurenta = document.getElementById('tr-tara')?.value || 'RO';
+  const monedaImplicita = (TM_TARI.find(x => x[0] === taraCurenta) || ['','RON'])[1];
+  return `
+    <div class="tr-rand" data-id="${t.id || ''}" data-resursa-id="${t.resursa_id || ''}" style="display:grid;grid-template-columns:90px 1fr 55px 90px 70px 60px 65px;gap:5px;margin-bottom:8px;align-items:center">
+      <span style="font-size:10.5px;color:#8BA3C0">${escapeHTML(t.cod_resursa || '')}</span>
+      <span style="font-size:11px;color:#E2E8F0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHTML(t.denumire_resursa || '(resursă nouă)')}</span>
+      <input class="tr-tara-r" value="${escapeHTML(t.tara_cod || taraCurenta)}" maxlength="2" style="${inputStyle};text-transform:uppercase">
+      <input class="tr-pret" type="number" step="0.01" min="0" value="${t.pret_unitar ?? ''}" placeholder="preț unitar *" style="${inputStyle}">
+      <input class="tr-um" value="${escapeHTML(t.unitate_masura || '')}" placeholder="u.m." style="${inputStyle}">
+      <input class="tr-moneda" value="${escapeHTML(t.moneda || monedaImplicita)}" maxlength="3" style="${inputStyle};text-transform:uppercase">
+      <div style="display:flex;gap:4px">
+        <button onclick="salveazaTarifResursa(this)" class="btn-p" style="font-size:10px;padding:5px 6px">Salv.</button>
+        ${t.id ? `<button onclick="stergeTarifResursa('${t.id}')" class="btn-s" style="font-size:10px;padding:5px 6px">✕</button>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function renderTarifeResurse(tarife) {
+  const header = `
+    <div style="display:grid;grid-template-columns:90px 1fr 55px 90px 70px 60px 65px;gap:5px;margin-bottom:6px;font-size:10px;color:#8BA3C0">
+      <span>Cod</span><span>Denumire</span><span>Țară</span><span>Preț unitar *</span><span>U.m.</span><span>Monedă</span><span></span>
+    </div>`;
+  document.getElementById('tr-lista').innerHTML = header + (tarife.length
+    ? tarife.map(randTarifResursaHTML).join('')
+    : `<div style="color:#8BA3C0;font-size:12px;padding:10px 0">Niciun tarif salvat pentru această combinație încă — caută o resursă mai sus ca s-o adaugi.</div>`);
+}
+
+function adaugaRandTarifResursa(resursa_id, denumire, unitate_masura) {
+  document.getElementById('tr-cauta').value = '';
+  document.getElementById('tr-cauta-rezultate').innerHTML = '';
+  const existent = document.getElementById('tr-lista').querySelector(`.tr-rand[data-resursa-id="${resursa_id}"]`);
+  if (existent) { existent.querySelector('.tr-pret').focus(); return; }
+  document.getElementById('tr-lista').insertAdjacentHTML('afterbegin', randTarifResursaHTML({ resursa_id, denumire_resursa: denumire, unitate_masura }));
+}
+
+async function salveazaTarifResursa(btn) {
+  const rand = btn.closest('.tr-rand');
+  const resursaId = Number(rand.dataset.resursaId);
+  const taraCod = rand.querySelector('.tr-tara-r').value.trim().toUpperCase();
+  const pretRaw = rand.querySelector('.tr-pret').value.trim();
+  if (!resursaId) return alert('Resursa lipsește — caută-o din nou');
+  if (pretRaw === '' || Number(pretRaw) <= 0) return alert('Preț unitar trebuie să fie un număr pozitiv');
+
+  const body = {
+    action: 'salveaza',
+    tip: document.getElementById('tr-tip').value,
+    id: rand.dataset.id || undefined,
+    resursa_id: resursaId,
+    tara_cod: taraCod,
+    pret_unitar: Number(pretRaw),
+    unitate_masura: rand.querySelector('.tr-um').value.trim() || null,
+    moneda: rand.querySelector('.tr-moneda').value.trim().toUpperCase() || 'RON',
+  };
+
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/tarife-resurse-fizice', { method: 'POST', headers, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadTarifeResurse();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+async function stergeTarifResursa(id) {
+  if (!confirm('Ștergi acest tarif?')) return;
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/tarife-resurse-fizice', { method: 'POST', headers, body: JSON.stringify({ action: 'sterge', tip: document.getElementById('tr-tip').value, id }) });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadTarifeResurse();
   } catch (e) { alert('Eroare: ' + e.message); }
 }
 
