@@ -82,7 +82,7 @@ async function maybeConvert(res, invoice_id) {
 }
 
 async function actionUpdateTaxConfig(req, res, user) {
-  const { tara_cod, cota_tva, cota_impozit_venit, cota_impozit_salarii, prag_minim_comanda } = req.body;
+  const { tara_cod, tara_nume, moneda, cota_tva, cota_impozit_venit, cota_impozit_salarii, prag_minim_comanda } = req.body;
   // prag_minim_comanda (22 august 2026, extensie configurabilă per țară a
   // fix-ului de integritate din aceeași zi) — undefined (câmp netrimis de
   // apelanți vechi) rămâne neatins; null (câmp gol în UI) explicit șters,
@@ -93,16 +93,37 @@ async function actionUpdateTaxConfig(req, res, user) {
       ? null
       : Number(prag_minim_comanda);
   }
-  const { data, error } = await supabaseAdmin
+
+  const { data: existenta } = await supabaseAdmin
     .from('tax_configurations')
-    .update(update)
+    .select('tara_cod')
     .eq('tara_cod', tara_cod)
-    .select()
-    .single();
+    .maybeSingle();
+
+  let data, error;
+  if (existenta) {
+    ({ data, error } = await supabaseAdmin
+      .from('tax_configurations')
+      .update(update)
+      .eq('tara_cod', tara_cod)
+      .select()
+      .single());
+  } else {
+    // Țară nouă (29 august 2026 — RS/ME/UA, cerute explicit de fondator, lipseau
+    // complet din tax_configurations). tara_nume/moneda obligatorii doar la creare.
+    if (!tara_nume || !moneda) {
+      return res.status(400).json({ error: 'tara_nume și moneda sunt obligatorii la crearea unei țări noi' });
+    }
+    ({ data, error } = await supabaseAdmin
+      .from('tax_configurations')
+      .insert({ tara_cod, tara_nume, moneda, cota_tva, cota_impozit_venit, cota_impozit_salarii, checkout_activ: false, activ: true })
+      .select()
+      .single());
+  }
   if (error) return res.status(500).json({ error: 'Eroare la actualizare' });
   await inregistreazaAudit({
-    admin: user, req, actiune: 'actualizare_cote_fiscale', entitate: 'tax_configurations', entitate_id: tara_cod,
-    detalii: { cota_tva, cota_impozit_venit, cota_impozit_salarii, prag_minim_comanda: update.prag_minim_comanda },
+    admin: user, req, actiune: existenta ? 'actualizare_cote_fiscale' : 'creare_tara_fiscala', entitate: 'tax_configurations', entitate_id: tara_cod,
+    detalii: { tara_cod, tara_nume, moneda, cota_tva, cota_impozit_venit, cota_impozit_salarii, prag_minim_comanda: update.prag_minim_comanda },
   });
   return res.status(200).json({ ok: true, config: data });
 }
