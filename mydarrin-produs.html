@@ -3528,6 +3528,11 @@ const PILOT_SERVICII_MAP = {
   'reparatii-utilaje-agricole': '5db12c3f-1b62-4966-97e8-297107de772e',
   'service-moto': '87fd92b3-caf4-438f-abe7-87b567c193cb',
   'livrare-turnare-betoane': '67b064da-70b2-47be-9e62-e852f931efc4',
+  // Al 6-lea serviciu pilot (29 august 2026) — primul cu 2+ niveluri reale
+  // simultan (Bronze/Silver/Gold, toate cu preț calculabil) și primul
+  // facturat pe altă unitate decât ora (mp) — exercită prima dată live
+  // grila dinamică N-coloane construită pe 22 august, dar netestată până azi.
+  'montaj-parchet-laminat': '59c4f00a-5438-4a70-9b6b-0fc142f243bc',
 };
 const NIVEL_RANG = { Bronze: 0, Silver: 1, Gold: 2, Platinum: 3 };
 const NIVEL_LABEL = { Bronze: 'BRONZ', Silver: 'ARGINT', Gold: 'AUR', Platinum: 'PLATINUM' };
@@ -3543,7 +3548,7 @@ async function initPilotProdus(slug) {
   try {
     const headers = { apikey: SUPA_PROD_ANON, Authorization: `Bearer ${SUPA_PROD_ANON}` };
     const [servRes, nivRes] = await Promise.all([
-      fetch(`${SUPA_PROD_URL}/rest/v1/catalog_servicii?id=eq.${serviciuId}&select=id,titlu,domeniu`, { headers }).then(r => r.ok ? r.json() : []),
+      fetch(`${SUPA_PROD_URL}/rest/v1/catalog_servicii?id=eq.${serviciuId}&select=id,titlu,domeniu,unitate_masura`, { headers }).then(r => r.ok ? r.json() : []),
       fetch(`${SUPA_PROD_URL}/rest/v1/catalog_niveluri?serviciu_id=eq.${serviciuId}&select=id,nivel,descriere`, { headers }).then(r => r.ok ? r.json() : []),
     ]);
     servRow = servRes[0]; niveluriRows = nivRes;
@@ -3580,7 +3585,13 @@ async function initPilotProdus(slug) {
   S.pilotServiciuId = serviciuId;
   S.pilotNiveluri = preturiReale;
   S.pilotNivelId = preturiReale[0].nivel_id;
-  S.type = 'serviciu'; S.unit = 'ore';
+  // Bug real găsit la testarea „Montaj Parchet Laminat" (29 august 2026):
+  // cele 5 servicii pilot anterioare erau toate pe oră — unitatea era
+  // hardcodată. Primul serviciu pilot facturat pe altă unitate (mp) ar fi
+  // afișat greșit "Cantitate (ore)"/"20 ore" pentru o lucrare de pardoseală.
+  // Acum citită real din catalog_servicii.unitate_masura, cu fallback la
+  // 'ore' — identic cu comportamentul vechi pentru cele 5 servicii orare.
+  S.type = 'serviciu'; S.unit = servRow.unitate_masura || 'ore';
 
   document.title = servRow.titlu + ' | My Darrin';
   setEl('bc-title', servRow.titlu);
@@ -3594,8 +3605,8 @@ async function initPilotProdus(slug) {
   const sumIcon = document.getElementById('sum-icon'); if (sumIcon) sumIcon.textContent = '';
   setEl('sum-title', servRow.titlu);
   setEl('sum-sub', 'Serviciu');
-  setEl('qty-label-lbl', 'Cantitate (ore)');
-  setEl('unit-lbl', 'ore');
+  setEl('qty-label-lbl', 'Cantitate (' + S.unit + ')');
+  setEl('unit-lbl', S.unit);
   setEl('sec1-ttl', 'Configurare serviciu');
   const reqBox = document.getElementById('req-box'); if (reqBox) reqBox.style.display = 'none';
 
