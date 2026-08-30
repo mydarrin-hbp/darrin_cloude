@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Coșul tău | My Darrin</title>
+<script>
+  window.__ENV__ = {
+    SUPABASE_URL: 'https://aacojyvujhywanaulvuu.supabase.co',
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhY29qeXZ1amh5d2FuYXVsdnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MjAzMzIsImV4cCI6MjA5ODQ5NjMzMn0.iwZnxctvazOL5OU_wqD7AvAKrVoOqLH_uvj1krK8-vs'
+  };
+</script>
+<script>
+window.MyDarrinAuth = window.MyDarrinAuth || {
+  getCurrentUser: async function(){ return null; },
+  getUserRoles:   async function(){ return []; },
+  performLogout:  async function(){ window.location.href='/'; },
+  isLoggedIn:     function(){ return false; }
+};
+</script>
+<script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
+<script src="format-currency.js"></script>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Helvetica Neue',Arial,system-ui,sans-serif;background:#F7F9FC;color:#2D2D2D}
+  header{background:#003366;padding:14px 20px;display:flex;align-items:center;justify-content:space-between}
+  header a.logo{color:#fff;font-weight:800;font-size:16px;text-decoration:none;letter-spacing:.02em}
+  header a.back{color:rgba(255,255,255,.75);font-size:13px;text-decoration:none}
+  header a.back:hover{color:#fff}
+  .wrap{max-width:760px;margin:0 auto;padding:28px 20px 90px}
+  h1{font-size:21px;font-weight:800;color:#003366;margin:0 0 4px}
+  .sub{font-size:13px;color:#8C9BAD;margin:0 0 24px}
+  .empty{background:#fff;border:1px solid #E8ECF0;border-radius:16px;padding:48px 24px;text-align:center}
+  .empty p{color:#6B7A8D;font-size:13.5px;margin:0 0 16px}
+  .btn-cta{display:inline-block;background:#FF8C00;color:#1A1A1A;font-weight:700;font-size:13.5px;padding:11px 22px;border-radius:10px;text-decoration:none}
+  .item{background:#fff;border:1px solid #E8ECF0;border-radius:14px;padding:16px 18px;margin-bottom:14px;display:flex;flex-direction:column;gap:8px}
+  .item-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .item-title{font-size:14.5px;font-weight:700;color:#003366}
+  .item-meta{font-size:12px;color:#8C9BAD;margin-top:3px}
+  .item-price{font-size:15px;font-weight:800;color:#0E9E99;white-space:nowrap}
+  .item-price.pending{color:#8C9BAD;font-weight:600;font-size:12.5px}
+  .item-addons{font-size:11.5px;color:#6B7A8D;background:#F4F7F9;border-radius:8px;padding:6px 10px}
+  .item-actions{display:flex;justify-content:flex-end}
+  .btn-remove{background:none;border:none;color:#C0392B;font-size:12px;font-weight:700;cursor:pointer;padding:4px 6px}
+  .addr-warn{font-size:11.5px;color:#C0392B;background:#FDECEA;border-radius:8px;padding:6px 10px}
+  .addr-input{width:100%;padding:8px 10px;border:1.5px solid #D5DFE8;border-radius:8px;font-size:12.5px;font-family:inherit;margin-top:4px}
+  .summary{background:#fff;border:1px solid #E8ECF0;border-radius:14px;padding:18px 20px;margin-top:8px}
+  .summary-row{display:flex;justify-content:space-between;font-size:13.5px;color:#6B7A8D;padding:4px 0}
+  .summary-row.total{font-size:17px;font-weight:800;color:#003366;border-top:1px solid #EEF2F7;margin-top:8px;padding-top:12px}
+  .btn-submit{width:100%;background:#003366;color:#fff;font-weight:700;font-size:14px;padding:14px;border:none;border-radius:12px;cursor:pointer;margin-top:14px}
+  .btn-submit:disabled{background:#B8C4CE;cursor:not-allowed}
+  .note{font-size:11px;color:#8C9BAD;text-align:center;margin-top:10px;line-height:1.5}
+  .status-box{border-radius:12px;padding:12px 14px;font-size:12.5px;margin-bottom:16px;display:none}
+  .status-box.ok{background:#D4EDDA;color:#1A7A3A;border:1px solid rgba(26,122,58,.2)}
+  .status-box.err{background:#FDECEA;color:#C0392B;border:1px solid rgba(220,38,38,.2)}
+</style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="index.html">My Darrin</a>
+  <a class="back" href="mydarrin-catalog.html">← Înapoi la catalog</a>
+</header>
+
+<div class="wrap">
+  <h1>Coșul tău</h1>
+  <p class="sub">Serviciile/materialele adăugate mai jos devin, la trimitere, comenzi separate — fiecare cu propria plată securizată prin escrow.</p>
+
+  <div id="status-ok" class="status-box ok"></div>
+  <div id="status-err" class="status-box err"></div>
+
+  <div id="empty-state" class="empty" style="display:none">
+    <p>Coșul tău e gol momentan.</p>
+    <a class="btn-cta" href="mydarrin-catalog.html">Răsfoiește catalogul</a>
+  </div>
+
+  <div id="items-list"></div>
+
+  <div id="summary-wrap" style="display:none" class="summary">
+    <div class="summary-row"><span id="summary-count">0 itemi</span><span id="summary-sub">—</span></div>
+    <div class="summary-row total"><span>Total estimat</span><span id="summary-total">—</span></div>
+    <button class="btn-submit" id="btn-submit" onclick="trimiteComenzile()">Trimite comenzile</button>
+    <p class="note">Fiecare item devine o comandă separată, cu propriul escrow și partener alocat. Plata se face prin ordin de plată, conform politicii curente. Prețurile marcate „se calculează la trimitere" sunt confirmate integral, server-side, în acel moment.</p>
+  </div>
+</div>
+
+<script>
+const SUPA_URL  = window.__ENV__?.SUPABASE_URL  || 'https://aacojyvujhywanaulvuu.supabase.co';
+const SUPA_ANON = window.__ENV__?.SUPABASE_ANON_KEY || '';
+let ITEMI = [];
+
+function _guestToken() {
+  try {
+    let t = localStorage.getItem('myd_guest_token');
+    if (!t) { t = crypto.randomUUID(); localStorage.setItem('myd_guest_token', t); }
+    return t;
+  } catch (e) { return null; }
+}
+
+async function _authHeaders() {
+  const session = (await window.supabaseClient?.auth.getSession())?.data?.session;
+  return session?.access_token
+    ? { headers: { Authorization: `Bearer ${session.access_token}` }, qs: '', token: session.access_token }
+    : { headers: {}, qs: `?sesiune_token=${encodeURIComponent(_guestToken() || '')}`, token: null };
+}
+
+function fmt(n) {
+  if (typeof window.fmtCurrency === 'function') return window.fmtCurrency(n);
+  return (Math.round((n || 0) * 100) / 100).toLocaleString('ro-RO') + ' Lei';
+}
+
+async function incarcaCos() {
+  const auth = await _authHeaders();
+  try {
+    const res = await fetch(`/api/client/cos-multi${auth.qs}`, { headers: auth.headers });
+    const data = await res.json();
+    ITEMI = data?.ok ? (data.itemi || []) : [];
+  } catch (e) {
+    ITEMI = [];
+  }
+  await randeazaItemi();
+}
+
+async function randeazaItemi() {
+  const listEl = document.getElementById('items-list');
+  const emptyEl = document.getElementById('empty-state');
+  const summaryEl = document.getElementById('summary-wrap');
+
+  if (!ITEMI.length) {
+    listEl.innerHTML = '';
+    emptyEl.style.display = '';
+    summaryEl.style.display = 'none';
+    return;
+  }
+  emptyEl.style.display = 'none';
+  summaryEl.style.display = '';
+
+  // Prețul real, pentru itemii cu nivel_id (mod pilot), se calculează live —
+  // identic sursă de adevăr cu mydarrin-produs.html, niciodată reinventat aici.
+  const preturi = await Promise.all(ITEMI.map(async (it) => {
+    const c = it.configurare || {};
+    if (!c.nivel_id) return { pret: c.total || null, live: false };
+    try {
+      const addonMateriale = [...(c.materiale || []), ...(c.inchirieri || [])].map(m => ({ id: m.id, qty: m.qty }));
+      const res = await fetch('/api/public/calculeaza-pret-nivel', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nivel_id: c.nivel_id, cantitate: c.cantitate || 1, tara_cod: c.tara_cod || 'RO', addon_materiale: addonMateriale }),
+      });
+      const data = await res.json();
+      return data?.ok && data.disponibil ? { pret: data.pret_final, live: true } : { pret: null, live: true, indisponibil: true };
+    } catch (e) { return { pret: null, live: true, eroare: true }; }
+  }));
+
+  listEl.innerHTML = ITEMI.map((it, i) => {
+    const c = it.configurare || {};
+    const p = preturi[i];
+    const addonuri = [...(c.materiale || []), ...(c.inchirieri || [])];
+    const addonTxt = addonuri.length ? addonuri.map(a => `${escapeHTML(a.titlu)} ×${a.qty}`).join(', ') : '';
+    const pretHTML = p.pret != null
+      ? `<div class="item-price">${fmt(p.pret)}</div>`
+      : `<div class="item-price pending">${p.indisponibil ? 'rețetă incompletă' : 'se calculează la trimitere'}</div>`;
+    const adresaHTML = c.addr
+      ? `<div class="item-meta">📍 ${escapeHTML(c.addr)}</div>`
+      : `<div class="addr-warn">Lipsește adresa de execuție — completeaz-o mai jos.<input class="addr-input" placeholder="Str. Exemplu nr. 10, oraș" onchange="setaAdresa('${it.id}', this.value)"/></div>`;
+    return `<div class="item" data-id="${it.id}">
+      <div class="item-top">
+        <div>
+          <div class="item-title">${escapeHTML(c.titlu || 'Serviciu')}</div>
+          <div class="item-meta">${escapeHTML(c.tierLabel || c.tier || '')} · ${c.qty || 1} ${escapeHTML(c.unit || '')}</div>
+        </div>
+        ${pretHTML}
+      </div>
+      ${addonTxt ? `<div class="item-addons">Materiale/echipamente: ${addonTxt}</div>` : ''}
+      ${adresaHTML}
+      <div class="item-actions"><button class="btn-remove" onclick="eliminaItem('${it.id}')">Elimină</button></div>
+    </div>`;
+  }).join('');
+
+  const totalCunoscut = preturi.reduce((s, p) => s + (p.pret || 0), 0);
+  const cateNecunoscute = preturi.filter(p => p.pret == null).length;
+  document.getElementById('summary-count').textContent = `${ITEMI.length} ${ITEMI.length === 1 ? 'serviciu' : 'servicii'} în coș`;
+  document.getElementById('summary-sub').textContent = cateNecunoscute ? `${cateNecunoscute} se calculează la trimitere` : '';
+  document.getElementById('summary-total').textContent = fmt(totalCunoscut) + (cateNecunoscute ? ' +' : '');
+}
+
+function escapeHTML(str) {
+  const d = document.createElement('div');
+  d.textContent = str == null ? '' : String(str);
+  return d.innerHTML;
+}
+
+function setaAdresa(id, valoare) {
+  const it = ITEMI.find(x => x.id === id);
+  if (it) it.configurare = { ...it.configurare, addr: valoare };
+}
+
+async function eliminaItem(id) {
+  const auth = await _authHeaders();
+  try {
+    await fetch(`/api/client/cos-multi?id=${encodeURIComponent(id)}${auth.qs.replace('?', '&')}`, { method: 'DELETE', headers: auth.headers });
+  } catch (e) { /* best-effort — oricum reîncărcăm lista */ }
+  ITEMI = ITEMI.filter(x => x.id !== id);
+  await randeazaItemi();
+}
+
+function _mostrareStatus(tip, mesaj) {
+  const ok = document.getElementById('status-ok');
+  const err = document.getElementById('status-err');
+  ok.style.display = 'none'; err.style.display = 'none';
+  const el = tip === 'ok' ? ok : err;
+  el.textContent = mesaj;
+  el.style.display = '';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Trimite fiecare item ca o comandă SEPARATĂ (api/comenzi/creeaza.js,
+// neschimbat) — model aprobat explicit de fondator (30 august 2026): nu o
+// comandă compusă cu escrow unic. Itemii reușiți sunt eliminați din coș;
+// cei eșuați rămân, cu mesajul real de eroare, ca utilizatorul să corecteze
+// (de regulă: adresă lipsă sau rețetă incompletă) și să reîncerce.
+async function trimiteComenzile() {
+  const auth = await _authHeaders();
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  btn.textContent = 'Se trimit comenzile...';
+
+  const reusite = [];
+  const esuate = [];
+
+  for (const it of ITEMI) {
+    const c = it.configurare || {};
+    if (!c.addr || typeof c.addr !== 'string' || !c.addr.trim()) {
+      esuate.push({ titlu: c.titlu, motiv: 'Adresă de execuție lipsă' });
+      continue;
+    }
+    const geo = window.MYD_GEO_LAST || {};
+    const taraComanda = c.tara_cod || geo.cc || 'RO';
+    const regiuneComanda = c.regiune || geo.region || null;
+    const localitateComanda = c.localitate || geo.city || null;
+
+    let corp;
+    if (c.nivel_id) {
+      const addonMateriale = [...(c.materiale || []), ...(c.inchirieri || [])].map(m => ({ id: m.id, qty: m.qty }));
+      corp = {
+        adresa: c.addr, tara_cod: taraComanda, regiune: regiuneComanda, localitate: localitateComanda,
+        nivel_id: c.nivel_id, cantitate: c.cantitate || 1, addon_materiale: addonMateriale,
+        data_programata: c.selDateISO || null, ora_inceput_programata: c.selOraInceput || null, ora_sfarsit_programata: c.selOraSfarsit || null,
+        metoda_plata: 'ordin_plata',
+      };
+    } else {
+      // Calea veche (cost_*), identică formulei din mydarrin-checkout.html —
+      // aceleași componente RAW, nu totalul deja majorat (ar dubla TVA/platforma).
+      const cost_baza_servicii = c.bazaRaw ?? 0;
+      const cost_asigurare = c.insPrice || 0;
+      const cost_materiale = c.materialePrice || 0;
+      const cost_chirie_scule = c.inchirieriPrice || 0;
+      corp = {
+        adresa: c.addr, tara_cod: taraComanda, regiune: regiuneComanda, localitate: localitateComanda,
+        cost_baza_servicii, cost_asigurare, cost_materiale, cost_chirie_scule,
+        valoare_totala: cost_baza_servicii + cost_asigurare + cost_materiale + cost_chirie_scule,
+        data_programata: c.selDateISO || null, ora_inceput_programata: c.selOraInceput || null, ora_sfarsit_programata: c.selOraSfarsit || null,
+        metoda_plata: 'ordin_plata',
+      };
+    }
+
+    try {
+      const res = await fetch('/api/comenzi/creeaza', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(auth.token ? { Authorization: `Bearer ${auth.token}` } : {}) },
+        body: JSON.stringify(corp),
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        reusite.push({ titlu: c.titlu, nr: data.comanda?.nr_comanda });
+        await fetch(`/api/client/cos-multi?id=${encodeURIComponent(it.id)}${auth.qs.replace('?', '&')}`, { method: 'DELETE', headers: auth.headers });
+      } else {
+        esuate.push({ titlu: c.titlu, motiv: data.error || 'Eroare necunoscută' });
+      }
+    } catch (e) {
+      esuate.push({ titlu: c.titlu, motiv: 'Eroare de rețea' });
+    }
+  }
+
+  // Recalculăm strict din ce a rămas cu adevărat în coș (server-ul e sursa
+  // de adevăr, nu presupuneri locale despre ce s-a șters cu succes mai sus).
+  await incarcaCos();
+
+  btn.disabled = false;
+  btn.textContent = 'Trimite comenzile';
+
+  if (reusite.length && !esuate.length) {
+    _mostrareStatus('ok', `✓ ${reusite.length} ${reusite.length === 1 ? 'comandă creată' : 'comenzi create'} cu succes: ${reusite.map(r => r.nr).join(', ')}. Vezi detalii în dashboard.`);
+  } else if (reusite.length && esuate.length) {
+    _mostrareStatus('err', `${reusite.length} ${reusite.length === 1 ? 'comandă creată' : 'comenzi create'} (${reusite.map(r => r.nr).join(', ')}). ${esuate.length} au eșuat: ${esuate.map(e => `${e.titlu} — ${e.motiv}`).join('; ')}.`);
+  } else if (esuate.length) {
+    _mostrareStatus('err', `Nicio comandă n-a putut fi creată: ${esuate.map(e => `${e.titlu} — ${e.motiv}`).join('; ')}.`);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', incarcaCos);
+</script>
+
+</body>
+</html>

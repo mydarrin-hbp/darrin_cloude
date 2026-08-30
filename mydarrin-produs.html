@@ -791,41 +791,50 @@ function _guestToken() {
   } catch (e) { return null; }
 }
 
+// Extras din salveazaStareaCheckout() (30 august 2026) — aceeași formă de
+// configurare e folosită acum în 2 locuri: backup-ul single-item existent
+// (api/client/cos) ȘI itemii coșului multi-serviciu (api/client/cos-multi,
+// vezi adaugaInCos() mai jos) — un singur loc care construiește obiectul,
+// nu duplicat.
+function _construiesteConfigCurenta() {
+  const titlu = S.pilotMode
+    ? (document.getElementById('prod-title')?.textContent || S.slug)
+    : ((typeof PRODUCTS_DB !== 'undefined' && PRODUCTS_DB[S.slug]?.title) || S.slug);
+  return {
+    titlu, slug: S.slug, type: S.type, tier: S.tier, tierLabel: S.tierLabel,
+    qty: S.qty, unit: S.unit, orderType: S.orderType,
+    ins: S.ins, insPrice: S.insPrice,
+    addr: S.addr, selDate: S.selDate, selTime: S.selTime,
+    selDateISO: S.selDateISO, selOraInceput: S.selOraInceput, selOraSfarsit: S.selOraSfarsit,
+    // G27 (26 Iulie 2026) — derivate din geocodarea reală a adresei de
+    // execuție (Nominatim), nu din locația dispozitivului — comanda se
+    // execută la adresa clientului, nu neapărat unde e telefonul lui.
+    tara_cod: S.tara_cod || null, regiune: S.regiune || null, localitate: S.localitate || null,
+    total: S.total, basePrice: S.basePrice,
+    // G16 (26 Iulie 2026) — componente RAW (pre-TVA/platformă), pentru
+    // trimiterea itemizată reală către checkout (vezi mydarrin-checkout.html);
+    // `total`/`basePrice` de mai sus rămân neschimbate, doar pentru afișare.
+    bazaRaw: S.bazaRaw,
+    materialePrice: S.materialePrice, inchirieriPrice: S.inchirieriPrice,
+    // Faza 2/3 CAT (29 august 2026) — `id` (catalog_servicii.id) e câmpul
+    // pe care checkout.html îl trimite mai departe ca `addon_materiale` pe
+    // calea nivel_id; `pret` de aici rămâne DOAR pentru afișare locală —
+    // serverul (rezolvaAddonMateriale) nu-l citește niciodată.
+    materiale: S.materiale.map(m => ({ id: m.id, titlu: m.titlu, qty: m.qty, pret: _addonPretNivel(m) })),
+    inchirieri: S.inchirieri.map(m => ({ id: m.id, titlu: m.titlu, qty: m.qty, pret: _addonPretNivel(m) })),
+    // Mod pilot (22 august 2026) — nivel_id+cantitate, singurele câmpuri
+    // citite de calea nouă din api/comenzi/creeaza.js; null pentru orice
+    // alt produs (calea veche, cost_*, neatinsă).
+    nivel_id: S.pilotMode ? S.pilotNivelId : null,
+    cantitate: S.pilotMode ? S.qty : null,
+    pilotPretConfirmat: S.pilotMode ? _pilotPretConfirmat : null,
+    salvat_la: Date.now(),
+  };
+}
+
 function salveazaStareaCheckout() {
   try {
-    const titlu = S.pilotMode
-      ? (document.getElementById('prod-title')?.textContent || S.slug)
-      : ((typeof PRODUCTS_DB !== 'undefined' && PRODUCTS_DB[S.slug]?.title) || S.slug);
-    const config = {
-      titlu, slug: S.slug, type: S.type, tier: S.tier, tierLabel: S.tierLabel,
-      qty: S.qty, unit: S.unit, orderType: S.orderType,
-      ins: S.ins, insPrice: S.insPrice,
-      addr: S.addr, selDate: S.selDate, selTime: S.selTime,
-      selDateISO: S.selDateISO, selOraInceput: S.selOraInceput, selOraSfarsit: S.selOraSfarsit,
-      // G27 (26 Iulie 2026) — derivate din geocodarea reală a adresei de
-      // execuție (Nominatim), nu din locația dispozitivului — comanda se
-      // execută la adresa clientului, nu neapărat unde e telefonul lui.
-      tara_cod: S.tara_cod || null, regiune: S.regiune || null, localitate: S.localitate || null,
-      total: S.total, basePrice: S.basePrice,
-      // G16 (26 Iulie 2026) — componente RAW (pre-TVA/platformă), pentru
-      // trimiterea itemizată reală către checkout (vezi mydarrin-checkout.html);
-      // `total`/`basePrice` de mai sus rămân neschimbate, doar pentru afișare.
-      bazaRaw: S.bazaRaw,
-      materialePrice: S.materialePrice, inchirieriPrice: S.inchirieriPrice,
-      // Faza 2/3 CAT (29 august 2026) — `id` (catalog_servicii.id) e câmpul
-      // pe care checkout.html îl trimite mai departe ca `addon_materiale` pe
-      // calea nivel_id; `pret` de aici rămâne DOAR pentru afișare locală —
-      // serverul (rezolvaAddonMateriale) nu-l citește niciodată.
-      materiale: S.materiale.map(m => ({ id: m.id, titlu: m.titlu, qty: m.qty, pret: _addonPretNivel(m) })),
-      inchirieri: S.inchirieri.map(m => ({ id: m.id, titlu: m.titlu, qty: m.qty, pret: _addonPretNivel(m) })),
-      // Mod pilot (22 august 2026) — nivel_id+cantitate, singurele câmpuri
-      // citite de calea nouă din api/comenzi/creeaza.js; null pentru orice
-      // alt produs (calea veche, cost_*, neatinsă).
-      nivel_id: S.pilotMode ? S.pilotNivelId : null,
-      cantitate: S.pilotMode ? S.qty : null,
-      pilotPretConfirmat: S.pilotMode ? _pilotPretConfirmat : null,
-      salvat_la: Date.now(),
-    };
+    const config = _construiesteConfigCurenta();
     sessionStorage.setItem('myd_checkout_config', JSON.stringify(config));
 
     // Etapa 1 — backup server-side, best-effort, nu blochează navigarea la
@@ -845,6 +854,29 @@ function salveazaStareaCheckout() {
     })();
   } catch (e) {
     console.warn('[checkout-config] nu am putut salva starea în sessionStorage:', e);
+  }
+}
+
+// Coș multi-serviciu (30 august 2026, cerere fondator) — adaugă configurarea
+// CURENTĂ ca item nou în cos_multi_itemi (api/client/cos-multi), distinct de
+// backup-ul single-item de mai sus. Întoarce true/false (succes), niciodată
+// nu aruncă — apelanții (continuaCumparaturile/adaugaServiciuNou) navighează
+// oricum mai departe, cu sau fără succes (best-effort, ca la salveazaStareaCheckout).
+async function adaugaInCos() {
+  try {
+    const config = _construiesteConfigCurenta();
+    const session = (await window.supabaseClient?.auth.getSession())?.data?.session;
+    const body = { configurare: config };
+    if (!session?.access_token) body.sesiune_token = _guestToken();
+    const res = await fetch('/api/client/cos-multi', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) },
+      body: JSON.stringify(body),
+    });
+    return res.ok;
+  } catch (e) {
+    console.warn('[cos-multi] nu am putut adăuga în coș:', e);
+    return false;
   }
 }
 
@@ -1650,10 +1682,11 @@ function triggerHeaderSearch(){
              coșului multi-serviciu: clientul poate continua să răsfoiască sau
              adăuga explicit un alt serviciu/material/echipament, fără să piardă
              configurarea curentă (deja salvată prin salveazaStareaCheckout()). -->
-        <div style="display:flex;gap:10px;margin-bottom:20px">
+        <div style="display:flex;gap:10px;margin-bottom:10px">
           <button type="button" onclick="continuaCumparaturile()" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid #D5DFE8;background:#fff;color:#6B7A8D;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">← Continuă cumpărăturile</button>
           <button type="button" onclick="adaugaServiciuNou()" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid #D5DFE8;background:#fff;color:#003366;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">+ Adaugă un nou serviciu</button>
         </div>
+        <a href="mydarrin-cos.html" id="cos-indicator" style="display:none;margin-bottom:20px;text-align:center;padding:9px;border-radius:10px;background:#EBF4FB;color:#003366;font-size:12.5px;font-weight:700;text-decoration:none">🛒 Coș</a>
 
         <!-- „Poate te interesează și..." (30 august 2026) — recomandări reale,
              din catalog_relatii (curatoriate) sau, dacă lipsesc, din același
@@ -3508,13 +3541,38 @@ function renderAddonList() {
 // înainte de a pleca de pe pagină, ca "Continuă cumpărăturile" să nu piardă
 // ce era deja completat (coșul propriu-zis, cu mai multe servicii simultan,
 // e etapa următoare — azi rămâne o singură configurare "curentă" salvată).
-function continuaCumparaturile() {
-  salveazaStareaCheckout();
+async function continuaCumparaturile() {
+  await adaugaInCos();
   window.location.href = 'mydarrin-catalog.html';
 }
-function adaugaServiciuNou() {
-  salveazaStareaCheckout();
+async function adaugaServiciuNou() {
+  await adaugaInCos();
   window.location.href = 'mydarrin-catalog.html';
+}
+
+// Indicator coș (30 august 2026) — link vizibil direct pe pagina de
+// configurare spre mydarrin-cos.html, cu numărul real de itemi deja
+// adăugați. Scop limitat, transparent: doar paginile implicate direct în
+// acest flux (produs/coș/catalog) — un indicator global în header-ul comun,
+// pe toate ~40 fișierele publice, rămâne proiect separat (Etapa DES).
+async function actualizeazaIndicatorCos() {
+  const el = document.getElementById('cos-indicator');
+  if (!el) return;
+  try {
+    const session = (await window.supabaseClient?.auth.getSession())?.data?.session;
+    const qs = session?.access_token ? '' : `?sesiune_token=${encodeURIComponent(_guestToken() || '')}`;
+    const res = await fetch(`/api/client/cos-multi${qs}`, {
+      headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+    });
+    const data = await res.json();
+    const n = data?.ok ? (data.itemi || []).length : 0;
+    if (n > 0) {
+      el.style.display = '';
+      el.textContent = `🛒 Coș (${n})`;
+    } else {
+      el.style.display = 'none';
+    }
+  } catch (e) { /* indicator best-effort, fără cont în flux */ }
 }
 
 // „Poate te interesează și..." (30 august 2026, cerere fondator) — recomandări
@@ -3896,6 +3954,7 @@ document.addEventListener('DOMContentLoaded',async ()=>{
   setType('standard',document.getElementById('btn-std'));
   loadAddonCatalog();
   loadRecomandari();
+  actualizeazaIndicatorCos();
   updateProgBars();
   openSec(1);
 });
