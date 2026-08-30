@@ -369,6 +369,10 @@ async function handler(req, res, user) {
     // confirmarea încasării+livrării) — doar primul pas, emiterea proformei,
     // lipsea. Izolat în propriul try/catch: o eroare la proformă nu trebuie
     // să blocheze comanda deja înregistrată cu succes.
+    // Notă 2 (29 august 2026) — hoist-uit în afara try-ului, ca emailul de
+    // mai jos să poată menționa numărul real de proformă (sau nimic, dacă
+    // emiterea eșuează — niciodată un număr fals).
+    let numarProforma = null;
     try {
       const anProforma = new Date().getFullYear();
       const { count: countProforma } = await supabaseAdmin
@@ -376,7 +380,7 @@ async function handler(req, res, user) {
         .select('id', { count: 'exact', head: true })
         .eq('tip', 'proforma')
         .gte('emisa_la', `${anProforma}-01-01`);
-      const numarProforma = `PF-${anProforma}-${String((countProforma || 0) + 1).padStart(6, '0')}`;
+      numarProforma = `PF-${anProforma}-${String((countProforma || 0) + 1).padStart(6, '0')}`;
 
       // FIX (G1, audit Secțiunea 6/36, 30 Iulie 2026): tara_cod (denormalizat
       // de pe comandă — util dacă vreodată o proformă există fără comanda_id)
@@ -421,7 +425,7 @@ async function handler(req, res, user) {
           .maybeSingle();
         if (profilClient?.email) {
           const limba = limbaProfilEmailComportamental(profilClient);
-          const { subiect, html } = renderEmailPrimaComanda(limba, { nume: null, numarComanda: data.nr_comanda || data.id });
+          const { subiect, html } = renderEmailPrimaComanda(limba, { nume: null, numarComanda: data.nr_comanda || data.id, comandaId: data.id, numarProforma });
           await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },

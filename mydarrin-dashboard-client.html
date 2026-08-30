@@ -3157,6 +3157,18 @@ async function loadComenziReale() {
     COMENZI_REALE = [];
   }
 
+  // Notă 2 (29 august 2026, cerere fondator): link-ul "Vezi Detalii Comandă"
+  // din emailul de confirmare ducea la dashboard-ul generic, fără nicio
+  // legătură cu comanda reală. Acum trimite ?comanda=<uuid> — deschidem
+  // automat drawer-ul real (openDrawer(), deja existent) dacă id-ul se
+  // găsește în comenzile reale ale clientului; altfel, tăcut, nu forțăm nimic.
+  try {
+    const comandaDinURL = new URLSearchParams(window.location.search).get('comanda');
+    if (comandaDinURL && COMENZI_REALE.some(c => c.id === comandaDinURL)) {
+      setTimeout(() => openDrawer(comandaDinURL), 300);
+    }
+  } catch (e) { /* parametru absent sau invalid — ignorat */ }
+
   if (listEl && !COMENZI_REALE.length) {
     listEl.innerHTML = '<div style="text-align:center;padding:28px;color:#8C9BAD;font-size:13px">Nu ai încă nicio comandă plasată.</div>';
   }
