@@ -1646,6 +1646,23 @@ function triggerHeaderSearch(){
           <div id="addon-selected" style="margin-top:12px"></div>
         </div>
 
+        <!-- Navigare uzuală (30 august 2026, cerere fondator) — pas premergător
+             coșului multi-serviciu: clientul poate continua să răsfoiască sau
+             adăuga explicit un alt serviciu/material/echipament, fără să piardă
+             configurarea curentă (deja salvată prin salveazaStareaCheckout()). -->
+        <div style="display:flex;gap:10px;margin-bottom:20px">
+          <button type="button" onclick="continuaCumparaturile()" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid #D5DFE8;background:#fff;color:#6B7A8D;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">← Continuă cumpărăturile</button>
+          <button type="button" onclick="adaugaServiciuNou()" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid #D5DFE8;background:#fff;color:#003366;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">+ Adaugă un nou serviciu</button>
+        </div>
+
+        <!-- „Poate te interesează și..." (30 august 2026) — recomandări reale,
+             din catalog_relatii (curatoriate) sau, dacă lipsesc, din același
+             domeniu — niciodată produse inventate/nealiniate. -->
+        <div id="recomandari-wrap" style="display:none;margin-bottom:20px">
+          <label class="f-label" style="margin-bottom:10px">Poate te interesează și...</label>
+          <div id="recomandari-list" style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px"></div>
+        </div>
+
         <button class="btn-primary" onclick="completeStep(1)">
           Continuă → Asigurare
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
@@ -3486,6 +3503,67 @@ function renderAddonList() {
   }).join('');
 }
 
+// Navigare uzuală (30 august 2026, cerere fondator) — pas premergător
+// coșului multi-serviciu. Ambele salvează explicit configurarea curentă
+// înainte de a pleca de pe pagină, ca "Continuă cumpărăturile" să nu piardă
+// ce era deja completat (coșul propriu-zis, cu mai multe servicii simultan,
+// e etapa următoare — azi rămâne o singură configurare "curentă" salvată).
+function continuaCumparaturile() {
+  salveazaStareaCheckout();
+  window.location.href = 'mydarrin-catalog.html';
+}
+function adaugaServiciuNou() {
+  salveazaStareaCheckout();
+  window.location.href = 'mydarrin-catalog.html';
+}
+
+// „Poate te interesează și..." (30 august 2026, cerere fondator) — recomandări
+// REALE, aliniate serviciului curent: întâi din catalog_relatii (curatoriate
+// manual), dacă lipsesc, fallback pe același domeniu — niciodată produse
+// nealiniate/inventate. Scop: doar mod pilot (singurul loc cu un
+// catalog_servicii.id real de folosit ca cheie — S.pilotServiciuId).
+async function loadRecomandari() {
+  if (!S.pilotMode || !S.pilotServiciuId || !SUPA_PROD_ANON) return;
+  const headers = { apikey: SUPA_PROD_ANON, Authorization: `Bearer ${SUPA_PROD_ANON}` };
+  const selectServiciu = 'id,id_serviciu,titlu,categorie,unitate_masura,catalog_niveluri(nivel,catalog_preturi(pret))';
+  let rezultate = [];
+  try {
+    const [dinspre, spre] = await Promise.all([
+      fetch(`${SUPA_PROD_URL}/rest/v1/catalog_relatii?catalog_serviciu_id=eq.${S.pilotServiciuId}&select=catalog_relatie_id`, { headers }).then(r => r.ok ? r.json() : []),
+      fetch(`${SUPA_PROD_URL}/rest/v1/catalog_relatii?catalog_relatie_id=eq.${S.pilotServiciuId}&select=catalog_serviciu_id`, { headers }).then(r => r.ok ? r.json() : []),
+    ]);
+    const idsRelatii = [...new Set([...dinspre.map(r => r.catalog_relatie_id), ...spre.map(r => r.catalog_serviciu_id)])];
+    if (idsRelatii.length) {
+      rezultate = await fetch(`${SUPA_PROD_URL}/rest/v1/catalog_servicii?id=in.(${idsRelatii.join(',')})&status_public=eq.true&select=${selectServiciu}`, { headers }).then(r => r.ok ? r.json() : []);
+    }
+    // Fallback onest: fără relații curatoriate, folosim NACE (aceeași cheie
+    // deja verificată fiabilă la filtrarea de addon-uri, CAT-2a) — NU domeniu,
+    // găsit inconsistent între textul liber al serviciilor de bază și al
+    // materialelor asociate (ex. "Pardoseli & Parchet" vs "Parchet &
+    // Pardoseli" — aceeași zonă, text scris diferit, string-match ar rata).
+    if (!rezultate.length && S.nace) {
+      rezultate = await fetch(`${SUPA_PROD_URL}/rest/v1/catalog_servicii?nace=eq.${encodeURIComponent(S.nace)}&id=neq.${S.pilotServiciuId}&status_public=eq.true&select=${selectServiciu}&limit=6`, { headers }).then(r => r.ok ? r.json() : []);
+    }
+  } catch (e) {
+    console.warn('[recomandari] indisponibile:', e); return;
+  }
+  if (!rezultate.length) return;
+
+  const wrap = document.getElementById('recomandari-wrap');
+  const list = document.getElementById('recomandari-list');
+  if (!wrap || !list) return;
+  wrap.style.display = '';
+  list.innerHTML = rezultate.slice(0, 6).map((r) => {
+    const preturi = (r.catalog_niveluri || []).map(n => n.catalog_preturi?.[0]?.pret).filter(p => typeof p === 'number');
+    const pretAfisat = preturi.length ? `de la ${Math.min(...preturi)} Lei` : '';
+    const tip = r.categorie === 'servicii' ? 'serviciu' : r.categorie === 'materiale' ? 'materiale' : r.categorie === 'inchirieri' ? 'inchirieri' : 'serviciu';
+    return `<a href="mydarrin-produs.html?slug=${encodeURIComponent(r.id_serviciu)}&type=${tip}" style="flex:0 0 auto;width:140px;padding:12px;border:1px solid #EEF2F7;border-radius:12px;text-decoration:none;background:#fff">
+      <div style="font-size:12px;font-weight:700;color:#003366;line-height:1.3;margin-bottom:6px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${escapeAddonHTML(r.titlu)}</div>
+      <div style="font-size:11px;color:#8C9BAD">${escapeAddonHTML(pretAfisat)}</div>
+    </a>`;
+  }).join('');
+}
+
 function escapeAddonHTML(str) {
   const d = document.createElement('div');
   d.textContent = str == null ? '' : String(str);
@@ -3662,6 +3740,10 @@ async function initPilotProdus(slug) {
   // "__fara_potrivire__", arătând "Niciun material" indiferent ce addon-uri
   // reale existau. Afecta toate cele 6 servicii pilot, nu doar acesta.
   S.nace = servRow.nace || '';
+  // 30 august 2026 — necesar pentru fallback-ul secțiunii "Poate te
+  // interesează și..." (loadRecomandari()), când catalog_relatii n-are
+  // intrări curatoriate pentru acest serviciu.
+  S.domeniu = servRow.domeniu || '';
 
   document.title = servRow.titlu + ' | My Darrin';
   setEl('bc-title', servRow.titlu);
@@ -3813,6 +3895,7 @@ document.addEventListener('DOMContentLoaded',async ()=>{
   selIns('none');
   setType('standard',document.getElementById('btn-std'));
   loadAddonCatalog();
+  loadRecomandari();
   updateProgBars();
   openSec(1);
 });
