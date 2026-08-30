@@ -73,6 +73,7 @@ const { incearcaAlocarePartener } = require('../../lib/aloca-partener');
 const { calculeazaPret, citestePragMinimComanda } = require('../../lib/calculeaza-pret');
 const { calculeazaCostNivel } = require('../../lib/calculeaza-cost-recipe');
 const { rezolvaAddonMateriale } = require('../../lib/rezolva-addon-materiale');
+const { genereazaProformaPDF } = require('../../lib/genereaza-proforma-pdf');
 const { renderEmailPrimaComanda, limbaProfilEmailComportamental } = require('../../lib/i18n');
 const { fromHeader } = require('../../lib/email-sender');
 
@@ -373,6 +374,7 @@ async function handler(req, res, user) {
     // mai jos să poată menționa numărul real de proformă (sau nimic, dacă
     // emiterea eșuează — niciodată un număr fals).
     let numarProforma = null;
+    let entitateEmitenta = null;
     try {
       const anProforma = new Date().getFullYear();
       const { count: countProforma } = await supabaseAdmin
@@ -390,7 +392,7 @@ async function handler(req, res, user) {
       // deja, public, în politica de confidențialitate). Pentru orice altă
       // țară, rămâne NULL până se confirmă entitatea reală (Home Best Pal
       // LTD sau alta) — nu presupunem.
-      const entitateEmitenta = insertBase.tara_cod === 'RO' ? 'Home Best Pal SRL' : null;
+      entitateEmitenta = insertBase.tara_cod === 'RO' ? 'Home Best Pal SRL' : null;
 
       await supabaseAdmin.from('invoices').insert({
         tip: 'proforma',
@@ -426,10 +428,33 @@ async function handler(req, res, user) {
         if (profilClient?.email) {
           const limba = limbaProfilEmailComportamental(profilClient);
           const { subiect, html } = renderEmailPrimaComanda(limba, { nume: null, numarComanda: data.nr_comanda || data.id, comandaId: data.id, numarProforma });
+
+          // Cerere fondator (30 august 2026): factura proformă trebuie
+          // ATAȘATĂ efectiv la email, nu doar menționată. Generată doar dacă
+          // proforma chiar a fost emisă (numarProforma real) — izolat în
+          // propriul try, o eroare de generare PDF nu trebuie să blocheze
+          // trimiterea emailului (fallback: fără atașament, ca înainte).
+          let attachments;
+          if (numarProforma) {
+            try {
+              const [{ data: entitateJuridica }, { data: contBancar }] = await Promise.all([
+                supabaseAdmin.from('entitati_juridice_platforma').select('denumire, cui, nr_reg_com, adresa').eq('tara_cod', insertBase.tara_cod || 'RO').maybeSingle(),
+                supabaseAdmin.from('bank_accounts').select('nume_afisat, banca, iban, swift').eq('tara_cod', insertBase.tara_cod || 'RO').eq('moneda', data.moneda).eq('tip', 'incasari').maybeSingle(),
+              ]);
+              const pdfBuffer = await genereazaProformaPDF({
+                invoice: { numar_document: numarProforma, emisa_la: new Date().toISOString(), suma_totala: data.suma_totala_platita, moneda: data.moneda, entitate_emitenta: entitateEmitenta },
+                comanda: data, clientEmail: profilClient.email, entitateJuridica, contBancar,
+              });
+              attachments = [{ filename: `${numarProforma}.pdf`, content: pdfBuffer.toString('base64') }];
+            } catch (pdfErr) {
+              console.error('[comenzi/creeaza] generare PDF proformă', pdfErr);
+            }
+          }
+
           await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ from: await fromHeader(limba), to: profilClient.email, subject: subiect, html }),
+            body: JSON.stringify({ from: await fromHeader(limba), to: profilClient.email, subject: subiect, html, ...(attachments ? { attachments } : {}) }),
           });
         }
       }
