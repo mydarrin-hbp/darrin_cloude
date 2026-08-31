@@ -2311,6 +2311,10 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
           <span style="font-size:14px;font-weight:700;color:#fff">Intrări existente</span>
           <input id="cat-filtru" placeholder="Caută după titlu sau domeniu (ex: grădinărit)" oninput="filtreazaCatalogList()" style="flex:1;min-width:200px;background:#131B27;border:1px solid #2D3F55;border-radius:9px;padding:8px 11px;color:#fff;font-size:12.5px">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#8BA3C0;cursor:pointer;white-space:nowrap">
+            <input type="checkbox" id="cat-filtru-doar-descriere" onchange="filtreazaCatalogList()" style="cursor:pointer">
+            Doar cu descriere
+          </label>
           <button onclick="loadCatalogList()" class="btn-p" style="font-size:12px;padding:8px 14px">↻ Reîncarcă</button>
         </div>
         <div id="cat-lista" style="color:#8BA3C0;font-size:13px">Se încarcă...</div>
@@ -5674,6 +5678,8 @@ async function loadCatalogList() {
     CATALOG_SERVICII_CACHE = data.servicii || [];
     const filtruEl = document.getElementById('cat-filtru');
     if (filtruEl) filtruEl.value = '';
+    const filtruDescriereEl = document.getElementById('cat-filtru-doar-descriere');
+    if (filtruDescriereEl) filtruDescriereEl.checked = false;
     renderCatalogList(CATALOG_SERVICII_CACHE);
   } catch (e) {
     el.innerHTML = `<div style="color:#E57373">Eroare: ${escapeHTML(e.message)}</div>`;
@@ -5719,11 +5725,22 @@ async function stergeImagineCatalog(idServiciu, url) {
   }
 }
 
+// 31 august 2026, cerere fondator: "cum găsesc lista cu materialele deja
+// descrise" — filtrul text (titlu/domeniu) nu ajuta la asta direct, mai
+// ales cu 128+ intrări din care marea majoritate n-au încă descriere reală
+// (generate automat "Vertical A", fără text). Checkbox nou, independent de
+// textul de căutare — se pot combina (ex. "parchet" + "doar cu descriere").
 function filtreazaCatalogList() {
   const termen = (document.getElementById('cat-filtru')?.value || '').trim().toLowerCase();
-  if (!termen) { renderCatalogList(CATALOG_SERVICII_CACHE); return; }
-  const filtrate = CATALOG_SERVICII_CACHE.filter((s) =>
-    (s.titlu || '').toLowerCase().includes(termen) || (s.domeniu || '').toLowerCase().includes(termen));
+  const doarCuDescriere = document.getElementById('cat-filtru-doar-descriere')?.checked;
+  let filtrate = CATALOG_SERVICII_CACHE;
+  if (termen) {
+    filtrate = filtrate.filter((s) =>
+      (s.titlu || '').toLowerCase().includes(termen) || (s.domeniu || '').toLowerCase().includes(termen));
+  }
+  if (doarCuDescriere) {
+    filtrate = filtrate.filter((s) => !!s.descriere);
+  }
   renderCatalogList(filtrate);
 }
 
@@ -5741,6 +5758,11 @@ function renderCatalogList(servicii) {
             <div style="font-size:11px;color:#8BA3C0">${escapeHTML(s.domeniu)} · <code>${escapeHTML(s.id_serviciu)}</code>${s.nace ? ' · NACE ' + escapeHTML(s.nace) : ''}${s.cod_esco ? ' · ESCO ' + escapeHTML(s.cod_esco) : ''}</div>
           </div>
           <span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:99px;background:${s.status_public ? 'rgba(76,190,131,.15)' : 'rgba(229,115,115,.15)'};color:${s.status_public ? '#4CBE83' : '#E57373'}">${s.status_public ? '🟢 Public' : '⚪ Ascuns'}</span>
+          <!-- 31 august 2026, cerere fondator: "cum găsesc lista cu materialele
+               deja descrise" — filtrul text (titlu/domeniu) nu ajuta, cu 128+
+               intrări cele mai multe fără descriere. Badge vizibil per rând +
+               toggle de filtrare (mai jos) rezolvă căutarea reală. -->
+          <span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:99px;background:${s.descriere ? 'rgba(14,158,153,.15)' : 'rgba(139,163,192,.12)'};color:${s.descriere ? '#0E9E99' : '#8BA3C0'}">${s.descriere ? '✓ Are descriere' : '— Fără descriere'}</span>
           <button onclick="toggleStatusCatalog('${s.id}', ${!s.status_public})" style="font-size:11px;padding:5px 11px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">${s.status_public ? 'Ascunde' : 'Publică'}</button>
           <button onclick="toggleNiveluriCatalog('${s.id}')" style="font-size:11px;padding:5px 11px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">Niveluri (${s.niveluri.length})</button>
           <button onclick="stergeServiciuCatalog('${s.id}', '${escapeHTML(s.titlu).replace(/'/g, "\\'")}')" style="font-size:11px;padding:5px 11px;border-radius:7px;border:1px solid rgba(192,57,43,.4);background:transparent;color:#E57373;cursor:pointer">Șterge</button>
