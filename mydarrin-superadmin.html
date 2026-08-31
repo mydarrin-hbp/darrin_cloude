@@ -2315,6 +2315,15 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
             <input type="checkbox" id="cat-filtru-doar-descriere" onchange="filtreazaCatalogList()" style="cursor:pointer">
             Doar cu descriere
           </label>
+          <!-- 31 august 2026, cerere fondator: "nu regăsesc materialele fără
+               imagini, pe care mi le-ai lăsat mie să le încarc" — analog cu
+               filtrul de descriere, dar pentru imagini. Combinat cu "Doar cu
+               descriere" izolează exact setul relevant azi: cele 6 materiale
+               deja descrise, încă fără nicio imagine reală încărcată. -->
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#8BA3C0;cursor:pointer;white-space:nowrap">
+            <input type="checkbox" id="cat-filtru-fara-imagini" onchange="filtreazaCatalogList()" style="cursor:pointer">
+            Doar fără imagini
+          </label>
           <button onclick="loadCatalogList()" class="btn-p" style="font-size:12px;padding:8px 14px">↻ Reîncarcă</button>
         </div>
         <div id="cat-lista" style="color:#8BA3C0;font-size:13px">Se încarcă...</div>
@@ -5621,6 +5630,14 @@ function switchCatalogTab(cat) {
     btn.style.background = activ ? '#FF8C00' : '#0F1826';
     btn.style.color = activ ? '#fff' : '#8BA3C0';
   });
+  // 31 august 2026: filtrele se resetează doar aici (schimbare de categorie
+  // reală, nu la fiecare reload din aceeași categorie — vezi loadCatalogList()).
+  const filtruEl = document.getElementById('cat-filtru');
+  if (filtruEl) filtruEl.value = '';
+  const filtruDescriereEl = document.getElementById('cat-filtru-doar-descriere');
+  if (filtruDescriereEl) filtruDescriereEl.checked = false;
+  const filtruImaginiEl = document.getElementById('cat-filtru-fara-imagini');
+  if (filtruImaginiEl) filtruImaginiEl.checked = false;
   loadCatalogList();
 }
 
@@ -5676,11 +5693,13 @@ async function loadCatalogList() {
     if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
 
     CATALOG_SERVICII_CACHE = data.servicii || [];
-    const filtruEl = document.getElementById('cat-filtru');
-    if (filtruEl) filtruEl.value = '';
-    const filtruDescriereEl = document.getElementById('cat-filtru-doar-descriere');
-    if (filtruDescriereEl) filtruDescriereEl.checked = false;
-    renderCatalogList(CATALOG_SERVICII_CACHE);
+    // 31 august 2026: NU se mai resetează filtrele aici — loadCatalogList()
+    // rulează și după fiecare upload/ștergere de imagine (fondator lucrează
+    // exact filtrat pe "Doar fără imagini" cât timp încarcă poze, una câte
+    // una — resetarea la fiecare reload arunca înapoi la lista completă).
+    // Resetarea rămâne doar la schimbarea de tab (switchCatalogTab), unde
+    // filtrele vechi oricum nu mai au sens pe altă categorie.
+    filtreazaCatalogList();
   } catch (e) {
     el.innerHTML = `<div style="color:#E57373">Eroare: ${escapeHTML(e.message)}</div>`;
   }
@@ -5733,6 +5752,7 @@ async function stergeImagineCatalog(idServiciu, url) {
 function filtreazaCatalogList() {
   const termen = (document.getElementById('cat-filtru')?.value || '').trim().toLowerCase();
   const doarCuDescriere = document.getElementById('cat-filtru-doar-descriere')?.checked;
+  const doarFaraImagini = document.getElementById('cat-filtru-fara-imagini')?.checked;
   let filtrate = CATALOG_SERVICII_CACHE;
   if (termen) {
     filtrate = filtrate.filter((s) =>
@@ -5740,6 +5760,9 @@ function filtreazaCatalogList() {
   }
   if (doarCuDescriere) {
     filtrate = filtrate.filter((s) => !!s.descriere);
+  }
+  if (doarFaraImagini) {
+    filtrate = filtrate.filter((s) => !(s.imagini || []).length);
   }
   renderCatalogList(filtrate);
 }
