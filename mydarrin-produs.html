@@ -1675,7 +1675,7 @@ function triggerHeaderSearch(){
           <!-- Faza 4 marketplace (31 august 2026, cerere fondator) — pagină
                dedicată, cu descrieri reale de produs; selecția revine instant
                aici (?addAddon=), vezi _verificaAddAddonDinURL() mai jos. -->
-          <a href="#" id="marketplace-link" style="display:none;margin-bottom:10px;text-align:center;padding:9px;border-radius:10px;border:1.5px solid #0E9E99;color:#0E9E99;font-size:12.5px;font-weight:700;text-decoration:none;background:#fff">🛍️ Răsfoiește în marketplace — descrieri complete</a>
+          <a href="#" id="marketplace-link" onclick="salveazaStareaCheckout()" style="display:none;margin-bottom:10px;text-align:center;padding:9px;border-radius:10px;border:1.5px solid #0E9E99;color:#0E9E99;font-size:12.5px;font-weight:700;text-decoration:none;background:#fff">🛍️ Răsfoiește în marketplace — descrieri complete</a>
           <div id="addon-list" style="max-height:220px;overflow-y:auto;border:1px solid #EEF2F7;border-radius:12px">
             <div style="padding:16px;text-align:center;color:#8C9BAD;font-size:12.5px">Se încarcă din catalog...</div>
           </div>
@@ -3504,7 +3504,7 @@ async function loadAddonCatalog() {
     }
   }
   renderAddonList();
-  _verificaAddAddonDinURL();
+  _restaureazaDupaMarketplace();
 }
 
 // Faza 4 marketplace (31 august 2026) — revenire din mydarrin-marketplace-materiale.html
@@ -3512,23 +3512,78 @@ async function loadAddonCatalog() {
 // ADDON_DB e populat (apelat la finalul loadAddonCatalog()), ca id-ul să
 // existe deja în listă — altfel, dacă produsul nu se găsește (NACE
 // nepotrivit, produs retras), nu se adaugă nimic silențios, doar un avertisment.
-function _verificaAddAddonDinURL() {
+//
+// BUG REAL găsit la testarea live a fondatorului (31 august 2026):
+// mydarrin-produs.html e o pagină nouă la fiecare navigare — S pornea mereu
+// de la zero (materiale:[], inchirieri:[], qty:1), deci orice adăugase
+// clientul ÎNAINTE de a merge în marketplace (alte materiale, cantitate
+// schimbată) se pierdea complet la revenire, rămânând DOAR noul produs ales
+// acolo. Reparat: starea completă se salvează (salveazaStareaCheckout(),
+// deja existent) chiar înainte de navigare (vezi linkul din HTML) și se
+// restaurează aici, din sessionStorage, ÎNAINTE de a adăuga noul produs —
+// dar restaurarea re-adaugă fiecare item prin addAddonItem() (nu copiază
+// obiectul brut din storage, care n-are preturi/descriere/blocatCantitate).
+function _restaureazaDupaMarketplace() {
   const params = new URLSearchParams(window.location.search);
   const idDeAdaugat = params.get('addAddon');
   if (!idDeAdaugat) return;
+
+  try {
+    const raw = sessionStorage.getItem('myd_checkout_config');
+    const cfg = raw ? JSON.parse(raw) : null;
+    if (cfg && cfg.slug === S.slug) {
+      if (typeof cfg.qty === 'number' && cfg.qty > 0) {
+        const qtyInput = document.getElementById('qty-input');
+        if (qtyInput) qtyInput.value = cfg.qty;
+        S.qty = cfg.qty;
+      }
+      ['materiale', 'inchirieri'].forEach((tip) => {
+        (cfg[tip] || []).forEach((salvat) => {
+          if (salvat.id === idDeAdaugat) return; // adăugat separat mai jos
+          if (S[tip].some((x) => x.id === salvat.id)) return;
+          addAddonItem(tip, salvat.id);
+          const rand = S[tip].find((x) => x.id === salvat.id);
+          if (rand && !rand.blocatCantitate && typeof salvat.qty === 'number' && salvat.qty > 0) rand.qty = salvat.qty;
+        });
+      });
+    }
+  } catch (e) {
+    console.warn('[marketplace] nu am putut restaura configurarea anterioară:', e);
+  }
+
   const inMateriale = ADDON_DB.materiale.find((x) => x.id === idDeAdaugat);
   const inInchirieri = ADDON_DB.inchirieri.find((x) => x.id === idDeAdaugat);
   const tip = inMateriale ? 'materiale' : inInchirieri ? 'inchirieri' : null;
   if (tip) {
+    const itemAdaugat = tip === 'materiale' ? inMateriale : inInchirieri;
     addAddonItem(tip, idDeAdaugat);
     addonActiveTab = tip;
     switchAddonTab(tip);
+    _aratConfirmareAddon(itemAdaugat.titlu);
   } else {
     console.warn('[marketplace] produsul selectat nu s-a găsit în lista curentă:', idDeAdaugat);
   }
+  recalc();
   const url = new URL(window.location.href);
   url.searchParams.delete('addAddon');
   window.history.replaceState({}, '', url.toString());
+}
+
+// Confirmare vizibilă (31 august 2026, cerere fondator implicită — clientul
+// trebuie să vadă clar că produsul s-a adăugat, nu doar să-l găsească tăcut
+// în listă) — reutilizează structura de toast deja consacrată în
+// mydarrin-marketplace-materiale.html, pentru consistență vizuală.
+function _aratConfirmareAddon(titlu) {
+  let toast = document.getElementById('addon-confirmare-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'addon-confirmare-toast';
+    toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:#1A7A3A;color:#fff;padding:12px 22px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 8px 28px rgba(0,0,0,.18);transition:transform .3s ease;z-index:999';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = `✓ „${titlu}" a fost adăugat — costul s-a actualizat`;
+  requestAnimationFrame(() => { toast.style.transform = 'translateX(-50%) translateY(0)'; });
+  setTimeout(() => { toast.style.transform = 'translateX(-50%) translateY(100px)'; }, 3500);
 }
 
 function _addonPretNivel(item) {
