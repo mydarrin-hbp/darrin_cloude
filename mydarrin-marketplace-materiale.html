@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Alege materialul | My Darrin</title>
+<script>
+  window.__ENV__ = {
+    SUPABASE_URL: 'https://aacojyvujhywanaulvuu.supabase.co',
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhY29qeXZ1amh5d2FuYXVsdnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MjAzMzIsImV4cCI6MjA5ODQ5NjMzMn0.iwZnxctvazOL5OU_wqD7AvAKrVoOqLH_uvj1krK8-vs'
+  };
+</script>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Helvetica Neue',Arial,system-ui,sans-serif;background:#F7F9FC;color:#2D2D2D}
+  header{background:#003366;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  header a.logo{color:#fff;font-weight:800;font-size:16px;text-decoration:none;letter-spacing:.02em}
+  header a.back{color:rgba(255,255,255,.75);font-size:13px;text-decoration:none}
+  header a.back:hover{color:#fff}
+  .wrap{max-width:900px;margin:0 auto;padding:28px 20px 90px}
+  h1{font-size:21px;font-weight:800;color:#003366;margin:0 0 4px}
+  .sub{font-size:13px;color:#8C9BAD;margin:0 0 22px}
+  .tabs{display:flex;gap:8px;margin-bottom:18px}
+  .tab-btn{padding:9px 16px;border-radius:10px;border:1.5px solid #D5DFE8;background:#fff;color:#6B7A8D;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit}
+  .tab-btn.active{border-color:#0E9E99;background:#0E9E99;color:#fff}
+  .search{width:100%;padding:11px 16px;border:1.5px solid #D5DFE8;border-radius:12px;font-size:13.5px;font-family:inherit;margin-bottom:18px;background:#fff}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+  .card{background:#fff;border:1px solid #E8ECF0;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px}
+  .card-title{font-size:14px;font-weight:700;color:#003366;line-height:1.3}
+  .card-desc{font-size:12px;color:#6B7A8D;line-height:1.5;flex:1}
+  .card-desc.empty{font-style:italic;color:#B8C4CE}
+  .card-price{font-size:15px;font-weight:800;color:#0E9E99}
+  .card-price span{font-size:11px;font-weight:600;color:#8C9BAD}
+  .btn-select{padding:9px;border-radius:10px;border:none;background:#FF8C00;color:#1A1A1A;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit}
+  .btn-select:disabled{background:#F4F7F9;color:#B8C4CE;cursor:default}
+  .empty-state{text-align:center;padding:48px 24px;color:#8C9BAD;font-size:13.5px}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:#1A7A3A;color:#fff;padding:12px 22px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 8px 28px rgba(0,0,0,.18);transition:transform .3s ease;z-index:99}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="index.html">My Darrin</a>
+  <a class="back" href="#" id="link-inapoi">← Înapoi la configurare</a>
+</header>
+
+<div class="wrap">
+  <h1>Alege materialul sau echipamentul</h1>
+  <p class="sub" id="context-sub">Produse aliniate serviciului tău — selectezi unul, revii instant în configurator cu costul adăugat.</p>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-materiale" onclick="schimbaTab('materiale')">Materiale</button>
+    <button class="tab-btn" id="tab-inchirieri" onclick="schimbaTab('inchirieri')">Echipamente de închiriat</button>
+  </div>
+  <input type="text" class="search" id="cauta" placeholder="Caută în listă..." oninput="randeaza()"/>
+
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPA_URL  = window.__ENV__?.SUPABASE_URL  || 'https://aacojyvujhywanaulvuu.supabase.co';
+const SUPA_ANON = window.__ENV__?.SUPABASE_ANON_KEY || '';
+const headers = { apikey: SUPA_ANON, Authorization: `Bearer ${SUPA_ANON}` };
+
+const params = new URLSearchParams(window.location.search);
+const PARENT_SLUG = params.get('slug') || '';
+const PARENT_TYPE = params.get('type') || 'serviciu';
+const NACE = params.get('nace') || '';
+
+document.getElementById('link-inapoi').href = PARENT_SLUG
+  ? `mydarrin-produs.html?slug=${encodeURIComponent(PARENT_SLUG)}&type=${encodeURIComponent(PARENT_TYPE)}`
+  : 'mydarrin-catalog.html';
+
+// Faza 4 marketplace (31 august 2026, cerere fondator): "se preiau descrierile
+// din marketplace de pe pagina cu produsele aliniate serviciului/rețetei" —
+// aceeași filtrare NACE deja folosită de loadAddonCatalog() în
+// mydarrin-produs.html (CAT-2a), acum pe o pagină dedicată, cu descrieri
+// reale de produs (catalog_servicii.descriere) și carduri, nu doar o listă
+// compactă. Onestitate: dacă serviciul curent n-are cod NACE, lista rămâne
+// goală cu mesaj clar — nu cade pe tot catalogul nefiltrat.
+let DB = { materiale: [], inchirieri: [] };
+let tabActiv = 'materiale';
+
+async function incarca() {
+  if (!NACE) {
+    document.getElementById('grid').innerHTML = '<div class="empty-state">Acest serviciu nu are un cod NACE asociat — nu putem alinia materiale/echipamente.</div>';
+    return;
+  }
+  const qs = `status_public=eq.true&nace=eq.${encodeURIComponent(NACE)}&select=id,id_serviciu,titlu,descriere,unitate_masura,catalog_niveluri(nivel,catalog_preturi(pret))&order=titlu`;
+  try {
+    const [mat, inch] = await Promise.all([
+      fetch(`${SUPA_URL}/rest/v1/catalog_servicii?categorie=eq.materiale&${qs}`, { headers }).then(r => r.ok ? r.json() : []),
+      fetch(`${SUPA_URL}/rest/v1/catalog_servicii?categorie=eq.inchirieri&${qs}`, { headers }).then(r => r.ok ? r.json() : []),
+    ]);
+    const normalizeaza = (rows) => rows.map((r) => {
+      const preturi = {};
+      (r.catalog_niveluri || []).forEach((n) => { preturi[n.nivel] = n.catalog_preturi?.[0]?.pret ?? null; });
+      const pret = preturi.Bronze ?? Object.values(preturi).find((p) => typeof p === 'number') ?? null;
+      return { id: r.id, id_serviciu: r.id_serviciu, titlu: r.titlu, descriere: r.descriere || '', unitate: r.unitate_masura || 'buc', pret };
+    });
+    DB.materiale = normalizeaza(mat);
+    DB.inchirieri = normalizeaza(inch);
+  } catch (e) {
+    console.warn('[marketplace] catalog indisponibil:', e);
+  }
+  randeaza();
+}
+
+function schimbaTab(tab) {
+  tabActiv = tab;
+  document.getElementById('tab-materiale').classList.toggle('active', tab === 'materiale');
+  document.getElementById('tab-inchirieri').classList.toggle('active', tab === 'inchirieri');
+  randeaza();
+}
+
+function escapeHTML(str) {
+  const d = document.createElement('div');
+  d.textContent = str == null ? '' : String(str);
+  return d.innerHTML;
+}
+
+function randeaza() {
+  const grid = document.getElementById('grid');
+  const query = (document.getElementById('cauta').value || '').toLowerCase().trim();
+  const toate = DB[tabActiv] || [];
+  const filtrate = query ? toate.filter((i) => i.titlu.toLowerCase().includes(query)) : toate;
+
+  if (!toate.length) {
+    grid.innerHTML = '<div class="empty-state">Niciun material/echipament aliniat acestui serviciu, momentan.</div>';
+    return;
+  }
+  if (!filtrate.length) {
+    grid.innerHTML = `<div class="empty-state">Niciun rezultat pentru „${escapeHTML(query)}"</div>`;
+    return;
+  }
+
+  grid.innerHTML = filtrate.map((item) => `
+    <div class="card">
+      <div class="card-title">${escapeHTML(item.titlu)}</div>
+      <div class="card-desc${item.descriere ? '' : ' empty'}">${item.descriere ? escapeHTML(item.descriere) : 'Fără descriere detaliată încă pentru acest produs.'}</div>
+      <div class="card-price">${item.pret != null ? item.pret.toLocaleString('ro-RO') + ' Lei' : '—'} <span>/ ${escapeHTML(item.unitate)}</span></div>
+      <button class="btn-select" ${item.pret == null ? 'disabled' : ''} onclick="selecteaza('${item.id}','${escapeHTML(item.titlu).replace(/'/g, "\\'")}')">${item.pret == null ? 'Preț indisponibil' : 'Selectează →'}</button>
+    </div>
+  `).join('');
+}
+
+// Transfer instant înapoi în configurator (cerere fondator: "sistemul îl va
+// duce instant în pagina de configurare a serviciului și va fi adăugat la
+// cost") — id-ul produsului ales trece prin URL (?addAddon=), citit de
+// mydarrin-produs.html la încărcare, care îl adaugă real în selector.
+function selecteaza(id, titlu) {
+  document.getElementById('toast').textContent = `„${titlu}" selectat — te ducem înapoi în configurator...`;
+  document.getElementById('toast').classList.add('show');
+  const dest = PARENT_SLUG
+    ? `mydarrin-produs.html?slug=${encodeURIComponent(PARENT_SLUG)}&type=${encodeURIComponent(PARENT_TYPE)}&addAddon=${encodeURIComponent(id)}`
+    : 'mydarrin-catalog.html';
+  setTimeout(() => { window.location.href = dest; }, 500);
+}
+
+document.addEventListener('DOMContentLoaded', incarca);
+</script>
+
+</body>
+</html>

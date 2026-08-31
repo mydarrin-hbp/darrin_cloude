@@ -1672,6 +1672,10 @@ function triggerHeaderSearch(){
             <button type="button" id="addon-tab-inchirieri" onclick="switchAddonTab('inchirieri')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid #D5DFE8;background:#fff;color:#6B7A8D;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">Echipamente de închiriat</button>
           </div>
           <input type="text" id="addon-search" placeholder="Caută în catalog..." oninput="renderAddonList()" style="width:100%;background:#F4F7F9;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px 14px;font-size:13px;color:#2D2D2D;outline:none;font-family:inherit;margin-bottom:10px"/>
+          <!-- Faza 4 marketplace (31 august 2026, cerere fondator) — pagină
+               dedicată, cu descrieri reale de produs; selecția revine instant
+               aici (?addAddon=), vezi _verificaAddAddonDinURL() mai jos. -->
+          <a href="#" id="marketplace-link" style="display:none;margin-bottom:10px;text-align:center;padding:9px;border-radius:10px;border:1.5px solid #0E9E99;color:#0E9E99;font-size:12.5px;font-weight:700;text-decoration:none;background:#fff">🛍️ Răsfoiește în marketplace — descrieri complete</a>
           <div id="addon-list" style="max-height:220px;overflow-y:auto;border:1px solid #EEF2F7;border-radius:12px">
             <div style="padding:16px;text-align:center;color:#8C9BAD;font-size:12.5px">Se încarcă din catalog...</div>
           </div>
@@ -3450,7 +3454,18 @@ async function loadAddonCatalog() {
   // NACE (sau n-are deloc cod NACE — produse de fallback), lista rămâne
   // goală cu un mesaj clar, NU cade înapoi pe tot catalogul nefiltrat.
   const naceFilter = S.nace ? `&nace=eq.${encodeURIComponent(S.nace)}` : '&nace=eq.__fara_potrivire__';
-  const qs = `status_public=eq.true${naceFilter}&select=id,id_serviciu,titlu,unitate_masura,catalog_niveluri(nivel,catalog_preturi(pret))&order=titlu`;
+  const qs = `status_public=eq.true${naceFilter}&select=id,id_serviciu,titlu,descriere,unitate_masura,catalog_niveluri(nivel,catalog_preturi(pret))&order=titlu`;
+  // Faza 4 marketplace (31 august 2026) — link vizibil doar dacă serviciul
+  // curent are un cod NACE real (aceeași condiție ca filtrarea de mai jos).
+  const marketplaceLink = document.getElementById('marketplace-link');
+  if (marketplaceLink) {
+    if (S.nace) {
+      marketplaceLink.style.display = '';
+      marketplaceLink.href = `mydarrin-marketplace-materiale.html?slug=${encodeURIComponent(S.slug)}&type=${encodeURIComponent(S.type)}&nace=${encodeURIComponent(S.nace)}`;
+    } else {
+      marketplaceLink.style.display = 'none';
+    }
+  }
   // Faza 2/3 CAT-fix (29 august 2026): parchetul propriu-zis (AC3/AC4/AC5)
   // NU mai e inclus în tier — bundle-ul generic "Parchet & Pardoseli"
   // (mat-parchet, Vertical A) tot rămâne exclus aici, ca să nu dubleze cele
@@ -3466,7 +3481,7 @@ async function loadAddonCatalog() {
     const normalizeaza = (rows) => rows.filter((r) => !excluse.includes(r.id_serviciu)).map((r) => {
       const preturi = {};
       (r.catalog_niveluri || []).forEach((n) => { preturi[n.nivel] = n.catalog_preturi?.[0]?.pret ?? null; });
-      return { id: r.id, titlu: r.titlu, unitate: r.unitate_masura || 'buc', preturi };
+      return { id: r.id, titlu: r.titlu, descriere: r.descriere || '', unitate: r.unitate_masura || 'buc', preturi };
     });
     ADDON_DB.materiale = normalizeaza(mat);
     ADDON_DB.inchirieri = normalizeaza(inch);
@@ -3489,6 +3504,31 @@ async function loadAddonCatalog() {
     }
   }
   renderAddonList();
+  _verificaAddAddonDinURL();
+}
+
+// Faza 4 marketplace (31 august 2026) — revenire din mydarrin-marketplace-materiale.html
+// cu ?addAddon=<catalog_servicii.id> selectat acolo. Rulează abia după ce
+// ADDON_DB e populat (apelat la finalul loadAddonCatalog()), ca id-ul să
+// existe deja în listă — altfel, dacă produsul nu se găsește (NACE
+// nepotrivit, produs retras), nu se adaugă nimic silențios, doar un avertisment.
+function _verificaAddAddonDinURL() {
+  const params = new URLSearchParams(window.location.search);
+  const idDeAdaugat = params.get('addAddon');
+  if (!idDeAdaugat) return;
+  const inMateriale = ADDON_DB.materiale.find((x) => x.id === idDeAdaugat);
+  const inInchirieri = ADDON_DB.inchirieri.find((x) => x.id === idDeAdaugat);
+  const tip = inMateriale ? 'materiale' : inInchirieri ? 'inchirieri' : null;
+  if (tip) {
+    addAddonItem(tip, idDeAdaugat);
+    addonActiveTab = tip;
+    switchAddonTab(tip);
+  } else {
+    console.warn('[marketplace] produsul selectat nu s-a găsit în lista curentă:', idDeAdaugat);
+  }
+  const url = new URL(window.location.href);
+  url.searchParams.delete('addAddon');
+  window.history.replaceState({}, '', url.toString());
 }
 
 function _addonPretNivel(item) {
@@ -3526,9 +3566,14 @@ function renderAddonList() {
   el.innerHTML = filtrate.slice(0, 40).map((item) => {
     const pret = _addonPretNivel(item);
     const dejaAdaugat = S[addonActiveTab].some((x) => x.id === item.id);
+    // Faza 4 marketplace (31 august 2026) — descriere reală, dacă produsul
+    // are una (catalog_servicii.descriere) — trunchiată, fișa completă e pe
+    // pagina de marketplace dedicată (link mai sus).
+    const descTrunchiata = item.descriere ? (item.descriere.length > 70 ? item.descriere.slice(0, 70) + '…' : item.descriere) : '';
     return `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #F4F7F9">
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:600;color:#2D2D2D;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeAddonHTML(item.titlu)}</div>
+        ${descTrunchiata ? `<div style="font-size:10.5px;color:#8C9BAD;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeAddonHTML(descTrunchiata)}</div>` : ''}
         <div style="font-size:11px;color:#8C9BAD">${pret} Lei / ${escapeAddonHTML(item.unitate)}</div>
       </div>
       <button type="button" onclick="addAddonItem('${addonActiveTab}','${item.id}')" ${dejaAdaugat ? 'disabled' : ''} style="padding:6px 12px;border-radius:8px;border:1px solid #D5DFE8;background:${dejaAdaugat ? '#F4F7F9' : '#EBF4FB'};color:${dejaAdaugat ? '#B8C4CE' : '#003366'};font-size:11.5px;font-weight:700;cursor:${dejaAdaugat ? 'default' : 'pointer'};font-family:inherit;flex-shrink:0">${dejaAdaugat ? 'Adăugat' : '+ Adaugă'}</button>
@@ -3692,8 +3737,14 @@ function renderAddonSelected() {
         : `<button type="button" onclick="changeAddonQty('${it.tip}','${it.id}',-1)" style="width:22px;height:22px;border-radius:6px;border:1px solid #D5DFE8;background:#fff;cursor:pointer;font-size:13px;line-height:1">−</button>
           <span style="font-size:12.5px;font-weight:700;color:#003366;min-width:16px;text-align:center">${it.qty}</span>
           <button type="button" onclick="changeAddonQty('${it.tip}','${it.id}',1)" style="width:22px;height:22px;border-radius:6px;border:1px solid #D5DFE8;background:#fff;cursor:pointer;font-size:13px;line-height:1">+</button>`;
+      // Faza 4 marketplace (31 august 2026, cerere fondator: "se vor adăuga
+      // la descriere doar detaliile preluate... pentru produsul selectat") —
+      // descrierea reală a produsului ALES apare aici, în configurator.
       return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#F4F7F9;border-radius:10px;margin-bottom:6px">
-        <div style="flex:1;min-width:0;font-size:12.5px;color:#2D2D2D;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeAddonHTML(it.titlu)}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12.5px;color:#2D2D2D;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeAddonHTML(it.titlu)}</div>
+          ${it.descriere ? `<div style="font-size:10.5px;color:#8C9BAD;line-height:1.4;margin-top:2px">${escapeAddonHTML(it.descriere)}</div>` : ''}
+        </div>
         <div style="display:flex;align-items:center;gap:6px">${cantitateUI}</div>
         <div style="font-size:12.5px;font-weight:700;color:#0E9E99;min-width:70px;text-align:right">${fmtCurrency(pret * it.qty)}</div>
         <button type="button" onclick="removeAddonItem('${it.tip}','${it.id}')" title="Elimină" style="width:22px;height:22px;border-radius:6px;border:1px solid rgba(220,38,38,.25);background:#FDECEA;color:#C0392B;cursor:pointer;font-size:14px;line-height:1;flex-shrink:0">×</button>
