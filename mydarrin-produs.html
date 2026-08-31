@@ -1562,6 +1562,14 @@ function triggerHeaderSearch(){
           </div>
         </div>
 
+        <!-- Bug real găsit 31 august 2026 (fondator: "am încărcat imagini...
+             se încarcă dar nu se văd public") — imaginile serviciului propriu
+             (catalog_servicii.imagini) nu erau niciodată afișate pe pagina
+             lui de configurare: #prod-img rămânea mereu placeholder-ul
+             gradient, indiferent câte imagini reale existau. Thumbnails
+             pentru restul, dacă sunt 2+. -->
+        <div id="prod-img-thumbs" style="display:none;gap:6px;margin:-14px 0 18px 138px;flex-wrap:wrap"></div>
+
         <!-- Deviz complet (31 august 2026, cerere fondator): etapele reale ale
              lucrării + instrucțiuni de întreținere, alături de descrierea de
              mai sus — vizibile doar dacă serviciul are conținut real populat
@@ -3875,7 +3883,7 @@ async function initPilotProdus(slug) {
   try {
     const headers = { apikey: SUPA_PROD_ANON, Authorization: `Bearer ${SUPA_PROD_ANON}` };
     const [servRes, nivRes] = await Promise.all([
-      fetch(`${SUPA_PROD_URL}/rest/v1/catalog_servicii?id=eq.${serviciuId}&select=id,titlu,domeniu,unitate_masura,nace,descriere,etape_lucrare,instructiuni_intretinere`, { headers }).then(r => r.ok ? r.json() : []),
+      fetch(`${SUPA_PROD_URL}/rest/v1/catalog_servicii?id=eq.${serviciuId}&select=id,titlu,domeniu,unitate_masura,nace,descriere,etape_lucrare,instructiuni_intretinere,imagini`, { headers }).then(r => r.ok ? r.json() : []),
       fetch(`${SUPA_PROD_URL}/rest/v1/catalog_niveluri?serviciu_id=eq.${serviciuId}&select=id,nivel,descriere`, { headers }).then(r => r.ok ? r.json() : []),
     ]);
     servRow = servRes[0]; niveluriRows = nivRes;
@@ -3961,8 +3969,33 @@ async function initPilotProdus(slug) {
     intretinereText.textContent = servRow.instructiuni_intretinere;
     intretinereWrap.style.display = '';
   } else if (intretinereWrap) { intretinereWrap.style.display = 'none'; }
+  // Bug real găsit 31 august 2026 (fondator: "am încărcat imagini... se
+  // încarcă dar nu se văd public") — imaginile serviciului propriu
+  // (catalog_servicii.imagini, urcate din panel-catalog) nu erau niciodată
+  // citite/afișate aici — #prod-img rămânea mereu gol, indiferent câte
+  // imagini reale existau pe rândul serviciului.
   const prodImgEl = document.getElementById('prod-img');
-  if (prodImgEl) { prodImgEl.style.backgroundImage = ''; prodImgEl.textContent = ''; }
+  const prodImgThumbs = document.getElementById('prod-img-thumbs');
+  const imaginiServiciu = Array.isArray(servRow.imagini) ? servRow.imagini : [];
+  if (prodImgEl) {
+    if (imaginiServiciu.length) {
+      prodImgEl.textContent = '';
+      prodImgEl.style.backgroundImage = `url(${imaginiServiciu[0]})`;
+      prodImgEl.style.backgroundSize = 'cover';
+      prodImgEl.style.backgroundPosition = 'center';
+    } else {
+      prodImgEl.style.backgroundImage = '';
+      prodImgEl.textContent = '';
+    }
+  }
+  if (prodImgThumbs) {
+    if (imaginiServiciu.length > 1) {
+      prodImgThumbs.innerHTML = imaginiServiciu.slice(1).map((u) => `<img src="${u}" style="width:36px;height:36px;object-fit:cover;border-radius:8px;border:1px solid #E8ECF0;cursor:pointer" onclick="document.getElementById('prod-img').style.backgroundImage='url('+this.src+')'"/>`).join('');
+      prodImgThumbs.style.display = 'flex';
+    } else {
+      prodImgThumbs.style.display = 'none';
+    }
+  }
   const sumIcon = document.getElementById('sum-icon'); if (sumIcon) sumIcon.textContent = '';
   setEl('sum-title', servRow.titlu);
   setEl('sum-sub', 'Serviciu');
