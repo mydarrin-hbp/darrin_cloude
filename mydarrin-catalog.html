@@ -5761,7 +5761,11 @@ function descDinDomeniu(item, tab) {
 // ── Build card HTML ───────────────────────────────────────────────────────
 function mkCard(item, pret, tab, asoc) {
   const d   = DOM[item.domeniu] || {cat:'Instalații', sub:'General', img:IMG_DEF};
-  const img = `https://images.unsplash.com/photo-${d.img}?w=600&q=80`;
+  // Imagine reală (urcată din back-office, catalog_servicii.imagini) dacă
+  // există — altfel poza stock generică deja folosită pentru restul
+  // catalogului, nepopulat încă.
+  const imgReal = Array.isArray(item.imagini) && item.imagini.length ? item.imagini[0] : null;
+  const img = imgReal || `https://images.unsplash.com/photo-${d.img}?w=600&q=80`;
   const isU = /inlocuire|electric|urgent/i.test(item.id_serviciu||'');
   const isA = tab === 'servicii';
   const p   = pret > 0 ? pret : 0;
@@ -5794,7 +5798,7 @@ function mkCard(item, pret, tab, asoc) {
   </div>
   <div class="card-body">
     <div class="card-title">${item.titlu}</div>
-    <div class="card-desc">${descDinDomeniu(item, tab)}</div>
+    <div class="card-desc">${item.descriere || descDinDomeniu(item, tab)}</div>
     ${aHtml}
     <!-- Codurile NACE/ESCO nu se afișează public — vizibile doar în back-office -->
     <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">
@@ -5876,9 +5880,14 @@ async function loadCatalog() {
 
   try {
     const [servicii, materiale, inchirieri, niveluri, relatii, svcAsoc] = await Promise.all([
-      sg('catalog_servicii', 'categorie=eq.servicii&status_public=eq.true&select=id,id_serviciu,titlu,domeniu,unitate_masura&order=domeniu,titlu'),
-      sg('catalog_servicii', 'categorie=eq.materiale&status_public=eq.true&select=id,id_serviciu,titlu,domeniu,unitate_masura&order=domeniu,titlu'),
-      sg('catalog_servicii', 'categorie=eq.inchirieri&status_public=eq.true&select=id,id_serviciu,titlu,domeniu,unitate_masura&order=domeniu,titlu'),
+      // 31 august 2026, cerere fondator: "descrierea, imaginile trebuie să
+      // fie vizibile și în catalogul de servicii... aliniat cu" pagina de
+      // configurare — descriere/imagini adăugate la select; mkCard() le
+      // folosește dacă există, cu fallback la textul/poza generică deja
+      // existentă pentru restul catalogului, nepopulat încă.
+      sg('catalog_servicii', 'categorie=eq.servicii&status_public=eq.true&select=id,id_serviciu,titlu,domeniu,unitate_masura,descriere,imagini&order=domeniu,titlu'),
+      sg('catalog_servicii', 'categorie=eq.materiale&status_public=eq.true&select=id,id_serviciu,titlu,domeniu,unitate_masura,descriere,imagini&order=domeniu,titlu'),
+      sg('catalog_servicii', 'categorie=eq.inchirieri&status_public=eq.true&select=id,id_serviciu,titlu,domeniu,unitate_masura,descriere,imagini&order=domeniu,titlu'),
       sg('catalog_niveluri', 'nivel=eq.standard&select=serviciu_id,materiale_baza_estimat'),
       sg('catalog_relatii',  'tip_relatie=eq.obiect_asociat&select=catalog_serviciu_id,catalog_relatie_id'),
       sg('catalog_servicii', 'categorie=eq.servicii&id_serviciu=like.cal-*&select=id,id_serviciu,titlu'),
