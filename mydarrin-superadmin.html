@@ -5669,6 +5669,45 @@ async function loadCatalogList() {
   }
 }
 
+// Faza 4 marketplace extensie (31 august 2026) — upload real, imagine cu
+// imagine (max 5MB, jpeg/png/webp), citită ca base64 în browser și trimisă
+// la api/admin/catalog-imagini.js (același tipar ca api/comenzi/upload-imagine.js).
+function incarcaImagineCatalog(idServiciu, inputEl) {
+  const file = inputEl.files?.[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { alert('Imaginea depășește 5MB.'); inputEl.value = ''; return; }
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try {
+      const base64 = reader.result.split(',')[1];
+      const headers = await _adminAuthHeader();
+      const res = await fetch('/api/admin/catalog-imagini', {
+        method: 'POST', headers,
+        body: JSON.stringify({ id_serviciu: idServiciu, imagine_base64: base64, mime_type: file.type }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+      await loadCatalogList();
+    } catch (e) {
+      alert('Eroare la încărcare: ' + e.message);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+async function stergeImagineCatalog(idServiciu, url) {
+  if (!confirm('Elimini această imagine?')) return;
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/catalog-imagini', { method: 'DELETE', headers, body: JSON.stringify({ id_serviciu: idServiciu, url }) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    await loadCatalogList();
+  } catch (e) {
+    alert('Eroare la eliminare: ' + e.message);
+  }
+}
+
 function filtreazaCatalogList() {
   const termen = (document.getElementById('cat-filtru')?.value || '').trim().toLowerCase();
   if (!termen) { renderCatalogList(CATALOG_SERVICII_CACHE); return; }
@@ -5694,6 +5733,23 @@ function renderCatalogList(servicii) {
           <button onclick="toggleStatusCatalog('${s.id}', ${!s.status_public})" style="font-size:11px;padding:5px 11px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">${s.status_public ? 'Ascunde' : 'Publică'}</button>
           <button onclick="toggleNiveluriCatalog('${s.id}')" style="font-size:11px;padding:5px 11px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">Niveluri (${s.niveluri.length})</button>
           <button onclick="stergeServiciuCatalog('${s.id}', '${escapeHTML(s.titlu).replace(/'/g, "\\'")}')" style="font-size:11px;padding:5px 11px;border-radius:7px;border:1px solid rgba(192,57,43,.4);background:transparent;color:#E57373;cursor:pointer">Șterge</button>
+        </div>
+        <!-- Faza 4 marketplace extensie (31 august 2026, cerere fondator) —
+             până la 5 imagini reale per produs/serviciu, încărcate manual
+             (niciodată generate/fabricate) — vezi api/admin/catalog-imagini.js. -->
+        <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #2D3F55;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:10.5px;color:#8BA3C0;text-transform:uppercase;letter-spacing:.04em">Imagini (${(s.imagini || []).length}/5)</span>
+          ${(s.imagini || []).map((url) => `
+            <span style="position:relative;display:inline-block">
+              <img src="${escapeHTML(url)}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid #2D3F55"/>
+              <button onclick="stergeImagineCatalog('${s.id}','${escapeHTML(url).replace(/'/g, "\\'")}')" title="Elimină" style="position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;border:none;background:#C0392B;color:#fff;font-size:10px;line-height:1;cursor:pointer;padding:0">×</button>
+            </span>
+          `).join('')}
+          ${(s.imagini || []).length < 5 ? `
+            <label style="width:44px;height:44px;border-radius:6px;border:1.5px dashed #2D3F55;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#8BA3C0;font-size:18px">
+              +<input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="incarcaImagineCatalog('${s.id}', this)"/>
+            </label>
+          ` : ''}
         </div>
         <div id="cat-niveluri-${s.id}" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid #2D3F55">
           ${s.niveluri.map((n) => `

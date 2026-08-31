@@ -29,7 +29,7 @@ async function actionList(req, res) {
 
   let q = supabaseAdmin
     .from('catalog_servicii')
-    .select('id, id_serviciu, categorie, domeniu, titlu, icon, nace, cod_esco, cod_uniclass, unitate_masura, rating, status_public, sectoare_client, creat_la')
+    .select('id, id_serviciu, categorie, domeniu, titlu, icon, nace, cod_esco, cod_uniclass, unitate_masura, rating, status_public, sectoare_client, creat_la, descriere, imagini')
     .order('domeniu', { ascending: true })
     .order('titlu', { ascending: true });
   if (categorie) q = q.eq('categorie', categorie);

@@ -25,7 +25,11 @@
   .tab-btn.active{border-color:#0E9E99;background:#0E9E99;color:#fff}
   .search{width:100%;padding:11px 16px;border:1.5px solid #D5DFE8;border-radius:12px;font-size:13.5px;font-family:inherit;margin-bottom:18px;background:#fff}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
-  .card{background:#fff;border:1px solid #E8ECF0;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px}
+  .card{background:#fff;border:1px solid #E8ECF0;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+  .card-img{width:calc(100% + 32px);margin:-16px -16px 0;height:140px;object-fit:cover;background:#F4F7F9}
+  .card-img-placeholder{width:calc(100% + 32px);margin:-16px -16px 0;height:70px;background:#F4F7F9;display:flex;align-items:center;justify-content:center;color:#B8C4CE;font-size:11px}
+  .card-thumbs{display:flex;gap:4px}
+  .card-thumbs img{width:32px;height:32px;object-fit:cover;border-radius:6px;border:1px solid #E8ECF0;cursor:pointer}
   .card-title{font-size:14px;font-weight:700;color:#003366;line-height:1.3}
   .card-desc{font-size:12px;color:#6B7A8D;line-height:1.5;flex:1}
   .card-desc.empty{font-style:italic;color:#B8C4CE}
@@ -89,7 +93,7 @@ async function incarca() {
     document.getElementById('grid').innerHTML = '<div class="empty-state">Acest serviciu nu are un cod NACE asociat — nu putem alinia materiale/echipamente.</div>';
     return;
   }
-  const qs = `status_public=eq.true&nace=eq.${encodeURIComponent(NACE)}&select=id,id_serviciu,titlu,descriere,unitate_masura,catalog_niveluri(nivel,catalog_preturi(pret))&order=titlu`;
+  const qs = `status_public=eq.true&nace=eq.${encodeURIComponent(NACE)}&select=id,id_serviciu,titlu,descriere,imagini,unitate_masura,catalog_niveluri(nivel,catalog_preturi(pret))&order=titlu`;
   try {
     const [mat, inch] = await Promise.all([
       fetch(`${SUPA_URL}/rest/v1/catalog_servicii?categorie=eq.materiale&${qs}`, { headers }).then(r => r.ok ? r.json() : []),
@@ -99,7 +103,7 @@ async function incarca() {
       const preturi = {};
       (r.catalog_niveluri || []).forEach((n) => { preturi[n.nivel] = n.catalog_preturi?.[0]?.pret ?? null; });
       const pret = preturi.Bronze ?? Object.values(preturi).find((p) => typeof p === 'number') ?? null;
-      return { id: r.id, id_serviciu: r.id_serviciu, titlu: r.titlu, descriere: r.descriere || '', unitate: r.unitate_masura || 'buc', pret };
+      return { id: r.id, id_serviciu: r.id_serviciu, titlu: r.titlu, descriere: r.descriere || '', imagini: Array.isArray(r.imagini) ? r.imagini : [], unitate: r.unitate_masura || 'buc', pret };
     });
     DB.materiale = normalizeaza(mat);
     DB.inchirieri = normalizeaza(inch);
@@ -139,6 +143,10 @@ function randeaza() {
 
   grid.innerHTML = filtrate.map((item) => `
     <div class="card">
+      ${item.imagini.length
+        ? `<img class="card-img" id="img-${item.id}" src="${escapeHTML(item.imagini[0])}" alt="${escapeHTML(item.titlu)}" loading="lazy"/>`
+        : `<div class="card-img-placeholder">Fără imagine încă</div>`}
+      ${item.imagini.length > 1 ? `<div class="card-thumbs">${item.imagini.slice(1).map((u) => `<img src="${escapeHTML(u)}" onclick="document.getElementById('img-${item.id}').src='${escapeHTML(u)}'"/>`).join('')}</div>` : ''}
       <div class="card-title">${escapeHTML(item.titlu)}</div>
       <div class="card-desc${item.descriere ? '' : ' empty'}">${item.descriere ? escapeHTML(item.descriere) : 'Fără descriere detaliată încă pentru acest produs.'}</div>
       <div class="card-price">${item.pret != null ? item.pret.toLocaleString('ro-RO') + ' Lei' : '—'} <span>/ ${escapeHTML(item.unitate)}</span></div>

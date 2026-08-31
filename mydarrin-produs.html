@@ -3454,7 +3454,7 @@ async function loadAddonCatalog() {
   // NACE (sau n-are deloc cod NACE — produse de fallback), lista rămâne
   // goală cu un mesaj clar, NU cade înapoi pe tot catalogul nefiltrat.
   const naceFilter = S.nace ? `&nace=eq.${encodeURIComponent(S.nace)}` : '&nace=eq.__fara_potrivire__';
-  const qs = `status_public=eq.true${naceFilter}&select=id,id_serviciu,titlu,descriere,unitate_masura,catalog_niveluri(nivel,catalog_preturi(pret))&order=titlu`;
+  const qs = `status_public=eq.true${naceFilter}&select=id,id_serviciu,titlu,descriere,imagini,unitate_masura,catalog_niveluri(nivel,catalog_preturi(pret))&order=titlu`;
   // Faza 4 marketplace (31 august 2026) — link vizibil doar dacă serviciul
   // curent are un cod NACE real (aceeași condiție ca filtrarea de mai jos).
   const marketplaceLink = document.getElementById('marketplace-link');
@@ -3481,7 +3481,7 @@ async function loadAddonCatalog() {
     const normalizeaza = (rows) => rows.filter((r) => !excluse.includes(r.id_serviciu)).map((r) => {
       const preturi = {};
       (r.catalog_niveluri || []).forEach((n) => { preturi[n.nivel] = n.catalog_preturi?.[0]?.pret ?? null; });
-      return { id: r.id, titlu: r.titlu, descriere: r.descriere || '', unitate: r.unitate_masura || 'buc', preturi };
+      return { id: r.id, titlu: r.titlu, descriere: r.descriere || '', imagini: Array.isArray(r.imagini) ? r.imagini : [], unitate: r.unitate_masura || 'buc', preturi };
     });
     ADDON_DB.materiale = normalizeaza(mat);
     ADDON_DB.inchirieri = normalizeaza(inch);
@@ -3625,7 +3625,11 @@ function renderAddonList() {
     // are una (catalog_servicii.descriere) — trunchiată, fișa completă e pe
     // pagina de marketplace dedicată (link mai sus).
     const descTrunchiata = item.descriere ? (item.descriere.length > 70 ? item.descriere.slice(0, 70) + '…' : item.descriere) : '';
+    const thumb = item.imagini?.[0]
+      ? `<img src="${item.imagini[0]}" style="width:36px;height:36px;object-fit:cover;border-radius:8px;flex-shrink:0" loading="lazy"/>`
+      : `<div style="width:36px;height:36px;border-radius:8px;background:#F4F7F9;flex-shrink:0"></div>`;
     return `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #F4F7F9">
+      ${thumb}
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:600;color:#2D2D2D;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeAddonHTML(item.titlu)}</div>
         ${descTrunchiata ? `<div style="font-size:10.5px;color:#8C9BAD;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeAddonHTML(descTrunchiata)}</div>` : ''}
@@ -3795,7 +3799,11 @@ function renderAddonSelected() {
       // Faza 4 marketplace (31 august 2026, cerere fondator: "se vor adăuga
       // la descriere doar detaliile preluate... pentru produsul selectat") —
       // descrierea reală a produsului ALES apare aici, în configurator.
+      const thumbSelectat = it.imagini?.[0]
+        ? `<img src="${it.imagini[0]}" style="width:40px;height:40px;object-fit:cover;border-radius:8px;flex-shrink:0"/>`
+        : '';
       return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#F4F7F9;border-radius:10px;margin-bottom:6px">
+        ${thumbSelectat}
         <div style="flex:1;min-width:0">
           <div style="font-size:12.5px;color:#2D2D2D;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeAddonHTML(it.titlu)}</div>
           ${it.descriere ? `<div style="font-size:10.5px;color:#8C9BAD;line-height:1.4;margin-top:2px">${escapeAddonHTML(it.descriere)}</div>` : ''}
