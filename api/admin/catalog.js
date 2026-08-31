@@ -112,7 +112,10 @@ async function actionCreeazaServiciu(req, res, user) {
 async function actionActualizeazaServiciu(req, res, user) {
   const { id, ...campuri } = req.body || {};
   if (!id) return res.status(400).json({ error: 'id obligatoriu.' });
-  const permise = ['domeniu', 'titlu', 'icon', 'nace', 'cod_esco', 'cod_uniclass', 'unitate_masura', 'sectoare_client', 'status_public'];
+  // 31 august 2026: 'descriere' lipsea din lista de câmpuri editabile —
+  // fondatorul n-avea cum să salveze/editeze descrierea unui material din
+  // panou (descrierile de azi au fost scrise direct în DB, prin SQL).
+  const permise = ['domeniu', 'titlu', 'icon', 'nace', 'cod_esco', 'cod_uniclass', 'unitate_masura', 'sectoare_client', 'status_public', 'descriere'];
   const update = {};
   permise.forEach((c) => { if (campuri[c] !== undefined) update[c] = campuri[c]; });
   if (!Object.keys(update).length) return res.status(400).json({ error: 'Niciun câmp de actualizat.' });
