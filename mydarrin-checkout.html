@@ -1297,11 +1297,17 @@ function triggerHeaderSearch(){
               <div class="flex items-start justify-between gap-2 flex-wrap">
                 <div>
                   <div class="font-bold text-[#003366] text-[15px]" id="ci1-title">Instalare tablou electric</div>
+                  <!-- Bug real găsit 31 august 2026 (fondator: "nu există
+                       descrierile serviciului... pe checkout") — descrierea
+                       reală a serviciului + a materialelor/accesoriilor
+                       adăugate, vizibile aici doar dacă există (mod pilot). -->
+                  <div class="text-xs text-[#6B7A8D] mt-1" id="ci1-desc" style="display:none;line-height:1.5"></div>
                   <div class="flex flex-wrap gap-2 mt-1.5">
                     <span class="chip chip-accent text-[10px]" id="ci1-tier">Pachet Aur</span>
                     <span class="chip chip-primary text-[10px]">Electro Profesional SRL</span>
                     <span class="chip chip-ai text-[10px]"><span class="pulse-dot mr-1"></span>ANRE Cl.I</span>
                   </div>
+                  <div id="ci1-materiale" style="display:none;margin-top:8px"></div>
                 </div>
                 <button onclick="removeItem(1)" class="text-[#8C9BAD] hover:text-red-400 transition p-1 flex-shrink-0"><i data-lucide="x" class="w-4 h-4"></i></button>
               </div>
@@ -3369,6 +3375,27 @@ function applyChecoutConfigReal(){
   setEl2('ci1-addr', cfg.addr || 'Adresă necompletată');
   setEl2('ci1-date', cfg.selDate ? (cfg.selDate + (cfg.selTime ? ' · ' + cfg.selTime : '')) : 'Data va fi confirmată');
   setEl2('ci1-price', (cfg.total || 0).toLocaleString('ro-RO'));
+
+  // Bug real găsit 31 august 2026 (fondator, testare live): descrierea reală
+  // a serviciului + materialele/accesoriile adăugate (cu descrierea lor
+  // proprie) nu apăreau deloc pe checkout — clientul plătea fără să vadă ce
+  // a ales, dincolo de titlu și preț.
+  const ci1Desc = document.getElementById('ci1-desc');
+  if (ci1Desc) {
+    if (cfg.descriereServiciu) { ci1Desc.textContent = cfg.descriereServiciu; ci1Desc.style.display = ''; }
+    else { ci1Desc.style.display = 'none'; }
+  }
+  const ci1Materiale = document.getElementById('ci1-materiale');
+  if (ci1Materiale) {
+    const toate = [...(cfg.materiale || []), ...(cfg.inchirieri || [])];
+    if (toate.length) {
+      ci1Materiale.innerHTML = `<div class="text-[10px] font-bold uppercase tracking-wide text-[#8C9BAD] mb-1">Materiale/echipamente adăugate</div>` +
+        toate.map((m) => `<div class="text-xs text-[#6B7A8D] mb-1"><span class="font-semibold text-[#2D2D2D]">${escapeHTML(m.titlu)}</span> ×${m.qty}${m.descriere ? ' — ' + escapeHTML(m.descriere) : ''}</div>`).join('');
+      ci1Materiale.style.display = '';
+    } else {
+      ci1Materiale.style.display = 'none';
+    }
+  }
 
   const item2 = document.getElementById('cart-item-2');
   if (item2) item2.style.display = 'none';

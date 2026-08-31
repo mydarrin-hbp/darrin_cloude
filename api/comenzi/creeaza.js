@@ -282,6 +282,11 @@ async function handler(req, res, user) {
       nr_comanda,
       client_id: user.id,
       status: 'in_cautare_partener',
+      // Bug real găsit 31 august 2026 (cerere fondator — proforma trebuie să
+      // arate locația reală de prestare): `adresa` era validată mai sus
+      // (obligatorie, string) dar niciodată persistată — doar tara_cod/
+      // regiune/localitate (geo larg) se salvau. Reparat.
+      adresa,
       tara_cod: tara_cod ? String(tara_cod).toUpperCase() : null,
       regiune,
       localitate,
@@ -441,13 +446,19 @@ async function handler(req, res, user) {
           let attachments;
           if (numarProforma) {
             try {
-              const [{ data: entitateJuridica }, { data: contBancar }] = await Promise.all([
+              const [{ data: entitateJuridica }, { data: contBancar }, { data: serviciu }] = await Promise.all([
                 supabaseAdmin.from('entitati_juridice_platforma').select('denumire, cui, nr_reg_com, adresa').eq('tara_cod', insertBase.tara_cod || 'RO').maybeSingle(),
                 supabaseAdmin.from('bank_accounts').select('nume_afisat, banca, iban, swift').eq('tara_cod', insertBase.tara_cod || 'RO').eq('moneda', data.moneda).eq('tip', 'incasari').maybeSingle(),
+                // Deviz complet (31 august 2026, cerere fondator) — descrierea
+                // reală, etapele lucrării și instrucțiunile de întreținere ale
+                // serviciului comandat, dacă au fost populate.
+                data.catalog_serviciu_id
+                  ? supabaseAdmin.from('catalog_servicii').select('titlu, descriere, etape_lucrare, instructiuni_intretinere').eq('id', data.catalog_serviciu_id).maybeSingle()
+                  : Promise.resolve({ data: null }),
               ]);
               const pdfBuffer = await genereazaProformaPDF({
                 invoice: { numar_document: numarProforma, emisa_la: new Date().toISOString(), suma_totala: data.suma_totala_platita, moneda: data.moneda, entitate_emitenta: entitateEmitenta },
-                comanda: data, clientEmail: profilClient.email, entitateJuridica, contBancar,
+                comanda: data, serviciu, clientEmail: profilClient.email, entitateJuridica, contBancar,
               });
               attachments = [{ filename: `${numarProforma}.pdf`, content: pdfBuffer.toString('base64') }];
             } catch (pdfErr) {

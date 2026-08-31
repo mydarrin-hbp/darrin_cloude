@@ -802,6 +802,10 @@ function _construiesteConfigCurenta() {
     : ((typeof PRODUCTS_DB !== 'undefined' && PRODUCTS_DB[S.slug]?.title) || S.slug);
   return {
     titlu, slug: S.slug, type: S.type, tier: S.tier, tierLabel: S.tierLabel,
+    // Bug real găsit 31 august 2026 (fondator: "nu există descrierile...
+    // pe checkout") — descrierea reală a serviciului nu ajungea niciodată în
+    // config-ul transmis mai departe la checkout, deși era deja afișată aici.
+    descriereServiciu: S.pilotMode ? (document.getElementById('prod-desc')?.textContent || '') : '',
     qty: S.qty, unit: S.unit, orderType: S.orderType,
     ins: S.ins, insPrice: S.insPrice,
     addr: S.addr, selDate: S.selDate, selTime: S.selTime,
@@ -820,8 +824,8 @@ function _construiesteConfigCurenta() {
     // pe care checkout.html îl trimite mai departe ca `addon_materiale` pe
     // calea nivel_id; `pret` de aici rămâne DOAR pentru afișare locală —
     // serverul (rezolvaAddonMateriale) nu-l citește niciodată.
-    materiale: S.materiale.map(m => ({ id: m.id, titlu: m.titlu, qty: m.qty, pret: _addonPretNivel(m) })),
-    inchirieri: S.inchirieri.map(m => ({ id: m.id, titlu: m.titlu, qty: m.qty, pret: _addonPretNivel(m) })),
+    materiale: S.materiale.map(m => ({ id: m.id, titlu: m.titlu, descriere: m.descriere || '', qty: m.qty, pret: _addonPretNivel(m) })),
+    inchirieri: S.inchirieri.map(m => ({ id: m.id, titlu: m.titlu, descriere: m.descriere || '', qty: m.qty, pret: _addonPretNivel(m) })),
     // Mod pilot (22 august 2026) — nivel_id+cantitate, singurele câmpuri
     // citite de calea nouă din api/comenzi/creeaza.js; null pentru orice
     // alt produs (calea veche, cost_*, neatinsă).
@@ -1556,6 +1560,20 @@ function triggerHeaderSearch(){
               <span style="font-size:12px;color:#8C9BAD" id="prod-rating">4.9 (280 rec.)</span>
             </div>
           </div>
+        </div>
+
+        <!-- Deviz complet (31 august 2026, cerere fondator): etapele reale ale
+             lucrării + instrucțiuni de întreținere, alături de descrierea de
+             mai sus — vizibile doar dacă serviciul are conținut real populat
+             (catalog_servicii.etape_lucrare/instructiuni_intretinere),
+             niciodată text generic inventat. -->
+        <div id="etape-wrap" style="display:none;margin-bottom:18px;background:#F4F7F9;border-radius:12px;padding:14px 16px">
+          <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#8C9BAD;margin-bottom:8px">Etapele lucrării</div>
+          <ol id="etape-lista" style="margin:0;padding-left:18px;font-size:12.5px;color:#2D2D2D;line-height:1.8"></ol>
+        </div>
+        <div id="intretinere-wrap" style="display:none;margin-bottom:22px;background:#F4F7F9;border-radius:12px;padding:14px 16px">
+          <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#8C9BAD;margin-bottom:8px">Întreținere și folosire</div>
+          <div id="intretinere-text" style="font-size:12.5px;color:#2D2D2D;line-height:1.65"></div>
         </div>
 
         <!-- ── TIER TABLE (dark, ca în screenshot) ── -->
@@ -3857,7 +3875,7 @@ async function initPilotProdus(slug) {
   try {
     const headers = { apikey: SUPA_PROD_ANON, Authorization: `Bearer ${SUPA_PROD_ANON}` };
     const [servRes, nivRes] = await Promise.all([
-      fetch(`${SUPA_PROD_URL}/rest/v1/catalog_servicii?id=eq.${serviciuId}&select=id,titlu,domeniu,unitate_masura,nace`, { headers }).then(r => r.ok ? r.json() : []),
+      fetch(`${SUPA_PROD_URL}/rest/v1/catalog_servicii?id=eq.${serviciuId}&select=id,titlu,domeniu,unitate_masura,nace,descriere,etape_lucrare,instructiuni_intretinere`, { headers }).then(r => r.ok ? r.json() : []),
       fetch(`${SUPA_PROD_URL}/rest/v1/catalog_niveluri?serviciu_id=eq.${serviciuId}&select=id,nivel,descriere`, { headers }).then(r => r.ok ? r.json() : []),
     ]);
     servRow = servRes[0]; niveluriRows = nivRes;
@@ -3921,9 +3939,28 @@ async function initPilotProdus(slug) {
   setEl('bc-title', servRow.titlu);
   setEl('bc-cat', 'Servicii');
   setEl('prod-title', servRow.titlu);
-  setEl('prod-desc', 'Serviciu furnizat de parteneri verificați · Preț calculat live din rețeta tehnică reală');
+  // Bug real găsit 31 august 2026 (fondator, testare live): descrierea reală
+  // a serviciului (catalog_servicii.descriere, populată explicit — vezi
+  // Faza 4) nu era niciodată citită — text generic hardcodat pentru toate
+  // cele 6 servicii pilot. Fallback la textul vechi doar dacă serviciul n-are
+  // încă o descriere reală populată.
+  setEl('prod-desc', servRow.descriere || 'Serviciu furnizat de parteneri verificați · Preț calculat live din rețeta tehnică reală');
   setEl('prod-rating', 'Nou · preț calculat live');
   setEl('prod-type-chip', 'Serviciu');
+
+  const etapeWrap = document.getElementById('etape-wrap');
+  const etapeLista = document.getElementById('etape-lista');
+  if (etapeWrap && etapeLista && Array.isArray(servRow.etape_lucrare) && servRow.etape_lucrare.length) {
+    etapeLista.innerHTML = servRow.etape_lucrare.map((e) => `<li>${escapeAddonHTML(e)}</li>`).join('');
+    etapeWrap.style.display = '';
+  } else if (etapeWrap) { etapeWrap.style.display = 'none'; }
+
+  const intretinereWrap = document.getElementById('intretinere-wrap');
+  const intretinereText = document.getElementById('intretinere-text');
+  if (intretinereWrap && intretinereText && servRow.instructiuni_intretinere) {
+    intretinereText.textContent = servRow.instructiuni_intretinere;
+    intretinereWrap.style.display = '';
+  } else if (intretinereWrap) { intretinereWrap.style.display = 'none'; }
   const prodImgEl = document.getElementById('prod-img');
   if (prodImgEl) { prodImgEl.style.backgroundImage = ''; prodImgEl.textContent = ''; }
   const sumIcon = document.getElementById('sum-icon'); if (sumIcon) sumIcon.textContent = '';
