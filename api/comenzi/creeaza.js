@@ -74,7 +74,7 @@ const { calculeazaPret, citestePragMinimComanda } = require('../../lib/calculeaz
 const { calculeazaCostNivel } = require('../../lib/calculeaza-cost-recipe');
 const { rezolvaAddonMateriale } = require('../../lib/rezolva-addon-materiale');
 const { genereazaProformaPDF } = require('../../lib/genereaza-proforma-pdf');
-const { renderEmailPrimaComanda, limbaProfilEmailComportamental } = require('../../lib/i18n');
+const { renderEmailPrimaComanda, renderEmailComandaConfirmata, limbaProfilEmailComportamental } = require('../../lib/i18n');
 const { fromHeader } = require('../../lib/email-sender');
 
 async function handler(req, res, user) {
@@ -409,17 +409,20 @@ async function handler(req, res, user) {
       console.error('[comenzi/creeaza] proformă', invoiceErr);
     }
 
-    // Email „prima comandă confirmată" (audit Secțiunea 39, 30 Iulie 2026,
-    // gap real: nicio confirmare de comandă la creare). Trimis DOAR la
-    // prima comandă reală a clientului — la fel cum spune textul cerut
-    // explicit ("Mulțumim pentru prima ta comandă") — nu la fiecare comandă;
-    // izolat în propriul try/catch, nu blochează comanda deja înregistrată.
+    // Email „comandă confirmată" — trimis la FIECARE comandă (30 august
+    // 2026, cerere fondator: "rezolvă și pe acesta", gap semnalat anterior —
+    // înainte se trimitea doar la prima comandă a clientului). Prima
+    // comandă păstrează textul special ("prima comandă"), cele următoare
+    // primesc textul generic (renderEmailComandaConfirmata) — aceeași
+    // structură, link real + proformă atașată, doar formularea diferă, ca
+    // să nu inducă în eroare un client care a mai comandat. Izolat în
+    // propriul try/catch, nu blochează comanda deja înregistrată.
     try {
       const { count: nrComenziClient } = await supabaseAdmin
         .from('comenzi')
         .select('id', { count: 'exact', head: true })
         .eq('client_id', user.id);
-      if (nrComenziClient === 1 && process.env.RESEND_API_KEY) {
+      if (process.env.RESEND_API_KEY) {
         const { data: profilClient } = await supabaseAdmin
           .from('profiles')
           .select('email, tara, limba')
@@ -427,7 +430,8 @@ async function handler(req, res, user) {
           .maybeSingle();
         if (profilClient?.email) {
           const limba = limbaProfilEmailComportamental(profilClient);
-          const { subiect, html } = renderEmailPrimaComanda(limba, { nume: null, numarComanda: data.nr_comanda || data.id, comandaId: data.id, numarProforma });
+          const renderEmail = nrComenziClient === 1 ? renderEmailPrimaComanda : renderEmailComandaConfirmata;
+          const { subiect, html } = renderEmail(limba, { nume: null, numarComanda: data.nr_comanda || data.id, comandaId: data.id, numarProforma });
 
           // Cerere fondator (30 august 2026): factura proformă trebuie
           // ATAȘATĂ efectiv la email, nu doar menționată. Generată doar dacă
@@ -459,7 +463,7 @@ async function handler(req, res, user) {
         }
       }
     } catch (emailErr) {
-      console.error('[comenzi/creeaza] email prima comandă', emailErr);
+      console.error('[comenzi/creeaza] email confirmare comandă', emailErr);
     }
 
     return res.status(200).json({ ok: true, comanda: data, alocare });
