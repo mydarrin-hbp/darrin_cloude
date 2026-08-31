@@ -85,6 +85,16 @@ async function handler(req, res, admin) {
       .from('catalog_servicii').update({ imagini: imaginiNoi }).eq('id', id_serviciu).select('id, imagini').single();
     if (updErr) return res.status(500).json({ error: updErr.message });
 
+    // Șterge și fișierul din storage (nu doar referința din DB) — evită
+    // acumularea de fișiere orfane la fiecare ștergere reală de imagine.
+    const prefix = `/storage/v1/object/public/${BUCKET}/`;
+    const idxPrefix = url.indexOf(prefix);
+    if (idxPrefix !== -1) {
+      const path = url.slice(idxPrefix + prefix.length);
+      const { error: rmErr } = await supabaseAdmin.storage.from(BUCKET).remove([path]);
+      if (rmErr) console.warn('[admin/catalog-imagini] fișier storage neșters (referința tot a fost eliminată din DB):', rmErr.message);
+    }
+
     await inregistreazaAudit({ admin, req, actiune: 'stergere_imagine_catalog', entitate: 'catalog_servicii', entitate_id: id_serviciu, detalii: { url } });
     return res.status(200).json({ ok: true, imagini: actualizat.imagini });
   }
