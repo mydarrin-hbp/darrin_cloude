@@ -2746,13 +2746,24 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 
 <script>
 // ── NAVIGATION ──
-const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','comenzi','audit','config','branding','seo','manual','accountancy','investitori','contact','prospecti','newsletter','email-gateway','facturare-parteneri','b2g-plati','preturi-niveluri','tarife-transport','tarife-manopera','tarife-resurse','marketplace-aprobari','acces-temporar'];
+// Bug real găsit 31 august 2026 (fondator: pagina de catalog rămânea goală
+// la click — titlul din header și highlight-ul din meniu se schimbau corect
+// (citesc din TITLES/onclick), dar panoul propriu-zis rămânea display:none
+// mereu, pentru că 'catalog' lipsea din acest array — showPanel('catalog')
+// nu-l atingea niciodată. Panoul + TITLES['catalog'] existau deja corect,
+// doar lista PANELS nu fusese actualizată când a fost adăugat (24 iulie 2026).
+// Al 2-lea caz identic găsit la aceeași verificare: panoul 'consultanta'
+// (panel-consultanta, linkuit real din meniu) lipsea și el din PANELS +
+// din TITLES — click-ul îl lăsa gol, cu titlu brut "consultanta" (fallback
+// TITLES[id]||id), nu doar ascuns.
+const PANELS = ['dashboard','tari','utilizatori','rbac','platforme','escrow','comisioane','vmc','parteneri','catalog','comenzi','audit','config','branding','seo','manual','accountancy','consultanta','investitori','contact','prospecti','newsletter','email-gateway','facturare-parteneri','b2g-plati','preturi-niveluri','tarife-transport','tarife-manopera','tarife-resurse','marketplace-aprobari','acces-temporar'];
 const TITLES = {
   dashboard:'Dashboard Global',tari:'Țări & Zone',utilizatori:'Utilizatori & Actori',
   rbac:'Permisiuni RBAC',platforme:'Platforme & Integrări',escrow:'Escrow Global',
   comisioane:'Comisioane & Tarifare',vmc:'VMC per Țară',parteneri:'Parteneri Globali',
   comenzi:'Comenzi Globale',catalog:'Catalog Servicii/Materiale/Închirieri',audit:'Audit Log',config:'Configurare Sistem',
   branding:'Branding & Design Platformă',seo:'SEO — Titluri & Descrieri',manual:'Manual de Funcționare',accountancy:'Accountancy',
+  consultanta:'Consultanță & Proiectare',
   investitori:'Administrare Investitori',contact:'Mesaje Contact',prospecti:'Prospecți Parteneri',
   newsletter:'Newsletter & Abonați','email-gateway':'Noreply & Transactional Gateway','facturare-parteneri':'Facturare Parteneri','b2g-plati':'B2G & Metode de Plată','preturi-niveluri':'Niveluri de Preț','tarife-transport':'Tarife Transport','tarife-manopera':'Tarife Manoperă (ESCO)','tarife-resurse':'Tarife Materiale & Utilaje','marketplace-aprobari':'Marketplace — Aprobări','acces-temporar':'Acces Temporar'
 };
