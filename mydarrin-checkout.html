@@ -3054,6 +3054,28 @@ var DB = {
   FI:{flag:'🇫🇮',name:'Finlanda',currency:'EUR',code:'EUR',lang:'fi',active:false},
 };
 
+// Mesaj "zonă indisponibilă", localizat pe limba detectată geografic
+// (DB[cc].lang) — cerere fondator, 1 septembrie 2026. Fallback englez pentru
+// orice limbă neacoperită aici (inclusiv țări din afara listei DB).
+var UNAVAIL_MSGS = {
+  ro: { pre: 'Nu suntem încă live în', body: 'Catalogul încă nu este disponibil. În curând Darrin va fi disponibil pentru tine.', btn: 'Anunță-mă la lansare' },
+  en: { pre: "We're not live yet in", body: "The catalog isn't available yet. Darrin will be available for you soon.", btn: 'Notify me at launch' },
+  de: { pre: 'Wir sind noch nicht live in', body: 'Der Katalog ist noch nicht verfügbar. Darrin wird bald für dich verfügbar sein.', btn: 'Bei Start benachrichtigen' },
+  fr: { pre: "Nous ne sommes pas encore actifs à", body: "Le catalogue n'est pas encore disponible. Darrin sera bientôt disponible pour vous.", btn: 'Prévenez-moi au lancement' },
+  bg: { pre: 'Все още не сме активни в', body: 'Каталогът все още не е наличен. Скоро Darrin ще бъде наличен за теб.', btn: 'Уведомете ме при старта' },
+  es: { pre: 'Todavía no estamos activos en', body: 'El catálogo aún no está disponible. Darrin estará disponible para ti muy pronto.', btn: 'Avísame en el lanzamiento' },
+  el: { pre: 'Δεν είμαστε ακόμη διαθέσιμοι στην', body: 'Ο κατάλογος δεν είναι ακόμη διαθέσιμος. Σύντομα ο Darrin θα είναι διαθέσιμος για εσένα.', btn: 'Ειδοποίησέ με στην κυκλοφορία' },
+  tr: { pre: 'Henüz şu bölgede aktif değiliz:', body: 'Katalog henüz kullanılamıyor. Darrin yakında senin için hazır olacak.', btn: 'Başlangıçta bana haber ver' },
+  uk: { pre: 'Ми ще не працюємо у', body: 'Каталог ще недоступний. Незабаром Darrin буде доступний для тебе.', btn: 'Повідом мене про запуск' },
+  fi: { pre: 'Emme ole vielä käytössä alueella', body: 'Luettelo ei ole vielä saatavilla. Darrin on pian saatavilla sinulle.', btn: 'Ilmoita minulle käynnistyksestä' },
+};
+function _applyUnavailMsg(lang) {
+  var m = UNAVAIL_MSGS[lang] || UNAVAIL_MSGS.en;
+  _t('unavail-title-pre', m.pre);
+  _t('unavail-body-text', m.body);
+  _t('unavail-submit-btn', m.btn);
+}
+
 // Sursă reală, live din tax_configurations.checkout_activ (nu hardcodată).
 // ['RO'] e doar fallback-ul folosit până răspunde fetch-ul de mai jos.
 var ACTIVE_TARI = ['RO'];
@@ -3135,6 +3157,7 @@ function applyGeo(d){
   if(!info.active){
     var zn=document.getElementById('unavail-zone');
     if(zn)zn.textContent=info.name;
+    _applyUnavailMsg(info.lang);
     setTimeout(function(){
       var b=document.getElementById('zone-unavailable');
       if(b)b.classList.remove('hidden');
@@ -3644,12 +3667,12 @@ function daiSendMessage(){
     </button>
     <div id="zone-unavailable-body" class="p-7">
       <div style="font-size:38px;margin-bottom:10px"><i data-lucide="globe" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-      <h3 class="font-bold text-xl text-[#2D2D2D] mb-2" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Nu suntem încă live în <span id="unavail-zone">zona ta</span></h3>
-      <p class="text-gray-500 text-sm leading-relaxed mb-5">Darrin inca nu este disponibil in zona ta. Imediat ce suntem live, te vom anunta cu email. Multumim pentru intelegere.</p>
+      <h3 class="font-bold text-xl text-[#2D2D2D] mb-2" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif"><span id="unavail-title-pre">Nu suntem încă live în</span> <span id="unavail-zone">zona ta</span></h3>
+      <p id="unavail-body-text" class="text-gray-500 text-sm leading-relaxed mb-5">Catalogul încă nu este disponibil. În curând Darrin va fi disponibil pentru tine.</p>
       <div id="zone-unavailable-form">
         <input type="email" id="unavail-email" placeholder="Adresa ta de email" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition mb-3"/>
         <textarea id="unavail-mesaj" rows="2" maxlength="1000" placeholder="Nevoia ta (opțional)" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition mb-3" style="resize:vertical"></textarea>
-        <button onclick="submitUnavail()" class="w-full bg-[#FF8C00] text-white py-3.5 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition">
+        <button onclick="submitUnavail()" id="unavail-submit-btn" class="w-full bg-[#FF8C00] text-white py-3.5 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition">
           Anunță-mă la lansare
         </button>
         <p id="unavail-error" style="display:none;color:#C0392B;font-size:12px;margin-top:8px;text-align:center"></p>
