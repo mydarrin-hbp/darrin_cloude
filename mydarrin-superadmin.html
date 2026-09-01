@@ -836,25 +836,14 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
         <div style="grid-column:1/-1;text-align:center;color:#4A6080;padding:20px">Se încarcă...</div>
       </div>
 
-      <!-- VMC per tara table -->
-      <div class="sa-card">
-        <div class="sa-card-hdr">
-          <div style="font-weight:700;color:#1A2332;font-size:13.5px">⚖ Valoare Minimă Comandă (VMC) — configurare live</div>
-          <button class="btn-p" style="font-size:11.5px;padding:7px 14px">Salvează toate</button>
-        </div>
-        <div class="sa-card-body">
-          <table class="sa-table">
-            <thead><tr><th>Țară</th><th>Monedă</th><th>VMC curent</th><th>TVA</th><th>Status</th><th>Acțiune</th></tr></thead>
-            <tbody>
-              <tr><td>🇷🇴 România</td><td>RON</td><td><input type="number" value="100" style="background:#F0F4F8;border:1px solid #D5DFE8;border-radius:7px;padding:5px 10px;color:#FF8C00;font-weight:700;width:80px;font-family:inherit;font-size:13px" onchange="markChanged(this)"/></td><td>19%</td><td><span class="chip chip-green">Activ</span></td><td><button class="btn-s" style="font-size:11px;padding:5px 10px">Salvează</button></td></tr>
-              <tr><td>🇲🇩 Moldova</td><td>MDL</td><td><input type="number" value="400" style="background:#F0F4F8;border:1px solid #D5DFE8;border-radius:7px;padding:5px 10px;color:#FF8C00;font-weight:700;width:80px;font-family:inherit;font-size:13px" onchange="markChanged(this)"/></td><td>20%</td><td><span class="chip chip-green">Activ</span></td><td><button class="btn-s" style="font-size:11px;padding:5px 10px">Salvează</button></td></tr>
-              <tr><td>🇩🇪 Germania</td><td>EUR</td><td><input type="number" value="25" style="background:#F0F4F8;border:1px solid #D5DFE8;border-radius:7px;padding:5px 10px;color:#FF8C00;font-weight:700;width:80px;font-family:inherit;font-size:13px" onchange="markChanged(this)"/></td><td>19%</td><td><span class="chip chip-teal">Beta</span></td><td><button class="btn-s" style="font-size:11px;padding:5px 10px">Salvează</button></td></tr>
-              <tr><td>🇫🇷 Franța</td><td>EUR</td><td><input type="number" value="25" style="background:#F0F4F8;border:1px solid #D5DFE8;border-radius:7px;padding:5px 10px;color:#FF8C00;font-weight:700;width:80px;font-family:inherit;font-size:13px" onchange="markChanged(this)"/></td><td>20%</td><td><span class="chip chip-orange">Pilot</span></td><td><button class="btn-s" style="font-size:11px;padding:5px 10px">Salvează</button></td></tr>
-              <tr><td>🇧🇬 Bulgaria</td><td>BGN</td><td><input type="number" value="40" style="background:#F0F4F8;border:1px solid #D5DFE8;border-radius:7px;padding:5px 10px;color:#FF8C00;font-weight:700;width:80px;font-family:inherit;font-size:13px" onchange="markChanged(this)"/></td><td>20%</td><td><span class="chip chip-orange">Pilot</span></td><td><button class="btn-s" style="font-size:11px;padding:5px 10px">Salvează</button></td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <!-- Bug real găsit 1 septembrie 2026 (fondator, testare live: "am
+           modificat ratele și nu salvează... nu pot configura TVA-ul") —
+           acest tabel era o A TREIA copie, complet separată, a aceluiași VMC
+           fals descoperit mai devreme azi — TVA text simplu needitabil,
+           butoanele "Salvează"/"Salvează toate" fără niciun onclick, 5 țări
+           hardcodate (Bulgaria greșit BGN, din nou). Complet redundant cu
+           grila reală de mai sus (fiecare card are deja VMC real + buton
+           spre panoul VMC editabil) — eliminat, nu reconstruit a treia oară. -->
     </div>
 
     <!-- ══ PANEL: RBAC ══ -->
