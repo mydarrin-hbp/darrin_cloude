@@ -82,7 +82,7 @@ async function maybeConvert(res, invoice_id) {
 }
 
 async function actionUpdateTaxConfig(req, res, user) {
-  const { tara_cod, tara_nume, moneda, cota_tva, cota_impozit_venit, cota_impozit_salarii, prag_minim_comanda } = req.body;
+  const { tara_cod, tara_nume, moneda, cota_tva, cota_impozit_venit, cota_impozit_salarii, prag_minim_comanda, checkout_activ } = req.body;
   // prag_minim_comanda (22 august 2026, extensie configurabilă per țară a
   // fix-ului de integritate din aceeași zi) — undefined (câmp netrimis de
   // apelanți vechi) rămâne neatins; null (câmp gol în UI) explicit șters,
@@ -99,6 +99,14 @@ async function actionUpdateTaxConfig(req, res, user) {
   // existente îl ignora complet în tăcere, indiferent ce trimitea UI-ul.
   if (moneda !== undefined && moneda !== null && String(moneda).trim()) {
     update.moneda = String(moneda).trim().toUpperCase();
+  }
+  // 1 septembrie 2026, cerere fondator: "apare doar România activă" — nu
+  // exista nicio cale reală de a activa altă țară pentru checkout. Adăugat
+  // aici; comportamentul de "aprobare manuală legată de entitate juridică"
+  // (Etapa M, Adjustare B) rămâne neconstruit — activarea rămâne o acțiune
+  // manuală directă a superadminului, nu automată/condiționată încă.
+  if (checkout_activ !== undefined) {
+    update.checkout_activ = !!checkout_activ;
   }
 
   const { data: existenta } = await supabaseAdmin
@@ -130,7 +138,7 @@ async function actionUpdateTaxConfig(req, res, user) {
   if (error) return res.status(500).json({ error: 'Eroare la actualizare' });
   await inregistreazaAudit({
     admin: user, req, actiune: existenta ? 'actualizare_cote_fiscale' : 'creare_tara_fiscala', entitate: 'tax_configurations', entitate_id: tara_cod,
-    detalii: { tara_cod, tara_nume, moneda, cota_tva, cota_impozit_venit, cota_impozit_salarii, prag_minim_comanda: update.prag_minim_comanda },
+    detalii: { tara_cod, tara_nume, moneda, cota_tva, cota_impozit_venit, cota_impozit_salarii, prag_minim_comanda: update.prag_minim_comanda, checkout_activ: update.checkout_activ },
   });
   return res.status(200).json({ ok: true, config: data });
 }

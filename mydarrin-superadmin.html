@@ -822,7 +822,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
           <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">Țări & Zone geografice</h2>
           <p style="font-size:12.5px;color:#4A6080">Configurare geo-fiscală · TVA · VMC · Zone poligon · Legislație</p>
         </div>
-        <button class="btn-p" onclick="openAddCountry()">+ Adaugă țară</button>
+        <button class="btn-p" onclick="document.getElementById('tg-add-cod')?.scrollIntoView({behavior:'smooth',block:'center'});document.getElementById('tg-add-cod')?.focus()">+ Adaugă țară</button>
       </div>
 
       <!-- Bug real găsit 1 septembrie 2026 (fondator: monedă needitabilă pentru
@@ -2868,7 +2868,7 @@ function showToast(msg){
   setTimeout(()=>t.remove(),2800);
 }
 function bustCache(){showToast('🔄 Cache bust global declanșat · content_version: v2026.06.16-'+Date.now().toString(36).slice(-4));}
-// openAddCountry()/selectCountry() reale — definite mai jos, lângă
+// adaugaTaraNoua()/toggleCheckoutActiv() — definite mai jos, lângă
 // loadTariReal() (1 septembrie 2026); stub-urile de teatru de aici (doar
 // showToast, nicio acțiune reală) au fost eliminate.
 function markChanged(el){el.style.borderColor='#FF8C00';}
@@ -3822,6 +3822,13 @@ async function loadTariReal(){
             </div>
             <span class="chip ${t.checkout_activ ? 'chip-green' : 'chip-teal'}">${t.checkout_activ ? '✓ Live' : 'Inactiv'}</span>
           </div>
+          <!-- Bug real găsit 1 septembrie 2026 (fondator: "apare doar România
+               activă"): nu exista NICIO cale, în UI, de a activa altă țară
+               pentru checkout — flag-ul checkout_activ nici măcar nu era
+               trimis din front-end către actionUpdateTaxConfig. Confirmare
+               obligatorie (nu doar click) — activarea permite comenzi reale,
+               plătite, în acea țară. -->
+          <button onclick="toggleCheckoutActiv('${t.tara_cod}', ${!t.checkout_activ}, this)" class="btn-s" style="width:100%;font-size:10.5px;padding:5px;margin-bottom:8px;${t.checkout_activ ? 'color:#C0392B' : 'color:#16A34A'}">${t.checkout_activ ? '⏸ Dezactivează checkout' : '▶ Activează checkout live'}</button>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:11px">
             <div>
               <div style="color:#4A6080;margin-bottom:3px">Monedă</div>
@@ -3842,11 +3849,23 @@ async function loadTariReal(){
           <span class="tg-msg" style="font-size:10.5px"></span>
         </div>
       </div>`).join('');
+    // Bug real găsit 1 septembrie 2026 (fondator: "dacă doresc să adaug o
+    // țară, nu am reușit"): fluxul vechi înlănțuia 4 ferestre prompt()
+    // consecutive — orice Cancel/Enter accidental pe oricare din ele oprea
+    // totul în tăcere, fără mesaj clar. Toate cele 33 de țări reale există
+    // deja azi, deci "adaugă" era oricum aproape mereu o actualizare mascată.
+    // Înlocuit cu un formular real, vizibil, testabil.
     grid.innerHTML = carduri + `
-      <div style="border:1.5px dashed #2D3F55;border-radius:14px;padding:32px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .2s" onclick="openAddCountry()" onmouseover="this.style.borderColor='#FF8C00'" onmouseout="this.style.borderColor='#2D3F55'">
-        <div style="width:40px;height:40px;border-radius:12px;border:1.5px dashed #2D3F55;display:flex;align-items:center;justify-content:center;margin-bottom:10px;font-size:20px">+</div>
-        <div style="font-size:13px;font-weight:600;color:#4A6080">Adaugă țară nouă</div>
-        <div style="font-size:11px;color:#2D3F55;margin-top:4px">Configurare completă</div>
+      <div style="border:1.5px dashed #2D3F55;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px">
+        <div style="font-size:13px;font-weight:700;color:#1A2332">+ Adaugă țară nouă</div>
+        <input id="tg-add-cod" placeholder="Cod ISO (ex: PT)" maxlength="2" style="padding:6px 9px;border:1px solid #D5DFE8;border-radius:7px;font-family:inherit;text-transform:uppercase;font-size:12px">
+        <input id="tg-add-nume" placeholder="Denumire (ex: Portugalia)" style="padding:6px 9px;border:1px solid #D5DFE8;border-radius:7px;font-family:inherit;font-size:12px">
+        <div style="display:flex;gap:6px">
+          <input id="tg-add-moneda" placeholder="Monedă" maxlength="3" style="flex:1;padding:6px 9px;border:1px solid #D5DFE8;border-radius:7px;font-family:inherit;text-transform:uppercase;font-size:12px">
+          <input id="tg-add-tva" type="number" step="0.1" placeholder="TVA %" style="flex:1;padding:6px 9px;border:1px solid #D5DFE8;border-radius:7px;font-family:inherit;font-size:12px">
+        </div>
+        <button class="btn-p" style="font-size:11.5px;padding:8px" onclick="adaugaTaraNoua(this)">+ Adaugă</button>
+        <span id="tg-add-msg" style="font-size:10.5px"></span>
       </div>`;
   } catch (e) {
     grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:#E57373;padding:20px">Eroare: ${escapeHTML(e.message)}</div>`;
@@ -3878,17 +3897,18 @@ async function salveazaCardTara(tara_cod, btn){
   }
 }
 
-// openAddCountry()/selectCountry() erau ambele teatru pur (doar un toast,
-// nicio acțiune reală) — reparate minim: adaugă efectiv o țară nouă în
-// tax_configurations (același endpoint deja funcțional), respectiv
-// navighează spre panoul real unde acea țară e deja editabilă.
-async function openAddCountry(){
-  const tara_cod = (prompt('Cod țară (ISO 2 litere, ex: PT)') || '').trim().toUpperCase();
-  if (!tara_cod) return;
-  const tara_nume = (prompt('Denumire țară') || '').trim();
-  const moneda = (prompt('Monedă (cod ISO, ex: EUR)') || '').trim().toUpperCase();
-  const cota_tva = parseFloat(prompt('Cotă TVA (%)') || '');
-  if (!tara_nume || !moneda || Number.isNaN(cota_tva)) { showToast('✗ Anulat — toate câmpurile sunt obligatorii'); return; }
+// Fix real 1 septembrie 2026 (fondator: "dacă doresc să adaug o țară, nu
+// am reușit") — formular real (mai sus, în loadTariReal), nu 4 prompt()
+// înlănțuite (orice Cancel oprea totul în tăcere).
+async function adaugaTaraNoua(btn){
+  const tara_cod = document.getElementById('tg-add-cod').value.trim().toUpperCase();
+  const tara_nume = document.getElementById('tg-add-nume').value.trim();
+  const moneda = document.getElementById('tg-add-moneda').value.trim().toUpperCase();
+  const cota_tva = parseFloat(document.getElementById('tg-add-tva').value);
+  const msgEl = document.getElementById('tg-add-msg');
+  if (!tara_cod || tara_cod.length !== 2) { msgEl.innerHTML = '<span style="color:#C0392B">Cod ISO invalid (2 litere)</span>'; return; }
+  if (!tara_nume || !moneda || Number.isNaN(cota_tva)) { msgEl.innerHTML = '<span style="color:#C0392B">Toate câmpurile sunt obligatorii</span>'; return; }
+  msgEl.textContent = '';
   try {
     const token = await accGetToken();
     const res = await fetch('/api/accountancy', {
@@ -3897,11 +3917,31 @@ async function openAddCountry(){
       body: JSON.stringify({ action: 'update_tax_config', tara_cod, tara_nume, moneda, cota_tva, cota_impozit_venit: 0 }),
     });
     if (!res.ok) throw new Error((await res.json()).error || 'Eroare necunoscută');
-    showToast(`✓ ${tara_nume} adăugată`);
+    showToast(`✓ ${tara_nume} adăugată/actualizată`);
+    loadTariReal();
+  } catch (e) { msgEl.innerHTML = `<span style="color:#C0392B">✗ ${escapeHTML(e.message)}</span>`; }
+}
+
+// Fix real 1 septembrie 2026 (fondator: "apare doar România activă") —
+// checkout_activ nu avea nicio cale de a fi schimbat din UI. Confirmare
+// obligatorie — activarea permite comenzi reale, plătite, în acea țară.
+async function toggleCheckoutActiv(tara_cod, nouaValoare, btn){
+  const mesaj = nouaValoare
+    ? `Activezi CHECKOUT LIVE pentru ${tara_cod} — clienții vor putea plasa și PLĂTI comenzi reale în această țară. Confirmi?`
+    : `Dezactivezi checkout-ul pentru ${tara_cod} — clienții nu vor mai putea plasa comenzi noi acolo. Confirmi?`;
+  if (!confirm(mesaj)) return;
+  try {
+    const token = await accGetToken();
+    const res = await fetch('/api/accountancy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: 'update_tax_config', tara_cod, checkout_activ: nouaValoare }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || 'Eroare necunoscută');
+    showToast(`✓ ${tara_cod} — checkout ${nouaValoare ? 'activat' : 'dezactivat'}`);
     loadTariReal();
   } catch (e) { showToast('✗ Eroare: ' + e.message); }
 }
-function selectCountry(code){ showPanel('accountancy'); }
 
 async function accLoadBankAccounts(){
   const { data } = await window.supabaseClient.from('bank_accounts').select('*').order('created_at', { ascending: false });
