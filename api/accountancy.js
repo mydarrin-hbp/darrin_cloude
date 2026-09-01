@@ -93,6 +93,13 @@ async function actionUpdateTaxConfig(req, res, user) {
       ? null
       : Number(prag_minim_comanda);
   }
+  // Bug real găsit 1 septembrie 2026 (fondator: "Bulgaria are acum moneda
+  // euro" — nu se putea schimba din back-office): `moneda` era acceptat din
+  // body dar folosit DOAR la crearea unei țări noi — actualizarea unei țări
+  // existente îl ignora complet în tăcere, indiferent ce trimitea UI-ul.
+  if (moneda !== undefined && moneda !== null && String(moneda).trim()) {
+    update.moneda = String(moneda).trim().toUpperCase();
+  }
 
   const { data: existenta } = await supabaseAdmin
     .from('tax_configurations')

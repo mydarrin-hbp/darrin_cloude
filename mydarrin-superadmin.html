@@ -868,8 +868,8 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
             </div>
           </div>
           <div style="padding:10px 16px;display:flex;gap:8px">
-            <button class="btn-s" style="flex:1;justify-content:center;font-size:11px" onclick="event.stopPropagation()">VMC</button>
-            <button class="btn-s" style="flex:1;justify-content:center;font-size:11px" onclick="event.stopPropagation()">Fiscal</button>
+            <button class="btn-s" style="flex:1;justify-content:center;font-size:11px" onclick="event.stopPropagation();showPanel('vmc')">VMC</button>
+            <button class="btn-s" style="flex:1;justify-content:center;font-size:11px" onclick="event.stopPropagation();showPanel('comisioane')">Fiscal</button>
           </div>
         </div>
 
@@ -891,8 +891,8 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
             </div>
           </div>
           <div style="padding:10px 16px;display:flex;gap:8px">
-            <button class="btn-s" style="flex:1;justify-content:center;font-size:11px" onclick="event.stopPropagation()">VMC</button>
-            <button class="btn-s" style="flex:1;justify-content:center;font-size:11px" onclick="event.stopPropagation()">Fiscal</button>
+            <button class="btn-s" style="flex:1;justify-content:center;font-size:11px" onclick="event.stopPropagation();showPanel('vmc')">VMC</button>
+            <button class="btn-s" style="flex:1;justify-content:center;font-size:11px" onclick="event.stopPropagation();showPanel('comisioane')">Fiscal</button>
           </div>
         </div>
 
@@ -914,8 +914,8 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
             </div>
           </div>
           <div style="padding:10px 16px;display:flex;gap:8px">
-            <button class="btn-s" style="flex:1;justify-content:center;font-size:11px" onclick="event.stopPropagation()">VMC</button>
-            <button class="btn-s" style="flex:1;justify-content:center;font-size:11px" onclick="event.stopPropagation()">Fiscal</button>
+            <button class="btn-s" style="flex:1;justify-content:center;font-size:11px" onclick="event.stopPropagation();showPanel('vmc')">VMC</button>
+            <button class="btn-s" style="flex:1;justify-content:center;font-size:11px" onclick="event.stopPropagation();showPanel('comisioane')">Fiscal</button>
           </div>
         </div>
 
@@ -937,8 +937,8 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
             </div>
           </div>
           <div style="padding:10px 16px;display:flex;gap:8px">
-            <button class="btn-s" style="flex:1;justify-content:center;font-size:11px" onclick="event.stopPropagation()">VMC</button>
-            <button class="btn-s" style="flex:1;justify-content:center;font-size:11px" onclick="event.stopPropagation()">Fiscal</button>
+            <button class="btn-s" style="flex:1;justify-content:center;font-size:11px" onclick="event.stopPropagation();showPanel('vmc')">VMC</button>
+            <button class="btn-s" style="flex:1;justify-content:center;font-size:11px" onclick="event.stopPropagation();showPanel('comisioane')">Fiscal</button>
           </div>
         </div>
 
@@ -1893,15 +1893,17 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
             <div><span style="color:#FF8C00">COST_BAZĂ</span> = <span style="color:#7AB3E0">max</span>(COST_BRUT, <span style="color:#FF8C00">VMC_țară</span>)</div>
             <div><span style="color:#4ADE80">COST_NIVEL</span> = COST_BAZĂ + Σ(resurse_adăugate)</div>
           </div>
+          <!-- Bug real găsit 1 septembrie 2026 (fondator: "am încercat să
+               configurez pragurile minime... nu funcționează, nu există
+               taburi cu salvează, editează, șterge") — tabelul era 100%
+               decorativ: valori hardcodate (inclusiv "Bulgaria: BGN", greșit
+               — DB are deja EUR), butoanele "Editează" fără niciun onclick.
+               Reconstruit pe date reale din tax_configurations, reutilizând
+               exact endpoint-ul deja funcțional din Accountancy
+               (update_tax_config) — o singură sursă de adevăr pentru VMC. -->
           <table class="sa-table">
-            <thead><tr><th>Țară</th><th>Monedă</th><th>VMC</th><th>Echivalent EUR</th><th>Ultimă modificare</th><th>Acțiune</th></tr></thead>
-            <tbody>
-              <tr><td>🇷🇴 România</td><td>RON</td><td><strong style="color:#FF8C00">100 Lei</strong></td><td style="color:#4A6080">~20 EUR</td><td style="color:#4A6080">14.06.2026</td><td><button class="btn-s" style="font-size:11px;padding:5px 10px">Editează</button></td></tr>
-              <tr><td>🇲🇩 Moldova</td><td>MDL</td><td><strong style="color:#FF8C00">400 MDL</strong></td><td style="color:#4A6080">~20 EUR</td><td style="color:#4A6080">01.06.2026</td><td><button class="btn-s" style="font-size:11px;padding:5px 10px">Editează</button></td></tr>
-              <tr><td>🇩🇪 Germania</td><td>EUR</td><td><strong style="color:#FF8C00">25 EUR</strong></td><td style="color:#4A6080">25 EUR</td><td style="color:#4A6080">10.06.2026</td><td><button class="btn-s" style="font-size:11px;padding:5px 10px">Editează</button></td></tr>
-              <tr><td>🇫🇷 Franța</td><td>EUR</td><td><strong style="color:#FF8C00">25 EUR</strong></td><td style="color:#4A6080">25 EUR</td><td style="color:#4A6080">10.06.2026</td><td><button class="btn-s" style="font-size:11px;padding:5px 10px">Editează</button></td></tr>
-              <tr><td>🇧🇬 Bulgaria</td><td>BGN</td><td><strong style="color:#FF8C00">40 BGN</strong></td><td style="color:#4A6080">~20 EUR</td><td style="color:#4A6080">10.06.2026</td><td><button class="btn-s" style="font-size:11px;padding:5px 10px">Editează</button></td></tr>
-            </tbody>
+            <thead><tr><th>Țară</th><th>Monedă</th><th>VMC (prag minim comandă)</th><th>Ultima actualizare</th><th>Acțiune</th></tr></thead>
+            <tbody id="vmc-tbody"><tr><td colspan="5" style="text-align:center;color:#8C9BAD">Se încarcă...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -3825,7 +3827,7 @@ async function accLoadTaxConfig(){
   tbody.innerHTML = (data || []).map(t => `
     <tr>
       <td>${t.tara_nume} (${t.tara_cod})</td>
-      <td>${t.moneda}</td>
+      <td><input type="text" maxlength="3" value="${t.moneda}" id="acc-moneda-${t.tara_cod}" style="width:55px;padding:4px 8px;border:1px solid #D5DFE8;border-radius:6px;font-family:inherit;text-transform:uppercase" title="Cod monedă ISO (ex: RON, EUR, BGN)"></td>
       <td><input type="number" step="0.1" value="${t.cota_tva}" id="acc-tva-${t.tara_cod}" style="width:70px;padding:4px 8px;border:1px solid #D5DFE8;border-radius:6px;font-family:inherit"></td>
       <td><input type="number" step="0.1" value="${t.cota_impozit_venit || 0}" id="acc-imp-${t.tara_cod}" style="width:70px;padding:4px 8px;border:1px solid #D5DFE8;border-radius:6px;font-family:inherit"></td>
       <td><input type="number" step="1" min="0" placeholder="implicit 100" value="${t.prag_minim_comanda ?? ''}" id="acc-prag-${t.tara_cod}" style="width:90px;padding:4px 8px;border:1px solid #D5DFE8;border-radius:6px;font-family:inherit" title="Cost minim de intervenție, în ${t.moneda}. Gol = fallback 100."></td>
@@ -3842,6 +3844,10 @@ async function accLoadTaxConfig(){
 }
 
 async function accSaveTaxConfig(tara_cod){
+  // Bug real găsit 1 septembrie 2026 (fondator: "Bulgaria are acum moneda
+  // euro") — coloana Monedă era text simplu, needitabil, în tabelul altfel
+  // real (TVA/Impozit/Prag minim funcționau deja). Adăugat input + trimis.
+  const moneda = document.getElementById(`acc-moneda-${tara_cod}`).value.trim().toUpperCase();
   const cota_tva = parseFloat(document.getElementById(`acc-tva-${tara_cod}`).value);
   const cota_impozit_venit = parseFloat(document.getElementById(`acc-imp-${tara_cod}`).value);
   // Prag minim comandă (22 august 2026) — gol înseamnă explicit "necompletat
@@ -3853,11 +3859,61 @@ async function accSaveTaxConfig(tara_cod){
   const res = await fetch('/api/accountancy', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ action: 'update_tax_config', tara_cod, cota_tva, cota_impozit_venit, prag_minim_comanda }),
+    body: JSON.stringify({ action: 'update_tax_config', tara_cod, moneda, cota_tva, cota_impozit_venit, prag_minim_comanda }),
   });
   if (res.ok) showToast(`✓ Cote actualizate pentru ${tara_cod}`);
   else showToast('✗ Eroare la salvare');
 }
+
+// Panoul VMC (1 septembrie 2026) — reconstruit pe date reale, aceeași sursă
+// (tax_configurations) și același endpoint (update_tax_config) ca tabelul
+// din Accountancy — un admin poate edita pragul minim din oricare panou,
+// fără riscul ca cele două să divergă.
+async function loadVmcReal(){
+  const tbody = document.getElementById('vmc-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#8C9BAD">Se încarcă...</td></tr>';
+  try {
+    const { data, error } = await window.supabaseClient.from('tax_configurations').select('*').order('tara_cod');
+    if (error) throw error;
+    if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#8C9BAD">Nicio țară configurată.</td></tr>'; return; }
+    tbody.innerHTML = data.map(t => `
+      <tr>
+        <td>${DASH_TARA_FLAG[t.tara_cod] || ''} ${escapeHTML(t.tara_nume)} (${escapeHTML(t.tara_cod)})</td>
+        <td><input type="text" maxlength="3" value="${escapeHTML(t.moneda)}" id="vmc-moneda-${t.tara_cod}" style="width:55px;padding:4px 8px;border:1px solid #D5DFE8;border-radius:6px;font-family:inherit;text-transform:uppercase"></td>
+        <td><input type="number" step="1" min="0" placeholder="implicit 100" value="${t.prag_minim_comanda ?? ''}" id="vmc-prag-${t.tara_cod}" style="width:100px;padding:4px 8px;border:1px solid #D5DFE8;border-radius:6px;font-family:inherit" title="Gol = fallback 100"></td>
+        <td style="color:#8C9BAD;font-size:11.5px">${t.updated_at ? new Date(t.updated_at).toLocaleDateString('ro-RO') : '—'}</td>
+        <td><button class="btn-s" style="font-size:11px;padding:5px 10px" onclick="salveazaVmc('${t.tara_cod}')">Salvează</button></td>
+      </tr>`).join('');
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#E57373">Eroare: ${escapeHTML(e.message)}</td></tr>`;
+  }
+}
+
+async function salveazaVmc(tara_cod){
+  const moneda = document.getElementById(`vmc-moneda-${tara_cod}`).value.trim().toUpperCase();
+  const pragRaw = document.getElementById(`vmc-prag-${tara_cod}`).value;
+  const prag_minim_comanda = pragRaw === '' ? null : parseFloat(pragRaw);
+  try {
+    const token = await accGetToken();
+    const res = await fetch('/api/accountancy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: 'update_tax_config', tara_cod, moneda, prag_minim_comanda }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || 'Eroare necunoscută');
+    showToast(`✓ VMC actualizat pentru ${tara_cod}`);
+    loadVmcReal();
+  } catch (e) {
+    showToast('✗ Eroare: ' + e.message);
+  }
+}
+
+const _origShowPanelVmc = window.showPanel;
+window.showPanel = function (id) {
+  if (_origShowPanelVmc) _origShowPanelVmc(id);
+  if (id === 'vmc') loadVmcReal();
+};
 
 async function accLoadBankAccounts(){
   const { data } = await window.supabaseClient.from('bank_accounts').select('*').order('created_at', { ascending: false });
