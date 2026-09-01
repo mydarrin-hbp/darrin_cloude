@@ -623,10 +623,10 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
       Acces Temporar
     </a>
-    <a class="sa-nav-item" href="mydarrin-backoffice-serviciu.html">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-      Backoffice Servicii
-    </a>
+    <!-- mydarrin-backoffice-serviciu.html retras din uz, 1 septembrie 2026 —
+         acoperirea lui reală (catalog/tier-uri/parteneri) e deja aici, în
+         "Catalog Servicii" (mai sus) / "Parteneri Globali". Link eliminat,
+         nu duplicat. -->
     <a class="sa-nav-item" href="mydarrin-dashboard-furnizor.html">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
       Dashboard Furnizor
@@ -806,9 +806,8 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
             <button class="btn-p" onclick="showPanel('rbac')" style="background:#0E9E99">🔐 Editează RBAC</button>
             <button class="btn-p" onclick="showPanel('vmc')" style="background:#1A5FAD">⚖ Setează VMC</button>
             <button class="btn-p" onclick="showPanel('comisioane')" style="background:#7C3AED">💰 Comisioane</button>
-            <button class="btn-s" onclick="showPanel('parteneri')">👤 Suspendă partener</button>
+            <button class="btn-s" onclick="showPanel('parteneri')">👤 Parteneri Globali</button>
             <button class="btn-s" onclick="showPanel('config')">⚙ Config sistem</button>
-            <a href="mydarrin-backoffice-serviciu.html" class="btn-s">📋 Backoffice Servicii</a>
             <a href="mydarrin-sync-architecture.html" class="btn-s">🔄 Arhitectură Sync</a>
           </div>
         </div>
@@ -1503,8 +1502,8 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
         <h4>Catalogul de servicii <span class="man-badge m-partial">parțial</span></h4>
         <table>
           <tr><th>Interfață</th><th>Stare</th><th>Ce face</th></tr>
-          <tr><td>Acest panou (<code>panel-catalog</code>)</td><td><span class="man-badge m-live">live</span></td><td>Singura interfață funcțională real — creare/editare, niveluri, legare rețetă tehnică, recalculare preț.</td></tr>
-          <tr><td><code>mydarrin-backoffice-serviciu.html</code></td><td><span class="man-badge m-mock">machetă</span></td><td>9 tab-uri, zero <code>fetch()</code> — butonul „Salvează" doar animă vizual. A nu se folosi ca sursă de adevăr.</td></tr>
+          <tr><td>Acest panou (<code>panel-catalog</code>)</td><td><span class="man-badge m-live">live</span></td><td>Singura interfață funcțională real — creare/editare, niveluri (inclusiv editor real de tier: label/descriere/normă/garanție, adăugat 1 sept 2026), legare rețetă tehnică, recalculare preț.</td></tr>
+          <tr><td><code>mydarrin-backoffice-serviciu.html</code></td><td><span class="man-badge m-plan">retras din uz</span></td><td>Redirect real spre acest panou, 1 septembrie 2026 — cele 9 tab-uri erau machetă (zero <code>fetch()</code>); acoperirea lor reală (servicii/tier-uri/parteneri) e deja aici + în „Parteneri Globali".</td></tr>
         </table>
         <h4>Integrări externe <span class="man-badge m-plan">majoritatea în așteptare</span></h4>
         <p>Toate trec prin <code>lib/integrare-gate.js</code> — verifică furnizor activ, altfel <code>503</code>. Stare live: niciun procesator de plăți, provider e-Factură sau asigurător real conectat.</p>
@@ -1783,11 +1782,26 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
         </div>
       </div>
     </div>
-    <div id="panel-parteneri" style="display:none;text-align:center;padding:60px 20px">
-      <div style="font-size:48px;margin-bottom:16px">👷</div>
-      <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:8px">Parteneri Globali — 1.842 actori</div>
-      <p style="color:#4A6080;margin-bottom:20px">KYC · Certificări · Zone active · Suspendare</p>
-      <a href="mydarrin-backoffice-serviciu.html" class="btn-p">→ Backoffice Servicii (Tab Parteneri)</a>
+    <!-- Reconstruit real, 1 septembrie 2026 — era 100% machetă ("1.842 actori" hardcodat,
+         link spre pagina retrasă mydarrin-backoffice-serviciu.html). Acum: date reale din
+         partners, via api/admin/parteneri-lista.js (nou) + acțiuni reale de aprobare/
+         respingere, deja existente (api/admin/verifica-document.js), doar neconectate aici. -->
+    <div id="panel-parteneri" style="display:none;padding:24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div>
+          <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">Parteneri Globali</h2>
+          <p id="pgl-count" style="font-size:12.5px;color:#4A6080">Se încarcă...</p>
+        </div>
+        <button class="btn-s" onclick="loadParteneriGlobali()">↺ Reîmprospătează</button>
+      </div>
+      <div class="sa-card">
+        <div class="sa-card-body" style="padding:0">
+          <table class="sa-table">
+            <thead><tr><th>Firmă</th><th>CUI</th><th>Tip</th><th>Status verificare</th><th>Contract</th><th>Regiune</th><th>Creat</th><th>Acțiune</th></tr></thead>
+            <tbody id="pgl-tbody"><tr><td colspan="8" style="text-align:center;color:#8C9BAD">Se încarcă...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- ══ MESAJE CONTACT (adăugat 2026-07-12) ══ -->
@@ -5909,7 +5923,24 @@ function renderCatalogList(servicii) {
         <div id="cat-niveluri-${s.id}" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid #2D3F55">
           ${s.niveluri.map((n) => `
             <div style="background:#131B27;border-radius:9px;padding:10px 12px;margin-bottom:8px">
-              <div style="font-size:12px;font-weight:700;color:#fff">${escapeHTML(n.label || n.nivel)} <span style="color:#8BA3C0;font-weight:400">· complexitate ${n.nivel_complexitate} · ${n.norma_timp}h normă</span></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+                <div style="font-size:12px;font-weight:700;color:#fff">${escapeHTML(n.label || n.nivel)} <span style="color:#8BA3C0;font-weight:400">· complexitate ${n.nivel_complexitate} · ${n.norma_timp}h normă${n.garantie_luni ? ` · garanție ${n.garantie_luni}luni` : ''}</span></div>
+                <button onclick="toggleEditareNivel('${n.id}')" style="font-size:10.5px;padding:3px 8px;border-radius:6px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">✎ Editează nivel</button>
+              </div>
+              ${n.descriere ? `<div style="font-size:11px;color:#8BA3C0;margin-top:4px">${escapeHTML(n.descriere)}</div>` : ''}
+              <div id="nivel-editare-${n.id}" style="display:none;margin-top:8px;padding-top:8px;border-top:1px dashed #2D3F55">
+                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+                  <input id="nivel-edit-label-${n.id}" value="${escapeHTML(n.label || '')}" placeholder="Titlu afișat (ex: Bronz — Manoperă pură)" style="flex:1;min-width:180px;background:#0F1826;border:1px solid #2D3F55;border-radius:7px;padding:6px 9px;color:#fff;font-size:11px">
+                  <input id="nivel-edit-norma-${n.id}" value="${n.norma_timp}" type="number" step="0.01" placeholder="Normă timp (h)" style="width:110px;background:#0F1826;border:1px solid #2D3F55;border-radius:7px;padding:6px 9px;color:#fff;font-size:11px">
+                  <input id="nivel-edit-materiale-${n.id}" value="${n.materiale_baza_estimat || 0}" type="number" step="0.01" placeholder="Materiale estimate (Lei)" style="width:150px;background:#0F1826;border:1px solid #2D3F55;border-radius:7px;padding:6px 9px;color:#fff;font-size:11px">
+                  <input id="nivel-edit-garantie-${n.id}" value="${n.garantie_luni || 0}" type="number" placeholder="Garanție (luni)" style="width:120px;background:#0F1826;border:1px solid #2D3F55;border-radius:7px;padding:6px 9px;color:#fff;font-size:11px">
+                </div>
+                <textarea id="nivel-edit-desc-${n.id}" rows="2" placeholder="Descriere nivel — afișată public (ex: ce include acest tier)" style="width:100%;background:#0F1826;border:1px solid #2D3F55;border-radius:7px;padding:8px 10px;color:#fff;font-size:11.5px;font-family:inherit;resize:vertical">${escapeHTML(n.descriere || '')}</textarea>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+                  <button onclick="salveazaNivelCatalog('${n.id}', '${s.id}')" class="btn-p" style="font-size:11.5px;padding:6px 12px">💾 Salvează nivel</button>
+                  <span id="nivel-edit-msg-${n.id}" style="font-size:11px"></span>
+                </div>
+              </div>
               <div style="margin-top:6px">
                 ${n.preturi.map((p) => `
                   <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;background:#0F1826;border-radius:7px;padding:4px 9px;margin:2px 4px 2px 0">
@@ -5947,8 +5978,10 @@ function renderCatalogList(servicii) {
             <input id="nivel-nume-${s.id}" placeholder="Nivel (ex: Bronz)" style="width:100px;background:#131B27;border:1px solid #2D3F55;border-radius:7px;padding:6px 9px;color:#fff;font-size:11px">
             <input id="nivel-complex-${s.id}" placeholder="Complexitate (1-4)" type="number" style="width:120px;background:#131B27;border:1px solid #2D3F55;border-radius:7px;padding:6px 9px;color:#fff;font-size:11px">
             <input id="nivel-norma-${s.id}" placeholder="Normă timp (h)" type="number" style="width:110px;background:#131B27;border:1px solid #2D3F55;border-radius:7px;padding:6px 9px;color:#fff;font-size:11px">
+            <input id="nivel-garantie-${s.id}" placeholder="Garanție (luni, opțional)" type="number" style="width:150px;background:#131B27;border:1px solid #2D3F55;border-radius:7px;padding:6px 9px;color:#fff;font-size:11px">
             <button onclick="creeazaNivelCatalog('${s.id}')" style="font-size:11px;padding:6px 12px;border-radius:7px;border:none;background:#0E9E99;color:#fff;cursor:pointer;font-weight:700">+ Nivel nou</button>
           </div>
+          <div style="font-size:10px;color:#4A6080;margin-top:4px">Nivelul nou se creează minimal — descriere/materiale estimate se completează după, din „✎ Editează nivel".</div>
         </div>
       </div>
     `).join('');
@@ -6027,16 +6060,51 @@ async function creeazaNivelCatalog(serviciuId) {
   const nivel = document.getElementById('nivel-nume-' + serviciuId).value.trim();
   const nivel_complexitate = Number(document.getElementById('nivel-complex-' + serviciuId).value);
   const norma_timp = Number(document.getElementById('nivel-norma-' + serviciuId).value);
+  const garantie_luni = Number(document.getElementById('nivel-garantie-' + serviciuId).value) || 0;
   if (!nivel || !nivel_complexitate || !norma_timp) { alert('Completează nivel, complexitate și normă de timp.'); return; }
   try {
     const headers = await _adminAuthHeader();
     const res = await fetch('/api/admin/catalog', {
       method: 'POST', headers,
-      body: JSON.stringify({ action: 'creeaza_nivel', serviciu_id: serviciuId, nivel, nivel_complexitate, norma_timp, label: nivel }),
+      body: JSON.stringify({ action: 'creeaza_nivel', serviciu_id: serviciuId, nivel, nivel_complexitate, norma_timp, label: nivel, garantie_luni }),
     });
     if (!res.ok) throw new Error((await res.json()).error);
     loadCatalogList();
   } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+// 1 septembrie 2026 — editor real de nivel (label/descriere/norma_timp/
+// materiale_baza_estimat/garantie_luni), parte din consolidarea panoului
+// unic (retragere mydarrin-backoffice-serviciu.html). Backend-ul
+// (actualizeaza_nivel) exista deja complet, neexpus în UI — singurul lucru
+// nou aici e formularul.
+function toggleEditareNivel(nivelId) {
+  const el = document.getElementById('nivel-editare-' + nivelId);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function salveazaNivelCatalog(nivelId, serviciuId) {
+  const msgEl = document.getElementById('nivel-edit-msg-' + nivelId);
+  const label = document.getElementById('nivel-edit-label-' + nivelId).value.trim();
+  const norma_timp = Number(document.getElementById('nivel-edit-norma-' + nivelId).value);
+  const materiale_baza_estimat = Number(document.getElementById('nivel-edit-materiale-' + nivelId).value) || 0;
+  const garantie_luni = Number(document.getElementById('nivel-edit-garantie-' + nivelId).value) || 0;
+  const descriere = document.getElementById('nivel-edit-desc-' + nivelId).value.trim();
+  if (!norma_timp) { msgEl.innerHTML = '<span style="color:#E57373">Normă timp obligatorie</span>'; return; }
+  msgEl.textContent = '';
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/catalog', {
+      method: 'POST', headers,
+      body: JSON.stringify({ action: 'actualizeaza_nivel', id: nivelId, label: label || null, norma_timp, materiale_baza_estimat, garantie_luni, descriere: descriere || null }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    msgEl.innerHTML = '<span style="color:#4CBE83">✓ Salvat</span>';
+    loadCatalogList();
+  } catch (e) {
+    msgEl.innerHTML = `<span style="color:#E57373">Eroare: ${escapeHTML(e.message)}</span>`;
+  }
 }
 
 async function stergeNivelCatalog(nivelId) {
@@ -6642,6 +6710,62 @@ window.showPanel = function(id) {
   if (id === 'comisioane' && !_commConfigLoaded) {
     setTimeout(loadComisioaneConfig, 300);
   }
+};
+
+// panel-parteneri, reconstruit real 1 septembrie 2026 — vezi comentariul de la markup.
+async function loadParteneriGlobali() {
+  const tbody = document.getElementById('pgl-tbody');
+  const countEl = document.getElementById('pgl-count');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#8C9BAD">Se încarcă...</td></tr>';
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/parteneri-lista', { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    countEl.textContent = `${data.total} parten${data.total === 1 ? 'er real' : 'eri reali'} în ${'partners'}`;
+    if (!data.parteneri.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#8C9BAD">Niciun partener real încă.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.parteneri.map((p) => {
+      const statusColor = p.status_verificare === 'approved' ? '#4CBE83' : (p.status_verificare === 'rejected' ? '#E57373' : '#F5A623');
+      const dataFmt = p.creata_la ? new Date(p.creata_la).toLocaleDateString('ro-RO') : '—';
+      return `
+        <tr>
+          <td>${escapeHTML(p.nume_firma || '—')}</td>
+          <td style="font-family:monospace;font-size:11.5px">${escapeHTML(p.cui || '—')}</td>
+          <td>${escapeHTML(p.partner_type || '—')}</td>
+          <td><span style="color:${statusColor};font-weight:700">${escapeHTML(p.status_verificare || 'pending_review')}</span></td>
+          <td>${p.contract_semnat ? '<span style="color:#4CBE83">✓ semnat</span>' : '<span style="color:#8C9BAD">nesemnat</span>'}</td>
+          <td>${escapeHTML(p.regiune_cod || '—')}</td>
+          <td>${dataFmt}</td>
+          <td style="display:flex;gap:5px">
+            <button onclick="decizieParteners('${p.id}','aprobat')" style="font-size:10.5px;padding:4px 8px;border-radius:6px;border:none;background:#0E9E99;color:#fff;cursor:pointer">Aprobă</button>
+            <button onclick="decizieParteners('${p.id}','respins')" style="font-size:10.5px;padding:4px 8px;border-radius:6px;border:1px solid rgba(192,57,43,.4);background:transparent;color:#E57373;cursor:pointer">Respinge</button>
+          </td>
+        </tr>`;
+    }).join('');
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#E57373">Eroare: ${escapeHTML(e.message)}</td></tr>`;
+  }
+}
+
+async function decizieParteners(id, decizie) {
+  if (!confirm(`Confirmi decizia „${decizie}" pentru acest partener?`)) return;
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/verifica-document', { method: 'POST', headers, body: JSON.stringify({ tip: 'partener', id, decizie }) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    loadParteneriGlobali();
+  } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+const _origShowPanelParteneri = window.showPanel;
+window.showPanel = function(id) {
+  if (_origShowPanelParteneri) _origShowPanelParteneri(id);
+  if (id === 'parteneri') loadParteneriGlobali();
 };
 </script>
 

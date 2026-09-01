@@ -15,7 +15,7 @@ const ROLE_META = {
   partener_curier:    { icon:'🚚',  title:'Curier de Cartier',        dashLink:'mydarrin-dashboard-partener.html?type=curier' },
   partener_asigurari: { icon:'🛡',  title:'Furnizor de Asigurări',    dashLink:'mydarrin-dashboard-partener.html?type=asigurari' },
   investor:           { icon:'📈', title:'Investitor',               dashLink:'mydarrin-investitori.html' },
-  admin:              { icon:'🛠',  title:'Admin',                    dashLink:'mydarrin-backoffice-serviciu.html' },
+  admin:              { icon:'🛠',  title:'Admin',                    dashLink:'mydarrin-superadmin.html' },
   superadmin:         { icon:'👑', title:'Super Admin',               dashLink:'mydarrin-superadmin.html' },
 };
 
