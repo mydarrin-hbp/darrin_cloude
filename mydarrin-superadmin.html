@@ -3804,24 +3804,42 @@ async function loadTariReal(){
   try {
     const { data, error } = await window.supabaseClient.from('tax_configurations').select('*').order('checkout_activ', { ascending: false }).order('tara_nume');
     if (error) throw error;
+    // Bug real găsit 1 septembrie 2026 (fondator, al 3-lea test live: "nu pot
+    // configura TVA-ul... nu mai am o listă cu configurările efectuate") —
+    // dovadă directă din audit-log: fondatorul A REUȘIT să editeze VMC pentru
+    // ~30 de țări (panel-vmc funcționa corect), dar butonul "Fiscal" de aici
+    // ducea la Comisioane (procente platformă), NU la TVA — un buton etichetat
+    // greșit, moștenit neschimbat din cardul original RO. Fix real: Monedă,
+    // TVA și VMC editabile direct pe card, un singur "Salvează" — nu mai
+    // trebuie să sară între 3 panouri diferite ca să configureze o țară.
     const carduri = (data || []).map(t => `
-      <div class="country-card ${t.checkout_activ ? 'active-country' : 'inactive-country'}">
+      <div class="country-card ${t.checkout_activ ? 'active-country' : 'inactive-country'}" data-tara="${t.tara_cod}">
         <div style="padding:16px;background:#F8FAFC;border-bottom:1px solid #D5DFE8">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
             <div style="display:flex;align-items:center;gap:10px">
               <span style="font-size:28px">${DASH_TARA_FLAG[t.tara_cod] || '🏳️'}</span>
-              <div><div style="font-weight:700;color:#1A2332;font-size:14px">${escapeHTML(t.tara_nume)}</div><div style="font-size:10.5px;color:#4A6080">${escapeHTML(t.tara_cod)} · ${escapeHTML(t.moneda)}</div></div>
+              <div><div style="font-weight:700;color:#1A2332;font-size:14px">${escapeHTML(t.tara_nume)}</div><div style="font-size:10.5px;color:#4A6080">${escapeHTML(t.tara_cod)}${t.updated_at ? ' · actualizat ' + new Date(t.updated_at).toLocaleDateString('ro-RO') : ''}</div></div>
             </div>
             <span class="chip ${t.checkout_activ ? 'chip-green' : 'chip-teal'}">${t.checkout_activ ? '✓ Live' : 'Inactiv'}</span>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
-            <div><span style="color:#4A6080">TVA:</span> <strong style="color:#E2E8F0">${t.cota_tva}%</strong></div>
-            <div><span style="color:#4A6080">VMC:</span> <strong style="color:#FF8C00">${t.prag_minim_comanda ?? 100} ${escapeHTML(t.moneda)}</strong></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:11px">
+            <div>
+              <div style="color:#4A6080;margin-bottom:3px">Monedă</div>
+              <input type="text" maxlength="3" value="${escapeHTML(t.moneda)}" class="tg-moneda" style="width:100%;padding:5px 7px;border:1px solid #D5DFE8;border-radius:6px;font-family:inherit;text-transform:uppercase;box-sizing:border-box">
+            </div>
+            <div>
+              <div style="color:#4A6080;margin-bottom:3px">TVA %</div>
+              <input type="number" step="0.1" value="${t.cota_tva}" class="tg-tva" style="width:100%;padding:5px 7px;border:1px solid #D5DFE8;border-radius:6px;font-family:inherit;box-sizing:border-box">
+            </div>
+            <div>
+              <div style="color:#4A6080;margin-bottom:3px">VMC</div>
+              <input type="number" step="1" min="0" placeholder="100" value="${t.prag_minim_comanda ?? ''}" class="tg-prag" style="width:100%;padding:5px 7px;border:1px solid #D5DFE8;border-radius:6px;font-family:inherit;box-sizing:border-box">
+            </div>
           </div>
         </div>
-        <div style="padding:10px 16px;display:flex;gap:8px">
-          <button class="btn-s" style="flex:1;justify-content:center;font-size:11px" onclick="showPanel('vmc')">VMC</button>
-          <button class="btn-s" style="flex:1;justify-content:center;font-size:11px" onclick="showPanel('comisioane')">Fiscal</button>
+        <div style="padding:10px 16px;display:flex;gap:8px;align-items:center">
+          <button class="btn-p" style="flex:1;justify-content:center;font-size:11px" onclick="salveazaCardTara('${t.tara_cod}', this)">💾 Salvează</button>
+          <span class="tg-msg" style="font-size:10.5px"></span>
         </div>
       </div>`).join('');
     grid.innerHTML = carduri + `
@@ -3832,6 +3850,31 @@ async function loadTariReal(){
       </div>`;
   } catch (e) {
     grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:#E57373;padding:20px">Eroare: ${escapeHTML(e.message)}</div>`;
+    return;
+  }
+}
+
+async function salveazaCardTara(tara_cod, btn){
+  const card = btn.closest('.country-card');
+  const moneda = card.querySelector('.tg-moneda').value.trim().toUpperCase();
+  const cota_tva = parseFloat(card.querySelector('.tg-tva').value);
+  const pragRaw = card.querySelector('.tg-prag').value;
+  const prag_minim_comanda = pragRaw === '' ? null : parseFloat(pragRaw);
+  const msgEl = card.querySelector('.tg-msg');
+  if (Number.isNaN(cota_tva)) { msgEl.innerHTML = '<span style="color:#C0392B">TVA invalid</span>'; return; }
+  msgEl.textContent = '';
+  try {
+    const token = await accGetToken();
+    const res = await fetch('/api/accountancy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: 'update_tax_config', tara_cod, moneda, cota_tva, prag_minim_comanda }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || 'Eroare necunoscută');
+    msgEl.innerHTML = '<span style="color:#16A34A">✓ Salvat</span>';
+    showToast(`✓ ${tara_cod} actualizată — Monedă/TVA/VMC`);
+  } catch (e) {
+    msgEl.innerHTML = `<span style="color:#C0392B">✗ ${escapeHTML(e.message)}</span>`;
   }
 }
 
