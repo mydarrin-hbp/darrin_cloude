@@ -682,6 +682,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
      performLogin()/performRegister() local, complet fals (doar sessionStorage). -->
 <script type="module" src="lib/supabaseClient.js"></script>
 <script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
+<script src="myd-unavail-msg.js"></script>
 <script src="format-currency.js"></script>
 <script src="seo-meta.js"></script>
 <script src="cookie-consent.js" defer></script>
@@ -3054,26 +3055,10 @@ var DB = {
   FI:{flag:'🇫🇮',name:'Finlanda',currency:'EUR',code:'EUR',lang:'fi',active:false},
 };
 
-// Mesaj "zonă indisponibilă", localizat pe limba detectată geografic
-// (DB[cc].lang) — cerere fondator, 1 septembrie 2026. Fallback englez pentru
-// orice limbă neacoperită aici (inclusiv țări din afara listei DB).
-var UNAVAIL_MSGS = {
-  ro: { pre: 'Nu suntem încă live în', body: 'Catalogul încă nu este disponibil. În curând Darrin va fi disponibil pentru tine.', btn: 'Anunță-mă la lansare' },
-  en: { pre: "We're not live yet in", body: "The catalog isn't available yet. Darrin will be available for you soon.", btn: 'Notify me at launch' },
-  de: { pre: 'Wir sind noch nicht live in', body: 'Der Katalog ist noch nicht verfügbar. Darrin wird bald für dich verfügbar sein.', btn: 'Bei Start benachrichtigen' },
-  fr: { pre: "Nous ne sommes pas encore actifs à", body: "Le catalogue n'est pas encore disponible. Darrin sera bientôt disponible pour vous.", btn: 'Prévenez-moi au lancement' },
-  bg: { pre: 'Все още не сме активни в', body: 'Каталогът все още не е наличен. Скоро Darrin ще бъде наличен за теб.', btn: 'Уведомете ме при старта' },
-  es: { pre: 'Todavía no estamos activos en', body: 'El catálogo aún no está disponible. Darrin estará disponible para ti muy pronto.', btn: 'Avísame en el lanzamiento' },
-  el: { pre: 'Δεν είμαστε ακόμη διαθέσιμοι στην', body: 'Ο κατάλογος δεν είναι ακόμη διαθέσιμος. Σύντομα ο Darrin θα είναι διαθέσιμος για εσένα.', btn: 'Ειδοποίησέ με στην κυκλοφορία' },
-  tr: { pre: 'Henüz şu bölgede aktif değiliz:', body: 'Katalog henüz kullanılamıyor. Darrin yakında senin için hazır olacak.', btn: 'Başlangıçta bana haber ver' },
-  uk: { pre: 'Ми ще не працюємо у', body: 'Каталог ще недоступний. Незабаром Darrin буде доступний для тебе.', btn: 'Повідом мене про запуск' },
-  fi: { pre: 'Emme ole vielä käytössä alueella', body: 'Luettelo ei ole vielä saatavilla. Darrin on pian saatavilla sinulle.', btn: 'Ilmoita minulle käynnistyksestä' },
-};
+// Mesaj "zonă indisponibilă" — extras în myd-unavail-msg.js (1 septembrie
+// 2026, refactor pentru reutilizare pe mydarrin-produs.html), sursă unică.
 function _applyUnavailMsg(lang) {
-  var m = UNAVAIL_MSGS[lang] || UNAVAIL_MSGS.en;
-  _t('unavail-title-pre', m.pre);
-  _t('unavail-body-text', m.body);
-  _t('unavail-submit-btn', m.btn);
+  if (window.MYD_UNAVAIL) window.MYD_UNAVAIL.apply(lang);
 }
 
 // Sursă reală, live din tax_configurations.checkout_activ (nu hardcodată).

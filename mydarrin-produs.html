@@ -922,6 +922,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 };
 </script>
 <script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
+<script src="myd-unavail-msg.js"></script>
 <script src="format-currency.js"></script>
 <script src="seo-meta.js"></script>
 <script src="cookie-consent.js" defer></script>
@@ -995,6 +996,37 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- ZONĂ INDISPONIBILĂ — blochează configurarea, 1 septembrie 2026, cerere
+     fondator: catalogul/categoriile rămân vizibile pentru navigare, dar
+     pagina de configurare a unui serviciu anume (aici) e blocată pentru
+     vizitatorii dintr-o țară fără checkout_activ — mesaj partajat cu
+     mydarrin-checkout.html (myd-unavail-msg.js), verificare reală din
+     tax_configurations (api/public/tari-active, aceeași sursă de adevăr
+     ca la checkout). Se poate închide (browsing rămâne posibil), dar
+     plasarea comenzii rămâne oricum blocată mai jos, în checkout +
+     server-side (api/comenzi/creeaza.js) — strat suplimentar, nu unic. -->
+<div id="zone-unavailable" class="hidden fixed inset-0 z-[500] flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/55 backdrop-blur-sm"></div>
+  <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-md z-10 overflow-hidden">
+    <button onclick="document.getElementById('zone-unavailable').classList.add('hidden')" class="absolute top-5 right-5 p-1.5 rounded-lg hover:bg-gray-100 transition text-gray-400 z-10" aria-label="Închide">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div id="zone-unavailable-body" class="p-7">
+      <div style="font-size:38px;margin-bottom:10px">🌍</div>
+      <h3 class="font-bold text-xl text-[#2D2D2D] mb-2" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif"><span id="unavail-title-pre">Nu suntem încă live în</span> <span id="unavail-zone">zona ta</span></h3>
+      <p id="unavail-body-text" class="text-gray-500 text-sm leading-relaxed mb-5">Catalogul încă nu este disponibil. În curând Darrin va fi disponibil pentru tine.</p>
+      <div id="zone-unavailable-form">
+        <input type="email" id="unavail-email" placeholder="Adresa ta de email" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition mb-3"/>
+        <textarea id="unavail-mesaj" rows="2" maxlength="1000" placeholder="Nevoia ta (opțional)" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003366] transition mb-3" style="resize:vertical"></textarea>
+        <button onclick="submitUnavailProdus()" id="unavail-submit-btn" class="w-full bg-[#FF8C00] text-white py-3.5 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition">
+          Anunță-mă la lansare
+        </button>
+        <p id="unavail-error" style="display:none;color:#C0392B;font-size:12px;margin-top:8px;text-align:center"></p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -3113,9 +3145,11 @@ function applyGeoData(data){
   // pentru că evenimentul avea alt nume, deși datele erau corecte.
   try{ window.dispatchEvent(new CustomEvent('myd:geo',{detail:{lang:_mydLangDinTara(country)}})); }catch(e){}
 
-  // Notă: pagina de configurare serviciu rămâne complet funcțională indiferent
-  // de țară — doar checkout-ul (mydarrin-checkout.html) e condiționat real de
-  // statusul de țară activă, verificat și server-side în api/comenzi/creeaza.js.
+  // ACTUALIZAT 1 septembrie 2026 — cerere fondator: pagina de configurare NU
+  // mai rămâne funcțională necondiționat; blocajul, care exista deja doar la
+  // checkout, se mută și aici (verificarea din checkout + server-side rămân
+  // neatinse, ca strat suplimentar). Vezi _verificaZonaProdus mai jos.
+  _verificaZonaProdus(country);
 
   // Salvare DB Supabase (fire-and-forget)
   if(data.lat&&data.lng&&window.__ENV__&&window.__ENV__.SUPABASE_ANON_KEY){
@@ -3126,6 +3160,65 @@ function applyGeoData(data){
     }).catch(function(){});
   }
   geoSave(data);
+}
+
+// ── Zonă indisponibilă — blochează configurarea (1 septembrie 2026) ──────
+// Sursă reală, live din tax_configurations.checkout_activ (api/public/
+// tari-active), aceeași folosită de mydarrin-checkout.html — nicio duplicare
+// de sursă de adevăr, doar reverificare separată pentru acest punct mai
+// timpuriu al fluxului.
+var PRODUS_ZONA_VERIFICATA = false;
+function _verificaZonaProdus(country) {
+  fetch('/api/public/tari-active')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      PRODUS_ZONA_VERIFICATA = true;
+      var active = (d && Array.isArray(d.active) && d.active.length) ? d.active : ['RO'];
+      var cc = (country || 'RO').toUpperCase();
+      if (active.indexOf(cc) === -1) {
+        var zn = document.getElementById('unavail-zone');
+        if (zn) zn.textContent = cc;
+        var lang = _mydLangDinTara(cc);
+        if (window.MYD_UNAVAIL) window.MYD_UNAVAIL.apply(lang);
+        var modal = document.getElementById('zone-unavailable');
+        if (modal) modal.classList.remove('hidden');
+      }
+    })
+    .catch(function(){ /* fail-open — dacă endpoint-ul nu răspunde, nu blocăm agresiv o pagină de navigare */ });
+}
+
+// Trimite lead-ul de zonă indisponibilă — identic ca logică cu submitUnavail()
+// din mydarrin-checkout.html, endpoint deja real (api/public/lead-zona.js).
+async function submitUnavailProdus() {
+  var emailEl = document.getElementById('unavail-email');
+  var errEl = document.getElementById('unavail-error');
+  var email = emailEl ? emailEl.value.trim() : '';
+  if (errEl) errEl.style.display = 'none';
+  if (!email || email.indexOf('@') === -1) {
+    if (errEl) { errEl.textContent = 'Introdu o adresă de email validă.'; errEl.style.display = 'block'; }
+    return;
+  }
+  var zoneName = document.getElementById('unavail-zone') ? document.getElementById('unavail-zone').textContent : null;
+  var mesajEl = document.getElementById('unavail-mesaj');
+  var mesaj = mesajEl ? mesajEl.value.trim() : '';
+  try {
+    var res = await fetch('/api/public/lead-zona', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, tara_nume: zoneName, mesaj: mesaj || undefined }),
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    var body = document.getElementById('zone-unavailable-body');
+    if (body) {
+      body.innerHTML = '<div class="text-center"><div style="font-size:38px;margin-bottom:10px">✅</div>'
+        + '<h3 class="font-bold text-xl text-[#2D2D2D] mb-2">Înregistrat cu succes!</h3>'
+        + '<p class="text-gray-400 text-sm leading-relaxed mb-6">Vei fi printre primii care află când My Darrin lansează în zona ta.</p>'
+        + '<button onclick="document.getElementById(\'zone-unavailable\').classList.add(\'hidden\')" class="bg-[#FF8C00] text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-[#CC7000] transition">Închide</button></div>';
+    }
+  } catch (err) {
+    if (errEl) { errEl.textContent = err.message || 'Nu am putut trimite cererea.'; errEl.style.display = 'block'; }
+  }
 }
 
 // ── Nivel 1: IP ──────────────────────────────────────────────────
