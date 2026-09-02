@@ -17,7 +17,7 @@
   'use strict';
 
   var LANG_KEY = 'myd_lang_v1';
-  var SUPPORTED = ['en', 'de', 'fr', 'tr']; // pilot — lista completă (UE+TR+UA+RS+ZH) se adaugă pe măsură ce se traduc paginile
+  var SUPPORTED = ['en', 'de', 'fr', 'tr', 'bg', 'el']; // 1 septembrie 2026: bg/el adăugate explicit, cerere fondator (geolocalizare BG/GR). Lista completă (UE+UA+RS+ZH) se adaugă pe măsură ce se traduc paginile
 
   function getSavedLang() {
     try { return localStorage.getItem(LANG_KEY); } catch (e) { return null; }
