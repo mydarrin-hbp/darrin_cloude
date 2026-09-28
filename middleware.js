@@ -279,6 +279,10 @@ const PAGINI_PUBLICE = new Set([
   '/cum-prestam-livram', '/cum-prestam-livram.html',
   '/garantii-si-asigurari', '/garantii-si-asigurari.html',
   '/confirmare-livrare', '/confirmare-livrare.html',
+  // Setarea/resetarea parolei (28 sept. 2026): linkurile din emailuri se deschid
+  // fără sesiune, deci pagina trebuie să treacă de barieră. Conține doar un
+  // formular care cere un token valid; fără token arată „link invalid".
+  '/reset-password', '/reset-password.html',
   '/mydarrin-v3', '/mydarrin-v3.html',
 ]);
 
