@@ -52,6 +52,25 @@ async function genereazaLinkParola(email) {
   return `${SITE_URL}/reset-password.html?token_hash=${encodeURIComponent(tokenHash)}&type=recovery`;
 }
 
+async function stareMesajResend(id) {
+  const asteapta = (ms) => new Promise((r) => setTimeout(r, ms));
+  const FINALE = ['delivered', 'bounced', 'complained', 'suppressed', 'failed', 'delivery_delayed'];
+  let ultima = null;
+  for (let i = 0; i < 3; i++) {
+    await asteapta(i === 0 ? 1200 : 1100);
+    try {
+      const r = await fetch(`https://api.resend.com/emails/${encodeURIComponent(id)}`, {
+        headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}` },
+      });
+      if (!r.ok) continue;
+      const j = await r.json();
+      ultima = j.last_event || ultima;
+      if (FINALE.includes(ultima)) break;
+    } catch (e) { /* ignorăm: starea e informativă */ }
+  }
+  return ultima;
+}
+
 // Întoarce { ok, motiv }. Înainte, răspunsul Resend nu era verificat deloc: un
 // refuz (domeniu, cheie, destinatar) trecea nevăzut, iar formularul afirma
 // „Email trimis".
@@ -73,7 +92,15 @@ async function trimiteEmailBunVenit({ email, nume, tip, limba, linkParola }) {
       console.error('[partner-register] Resend a refuzat emailul:', res.status, corp.slice(0, 300));
       return { ok: false, motiv: `resend_${res.status}` };
     }
-    return { ok: true, motiv: null };
+    const trimis = await res.json().catch(() => ({}));
+    // „Acceptat" de Resend nu înseamnă „livrat": interogăm starea reală a mesajului
+    // (max. ~3,5 s). Un bounce, o reclamație sau o adresă suprimată se raportează.
+    const stare = trimis.id ? await stareMesajResend(trimis.id) : null;
+    console.log('[partner-register] Resend id=', trimis.id, 'stare=', stare);
+    if (stare && ['bounced', 'complained', 'suppressed', 'failed'].includes(stare)) {
+      return { ok: false, motiv: `resend_${stare}`, resend_id: trimis.id || null, stare };
+    }
+    return { ok: true, motiv: null, resend_id: trimis.id || null, stare };
   } catch (emailErr) {
     console.error('[partner-register] email bun venit eșuat:', emailErr);
     return { ok: false, motiv: 'retea' };
@@ -154,7 +181,7 @@ module.exports = async function handler(req, res) {
             const st = await trimiteEmailBunVenit({ email, nume, tip, limba, linkParola: linkExistent });
             return res.status(200).json({
               ok: true, reprimit: true, user_id: prof.id,
-              email_trimis: st.ok, email_motiv: st.motiv, link_parola: !!linkExistent,
+              email_trimis: st.ok, email_motiv: st.motiv, email_stare: st.stare || null, link_parola: !!linkExistent,
             });
           }
         }
@@ -221,6 +248,7 @@ module.exports = async function handler(req, res) {
       ok: true,
       user_id: invited.user.id,
       email_trimis: emailStatus.ok,
+      email_stare: emailStatus.stare || null,
       email_motiv: emailStatus.motiv,
       link_parola: !!linkParola,
     });
