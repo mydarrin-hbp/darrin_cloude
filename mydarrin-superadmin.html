@@ -559,7 +559,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
     </a>
     <a class="sa-nav-item" onclick="showPanel('manual')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
-      Manual de Funcționare
+      Manual de Utilizare și Documentație Tehnică Open-Source
     </a>
     <a class="sa-nav-item" onclick="showPanel('accountancy')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
@@ -1428,8 +1428,8 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
          neconstruit, semnalat separat ca proiect propriu, mult mai mare. -->
     <div id="panel-manual" style="display:none">
       <div style="margin-bottom:20px">
-        <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">📖 Manual de Funcționare — Platforma My Darrin</h2>
-        <p style="font-size:12.5px;color:#4A6080">Ghid pe module, aliniat strict cu starea reală, verificată live — nu cu funcționalități intenționate sau planificate, decât acolo unde e marcat explicit ca atare. Conținut static, actualizat manual la fiecare revizuire majoră.</p>
+        <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">📖 Manual de Utilizare și Documentație Tehnică Open-Source — Platforma My Darrin</h2>
+        <p style="font-size:12.5px;color:#4A6080">Ghid pe module (capitolele 01–06) și documentație tehnică (capitolele 07–10), aliniate strict cu starea reală, verificată în cod și în baza de date live la 28 septembrie 2026 — nu cu funcționalități intenționate sau planificate, decât acolo unde e marcat explicit ca atare. Conținut static, actualizat manual la fiecare revizuire majoră. Acces intern, doar back-office.</p>
       </div>
 
       <div style="margin-bottom:18px;padding:12px 14px;background:rgba(14,158,153,.08);border:1px solid rgba(14,158,153,.25);border-radius:10px;font-size:11.5px;color:#8FA3BD;line-height:1.6">
@@ -1443,6 +1443,10 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
         <a href="#man-cap4" style="font-size:11.5px;color:#8FA3BD;background:#16202E;border:1px solid #2D3F55;padding:6px 12px;border-radius:8px;text-decoration:none">04 Mobil</a>
         <a href="#man-cap5" style="font-size:11.5px;color:#8FA3BD;background:#16202E;border:1px solid #2D3F55;padding:6px 12px;border-radius:8px;text-decoration:none">05 Depanare</a>
         <a href="#man-cap6" style="font-size:11.5px;color:#8FA3BD;background:#16202E;border:1px solid #2D3F55;padding:6px 12px;border-radius:8px;text-decoration:none">06 Ghiduri</a>
+        <a href="#man-cap7" style="font-size:11.5px;color:#8FA3BD;background:#16202E;border:1px solid #2D3F55;padding:6px 12px;border-radius:8px;text-decoration:none">07 Arhitectură tehnică &amp; deploy</a>
+        <a href="#man-cap8" style="font-size:11.5px;color:#8FA3BD;background:#16202E;border:1px solid #2D3F55;padding:6px 12px;border-radius:8px;text-decoration:none">08 Algoritmi: preț &amp; evaluare</a>
+        <a href="#man-cap9" style="font-size:11.5px;color:#8FA3BD;background:#16202E;border:1px solid #2D3F55;padding:6px 12px;border-radius:8px;text-decoration:none">09 Reguli curierat &amp; parteneri</a>
+        <a href="#man-cap10" style="font-size:11.5px;color:#8FA3BD;background:#16202E;border:1px solid #2D3F55;padding:6px 12px;border-radius:8px;text-decoration:none">10 Registru diferențe</a>
       </div>
 
       <style>
@@ -1577,6 +1581,122 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
         </ol>
 
         <p style="margin-top:14px;font-size:11px;color:#6B7F99">Ghidurile complete (7 fluxuri, inclusiv semnare contract și urmărire comandă) sunt în <a href="https://claude.ai/code/artifact/f53b2efc-08c6-4192-9da1-8afa9a35a7c6" target="_blank" rel="noopener" style="color:#0E9E99">versiunea extinsă (v2)</a>.</p>
+      </div>
+
+      <div class="man-sec" id="man-cap7">
+        <h3>07 · Arhitectură tehnică &amp; Deploy</h3>
+        <div class="man-callout c-note">📘 Capitolele 07–10 sunt documentație tehnică. Sursa de adevăr e codul din repo-ul <code>mydarrin-hbp/darrin_cloude</code> și baza de date live; orice diferență față de specificațiile inițiale e listată explicit în capitolul 10.</div>
+        <h4>Pipeline de deploy <span class="man-badge m-live">live</span></h4>
+        <ol class="man-steps">
+          <li>Modificarea de cod sau de interfață se urcă în GitHub, pe ramura <code>main</code>.</li>
+          <li>Vercel detectează push-ul și rulează automat build-ul și redeploy-ul (de ordinul zecilor de secunde).</li>
+          <li>Rutarea, redirecturile pe subdomenii, headerele de securitate și cron-urile sunt în <code>vercel.json</code>. Domeniul <code>admin.mydarrin.homebestpal.com</code> redirecționează rădăcina spre <code>/mydarrin-superadmin.html</code>; <code>api.mydarrin.homebestpal.com</code> spre <code>/api/health</code>.</li>
+        </ol>
+        <div class="man-callout c-warn">⚠️ Domeniul back-office-ului este <code>homebestpal.com</code> (nu <code>homebestopal.com</code>). Verifică ortografia când îl comunici.</div>
+        <h4>Scripturile cheie ale platformei</h4>
+        <table>
+          <tr><th>Fișier</th><th>Rol real în cod</th><th>Stare</th></tr>
+          <tr><td><code>account-system.js</code></td><td>Sistem de cont unificat. Sesiune reală prin Supabase Auth (JWT gestionat de <code>supabase-js</code>), definește <code>ROLE_META</code> (rol → titlu + dashboard). Necesită <code>lib/supabaseClient.js</code> încărcat înaintea lui.</td><td><span class="man-badge m-live">live</span></td></tr>
+          <tr><td><code>myd-geo.js</code></td><td>Geolocație în trepte: GPS cu permisiune, cache <code>localStorage</code> 30 min, fallback pe IP (țară + monedă). Expune <code>MYD_GEO.data / refresh() / setManual(code)</code> și emite evenimentul <code>myd:geo</code>.</td><td><span class="man-badge m-live">live</span></td></tr>
+          <tr><td><code>i18n-loader.js</code></td><td>Traduce elementele marcate <code>data-i18n</code>. Limba sursă e RO. Limbi suportate azi: <code>en, de, fr, tr, bg, el</code> (fișiere în <code>/i18n</code>). Extindere prin chei noi în JSON, fără modificarea loader-ului.</td><td><span class="man-badge m-partial">parțial</span></td></tr>
+          <tr><td><code>sw.js</code></td><td>Service worker minimal, doar pentru instalabilitate PWA. Cache-first pe assets statice (css/js/imagini/fonturi); HTML și API merg mereu pe rețea, necache-uite. <strong style="color:#fff">Nu oferă mod offline</strong>.</td><td><span class="man-badge m-partial">parțial</span></td></tr>
+          <tr><td><code>middleware.js</code></td><td>Control de acces server-side, fail-closed. Include restricția back-office-ului la un singur cont configurat prin variabilă de mediu.</td><td><span class="man-badge m-live">live</span></td></tr>
+        </table>
+        <h4>Rute API relevante (<code>/api</code>)</h4>
+        <ul>
+          <li><code>deviz/calculate.js</code> — motorul de deviz; <code>comenzi/creeaza.js</code> — plasare comandă (aceeași formulă, sumele se îngheață pe comandă).</li>
+          <li><code>partener/*</code> — wizard de onboarding (<code>wizard-*.js</code>), contract cu OTP, GPS, heartbeat, <code>cmr-generare.js</code>, <code>finalizeaza-comanda.js</code>.</li>
+          <li><code>investitori/kyc.js</code>, <code>public/investitori-subscrie.js</code> — dosar KYC și cerere de subscriere.</li>
+          <li><code>public/comanda-token.js</code> — pagina publică de confirmare livrare, pe baza tokenului UUID trimis pe email; rate-limitat (20 cereri / 10 min).</li>
+          <li><code>cron/*</code> — auto-confirmare comenzi, expirare acces temporar, emailuri de coș/cont abandonat, reminder profil partener.</li>
+        </ul>
+        <h4>Design tokens <span class="man-badge m-live">live</span></h4>
+        <table>
+          <tr><th>Token</th><th>Valoare</th><th>Utilizare</th></tr>
+          <tr><td>Primary</td><td><code>#003366</code></td><td>Elemente structurale</td></tr>
+          <tr><td>Accent</td><td><code>#FF8C00</code></td><td>CTA și acțiuni rapide</td></tr>
+          <tr><td>AI Teal</td><td><code>#0E9E99</code></td><td>Rezervat exclusiv modulelor ghidate de AI</td></tr>
+          <tr><td>Surface / Nav</td><td><code>#F0F4F8</code> / <code>#16202E</code></td><td>Fundaluri / meniuri</td></tr>
+          <tr><td>Tipografie</td><td>Syne / Inter</td><td>Titluri / corp de text</td></tr>
+        </table>
+      </div>
+
+      <div class="man-sec" id="man-cap8">
+        <h3>08 · Algoritmi core: preț și evaluare</h3>
+        <h4>Formula de preț (server) <span class="man-badge m-live">live</span></h4>
+        <p>Sursă unică: <code>lib/calculeaza-pret.js</code>, folosită de <code>api/deviz/calculate.js</code> și <code>api/comenzi/creeaza.js</code>. Formula e <strong style="color:#fff">aditivă</strong>, nu multiplicativă. Fiecare componentă de cost corespunde unui rol plătit separat din escrow.</p>
+        <table>
+          <tr><th>Pas</th><th>Calcul</th></tr>
+          <tr><td>1. Subtotal</td><td><code>cost_baza_servicii + cost_materiale + cost_chirie_scule + cost_curier + cost_asigurare + cost_transport_greutate + cost_ajutor</code></td></tr>
+          <tr><td>2. Taxe platformă</td><td><code>marketing = subtotal × 3%</code> · <code>mentenanță = subtotal × 2%</code> · <code>comision = subtotal × 12%</code></td></tr>
+          <tr><td>3. TVA</td><td><code>tva = (subtotal + marketing + mentenanță + comision) × cota_tva(țară)</code></td></tr>
+          <tr><td>4. Preț final</td><td><code>pret_final = max( subtotal + taxe platformă + tva , prag_minim_comanda(țară) )</code></td></tr>
+        </table>
+        <p>Procentele (3 / 2 / 12) sunt citite din <code>backoffice_config</code> (secțiunea <code>pricing</code>), TVA-ul și pragul minim din <code>tax_configurations</code>. Serverul <strong style="color:#fff">respinge cu 400</strong> orice câmp de preț trimis din client (<code>comision_pct</code>, <code>tva</code>, <code>mydarrin_pct</code>, <code>zone_coef</code>, <code>urgency_coef</code> etc.).</p>
+        <p><strong style="color:#fff">Exemplu numeric (RO, subtotal 1000 Lei):</strong> marketing 30 + mentenanță 20 + comision 120 = 1170 · TVA 21% = 245,70 · total 1415,70 Lei (peste pragul minim de 150 Lei, deci se păstrează).</p>
+        <div class="man-callout c-warn">⚠️ Pragul minim (VMC) se aplică <strong>după</strong> TVA, pe prețul final, nu pe costul de bază înainte de taxe. Comportamentul e diferit de descrierea din <code>mydarrin-deviz-engine.html</code> („VMC = cost pre-TVA”).</div>
+        <h4>Valori live în baza de date (28 sept. 2026)</h4>
+        <table>
+          <tr><th>Țară</th><th>TVA</th><th>Prag minim comandă</th></tr>
+          <tr><td>RO</td><td>21%</td><td>150 (Lei)</td></tr>
+          <tr><td>MD</td><td>20%</td><td>500 (MDL)</td></tr>
+          <tr><td>DE</td><td>19%</td><td>55 (EUR)</td></tr>
+          <tr><td>FR</td><td>20%</td><td>55 (EUR)</td></tr>
+          <tr><td>BG</td><td>20%</td><td>30 (BGN)</td></tr>
+        </table>
+        <p>Tabelul <code>tax_configurations</code> conține 33 de țări; cele de mai sus sunt cele 5 acceptate azi de <code>/api/deviz/calculate</code> (<code>RO, MD, DE, FR, BG</code>). Valorile se administrează din <code>panel-accountancy</code>. Dacă o țară nu are rând, fallback-ul din cod e TVA implicit (RO 21%, MD 20%, DE 19%, FR 20%, BG 20%) și prag minim 100.</p>
+        <div class="man-callout c-danger">🛑 Formula multiplicativă <code>COST_BAZA × (1 + indirect 10% + marketing 3% + platform 3%) × mydarrin_pct × zone_coef × urgency_coef × (1 + TVA)</code> a fost <strong>eliminată deliberat la 22 iulie 2026</strong>. Nu mai există în server: coeficienții de zonă și urgență, cota „indirect 10%” și <code>mydarrin_pct</code> nu au echivalent în formula activă. Pagina <code>mydarrin-deviz-engine.html</code> încă le prezintă.</div>
+        <h4>Evaluarea investitorilor (FT2) <span class="man-badge m-partial">parțial</span></h4>
+        <p>Calcul în browser (<code>calcEvaluare()</code> în <code>mydarrin-investitori.html</code>), doar informativ:</p>
+        <table>
+          <tr><th>Mărime</th><th>Formula din cod</th></tr>
+          <tr><td>ARR</td><td><code>GTV_lunar × comision_mediu × 12</code></td></tr>
+          <tr><td>eval_GTV</td><td><code>(GTV_lunar × 12) × 4,2</code></td></tr>
+          <tr><td>eval_ARR</td><td><code>ARR × 8,5</code></td></tr>
+          <tr><td>Factor geo</td><td><code>1 + (țări_active − 1) × 0,3</code></td></tr>
+          <tr><td>Evaluare</td><td><code>(eval_GTV × 40% + eval_ARR × 60%) × factor geo</code></td></tr>
+        </table>
+        <p><strong style="color:#fff">Exemplu:</strong> GTV lunar 100.000, comision mediu 8%, 2 țări active. GTV anual 1.200.000 → eval_GTV 5.040.000; ARR 96.000 → eval_ARR 816.000; baza = 2.016.000 + 489.600 = 2.505.600; × 1,3 = <strong>3.257.280</strong>.</p>
+        <div class="man-callout c-danger">🛑 Fluxul de investitori nu are azi nicio verificare automată. Documentul de identitate nu trece prin OCR, iar verificarea PEP/sancțiuni e doar o bifă declarativă; identitatea o verifică manual echipa, după trimiterea cererii. Contractul <em>Shareholders Agreement</em> se trimite pe email pentru semnare electronică, iar subscrierea nu e finalizată legal la pasul din pagină. <code>api/investitori/kyc.js</code> înregistrează dosarul cu status <code>in_verificare</code>.</div>
+      </div>
+
+      <div class="man-sec" id="man-cap9">
+        <h3>09 · Reguli curierat, asigurări și parteneri</h3>
+        <div class="man-callout c-warn">⚠️ Regulile de mai jos sunt implementate în <code>mydarrin-dashboard-partener.html</code> ca logică <strong>client-side, în memoria paginii</strong>: nu sunt aplicate de server și se pierd la reîncărcare. Sunt documentate cum funcționează azi, nu ca garanții de sistem.</div>
+        <table>
+          <tr><th>Cod</th><th>Regulă</th><th>Comportament real în cod</th><th>Stare</th></tr>
+          <tr><td>BC1</td><td>Filtru vehicul</td><td><code>VEHICLE_RULES</code> + <code>canAcceptCursa()</code>, limite pe tip de vehicul: bicicletă 10 kg / 30 L, scuter 25 kg / 60 L, autoturism 50 kg / 200 L, utilitară 500 kg / 2000 L, camion 5000 kg / 20000 L. Cursa care depășește limita e refuzată cu alertă și oferta de trecere pe utilitară.</td><td><span class="man-badge m-partial">parțial</span></td></tr>
+          <tr><td>BC2</td><td>Status ocupat + coadă FIFO</td><td><code>CURIER_STARE.is_active_in_ride</code> blochează preluarea unei a doua curse (mesaj „Ești deja în cursă activă”). <code>adaugaInCoada()</code> și procesarea cozii la <code>finalizareCursa()</code> există, dar <strong>nimic nu apelează <code>adaugaInCoada()</code></strong>: cursele noi nu intră azi în coadă.</td><td><span class="man-badge m-partial">parțial</span></td></tr>
+          <tr><td>IO1</td><td>Pauză rapidă</td><td>Meniu cu 15 / 30 / 45 / 60 / 90 min, setat în topbar doar pentru curier. Steagul <code>CURIER_IN_PAUZA</code> și temporizarea (<code>setTimeout</code>) rulează doar în browser; nu blochează alocarea de pe server.</td><td><span class="man-badge m-partial">parțial</span></td></tr>
+          <tr><td>BC6</td><td>CMR digital</td><td><code>confirmPickupCuCMR()</code> → <code>generareCMR()</code> generează documentul în pagină, cu „hash” din <code>Math.random()</code>, salvat în <code>sessionStorage</code>. Endpoint-ul real <code>api/partener/cmr-generare.js</code> folosește SHA-256 al conținutului și verifică documentele curierului (CUI, licență ARR, cazier).</td><td><span class="man-badge m-partial">parțial</span></td></tr>
+          <tr><td>IO4</td><td>Nr. contract pe factură</td><td>Numărul <code>MP-BCU-2026-…</code> e injectat în antetul emitentului dintr-o hartă de valori fixe (demonstrative) pe tip de partener, nu din contractul real al partenerului.</td><td><span class="man-badge m-mock">demonstrativ</span></td></tr>
+          <tr><td>BC3</td><td>Cross-reference daune</td><td>Format <code>CLAIM-YYYY-CMDxxxx-TIP</code>, dar dosarele din <code>DAUNE_DB</code> sunt două înregistrări statice de exemplu, fără persistare.</td><td><span class="man-badge m-mock">demonstrativ</span></td></tr>
+          <tr><td>BC4</td><td>Sandbox asigurări</td><td><code>toggleSandboxMode()</code> comută doar eticheta și culoarea butonului (<code>ASIG_API_CONFIG.mode</code>). <code>testSandboxAPI()</code> simulează un răspuns „200 OK”; niciun asigurător real nu e conectat.</td><td><span class="man-badge m-mock">demonstrativ</span></td></tr>
+        </table>
+        <h4>Comenzi și guest checkout</h4>
+        <p>Checkout-ul <strong style="color:#fff">nu mai permite comandă fără cont</strong>: <code>saveGuestOrder()</code> (doar <code>sessionStorage</code>, comanda nu ajungea niciodată în baza de date) a fost înlocuit la 11 iulie 2026 cu cerere de cont real și apel la <code>/api/comenzi/creeaza</code>. Urmărirea fără cont există doar pentru <strong>confirmarea livrării</strong>, prin tokenul UUID trimis pe email (<code>api/public/comanda-token.js</code>), nu ca „banner de tracking pentru guest”. Comenzile se pot programa cu dată și interval orar (<code>data_programata</code>, <code>ora_inceput_programata</code>, <code>ora_sfarsit_programata</code>). Alocarea partenerului se face server-side prin <code>lib/aloca-partener.js</code> (competență ESCO/NACE și disponibilitate); un mecanism distinct de „alocare geo instantă” pentru comenzile Urgente nu a fost verificat în acest audit.</p>
+        <h4>Onboarding partener</h4>
+        <p>Wizard dinamic în <code>mydarrin-devino-partener.html</code>, cu salvare pe pași prin <code>api/partener/wizard-*.js</code> (companie, NACE, angajați, utilaje, certificări, alocare). Contractul se semnează prin OTP (<code>contract-trimite-otp.js</code> / <code>contract-confirma-otp.js</code>) și cere cont bancar activ și documente aprobate.</p>
+      </div>
+
+      <div class="man-sec" id="man-cap10">
+        <h3>10 · Registru de diferențe: specificație vs. cod live</h3>
+        <p>Lista diferențelor constatate la 28 septembrie 2026 între specificația funcțională inițială (folosită în documentele de prezentare) și starea reală. Decizia de aliniere (în cod sau în specificație) aparține fondatorului.</p>
+        <table>
+          <tr><th>Subiect</th><th>Specificație</th><th>Live</th></tr>
+          <tr><td>Formula de preț</td><td>Multiplicativă, cu indirect 10%, <code>mydarrin_pct</code> 7–20%, coeficienți zonă/urgență</td><td>Aditivă; marketing 3%, mentenanță 2%, comision 12%; fără coeficienți (există și chei separate de 15% pentru bricolaj/închiriere contractat, în <code>backoffice_config</code>)</td></tr>
+          <tr><td>VMC</td><td>RO 100, MD 400, DE/FR 25, BG 40; aplicat pe <code>COST_BAZA</code></td><td>RO 150, MD 500, DE 55, FR 55, BG 30; aplicat pe prețul final cu TVA</td></tr>
+          <tr><td>Pagina motor deviz</td><td>—</td><td><code>mydarrin-deviz-engine.html</code> afișează încă valorile și formula vechi (VMC 100/400/25/25/40)</td></tr>
+          <tr><td>BC1 filtru vehicul</td><td>&gt;10 kg sau &gt;50 L → exclusiv utilitară</td><td>Praguri pe fiecare tip; cursele de 10–50 kg sunt acceptate și de scuter (până la 25 kg) și autoturism (până la 50 kg); utilitara e cerută abia peste 50 kg / 200 L</td></tr>
+          <tr><td>BC2 coadă FIFO</td><td>Curse noi intră automat în coadă</td><td>Curse noi refuzate cu mesaj; coada nu e alimentată</td></tr>
+          <tr><td>BC6 CMR + eIDAS</td><td>Hash securizat și semnătură eIDAS la ridicare</td><td>UI: hash aleator, etichetă „eIDAS Qualified” statică; API: SHA-256; semnătură eIDAS calificată neintegrată (necesită furnizor extern)</td></tr>
+          <tr><td>IO4 nr. contract</td><td>Injectat în facturile fiscale</td><td>Valori fixe demonstrative în interfață</td></tr>
+          <tr><td>Guest checkout (B4)</td><td>Urmărire fără cont, banner cu token</td><td>Comandă cere cont; token doar pentru confirmarea livrării</td></tr>
+          <tr><td>KYC investitori</td><td>Scanare CI + OCR, PEP, MIFID, eIDAS</td><td>Încărcare manuală, verificare de către echipă; chestionar MIFID și bifă PEP declarative; fără eIDAS</td></tr>
+          <tr><td>Aplicații mobile</td><td>Două aplicații (generală și Partner)</td><td>Nu există aplicații native; site responsiv + PWA instalabil (<code>sw.js</code>)</td></tr>
+          <tr><td>Sandbox asigurări</td><td>Sandbox API configurabil</td><td>Doar comutator vizual + test simulat</td></tr>
+        </table>
+        <div class="man-callout c-note">📘 Această secțiune se actualizează manual, împreună cu capitolele 01–09, la fiecare revizuire majoră. Dacă vreo diferență se rezolvă în cod, rândul se șterge de aici.</div>
       </div>
     </div>
 
@@ -2666,7 +2786,7 @@ const TITLES = {
   rbac:'Permisiuni RBAC',platforme:'Platforme & Integrări',escrow:'Escrow Global',
   comisioane:'Comisioane & Tarifare',vmc:'VMC per Țară',parteneri:'Parteneri Globali',
   comenzi:'Comenzi Globale',catalog:'Catalog Servicii/Materiale/Închirieri',audit:'Audit Log',config:'Configurare Sistem',
-  branding:'Branding & Design Platformă',seo:'SEO — Titluri & Descrieri',manual:'Manual de Funcționare',accountancy:'Accountancy',
+  branding:'Branding & Design Platformă',seo:'SEO — Titluri & Descrieri',manual:'Manual de Utilizare și Documentație Tehnică Open-Source',accountancy:'Accountancy',
   consultanta:'Consultanță & Proiectare',
   investitori:'Administrare Investitori',contact:'Mesaje Contact',prospecti:'Prospecți Parteneri',
   newsletter:'Newsletter & Abonați','email-gateway':'Noreply & Transactional Gateway','facturare-parteneri':'Facturare Parteneri','b2g-plati':'B2G & Metode de Plată','preturi-niveluri':'Niveluri de Preț','tarife-transport':'Tarife Transport','tarife-manopera':'Tarife Manoperă (ESCO)','tarife-resurse':'Tarife Materiale & Utilaje','marketplace-aprobari':'Marketplace — Aprobări','acces-temporar':'Acces Temporar'
