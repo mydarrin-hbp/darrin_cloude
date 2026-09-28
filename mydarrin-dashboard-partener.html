@@ -1685,7 +1685,9 @@ async function loadHardStopStatus(){
       pasi += `<div style="padding:8px 0;color:#5A6B7D">✅ Profil aprobat &nbsp;·&nbsp; 🔲 <b>Cont bancar</b> — adaugă un cont activ din secțiunea <a href="#" onclick="showPanel('cont-bancar');return false" style="color:#0E9E99;font-weight:700">Cont bancar</a>.</div>`;
     } else if (!data.contract_semnat) {
       pasi += `<div style="padding:8px 0;color:#5A6B7D">✅ Profil aprobat &nbsp;·&nbsp; ✅ Cont bancar &nbsp;·&nbsp; 🔲 <b>Contract nesemnat</b></div>
+        <div style="font-size:12.5px;color:#5A6B7D;margin-top:6px">Citește contractul-cadru înainte de a cere codul: el cuprinde portofoliul tău de activități, codul CAEN și competențele declarate.</div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px">
+          <button class="btn-s" onclick="deschideContractPartener()" style="font-size:12px;padding:8px 14px">📄 Citește contractul</button>
           <button class="btn-p" onclick="trimiteOtpContract()" id="btn-trimite-otp" style="font-size:12px;padding:8px 14px">Trimite cod pe email</button>
           <input id="otp-contract-input" placeholder="Cod din email" maxlength="6" style="width:110px;border:1.5px solid #E2DFD6;border-radius:9px;padding:8px 10px;font-size:13px;font-family:monospace">
           <button class="btn-p" onclick="confirmaOtpContract()" style="font-size:12px;padding:8px 14px;background:#0E9E99">Confirmă &amp; semnează</button>
@@ -1699,6 +1701,35 @@ async function loadHardStopStatus(){
     </div>`;
   } catch (e) {
     el.style.display = 'none';
+  }
+}
+
+// Contractul-cadru (lib/contract-partener.js): instantaneul acceptat, sau varianta generată
+// din datele curente ale contului dacă nu e încă acceptat.
+async function deschideContractPartener(){
+  let m = document.getElementById('ctr-modal');
+  if (m) m.remove();
+  m = document.createElement('div');
+  m.id = 'ctr-modal';
+  m.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(15,25,40,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+  m.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:820px;width:100%;max-height:90vh;display:flex;flex-direction:column;overflow:hidden">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:1px solid #E2E8F0"><strong id="ctr-modal-titlu" style="color:#1A2332">Contract</strong>'
+    + '<button class="btn-s" onclick="document.getElementById(\'ctr-modal\').remove()" style="font-size:12px;padding:6px 12px">Închide</button></div>'
+    + '<div id="ctr-modal-corp" style="padding:18px 22px;overflow:auto;font-size:13px;color:#5A6B7D">Se încarcă contractul...</div></div>';
+  m.addEventListener('click', (e) => { if (e.target === m) m.remove(); });
+  document.body.appendChild(m);
+  const corp = document.getElementById('ctr-modal-corp');
+  try {
+    const headers = await _partenerAuthHeader();
+    const res = await fetch('/api/partener/contract', { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    document.getElementById('ctr-modal-titlu').textContent = (data.semnat ? 'Contract acceptat · ' : 'Contract de acceptat · ') + data.numar;
+    corp.style.color = '';
+    corp.innerHTML = data.html;
+  } catch (e) {
+    corp.style.color = '#C0392B';
+    corp.textContent = e.message;
   }
 }
 
@@ -2650,6 +2681,7 @@ function renderDocumente() {
   const contract = c.partner.contract_semnat
     ? `<span class="chip ch-g">Semnat</span> <span style="color:#5A6B7D;font-size:12px">${_dataFmt(c.partner.contract_semnat_la)}${c.partner.contract_versiune ? ' · versiunea ' + _escD(c.partner.contract_versiune) : ''}</span>`
     : '<span class="chip ch-o">Nesemnat</span> <span style="color:#5A6B7D;font-size:12px">Contractul se semnează din panoul de start, prin cod OTP.</span>';
+  const contractBtn = ' <button class="btn-s" style="font-size:10.5px;padding:4px 9px;margin-left:8px" onclick="deschideContractPartener()">📄 ' + (c.partner.contract_semnat ? 'Vezi contractul' : 'Citește contractul') + '</button>';
   const docs = c.documente.length
     ? `<table class="dp-table"><thead><tr><th>Document</th><th>Status</th><th>Încărcat</th><th>Observații</th><th></th></tr></thead><tbody>${c.documente.map((d) => `<tr><td><strong>${_escD(_TIP_DOC_LBL[d.tip_document] || d.tip_document)}</strong></td><td><span class="chip ${_STATUS_DOC_CLS[d.status] || 'ch-gr'}">${_escD(_STATUS_DOC[d.status] || d.status)}</span></td><td style="color:#5A6B7D">${_dataFmt(d.uploaded_at)}</td><td style="color:#5A6B7D">${_escD(d.observatii || '—')}</td><td>${d.status === 'pending' ? `<button class="btn-s" style="font-size:10.5px;padding:4px 9px;color:#C0392B" onclick="stergeDocumentPartener('${_escD(d.id)}')">Șterge</button>` : ''}</td></tr>`).join('')}</tbody></table>`
     : '<div class="dp-card-body" style="color:#5A6B7D;font-size:12.5px">Niciun document încărcat. Certificările se adaugă din panoul „Certificările mele”.</div>';
@@ -2669,7 +2701,7 @@ function renderDocumente() {
   </div>
   <div class="dp-card" style="margin-bottom:18px">
     <div class="dp-card-hdr"><strong style="color:#1A2332">📄 Contract-cadru de parteneriat</strong></div>
-    <div class="dp-card-body" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">${contract}</div>
+    <div class="dp-card-body" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">${contract}${contractBtn}</div>
   </div>
   <div class="dp-card">
     <div class="dp-card-hdr"><strong style="color:#1A2332">🪪 Documente încărcate</strong></div>

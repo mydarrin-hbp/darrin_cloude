@@ -7,13 +7,14 @@ const crypto = require('crypto');
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
+const { genereazaContractPartener, sha256 } = require('../../lib/contract-partener-date');
+const { CONTRACT_VERSIUNE } = require('../../lib/contract-partener');
 
 const ROLURI_PARTENER = [
   'partener_curier', 'partener_servicii', 'partener_materiale',
   'partener_inchirieri', 'partener_asigurari',
 ];
 const MAX_INCERCARI = 5;
-const CONTRACT_VERSIUNE = 'v1-2026-07-25';
 
 function hashCod(cod) {
   return crypto.createHash('sha256').update(cod).digest('hex');
@@ -56,13 +57,24 @@ async function handler(req, res, user) {
     return res.status(400).json({ error: 'Cod incorect.' });
   }
 
-  await supabaseAdmin.from('partner_contract_otp').update({ folosit: true }).eq('id', otpRow.id);
+  // Instantaneul contractului exact cum l-a văzut și acceptat partenerul (portofoliu, CAEN, procente).
+  const semnatLa = new Date().toISOString();
+  const contract = await genereazaContractPartener(user.id, { semnatLa });
+  if (!contract) return res.status(500).json({ error: 'Codul a fost validat, dar nu am putut genera contractul. Încearcă din nou.' });
+  const { error: snapErr } = await supabaseAdmin.from('partner_contracte_semnate').upsert({
+    partner_id: user.id, versiune: contract.versiune, numar: contract.numar, html: contract.html,
+    sha256: sha256(contract.html), semnat_la: semnatLa, ip: getClientIp(req),
+  }, { onConflict: 'partner_id,versiune' });
+  if (snapErr) {
+    console.error('[contract-confirma-otp] snapshot', snapErr);
+    return res.status(500).json({ error: 'Codul a fost validat, dar nu am putut păstra contractul. Încearcă din nou.' });
+  }
 
   const { error: updErr } = await supabaseAdmin
     .from('partners')
     .update({
       contract_semnat: true,
-      contract_semnat_la: new Date().toISOString(),
+      contract_semnat_la: semnatLa,
       contract_versiune: CONTRACT_VERSIUNE,
       contract_ip: getClientIp(req),
     })
@@ -72,12 +84,15 @@ async function handler(req, res, user) {
     return res.status(500).json({ error: 'Codul a fost validat, dar nu am putut înregistra semnătura. Încearcă din nou.' });
   }
 
+  // Codul se consumă doar după ce instantaneul și semnătura sunt salvate, ca un eșec să poată fi reîncercat cu același cod.
+  await supabaseAdmin.from('partner_contract_otp').update({ folosit: true }).eq('id', otpRow.id);
+
   await inregistreazaAudit({
     admin: user, req, actiune: 'partener_semneaza_contract', entitate: 'partners', entitate_id: user.id,
-    detalii: { versiune: CONTRACT_VERSIUNE },
+    detalii: { versiune: CONTRACT_VERSIUNE, numar: contract.numar },
   });
 
-  return res.status(200).json({ ok: true, contract_semnat_la: new Date().toISOString() });
+  return res.status(200).json({ ok: true, contract_semnat_la: semnatLa });
 }
 
 module.exports = requireAuth(ROLURI_PARTENER, handler);
