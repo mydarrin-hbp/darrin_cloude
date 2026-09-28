@@ -1403,7 +1403,41 @@ function renderOverviewCurier() {
   </div>`;
 }
 
+// Curse demonstrative, în memorie (dispecerizarea reală pe server nu există încă).
+const CURSE_DEMO = {
+  'CUR-001': { title:'Livrare materiale sanitare', pickup:'Depozit ACA Business Group · Calea Ștefan cel Mare 12', dest:'Str. Păcurari 23 · Valentin (meșter)', km:'1.2 km', price:'35 Lei', vehicul:'Utilitară', cls:'pending', badge:'📦 Materiale' },
+  'CUR-002': { title:'Transport echipament Hilti', pickup:'Rental Pro SRL · Bd. Copou 8', dest:'Bd. Unirii 12 · SC Construct', km:'2.1 km', price:'45 Lei', vehicul:'Auto', cls:'pending', badge:'🏗 Închirieri' },
+  'CUR-003': { title:'Livrare urgentă robinet', pickup:'PCB Materiale · Str. Lăpușneanu 7', dest:'Ion Vasile · Sector 2 · Bloc M3', km:'0.8 km', price:'28 Lei', vehicul:'Bicicletă', cls:'urgent', badge:'⚡ Urgent' },
+  'CUR-004': { title:'Transport motor pompă', pickup:'Apa Nova Depozit · Pipa', dest:'SC HidroServ · Șoseau Nicolina 8', km:'4.5 km', price:'65 Lei', vehicul:'Utilitară', cls:'pending', badge:'🔧 Servicii' },
+};
+const CURSE_REFUZATE = new Set();
+
+function cursaDisponibila(id) {
+  return !CURSE_REFUZATE.has(id)
+    && CURIER_STARE.cursa_activa_id !== id
+    && !CURIER_STARE.coada_curse.some(c => c.id === id);
+}
+
 function renderCurse() {
+  const ids = Object.keys(CURSE_DEMO);
+  const disponibile = ids.filter(cursaDisponibila);
+  const activa = CURIER_STARE.cursa_activa_id;
+  const coada = CURIER_STARE.coada_curse;
+  const bannerActiva = activa ? `
+    <div style="margin-bottom:12px;padding:11px 14px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.25);border-radius:11px;font-size:12.5px;color:#4B0082;display:flex;justify-content:space-between;align-items:center;gap:10px">
+      <span>🚚 Ești în cursă activă: <strong>#${activa}</strong>. Cursele noi primite intră automat în coadă.</span>
+      <button class="btn-s" style="font-size:11px;padding:5px 11px" onclick="showPanel('activ')">Deschide cursa</button>
+    </div>` : '';
+  const listaCoada = coada.length ? `
+    <div class="dp-card" style="margin-bottom:14px">
+      <div class="dp-card-hdr"><strong style="color:#1A2332">⏳ Coadă (${coada.length}) · în ordinea primirii</strong></div>
+      <div class="dp-card-body" style="display:flex;flex-direction:column;gap:7px;font-size:12.5px">
+        ${coada.map((c,i) => `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 11px;background:#F0F4F8;border-radius:9px"><span><strong>${i+1}.</strong> #${c.id} · ${(CURSE_DEMO[c.id]||{}).title||''}</span><button class="btn-s" style="font-size:11px;padding:4px 10px" onclick="refuzaCursa('${c.id}')">Renunță</button></div>`).join('')}
+      </div>
+    </div>` : '';
+  const carduri = disponibile.length
+    ? disponibile.map(id => { const c = CURSE_DEMO[id]; return cursaCardFull('#'+id, c.title, c.pickup, c.dest, c.km, c.price, c.vehicul, c.cls, c.badge, c.greutate_kg, c.volum_L); }).join('')
+    : '<div style="padding:22px;text-align:center;font-size:12.5px;color:#5A6B7D">Nicio cursă disponibilă acum.</div>';
   return `
   <div style="margin-bottom:18px;display:flex;align-items:center;justify-content:space-between">
     <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Dispecerat curse LIVE</h2>
@@ -1414,26 +1448,37 @@ function renderCurse() {
       <button class="btn-s" onclick="filterCurse('utilitara',this)">🚐 Utilitară</button>
     </div>
   </div>
+  ${bannerActiva}
+  ${listaCoada}
   <div class="dp-card">
     <div style="padding:14px;display:flex;flex-direction:column;gap:10px">
-      ${cursaCardFull('#CUR-001','Livrare materiale sanitare','Depozit ACA Business Group · Calea Ștefan cel Mare 12','Str. Păcurari 23 · Valentin (meșter)','1.2 km','35 Lei','Utilitară','pending','📦 Materiale')}
-      ${cursaCardFull('#CUR-002','Transport echipament Hilti','Rental Pro SRL · Bd. Copou 8','Bd. Unirii 12 · SC Construct','2.1 km','45 Lei','Auto','pending','🏗 Închirieri')}
-      ${cursaCardFull('#CUR-003','Livrare urgentă robinet','PCB Materiale · Str. Lăpușneanu 7','Ion Vasile · Sector 2 · Bloc M3','0.8 km','28 Lei','Bicicletă','urgent','⚡ Urgent')}
-      ${cursaCardFull('#CUR-004','Transport motor pompă','Apa Nova Depozit · Pipa','SC HidroServ · Șoseau Nicolina 8','4.5 km','65 Lei','Utilitară','pending','🔧 Servicii')}
+      ${carduri}
     </div>
   </div>`;
 }
 
 function renderCursaActiva() {
+  const id = CURIER_STARE.cursa_activa_id;
+  const c = id && CURSE_DEMO[id];
+  if (!c) {
+    return `
+    <div class="dp-card">
+      <div class="dp-card-body" style="text-align:center;padding:36px 20px">
+        <div style="font-size:15px;font-weight:800;color:#1A2332;margin-bottom:6px">Nu ai nicio cursă activă</div>
+        <div style="font-size:12.5px;color:#5A6B7D;margin-bottom:16px">Preia o cursă din lista de curse disponibile.${CURIER_STARE.coada_curse.length ? ' Ai ' + CURIER_STARE.coada_curse.length + ' curse în coadă.' : ''}</div>
+        <button class="btn-p" onclick="showPanel('curse')" style="justify-content:center">Vezi curse disponibile</button>
+      </div>
+    </div>`;
+  }
   return `
   <div class="dp-card" style="background:linear-gradient(135deg,#4B0082,#7C3AED);color:#fff;margin-bottom:18px">
     <div style="padding:18px 20px">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.7;margin-bottom:6px">🚴 Cursă activă</div>
-      <div style="font-size:18px;font-weight:800;margin-bottom:10px">Livrare materiale sanitare · #CUR-001</div>
+      <div style="font-size:18px;font-weight:800;margin-bottom:10px">${c.title} · #${id}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
-        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px;text-align:center"><div style="font-size:9px;opacity:.7">Distanță</div><div style="font-size:16px;font-weight:800">0.6 km</div><div style="font-size:9px;opacity:.7">rămase</div></div>
-        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px;text-align:center"><div style="font-size:9px;opacity:.7">ETA</div><div style="font-size:16px;font-weight:800">4 min</div><div style="font-size:9px;opacity:.7">estimat</div></div>
-        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px;text-align:center"><div style="font-size:9px;opacity:.7">Câștig</div><div style="font-size:16px;font-weight:800">35 Lei</div><div style="font-size:9px;opacity:.7">la livrare</div></div>
+        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px;text-align:center"><div style="font-size:9px;opacity:.7">Distanță</div><div style="font-size:16px;font-weight:800">${c.km}</div></div>
+        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px;text-align:center"><div style="font-size:9px;opacity:.7">Câștig</div><div style="font-size:16px;font-weight:800">${c.price}</div><div style="font-size:9px;opacity:.7">la livrare</div></div>
+        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px;text-align:center"><div style="font-size:9px;opacity:.7">În coadă</div><div style="font-size:16px;font-weight:800">${CURIER_STARE.coada_curse.length}</div><div style="font-size:9px;opacity:.7">curse</div></div>
       </div>
     </div>
   </div>
@@ -1441,27 +1486,32 @@ function renderCursaActiva() {
     <div class="dp-card">
       <div class="dp-card-hdr"><strong style="color:#1A2332">📍 Detalii cursă</strong></div>
       <div class="dp-card-body" style="font-size:12.5px;display:flex;flex-direction:column;gap:10px">
-        <div style="padding:10px;background:#F0F4F8;border-radius:10px;border-left:3px solid #7C3AED"><div style="font-weight:700;color:#1A2332">Pickup</div><div style="color:#5A6B7D">Depozit ACA Business Group<br>Calea Ștefan cel Mare 12</div></div>
-        <div style="padding:10px;background:#F0F4F8;border-radius:10px;border-left:3px solid #0E9E99"><div style="font-weight:700;color:#1A2332">Destinație</div><div style="color:#5A6B7D">Valentin (meșter) · Str. Păcurari 23<br>+40 721 456 789</div></div>
-        <div style="padding:10px;background:#FFF8EE;border-radius:10px;border:1px solid rgba(255,140,0,.2)"><div style="font-weight:700;color:#CC7000">Conținut colet</div><div style="color:#5A6B7D">Țevi PPR 20mm · 6m<br>Fitinguri set · Cod colet: PCK-4821</div></div>
+        <div style="padding:10px;background:#F0F4F8;border-radius:10px;border-left:3px solid #7C3AED"><div style="font-weight:700;color:#1A2332">Pickup</div><div style="color:#5A6B7D">${c.pickup}</div></div>
+        <div style="padding:10px;background:#F0F4F8;border-radius:10px;border-left:3px solid #0E9E99"><div style="font-weight:700;color:#1A2332">Destinație</div><div style="color:#5A6B7D">${c.dest}</div></div>
       </div>
     </div>
     <div class="dp-card">
       <div class="dp-card-hdr"><strong style="color:#1A2332">Acțiuni</strong></div>
       <div class="dp-card-body" style="display:flex;flex-direction:column;gap:10px">
         <!-- BC6 — Confirmare pickup cu CMR -->
-        <button class="btn-p" onclick="confirmPickupCuCMR('CUR-001','Dedeman · Depozit Theodor Pallady','Elena Cucu · Str. Gorjului 118','Calorifer Purmo C11 600/10',18,'60×80×12 cm')" style="width:100%;justify-content:center;background:#0E9E99">
+        <button class="btn-p" onclick="pickupCursaActiva()" style="width:100%;justify-content:center;background:#0E9E99">
           📸 Confirmă ridicare + Generează CMR
         </button>
         <!-- BC2 — Finalizare cursă cu deblocare status -->
-        <button class="btn-p" onclick="finalizareCursa('CUR-001')" style="width:100%;justify-content:center">
+        <button class="btn-p" onclick="finalizareCursa('${id}')" style="width:100%;justify-content:center">
           ✅ Confirmă livrare + Finalizează cursa
         </button>
-        <button class="btn-s" style="width:100%;justify-content:center">📞 Sună destinatarul</button>
         <button class="btn-s" style="width:100%;justify-content:center;color:#C0392B;border-color:rgba(192,57,43,.3)">⚠ Raportează problemă</button>
       </div>
     </div>
   </div>`;
+}
+
+function pickupCursaActiva() {
+  const id = CURIER_STARE.cursa_activa_id;
+  const c = id && CURSE_DEMO[id];
+  if (!c) return;
+  confirmPickupCuCMR(id, c.pickup, c.dest, c.title, c.greutate_kg || 0, c.dimensiuni || 'n/d');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2591,9 +2641,10 @@ function cursaCard(title,ruta,km,price,vehicul,cls){
   return `<div class="task-card ${cls}" style="cursor:pointer"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><strong style="font-size:12.5px;color:#1A2332">${title}</strong><span class="chip ${cl}">${vehicul}</span></div><div style="font-size:11px;color:#5A6B7D;margin-bottom:4px">${ruta}</div><div style="font-size:12px;font-weight:700;color:#7C3AED">${km} · ${price}</div></div>`;
 }
 
-function cursaCardFull(id,title,pickup,dest,km,price,vehicul,cls,badge,greutate_kg){
+function cursaCardFull(id,title,pickup,dest,km,price,vehicul,cls,badge,greutate_kg,volum_L){
   const cl={pending:'ch-o',urgent:'ch-r'}[cls]||'ch-gr';
-  return `<div class="task-card ${cls}"><div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px"><div><div style="font-size:13px;font-weight:700;color:#1A2332">${title}</div><div style="font-size:10px;color:#5A6B7D;margin-top:2px;font-family:monospace">${id}</div></div><div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end"><span class="chip ${cl}">${vehicul}</span><span class="chip ch-b" style="font-size:9px">${badge}</span></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px"><div style="background:#F0F4F8;border-radius:8px;padding:7px;font-size:11px"><div style="color:#5A6B7D;margin-bottom:2px">📤 Pickup</div><div style="font-weight:600;color:#1A2332">${pickup}</div></div><div style="background:#F0F4F8;border-radius:8px;padding:7px;font-size:11px"><div style="color:#5A6B7D;margin-bottom:2px">📍 Destinație</div><div style="font-weight:600;color:#1A2332">${dest}</div></div></div><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:#5A6B7D">${km}</span>${greutate_kg?`<span class="chip ${greutate_kg>10?'ch-r':'ch-g'}" style="font-size:9px">${greutate_kg}kg · ${greutate_kg>10?'🚐 Utilitară req.':'🚴 OK'}</span>`:''}${' '}<span style="font-size:13px;font-weight:800;color:#7C3AED">${price}</span><div style="display:flex;gap:8px"><button class="btn-s" style="font-size:11px;padding:6px 12px">Refuz</button><button class="btn-p" style="font-size:11px;padding:6px 12px;background:#7C3AED">Preia cursa</button></div></span></div></div>`;
+  const idc=String(id).replace('#','');
+  return `<div class="task-card ${cls}"><div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px"><div><div style="font-size:13px;font-weight:700;color:#1A2332">${title}</div><div style="font-size:10px;color:#5A6B7D;margin-top:2px;font-family:monospace">${id}</div></div><div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end"><span class="chip ${cl}">${vehicul}</span><span class="chip ch-b" style="font-size:9px">${badge}</span></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px"><div style="background:#F0F4F8;border-radius:8px;padding:7px;font-size:11px"><div style="color:#5A6B7D;margin-bottom:2px">📤 Pickup</div><div style="font-weight:600;color:#1A2332">${pickup}</div></div><div style="background:#F0F4F8;border-radius:8px;padding:7px;font-size:11px"><div style="color:#5A6B7D;margin-bottom:2px">📍 Destinație</div><div style="font-weight:600;color:#1A2332">${dest}</div></div></div><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:#5A6B7D">${km}</span>${greutate_kg?`<span class="chip ${greutate_kg>10?'ch-r':'ch-g'}" style="font-size:9px">${greutate_kg}kg · ${greutate_kg>10?'🚐 Utilitară req.':'🚴 OK'}</span>`:''}${' '}<span style="font-size:13px;font-weight:800;color:#7C3AED">${price}</span><div style="display:flex;gap:8px"><button class="btn-s" style="font-size:11px;padding:6px 12px" onclick="refuzaCursa('${idc}')">Refuz</button><button class="btn-p" style="font-size:11px;padding:6px 12px;background:#7C3AED" onclick="preiaComanda('${idc}',${greutate_kg||0},${volum_L||0})">Preia cursa</button></div></span></div></div>`;
 }
 
 function politaCard(cod,tip,beneficiar,status,start,end){
@@ -3444,13 +3495,14 @@ function preiaComanda(cursaId, kg, volL) {
   // BC1 — Verificare vehicul
   const check = canAcceptCursa(cursaData);
   if (!check.ok) {
-    showAlertVehicul(check.motiv, cursaId);
+    showAlertVehicul(check.motiv, cursaId, kg, volL);
     return;
   }
 
-  // BC2 — Verificare status ocupat
+  // BC2 — Ocupat în cursă: cursa nouă intră automat în coada FIFO
   if (CURIER_STARE.is_active_in_ride) {
-    showToast('⚠ Ești deja în cursă activă (#' + CURIER_STARE.cursa_activa_id + '). Finalizează-o înainte.');
+    adaugaInCoada(cursaData);
+    showPanel('curse');
     return;
   }
 
@@ -3461,7 +3513,7 @@ function preiaComanda(cursaId, kg, volL) {
   showPanel('activ');
 }
 
-function showAlertVehicul(motiv, cursaId) {
+function showAlertVehicul(motiv, cursaId, kg, volL) {
   const overlay = document.createElement('div');
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px';
   overlay.innerHTML=`
@@ -3470,7 +3522,7 @@ function showAlertVehicul(motiv, cursaId) {
       <h3 style="font-size:16px;font-weight:800;color:#C0392B;text-align:center;margin-bottom:10px">Vehicul incompatibil</h3>
       <p style="font-size:12.5px;color:#5A6B7D;text-align:center;line-height:1.6;margin-bottom:16px">${motiv}</p>
       <div style="display:flex;flex-direction:column;gap:8px">
-        <button onclick="setCurierVehicul('utilitara');this.closest('[style*=fixed]').remove();preiaComanda('${cursaId}',0,0)" 
+        <button onclick="setCurierVehicul('utilitara');this.closest('[style*=fixed]').remove();preiaComanda('${cursaId}',${kg||0},${volL||0})"
                 style="padding:11px;border-radius:11px;border:none;background:#7C3AED;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
           🚐 Schimbă pe Utilitară și preia cursa
         </button>
@@ -3499,19 +3551,49 @@ function finalizareCursa(cursaId) {
   CURIER_STARE.cursa_activa_id   = null;
   showToast('✅ Cursă #' + cursaId + ' finalizată · Escrow eliberat');
 
-  // Procesăm coada
+  // FIFO: prima cursă primită cât timp erai ocupat se oferă prima
   if (CURIER_STARE.coada_curse.length > 0) {
     const urmatoarea = CURIER_STARE.coada_curse.shift();
-    setTimeout(() => {
-      showToast('📨 Cursă nouă disponibilă din coadă: #' + urmatoarea.id);
-      showPanel('curse');
-    }, 800);
+    showPanel('curse');
+    setTimeout(() => showCursaDinCoada(urmatoarea), 400);
+  } else {
+    showPanel('curse');
   }
 }
 
 function adaugaInCoada(cursa) {
+  if (CURIER_STARE.cursa_activa_id === cursa.id || CURIER_STARE.coada_curse.some(c => c.id === cursa.id)) {
+    showToast('ℹ Cursa #' + cursa.id + ' este deja în coadă sau activă');
+    return;
+  }
   CURIER_STARE.coada_curse.push(cursa);
   showToast(`⏳ Cursă #${cursa.id} adăugată în coadă (poziția ${CURIER_STARE.coada_curse.length})`);
+}
+
+function refuzaCursa(cursaId) {
+  CURIER_STARE.coada_curse = CURIER_STARE.coada_curse.filter(c => c.id !== cursaId);
+  CURSE_REFUZATE.add(cursaId);
+  showToast('Cursă #' + cursaId + ' refuzată');
+  if (currentPanel === 'curse') showPanel('curse');
+}
+
+function showCursaDinCoada(cursa) {
+  const c = CURSE_DEMO[cursa.id] || {};
+  const overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML=`
+    <div style="background:#fff;border-radius:18px;max-width:360px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+      <div style="font-size:32px;text-align:center;margin-bottom:10px">📨</div>
+      <h3 style="font-size:16px;font-weight:800;color:#1A2332;text-align:center;margin-bottom:6px">Următoarea cursă din coadă</h3>
+      <p style="font-size:12.5px;color:#5A6B7D;text-align:center;line-height:1.6;margin-bottom:16px"><strong>#${cursa.id}</strong>${c.title ? ' · ' + c.title : ''}${c.price ? '<br>' + c.km + ' · ' + c.price : ''}</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button onclick="this.closest('[style*=fixed]').remove();preiaComanda('${cursa.id}',${cursa.greutate_kg||0},${cursa.volum_L||0})"
+                style="padding:11px;border-radius:11px;border:none;background:#7C3AED;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Preia cursa</button>
+        <button onclick="this.closest('[style*=fixed]').remove();refuzaCursa('${cursa.id}')"
+                style="padding:10px;border-radius:11px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Refuz</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -3623,7 +3705,7 @@ function generareCMR(cursaId, furnizor, destinatar, produs, greutate_kg, dimensi
           <div style="background:#F0F4F8;border-radius:9px;padding:9px 12px"><div style="color:#5A6B7D;font-size:9.5px;margin-bottom:2px">📤 EXPEDITOR</div><div style="font-weight:700">${furnizor}</div></div>
           <div style="background:#F0F4F8;border-radius:9px;padding:9px 12px"><div style="color:#5A6B7D;font-size:9.5px;margin-bottom:2px">📍 DESTINATAR</div><div style="font-weight:700">${destinatar}</div></div>
           <div style="background:#F0F4F8;border-radius:9px;padding:9px 12px"><div style="color:#5A6B7D;font-size:9.5px;margin-bottom:2px">📦 PRODUS</div><div style="font-weight:700">${produs}</div></div>
-          <div style="background:#F0F4F8;border-radius:9px;padding:9px 12px"><div style="color:#5A6B7D;font-size:9.5px;margin-bottom:2px">⚖ GREUTATE</div><div style="font-weight:700">${greutate_kg} kg</div></div>
+          <div style="background:#F0F4F8;border-radius:9px;padding:9px 12px"><div style="color:#5A6B7D;font-size:9.5px;margin-bottom:2px">⚖ GREUTATE</div><div style="font-weight:700">${greutate_kg > 0 ? greutate_kg + ' kg' : 'n/d'}</div></div>
           <div style="background:#F0F4F8;border-radius:9px;padding:9px 12px"><div style="color:#5A6B7D;font-size:9.5px;margin-bottom:2px">📐 DIMENSIUNI</div><div style="font-weight:700">${dimensiuni}</div></div>
           <div style="background:#F0F4F8;border-radius:9px;padding:9px 12px"><div style="color:#5A6B7D;font-size:9.5px;margin-bottom:2px">✅ STARE COLET</div><div style="font-weight:700;color:${stareColet==='intact'?'#1A7A3A':'#C0392B'}">${stareColet==='intact'?'Intact':'⚠ Deteriorat'}</div></div>
         </div>
