@@ -792,7 +792,7 @@ function showPanel(id) {
   if (!content) return;
 
   // Router
-  if (id === 'overview')   { content.innerHTML = renderOverview(); loadEscrowReal(); loadFacturareParteneri(); loadHardStopStatus(); }
+  if (id === 'overview')   { content.innerHTML = renderOverview(); loadEscrowReal(); loadFacturareParteneri(); loadHardStopStatus(); loadDauneOverviewReal(); }
   else if (id === 'sarcini')    content.innerHTML = renderSarcini();
   else if (id === 'portofoliu') { content.innerHTML = renderPortofoliu(); loadPortofoliuReal(); }
   else if (id === 'echipa')     { content.innerHTML = renderEchipa(); loadEchipaReal(); }
@@ -809,7 +809,7 @@ function showPanel(id) {
   else if (id === 'curse')      content.innerHTML = renderCurse();
   else if (id === 'activ')      content.innerHTML = renderCursaActiva();
   else if (id === 'polite')     content.innerHTML = renderPolite();
-  else if (id === 'daune')      content.innerHTML = renderDaune();
+  else if (id === 'daune')      { content.innerHTML = renderDaune(); loadDosareDaunaReal(); }
   else if (id === 'zona-acoperire') { content.innerHTML = renderZonaCurier(); loadZonaCurierReal(); }
   else if (id === 'tipuri-polita')  { content.innerHTML = renderTipuriPolita(); loadTipuriPolitaReal(); }
 }
@@ -1540,11 +1540,8 @@ function renderOverviewAsig() {
     </div>
     <div style="display:flex;flex-direction:column;gap:14px">
       <div class="dp-card">
-        <div class="dp-card-hdr"><strong style="color:#1A2332">⚠ Dosare daune active</strong><span class="chip ch-r">2</span></div>
-        <div class="dp-card-body" style="display:flex;flex-direction:column;gap:8px">
-          ${daunaCard('DAU-001','CMD-4810','Viciu instalație PPR','În analiză','2.400 Lei')}
-          ${daunaCard('DAU-002','CMD-4802','Material defect · Țeavă','Aprobare','850 Lei')}
-        </div>
+        <div class="dp-card-hdr"><strong style="color:#1A2332">⚠ Dosare daune active</strong><span id="ov-daune-badge" class="chip ch-gr">…</span></div>
+        <div class="dp-card-body" id="ov-daune-lista" style="display:flex;flex-direction:column;gap:8px"><div style="color:#5A6B7D;font-size:12px">Se încarcă...</div></div>
       </div>
       <div class="dp-card">
         <div class="dp-card-hdr"><strong style="color:#1A2332">🔗 Status API</strong></div>
@@ -1590,21 +1587,110 @@ function renderDaune() {
   return `
   <div style="margin-bottom:18px;display:flex;align-items:center;justify-content:space-between">
     <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Dosare daune (Claims)</h2>
-    <span class="chip ch-r">2 active</span>
+    <span id="dauna-badge" class="chip ch-gr">Se încarcă...</span>
   </div>
   <div style="background:#FFF0F0;border-radius:14px;border:1.5px solid rgba(192,57,43,.25);padding:14px 18px;margin-bottom:18px">
     <div style="font-size:12.5px;color:#C0392B;font-weight:700;margin-bottom:5px">
-      ⚖ Logica transfer răspundere + 🔗 ID Eveniment Corelat (cross-reference universal)
+      🔗 ID Eveniment Corelat
     </div>
     <div style="font-size:12px;color:#5A6B7D;line-height:1.7">
-      Fiecare dosar de daună are un <strong style="color:#1A5FAD">ID Eveniment Corelat unic</strong> (CLAIM-YYYY-CMDxxxx-TIP) 
-      vizibil atât la Asigurător cât și la Furnizorul imputat — același eveniment, aceeași înregistrare, 
-      fără ID-uri diferite. My Darrin transferă automat răspunderea financiară furnizorului vinovat.
+      Fiecare dosar de daună are un <strong style="color:#1A5FAD">ID Eveniment Corelat unic</strong> (CLAIM-YYYY-CMDxxxx-TIP),
+      același pe care îl vede clientul care a deschis dosarul. Aici se înregistrează doar decizia asiguratorului;
+      transferul sumei către furnizorul imputat nu se face automat.
     </div>
   </div>
-  <div style="display:flex;flex-direction:column;gap:12px">
-    ${Object.keys(DAUNE_DB).map(claimId => renderDaunaCard(claimId)).join('')}
+  <div id="dauna-lista" style="display:flex;flex-direction:column;gap:12px"><div style="color:#5A6B7D;font-size:12.5px">Se încarcă dosarele...</div></div>`;
+}
+
+const _DAUNA_STATUS_LBL = { deschis: 'Deschis', in_analiza: 'În analiză', aprobat: 'Aprobat', respins: 'Respins', inchis: 'Închis' };
+const _DAUNA_TIP_LBL = { EXE: 'Execuție lucrare', MAT: 'Material', TRN: 'Transport' };
+function _escD(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+
+function _dauneButoane(d) {
+  const b = (txt, act, extra) => `<button class="btn-s" style="font-size:12px;${extra || ''}" onclick="actiuneDauna('${d.id}','${act}')">${txt}</button>`;
+  if (d.status === 'deschis') return `<button class="btn-p" style="font-size:12px" onclick="actiuneDauna('${d.id}','preia')">Preia dosarul</button>`;
+  if (d.status === 'in_analiza' && d.ale_mele) return `<button class="btn-p" style="background:#1A7A3A;font-size:12px" onclick="actiuneDauna('${d.id}','aproba')">✓ Aprobă</button>${b('✗ Respinge', 'respinge', 'color:#C0392B;border-color:rgba(192,57,43,.3)')}`;
+  if ((d.status === 'aprobat' || d.status === 'respins') && d.ale_mele) return b('Închide dosarul', 'inchide');
+  return '';
+}
+
+function _dauneCard(d) {
+  const val = (n, m) => n == null ? '—' : Number(n).toLocaleString('ro-RO') + ' ' + (m || '');
+  return `<div style="background:#FFF0F0;border-radius:14px;border:1.5px solid rgba(192,57,43,.25);padding:15px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:13px;font-weight:800;color:#C0392B">${_escD(_DAUNA_TIP_LBL[d.tip] || d.tip)}</div>
+        <div style="font-size:10px;font-family:monospace;color:#8C9BAD;margin-top:2px">🔗 ID Eveniment: <strong style="color:#1A5FAD">${_escD(d.claim_id)}</strong></div>
+      </div>
+      <span class="chip ch-o">${_escD(_DAUNA_STATUS_LBL[d.status] || d.status)}</span>
+    </div>
+    <div style="font-size:12px;color:#1A2332;margin-bottom:10px;line-height:1.6">${_escD(d.descriere)}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-size:12px;margin-bottom:12px">
+      <div style="background:#F8FAFC;border-radius:8px;padding:8px 10px"><span style="color:#5A6B7D">Comandă origine</span><div style="font-weight:700;margin-top:2px;font-family:monospace">${_escD(d.nr_comanda || '—')}</div></div>
+      <div style="background:#F8FAFC;border-radius:8px;padding:8px 10px"><span style="color:#5A6B7D">Valoare estimată</span><div style="font-weight:700;margin-top:2px">${val(d.valoare_estimata, d.moneda)}</div></div>
+      <div style="background:#F8FAFC;border-radius:8px;padding:8px 10px"><span style="color:#5A6B7D">Valoare aprobată</span><div style="font-weight:700;margin-top:2px">${val(d.valoare_aprobata, d.moneda)}</div></div>
+    </div>
+    ${d.decizie_motiv ? `<div style="font-size:12px;color:#5A6B7D;margin-bottom:10px">Motiv decizie: ${_escD(d.decizie_motiv)}</div>` : ''}
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${_dauneButoane(d)}</div>
   </div>`;
+}
+
+async function _incarcaDosareDauna() {
+  const res = await fetch('/api/partener/dosare-dauna', { headers: await _partenerAuthHeader() });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+  return data.dosare || [];
+}
+
+async function loadDosareDaunaReal() {
+  const el = document.getElementById('dauna-lista');
+  const badge = document.getElementById('dauna-badge');
+  if (!el) return;
+  try {
+    const dosare = await _incarcaDosareDauna();
+    const active = dosare.filter((d) => ['deschis', 'in_analiza'].includes(d.status)).length;
+    if (badge) { badge.textContent = active + (active === 1 ? ' activ' : ' active'); badge.className = 'chip ' + (active ? 'ch-r' : 'ch-g'); }
+    el.innerHTML = dosare.length ? dosare.map(_dauneCard).join('') : '<div style="color:#5A6B7D;font-size:12.5px">Niciun dosar de daună deocamdată.</div>';
+  } catch (e) {
+    if (badge) { badge.textContent = 'Indisponibil'; badge.className = 'chip ch-gr'; }
+    el.innerHTML = `<div style="color:#C0392B;font-size:12.5px">Eroare: ${_escD(e.message)}</div>`;
+  }
+}
+
+async function loadDauneOverviewReal() {
+  const el = document.getElementById('ov-daune-lista');
+  const badge = document.getElementById('ov-daune-badge');
+  if (!el) return;
+  try {
+    const active = (await _incarcaDosareDauna()).filter((d) => ['deschis', 'in_analiza'].includes(d.status));
+    if (badge) { badge.textContent = String(active.length); badge.className = 'chip ' + (active.length ? 'ch-r' : 'ch-g'); }
+    el.innerHTML = active.length
+      ? active.slice(0, 5).map((d) => `<div style="display:flex;justify-content:space-between;gap:8px;padding:7px 10px;background:#F0F4F8;border-radius:9px;font-size:12px"><span style="font-family:monospace;color:#1A5FAD">${_escD(d.claim_id)}</span><span>${_escD(_DAUNA_STATUS_LBL[d.status])}</span></div>`).join('')
+      : '<div style="color:#5A6B7D;font-size:12px">Niciun dosar activ.</div>';
+  } catch (e) {
+    if (badge) badge.textContent = '—';
+    el.innerHTML = `<div style="color:#C0392B;font-size:12px">Eroare: ${_escD(e.message)}</div>`;
+  }
+}
+
+async function actiuneDauna(id, actiune) {
+  const body = { id, actiune };
+  if (actiune === 'aproba') {
+    const v = window.prompt('Valoarea aprobată a daunei (număr):');
+    if (v === null) return;
+    body.valoare_aprobata = v.replace(',', '.');
+  } else if (actiune === 'respinge') {
+    const m = window.prompt('Motivul respingerii (minimum 5 caractere):');
+    if (m === null) return;
+    body.motiv = m;
+  }
+  try {
+    const res = await fetch('/api/partener/dosare-dauna', { method: 'POST', headers: await _partenerAuthHeader(), body: JSON.stringify(body) });
+    const j = await res.json();
+    if (!res.ok) throw new Error(j.error || 'Eroare necunoscută');
+    showToast('Dosar actualizat');
+  } catch (e) { showToast('⚠ ' + e.message); }
+  loadDosareDaunaReal();
 }
 
 // Card cu date REALE de escrow (comanda_subcontractori/comisioane), spre
@@ -3594,68 +3680,6 @@ function showCursaDinCoada(cursa) {
       </div>
     </div>`;
   document.body.appendChild(overlay);
-}
-
-// ════════════════════════════════════════════════════════════════
-// BC3 — CROSS-REFERENCE DAUNE: ID unic comun CLAIM-YYYY-CMDxxxx-TIP
-// ════════════════════════════════════════════════════════════════
-
-const DAUNE_DB = {
-  'CLAIM-2026-CMD4821-EXE': {
-    id_asigurator: 'DAU-001',
-    id_furnizor:   null, // dauna e de la meșter
-    id_client:     'CMD-4821',
-    tip:           'Viciu instalație PPR',
-    responsabil:   'Valentin P. · Partener Servicii',
-    polita:        'RO-ASF-2026-00441',
-    valoare:       2400,
-    status:        'in_analiza',
-  },
-  'CLAIM-2026-CMD4802-MAT': {
-    id_asigurator: 'DAU-002',
-    id_furnizor:   'IMP-001',   // ← același eveniment, ID comun
-    id_client:     'CMD-4802',
-    tip:           'Material defect · Țeavă PPR',
-    responsabil:   'ACA Business Group SRL',
-    polita:        'RO-ASF-2026-00438',
-    valoare:       850,
-    status:        'aprobare',
-  },
-};
-
-function getDaunaByClaim(claimId) {
-  return DAUNE_DB[claimId] || null;
-}
-
-function renderDaunaCard(claimId) {
-  const d = DAUNE_DB[claimId];
-  if (!d) return '';
-  const sCls = d.status==='in_analiza'?'ch-o':'ch-b';
-  return `
-  <div style="background:#FFF0F0;border-radius:14px;border:1.5px solid rgba(192,57,43,.25);padding:15px;margin-bottom:12px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-      <div>
-        <div style="font-size:13px;font-weight:800;color:#C0392B">${d.tip}</div>
-        <div style="font-size:10px;font-family:monospace;color:#8C9BAD;margin-top:2px">
-          🔗 ID Eveniment: <strong style="color:#1A5FAD">${claimId}</strong>
-          ${d.id_furnizor ? `<span style="margin-left:6px">· Ref furnizor: <strong>${d.id_furnizor}</strong></span>`:''}
-          ${d.id_asigurator ? `<span style="margin-left:6px">· Ref asigurator: <strong>${d.id_asigurator}</strong></span>`:''}
-        </div>
-      </div>
-      <span class="chip ${sCls}">${d.status==='in_analiza'?'În analiză':'Aprobare'}</span>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;margin-bottom:12px">
-      <div style="background:#F8FAFC;border-radius:8px;padding:8px 10px"><span style="color:#5A6B7D">Responsabil</span><div style="font-weight:700;margin-top:2px">${d.responsabil}</div></div>
-      <div style="background:#F8FAFC;border-radius:8px;padding:8px 10px"><span style="color:#5A6B7D">Poliță asociată</span><div style="font-weight:700;margin-top:2px;font-family:monospace;font-size:11px">${d.polita}</div></div>
-      <div style="background:#F8FAFC;border-radius:8px;padding:8px 10px"><span style="color:#5A6B7D">Comandă origine</span><div style="font-weight:700;margin-top:2px;font-family:monospace">${d.id_client}</div></div>
-      <div style="background:#FFF0F0;border-radius:8px;padding:8px 10px;border:1px solid rgba(192,57,43,.15)"><span style="color:#5A6B7D">Valoare daună</span><div style="font-weight:800;color:#C0392B;font-size:14px;margin-top:2px">${d.valoare} Lei</div></div>
-    </div>
-    <div style="display:flex;gap:8px">
-      <button class="btn-p" onclick="showToast('✓ Daună aprobată · Sumă imputată furnizorului')" style="background:#1A7A3A;font-size:12px">✓ Aprobă dauna</button>
-      <button class="btn-s" onclick="showToast('📋 Dosar complet: ${claimId}')" style="font-size:12px">📋 Dosar complet</button>
-      <button class="btn-s" onclick="showToast('✗ Daună respinsă')" style="font-size:12px;color:#C0392B;border-color:rgba(192,57,43,.3)">✗ Respinge</button>
-    </div>
-  </div>`;
 }
 
 // ════════════════════════════════════════════════════════════════

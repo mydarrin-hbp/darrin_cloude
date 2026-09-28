@@ -40,6 +40,32 @@ async function trimiteEmailFinalizare(email, comanda, token) {
   }
 }
 
+// Etapa 5e (28 sept. 2026): garanția de execuție începe la finalizare, cu durata
+// din catalog_niveluri.garantie_luni. Fără durată configurată (azi 0 pe toate
+// nivelurile) nu se creează nicio garanție, ca să nu inventăm o perioadă.
+// suma_blocata rămâne 0: nu există procesator de card care să blocheze fonduri.
+async function creeazaGarantieDacaEConfigurata(comanda, imaginiAfterIds) {
+  if (!comanda.nivel_id) return;
+  const { data: nivel } = await supabaseAdmin
+    .from('catalog_niveluri').select('garantie_luni').eq('id', comanda.nivel_id).maybeSingle();
+  const luni = Number(nivel?.garantie_luni);
+  if (!Number.isInteger(luni) || luni < 3 || luni > 120) return;
+  const acum = new Date();
+  const expira = new Date(acum);
+  expira.setMonth(expira.getMonth() + luni);
+  const { error } = await supabaseAdmin.from('garantii_lucrari').upsert({
+    comanda_id: comanda.id,
+    partener_id: comanda.partener_id,
+    data_finalizare: acum.toISOString(),
+    durata_luni: luni,
+    data_expirare: expira.toISOString(),
+    suma_blocata: 0,
+    imagini_after_ids: imaginiAfterIds,
+    status: 'activa',
+  }, { onConflict: 'comanda_id', ignoreDuplicates: true });
+  if (error) console.error('[finalizeaza-comanda] garanție:', error);
+}
+
 async function handler(req, res, user) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const { comanda_id } = req.body || {};
@@ -47,7 +73,7 @@ async function handler(req, res, user) {
 
   const { data: comanda, error: comErr } = await supabaseAdmin
     .from('comenzi')
-    .select('id, nr_comanda, client_id, partener_id, status')
+    .select('id, nr_comanda, client_id, partener_id, status, nivel_id')
     .eq('id', comanda_id)
     .single();
   if (comErr || !comanda) return res.status(404).json({ error: 'Comanda nu există' });
@@ -58,7 +84,7 @@ async function handler(req, res, user) {
 
   const { data: imagini, error: imgErr } = await supabaseAdmin
     .from('comenzi_imagini')
-    .select('tip')
+    .select('id, tip')
     .eq('comanda_id', comanda_id);
   if (imgErr) return res.status(500).json({ error: 'Eroare la verificarea fotografiilor' });
 
@@ -85,6 +111,12 @@ async function handler(req, res, user) {
   if (error) {
     console.error('[finalizeaza-comanda]', error);
     return res.status(500).json({ error: 'Nu am putut finaliza comanda' });
+  }
+
+  try {
+    await creeazaGarantieDacaEConfigurata(comanda, (imagini || []).filter((i) => i.tip === 'after').map((i) => i.id));
+  } catch (garantieErr) {
+    console.error('[finalizeaza-comanda] garanție eșuată:', garantieErr);
   }
 
   const { data: clientAuth } = await supabaseAdmin.auth.admin.getUserById(comanda.client_id);

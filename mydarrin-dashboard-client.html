@@ -1705,6 +1705,8 @@ function triggerHeaderSearch(){
     <div class="pt-2 border-t border-[#F4F7F9]" id="drawer-breakdown"></div>
     <!-- Actions (afișate doar dacă statusul le permite real) -->
     <div class="space-y-2.5 pt-2 border-t border-[#F4F7F9]" id="drawer-actions"></div>
+    <!-- Dosare de daună (Etapa 5d, 28 sept. 2026) — api/client/dauna.js -->
+    <div class="pt-2 border-t border-[#F4F7F9]" id="drawer-dauna"></div>
   </div>
 </div>
 
@@ -3317,7 +3319,68 @@ function renderDrawerContent(c) {
          </button>`
       : '';
   }
+  renderDrawerDauna(c);
   if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+// Etapa 5d (28 sept. 2026) — dosare de daună reale, api/client/dauna.js.
+// ID-ul CLAIM-YYYY-CMDxxxx-TIP e același pe care îl vede asiguratorul.
+const _DAUNA_STATUS = {
+  deschis: 'Deschis', in_analiza: 'În analiză', aprobat: 'Aprobat', respins: 'Respins', inchis: 'Închis',
+};
+const _DAUNA_TIP = { EXE: 'Execuție lucrare', MAT: 'Material', TRN: 'Transport' };
+
+async function renderDrawerDauna(c) {
+  const el = document.getElementById('drawer-dauna');
+  if (!el) return;
+  if (!['finalizata', 'confirmata_client'].includes(c.status)) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-2">Dosare de daună</div><div class="text-xs text-[#8C9BAD]">Se încarcă...</div>';
+  let dosare = [];
+  try {
+    const res = await fetch('/api/client/dauna?comanda_id=' + encodeURIComponent(c.id), { headers: await _clientAuthHeader() });
+    const j = await res.json();
+    dosare = res.ok && j.dosare ? j.dosare : [];
+  } catch (e) { console.error('[dauna] listare eșuată:', e); }
+  const lista = dosare.map((d) => `<div class="rounded-xl p-2.5 mb-2" style="background:#F8FAFC;border:1px solid #E8ECF0">
+      <div class="flex justify-between items-center gap-2"><span class="font-mono text-[11px] font-bold text-[#1A5FAD]">${escapeDashHTML(d.claim_id)}</span><span class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background:#EBF4FB;color:#003366">${escapeDashHTML(_DAUNA_STATUS[d.status] || d.status)}</span></div>
+      <div class="text-xs text-[#6B7A8D] mt-1">${escapeDashHTML(_DAUNA_TIP[d.tip] || d.tip)} · ${escapeDashHTML(d.descriere.length > 90 ? d.descriere.slice(0, 90) + '…' : d.descriere)}</div>
+      ${d.status === 'respins' && d.decizie_motiv ? `<div class="text-xs text-[#C0392B] mt-1">Motiv: ${escapeDashHTML(d.decizie_motiv)}</div>` : ''}
+      ${d.status === 'aprobat' && d.valoare_aprobata != null ? `<div class="text-xs text-[#1A7A3A] mt-1">Valoare aprobată: ${fmtCurrencyDash(d.valoare_aprobata, d.moneda)}</div>` : ''}
+    </div>`).join('');
+  el.innerHTML = `<div class="text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-2">Dosare de daună</div>
+    ${lista || '<div class="text-xs text-[#8C9BAD] mb-2">Nu ai deschis niciun dosar pe această comandă.</div>'}
+    <button class="w-full py-2.5 rounded-2xl border border-[#D5DFE8] text-xs font-semibold text-[#6B7A8D] hover:border-[#FF8C00] hover:text-[#FF8C00] transition" onclick="document.getElementById('dauna-form').hidden=!document.getElementById('dauna-form').hidden">Deschide dosar de daună</button>
+    <div id="dauna-form" hidden class="mt-2 space-y-2">
+      <select id="dauna-tip" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2 text-xs">
+        <option value="EXE">Execuție lucrare</option><option value="MAT">Material</option><option value="TRN">Transport</option>
+      </select>
+      <textarea id="dauna-descriere" rows="3" placeholder="Descrie paguba (minimum 10 caractere)" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2 text-xs"></textarea>
+      <input id="dauna-valoare" type="number" min="0" step="0.01" placeholder="Valoare estimată (opțional)" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2 text-xs"/>
+      <button id="dauna-trimite" class="w-full py-2.5 rounded-2xl bg-[#FF8C00] text-white text-xs font-bold hover:opacity-90 transition" onclick="trimiteDauna('${c.id}')">Trimite dosarul</button>
+      <div id="dauna-msg" class="text-xs"></div>
+    </div>`;
+}
+
+async function trimiteDauna(comandaId) {
+  const msg = document.getElementById('dauna-msg');
+  const btn = document.getElementById('dauna-trimite');
+  const body = {
+    comanda_id: comandaId,
+    tip: document.getElementById('dauna-tip').value,
+    descriere: document.getElementById('dauna-descriere').value,
+    valoare_estimata: document.getElementById('dauna-valoare').value,
+  };
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetch('/api/client/dauna', { method: 'POST', headers: await _clientAuthHeader(), body: JSON.stringify(body) });
+    const j = await res.json();
+    if (!res.ok) throw new Error(j.error || 'Nu am putut deschide dosarul.');
+    const c = COMENZI_REALE.find((x) => x.id === comandaId);
+    if (c) renderDrawerDauna(c);
+  } catch (e) {
+    if (msg) { msg.textContent = e.message; msg.style.color = '#C0392B'; }
+    if (btn) btn.disabled = false;
+  }
 }
 
 // D2a Prioritate 3 (23 august 2026) — breakdown real din
