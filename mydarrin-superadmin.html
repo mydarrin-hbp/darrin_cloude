@@ -1519,7 +1519,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
         <p>Navigare catalog, căutare — reale. <strong style="color:#fff">Catalogul public nu filtrează deloc după țară</strong> azi — orice vizitator vede același catalog, indiferent de origine.</p>
         <div class="man-callout c-warn">⚠️ Bariera de pre-lansare rămâne activă deliberat pe toată platforma publică, indiferent de cele de mai sus, până la decizia explicită a superadminului.</div>
         <h4>Tranzacții <span class="man-badge m-partial">parțial</span></h4>
-        <p>Checkout, escrow și motorul de preț real funcționează — dar prețul calculat din rețeta tehnică reală e conectat azi doar pe 2 din 5 servicii pilot (Grădinărit, Service Moto); restul catalogului încă pe preț static.</p>
+        <p>Checkout, escrow și motorul de preț real funcționează — dar prețul calculat din rețeta tehnică reală e conectat pe serviciile din <code>PILOT_SERVICII_MAP</code> (<code>mydarrin-produs.html</code>; 17 intrări la 28 septembrie 2026: grădinărit, mutări, service moto, parchet laminat, radiatoare, conducte termice, lavoar, WC și cadă). Pagina afișează preț real doar pentru nivelurile cu tarife complete; restul catalogului rămâne pe preț static.</p>
       </div>
 
       <div class="man-sec" id="man-cap4">
@@ -1670,7 +1670,8 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
           <tr><td>IO1</td><td>Pauză rapidă</td><td>Meniu cu 15 / 30 / 45 / 60 / 90 min, setat în topbar doar pentru curier. Steagul <code>CURIER_IN_PAUZA</code> și temporizarea (<code>setTimeout</code>) rulează doar în browser; nu blochează alocarea de pe server.</td><td><span class="man-badge m-partial">parțial</span></td></tr>
           <tr><td>BC6</td><td>CMR digital</td><td><code>confirmPickupCuCMR()</code> → <code>generareCMR()</code> generează documentul în pagină, cu „hash” din <code>Math.random()</code>, salvat în <code>sessionStorage</code>. Endpoint-ul real <code>api/partener/cmr-generare.js</code> folosește SHA-256 al conținutului și verifică documentele curierului (CUI, licență ARR, cazier).</td><td><span class="man-badge m-partial">parțial</span></td></tr>
           <tr><td>IO4</td><td>Nr. contract pe factură</td><td>Numărul <code>MP-BCU-2026-…</code> e injectat în antetul emitentului dintr-o hartă de valori fixe (demonstrative) pe tip de partener, nu din contractul real al partenerului.</td><td><span class="man-badge m-mock">demonstrativ</span></td></tr>
-          <tr><td>BC3</td><td>Cross-reference daune</td><td>Format <code>CLAIM-YYYY-CMDxxxx-TIP</code>, dar dosarele din <code>DAUNE_DB</code> sunt două înregistrări statice de exemplu, fără persistare.</td><td><span class="man-badge m-mock">demonstrativ</span></td></tr>
+          <tr><td>BC3</td><td>Cross-reference daune</td><td>Real din 28 septembrie 2026: tabela <code>dosare_dauna</code>; clientul deschide un dosar pe o comandă finalizată (<code>api/client/dauna.js</code>) și primește ID-ul <code>CLAIM-YYYY-CMDxxxx-TIP</code> (TIP = EXE / MAT / TRN); asiguratorul aprobat îl vede în dashboard, îl preia, îl aprobă sau respinge (<code>api/partener/dosare-dauna.js</code>). Se înregistrează doar decizia: transferul sumei către furnizorul imputat, trimiterea către un asigurător extern și emailurile de notificare nu există.</td><td><span class="man-badge m-partial">parțial</span></td></tr>
+          <tr><td>5e</td><td>Garanție de execuție</td><td>La finalizarea comenzii (<code>api/partener/finalizeaza-comanda.js</code>) se creează un rând în <code>garantii_lucrari</code> doar dacă nivelul are <code>garantie_luni</code> între 3 și 120; azi toate nivelurile au 0, deci nu se creează nicio garanție până nu o configurezi din editorul de niveluri. <code>suma_blocata</code> e 0 (fără procesator de card).</td><td><span class="man-badge m-partial">parțial</span></td></tr>
           <tr><td>BC4</td><td>Sandbox asigurări</td><td><code>toggleSandboxMode()</code> comută doar eticheta și culoarea butonului (<code>ASIG_API_CONFIG.mode</code>). <code>testSandboxAPI()</code> simulează un răspuns „200 OK”; niciun asigurător real nu e conectat.</td><td><span class="man-badge m-mock">demonstrativ</span></td></tr>
         </table>
         <h4>Comenzi și guest checkout</h4>
@@ -2585,6 +2586,31 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
           <div style="font-size:26px;font-weight:800;color:#A78BFA" id="ia-div-pool">—</div>
           <div style="font-size:10.5px;color:#4A6080;margin-top:4px">EUR · din profit net</div>
         </div>
+      </div>
+
+      <!-- Cereri de subscriere publice (fără cont) — aprobare/respingere, api/admin/investitori-aprobare.js -->
+      <div class="sa-card" style="margin-bottom:18px">
+        <div class="sa-card-hdr">
+          <div style="font-weight:700;color:#1A2332;font-size:13.5px">📥 Cereri de subscriere publice</div>
+          <div style="font-size:11px;color:#4A6080" id="inv-subscrieri-count">—</div>
+        </div>
+        <div class="sa-card-body" style="padding:0;max-height:300px;overflow-y:auto">
+          <table class="sa-table">
+            <thead><tr>
+              <th>Email</th>
+              <th>Oraș</th>
+              <th>Acțiuni</th>
+              <th>Valoare (EUR)</th>
+              <th>Primită</th>
+              <th>Status</th>
+              <th style="text-align:center">Decizie</th>
+            </tr></thead>
+            <tbody id="inv-subscrieri-tbody">
+              <tr><td colspan="7" style="text-align:center;color:#4A6080;padding:20px">Se încarcă...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="padding:10px 14px;font-size:11px;color:#4A6080;border-top:1px solid #EEF2F7">Aprobarea schimbă doar statusul cererii; nu creează cont și nu atribuie rolul de investitor, care rămân pași manuali separați.</div>
       </div>
 
       <!-- Grid 2 col: Tabel investitori + Runda status -->
@@ -4186,6 +4212,7 @@ async function loadInvestitoriAdmin() {
     renderInvKpis(data.kpis || {});
     renderInvTable(data.investitori || []);
     renderKycPendingList(data.investitori || []);
+    renderSubscrieriPublice(data.subscrieri_publice || []);
 
   } catch (err) {
     console.error('[InvAdmin]', err);
@@ -4314,6 +4341,60 @@ function renderKycPendingList(investitori) {
           style="padding:4px 8px;border-radius:6px;border:none;background:#C0392B;color:#fff;font-size:10px;cursor:pointer;font-family:inherit">✗</button>
       </div>
     </div>`).join('');
+}
+
+// ── Cereri de subscriere publice ──────────────────────────────
+const SUBSCRIERE_CHIP = {
+  in_asteptare: '<span class="chip chip-orange" style="font-size:10px">⏳ În așteptare</span>',
+  aprobat:      '<span class="chip chip-green" style="font-size:10px">✅ Aprobat</span>',
+  respins:      '<span class="chip chip-red" style="font-size:10px">❌ Respins</span>',
+};
+
+function renderSubscrieriPublice(rows) {
+  const tbody = document.getElementById('inv-subscrieri-tbody');
+  const counter = document.getElementById('inv-subscrieri-count');
+  if (!tbody) return;
+  const asteapta = rows.filter(r => r.status === 'in_asteptare').length;
+  if (counter) counter.textContent = `${rows.length} cereri · ${asteapta} în așteptare`;
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#4A6080;padding:20px">Nicio cerere de subscriere</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => {
+    const data = r.creat_la ? new Date(r.creat_la).toLocaleDateString('ro-RO') : '—';
+    const decizie = r.status === 'in_asteptare'
+      ? `<div style="display:flex;gap:4px;justify-content:center">
+           <button onclick="decideSubscriere('${escapeHTML(r.id)}','aproba')" style="padding:4px 10px;border-radius:6px;border:none;background:#1A7A3A;color:#fff;font-size:10px;cursor:pointer;font-family:inherit">✓ Aprobă</button>
+           <button onclick="decideSubscriere('${escapeHTML(r.id)}','respinge')" style="padding:4px 8px;border-radius:6px;border:none;background:#C0392B;color:#fff;font-size:10px;cursor:pointer;font-family:inherit">✗ Respinge</button>
+         </div>`
+      : '<div style="text-align:center;color:#4A6080;font-size:11px">—</div>';
+    return `<tr>
+      <td style="font-size:12px;color:#E2E8F0;font-weight:600">${escapeHTML(r.email || '—')}</td>
+      <td style="color:#8BA3C0">${escapeHTML(r.oras || '—')}</td>
+      <td style="font-weight:700;color:#FF8C00">${fmtA(r.actiuni)}</td>
+      <td style="color:#E2E8F0">€${fmtA(r.valoare_investita)}</td>
+      <td style="color:#8BA3C0">${data}</td>
+      <td>${SUBSCRIERE_CHIP[r.status] || escapeHTML(r.status || '—')}</td>
+      <td>${decizie}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function decideSubscriere(id, actiune) {
+  const eticheta = actiune === 'aproba' ? 'Aprobă' : 'Respinge';
+  if (!confirm(`${eticheta} această cerere de subscriere?`)) return;
+  try {
+    const token = await accGetToken();
+    const res = await fetch('/api/admin/investitori-aprobare', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ id, actiune }),
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(j.error || `HTTP ${res.status}`);
+    showSAToast(actiune === 'aproba' ? '✅ Cerere aprobată' : '❌ Cerere respinsă');
+    loadInvestitoriAdmin();
+  } catch (e) { showSAToast('⚠ Eroare: ' + e.message); }
 }
 
 // ── KYC actions ───────────────────────────────────────────────
