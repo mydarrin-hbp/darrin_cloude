@@ -5735,7 +5735,7 @@ async function loadMarketplaceAprobari() {
       : data.documente_pending.map((d) => `
         <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #2D3F55">
           <div style="flex:1"><div style="color:#fff;font-weight:600;font-size:12.5px">${escapeHTML(d.tip_document)}</div>
-            <div style="color:#8BA3C0;font-size:11px">Furnizor: ${escapeHTML(d.partener_id)} · <a href="${escapeHTML(d.storage_path)}" target="_blank" style="color:#7AB3E0">vezi calea fișierului</a></div></div>
+            <div style="color:#8BA3C0;font-size:11px">Partener: ${escapeHTML(d.nume_firma || d.partener_id)} · <button onclick="deschideDocumentPartener('${d.id}')" style="background:none;border:none;padding:0;color:#7AB3E0;cursor:pointer;font:inherit;text-decoration:underline">Deschide documentul</button></div></div>
           <button onclick="decideDocument('${d.id}','aprobat')" class="btn-p" style="font-size:11px;padding:6px 12px;background:#0E9E99">Aprobă</button>
           <button onclick="decideDocument('${d.id}','respins')" class="btn-s" style="font-size:11px;padding:6px 12px">Respinge</button>
         </div>`).join('');
@@ -5767,6 +5767,16 @@ async function decideFurnizor(id, decizie) {
     if (!res.ok) throw new Error((await res.json()).error);
     loadMarketplaceAprobari();
   } catch (e) { alert('Eroare: ' + e.message); }
+}
+
+async function deschideDocumentPartener(id) {
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/document-url?id=' + encodeURIComponent(id), { headers });
+    const j = await res.json();
+    if (!res.ok) throw new Error(j.error || 'Eroare necunoscută');
+    window.open(j.url, '_blank', 'noopener');
+  } catch (e) { alert('Nu am putut deschide documentul: ' + e.message); }
 }
 
 async function decideDocument(id, decizie) {

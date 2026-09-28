@@ -2651,10 +2651,22 @@ function renderDocumente() {
     ? `<span class="chip ch-g">Semnat</span> <span style="color:#5A6B7D;font-size:12px">${_dataFmt(c.partner.contract_semnat_la)}${c.partner.contract_versiune ? ' · versiunea ' + _escD(c.partner.contract_versiune) : ''}</span>`
     : '<span class="chip ch-o">Nesemnat</span> <span style="color:#5A6B7D;font-size:12px">Contractul se semnează din panoul de start, prin cod OTP.</span>';
   const docs = c.documente.length
-    ? `<table class="dp-table"><thead><tr><th>Document</th><th>Status</th><th>Încărcat</th><th>Observații</th></tr></thead><tbody>${c.documente.map((d) => `<tr><td><strong>${_escD(d.tip_document)}</strong></td><td><span class="chip ${_STATUS_DOC_CLS[d.status] || 'ch-gr'}">${_escD(_STATUS_DOC[d.status] || d.status)}</span></td><td style="color:#5A6B7D">${_dataFmt(d.uploaded_at)}</td><td style="color:#5A6B7D">${_escD(d.observatii || '—')}</td></tr>`).join('')}</tbody></table>`
+    ? `<table class="dp-table"><thead><tr><th>Document</th><th>Status</th><th>Încărcat</th><th>Observații</th><th></th></tr></thead><tbody>${c.documente.map((d) => `<tr><td><strong>${_escD(_TIP_DOC_LBL[d.tip_document] || d.tip_document)}</strong></td><td><span class="chip ${_STATUS_DOC_CLS[d.status] || 'ch-gr'}">${_escD(_STATUS_DOC[d.status] || d.status)}</span></td><td style="color:#5A6B7D">${_dataFmt(d.uploaded_at)}</td><td style="color:#5A6B7D">${_escD(d.observatii || '—')}</td><td>${d.status === 'pending' ? `<button class="btn-s" style="font-size:10.5px;padding:4px 9px;color:#C0392B" onclick="stergeDocumentPartener('${_escD(d.id)}')">Șterge</button>` : ''}</td></tr>`).join('')}</tbody></table>`
     : '<div class="dp-card-body" style="color:#5A6B7D;font-size:12.5px">Niciun document încărcat. Certificările se adaugă din panoul „Certificările mele”.</div>';
   return `
   <div style="margin-bottom:18px"><h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Documentele mele</h2></div>
+  <div class="dp-card" style="margin-bottom:18px">
+    <div class="dp-card-hdr"><strong style="color:#1A2332">⬆ Încarcă un document</strong></div>
+    <div class="dp-card-body" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;font-size:12.5px">
+      <div><label for="doc-tip" style="display:block;color:#5A6B7D;margin-bottom:3px">Tip document</label>
+        <select id="doc-tip" style="border:1.5px solid #D5DFE8;border-radius:10px;padding:8px 11px;font-size:12.5px;font-family:inherit">${Object.keys(_TIP_DOC_LBL).map((k) => `<option value="${k}">${_escD(_TIP_DOC_LBL[k])}</option>`).join('')}</select></div>
+      <div><label for="doc-fisier" style="display:block;color:#5A6B7D;margin-bottom:3px">Fișier (PDF, JPG sau PNG, maximum 10 MB)</label>
+        <input id="doc-fisier" type="file" accept=".pdf,.jpg,.jpeg,.png" style="font-size:12px"/></div>
+      <button id="doc-btn" class="btn-p" onclick="incarcaDocumentPartener()" style="font-size:12px">Încarcă</button>
+      <span id="doc-msg" style="font-size:12px"></span>
+    </div>
+    <div class="dp-card-body" style="padding-top:0;font-size:11.5px;color:#5A6B7D;line-height:1.6">Documentele le verifică echipa My Darrin; nu există verificare automată sau scor de aprobare.</div>
+  </div>
   <div class="dp-card" style="margin-bottom:18px">
     <div class="dp-card-hdr"><strong style="color:#1A2332">📄 Contract-cadru de parteneriat</strong></div>
     <div class="dp-card-body" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">${contract}</div>
@@ -2663,6 +2675,57 @@ function renderDocumente() {
     <div class="dp-card-hdr"><strong style="color:#1A2332">🪪 Documente încărcate</strong></div>
     ${docs}
   </div>`;
+}
+
+const _TIP_DOC_LBL = {
+  ci: 'CI / pașaport administrator', certificat: 'Certificat de înregistrare firmă', cui: 'CUI / certificat fiscal',
+  licenta: 'Atestat / autorizație (ex. ISCIR)', licenta_arr: 'Licență ARR (curier)',
+  cazier_judiciar: 'Cazier judiciar', asigurare: 'Poliță de asigurare RC',
+};
+
+async function incarcaDocumentPartener() {
+  const msg = document.getElementById('doc-msg');
+  const btn = document.getElementById('doc-btn');
+  const set = (t, ok) => { if (msg) { msg.textContent = t; msg.style.color = ok ? '#1A7A3A' : '#C0392B'; } };
+  const fisier = document.getElementById('doc-fisier').files[0];
+  const tip = document.getElementById('doc-tip').value;
+  const EXT = { 'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/png': 'png' };
+  if (!fisier) return set('Alege un fișier.', false);
+  if (!EXT[fisier.type]) return set('Acceptăm doar PDF, JPG sau PNG.', false);
+  if (fisier.size > 10 * 1024 * 1024) return set('Fișierul depășește 10 MB.', false);
+  if (btn) btn.disabled = true;
+  set('Se încarcă...', true);
+  try {
+    const { data: { session } } = await window.supabaseClient.auth.getSession();
+    const uid = session && session.user && session.user.id;
+    if (!uid) throw new Error('Sesiunea a expirat. Autentifică-te din nou.');
+    const cale = `${uid}/doc-${tip}-${Date.now()}.${EXT[fisier.type]}`;
+    const { error: upErr } = await window.supabaseClient.storage.from('partner-certificari').upload(cale, fisier, { contentType: fisier.type, upsert: false });
+    if (upErr) throw new Error('Încărcarea în Storage a eșuat: ' + upErr.message);
+    const res = await fetch('/api/partener/documente', {
+      method: 'POST', headers: { ...(await _partenerAuthHeader()), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tip_document: tip, document_path: cale }),
+    });
+    const j = await res.json();
+    if (!res.ok) throw new Error(j.error || 'Eroare necunoscută');
+    showToast('Document încărcat. Îl verifică echipa My Darrin.');
+    await loadPartenerCont();
+  } catch (e) {
+    set(e.message, false);
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function stergeDocumentPartener(id) {
+  if (!window.confirm('Ștergi acest document?')) return;
+  try {
+    const res = await fetch('/api/partener/documente', {
+      method: 'DELETE', headers: { ...(await _partenerAuthHeader()), 'Content-Type': 'application/json' }, body: JSON.stringify({ id }),
+    });
+    const j = await res.json();
+    if (!res.ok) throw new Error(j.error || 'Eroare necunoscută');
+    await loadPartenerCont();
+  } catch (e) { showToast('⚠ ' + e.message); }
 }
 
 function renderProfil() {

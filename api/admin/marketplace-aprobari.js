@@ -29,10 +29,19 @@ async function handleGet(req, res) {
       .eq('status', 'in_asteptare'),
   ]);
 
+  // Adminul trebuie să vadă numele firmei, nu doar un UUID, ca să știe ce verifică.
+  const idsParteneri = [...new Set((documentePending || []).map((d) => d.partener_id))];
+  const numePeId = {};
+  if (idsParteneri.length) {
+    const { data: parteneri } = await supabaseAdmin.from('partners').select('id, nume_firma').in('id', idsParteneri);
+    (parteneri || []).forEach((p) => { numePeId[p.id] = p.nume_firma; });
+  }
+  const documenteCuNume = (documentePending || []).map((d) => ({ ...d, nume_firma: numePeId[d.partener_id] || null }));
+
   return res.status(200).json({
     ok: true,
     furnizori_pending: furnizoriPending || [],
-    documente_pending: documentePending || [],
+    documente_pending: documenteCuNume,
     produse_pending: { materiale: materialePending || [], echipamente: echipamentePending || [] },
   });
 }
