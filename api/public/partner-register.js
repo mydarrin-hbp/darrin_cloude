@@ -8,6 +8,7 @@ const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { checkRateLimit } = require('../../lib/rate-limit');
 const { limbaDinTara, renderEmailBunVenitPartener } = require('../../lib/i18n');
 const { validateIBAN } = require('../../lib/iban');
+const { fromHeader } = require('../../lib/email-sender');
 
 const TIPURI_ENTITATE = ['persoana_fizica', 'pfa', 'srl', 'srl_d', 'sa', 'institutie_publica'];
 
@@ -36,27 +37,46 @@ const TIP_LABELS = {
   asigurari:  { ro:'furnizor de asigurări',           en:'insurance provider',            it:'fornitore di assicurazioni',           fr:"fournisseur d'assurances",              de:'Versicherungsanbieter',        es:'proveedor de seguros' },
 };
 
-async function trimiteEmailBunVenit({ email, nume, tip, limba }) {
-  if (!process.env.RESEND_API_KEY) return;
+const SITE_URL = process.env.SITE_URL || 'https://mydarrin.homebestpal.com';
+
+// Link de setare a parolei, generat de noi și trimis prin Resend. Nu depinde de
+// mailerul Supabase Auth și nici de lista de URL-uri permise: token-ul e consumat
+// de pagina reset-password.html prin verifyOtp, nu de un redirect Supabase.
+async function genereazaLinkParola(email) {
+  const { data, error } = await supabaseAdmin.auth.admin.generateLink({ type: 'recovery', email });
+  const tokenHash = data?.properties?.hashed_token;
+  if (error || !tokenHash) {
+    console.error('[partner-register] generateLink a eșuat:', error?.message || 'fără hashed_token');
+    return null;
+  }
+  return `${SITE_URL}/reset-password.html?token_hash=${encodeURIComponent(tokenHash)}&type=recovery`;
+}
+
+// Întoarce { ok, motiv }. Înainte, răspunsul Resend nu era verificat deloc: un
+// refuz (domeniu, cheie, destinatar) trecea nevăzut, iar formularul afirma
+// „Email trimis".
+async function trimiteEmailBunVenit({ email, nume, tip, limba, linkParola }) {
+  if (!process.env.RESEND_API_KEY) return { ok: false, motiv: 'resend_neconfigurat' };
   const tipLabel = (TIP_LABELS[tip] && TIP_LABELS[tip][limba]) || TIP_LABELS[tip]?.ro || tip;
-  const { subiect, html } = renderEmailBunVenitPartener(limba, { nume, tipLabel });
+  const { subiect, html } = renderEmailBunVenitPartener(limba, { nume, tipLabel, linkParola });
   try {
-    await fetch('https://api.resend.com/emails', {
+    const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        from: 'noreply@homebestpal.com',
-        to: email,
-        subject: subiect,
-        html,
-      }),
+      body: JSON.stringify({ from: await fromHeader(limba), to: email, subject: subiect, html }),
     });
+    if (!res.ok) {
+      const corp = await res.text().catch(() => '');
+      console.error('[partner-register] Resend a refuzat emailul:', res.status, corp.slice(0, 300));
+      return { ok: false, motiv: `resend_${res.status}` };
+    }
+    return { ok: true, motiv: null };
   } catch (emailErr) {
-    // Best-effort — nu blocăm înregistrarea dacă emailul de bun venit eșuează.
     console.error('[partner-register] email bun venit eșuat:', emailErr);
+    return { ok: false, motiv: 'retea' };
   }
 }
 
@@ -111,11 +131,37 @@ module.exports = async function handler(req, res) {
   const limba = limbaDinTara(tara);
   let invitedUserId = null;
   try {
-    // 1. Invitație reală — creează contul Supabase Auth cu rolul corect în metadate
-    const { data: invited, error: inviteErr } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      data: { role, nume: nume || '', prenume: prenume || '' },
+    // 1. Contul Supabase Auth, cu rolul corect în metadate (îl citește trigger-ul
+    // handle_new_user). Nu trimitem invitația Supabase: livrarea ei nu a fost
+    // niciodată dovedită (niciun partener n-a confirmat vreodată un cont), iar
+    // fără ea partenerul nu putea seta parola. Parola se setează cu linkul din
+    // emailul trimis mai jos, prin Resend.
+    const { data: invited, error: createErr } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      email_confirm: true,
+      user_metadata: { role, nume: nume || '', prenume: prenume || '' },
     });
-    if (inviteErr) throw inviteErr;
+    if (createErr) {
+      if (createErr.status === 422 || /already|registered|exists/i.test(createErr.message || '')) {
+        // Cont creat anterior și niciodată folosit (ex.: emailul inițial nu a ajuns):
+        // retrimitem linkul de setare a parolei către proprietarul adresei, ca la
+        // „Am uitat parola". Nu se creează și nu se șterge nimic.
+        const { data: prof } = await supabaseAdmin.from('profiles').select('id').eq('email', email).maybeSingle();
+        if (prof) {
+          const { data: existent } = await supabaseAdmin.auth.admin.getUserById(prof.id);
+          if (existent?.user && !existent.user.last_sign_in_at) {
+            const linkExistent = await genereazaLinkParola(email);
+            const st = await trimiteEmailBunVenit({ email, nume, tip, limba, linkParola: linkExistent });
+            return res.status(200).json({
+              ok: true, reprimit: true, user_id: prof.id,
+              email_trimis: st.ok, email_motiv: st.motiv, link_parola: !!linkExistent,
+            });
+          }
+        }
+        return res.status(409).json({ error: 'Există deja un cont cu această adresă de email. Autentifică-te sau folosește „Am uitat parola”.' });
+      }
+      throw createErr;
+    }
     invitedUserId = invited.user.id;
 
     // 2. Înregistrare în tabelul partners (documente suplimentare se completează ulterior, la aprobare)
@@ -165,10 +211,19 @@ module.exports = async function handler(req, res) {
       await supabaseAdmin.from('profiles').update(profileUpdate).eq('id', invited.user.id);
     }
 
-    // 4. Email de bun venit, în limba dedusă din țară — best-effort.
-    await trimiteEmailBunVenit({ email, nume, tip, limba });
+    // 4. Email de bun venit cu linkul de setare a parolei, în limba dedusă din
+    // țară. Contul rămâne creat chiar dacă emailul eșuează; răspunsul spune
+    // sincer ce s-a întâmplat, ca formularul să nu afirme ce n-a avut loc.
+    const linkParola = await genereazaLinkParola(email);
+    const emailStatus = await trimiteEmailBunVenit({ email, nume, tip, limba, linkParola });
 
-    return res.status(200).json({ ok: true, user_id: invited.user.id });
+    return res.status(200).json({
+      ok: true,
+      user_id: invited.user.id,
+      email_trimis: emailStatus.ok,
+      email_motiv: emailStatus.motiv,
+      link_parola: !!linkParola,
+    });
   } catch (err) {
     console.error('[partner-register]', err);
     // Dacă am apucat să creăm userul Auth dar insertul în partners a eșuat,

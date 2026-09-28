@@ -1349,14 +1349,13 @@ function submitNewsletter() {
         <div style="font-size:56px;margin-bottom:14px"><i data-lucide="party-popper" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
         <h3 style="font-size:20px;font-weight:800;color:#1A2332;margin-bottom:8px;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Cerere înregistrată cu succes!</h3>
         <div style="background:linear-gradient(135deg,#E0F5F4,#EBF4FB);border-radius:14px;padding:16px;margin:16px 0;border:1px solid #D5DFE8">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:8px">ID Partener generat</div>
-          <div style="font-size:24px;font-weight:800;color:#003366;letter-spacing:.06em;font-family:monospace" id="partner-id-display">MP-BCU-2026-001</div>
-          <div style="font-size:10px;color:#5A6B7D;margin-top:6px;font-weight:600">Contract My Darrin · Folosiți acest ID în toate facturile emise către Home Best Pal SRL</div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:8px">Cod cont</div>
+          <div style="font-size:24px;font-weight:800;color:#003366;letter-spacing:.06em;font-family:monospace" id="partner-id-display">—</div>
+          <div style="font-size:10px;color:#5A6B7D;margin-top:6px;font-weight:600">Cod de referință al contului tău</div>
         </div>
         <div style="font-size:13px;color:#5A6B7D;line-height:1.7;margin-bottom:16px">
-          Email trimis la <strong id="confirm-email-show">—</strong><br/>
-          SMS OTP trimis pe telefonul înregistrat<br/>
-          ⏱ Verificare documente: <strong style="color:#FF8C00">max 48h</strong><br/>
+          <span id="confirm-email-line">—</span><br/>
+          Documentele se încarcă din dashboard, la „Documentele mele”; le verifică echipa My Darrin.<br/>
           Cont: <strong style="color:#0E9E99" id="final-ocr-score">—</strong>
         </div>
         <div style="display:flex;gap:10px;flex-direction:column">
@@ -1403,13 +1402,13 @@ const WIZARD_DATA = {
         {val:'F43.34',label:'Zugrăveli & vopsitorie'},
       ],
       services:[
-        {label:'Montaj obiecte sanitare (lavoar, WC, cadă)',sub:'Instalator · Zona A',price:'85 Lei/h',checked:true},
-        {label:'Reparații instalații apă-canal',sub:'Instalator · Urgent +30%',price:'85 Lei/h',checked:true},
-        {label:'Montaj centrală termică + calorifere',sub:'Instalator + Atestat ISCIR',price:'95 Lei/h',checked:true},
-        {label:'Instalații AC split',sub:'Necesită atestat F-gas',price:'110 Lei/h',checked:false},
-        {label:'Desfundare canalizare profesională',sub:'Echipament special',price:'120 Lei/interv.',checked:false},
+        {label:'Montaj obiecte sanitare (lavoar, WC, cadă)',sub:'Instalator · Zona A',price:'',checked:true},
+        {label:'Reparații instalații apă-canal',sub:'Instalator · Urgent +30%',price:'',checked:true},
+        {label:'Montaj centrală termică + calorifere',sub:'Instalator + Atestat ISCIR',price:'',checked:true},
+        {label:'Instalații AC split',sub:'Necesită atestat F-gas',price:'',checked:false},
+        {label:'Desfundare canalizare profesională',sub:'Echipament special',price:'',checked:false},
       ],
-      rateInfo:'Tarifele sunt calculate de Deviz Engine. VMC 100 Lei. <strong>Nu editezi prețurile direct.</strong>',
+      rateInfo:'Tarifele se calculează pe server din rețetele tehnice; <strong>nu editezi prețurile direct.</strong> Serviciile și zonele se configurează după înregistrare, din dashboard.',
       zones:['Sector 1','Sector 2','Sector 3','Sector 4','Sector 5','Sector 6','Ilfov'],
       zonesChecked:[true,true,true,false,false,false,false],
     },
@@ -1427,12 +1426,12 @@ const WIZARD_DATA = {
     },
     step3: {
       title:'Documente KYC & Autorizații',
-      subtitle:'Documentele se încarcă și se verifică după confirmarea contului',
+      subtitle:'Documentele se încarcă din dashboard, după ce îți setezi parola',
       docs:[
         {label:'CI / Pașaport administrator',required:true,note:''},
         {label:'Certificat înregistrare firmă (J/...)',required:true,note:''},
-        {label:'Atestat ISCIR / Autorizație instalator',required:true,note:'Verificare valabilitate automată'},
-        {label:'Poliță asigurare RC (opțional)',required:false,note:'Crește scorul cu +15%'},
+        {label:'Atestat ISCIR / Autorizație instalator',required:true,note:''},
+        {label:'Poliță asigurare RC (opțional)',required:false,note:''},
       ],
     },
   },
@@ -1453,13 +1452,13 @@ const WIZARD_DATA = {
         {val:'G46.61',label:'Mașini agricole și forestiere'},
       ],
       services:[
-        {label:'Materiale construcții (ciment, BCA, cărămidă)',sub:'Livrare șantier · Paleți',price:'Negociat/kg',checked:true},
-        {label:'Produse sanitare (țevi PPR, PEX, fitinguri)',sub:'Stoc permanent · Livrare 24h',price:'Negociat/buc',checked:true},
-        {label:'Produse electrice & cabluri',sub:'Certificare CE obligatorie',price:'Negociat/ml',checked:true},
-        {label:'Finisaje & vopsele (Caparol, Baumit)',sub:'Disponibil la comandă',price:'Negociat/L',checked:false},
-        {label:'Lemn & cherestea (OSB, PAL, MDF)',sub:'Livrare la dimensiune',price:'Negociat/m³',checked:false},
+        {label:'Materiale construcții (ciment, BCA, cărămidă)',sub:'Livrare șantier · Paleți',price:'',checked:true},
+        {label:'Produse sanitare (țevi PPR, PEX, fitinguri)',sub:'Stoc permanent · Livrare 24h',price:'',checked:true},
+        {label:'Produse electrice & cabluri',sub:'Certificare CE obligatorie',price:'',checked:true},
+        {label:'Finisaje & vopsele (Caparol, Baumit)',sub:'Disponibil la comandă',price:'',checked:false},
+        {label:'Lemn & cherestea (OSB, PAL, MDF)',sub:'Livrare la dimensiune',price:'',checked:false},
       ],
-      rateInfo:'Prețurile sunt introduse de tine per produs în Catalog. Comision platformă: <strong>7.5% materiale</strong> (0% promo → 13.09.2026).',
+      rateInfo:'Prețurile le introduci tu, per produs, în Catalog, după înregistrare. Comisionul platformei se stabilește în contractul-cadru.',
       zones:['București','Ilfov','Iași','Cluj','Brașov','Timiș','Național'],
       zonesChecked:[true,true,false,false,false,false,false],
     },
@@ -1489,7 +1488,7 @@ const WIZARD_DATA = {
         {label:'Certificat înregistrare firmă + CUI',required:true,note:'Validare ANAF automată'},
         {label:'Certificat calitate / ISO 9001 (dacă există)',required:false,note:'Crește vizibilitatea în catalog'},
         {label:'Listă produse cu specificații tehnice',required:false,note:'PDF sau XLS · Importat în catalog'},
-        {label:'Poliță asigurare marfă (opțional)',required:false,note:'Crește scorul de încredere'},
+        {label:'Poliță asigurare marfă (opțional)',required:false,note:''},
       ],
     },
   },
@@ -1510,13 +1509,13 @@ const WIZARD_DATA = {
         {val:'N77.39',label:'Alte activități de închiriere și leasing'},
       ],
       services:[
-        {label:'Utilaje grele (excavatoare, buldozere, încărcătoare)',sub:'Cu sau fără operator calificat',price:'800 Lei/zi',checked:true},
-        {label:'Scule electrice (flex, mașini sudură, generatoare)',sub:'Livrare și ridicare inclusă',price:'80–180 Lei/zi',checked:true},
-        {label:'Acces & Siguranță (nacele, schele, macarale)',sub:'Montaj și demontaj inclus',price:'250–500 Lei/zi',checked:false},
-        {label:'Vehicule & Transport (camionete, dubițe, camioane)',sub:'Cu sau fără șofer',price:'250 Lei/zi',checked:false},
-        {label:'Personal calificat (operator, electrician, sudor)',sub:'Trimis la șantier',price:'65 Lei/h',checked:false},
+        {label:'Utilaje grele (excavatoare, buldozere, încărcătoare)',sub:'Cu sau fără operator calificat',price:'',checked:true},
+        {label:'Scule electrice (flex, mașini sudură, generatoare)',sub:'Livrare și ridicare inclusă',price:'',checked:true},
+        {label:'Acces & Siguranță (nacele, schele, macarale)',sub:'Montaj și demontaj inclus',price:'',checked:false},
+        {label:'Vehicule & Transport (camionete, dubițe, camioane)',sub:'Cu sau fără șofer',price:'',checked:false},
+        {label:'Personal calificat (operator, electrician, sudor)',sub:'Trimis la șantier',price:'',checked:false},
       ],
-      rateInfo:'Tarifele sunt propuse de tine per echipament/zi. Comision platformă: <strong>10% rental</strong> (0% promo → 13.09.2026).',
+      rateInfo:'Tarifele le propui tu, per echipament, după înregistrare. Comisionul platformei se stabilește în contractul-cadru.',
       zones:['Sector 1','Sector 2','Sector 3','Sector 4','Sector 5','Sector 6','Ilfov','Național'],
       zonesChecked:[true,true,true,true,false,false,false,false],
     },
@@ -1567,13 +1566,13 @@ const WIZARD_DATA = {
         {val:'H53.20',label:'Alte activități poștale și curierat'},
       ],
       services:[
-        {label:'Bicicletă / Trotinetă electrică',sub:'Colete mici · max 10kg · Eco friendly',price:'15 Lei/livrare',checked:true},
-        {label:'Motocicletă / Scuter',sub:'Colete medii · max 25kg · Rapid',price:'20 Lei/livrare',checked:false},
-        {label:'Autoturism',sub:'Colete mari · max 50kg · Confort',price:'25 Lei/livrare',checked:false},
-        {label:'Autoutilitară',sub:'Paleți, mobilă · max 500kg',price:'45 Lei/livrare',checked:false},
-        {label:'Livrare materiale construcții',sub:'Coordonare cu furnizori Marketplace',price:'35 Lei/livrare',checked:false},
+        {label:'Bicicletă / Trotinetă electrică',sub:'Colete mici · max 10kg · Eco friendly',price:'',checked:true},
+        {label:'Motocicletă / Scuter',sub:'Colete medii · max 25kg · Rapid',price:'',checked:false},
+        {label:'Autoturism',sub:'Colete mari · max 50kg · Confort',price:'',checked:false},
+        {label:'Autoutilitară',sub:'Paleți, mobilă · max 500kg',price:'',checked:false},
+        {label:'Livrare materiale construcții',sub:'Coordonare cu furnizori Marketplace',price:'',checked:false},
       ],
-      rateInfo:'Tarifele sunt propuse de tine. Comision platformă: <strong>12% curierat</strong> (0% promo → 13.09.2026). Darrin AI alocă automat comenzile în zona ta.',
+      rateInfo:'Tarifele le propui tu, după înregistrare. Comisionul platformei se stabilește în contractul-cadru. Comenzile se alocă automat în funcție de zonă.',
       zones:['Sector 1','Sector 2','Sector 3','Sector 4','Sector 5','Sector 6'],
       zonesChecked:[false,true,true,false,false,false],
     },
@@ -1622,13 +1621,13 @@ const WIZARD_DATA = {
         {val:'K66.22',label:'Activități de intermediere în asigurări'},
       ],
       services:[
-        {label:'Poliță garanție lucrare (Work Guarantee)',sub:'Emisă automat la finalizarea comenzii',price:'2–5% valoare lucrare',checked:true},
-        {label:'Asigurare bunuri client (All Risk)',sub:'Opțional pentru client la comandă',price:'0.5–1% valoare bunuri',checked:true},
-        {label:'Răspundere civilă profesională partener',sub:'RC Profesional · Obligatorie recomandată',price:'80–150 Lei/lună',checked:false},
-        {label:'Asigurare incendiu și calamități',sub:'Disponibilă la cerere client',price:'Calculat la risc',checked:false},
-        {label:'RCA parteneri flotă My Darrin',sub:'Ofertă preferențială parteneri platformă',price:'Negociat',checked:false},
+        {label:'Poliță garanție lucrare (Work Guarantee)',sub:'Emisă automat la finalizarea comenzii',price:'',checked:true},
+        {label:'Asigurare bunuri client (All Risk)',sub:'Opțional pentru client la comandă',price:'',checked:true},
+        {label:'Răspundere civilă profesională partener',sub:'RC Profesional · Obligatorie recomandată',price:'',checked:false},
+        {label:'Asigurare incendiu și calamități',sub:'Disponibilă la cerere client',price:'',checked:false},
+        {label:'RCA parteneri flotă My Darrin',sub:'Ofertă preferențială parteneri platformă',price:'',checked:false},
       ],
-      rateInfo:'Polițele sunt emise automat via API la fiecare comandă finalizată. Nr. poliță generat în format ASF: <strong>RO-ASF-YYYY-[xxxxx]</strong>. Fiecare factură de comision include nr. poliță ASF și perioada de asigurare (obligatoriu raportare lunară ASF). Comision intermediar: <strong>15% din primă</strong>. Atestat ASF obligatoriu.',
+      rateInfo:'Polițele se înregistrează manual de echipa My Darrin; nu există încă integrare cu un asigurător extern. Comisionul se stabilește în contractul-cadru. Atestat ASF obligatoriu.',
       zones:['Național','EU Cross-border'],
       zonesChecked:[true,false],
     },
@@ -1815,9 +1814,9 @@ function renderStep1(d, stepTitle) {
       <input type="checkbox" ${s.checked?'checked':''} style="width:16px;height:16px;accent-color:${color};flex-shrink:0"/>
       <div style="flex:1">
         <div style="font-size:12.5px;font-weight:700;color:#1A2332">${s.label}</div>
-        <div style="font-size:10.5px;color:#5A6B7D">${s.sub} · <strong style="color:${color}">${s.price}</strong></div>
+        <div style="font-size:10.5px;color:#5A6B7D">${s.sub}${s.price ? ' · <strong style="color:' + color + '">' + s.price + '</strong>' : ''}</div>
       </div>
-      <span style="font-size:9.5px;font-weight:700;padding:3px 8px;border-radius:99px;background:${s.checked?'rgba(14,158,153,.1)':'#F0F4F8'};color:${s.checked?'#0B7A76':'#8C9BAD'}">${s.checked?'Activ':'Neactivat'}</span>
+      <span style="font-size:9.5px;font-weight:700;padding:3px 8px;border-radius:99px;background:${s.checked?'rgba(14,158,153,.1)':'#F0F4F8'};color:${s.checked?'#0B7A76':'#8C9BAD'}">${s.checked?'Selectat':'Neselectat'}</span>
     </label>`).join('');
 
   const zonesHtml = d.zones.map((z,i) => `
@@ -1843,10 +1842,11 @@ function renderStep1(d, stepTitle) {
   return `
     <h3 style="font-size:15px;font-weight:800;color:#1A2332;margin-bottom:4px;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">${stepTitle}</h3>
     <p style="font-size:12px;color:#5A6B7D;margin-bottom:14px">${d.subtitle}</p>
+    <div style="background:#EBF4FB;border:1px solid #D6E8F5;border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:11.5px;color:#1A5FAD;line-height:1.6">Selecțiile din acest pas sunt orientative și <strong>nu se salvează la înregistrare</strong>. Se trimit doar datele firmei și ale administratorului. Portofoliul, echipamentele și zonele le configurezi din dashboard, după ce îți setezi parola.</div>
     ${naceHtml}
     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:8px">
       Servicii / Produse disponibile
-      <span style="font-size:9px;color:#0E9E99;margin-left:5px">● din Backoffice</span>
+      <span style="font-size:9px;color:#8C9BAD;margin-left:5px">orientativ</span>
     </div>
     ${servicesHtml}
     ${integrHtml}
@@ -1968,6 +1968,7 @@ function renderStep2(d, stepTitle) {
   return `
     <h3 style="font-size:15px;font-weight:800;color:#1A2332;margin-bottom:4px;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">${stepTitle}</h3>
     <p style="font-size:12px;color:#5A6B7D;margin-bottom:12px">${d.subtitle}</p>
+    <div style="background:#EBF4FB;border:1px solid #D6E8F5;border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:11.5px;color:#1A5FAD;line-height:1.6">Bifările din acest pas sunt orientative și <strong>nu se salvează la înregistrare</strong>. Echipamentele, integrările și programul se configurează din dashboard.</div>
     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:8px">
       Cerințe obligatorii
       <span style="font-size:9px;color:#0E9E99;margin-left:5px">● ${d.source}</span>
@@ -1993,15 +1994,13 @@ function renderStep3(d, stepTitle) {
         <span style="font-size:9.5px;font-weight:700;padding:3px 9px;border-radius:99px;background:${doc.required?'rgba(255,140,0,.1)':'#F0F4F8'};color:${doc.required?'#CC7000':'#8C9BAD'}">${doc.required?'Obligatoriu':'Opțional'}</span>
       </div>
       ${doc.note?`<div style="font-size:10.5px;color:#5A6B7D;margin-bottom:6px">${doc.note}</div>`:''}
-      <div style="border:1.5px dashed #D5DFE8;border-radius:9px;padding:9px;text-align:center;font-size:11.5px;color:#8C9BAD">Se încarcă după confirmarea contului, la Pasul 6 din wizard-ul complet</div>
-        Click upload · PDF/JPG/PNG · max 10MB
-      </div>
+      <div style="border:1.5px dashed #D5DFE8;border-radius:9px;padding:9px;text-align:center;font-size:11.5px;color:#8C9BAD">Se încarcă din dashboard, la „Documentele mele”, după ce îți setezi parola · PDF/JPG/PNG · max 10 MB</div>
     </div>`).join('');
 
   return `
     <h3 style="font-size:15px;font-weight:800;color:#1A2332;margin-bottom:4px;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">${stepTitle}</h3>
     <p style="font-size:12px;color:#5A6B7D;margin-bottom:12px">${d.subtitle}</p>
-    <div style="font-size:11px;color:#8C9BAD;margin-bottom:12px">Documentele se încarcă și se verifică după confirmarea contului (max 48h) — nu există scor automat de aprobare.</div>
+    <div style="font-size:11px;color:#8C9BAD;margin-bottom:12px">Documentele se încarcă din dashboard, după ce îți setezi parola. Le verifică echipa My Darrin; nu există verificare automată sau scor de aprobare.</div>
     ${asfBadge}
     ${docsHtml}
     <div style="display:flex;gap:10px;margin-top:4px">
@@ -2015,25 +2014,25 @@ function renderStep4() {
   const meta  = PARTNER_META[selectedPartnerType];
   const color = meta?.color || '#FF8C00';
   const contractText = {
-    servicii:  'Partenerul prestează servicii conform devizelor generate de Darrin AI. Comision: 0% promo → 13.09.2026, apoi 15%.',
-    materiale: 'Furnizorul listează produse în Marketplace My Darrin. Comision: 0% promo → 13.09.2026, apoi 7.5%.',
-    inchirieri:'Furnizorul pune la dispoziție echipamente conform calendarului de disponibilitate. Comision: 0% promo → 13.09.2026, apoi 10%.',
-    curier:    'Curierul preia comenzile de livrare din zona definită via Darrin AI dispatch. Comision: 0% promo → 13.09.2026, apoi 12%.',
-    asigurari: 'Asigurătorul emite polițe automat via API la fiecare comandă finalizată. Comision intermediar: 15% din primă. Atestat ASF obligatoriu.',
+    servicii:  'Partenerul prestează servicii conform devizelor calculate de platformă. Comisionul se stabilește în contractul-cadru, semnat cu cod OTP din dashboard.',
+    materiale: 'Furnizorul listează produse în Marketplace My Darrin. Comisionul se stabilește în contractul-cadru, semnat cu cod OTP din dashboard.',
+    inchirieri:'Furnizorul pune la dispoziție echipamente conform calendarului de disponibilitate. Comisionul se stabilește în contractul-cadru, semnat cu cod OTP din dashboard.',
+    curier:    'Curierul preia comenzile de livrare din zona definită. Comisionul se stabilește în contractul-cadru, semnat cu cod OTP din dashboard.',
+    asigurari: 'Asigurătorul înregistrează polițele emise pentru comenzile cu asigurare. Comisionul se stabilește în contractul-cadru, semnat cu cod OTP din dashboard. Atestat ASF obligatoriu.',
   }[selectedPartnerType] || '';
 
   return `
-    <h3 style="font-size:15px;font-weight:800;color:#1A2332;margin-bottom:4px;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Contract & Semnătură electronică</h3>
-    <p style="font-size:12px;color:#5A6B7D;margin-bottom:12px">Conform eIDAS · GDPR · Transmitere automată email + SMS</p>
+    <h3 style="font-size:15px;font-weight:800;color:#1A2332;margin-bottom:4px;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Contract & acceptare termeni</h3>
+    <p style="font-size:12px;color:#5A6B7D;margin-bottom:12px">Contractul-cadru se semnează după înregistrare, cu cod OTP din dashboard. Aici accepți termenii și politica GDPR.</p>
     <div style="background:#F8FAFC;border-radius:12px;border:1px solid #EEF2F7;padding:14px;margin-bottom:14px;max-height:140px;overflow-y:auto">
       <div style="font-size:11px;color:#1A2332;line-height:1.8;font-family:Georgia,serif">
         <strong>CONTRACT PARTENERIAT My Darrin · ${meta?.title}</strong><br/>
-        Nr. AUTO-MP-2026<br/><br/>
+        <br/>
         Între <strong>Home Best Pal SRL</strong> (Platformă) și <strong id="contract-partner-name">${document.getElementById('f-firma')?.value || 'Partener'}</strong>, se încheie prezentul contract.<br/><br/>
         <strong>Art. 1 · Obiect:</strong> ${contractText}<br/>
         <strong>Art. 2 · Escrow:</strong> Plățile sunt gestionate prin sistem Escrow securizat.<br/>
-        <strong>Art. 3 · Garanție:</strong> Garanție digitală emisă automat per lucrare finalizată.<br/>
-        <strong>Art. 4 · Dispatch:</strong> Comenzile sunt alocate automat de Darrin AI în zona selectată.
+        <strong>Art. 3 · Garanție:</strong> Garanția de execuție se aplică potrivit nivelului serviciului, conform contractului-cadru.<br/>
+        <strong>Art. 4 · Dispatch:</strong> Comenzile sunt alocate automat, în funcție de zonă, competențe și program.
       </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:14px">
@@ -2047,17 +2046,17 @@ function renderStep4() {
       </label>
       <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
         <input type="checkbox" id="cb-contract" style="width:18px;height:18px;accent-color:${color};flex-shrink:0;margin-top:1px"/>
-        <div style="font-size:12.5px;color:#1A2332;line-height:1.5">Semnez electronic contractul și confirm că datele sunt reale *</div>
+        <div style="font-size:12.5px;color:#1A2332;line-height:1.5">Confirm că datele introduse sunt reale și voi semna contractul-cadru cu cod OTP din dashboard *</div>
       </label>
       <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
         <input type="checkbox" id="cb-notif" style="width:18px;height:18px;accent-color:${color};flex-shrink:0;margin-top:1px" checked/>
-        <div style="font-size:12.5px;color:#5A6B7D;line-height:1.5">Accept notificări SMS/email pentru comenzi și expirări documente</div>
+        <div style="font-size:12.5px;color:#5A6B7D;line-height:1.5">Accept notificări prin email pentru comenzi și documente</div>
       </label>
     </div>
     <button onclick="submitRegistration()" style="width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,${color},${color}cc);color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 6px 20px rgba(0,0,0,.2);transition:all .2s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">
       Înregistrează-mă ca ${PARTNER_META[selectedPartnerType]?.title}
     </button>
-    <div style="text-align:center;margin-top:8px;font-size:10.5px;color:#8C9BAD">ID Partener + OTP pe email + SMS în max 5 minute</div>`;
+    <div style="text-align:center;margin-top:8px;font-size:10.5px;color:#8C9BAD">Primești pe email un link pentru setarea parolei.</div>`;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -2221,15 +2220,21 @@ async function submitRegistration() {
 
     const meta = PARTNER_META[selectedPartnerType];
     const idEl     = document.getElementById('partner-id-display');
-    const emailEl  = document.getElementById('confirm-email-show');
+    const emailEl  = document.getElementById('confirm-email-line');
     const ocrEl    = document.getElementById('final-ocr-score');
     const dashLink = document.getElementById('success-dashboard-link');
 
     if (idEl)     idEl.textContent   = data.user_id.slice(0, 8).toUpperCase();
-    if (emailEl)  emailEl.textContent = email;
-    if (ocrEl)    ocrEl.textContent  = 'Cont creat — verifică emailul pentru setarea parolei';
+    // Textul depinde de ce s-a întâmplat cu adevărat: înainte se afirma „Email trimis" oricum.
+    const safe = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    if (emailEl) {
+      emailEl.innerHTML = data.email_trimis && data.link_parola
+        ? 'Ți-am trimis un email la <strong>' + safe(email) + '</strong> cu linkul de setare a parolei. Verifică și folderul Spam.'
+        : 'Contul e creat, dar <strong>nu am putut trimite emailul</strong> la ' + safe(email) + '. Folosește „Am uitat parola” pe pagina de autentificare, cu aceeași adresă.';
+    }
+    if (ocrEl) ocrEl.textContent = data.reprimit ? 'Cont existent, link retrimis' : 'Cont creat';
     if (dashLink && meta?.dashLink) dashLink.href = meta.dashLink;
-    if (dashLink && meta) dashLink.textContent = 'Accesează ' + meta.title + ' Dashboard →';
+    if (dashLink && meta) dashLink.textContent = 'Intră în dashboard (după ce îți setezi parola) →';
 
     for (let i = 0; i <= 4; i++) {
       const el = document.getElementById('wiz-step-' + i);
@@ -2238,7 +2243,7 @@ async function submitRegistration() {
     const succ = document.getElementById('wiz-step-success');
     if (succ) succ.style.display = 'block';
 
-    showToast('Cont real creat ca ' + meta?.title + ' — verifică emailul!');
+    showToast(data.email_trimis && data.link_parola ? 'Cont creat ca ' + meta?.title + '. Verifică emailul pentru setarea parolei.' : 'Cont creat, dar emailul nu a putut fi trimis. Folosește „Am uitat parola”.');
   } catch (err) {
     showToast('' + (err.message || 'Eroare la înregistrare'));
     if (btn) { btn.textContent = 'Finalizează înregistrarea'; btn.disabled = false; }
