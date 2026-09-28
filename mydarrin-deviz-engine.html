@@ -467,247 +467,123 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 
 <div class="max-w-5xl mx-auto px-6 py-12 space-y-10">
 
+  <div class="card" style="background:#FFF8EE;border:1px solid #FFD980">
+    <div class="p-5" style="font-size:12.5px;color:#6B7A8D;line-height:1.7">
+      <strong style="color:#CC7000">Ce e aliniat la cod și ce e încă arhitectură țintă (28 sept. 2026).</strong>
+      Secțiunile <strong>1 (formula)</strong> și <strong>6 (prag minim comandă)</strong> descriu comportamentul real din <code>lib/calculeaza-pret.js</code> și valorile din baza de date. Restul paginii (secțiunile 2–5 și 7, endpoint-urile <code>/api/v1/…</code>, „Cloud Run / GCS”, Google Maps, dispatch) descrie o arhitectură proiectată care nu există în acest repo; API-urile reale sunt sub <code>/api/deviz</code>, <code>/api/comenzi</code>, <code>/api/public</code> și <code>/api/admin</code>. Coeficienții de zonă, legislație și urgență au fost eliminați din formulă la 22 iulie 2026, deci orice mențiune a lor în secțiunile 2–5 și 7 este depășită.
+    </div>
+  </div>
+
   <!-- ══════════════════════════════════════════
-       1. FORMULA COMPLETĂ DE CALCUL
+       1. FORMULA DE CALCUL — aliniată la lib/calculeaza-pret.js (28 sept. 2026)
   ══════════════════════════════════════════ -->
-  <div class="sec-divider"><div class="sec-num">1</div><h2 class="text-2xl font-bold text-[#003366]">Formula completă de calcul preț final</h2></div>
+  <div class="sec-divider"><div class="sec-num">1</div><h2 class="text-2xl font-bold text-[#003366]">Formula de calcul preț final</h2></div>
 
   <div class="card reveal">
     <div class="card-hdr flex items-center justify-between">
-      <div class="font-bold text-[#003366] flex items-center gap-2">🧮 PriceConfigRecord — Formula în cascadă</div>
-      <span class="chip" style="background:#EBF4FB;color:#003366">Cost Engine Live · deviz-configs/page.tsx</span>
+      <div class="font-bold text-[#003366] flex items-center gap-2">🧮 Formula aditivă — cea din cod</div>
+      <span class="chip" style="background:#EBF4FB;color:#003366">lib/calculeaza-pret.js · aliniat 28 sept. 2026</span>
     </div>
     <div class="p-6">
-      <!-- Formula pași -->
       <div class="space-y-1 mb-6">
         <div class="formula-line">
           <div class="f-step">1</div>
           <div class="flex-1">
-            <span class="font-bold text-[#003366]">COST_BAZĂ</span>
+            <span class="font-bold text-[#003366]">SUBTOTAL</span>
             <span class="text-[#8C9BAD] mx-2">=</span>
-            <span class="text-[#0E9E99] font-mono text-sm">Σ(LABOR + MATERIAL + EQUIPMENT + TRANSPORT + ASIGURARE)</span>
+            <span class="text-[#0E9E99] font-mono text-sm">manoperă + materiale + chirie scule + curier + asigurare + transport pe greutate + ajutor</span>
           </div>
-          <div class="text-xs text-[#8C9BAD] text-right">resurse din rețetă</div>
+          <div class="text-xs text-[#8C9BAD] text-right">din rețeta nivelului</div>
         </div>
-        <div class="formula-line" style="background:rgba(14,158,153,.04);border-radius:10px">
-          <div class="f-step" style="background:#0E9E99">2</div>
-          <div class="flex-1">
-            <span class="font-bold text-[#003366]">COST_NIVEL</span>
-            <span class="text-[#8C9BAD] mx-2">=</span>
-            <span class="text-[#0E9E99] font-mono text-sm">Σ(resurse_nivel_selectat)</span>
-            <span class="ml-2 text-[10px] text-[#8C9BAD]">fiecare nivel are propriul set cumulativ de resurse reale din catalog</span>
-          </div>
-          <div class="text-xs text-[#0E9E99] text-right font-bold">resurse reale</div>
-        </div>
-        <!-- Explainer niveluri cumulative -->
-        <div class="ml-8 my-2 rounded-xl overflow-hidden border border-[#D5DFE8]">
-          <table style="width:100%;border-collapse:collapse;font-size:11px">
-            <thead style="background:#F4F7F9">
-              <tr>
-                <th style="padding:7px 12px;text-align:left;color:#6B7A8D;font-weight:700;font-size:9.5px;text-transform:uppercase;letter-spacing:.07em">Nivel</th>
-                <th style="padding:7px 12px;text-align:left;color:#6B7A8D;font-weight:700;font-size:9.5px;text-transform:uppercase;letter-spacing:.07em">Resurse incluse (cumulative)</th>
-                <th style="padding:7px 12px;text-align:right;color:#6B7A8D;font-weight:700;font-size:9.5px;text-transform:uppercase;letter-spacing:.07em">Cost bază exemplu</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr style="border-bottom:1px solid #F4F7F9">
-                <td style="padding:7px 12px"><span style="font-size:10px;background:#FDF4E8;color:#CD7F32;padding:2px 8px;border-radius:99px;font-weight:800">🥉 BRONZ</span></td>
-                <td style="padding:7px 12px;color:#6B7A8D">LABOR (manoperă instalator ISCIR · 1 ore)</td>
-                <td style="padding:7px 12px;text-align:right;font-weight:bold;color:#CD7F32">520 Lei</td>
-              </tr>
-              <tr style="border-bottom:1px solid #F4F7F9;background:#FAFBFD">
-                <td style="padding:7px 12px"><span style="font-size:10px;background:#F4F7F9;color:#6B7A8D;padding:2px 8px;border-radius:99px;font-weight:800">🥈 ARGINT</span></td>
-                <td style="padding:7px 12px;color:#6B7A8D">BRONZ + MATERIAL (fitinguri + teflon + robineți · 1 set)</td>
-                <td style="padding:7px 12px;text-align:right;font-weight:bold;color:#6B7A8D">605 Lei</td>
-              </tr>
-              <tr style="border-bottom:1px solid #F4F7F9">
-                <td style="padding:7px 12px"><span style="font-size:10px;background:#FFF0D6;color:#CC7000;padding:2px 8px;border-radius:99px;font-weight:800">🥇 AUR</span></td>
-                <td style="padding:7px 12px;color:#6B7A8D">
-                  ARGINT + MATERIAL (calorifer Purmo) + TRANSPORT (livrare materiale) 
-                  + <strong style="color:#CC7000">LABOR (curățenie moluz 1h) + TRANSPORT (evacuare moluz)</strong>
-                  <div style="font-size:10px;color:#999;margin-top:2px">↑ activitate reală în plus față de ARGINT — nu un procent</div>
-                </td>
-                <td style="padding:7px 12px;text-align:right;font-weight:bold;color:#FF8C00">1.063 Lei</td>
-              </tr>
-              <tr>
-                <td style="padding:7px 12px"><span style="font-size:10px;background:#EBF4FB;color:#1A5FAD;padding:2px 8px;border-radius:99px;font-weight:800">💎 PLATINUM</span></td>
-                <td style="padding:7px 12px;color:#6B7A8D">
-                  AUR + LABOR (curățenie finală 2h) + MATERIAL (protecție pardoseală)
-                  + calorifer premium (Vogel&amp;Noot)
-                  <div style="font-size:10px;color:#999;margin-top:2px">↑ activitate reală în plus față de AUR — nu un procent</div>
-                </td>
-                <td style="padding:7px 12px;text-align:right;font-weight:bold;color:#1A5FAD">1.383 Lei</td>
-              </tr>
-            </tbody>
-          </table>
-          <div style="padding:8px 12px;background:#F4F7F9;font-size:10px;color:#6B7A8D;border-top:1px solid #D5DFE8">
-            ⚡ <strong>Logică corectă:</strong> Fiecare nivel superior adaugă resurse reale (activități + materiale) față de nivelul inferior — nu un procent. Costul diferenței = costul real al resurselor adăugate.
-          </div>
-        </div>
-        <div class="formula-line">
-          <div class="f-step" style="background:#7C3AED">3</div>
-          <div class="flex-1">
-            <span class="font-bold text-[#003366]">+ COSTURI INDIRECTE</span>
-            <span class="text-[#8C9BAD] mx-2">+=</span>
-            COST_NIVEL <span class="text-[#8C9BAD] mx-1">×</span>
-            <span class="text-[#A78BFA] font-mono text-sm">indirect_cost_percentage</span>
-            <span class="ml-2 text-[10px] text-[#8C9BAD]">overhead, asigurări firmă, contabilitate · default 10%</span>
-          </div>
-          <div class="text-xs text-[#8C9BAD] text-right">configurat BO</div>
-        </div>
-        <div class="formula-line">
-          <div class="f-step" style="background:#7C3AED">4</div>
+        <div class="formula-line" style="background:rgba(124,58,237,.04);border-radius:10px">
+          <div class="f-step" style="background:#7C3AED">2</div>
           <div class="flex-1">
             <span class="font-bold text-[#003366]">+ MARKETING</span>
-            <span class="text-[#8C9BAD] mx-2">+=</span>
-            <span class="text-[#A78BFA] font-mono text-sm">marketing_percentage</span>
-            <span class="ml-2 text-[10px] text-[#8C9BAD]">publicitate, SEO, campanii · configurat BO</span>
+            <span class="text-[#8C9BAD] mx-2">=</span>
+            <span class="text-[#A78BFA] font-mono text-sm">subtotal × cost_marketing_pct</span>
+            <span class="ml-2 text-[10px] text-[#8C9BAD]">azi 3%</span>
           </div>
-          <div class="text-xs text-[#8C9BAD] text-right">configurat BO</div>
+          <div class="text-xs text-[#8C9BAD] text-right">backoffice_config</div>
         </div>
-        <div class="formula-line">
-          <div class="f-step" style="background:#7C3AED">5</div>
+        <div class="formula-line" style="background:rgba(124,58,237,.04);border-radius:10px">
+          <div class="f-step" style="background:#7C3AED">3</div>
           <div class="flex-1">
             <span class="font-bold text-[#003366]">+ MENTENANȚĂ PLATFORMĂ</span>
-            <span class="text-[#8C9BAD] mx-2">+=</span>
-            <span class="text-[#A78BFA] font-mono text-sm">platform_maintenance_percentage</span>
-            <span class="ml-2 text-[10px] text-[#8C9BAD]">hosting, Cloud Run, GCS · default 3%</span>
-          </div>
-          <div class="text-xs text-[#8C9BAD] text-right">configurat BO</div>
-        </div>
-        <div class="formula-line" style="background:#FFF8EE">
-          <div class="f-step" style="background:#FF8C00">6</div>
-          <div class="flex-1">
-            <span class="font-bold text-[#CC7000]">+ COMISION HBP — My Darrin</span>
-            <span class="text-[#8C9BAD] mx-2">+=</span>
-            <span class="text-[#FF8C00] font-mono text-sm">mydarrin_platform_percentage</span>
-            <span class="ml-2 text-[10px] text-[#8C9BAD]">antreprenor general · 7–20% configurabil · default 15%</span>
-          </div>
-          <div class="text-xs text-[#CC7000] text-right font-bold">7–20%</div>
-        </div>
-        <div class="formula-line">
-          <div class="f-step" style="background:#D97706">7</div>
-          <div class="flex-1">
-            <span class="font-bold text-[#003366]">× COEF. ZONĂ</span>
             <span class="text-[#8C9BAD] mx-2">=</span>
-            <span class="text-[#FCD34D] font-mono text-sm">zone_coefficient_override</span>
-            <span class="ml-2 text-[10px] text-[#8C9BAD]">detectat IP → localitate → ZoneRecord.multiplier</span>
+            <span class="text-[#A78BFA] font-mono text-sm">subtotal × cost_mentenanta_pct</span>
+            <span class="ml-2 text-[10px] text-[#8C9BAD]">azi 2%</span>
           </div>
-          <div class="text-xs text-[#8C9BAD] text-right">auto-detect</div>
+          <div class="text-xs text-[#8C9BAD] text-right">backoffice_config</div>
         </div>
-        <div class="formula-line">
-          <div class="f-step" style="background:#D97706">8</div>
+        <div class="formula-line" style="background:#FFF8EE;border-radius:10px">
+          <div class="f-step" style="background:#FF8C00">4</div>
           <div class="flex-1">
-            <span class="font-bold text-[#003366]">× LEGISLAȚIE</span>
+            <span class="font-bold text-[#CC7000]">+ COMISION PLATFORMĂ — My Darrin</span>
             <span class="text-[#8C9BAD] mx-2">=</span>
-            <span class="text-[#FCD34D] font-mono text-sm">legislation_coefficient</span>
-            <span class="ml-2 text-[10px] text-[#8C9BAD]">RO-STD=1.0 · EU-STD=1.05 · MD-STD=0.95</span>
+            <span class="text-[#FF8C00] font-mono text-sm">subtotal × comision_platforma_default_pct</span>
+            <span class="ml-2 text-[10px] text-[#8C9BAD]">azi 12%</span>
           </div>
-          <div class="text-xs text-[#8C9BAD] text-right">per țară</div>
-        </div>
-        <div class="formula-line">
-          <div class="f-step" style="background:#D97706">9</div>
-          <div class="flex-1">
-            <span class="font-bold text-[#003366]">× URGENȚĂ / ZI / ORA</span>
-            <span class="text-[#8C9BAD] mx-2">=</span>
-            <span class="text-[#FCD34D] font-mono text-sm">urgency_coefficient</span>
-            <span class="ml-2 text-[10px] text-[#8C9BAD]">Normal×1.0 · Urgent×1.3 · Noapte×1.5 · Sâmbătă×1.5 · Duminică/Sărbătoare×2.0</span>
-          </div>
-          <div class="text-xs text-[#8C9BAD] text-right">configurat BO</div>
+          <div class="text-xs text-[#CC7000] text-right font-bold">backoffice_config</div>
         </div>
         <div class="formula-line" style="background:#FDECEA;border-radius:10px">
-          <div class="f-step" style="background:#DC2626">10</div>
+          <div class="f-step" style="background:#DC2626">5</div>
           <div class="flex-1">
-            <span class="font-bold text-red-700">× TVA</span>
+            <span class="font-bold text-red-700">+ TVA</span>
             <span class="text-[#8C9BAD] mx-2">=</span>
-            <span class="text-red-500 font-mono text-sm">vat_percentage</span>
-            <span class="ml-2 text-[10px] text-[#8C9BAD]">auto-detectat din IP → TaxRuleRecord · RO=19% · MD=20% · DE=19% · FR=20%</span>
+            <span class="text-red-500 font-mono text-sm">(subtotal + marketing + mentenanță + comision) × cota_tva(țară)</span>
+            <span class="ml-2 text-[10px] text-[#8C9BAD]">RO 21% · MD 20% · DE 19% · FR 20% · BG 20%</span>
           </div>
-          <div class="text-xs text-red-600 font-bold text-right">auto/țară</div>
+          <div class="text-xs text-red-600 font-bold text-right">tax_configurations</div>
         </div>
         <div class="formula-line" style="background:linear-gradient(135deg,#EBF4FB,#DDE6F5);border-radius:10px;border:2px solid #003366">
           <div class="f-step" style="background:#003366;width:28px;height:28px;font-size:12px">✓</div>
           <div class="flex-1">
             <span class="font-bold text-[#003366] text-base">PREȚ FINAL CLIENT</span>
             <span class="text-[#8C9BAD] mx-2">=</span>
-            <span class="text-[#003366] font-mono text-sm">toate etapele 1–10 aplicate în cascadă</span>
+            <span class="text-[#003366] font-mono text-sm">max( subtotal + taxe platformă + TVA , prag_minim_comanda(țară) )</span>
           </div>
-          <div class="text-[#FF8C00] font-bold text-right">afișat în pagina publică</div>
+          <div class="text-[#FF8C00] font-bold text-right">rotunjit la 2 zecimale la fiecare pas</div>
         </div>
       </div>
 
-      <!-- Exemplu numeric -->
+      <div class="rounded-xl p-4 mb-6" style="background:#FFF0D6;border:1px solid #FFB866;font-size:12px;color:#6B7A8D;line-height:1.65">
+        <strong style="color:#CC7000">Eliminate din formulă la 22 iulie 2026:</strong> costul indirect de 10%, comisionul variabil 7–20% (<code>mydarrin_pct</code>), coeficientul de zonă, coeficientul de legislație și coeficientul de urgență. Procentele de mai sus se aplică fiecare pe subtotal, nu în cascadă. Serverul respinge cu HTTP 400 orice câmp de preț trimis din client (<code>comision_pct</code>, <code>tva</code>, <code>mydarrin_pct</code>, <code>zone_coef</code>, <code>urgency_coef</code> ș.a.), iar procentele și TVA-ul se citesc doar din baza de date.
+      </div>
+
       <div class="grid md:grid-cols-2 gap-5">
         <div class="rounded-xl p-5" style="background:#F4F7F9;border:1px solid #D5DFE8">
-          <div class="font-bold text-[#003366] mb-3 text-sm">📊 Exemplu: Înlocuire calorifer · Pachet Aur · București · Normal</div>
+          <div class="font-bold text-[#003366] mb-3 text-sm">📊 Exemplu: înlocuire calorifer · România</div>
           <div class="space-y-1.5 text-xs">
-            <div class="flex justify-between"><span class="text-[#6B7A8D]">LABOR · Instalator ISCIR · 1 ore</span><span class="font-mono">520 Lei</span></div>
-            <div class="flex justify-between"><span class="text-[#6B7A8D]">MATERIAL · Purmo C11 600/8 · 1 buc</span><span class="font-mono">310 Lei</span></div>
-            <div class="flex justify-between"><span class="text-[#6B7A8D]">MATERIAL · Fitinguri + teflon · 1 set</span><span class="font-mono">85 Lei</span></div>
-            <div class="flex justify-between"><span class="text-[#6B7A8D]">TRANSPORT · 3.5 Lei/km × 25km</span><span class="font-mono">88 Lei</span></div>
-            <div class="flex justify-between" style="border-bottom:1px dashed #E8F0F7;padding-bottom:8px;margin-bottom:8px">
-              <span class="font-semibold text-[#2D2D2D]">
-                <span style="font-size:9px;background:#FDF4E8;color:#CD7F32;padding:1px 6px;border-radius:99px;font-weight:800;margin-right:6px">🥉 BRONZ</span>LABOR · Instalator ISCIR · 1 oră
-              </span>
-              <span class="font-mono text-[#CD7F32] font-bold">520 Lei</span>
-            </div>
-            <div class="flex justify-between text-[#6B7A8D] text-xs pl-2 mb-1">
-              <span>+ <span style="font-size:9px;background:#F4F7F9;color:#6B7A8D;padding:1px 5px;border-radius:99px;font-weight:700">🥈 ARGINT</span> adaugă: MATERIAL fitinguri + teflon + robineți (1 set)</span>
-              <span class="font-mono">+ 85 Lei</span>
-            </div>
-            <div style="background:#FFFBF0;border-radius:10px;border:1px solid #FFD980;padding:10px 13px;margin:8px 0">
-              <div class="flex justify-between text-xs font-bold text-[#CC7000] mb-2">
-                <span>
-                  <span style="font-size:9px;background:#FFF0D6;color:#CC7000;padding:1px 6px;border-radius:99px;font-weight:800;margin-right:5px">🥇 AUR</span>
-                  adaugă activități &amp; materiale reale față de Argint
-                </span>
-                <span class="font-mono">+ 458 Lei</span>
-              </div>
-              <div class="flex justify-between text-xs text-[#6B7A8D] pl-3 mb-1"><span>→ MATERIAL · Calorifer Purmo C11 600/8 · 1 buc</span><span class="font-mono">+ 310 Lei</span></div>
-              <div class="flex justify-between text-xs text-[#6B7A8D] pl-3 mb-1"><span>→ TRANSPORT · livrare materiale · 3.5 Lei/km × 25km</span><span class="font-mono">+ 88 Lei</span></div>
-              <div class="flex justify-between text-xs font-semibold text-[#CC7000] pl-3">
-                <span>→ LABOR · curățenie moluz + transport evacuare moluz · 1h</span>
-                <span class="font-mono">+ 60 Lei</span>
-              </div>
-              <div style="font-size:10px;color:#999;margin-top:6px;font-style:italic">↑ Activitate reală în plus față de Argint — nu un procent. Prestatorul execută o oră extra pentru curățenie moluz + cost transport evacuare.</div>
-            </div>
-            <div class="flex justify-between" style="border-top:2px solid #FF8C00;padding-top:8px;margin-top:4px;margin-bottom:12px">
-              <span class="font-bold text-[#003366]">Σ Cost nivel AUR (resurse reale cumulative)</span>
-              <span class="font-bold font-mono text-[#FF8C00]">1.063 Lei</span>
-            </div>
-            <div class="flex justify-between text-[#6B7A8D]"><span>+ Costuri indirecte (10%)</span><span class="font-mono">1.169 Lei</span></div>
-            <div class="flex justify-between text-[#6B7A8D]"><span>+ Marketing (3%)</span><span class="font-mono">1.204 Lei</span></div>
-            <div class="flex justify-between text-[#6B7A8D]"><span>+ Mentenanță platformă (3%)</span><span class="font-mono">1.240 Lei</span></div>
-            <div class="flex justify-between font-semibold text-[#FF8C00]"><span>+ Comision HBP · My Darrin (15%)</span><span class="font-mono font-bold">1.426 Lei</span></div>
-            <div class="flex justify-between text-[#6B7A8D]"><span>× Zonă (1.0) × Legislație RO-STD (1.0) × Urgență Normal (1.0)</span><span class="font-mono">× 1.0</span></div>
-            <div class="flex justify-between border-t border-[#D5DFE8] pt-1.5 mt-2"><span class="font-bold">Subtotal pre-TVA</span><span class="font-bold font-mono">1.426 Lei</span></div>
-            <div class="flex justify-between text-red-500"><span>+ TVA RO (19%)</span><span class="font-mono">+ 271 Lei</span></div>
+            <div class="flex justify-between"><span class="text-[#6B7A8D]">Manoperă · instalator · 1 oră</span><span class="font-mono">520,00 Lei</span></div>
+            <div class="flex justify-between"><span class="text-[#6B7A8D]">Material · calorifer C11 600/8 · 1 buc</span><span class="font-mono">310,00 Lei</span></div>
+            <div class="flex justify-between"><span class="text-[#6B7A8D]">Material · fitinguri + teflon · 1 set</span><span class="font-mono">85,00 Lei</span></div>
+            <div class="flex justify-between" style="border-bottom:1px dashed #E8F0F7;padding-bottom:8px;margin-bottom:8px"><span class="text-[#6B7A8D]">Curier · livrare materiale</span><span class="font-mono">88,00 Lei</span></div>
+            <div class="flex justify-between" style="border-top:2px solid #FF8C00;padding-top:8px;margin-bottom:10px"><span class="font-bold text-[#003366]">Subtotal</span><span class="font-bold font-mono text-[#FF8C00]">1.003,00 Lei</span></div>
+            <div class="flex justify-between text-[#6B7A8D]"><span>+ Marketing (3%)</span><span class="font-mono">30,09 Lei</span></div>
+            <div class="flex justify-between text-[#6B7A8D]"><span>+ Mentenanță platformă (2%)</span><span class="font-mono">20,06 Lei</span></div>
+            <div class="flex justify-between font-semibold text-[#FF8C00]"><span>+ Comision platformă (12%)</span><span class="font-mono font-bold">120,36 Lei</span></div>
+            <div class="flex justify-between border-t border-[#D5DFE8] pt-1.5 mt-2"><span class="font-bold">Total fără TVA</span><span class="font-bold font-mono">1.173,51 Lei</span></div>
+            <div class="flex justify-between text-red-500"><span>+ TVA RO (21%)</span><span class="font-mono">+ 246,44 Lei</span></div>
+            <div class="flex justify-between text-[#6B7A8D]"><span>Prag minim RO: 150,00 Lei → depășit, nu se aplică</span><span class="font-mono">OK</span></div>
             <div class="flex justify-between border-t-2 border-[#003366] pt-2 mt-1">
               <span class="font-bold text-[#003366] text-sm">PREȚ FINAL CLIENT</span>
-              <span class="font-bold font-mono text-[#FF8C00] text-lg">1.697 Lei</span>
+              <span class="font-bold font-mono text-[#FF8C00] text-lg">1.419,95 Lei</span>
             </div>
           </div>
         </div>
         <div class="space-y-3">
           <div class="rounded-xl p-4" style="background:#EBF4FB;border:1px solid #D6E8F5">
-            <div class="font-bold text-[#003366] text-sm mb-2">🏗 Structura costurilor (Aur)</div>
+            <div class="font-bold text-[#003366] text-sm mb-2">🏗 Structura prețului final din exemplu</div>
             <div class="space-y-2">
-              <div><div class="flex justify-between text-xs mb-1"><span class="text-[#6B7A8D]">Resurse furnizori (LABOR+MAT+TRNSP)</span><span>48.1%</span></div><div class="h-2 bg-[#D5DFE8] rounded-full"><div class="h-2 rounded-full bg-[#0E9E99]" style="width:48%"></div></div></div>
-              <div><div class="flex justify-between text-xs mb-1"><span class="text-[#6B7A8D]">Resurse adăugate nivel AUR vs BRONZ</span><span>25.7%</span></div><div class="h-2 bg-[#D5DFE8] rounded-full"><div class="h-2 rounded-full bg-[#7AB3E0]" style="width:26%"></div></div></div>
-              <div><div class="flex justify-between text-xs mb-1"><span class="text-[#6B7A8D]">Costuri indirecte</span><span>7.9%</span></div><div class="h-2 bg-[#D5DFE8] rounded-full"><div class="h-2 rounded-full bg-[#A78BFA]" style="width:8%"></div></div></div>
-              <div><div class="flex justify-between text-xs mb-1"><span class="text-[#6B7A8D]">Marketing + Mentenanță</span><span>3.8%</span></div><div class="h-2 bg-[#D5DFE8] rounded-full"><div class="h-2 rounded-full bg-[#A78BFA]" style="width:4%"></div></div></div>
-              <div><div class="flex justify-between text-xs mb-1"><span class="text-[#6B7A8D] font-bold">Comision HBP (15%)</span><span class="font-bold">8.4%</span></div><div class="h-2 bg-[#D5DFE8] rounded-full"><div class="h-2 rounded-full bg-[#FF8C00]" style="width:8%"></div></div></div>
-              <div><div class="flex justify-between text-xs mb-1"><span class="text-red-400">TVA (19%)</span><span class="text-red-400">16%</span></div><div class="h-2 bg-[#D5DFE8] rounded-full"><div class="h-2 rounded-full bg-red-300" style="width:16%"></div></div></div>
+              <div><div class="flex justify-between text-xs mb-1"><span class="text-[#6B7A8D]">Resurse (manoperă, materiale, curier)</span><span>70,6%</span></div><div class="h-2 bg-[#D5DFE8] rounded-full"><div class="h-2 rounded-full bg-[#0E9E99]" style="width:70.6%"></div></div></div>
+              <div><div class="flex justify-between text-xs mb-1"><span class="text-[#6B7A8D]">Marketing + mentenanță</span><span>3,5%</span></div><div class="h-2 bg-[#D5DFE8] rounded-full"><div class="h-2 rounded-full bg-[#A78BFA]" style="width:3.5%"></div></div></div>
+              <div><div class="flex justify-between text-xs mb-1"><span class="text-[#6B7A8D] font-bold">Comision platformă (12%)</span><span class="font-bold">8,5%</span></div><div class="h-2 bg-[#D5DFE8] rounded-full"><div class="h-2 rounded-full bg-[#FF8C00]" style="width:8.5%"></div></div></div>
+              <div><div class="flex justify-between text-xs mb-1"><span class="text-red-400">TVA (21%)</span><span class="text-red-400">17,4%</span></div><div class="h-2 bg-[#D5DFE8] rounded-full"><div class="h-2 rounded-full bg-red-300" style="width:17.4%"></div></div></div>
             </div>
           </div>
-          <div class="rounded-xl p-4" style="background:#FFF0D6;border:1px solid #FFB866">
-            <div class="font-bold text-[#CC7000] text-sm mb-2">⚡ Impactul urgenței asupra prețului</div>
-            <div class="space-y-1.5 text-xs">
-              <div class="flex justify-between"><span class="text-[#6B7A8D]">Normal (Luni–Vineri 08–18)</span><span class="font-mono font-bold">1.697 Lei ×1.0</span></div>
-              <div class="flex justify-between"><span class="text-[#6B7A8D]">Urgent ziua (&lt;3h)</span><span class="font-mono font-bold text-[#CC7000]">2.206 Lei ×1.3</span></div>
-              <div class="flex justify-between"><span class="text-[#6B7A8D]">Noapte / Sâmbătă</span><span class="font-mono font-bold text-[#CC7000]">2.546 Lei ×1.5</span></div>
-              <div class="flex justify-between border-t border-[#FFB866] pt-1.5"><span class="font-bold text-[#CC7000]">Duminică / Sărbătoare</span><span class="font-mono font-bold text-red-500">3.394 Lei ×2.0</span></div>
-            </div>
+          <div class="rounded-xl p-4" style="background:#F4F7F9;border:1px solid #D5DFE8;font-size:12px;color:#6B7A8D;line-height:1.65">
+            <div class="font-bold text-[#003366] text-sm mb-2">Unde se configurează</div>
+            Procentele platformei: <code>backoffice_config</code>, secțiunea <code>pricing</code>. TVA și prag minim: <em>Back-office → Țări &amp; Zone</em> (tabela <code>tax_configurations</code>). Costul resurselor vine din rețeta legată la nivelul serviciului (<em>Catalog → Rețetă tehnică</em>) și din tarifele de manoperă, materiale și transport.
           </div>
         </div>
       </div>
@@ -911,7 +787,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
             <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:8px">✅ Vizibil pe pagina publică</div>
             <div style="font-size:12px;color:#2D2D2D;line-height:2">
               <div style="display:flex;justify-content:space-between"><span>Titlu + descriere nivel (benefitsMarkdown)</span><span style="font-size:9px;background:#D4EDDA;color:#1A7A3A;padding:1px 7px;border-radius:99px;font-weight:700">✓ ON</span></div>
-              <div style="display:flex;justify-content:space-between"><span>Preț total final (cu TVA + VMC + zonă)</span><span style="font-size:9px;background:#D4EDDA;color:#1A7A3A;padding:1px 7px;border-radius:99px;font-weight:700">✓ ON</span></div>
+              <div style="display:flex;justify-content:space-between"><span>Preț total final (cu TVA + prag minim)</span><span style="font-size:9px;background:#D4EDDA;color:#1A7A3A;padding:1px 7px;border-radius:99px;font-weight:700">✓ ON</span></div>
               <div style="display:flex;justify-content:space-between"><span>Tabel ✓/✗ ce include/exclude</span><span style="font-size:9px;background:#D4EDDA;color:#1A7A3A;padding:1px 7px;border-radius:99px;font-weight:700">✓ ON</span></div>
               <div style="display:flex;justify-content:space-between"><span>Garanție digitală (luni)</span><span style="font-size:9px;background:#D4EDDA;color:#1A7A3A;padding:1px 7px;border-radius:99px;font-weight:700">✓ ON</span></div>
               <div style="display:flex;justify-content:space-between"><span>Tarife speciale (×1.0/1.3/1.5/2.0 informativ)</span><span style="font-size:9px;background:#D4EDDA;color:#1A7A3A;padding:1px 7px;border-radius:99px;font-weight:700">✓ ON</span></div>
@@ -924,7 +800,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
               <div style="display:flex;justify-content:space-between"><span>Rețeta completă (resurse + prețuri)</span><span style="font-size:9px;background:#FDECEA;color:#C0392B;padding:1px 7px;border-radius:99px;font-weight:700">✗ OFF</span></div>
               <div style="display:flex;justify-content:space-between"><span>Formula calcul (%, coeficienți)</span><span style="font-size:9px;background:#FDECEA;color:#C0392B;padding:1px 7px;border-radius:99px;font-weight:700">✗ OFF</span></div>
               <div style="display:flex;justify-content:space-between"><span>Identitate parteneri (pseudonim+cod vizibil)</span><span style="font-size:9px;background:#FDECEA;color:#C0392B;padding:1px 7px;border-radius:99px;font-weight:700">✗ OFF</span></div>
-              <div style="display:flex;justify-content:space-between"><span>Costuri indirecte / marketing / HBP %</span><span style="font-size:9px;background:#FDECEA;color:#C0392B;padding:1px 7px;border-radius:99px;font-weight:700">✗ OFF</span></div>
+              <div style="display:flex;justify-content:space-between"><span>Marketing / mentenanță / comision platformă</span><span style="font-size:9px;background:#FDECEA;color:#C0392B;padding:1px 7px;border-radius:99px;font-weight:700">✗ OFF</span></div>
               <div style="display:flex;justify-content:space-between"><span>Vizibilitate deviz (configurat BO)</span><span style="font-size:9px;background:#EBF4FB;color:#1A5FAD;padding:1px 7px;border-radius:99px;font-weight:700">⚙ BO</span></div>
             </div>
           </div>
@@ -1097,7 +973,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
             <div class="flow-node" style="background:#EBF4FB;border:1px solid #D6E8F5">
               <div class="flex items-center gap-3">
                 <div style="width:32px;height:32px;border-radius:10px;background:#003366;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:800;flex-shrink:0">4</div>
-                <div><div class="font-bold text-sm text-[#003366]">TaxRuleRecord → TVA automat</div><div class="text-xs text-[#6B7A8D] mt-0.5">RO=19% · MD=20% · DE=19% · FR=20% · BG=20%</div></div>
+                <div><div class="font-bold text-sm text-[#003366]">TaxRuleRecord → TVA automat</div><div class="text-xs text-[#6B7A8D] mt-0.5">RO=21% · MD=20% · DE=19% · FR=20% · BG=20%</div></div>
               </div>
             </div>
             <div class="flow-arrow">↓</div>
@@ -1194,7 +1070,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
             <div class="text-center text-[#D5DFE8]">↓</div>
             <div class="flow-node" style="background:#FFF0D6;border:1px solid #FFB866;padding:12px 16px">
               <div class="font-bold text-xs text-[#CC7000]">5. Deviz Configs</div>
-              <div class="text-[11px] text-[#6B7A8D] mt-0.5">PriceConfigRecord: indirect%, maintenance%, HBP%, urgency coef., DevizRuleRecord per nivel</div>
+              <div class="text-[11px] text-[#6B7A8D] mt-0.5">backoffice_config (secțiunea pricing): marketing%, mentenanță%, comision platformă%; rețeta tehnică per nivel</div>
             </div>
           </div>
         </div>
@@ -1209,7 +1085,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
             <div class="text-center text-[#D5DFE8]">↓</div>
             <div class="flow-node" style="background:#E0F5F4;border:1px solid rgba(14,158,153,.3);padding:12px 16px">
               <div class="font-bold text-xs text-[#0B7A76]">7. Cost Engine calcul</div>
-              <div class="text-[11px] text-[#6B7A8D] mt-0.5">Formula 10 pași: bază → nivel → indirecte → marketing → mentenanță → HBP → zonă → leg. → urg. → TVA</div>
+              <div class="text-[11px] text-[#6B7A8D] mt-0.5">Formula în 5 pași: subtotal → marketing → mentenanță → comision platformă → TVA, apoi prag minim per țară</div>
             </div>
             <div class="text-center text-[#D5DFE8]">↓</div>
             <div class="flow-node" style="background:linear-gradient(135deg,#E0F5F4,#EBF4FB);border:1px solid rgba(14,158,153,.2);padding:12px 16px">
@@ -1239,7 +1115,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
             <div class="text-center text-[#D5DFE8]">↓</div>
             <div class="flow-node" style="background:#F4F7F9;border:1px solid #D5DFE8;padding:12px 16px">
               <div class="font-bold text-xs text-[#003366]">Booking panel + Deviz AI</div>
-              <div class="text-[11px] text-[#6B7A8D] mt-0.5">Selectează nivel · tip comandă (normal/urgent) · dată · oră → preț live calculat automat</div>
+              <div class="text-[11px] text-[#6B7A8D] mt-0.5">Selectează nivel · cantitate · dată · oră → preț live calculat automat</div>
             </div>
             <div class="text-center text-[#D5DFE8]">↓</div>
             <div class="flow-node" style="background:#FFF0D6;border:1px solid #FFB866;padding:12px 16px">
@@ -1512,172 +1388,69 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 
 
   <!-- ══════════════════════════════════════════
-       6. VALOARE MINIMĂ COMANDĂ (VMC)
+       6. PRAG MINIM COMANDĂ (VMC) — aliniat la cod (28 sept. 2026)
   ══════════════════════════════════════════ -->
 
-  <div class="sec-divider"><div class="sec-num" style="background:#0E9E99">6</div><h2 class="text-2xl font-bold text-[#003366]">Valoare Minimă Comandă (VMC) — Configurată per țară</h2></div>
+  <div class="sec-divider"><div class="sec-num" style="background:#0E9E99">6</div><h2 class="text-2xl font-bold text-[#003366]">Prag minim comandă (VMC) — configurat per țară</h2></div>
 
   <div class="card reveal">
     <div class="card-hdr" style="background:linear-gradient(135deg,#002255,#003366)">
       <div class="font-bold text-white flex items-center gap-2">
         <span style="width:28px;height:28px;background:#0E9E99;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">⚖</span>
-        Valoare Minimă Comandă (VMC) — Gestionată din Backoffice per țară · LIVE
+        Prag minim comandă — citit din tax_configurations
       </div>
-      <span class="chip" style="background:rgba(14,158,153,.2);border:1px solid rgba(14,158,153,.3);color:#0E9E99">Admin · SuperAdmin · LIVE sync</span>
+      <span id="vmc-src" class="chip" style="background:rgba(14,158,153,.2);border:1px solid rgba(14,158,153,.3);color:#0E9E99">instantaneu 28 sept. 2026</span>
     </div>
     <div class="p-6 space-y-6">
 
-      <!-- LOGICA EXPLICATĂ -->
       <div style="background:#F4F7F9;border-radius:16px;border:1px solid #D5DFE8;padding:20px">
-        <div style="font-weight:700;color:#003366;font-size:14px;margin-bottom:12px">📐 Logica de reglare automată VMC</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-          <div>
-            <div style="font-size:12px;color:#6B7A8D;line-height:1.75">
-              Platforma calculează valoarea comenzii pe baza <strong style="color:#2D2D2D">cantității × prețul unitar</strong> al resursei selectate. 
-              Dacă rezultatul este <strong style="color:#C0392B">sub pragul VMC configurat</strong> pentru acea țară, 
-              sistemul aplică automat <strong style="color:#003366">valoarea minimă</strong> ca preț de bază — 
-              fără a modifica cantitatea sau resursele din rețetă.
-            </div>
-            <div style="margin-top:12px;padding:12px;background:#FDECEA;border-radius:12px;border:1px solid rgba(220,38,38,.2)">
-              <div style="font-size:10px;font-weight:700;color:#C0392B;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Exemplu concret</div>
-              <div style="font-size:12px;color:#6B7A8D;line-height:1.65">
-                Serviciu: <strong style="color:#2D2D2D">Montaj gresie</strong> · Nivel Bronz · București<br>
-                Tarif: <strong style="color:#2D2D2D">45 Lei/m²</strong> manoperă<br>
-                Cantitate client: <strong style="color:#2D2D2D">2 m²</strong><br>
-                Calcul brut: 45 × 2 = <strong style="color:#C0392B">90 Lei → sub VMC RO (100 Lei)</strong><br>
-                <strong style="color:#003366">→ Sistemul aplică VMC: 100 Lei</strong> ca bază de calcul<br>
-                <span style="font-size:11px;color:#999;font-style:italic">Clientul vede: de la 100 Lei · în catalog: de la 45 Lei/m²</span>
-              </div>
-            </div>
-          </div>
-          <div>
-            <!-- Flow VMC vizual -->
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:10px">Flux decizie VMC</div>
-            <div class="space-y-2">
-              <div style="display:flex;align-items:center;gap:10px;padding:9px 13px;background:#EBF4FB;border-radius:10px;border:1px solid #D6E8F5">
-                <div style="width:22px;height:22px;border-radius:50%;background:#003366;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">1</div>
-                <div style="font-size:12px;color:#2D2D2D">Calcul brut = cantitate × preț_unitar</div>
-              </div>
-              <div style="text-align:center;color:#D5DFE8;font-size:18px">↓</div>
-              <div style="display:flex;align-items:center;gap:10px;padding:9px 13px;background:#FFF0D6;border-radius:10px;border:1px solid #FFB866">
-                <div style="width:22px;height:22px;border-radius:50%;background:#FF8C00;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">2</div>
-                <div style="font-size:12px;color:#2D2D2D">Calcul brut ≥ VMC_țară?</div>
-              </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
-                <div style="text-align:center">
-                  <div style="color:#D5DFE8;font-size:14px;margin-bottom:4px">✓ DA</div>
-                  <div style="padding:8px;background:#D4EDDA;border-radius:10px;border:1px solid rgba(26,122,58,.2);font-size:11px;color:#1A7A3A;font-weight:600">Folosește calcul brut</div>
-                </div>
-                <div style="text-align:center">
-                  <div style="color:#D5DFE8;font-size:14px;margin-bottom:4px">✗ NU</div>
-                  <div style="padding:8px;background:#FDECEA;border-radius:10px;border:1px solid rgba(220,38,38,.2);font-size:11px;color:#C0392B;font-weight:600">Aplică VMC ca bază</div>
-                </div>
-              </div>
-              <div style="display:flex;align-items:center;gap:10px;padding:9px 13px;background:#E0F5F4;border-radius:10px;border:1px solid rgba(14,158,153,.3)">
-                <div style="width:22px;height:22px;border-radius:50%;background:#0E9E99;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">3</div>
-                <div style="font-size:12px;color:#2D2D2D">Aplică formula completă (indirecte + HBP + TVA)</div>
-              </div>
-              <div style="text-align:center;color:#D5DFE8;font-size:18px">↓</div>
-              <div style="display:flex;align-items:center;gap:10px;padding:9px 13px;background:#FFF0D6;border-radius:10px;border:1px solid #FFB866">
-                <div style="width:22px;height:22px;border-radius:50%;background:#FF8C00;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">✓</div>
-                <div style="font-size:12px;font-weight:700;color:#CC7000">Preț final afișat clientului</div>
-              </div>
-            </div>
+        <div style="font-weight:700;color:#003366;font-size:14px;margin-bottom:12px">📐 Cum se aplică</div>
+        <div style="font-size:12.5px;color:#6B7A8D;line-height:1.75">
+          Pragul se aplică <strong style="color:#C0392B">pe prețul final, după TVA</strong>: <code style="font-family:monospace;font-size:11.5px">pret_final = max( subtotal + taxe platformă + TVA , prag_minim_comanda(țară) )</code>. Nu se aplică pe costul de bază înainte de taxe. Rețeta, cantitatea și componentele rămân neschimbate; se ridică doar suma finală. Dacă o țară nu are prag configurat, serverul folosește 100.
+        </div>
+        <div style="margin-top:12px;padding:12px;background:#FDECEA;border-radius:12px;border:1px solid rgba(220,38,38,.2)">
+          <div style="font-size:10px;font-weight:700;color:#C0392B;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Exemplu concret</div>
+          <div style="font-size:12px;color:#6B7A8D;line-height:1.65">
+            Manoperă 2 m² × 45 Lei = <strong style="color:#2D2D2D">90,00 Lei</strong> subtotal · România<br>
+            + marketing 2,70 + mentenanță 1,80 + comision 10,80 = 105,30 Lei · + TVA 21% (22,11) = <strong style="color:#2D2D2D">127,41 Lei</strong><br>
+            127,41 &lt; prag RO 150 → <strong style="color:#003366">clientul plătește 150,00 Lei</strong>
           </div>
         </div>
       </div>
 
-      <!-- TABEL VMC PER ȚARĂ -->
       <div>
-        <div style="font-weight:700;color:#003366;font-size:14px;margin-bottom:12px">🌍 VMC configurate per țară (Backoffice → System → Geo-Fiscal · LIVE)</div>
+        <div style="font-weight:700;color:#003366;font-size:14px;margin-bottom:12px">🌍 Prag minim și TVA în cele 5 țări acceptate de motor</div>
         <div style="overflow-x:auto;border-radius:16px;border:1px solid #D5DFE8">
           <table style="width:100%;border-collapse:collapse;font-size:13px">
             <thead style="background:linear-gradient(135deg,#F4F7F9,#EBF4FB)">
               <tr>
                 <th style="padding:11px 16px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Țară</th>
                 <th style="padding:11px 16px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Monedă</th>
-                <th style="padding:11px 16px;text-align:right;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">VMC (local)</th>
-                <th style="padding:11px 16px;text-align:right;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">VMC (EUR echiv.)</th>
-                <th style="padding:11px 16px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">TVA inclus</th>
-                <th style="padding:11px 16px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Status</th>
-                <th style="padding:11px 16px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Configurată de</th>
+                <th style="padding:11px 16px;text-align:right;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Prag minim</th>
+                <th style="padding:11px 16px;text-align:right;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">TVA</th>
+                <th style="padding:11px 16px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Checkout</th>
               </tr>
             </thead>
-            <tbody>
-              <tr style="border-bottom:1px solid #F4F7F9">
-                <td style="padding:12px 16px"><span style="font-size:16px">🇷🇴</span> <strong>România</strong></td>
-                <td style="padding:12px 16px;text-align:center;font-family:monospace;font-weight:700;color:#003366">RON</td>
-                <td style="padding:12px 16px;text-align:right;font-weight:800;font-size:16px;color:#FF8C00">100 Lei</td>
-                <td style="padding:12px 16px;text-align:right;color:#6B7A8D;font-mono">≈ 20 EUR</td>
-                <td style="padding:12px 16px;text-align:center"><span style="font-size:9px;background:#D4EDDA;color:#1A7A3A;padding:2px 8px;border-radius:99px;font-weight:700">Nu — pre-TVA</span></td>
-                <td style="padding:12px 16px;text-align:center"><span style="display:inline-flex;align-items:center;gap:4px;font-size:9px;background:#D4EDDA;color:#1A7A3A;padding:3px 10px;border-radius:99px;font-weight:700"><span style="width:5px;height:5px;border-radius:50%;background:#1A7A3A;animation:pdot 2s infinite;display:inline-block"></span>LIVE</span></td>
-                <td style="padding:12px 16px;font-size:11px;color:#6B7A8D">Admin RO · SuperAdmin</td>
-              </tr>
-              <tr style="border-bottom:1px solid #F4F7F9;background:#FAFBFD">
-                <td style="padding:12px 16px"><span style="font-size:16px">🇲🇩</span> <strong>Moldova</strong></td>
-                <td style="padding:12px 16px;text-align:center;font-family:monospace;font-weight:700;color:#003366">MDL</td>
-                <td style="padding:12px 16px;text-align:right;font-weight:800;font-size:16px;color:#FF8C00">400 MDL</td>
-                <td style="padding:12px 16px;text-align:right;color:#6B7A8D;font-mono">≈ 20 EUR</td>
-                <td style="padding:12px 16px;text-align:center"><span style="font-size:9px;background:#D4EDDA;color:#1A7A3A;padding:2px 8px;border-radius:99px;font-weight:700">Nu — pre-TVA</span></td>
-                <td style="padding:12px 16px;text-align:center"><span style="display:inline-flex;align-items:center;gap:4px;font-size:9px;background:#D4EDDA;color:#1A7A3A;padding:3px 10px;border-radius:99px;font-weight:700"><span style="width:5px;height:5px;border-radius:50%;background:#1A7A3A;animation:pdot 2s infinite;display:inline-block"></span>LIVE</span></td>
-                <td style="padding:12px 16px;font-size:11px;color:#6B7A8D">Admin MD · SuperAdmin</td>
-              </tr>
-              <tr style="border-bottom:1px solid #F4F7F9">
-                <td style="padding:12px 16px"><span style="font-size:16px">🇩🇪</span> <strong>Germania</strong></td>
-                <td style="padding:12px 16px;text-align:center;font-family:monospace;font-weight:700;color:#003366">EUR</td>
-                <td style="padding:12px 16px;text-align:right;font-weight:800;font-size:16px;color:#FF8C00">25 EUR</td>
-                <td style="padding:12px 16px;text-align:right;color:#6B7A8D;font-mono">25 EUR</td>
-                <td style="padding:12px 16px;text-align:center"><span style="font-size:9px;background:#D4EDDA;color:#1A7A3A;padding:2px 8px;border-radius:99px;font-weight:700">Nu — pre-TVA</span></td>
-                <td style="padding:12px 16px;text-align:center"><span style="display:inline-flex;align-items:center;gap:4px;font-size:9px;background:#FFF0D6;color:#CC7000;padding:3px 10px;border-radius:99px;font-weight:700">În configurare</span></td>
-                <td style="padding:12px 16px;font-size:11px;color:#6B7A8D">Admin DE · SuperAdmin</td>
-              </tr>
-              <tr style="border-bottom:1px solid #F4F7F9;background:#FAFBFD">
-                <td style="padding:12px 16px"><span style="font-size:16px">🇫🇷</span> <strong>Franța</strong></td>
-                <td style="padding:12px 16px;text-align:center;font-family:monospace;font-weight:700;color:#003366">EUR</td>
-                <td style="padding:12px 16px;text-align:right;font-weight:800;font-size:16px;color:#FF8C00">25 EUR</td>
-                <td style="padding:12px 16px;text-align:right;color:#6B7A8D;font-mono">25 EUR</td>
-                <td style="padding:12px 16px;text-align:center"><span style="font-size:9px;background:#D4EDDA;color:#1A7A3A;padding:2px 8px;border-radius:99px;font-weight:700">Nu — pre-TVA</span></td>
-                <td style="padding:12px 16px;text-align:center"><span style="display:inline-flex;align-items:center;gap:4px;font-size:9px;background:#FFF0D6;color:#CC7000;padding:3px 10px;border-radius:99px;font-weight:700">În configurare</span></td>
-                <td style="padding:12px 16px;font-size:11px;color:#6B7A8D">Admin FR · SuperAdmin</td>
-              </tr>
-              <tr>
-                <td style="padding:12px 16px"><span style="font-size:16px">🇧🇬</span> <strong>Bulgaria</strong></td>
-                <td style="padding:12px 16px;text-align:center;font-family:monospace;font-weight:700;color:#003366">BGN</td>
-                <td style="padding:12px 16px;text-align:right;font-weight:800;font-size:16px;color:#FF8C00">40 BGN</td>
-                <td style="padding:12px 16px;text-align:right;color:#6B7A8D;font-mono">≈ 20 EUR</td>
-                <td style="padding:12px 16px;text-align:center"><span style="font-size:9px;background:#D4EDDA;color:#1A7A3A;padding:2px 8px;border-radius:99px;font-weight:700">Nu — pre-TVA</span></td>
-                <td style="padding:12px 16px;text-align:center"><span style="display:inline-flex;align-items:center;gap:4px;font-size:9px;background:#FFF0D6;color:#CC7000;padding:3px 10px;border-radius:99px;font-weight:700">În configurare</span></td>
-                <td style="padding:12px 16px;font-size:11px;color:#6B7A8D">Admin BG · SuperAdmin</td>
-              </tr>
-            </tbody>
+            <tbody id="vmc-tbody"></tbody>
           </table>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
-          <div style="padding:12px 16px;background:#EBF4FB;border-radius:12px;border:1px solid #D6E8F5;font-size:11.5px;color:#6B7A8D;line-height:1.6">
-            <strong style="color:#003366">VMC = cost pre-TVA.</strong> TVA-ul se aplică după aplicarea VMC, conform regulii geo-fiscale a țării. 
-            Astfel clientul vede întotdeauna prețul final cu TVA inclus, iar VMC este pragul intern pre-taxare.
-          </div>
-          <div style="padding:12px 16px;background:#FFF0D6;border-radius:12px;border:1px solid #FFB866;font-size:11.5px;color:#6B7A8D;line-height:1.6">
-            <strong style="color:#CC7000">VMC este LIVE.</strong> Modificările din Backoffice → System → Geo-Fiscal sunt aplicate imediat prin 
-            <code style="font-family:monospace;font-size:10px;background:#FFF0D6">PUT /api/v1/backoffice/site-content/vmc-config</code> 
-            cu invalidare cache automată.
-          </div>
+        <div style="margin-top:12px;padding:12px 16px;background:#EBF4FB;border-radius:12px;border:1px solid #D6E8F5;font-size:11.5px;color:#6B7A8D;line-height:1.6">
+          Valorile se modifică din <strong style="color:#003366">Back-office → Țări &amp; Zone</strong> (endpoint <code style="font-family:monospace;font-size:10px">POST /api/accountancy</code>, acțiunea <code style="font-family:monospace;font-size:10px">update_tax_config</code>), iar efectul e imediat la următorul calcul. Tabelul conține 33 de țări; motorul de deviz acceptă azi doar RO, MD, DE, FR și BG.
         </div>
       </div>
 
-      <!-- SIMULATOR VMC INTERACTIV -->
       <div>
-        <div style="font-weight:700;color:#003366;font-size:14px;margin-bottom:12px">🧮 Simulator VMC — Testează calculul</div>
+        <div style="font-weight:700;color:#003366;font-size:14px;margin-bottom:12px">🧮 Simulator — aceeași formulă ca în server</div>
         <div style="background:#F4F7F9;border-radius:16px;border:1px solid #D5DFE8;padding:20px">
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px">
             <div>
-              <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:6px">Serviciu exemplu</label>
+              <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:6px">Cost manoperă (exemple orientative)</label>
               <select id="sim-service" onchange="simCalc()" style="width:100%;background:#fff;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px 12px;font-size:13px;color:#2D2D2D;outline:none;font-family:inherit;cursor:pointer">
-                <option value="45|mp|Montaj gresie">Montaj gresie · 45 Lei/m²</option>
-                <option value="30|mp|Văruit pereți">Văruit pereți · 30 Lei/m²</option>
-                <option value="280|buc|Inlocuire calorifer">Înlocuire calorifer · 280 Lei/buc</option>
-                <option value="55|mp|Parchet flotant">Parchet flotant · 55 Lei/m²</option>
-                <option value="120|ml|Instalare copertină">Copertină · 120 Lei/ml</option>
+                <option value="45|mp|Montaj gresie">Montaj gresie · 45/m²</option>
+                <option value="30|mp|Văruit pereți">Văruit pereți · 30/m²</option>
+                <option value="280|buc|Înlocuire calorifer">Înlocuire calorifer · 280/buc</option>
+                <option value="55|mp|Parchet flotant">Parchet flotant · 55/m²</option>
+                <option value="120|ml|Instalare copertină">Copertină · 120/ml</option>
               </select>
             </div>
             <div>
@@ -1686,170 +1459,53 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
             </div>
             <div>
               <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:6px">Țara clientului</label>
-              <select id="sim-country" onchange="simCalc()" style="width:100%;background:#fff;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px 12px;font-size:13px;color:#2D2D2D;outline:none;font-family:inherit;cursor:pointer">
-                <option value="RO|100|RON|0.19">🇷🇴 România · VMC 100 Lei</option>
-                <option value="MD|400|MDL|0.20">🇲🇩 Moldova · VMC 400 MDL</option>
-                <option value="DE|25|EUR|0.19">🇩🇪 Germania · VMC 25 EUR</option>
-                <option value="FR|25|EUR|0.20">🇫🇷 Franța · VMC 25 EUR</option>
-                <option value="BG|40|BGN|0.20">🇧🇬 Bulgaria · VMC 40 BGN</option>
-              </select>
-            </div>
-            <div>
-              <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:6px">Tip comandă</label>
-              <select id="sim-urg" onchange="simCalc()" style="width:100%;background:#fff;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px 12px;font-size:13px;color:#2D2D2D;outline:none;font-family:inherit;cursor:pointer">
-                <option value="1.0">📅 Normal ×1.0</option>
-                <option value="1.3">⚡ Urgent ×1.3</option>
-                <option value="1.5">🌙 Noapte ×1.5</option>
-                <option value="2.0">🎉 Duminică ×2.0</option>
-              </select>
+              <select id="sim-country" onchange="simCalc()" style="width:100%;background:#fff;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px 12px;font-size:13px;color:#2D2D2D;outline:none;font-family:inherit;cursor:pointer"></select>
             </div>
           </div>
-
-          <!-- RESULT -->
           <div id="sim-result" style="background:#fff;border-radius:14px;border:2px solid #D5DFE8;padding:16px;min-height:120px">
             <div style="color:#8C9BAD;text-align:center;padding:20px 0">Completează câmpurile de mai sus pentru calcul instant</div>
           </div>
+          <div style="margin-top:10px;font-size:11px;color:#8C9BAD;line-height:1.55">Prețurile unitare din listă sunt exemple, nu tarife din baza de date. Simulatorul presupune subtotal = cantitate × preț unitar și aplică procentele platformei și TVA-ul din tabelul de mai sus.</div>
         </div>
       </div>
 
-      <!-- PERMISIUNI ADMIN -->
       <div>
-        <div style="font-weight:700;color:#003366;font-size:14px;margin-bottom:12px">🔐 Permisiuni configurare VMC — RBAC</div>
-        <div style="overflow-x:auto;border-radius:16px;border:1px solid #D5DFE8">
-          <table style="width:100%;border-collapse:collapse;font-size:12.5px">
-            <thead style="background:#F4F7F9">
-              <tr>
-                <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Rol</th>
-                <th style="padding:10px 16px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Vedere VMC</th>
-                <th style="padding:10px 16px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Modificare VMC</th>
-                <th style="padding:10px 16px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Activare/Dezactivare</th>
-                <th style="padding:10px 16px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Aprobare modificare</th>
-                <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7A8D;border-bottom:1px solid #D5DFE8">Scope</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr style="border-bottom:1px solid #F4F7F9;background:rgba(255,140,0,.04)">
-                <td style="padding:11px 16px;font-weight:700;color:#CC7000">⭐ SuperAdmin (HBP SRL)</td>
-                <td style="padding:11px 16px;text-align:center;color:#1A7A3A;font-size:16px;font-weight:700">✓</td>
-                <td style="padding:11px 16px;text-align:center;color:#1A7A3A;font-size:16px;font-weight:700">✓</td>
-                <td style="padding:11px 16px;text-align:center;color:#1A7A3A;font-size:16px;font-weight:700">✓</td>
-                <td style="padding:11px 16px;text-align:center;color:#1A7A3A;font-size:16px;font-weight:700">Auto</td>
-                <td style="padding:11px 16px;font-size:11px;color:#6B7A8D">Toate țările · Global override</td>
-              </tr>
-              <tr style="border-bottom:1px solid #F4F7F9">
-                <td style="padding:11px 16px;font-weight:700;color:#003366">🛡 Admin Țară (e.g. Admin RO)</td>
-                <td style="padding:11px 16px;text-align:center;color:#1A7A3A;font-size:16px;font-weight:700">✓</td>
-                <td style="padding:11px 16px;text-align:center;color:#1A7A3A;font-size:16px;font-weight:700">✓</td>
-                <td style="padding:11px 16px;text-align:center;color:#CC7000;font-size:13px;font-weight:700">± Limitat</td>
-                <td style="padding:11px 16px;text-align:center;font-size:11px;color:#6B7A8D">SuperAdmin</td>
-                <td style="padding:11px 16px;font-size:11px;color:#6B7A8D">Doar țara sa · în limita globală</td>
-              </tr>
-              <tr style="border-bottom:1px solid #F4F7F9;background:#FAFBFD">
-                <td style="padding:11px 16px;font-weight:600;color:#6B7A8D">🔧 Admin Catalog</td>
-                <td style="padding:11px 16px;text-align:center;color:#1A7A3A;font-size:16px;font-weight:700">✓</td>
-                <td style="padding:11px 16px;text-align:center;color:#C0392B;font-size:18px;font-weight:700">✗</td>
-                <td style="padding:11px 16px;text-align:center;color:#C0392B;font-size:18px;font-weight:700">✗</td>
-                <td style="padding:11px 16px;text-align:center;color:#C0392B;font-size:18px;font-weight:700">✗</td>
-                <td style="padding:11px 16px;font-size:11px;color:#6B7A8D">Read-only · Aplică în deviz</td>
-              </tr>
-              <tr>
-                <td style="padding:11px 16px;font-weight:600;color:#6B7A8D">👤 Partener / Client</td>
-                <td style="padding:11px 16px;text-align:center;color:#C0392B;font-size:18px;font-weight:700">✗</td>
-                <td style="padding:11px 16px;text-align:center;color:#C0392B;font-size:18px;font-weight:700">✗</td>
-                <td style="padding:11px 16px;text-align:center;color:#C0392B;font-size:18px;font-weight:700">✗</td>
-                <td style="padding:11px 16px;text-align:center;color:#C0392B;font-size:18px;font-weight:700">✗</td>
-                <td style="padding:11px 16px;font-size:11px;color:#6B7A8D">Nu are acces la configurare</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- SINCRONIZARE PAGINI -->
-      <div>
-        <div style="font-weight:700;color:#003366;font-size:14px;margin-bottom:12px">🔄 Sincronizare VMC — Toate paginile afectate</div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+        <div style="font-weight:700;color:#003366;font-size:14px;margin-bottom:12px">🔄 Unde se aplică pragul în cod</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
           <div style="background:#F4F7F9;border-radius:14px;border:1px solid #D5DFE8;padding:16px">
-            <div style="font-weight:700;color:#003366;font-size:12px;margin-bottom:10px">⚙️ Backoffice — Sursă</div>
-            <div class="space-y-2" style="font-size:11.5px;color:#6B7A8D;line-height:1.6">
-              <div style="display:flex;align-items:flex-start;gap:6px"><span style="color:#FF8C00;font-weight:700;flex-shrink:0">→</span><span>System → Geo-Fiscal → VMC per țară (editabil SuperAdmin/Admin)</span></div>
-              <div style="display:flex;align-items:flex-start;gap:6px"><span style="color:#FF8C00;font-weight:700;flex-shrink:0">→</span><span>Catalog → Creare Serviciu → Preț de la (calculat cu VMC)</span></div>
-              <div style="display:flex;align-items:flex-start;gap:6px"><span style="color:#FF8C00;font-weight:700;flex-shrink:0">→</span><span>Deviz Configs → PriceConfigRecord → min_order_value per țară</span></div>
+            <div style="font-weight:700;color:#003366;font-size:12px;margin-bottom:10px">⚙️ Sursă</div>
+            <div style="font-size:11.5px;color:#6B7A8D;line-height:1.7">
+              <code>tax_configurations.prag_minim_comanda</code> — editat din Back-office → Țări &amp; Zone.<br>
+              <code>lib/calculeaza-pret.js</code> — citește pragul și aplică <code>max()</code>.
             </div>
           </div>
           <div style="background:#EBF4FB;border-radius:14px;border:1px solid #D6E8F5;padding:16px">
-            <div style="font-weight:700;color:#003366;font-size:12px;margin-bottom:10px">🌐 Pagini publice — Afișare</div>
-            <div class="space-y-2" style="font-size:11.5px;color:#6B7A8D;line-height:1.6">
-              <div style="display:flex;align-items:flex-start;gap:6px"><span style="color:#0E9E99;font-weight:700;flex-shrink:0">→</span><span>Pagina catalog: <em>de la X Lei/m²</em> (tariful unitar, indiferent VMC)</span></div>
-              <div style="display:flex;align-items:flex-start;gap:6px"><span style="color:#0E9E99;font-weight:700;flex-shrink:0">→</span><span>Pagina serviciu: Booking panel → calculator live aplică VMC automat</span></div>
-              <div style="display:flex;align-items:flex-start;gap:6px"><span style="color:#0E9E99;font-weight:700;flex-shrink:0">→</span><span>Deviz AI: generează deviz cu VMC aplicat și afișează nota informativă</span></div>
+            <div style="font-weight:700;color:#003366;font-size:12px;margin-bottom:10px">🌐 Apelanți</div>
+            <div style="font-size:11.5px;color:#6B7A8D;line-height:1.7;font-family:monospace">
+              POST /api/deviz/calculate<br>
+              GET&nbsp; /api/public/calculeaza-pret-nivel<br>
+              POST /api/comenzi/creeaza
             </div>
           </div>
-          <div style="background:#E0F5F4;border-radius:14px;border:1px solid rgba(14,158,153,.3);padding:16px">
-            <div style="font-weight:700;color:#0B7A76;font-size:12px;margin-bottom:10px">📡 API Sync — LIVE</div>
-            <div class="space-y-2" style="font-size:11px;color:#6B7A8D;line-height:1.6;font-family:monospace">
-              <div style="color:#0E9E99">GET /api/v1/public/sync/catalog-price/{slug}</div>
-              <div style="color:#0E9E99">GET /api/v1/public/vmc/{country_code}</div>
-              <div style="color:#FF8C00">PUT /api/v1/backoffice/vmc/{country_code}</div>
-              <div style="color:#FF8C00">POST /api/v1/backoffice/vmc/validate
-            <div style="display:flex;align-items:center;gap:8px;margin-top:4px"><span style="font-size:9px;background:rgba(14,158,153,.2);color:#0E9E99;padding:2px 7px;border-radius:99px;font-weight:700">DISPATCH</span><span style="color:#0E9E99;font-family:monospace;font-size:11px">claimPartnerLiveJob(broadcast_id)</span> <span style="color:#4A6080;font-size:10px">→ primul partener care acceptă preia</span></div></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Comportament în catalog vs pagina serviciu -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
           <div style="background:#FFF8EE;border-radius:14px;border:1px solid #FFD980;padding:16px">
-            <div style="font-weight:700;color:#CC7000;font-size:12px;margin-bottom:8px">📋 Catalog public — Afișare preț unitar</div>
-            <div style="font-size:12px;color:#6B7A8D;line-height:1.65;margin-bottom:10px">
-              În catalogul de servicii, prețul afișat este <strong style="color:#2D2D2D">tariful unitar</strong> (ex: 45 Lei/m²) — 
-              independent de VMC. Clientul știe prețul per unitate de măsură.
-            </div>
-            <div style="background:#fff;border-radius:10px;border:1px solid #FFD980;padding:12px">
-              <div style="font-size:11px;color:#8C9BAD;margin-bottom:4px">Montaj gresie · Bronz</div>
-              <div style="font-size:22px;font-weight:800;color:#003366">45 <span style="font-size:13px;font-weight:400;color:#8C9BAD">Lei/m²</span></div>
-              <div style="font-size:10px;color:#8C9BAD;margin-top:2px">de la · minim 100 Lei comandă</div>
-            </div>
-          </div>
-          <div style="background:#EBF4FB;border-radius:14px;border:1px solid #D6E8F5;padding:16px">
-            <div style="font-weight:700;color:#003366;font-size:12px;margin-bottom:8px">🛒 Pagina serviciu — Calculator live VMC</div>
-            <div style="font-size:12px;color:#6B7A8D;line-height:1.65;margin-bottom:10px">
-              La completarea cantității în booking panel, calculatorul aplică VMC automat 
-              și afișează o notă explicativă dacă comanda este sub prag.
-            </div>
-            <div style="background:#fff;border-radius:10px;border:1px solid #D6E8F5;padding:12px">
-              <div style="font-size:11px;color:#8C9BAD;margin-bottom:4px">Cantitate: 2 m² × 45 Lei = 90 Lei</div>
-              <div style="font-size:11px;color:#C0392B;font-weight:600;margin-bottom:4px">⚠️ Sub VMC RO (100 Lei) — se aplică minimum</div>
-              <div style="font-size:22px;font-weight:800;color:#FF8C00">100 <span style="font-size:13px;font-weight:400;color:#8C9BAD">Lei · bază</span></div>
-              <div style="font-size:10px;color:#8C9BAD;margin-top:2px">+ costuri platformă + TVA = preț final</div>
+            <div style="font-weight:700;color:#CC7000;font-size:12px;margin-bottom:10px">📋 Ce vede clientul</div>
+            <div style="font-size:11.5px;color:#6B7A8D;line-height:1.7">
+              Pagina de configurare a serviciului afișează prețul întors de <code>calculeaza-pret-nivel</code>, deci deja cu pragul aplicat.
             </div>
           </div>
         </div>
       </div>
 
-      <!-- INTEGRARE ÎN FORMULA -->
       <div style="background:linear-gradient(135deg,#001E3C,#002855);border-radius:16px;border:1px solid rgba(14,158,153,.25);padding:20px">
         <div style="font-weight:700;color:#fff;font-size:13px;margin-bottom:14px;display:flex;align-items:center;gap:8px">
           <span style="width:24px;height:24px;background:#0E9E99;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px">∑</span>
-          Integrare VMC în Formula completă de calcul
+          Pragul în formula completă
         </div>
         <div style="font-family:monospace;font-size:12.5px;line-height:2;color:rgba(255,255,255,.75)">
-          <span style="color:#0E9E99">COST_BRUT</span> = cantitate × preț_unitar<br>
-          <span style="color:#FCD34D">COST_BAZĂ</span> = <span style="color:#F87171">max</span>(<span style="color:#0E9E99">COST_BRUT</span>, <span style="color:#FF8C00">VMC_țară</span>)
-          <span style="color:rgba(255,255,255,.35);font-size:11px">  ← reglare automată dacă sub prag</span><br>
-          <span style="color:#A78BFA">COST_NIVEL</span> = <span style="color:#FCD34D">COST_BAZĂ</span> + Σ(resurse_adăugate_nivel)<br>
-          <span style="color:#A78BFA">+ COSTURI_INDIRECTE</span> (<span style="color:rgba(255,255,255,.5)">indirect_%</span>)<br>
-          <span style="color:#A78BFA">+ MARKETING + MENTENANȚĂ + HBP_%</span><br>
-          <span style="color:#FCD34D">× COEF_ZONĂ × COEF_LEGISLAȚIE × URGENȚĂ</span><br>
-          <span style="color:#F87171">× (1 + TVA_țară)</span><br>
-          <span style="color:#fff;font-weight:700;font-size:14px">= PREȚ FINAL CLIENT</span>
-        </div>
-        <div style="margin-top:14px;padding:10px 14px;background:rgba(14,158,153,.12);border-radius:10px;border:1px solid rgba(14,158,153,.2)">
-          <div style="font-size:11px;color:rgba(255,255,255,.6);line-height:1.6">
-            <strong style="color:#0E9E99">Funcția max()</strong> este cheia — dacă COST_BRUT ≥ VMC_țară, totul continuă normal. 
-            Dacă COST_BRUT &lt; VMC_țară, sistemul folosește VMC ca prag de pornire, 
-            asigurând viabilitatea economică a fiecărei comenzi pentru toți partenerii implicați.
-          </div>
+          <span style="color:#FCD34D">SUBTOTAL</span> = Σ componente din rețetă<br>
+          <span style="color:#A78BFA">TAXE_PLATFORMĂ</span> = SUBTOTAL × (marketing% + mentenanță% + comision%)<br>
+          <span style="color:#F87171">TVA</span> = (SUBTOTAL + TAXE_PLATFORMĂ) × cota_tva_țară<br>
+          <span style="color:#fff;font-weight:700;font-size:14px">PREȚ FINAL</span> = <span style="color:#F87171">max</span>( SUBTOTAL + TAXE_PLATFORMĂ + TVA , <span style="color:#FF8C00">prag_minim_țară</span> )
         </div>
       </div>
 
@@ -2880,70 +2536,126 @@ function addCountry(){
   if(sel) backofficeApiPending('Activarea pentru '+countries[parseInt(sel)-1]+' (upload certificări, verificare, confirmare) nu are încă un API real de backoffice — pagină de exemplu.');
 }
 
-// VMC SIMULATOR
-function simCalc(){
+// VMC SIMULATOR — aceeași formulă ca lib/calculeaza-pret.js
+const VMC_PCT = { marketing: 3, mentenanta: 2, comision: 12 };
+let VMC_DATA = {
+  RO: { flag:'🇷🇴', nume:'România', moneda:'RON', tva:21, prag:150, checkout:true },
+  MD: { flag:'🇲🇩', nume:'Moldova', moneda:'MDL', tva:20, prag:500, checkout:true },
+  DE: { flag:'🇩🇪', nume:'Germania', moneda:'EUR', tva:19, prag:55, checkout:false },
+  FR: { flag:'🇫🇷', nume:'Franța', moneda:'EUR', tva:20, prag:55, checkout:false },
+  BG: { flag:'🇧🇬', nume:'Bulgaria', moneda:'EUR', tva:20, prag:30, checkout:true },
+};
+const VMC_FLAGS = { RO:'🇷🇴', MD:'🇲🇩', DE:'🇩🇪', FR:'🇫🇷', BG:'🇧🇬' };
+const r2 = n => Math.round(n * 100) / 100;
+const fmt2 = n => n.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function renderVmcUi() {
+  const codes = Object.keys(VMC_DATA);
+  const tb = document.getElementById('vmc-tbody');
+  if (tb) {
+    tb.innerHTML = codes.map((c, i) => {
+      const d = VMC_DATA[c];
+      const bg = i % 2 ? 'background:#FAFBFD;' : '';
+      const chk = d.checkout
+        ? '<span style="font-size:9px;background:#D4EDDA;color:#1A7A3A;padding:3px 10px;border-radius:99px;font-weight:700">activ</span>'
+        : '<span style="font-size:9px;background:#FFF0D6;color:#CC7000;padding:3px 10px;border-radius:99px;font-weight:700">inactiv</span>';
+      return `<tr style="${bg}border-bottom:1px solid #F4F7F9">
+        <td style="padding:12px 16px"><span style="font-size:16px">${d.flag}</span> <strong>${d.nume}</strong></td>
+        <td style="padding:12px 16px;text-align:center;font-family:monospace;font-weight:700;color:#003366">${d.moneda}</td>
+        <td style="padding:12px 16px;text-align:right;font-weight:800;font-size:16px;color:#FF8C00">${d.prag == null ? '100 (implicit)' : fmt2(d.prag) + ' ' + d.moneda}</td>
+        <td style="padding:12px 16px;text-align:right;color:#6B7A8D">${d.tva}%</td>
+        <td style="padding:12px 16px;text-align:center">${chk}</td>
+      </tr>`;
+    }).join('');
+  }
+  const sel = document.getElementById('sim-country');
+  if (sel) {
+    const cur = sel.value;
+    sel.innerHTML = codes.map(c => `<option value="${c}">${VMC_DATA[c].flag} ${VMC_DATA[c].nume} · prag ${VMC_DATA[c].prag == null ? 100 : fmt2(VMC_DATA[c].prag)} ${VMC_DATA[c].moneda}</option>`).join('');
+    if (cur && VMC_DATA[cur]) sel.value = cur;
+  }
+}
+
+async function loadVmcLive() {
+  const [tax, cfg] = await Promise.all([
+    supaDevizFetch('tax_configurations', '?select=tara_cod,tara_nume,moneda,cota_tva,prag_minim_comanda,checkout_activ&tara_cod=in.(RO,MD,DE,FR,BG)&order=tara_cod'),
+    supaDevizFetch('backoffice_config', '?select=cheie,valoare&sectiune=eq.pricing'),
+  ]);
+  const badge = document.getElementById('vmc-src');
+  if (!Array.isArray(tax) || !tax.length) {
+    if (badge) badge.textContent = 'instantaneu 28 sept. 2026 · citirea live nu a reușit';
+    return;
+  }
+  const next = {};
+  tax.forEach(t => {
+    next[t.tara_cod] = {
+      flag: VMC_FLAGS[t.tara_cod] || '', nume: t.tara_nume, moneda: t.moneda,
+      tva: Number(t.cota_tva), prag: t.prag_minim_comanda == null ? null : Number(t.prag_minim_comanda),
+      checkout: !!t.checkout_activ,
+    };
+  });
+  VMC_DATA = next;
+  if (Array.isArray(cfg)) {
+    cfg.forEach(r => {
+      const v = Number(r.valoare);
+      if (!Number.isFinite(v)) return;
+      if (r.cheie === 'cost_marketing_pct') VMC_PCT.marketing = v;
+      if (r.cheie === 'cost_mentenanta_pct') VMC_PCT.mentenanta = v;
+      if (r.cheie === 'comision_platforma_default_pct') VMC_PCT.comision = v;
+    });
+  }
+  if (badge) badge.textContent = 'live · tax_configurations';
+  renderVmcUi();
+  simCalc();
+}
+
+function simCalc() {
   const svc = document.getElementById('sim-service').value.split('|');
   const price = parseFloat(svc[0]);
   const um = svc[1];
   const name = svc[2];
   const qty = parseFloat(document.getElementById('sim-qty').value) || 1;
-  const country = document.getElementById('sim-country').value.split('|');
-  const vmc = parseFloat(country[0].split('-')[0]) || parseFloat(country[0]);
-  
-  // Parse country data
-  const cparts = document.getElementById('sim-country').value.split('|');
-  const vmcVal = parseFloat(cparts[0].replace(/[^0-9.]/g,'')) || 100;
-  const cur = cparts[1] || 'RON';
-  const vatR = parseFloat(cparts[2]) || 0.19;
-  const urgMult = parseFloat(document.getElementById('sim-urg').value) || 1.0;
-  
-  // VMC values map
-  const vmcMap = {'RO':100,'MD':400,'DE':25,'FR':25,'BG':40};
-  const selCountry = document.getElementById('sim-country').value;
-  const countryCode = selCountry.split('|')[0];
-  const vmcFinal = vmcMap[countryCode] || 100;
+  const code = document.getElementById('sim-country').value || 'RO';
+  const d = VMC_DATA[code] || VMC_DATA.RO;
+  const cur = d.moneda;
+  const prag = d.prag == null ? 100 : d.prag;
 
-  const brut = price * qty;
-  const vmcApplied = brut < vmcFinal;
-  const baza = Math.max(brut, vmcFinal);
-  const c2 = baza * (1 + 0.10);  // indirecte
-  const c3 = c2 * (1 + 0.03);   // marketing
-  const c4 = c3 * (1 + 0.03);   // mentenanta
-  const c5 = c4 * (1 + 0.15);   // HBP
-  const c6 = c5 * urgMult;
-  const final = c6 * (1 + vatR);
+  const subtotal = r2(price * qty);
+  const mkt = r2(subtotal * VMC_PCT.marketing / 100);
+  const ment = r2(subtotal * VMC_PCT.mentenanta / 100);
+  const com = r2(subtotal * VMC_PCT.comision / 100);
+  const fara = r2(subtotal + mkt + ment + com);
+  const tva = r2(fara * d.tva / 100);
+  const cuTva = r2(fara + tva);
+  const aplicat = cuTva < prag;
+  const final = Math.max(cuTva, prag);
 
-  const urgLabel = urgMult===1.0?'Normal':urgMult===1.3?'Urgent':urgMult===1.5?'Noapte':'Duminică';
-  
   document.getElementById('sim-result').innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px">
       <div>
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:10px">Defalcare calcul</div>
-        <div style="space-y:4px;font-size:12.5px;line-height:2">
-          <div style="display:flex;justify-content:space-between"><span style="color:#6B7A8D">${name} · ${qty} ${um} × ${price} ${cur}</span><span style="font-family:monospace;font-weight:600">${brut.toFixed(0)} ${cur}</span></div>
-          ${vmcApplied ? `<div style="display:flex;justify-content:space-between;background:#FDECEA;border-radius:8px;padding:4px 10px;margin:4px 0">
-            <span style="color:#C0392B;font-weight:600">⚠️ Sub VMC ${countryCode} (${vmcFinal} ${cur}) → se aplică minimum</span>
-            <span style="font-family:monospace;font-weight:700;color:#C0392B">${vmcFinal} ${cur}</span>
-          </div>` : `<div style="display:flex;justify-content:space-between"><span style="color:#1A7A3A;font-weight:600">✓ Peste VMC (${vmcFinal} ${cur}) — calcul normal</span><span style="font-family:monospace;color:#1A7A3A">OK</span></div>`}
-          <div style="display:flex;justify-content:space-between"><span style="color:#6B7A8D">Bază calcul</span><span style="font-family:monospace;font-weight:700;color:#FF8C00">${baza.toFixed(0)} ${cur}</span></div>
-          <div style="display:flex;justify-content:space-between"><span style="color:#6B7A8D">+ Indirecte (10%)</span><span style="font-family:monospace">${c2.toFixed(0)} ${cur}</span></div>
-          <div style="display:flex;justify-content:space-between"><span style="color:#6B7A8D">+ Marketing + Mentenanță (6%)</span><span style="font-family:monospace">${c4.toFixed(0)} ${cur}</span></div>
-          <div style="display:flex;justify-content:space-between"><span style="color:#FF8C00;font-weight:600">+ Comision HBP (15%)</span><span style="font-family:monospace;font-weight:700;color:#FF8C00">${c5.toFixed(0)} ${cur}</span></div>
-          ${urgMult>1?`<div style="display:flex;justify-content:space-between"><span style="color:#CC7000;font-weight:600">× Urgență ${urgLabel} (×${urgMult})</span><span style="font-family:monospace;font-weight:700;color:#CC7000">${c6.toFixed(0)} ${cur}</span></div>`:''}
-          <div style="display:flex;justify-content:space-between;border-top:1px solid #D5DFE8;padding-top:6px;margin-top:4px"><span style="color:#6B7A8D">+ TVA (${(vatR*100).toFixed(0)}%)</span><span style="font-family:monospace">+${(c6*vatR).toFixed(0)} ${cur}</span></div>
+        <div style="font-size:12.5px;line-height:2">
+          <div style="display:flex;justify-content:space-between;gap:10px"><span style="color:#6B7A8D">${name} · ${qty} ${um} × ${fmt2(price)} ${cur}</span><span style="font-family:monospace;font-weight:600">${fmt2(subtotal)} ${cur}</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:#6B7A8D">+ Marketing (${VMC_PCT.marketing}%)</span><span style="font-family:monospace">${fmt2(mkt)} ${cur}</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:#6B7A8D">+ Mentenanță (${VMC_PCT.mentenanta}%)</span><span style="font-family:monospace">${fmt2(ment)} ${cur}</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:#FF8C00;font-weight:600">+ Comision platformă (${VMC_PCT.comision}%)</span><span style="font-family:monospace;font-weight:700;color:#FF8C00">${fmt2(com)} ${cur}</span></div>
+          <div style="display:flex;justify-content:space-between;border-top:1px solid #D5DFE8;padding-top:6px;margin-top:4px"><span style="color:#6B7A8D">+ TVA (${d.tva}%)</span><span style="font-family:monospace">+${fmt2(tva)} ${cur}</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:#6B7A8D">Total cu TVA</span><span style="font-family:monospace;font-weight:700">${fmt2(cuTva)} ${cur}</span></div>
+          ${aplicat
+            ? `<div style="display:flex;justify-content:space-between;gap:10px;background:#FDECEA;border-radius:8px;padding:4px 10px;margin:4px 0"><span style="color:#C0392B;font-weight:600">Sub prag ${code} (${fmt2(prag)} ${cur}) → se aplică pragul</span><span style="font-family:monospace;font-weight:700;color:#C0392B">${fmt2(prag)} ${cur}</span></div>`
+            : `<div style="display:flex;justify-content:space-between"><span style="color:#1A7A3A;font-weight:600">Peste prag (${fmt2(prag)} ${cur}) — calcul normal</span><span style="font-family:monospace;color:#1A7A3A">OK</span></div>`}
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:${vmcApplied?'#FFF8EE':'#F4FFFA'};border-radius:14px;border:2px solid ${vmcApplied?'#FF8C00':'#1A7A3A'};padding:20px;text-align:center">
-        <div style="font-size:11px;color:#8C9BAD;margin-bottom:6px">${vmcApplied?'VMC aplicat · Preț ajustat':'Calcul normal · Fără ajustare'}</div>
-        <div style="font-size:40px;font-weight:800;color:${vmcApplied?'#FF8C00':'#003366'};line-height:1">${final.toFixed(0)}</div>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:${aplicat ? '#FFF8EE' : '#F4FFFA'};border-radius:14px;border:2px solid ${aplicat ? '#FF8C00' : '#1A7A3A'};padding:20px;text-align:center">
+        <div style="font-size:11px;color:#8C9BAD;margin-bottom:6px">${aplicat ? 'Prag aplicat · preț ridicat' : 'Calcul normal · fără ajustare'}</div>
+        <div style="font-size:36px;font-weight:800;color:${aplicat ? '#FF8C00' : '#003366'};line-height:1">${fmt2(final)}</div>
         <div style="font-size:14px;color:#8C9BAD;margin-top:2px">${cur} · TVA inclus</div>
-        ${vmcApplied?`<div style="font-size:10px;color:#CC7000;margin-top:8px;max-width:160px;line-height:1.5">Calcul brut: ${brut} ${cur} < VMC ${vmcFinal} ${cur}<br>Sistem a ajustat automat</div>`:
-        `<div style="font-size:10px;color:#1A7A3A;margin-top:8px">Calcul brut: ${brut} ${cur} ≥ VMC ${vmcFinal} ${cur}</div>`}
+        <div style="font-size:10px;color:${aplicat ? '#CC7000' : '#1A7A3A'};margin-top:8px;max-width:180px;line-height:1.5">Total calculat: ${fmt2(cuTva)} ${cur} ${aplicat ? '&lt;' : '≥'} prag ${fmt2(prag)} ${cur}</div>
       </div>
     </div>`;
 }
 // Run on load
-setTimeout(simCalc, 100);
+setTimeout(() => { renderVmcUi(); simCalc(); loadVmcLive(); }, 100);
 
 if(typeof lucide!=="undefined")lucide.createIcons();
 </script>
