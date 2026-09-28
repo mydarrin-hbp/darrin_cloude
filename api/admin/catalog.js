@@ -458,7 +458,10 @@ async function actionLeagaArticolNivel(req, res, user) {
     supabaseAdmin.from('devize_indicatoare').select('nace_cod').eq('indicator_id', articol.indicator_id).maybeSingle(),
     supabaseAdmin.from('catalog_servicii').select('nace, titlu').eq('id', nivel.serviciu_id).maybeSingle(),
   ]);
-  if (indicator?.nace_cod && serviciu?.nace && indicator.nace_cod !== serviciu.nace) {
+  // Ambele formate coexistă în DB ("F 43.33" pe servicii, "43.33" sau "F 43.22" pe indicatoare):
+  // compar fără litera de secțiune, altfel avertismentul iese fals-pozitiv la potrivire perfectă.
+  const faraSectiune = (c) => String(c).trim().replace(/^[A-Za-z]\s+/, '');
+  if (indicator?.nace_cod && serviciu?.nace && faraSectiune(indicator.nace_cod) !== faraSectiune(serviciu.nace)) {
     avertisment = `Cod NACE al articolului (${indicator.nace_cod}) diferă de cel al serviciului „${serviciu.titlu}" (${serviciu.nace}) — verifică dacă legarea e corectă.`;
   }
 
