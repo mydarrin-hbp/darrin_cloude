@@ -47,6 +47,7 @@ async function cautaANAF(cuiNumeric) {
   return {
     denumire: dg.denumire || null,
     adresa: dg.adresa || null,
+    nr_reg_com: dg.nrRegCom || null,
     tva_activ: !!item.inregistrare_scop_Tva?.scpTVA,
   };
 }

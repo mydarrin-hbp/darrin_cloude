@@ -75,7 +75,10 @@ module.exports = async function handler(req, res) {
   const {
     nume, prenume, telefon, email, tip, nume_firma, cui, tara,
     tip_entitate_legala, is_treasury_account, regiune_cod, iban, banca,
+    nr_reg_com, adresa_sediu_social,
   } = req.body || {};
+  const nrRegCom = typeof nr_reg_com === 'string' ? nr_reg_com.trim().slice(0, 40) : '';
+  const adresaSediu = typeof adresa_sediu_social === 'string' ? adresa_sediu_social.trim().slice(0, 300) : '';
 
   if (!email || !email.includes('@')) {
     return res.status(400).json({ error: 'Email valid obligatoriu.' });
@@ -127,6 +130,8 @@ module.exports = async function handler(req, res) {
       status_verificare: 'pending_review',
       ...(tip_entitate_legala ? { tip_entitate_legala } : {}),
       ...(regiune_cod ? { regiune_cod } : {}),
+      ...(nrRegCom ? { nr_reg_com: nrRegCom } : {}),
+      ...(adresaSediu ? { adresa_sediu_social: adresaSediu } : {}),
       ...(is_treasury_account !== undefined ? { is_treasury_account: Boolean(is_treasury_account) } : {}),
     });
     if (partnerErr) throw partnerErr;

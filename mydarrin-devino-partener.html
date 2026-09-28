@@ -1276,6 +1276,16 @@ function submitNewsletter() {
             <input type="text" id="f-cui" placeholder="RO12345678" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="validateCUI(this)" oninput="this.value=this.value.replace(/[^0-9RO]/g,'')"/>
           </div>
         </div>
+        <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-bottom:10px">
+          <div>
+            <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Nr. reg. comerțului</label>
+            <input type="text" id="f-nrregcom" placeholder="J22/123/2020" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
+          </div>
+          <div>
+            <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Adresă sediu social <span id="sediu-status" style="font-size:9px;color:#0E9E99"></span></label>
+            <input type="text" id="f-sediu" placeholder="Str. Exemplu 1, Iași" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
+          </div>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
           <div>
             <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Prenume administrator *</label>
@@ -2123,6 +2133,15 @@ async function validateCUI(input) {
       input.style.borderColor = '#0E9E99';
       const f = document.getElementById('f-firma');
       if (f && !f.value.trim()) f.value = data.denumire;
+      // Nr. reg. com. și adresa vin din registru; se pre-completează doar câmpurile goale,
+      // iar utilizatorul le verifică și le poate corecta înainte de trimitere.
+      const nr = document.getElementById('f-nrregcom');
+      const sediu = document.getElementById('f-sediu');
+      const sst = document.getElementById('sediu-status');
+      let preluat = false;
+      if (nr && data.nr_reg_com && !nr.value.trim()) { nr.value = data.nr_reg_com; preluat = true; }
+      if (sediu && data.adresa && !sediu.value.trim()) { sediu.value = data.adresa; preluat = true; }
+      if (sst && preluat) sst.textContent = '· preluat din registru, verifică';
     } else if (status) {
       status.textContent = 'Nu am găsit date — completează manual';
       status.style.color = '#8C9BAD';
@@ -2193,7 +2212,9 @@ async function submitRegistration() {
     const res = await fetch('/api/public/partner-register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nume, prenume, telefon, email, tip: selectedPartnerType, nume_firma, cui, tara, iban, banca, tip_entitate_legala, is_treasury_account, regiune_cod }),
+      body: JSON.stringify({ nume, prenume, telefon, email, tip: selectedPartnerType, nume_firma, cui, tara, iban, banca, tip_entitate_legala, is_treasury_account, regiune_cod,
+        nr_reg_com: document.getElementById('f-nrregcom')?.value || '',
+        adresa_sediu_social: document.getElementById('f-sediu')?.value || '' }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
