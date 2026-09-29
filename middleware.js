@@ -251,9 +251,11 @@ const PAGINI_STRICTE = [
 // autentificat, vezi FIX-ul de mai jos din acea funcție), toate cele 5 din
 // PAGINI_STRICTE, și
 // mydarrin-app-mobile.html (rămâne mockup static, de revizuit la Faza H).
-// mydarrin-v3.html rămâne inclus deliberat — fișierul e azi doar stub-ul de
-// redirect real (retras din uz 27 august), trebuie să rămână reachable ca
-// plasă de siguranță pentru orice link extern/bookmark vechi.
+// mydarrin-v3(.html) rămân incluse deliberat — fișierul fizic a fost șters
+// definitiv (29 septembrie 2026, cerere fondator: nu trebuia să mai existe
+// nicio urmă a variantei vechi în repo); redirectul spre index.html pentru
+// orice link extern/bookmark vechi se face acum exclusiv din vercel.json
+// (rewrites), fără niciun fișier HTML propriu.
 const PAGINI_PUBLICE = new Set([
   '/', '/index', '/index.html',
   '/mydarrin-catalog', '/mydarrin-catalog.html',
