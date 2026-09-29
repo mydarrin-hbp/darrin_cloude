@@ -628,18 +628,13 @@ function renderOverviewMat(){
           ${stocCritic('Țeavă PP-R 20mm','12','20','atentie')}
         </div>
       </div>
-      <div class="f-card">
-        <div class="f-card-hdr"><strong>🔗 Sync integrări</strong><span class="chip ch-g">Live</span></div>
-        <div class="f-card-body" style="font-size:12px;display:flex;flex-direction:column;gap:6px">
-          ${integRow('WooCommerce','248 produse sync','ok')}
-          ${integRow('API REST / ERP','SAGA sync · acum 15min','ok')}
-          ${integRow('Import CSV','Ultimul import: 14.06','ok')}
-          ${integRow('Shopify','Neconectat','inactive')}
-        </div>
-      </div>
     </div>
   </div>`;
 }
+// FIX (29 septembrie 2026): cardul „Sync integrări" (WooCommerce/API-ERP/
+// Shopify) de mai sus era decorativ — aceleași integrări fictive eliminate
+// din tab-ul Import. Restul acestui panou (KPI, comenzi „LIVE", stocuri
+// critice) rămâne, la fel, date fixe — semnalat separat, nu ascuns aici.
 
 function renderComenzi(){
   return `
@@ -750,10 +745,17 @@ async function loadProduseLive(){
   }
 }
 
+// FIX (29 septembrie 2026, cerere fondator): cardul „Integrări active"
+// (WooCommerce „248 produse sync", Shopify, API REST/ERP „SAGA/WinMentor —
+// activ", „API Key furnizor myd_furn_...") era 100% decorativ — niciun
+// endpoint, nicio tabelă, nicio cheie API reală în spate. Eliminat, nu
+// înlocuit cu alt mock (politica „fără UI placeholder"). Rămâne doar
+// cardul de import CSV, singurul canal real azi. Panoul se rescrie oricum
+// la mutarea formularului CRUD aici (vezi decizia „marketplace, punctul 5").
 function renderImport(){
   return `
-  <div style="margin-bottom:18px"><h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Import CSV / Integrare API</h2></div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+  <div style="margin-bottom:18px"><h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Import CSV</h2></div>
+  <div style="display:grid;grid-template-columns:1fr;gap:18px;max-width:520px">
     <div class="f-card">
       <div class="f-card-hdr"><strong>📊 Import CSV / Excel</strong></div>
       <div class="f-card-body">
@@ -774,22 +776,6 @@ function renderImport(){
         </div>
         <div style="margin-top:12px">
           <a href="mydarrin-marketplace.html#mp-tabs-section" class="btn-p" style="width:100%;justify-content:center;text-decoration:none">Deschide Marketplace → Import CSV</a>
-        </div>
-      </div>
-    </div>
-    <div class="f-card">
-      <div class="f-card-hdr"><strong>🔗 Integrări active</strong></div>
-      <div class="f-card-body" style="display:flex;flex-direction:column;gap:10px">
-        ${integCard('🛒','WooCommerce','Plugin My Darrin · 248 produse sync','active')}
-        ${integCard('🏪','Shopify','Neconectat','inactive')}
-        ${integCard('🔗','API REST / ERP','SAGA/WinMentor · Token Bearer','active')}
-        ${integCard('📊','Import CSV Manual','Cron zilnic 06:00','ok')}
-        <div style="background:#F0F4F8;border-radius:11px;padding:12px 14px;margin-top:4px">
-          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:7px">API Key furnizor</div>
-          <div style="display:flex;gap:8px">
-            <div style="flex:1;background:#fff;border:1px solid #D5DFE8;border-radius:8px;padding:8px 12px;font-family:monospace;font-size:11.5px;color:#1A5FAD;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">myd_furn_aca_••••••••••••••</div>
-            <button class="btn-s" style="font-size:11px;padding:8px 12px;white-space:nowrap" onclick="showToast('✓ API Key copiat')">📋 Copiază</button>
-          </div>
         </div>
       </div>
     </div>
