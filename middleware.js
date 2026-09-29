@@ -223,6 +223,14 @@ async function treceBarieraPlatforma(request, supabaseAdmin, pathname) {
   return rutaAcces === rutaCeruta;
 }
 
+// FIX (29 septembrie 2026, Etapa LANSARE, ridicare generală — cerere
+// fondator): bariera generală (dashboard-uri client/partener/furnizor +
+// orice pagină neenumerată) e acum deschisă necondiționat. NU afectează
+// PAGINI_STRICTE (superadmin/backoffice/deviz-engine/auth-schema/
+// sync-architecture) — acelea rămân, mai jos, pe gate-ul lor propriu,
+// separat, doar admin/superadmin, contul unic autorizat.
+const BARIERA_GENERALA_ACTIVA = false;
+
 const PAGINI_STRICTE = [
   '/mydarrin-superadmin', '/mydarrin-superadmin.html',
   '/mydarrin-backoffice-serviciu', '/mydarrin-backoffice-serviciu.html',
@@ -351,6 +359,13 @@ export default async function middleware(request) {
 
   // Bariera generală a platformei — orice altă pagină din site (dashboard-uri
   // client/partener/furnizor, orice rută neenumerată explicit mai sus).
+  // DEZACTIVATĂ (29 septembrie 2026, cerere fondator, scopită explicit la
+  // "doar bariera generală" — PAGINI_STRICTE de mai sus rămâne neatinsă,
+  // tot admin/superadmin unic autorizat). Mecanismul (treceBarieraPlatforma,
+  // accese_temporare, NDA) rămâne intact în cod — gating reversibil, conform
+  // notei „Etapa LANSARE provizorie": un singur `if` de reactivat, nu o
+  // rescriere, dacă se decide revenirea la acces condiționat.
+  if (!BARIERA_GENERALA_ACTIVA) return next();
   const permis = await treceBarieraPlatforma(request, supabaseAdmin, pathname);
   if (permis === 'nda_pending') {
     console.log(`[middleware-bariera] NDA neacceptat — path=${pathname}, redirect spre /acord-confidentialitate`);
