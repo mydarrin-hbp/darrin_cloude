@@ -23,7 +23,13 @@ const LOGO_IMPLICIT_BUFFER = Buffer.from(LOGO_IMPLICIT_B64, 'base64');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  // FIX (29 sept. 2026): doar GET era acceptat — orice HEAD (folosit de
+  // scraper-e ca Facebook Sharing Debugger pentru a valida un og:image
+  // înainte să-l descarce integral) primea 405, era interpretat drept
+  // "imagine coruptă/invalidă", și Facebook cădea pe fallback (prima
+  // imagine găsită în pagină, o poză de stoc cu metadată proprie străină —
+  // exact tiparul reparat mai devreme la og:image însuși).
+  if (req.method !== 'GET' && req.method !== 'HEAD') return res.status(405).json({ error: 'Method not allowed' });
 
   const slotParam = req.query?.slot;
   const slot = VALID_SLOTS.includes(slotParam) ? slotParam : 'header_logo';
@@ -42,12 +48,16 @@ module.exports = async function handler(req, res) {
     }
 
     res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Length', String(buffer.length));
     res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=600');
+    if (req.method === 'HEAD') return res.status(200).end();
     return res.status(200).send(buffer);
   } catch (err) {
     console.error('[branding/logo-image]', err);
     res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Length', String(LOGO_IMPLICIT_BUFFER.length));
     res.setHeader('Cache-Control', 'public, max-age=60');
+    if (req.method === 'HEAD') return res.status(200).end();
     return res.status(200).send(LOGO_IMPLICIT_BUFFER);
   }
 };
