@@ -251,6 +251,13 @@ const PAGINI_PUBLICE = new Set([
   '/mydarrin-catalog', '/mydarrin-catalog.html',
   '/mydarrin-produs', '/mydarrin-produs.html',
   '/mydarrin-categorie-servicii', '/mydarrin-categorie-servicii.html',
+  // FIX (29 septembrie 2026) — omise din auditul inițial (27 august): cele
+  // 12 linkuri de pe homepage către aceste două pagini (carusel materiale +
+  // carusel închirieri) duceau la /acces-temporar în loc de pagina de
+  // categorie. mydarrin-categorie-servicii era deja publică; acestea, la fel
+  // link-ate din index.html, nu erau — inconsecvență, nu decizie deliberată.
+  '/mydarrin-categorie-materiale', '/mydarrin-categorie-materiale.html',
+  '/mydarrin-categorie-inchirieri', '/mydarrin-categorie-inchirieri.html',
   '/mydarrin-checkout', '/mydarrin-checkout.html',
   '/mydarrin-cos', '/mydarrin-cos.html',
   '/mydarrin-marketplace-materiale', '/mydarrin-marketplace-materiale.html',
