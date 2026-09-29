@@ -346,6 +346,32 @@ input:valid:not(:placeholder-shown):not([type="checkbox"]) {
 })();
 </script>
 
+<!-- FIX (29 sept. 2026, cerere fondator): Tailwind se încarcă printr-un
+     tag script injectat, asincron — pagina se randează imediat, complet
+     nestilizată (fără dimensiuni/culori/poziționare Tailwind), până se
+     termină descărcarea + procesarea claselor. Vizibil clar pe o conexiune
+     mai lentă (proiector, semnalat de fondator): forme/elemente uriașe,
+     nestilizate, timp de 1-2 secunde, înainte ca pagina reală să apară —
+     nu era un bug de rutare sau o resursă Facebook, era chiar acest flash.
+     Ascundem body-ul până Tailwind termină (sau max. 2,5s, ca să nu rămână
+     ecran alb la infinit dacă CDN-ul e indisponibil/lent) — o pagină albă,
+     scurtă, e mult mai puțin deranjantă decât un flash de conținut rupt.
+     Reparație minimă, contenabilă; migrarea la un build Tailwind precompilat
+     (eliminarea completă a Play CDN, recomandată de Tailwind doar pentru
+     dezvoltare) e un proiect separat, mai amplu. -->
+<style>body{visibility:hidden}</style>
+<script>
+(function(){
+  var aratat = false;
+  function arata(){
+    if (aratat) return;
+    aratat = true;
+    document.body.style.visibility = 'visible';
+  }
+  window.addEventListener('DOMContentLoaded', function(){ setTimeout(arata, 2500); });
+  window.__myDarrinArataPagina = arata;
+})();
+</script>
 <!-- Tailwind CSS Play CDN — URL corect fără versiune în path -->
 <script>
 // tailwind.config trebuie definit ÎNAINTE de a încărca scriptul Tailwind
@@ -370,9 +396,11 @@ window.tailwindConfig = {
     if (typeof tailwind !== 'undefined' && tailwind.config) {
       tailwind.config = window.tailwindConfig;
     }
+    if (window.__myDarrinArataPagina) window.__myDarrinArataPagina();
   };
   s.onerror = function() {
     console.warn('[MyDarrin] Tailwind CDN indisponibil — clasele Tailwind pot să nu fie aplicate');
+    if (window.__myDarrinArataPagina) window.__myDarrinArataPagina();
   };
   document.head.appendChild(s);
 })();
