@@ -1397,11 +1397,16 @@ function triggerHeaderSearch(){
               <textarea class="f-textarea" id="prod-descriere" maxlength="1000" oninput="document.getElementById('prod-descriere-count').textContent=this.value.length" placeholder="Descriere completă a produsului — minimum 100 de caractere."></textarea>
               <div style="text-align:right;font-size:10.5px;color:#8C9BAD"><span id="prod-descriere-count">0</span>/1000 (minim 100)</div>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
               <div><label class="f-label">Categorie *</label>
                 <select class="f-select" id="prod-categorie"><option value="">Se încarcă...</option></select>
               </div>
-              <div><label class="f-label">Cod NACE</label><input type="text" class="f-input" id="prod-nace" placeholder="F 43.22" style="font-family:monospace"/></div>
+              <div><label class="f-label">Cod CAEN/NACE *</label>
+                <select class="f-select" id="prod-nace"><option value="">Se încarcă...</option></select>
+              </div>
+              <div><label class="f-label">Cod Uniclass <span style="font-weight:400;color:#8C9BAD">(opțional)</span></label>
+                <select class="f-select" id="prod-uniclass"><option value="">— fără —</option></select>
+              </div>
             </div>
             <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px">
               <div><label class="f-label">Preț unitar (fără TVA) *</label><input type="number" class="f-input" placeholder="245.00" min="0.01" step="0.01" id="prod-pret"/></div>
@@ -1563,7 +1568,14 @@ function triggerHeaderSearch(){
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
               <div><label class="f-label">Monedă *</label><select class="f-select" id="ech-moneda"><option>RON</option><option>EUR</option><option>MDL</option><option>BGN</option></select></div>
-              <div><label class="f-label">Cod NACE</label><input type="text" class="f-input" id="ech-nace" placeholder="N 77.32" style="font-family:monospace"/></div>
+              <div><label class="f-label">Cod CAEN/NACE *</label>
+                <select class="f-select" id="ech-nace"><option value="">Se încarcă...</option></select>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr;gap:12px">
+              <div><label class="f-label">Cod Uniclass <span style="font-weight:400;color:#8C9BAD">(opțional)</span></label>
+                <select class="f-select" id="ech-uniclass"><option value="">— fără —</option></select>
+              </div>
             </div>
             <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px">
               <div><label class="f-label">Descriere preț *</label><input type="text" class="f-input" id="ech-descriere-pret" placeholder="Ex: Tarif pe zi, fără combustibil"/></div>
@@ -3252,6 +3264,37 @@ async function incarcaCategoriiMp() {
   }
 }
 
+// Faza 1 (29 sept. 2026, punctul 3 din decizii): cod CAEN/NACE obligatoriu
+// dintr-o listă reală (api/public/nace-lista — aceeași sursă ca Pasul 3 al
+// wizard-ului de partener), nu text liber; cod Uniclass opțional
+// (api/public/uniclass-lista — doar 27 coduri populate azi, de-asta rămâne
+// opțional, nu obligatoriu). Validarea reală rămâne server-side
+// (lib/valideaza-produs-marketplace.js) — aceste liste doar ghidează.
+async function incarcaTaxonomieMp() {
+  const selectoareNace = [document.getElementById('prod-nace'), document.getElementById('ech-nace')];
+  const selectoareUniclass = [document.getElementById('prod-uniclass'), document.getElementById('ech-uniclass')];
+  try {
+    const r = await fetch('/api/public/nace-lista');
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'eroare necunoscută');
+    const optiuni = '<option value="">Selectează...</option>' + (j.clase || []).map((c) => `<option value="${escapeHTML(c.cod)}">${escapeHTML(c.cod)} — ${escapeHTML(c.denumire_ro)}</option>`).join('');
+    selectoareNace.forEach((el) => { if (el) el.innerHTML = optiuni; });
+  } catch (e) {
+    console.error('[marketplace] nace-lista', e);
+    selectoareNace.forEach((el) => { if (el) el.innerHTML = '<option value="">(eroare la încărcare)</option>'; });
+  }
+  try {
+    const r = await fetch('/api/public/uniclass-lista');
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'eroare necunoscută');
+    const optiuni = '<option value="">— fără —</option>' + (j.coduri || []).map((c) => `<option value="${escapeHTML(c.code)}">${escapeHTML(c.code)} — ${escapeHTML(c.title_ro)}</option>`).join('');
+    selectoareUniclass.forEach((el) => { if (el) el.innerHTML = optiuni; });
+  } catch (e) {
+    console.error('[marketplace] uniclass-lista', e);
+    selectoareUniclass.forEach((el) => { if (el) el.innerHTML = '<option value="">(eroare la încărcare)</option>'; });
+  }
+}
+
 async function incarcaFisiereMp(input, tip) {
   const previewId = tip === 'materiale' ? 'mat-file-preview' : 'ech-file-preview';
   const preview = document.getElementById(previewId);
@@ -3300,7 +3343,7 @@ async function incarcaFisiereMp(input, tip) {
 }
 
 function _resetCampuriMaterial() {
-  ['prod-denumire', 'prod-descriere', 'prod-descriere-pret', 'prod-ambalaj', 'prod-nace', 'prod-pret', 'prod-stoc', 'prod-leadtime', 'prod-furnizor-comercial', 'prod-specificatii', 'prod-video'].forEach((id) => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['prod-denumire', 'prod-descriere', 'prod-descriere-pret', 'prod-ambalaj', 'prod-nace', 'prod-uniclass', 'prod-pret', 'prod-stoc', 'prod-leadtime', 'prod-furnizor-comercial', 'prod-specificatii', 'prod-video'].forEach((id) => { const el = document.getElementById(id); if (el) el.value = ''; });
   const c = document.getElementById('prod-descriere-count'); if (c) c.textContent = '0';
   const preview = document.getElementById('mat-file-preview'); if (preview) preview.innerHTML = '';
   mpState.materiale = { imagini: [], fisa_tehnica_url: null };
@@ -3317,7 +3360,8 @@ async function saveMaterial() {
     descriere_pret: document.getElementById('prod-descriere-pret').value.trim(),
     ambalaj: document.getElementById('prod-ambalaj').value.trim() || null,
     categorie_id: document.getElementById('prod-categorie').value || null,
-    nace_cod: document.getElementById('prod-nace').value.trim() || null,
+    nace_cod: document.getElementById('prod-nace').value || null,
+    cod_uniclass: document.getElementById('prod-uniclass').value || null,
     pret_fara_tva: Number(document.getElementById('prod-pret').value),
     moneda: document.getElementById('prod-moneda').value,
     unitate_masura: document.getElementById('prod-um').value,
@@ -3347,7 +3391,7 @@ async function saveMaterial() {
 }
 
 function _resetCampuriEchipament() {
-  ['ech-denumire', 'ech-descriere', 'ech-descriere-pret', 'ech-nace', 'ech-pret-ora', 'ech-pret-zi', 'ech-pret-saptamana', 'ech-buc', 'ech-specificatii', 'ech-video'].forEach((id) => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['ech-denumire', 'ech-descriere', 'ech-descriere-pret', 'ech-nace', 'ech-uniclass', 'ech-pret-ora', 'ech-pret-zi', 'ech-pret-saptamana', 'ech-buc', 'ech-specificatii', 'ech-video'].forEach((id) => { const el = document.getElementById(id); if (el) el.value = ''; });
   const c = document.getElementById('ech-descriere-count'); if (c) c.textContent = '0';
   const preview = document.getElementById('ech-file-preview'); if (preview) preview.innerHTML = '';
   mpState.echipamente = { imagini: [], fisa_tehnica_url: null };
@@ -3365,7 +3409,8 @@ async function saveEchipament() {
     descriere: document.getElementById('ech-descriere').value,
     descriere_pret: document.getElementById('ech-descriere-pret').value.trim(),
     categorie_id: document.getElementById('ech-categorie').value || null,
-    nace_cod: document.getElementById('ech-nace').value.trim() || null,
+    nace_cod: document.getElementById('ech-nace').value || null,
+    cod_uniclass: document.getElementById('ech-uniclass').value || null,
     operator_inclus: document.getElementById('ech-operator').value,
     tarif_ora: tarifOraRaw ? Number(tarifOraRaw) : null,
     tarif_zi: Number(document.getElementById('ech-pret-zi').value),
@@ -3398,13 +3443,14 @@ async function saveEchipament() {
 // Notă de scop: UI-ul de import CSV există azi doar pe tab-ul Materiale.
 // Backend-ul (/api/marketplace/importa-csv) suportă deja tip:'echipamente'
 // identic — un buton similar se poate adăuga oricând, fără cod nou pe server.
-const MP_CSV_HEADERE = ['denumire_produs', 'descriere', 'descriere_pret', 'ambalaj', 'categorie', 'nace_cod', 'pret_fara_tva', 'moneda', 'unitate_masura', 'stoc_disponibil', 'lead_time_zile', 'furnizor_comercial', 'cui_furnizor', 'specificatii_tehnice', 'cod_produs_furnizor', 'imagine_url_1', 'imagine_url_2', 'imagine_url_3', 'imagine_url_4', 'imagine_url_5', 'imagine_url_6', 'video_url'];
+const MP_CSV_HEADERE = ['denumire_produs', 'descriere', 'descriere_pret', 'ambalaj', 'categorie', 'nace_cod', 'cod_uniclass', 'pret_fara_tva', 'moneda', 'unitate_masura', 'stoc_disponibil', 'lead_time_zile', 'furnizor_comercial', 'cui_furnizor', 'specificatii_tehnice', 'cod_produs_furnizor', 'imagine_url_1', 'imagine_url_2', 'imagine_url_3', 'imagine_url_4', 'imagine_url_5', 'imagine_url_6', 'video_url'];
 
 function dlTemplate() {
   const randExemplu = {
     denumire_produs: 'Calorifer Purmo C11 600x10 elemenți',
     descriere: 'Completează aici o descriere reală, de minimum 100 de caractere, care explică marca, dimensiunile și utilizarea produsului.',
-    descriere_pret: 'Preț per bucată', ambalaj: '', categorie: 'Electrice & Cabluri', nace_cod: 'F 43.22',
+    descriere_pret: 'Preț per bucată', ambalaj: '', categorie: 'Electrice & Cabluri', nace_cod: '43.22',
+    cod_uniclass: 'Pr_70_60_36_73 (opțional — vezi lista din formular)',
     pret_fara_tva: '245.00', moneda: 'RON', unitate_masura: 'buc', stoc_disponibil: '48', lead_time_zile: '2',
     furnizor_comercial: '', cui_furnizor: '', specificatii_tehnice: '', cod_produs_furnizor: 'SKU-001',
     imagine_url_1: '(obligatoriu — urcă imaginea individual mai întâi, apoi copiază URL-ul aici)',
@@ -3425,6 +3471,7 @@ function _mapeazaRandCsvMaterial(rec) {
   return {
     denumire: rec.denumire_produs || '', descriere: rec.descriere || '', descriere_pret: rec.descriere_pret || '',
     ambalaj: rec.ambalaj || null, categorie_id: categorie ? categorie.id : null, nace_cod: rec.nace_cod || null,
+    cod_uniclass: rec.cod_uniclass || null,
     pret_fara_tva: Number(rec.pret_fara_tva), moneda: (rec.moneda || '').toUpperCase(), unitate_masura: rec.unitate_masura || '',
     stoc_disponibil: Number(rec.stoc_disponibil) || 0, lead_time_zile: Number(rec.lead_time_zile) || 0,
     furnizor_comercial: rec.furnizor_comercial || null, cui_furnizor: rec.cui_furnizor || null,
@@ -3579,6 +3626,7 @@ async function incarcaDocumenteKyc(input) {
 }
 
 document.addEventListener('DOMContentLoaded', incarcaCategoriiMp);
+document.addEventListener('DOMContentLoaded', incarcaTaxonomieMp);
 
 // ── UTILS ──
 function setEl(id,val){ const e=document.getElementById(id); if(e) e.textContent=val; }
