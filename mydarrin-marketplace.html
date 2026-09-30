@@ -1016,9 +1016,6 @@ function triggerHeaderSearch(){
 }
 </script>
 
-
-
-
 <div id="sidebar-overlay" onclick="closeSidebar()"></div>
 <div id="sidebar">
 
@@ -1252,7 +1249,6 @@ function triggerHeaderSearch(){
   </div>
 </div>
 
-
 <!-- BREADCRUMB -->
 <div style="background:#fff;border-bottom:1px solid #D5DFE8;padding:9px 24px">
   <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:6px;font-size:12px;color:#8C9BAD;flex-wrap:wrap">
@@ -1374,278 +1370,30 @@ function triggerHeaderSearch(){
   <div id="mp-tabs-section" style="scroll-margin-top:80px">
     <!-- Tab bar -->
     <div style="display:flex;gap:6px;padding:6px;background:#fff;border-radius:16px;border:1px solid #D5DFE8;margin-bottom:20px;overflow-x:auto">
-      <button class="mp-tab active" id="mpt-materiale" onclick="switchMpTab('materiale',this)">Plasează materiale</button>
-      <button class="mp-tab" id="mpt-echipamente" onclick="switchMpTab('echipamente',this)">Plasează echipamente</button>
-      <button class="mp-tab" id="mpt-cont" onclick="switchMpTab('cont',this)">Cont furnizor</button>
+      <button class="mp-tab active" id="mpt-cont" onclick="switchMpTab('cont',this)">Cont furnizor</button>
       <button class="mp-tab" id="mpt-comision" onclick="switchMpTab('comision',this)">Comisioane & Plăți</button>
     </div>
 
-    <!-- ══ TAB: MATERIALE ══ -->
-    <div id="mptab-materiale">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px" class="mp-2col">
-
-        <!-- Formular adăugare produs -->
-        <div class="card">
-          <div class="card-hdr" style="display:flex;align-items:center;justify-content:space-between">
-            <div style="font-weight:700;color:#003366;font-size:14px">Adaugă produs individual</div>
-            <span class="chip chip-ai">Manual</span>
-          </div>
-          <div style="padding:22px;display:flex;flex-direction:column;gap:14px">
-            <div><label class="f-label">Denumire produs *</label><input type="text" class="f-input" id="prod-denumire" placeholder="Ex: Calorifer Purmo C11 600×10 elemenți"/></div>
-            <div>
-              <label class="f-label">Descriere * <span style="font-weight:400;color:#8C9BAD">(100-1000 caractere)</span></label>
-              <textarea class="f-textarea" id="prod-descriere" maxlength="1000" oninput="document.getElementById('prod-descriere-count').textContent=this.value.length" placeholder="Descriere completă a produsului — minimum 100 de caractere."></textarea>
-              <div style="text-align:right;font-size:10.5px;color:#8C9BAD"><span id="prod-descriere-count">0</span>/1000 (minim 100)</div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
-              <div><label class="f-label">Categorie *</label>
-                <select class="f-select" id="prod-categorie"><option value="">Se încarcă...</option></select>
-              </div>
-              <div><label class="f-label">Cod CAEN/NACE *</label>
-                <select class="f-select" id="prod-nace"><option value="">Se încarcă...</option></select>
-              </div>
-              <div><label class="f-label">Cod Uniclass <span style="font-weight:400;color:#8C9BAD">(opțional)</span></label>
-                <select class="f-select" id="prod-uniclass"><option value="">— fără —</option></select>
-              </div>
-            </div>
-            <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px">
-              <div><label class="f-label">Preț unitar (fără TVA) *</label><input type="number" class="f-input" placeholder="245.00" min="0.01" step="0.01" id="prod-pret"/></div>
-              <div><label class="f-label">Monedă *</label><select class="f-select" id="prod-moneda"><option>RON</option><option>EUR</option><option>MDL</option><option>BGN</option></select></div>
-              <div><label class="f-label">U.M. *</label><select class="f-select" id="prod-um"><option>buc</option><option>m²</option><option>ml</option><option>kg</option><option>l</option><option>set</option><option>m³</option><option>găleată</option></select></div>
-            </div>
-            <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px">
-              <div><label class="f-label">Descriere preț *</label><input type="text" class="f-input" id="prod-descriere-pret" placeholder="Ex: Preț per bucată, Preț per palet"/></div>
-              <div><label class="f-label">Ambalaj</label><input type="text" class="f-input" id="prod-ambalaj" placeholder="opțional"/></div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-              <div><label class="f-label">Stoc disponibil</label><input type="number" class="f-input" placeholder="48" min="0" id="prod-stoc"/></div>
-              <div><label class="f-label">Lead time livrare (zile)</label><input type="number" class="f-input" id="prod-leadtime" placeholder="2" min="0"/></div>
-            </div>
-            <div><label class="f-label">Furnizor comercial</label><input type="text" class="f-input" id="prod-furnizor-comercial" placeholder="ACA BUSINESS GROUP · CUI 32667674"/></div>
-            <div><label class="f-label">Specificații tehnice</label><textarea class="f-textarea" id="prod-specificatii" placeholder="Marcă, dimensiuni, certificări, standard EN/ISO, note montaj..."></textarea></div>
-            <div><label class="f-label">Video (link YouTube/Vimeo, opțional)</label><input type="url" class="f-input" id="prod-video" placeholder="https://www.youtube.com/watch?v=..."/></div>
-            <!-- Comision estimat -->
-            <div style="background:linear-gradient(135deg,#EBF4FB,#F4F7F9);border-radius:12px;border:1px solid #D5DFE8;padding:14px">
-              <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:8px">Comision estimat (configurat BO)</div>
-              <div style="display:flex;justify-content:space-between;font-size:13px">
-                <span style="color:#6B7A8D">La preț de 245 Lei/buc</span>
-                <span style="font-weight:700;color:#003366">Comision: <span id="com-preview">12–24 Lei</span></span>
-              </div>
-              <div style="font-size:11px;color:#8C9BAD;margin-top:4px">Interval 5–10% · Negociat individual în Backoffice</div>
-            </div>
-            <div>
-              <label class="f-label">Imagini (minim 1, max 6) + Fișă tehnică (PDF)</label>
-              <div class="upload-dz" ondragover="event.preventDefault();this.classList.add('dz-over')" ondragleave="this.classList.remove('dz-over')" onclick="this.querySelector('input').click()">
-                <input type="file" multiple accept="image/*,.pdf" style="display:none" onchange="incarcaFisiereMp(this,'materiale')"/>
-                <div style="font-size:28px;margin-bottom:8px"><i data-lucide="paperclip" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-                <div style="font-size:13px;font-weight:600;color:#6B7A8D">Drag & drop sau click</div>
-                <div style="font-size:11px;color:#8C9BAD;margin-top:4px">JPG, PNG, PDF · Max 20MB</div>
-              </div>
-              <div id="mat-file-preview" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
-            </div>
-            <button onclick="saveMaterial()" class="btn-p" style="width:100%">
-              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
-              Adaugă în marketplace
-            </button>
-          </div>
-        </div>
-
-        <!-- Import CSV + produse active -->
-        <div style="display:flex;flex-direction:column;gap:16px">
-          <!-- Import bulk -->
-          <div class="card">
-            <div class="card-hdr" style="display:flex;align-items:center;justify-content:space-between">
-              <div style="font-weight:700;color:#003366;font-size:14px">Import în masă — CSV / Excel</div>
-              <span class="chip chip-acc">Bulk</span>
-            </div>
-            <div style="padding:20px">
-              <!-- Schema CSV -->
-              <div style="background:#0F1923;border-radius:14px;padding:16px;margin-bottom:16px;font-family:monospace">
-                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:10px">Schema CSV My Darrin · Materiale</div>
-                <div style="font-size:11.5px;line-height:2">
-                  <div><span style="color:#0E9E99">denumire_produs</span><span style="color:#4A6080"> · text · obligatoriu (3-200 car.)</span></div>
-                  <div><span style="color:#0E9E99">descriere</span><span style="color:#4A6080"> · text · obligatoriu (100-1000 car.)</span></div>
-                  <div><span style="color:#0E9E99">descriere_pret</span><span style="color:#4A6080"> · text · obligatoriu · ex: „Preț per bucată"</span></div>
-                  <div><span style="color:#0E9E99">ambalaj</span><span style="color:#4A6080"> · text · opțional</span></div>
-                  <div><span style="color:#0E9E99">categorie</span><span style="color:#4A6080"> · text</span></div>
-                  <div><span style="color:#0E9E99">nace_cod</span><span style="color:#4A6080"> · text · ex: F 43.22</span></div>
-                  <div><span style="color:#FF8C00">pret_fara_tva</span><span style="color:#4A6080"> · număr · obligatoriu</span></div>
-                  <div><span style="color:#FF8C00">moneda</span><span style="color:#4A6080"> · RON/EUR/MDL/BGN</span></div>
-                  <div><span style="color:#FF8C00">unitate_masura</span><span style="color:#4A6080"> · buc/m²/kg...</span></div>
-                  <div><span style="color:#7AB3E0">stoc_disponibil</span><span style="color:#4A6080"> · număr</span></div>
-                  <div><span style="color:#7AB3E0">lead_time_zile</span><span style="color:#4A6080"> · număr</span></div>
-                  <div><span style="color:#A78BFA">furnizor_comercial</span><span style="color:#4A6080"> · text · ex: ACA BG</span></div>
-                  <div><span style="color:#A78BFA">cui_furnizor</span><span style="color:#4A6080"> · ex: 32667674</span></div>
-                  <div><span style="color:#A78BFA">specificatii_tehnice</span><span style="color:#4A6080"> · text</span></div>
-                  <div><span style="color:#E57373">imagine_url_1</span><span style="color:#4A6080"> · obligatoriu · urcă imaginea individual mai întâi, apoi copiază URL-ul</span></div>
-                  <div><span style="color:#E57373">imagine_url_2</span>...<span style="color:#E57373">imagine_url_6</span><span style="color:#4A6080"> · opțional</span></div>
-                  <div><span style="color:#E57373">video_url</span><span style="color:#4A6080"> · opțional · doar link YouTube/Vimeo</span></div>
-                </div>
-              </div>
-              <div class="upload-dz" style="margin-bottom:14px" ondragover="event.preventDefault();this.classList.add('dz-over')" ondragleave="this.classList.remove('dz-over')" onclick="this.querySelector('input').click()">
-                <input type="file" accept=".csv" style="display:none" onchange="handleCSVUpload(this)"/>
-                <div style="font-size:28px;margin-bottom:8px"><i data-lucide="bar-chart-3" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-                <div style="font-size:13px;font-weight:600;color:#6B7A8D">Upload CSV</div>
-                <div style="font-size:11px;color:#8C9BAD;margin-top:4px">.csv · Max 10MB</div>
-              </div>
-              <div style="display:flex;gap:10px">
-                <button onclick="dlTemplate()" class="btn-s" style="flex:1">Template CSV</button>
-                <button onclick="importCSV()" class="btn-ai" style="flex:1">Importă acum</button>
-              </div>
-              <div id="mp-import-progres" style="margin-top:12px;font-size:11.5px;color:#6B7A8D;white-space:pre-line"></div>
-            </div>
-          </div>
-
-          <!-- Produse active -->
-          <div class="card">
-            <div class="card-hdr" style="display:flex;align-items:center;justify-content:space-between">
-              <div style="font-weight:700;color:#003366;font-size:14px">Produse active în marketplace</div>
-              <span class="chip chip-g">3 live</span>
-            </div>
-            <div>
-              <table class="com-table" style="width:100%">
-                <thead><tr>
-                  <th>Produs</th><th style="text-align:right">Preț</th><th style="text-align:center">Stoc</th><th style="text-align:center">Status</th>
-                </tr></thead>
-                <tbody>
-                  <tr>
-                    <td><div style="font-weight:600;color:#2D2D2D;font-size:13px">Calorifer Purmo C11 600/10</div><div style="font-size:10.5px;color:#8C9BAD">F 43.22 · ACA BG · buc</div></td>
-                    <td style="text-align:right;font-weight:700;color:#003366">310 RON</td>
-                    <td style="text-align:center;color:#6B7A8D">48</td>
-                    <td style="text-align:center"><span class="chip chip-g" style="font-size:9.5px">Live</span></td>
-                  </tr>
-                  <tr>
-                    <td><div style="font-weight:600;color:#2D2D2D;font-size:13px">Parchet stratificat 8mm AC3</div><div style="font-size:10.5px;color:#8C9BAD">F 43.33 · m²</div></td>
-                    <td style="text-align:right;font-weight:700;color:#003366">45 RON</td>
-                    <td style="text-align:center;color:#6B7A8D">240</td>
-                    <td style="text-align:center"><span class="chip chip-g" style="font-size:9.5px">Live</span></td>
-                  </tr>
-                  <tr>
-                    <td><div style="font-weight:600;color:#2D2D2D;font-size:13px">Vopsea lavabilă Caparol 15L</div><div style="font-size:10.5px;color:#8C9BAD">F 43.34 · găleată</div></td>
-                    <td style="text-align:right;font-weight:700;color:#003366">65 RON</td>
-                    <td style="text-align:center;color:#CC7000">3</td>
-                    <td style="text-align:center"><span class="chip chip-acc" style="font-size:9.5px">Stoc mic</span></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══ TAB: ECHIPAMENTE ══ -->
-    <div id="mptab-echipamente" style="display:none">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px" class="mp-2col">
-        <div class="card">
-          <div class="card-hdr" style="display:flex;align-items:center;justify-content:space-between">
-            <div style="font-weight:700;color:#003366;font-size:14px">Adaugă echipament de închiriere</div>
-            <span class="chip chip-acc">Rental</span>
-          </div>
-          <div style="padding:22px;display:flex;flex-direction:column;gap:14px">
-            <div><label class="f-label">Denumire echipament *</label><input type="text" class="f-input" id="ech-denumire" placeholder="Ex: Excavator mini JCB 8025 · 2.5T"/></div>
-            <div>
-              <label class="f-label">Descriere * <span style="font-weight:400;color:#8C9BAD">(100-1000 caractere)</span></label>
-              <textarea class="f-textarea" id="ech-descriere" maxlength="1000" oninput="document.getElementById('ech-descriere-count').textContent=this.value.length" placeholder="Descriere completă a echipamentului — minimum 100 de caractere."></textarea>
-              <div style="text-align:right;font-size:10.5px;color:#8C9BAD"><span id="ech-descriere-count">0</span>/1000 (minim 100)</div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-              <div><label class="f-label">Categorie *</label>
-                <select class="f-select" id="ech-categorie"><option value="">Se încarcă...</option></select>
-              </div>
-              <div><label class="f-label">Operator inclus</label>
-                <select class="f-select" id="ech-operator">
-                  <option value="fara_operator">Fără operator</option>
-                  <option value="cu_operator_optional">Cu operator opțional</option>
-                  <option value="operator_obligatoriu">Operator obligatoriu</option>
-                </select>
-              </div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
-              <div><label class="f-label">Tarif/oră</label><input type="number" class="f-input" id="ech-pret-ora" placeholder="—" min="0"/></div>
-              <div><label class="f-label">Tarif/zi *</label><input type="number" class="f-input" placeholder="800" min="0.01" id="ech-pret-zi"/></div>
-              <div><label class="f-label">Tarif/săpt.</label><input type="number" class="f-input" id="ech-pret-saptamana" placeholder="4500" min="0"/></div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-              <div><label class="f-label">Monedă *</label><select class="f-select" id="ech-moneda"><option>RON</option><option>EUR</option><option>MDL</option><option>BGN</option></select></div>
-              <div><label class="f-label">Cod CAEN/NACE *</label>
-                <select class="f-select" id="ech-nace"><option value="">Se încarcă...</option></select>
-              </div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr;gap:12px">
-              <div><label class="f-label">Cod Uniclass <span style="font-weight:400;color:#8C9BAD">(opțional)</span></label>
-                <select class="f-select" id="ech-uniclass"><option value="">— fără —</option></select>
-              </div>
-            </div>
-            <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px">
-              <div><label class="f-label">Descriere preț *</label><input type="text" class="f-input" id="ech-descriere-pret" placeholder="Ex: Tarif pe zi, fără combustibil"/></div>
-              <div><label class="f-label">Buc disponibile *</label><input type="number" class="f-input" id="ech-buc" placeholder="3" min="0"/></div>
-            </div>
-            <div><label class="f-label">Specificații tehnice</label><textarea class="f-textarea" id="ech-specificatii" placeholder="Greutate, dimensiuni, capacitate, accesorii, certificări operator ISCIR..."></textarea></div>
-            <div><label class="f-label">Video (link YouTube/Vimeo, opțional)</label><input type="url" class="f-input" id="ech-video" placeholder="https://www.youtube.com/watch?v=..."/></div>
-            <!-- Comision estimat echipamente -->
-            <div style="background:linear-gradient(135deg,#FFF8EE,#FFF0D6);border-radius:12px;border:1px solid #FFD980;padding:14px">
-              <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#CC7000;margin-bottom:8px">Comision estimat (configurat BO)</div>
-              <div style="display:flex;justify-content:space-between;font-size:13px">
-                <span style="color:#6B7A8D">La tarif de 800 Lei/zi</span>
-                <span style="font-weight:700;color:#003366">Comision: <span id="com-ech-preview">64–96 Lei/zi</span></span>
-              </div>
-              <div style="font-size:11px;color:#8C9BAD;margin-top:4px">Interval 8–12% · Negociat individual în Backoffice</div>
-            </div>
-            <div>
-              <label class="f-label">Imagini (minim 1, max 6) + Fișă tehnică</label>
-              <div class="upload-dz" onclick="this.querySelector('input').click()">
-                <input type="file" multiple accept="image/*,.pdf" style="display:none" onchange="incarcaFisiereMp(this,'echipamente')"/>
-                <div style="font-size:28px;margin-bottom:8px"><i data-lucide="paperclip" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-                <div style="font-size:13px;font-weight:600;color:#6B7A8D">Drag & drop sau click</div>
-              </div>
-              <div id="ech-file-preview" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
-            </div>
-            <button onclick="saveEchipament()" class="btn-p" style="width:100%">
-              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
-              Adaugă echipament în marketplace
-            </button>
-          </div>
-        </div>
-
-        <!-- Calendar disponibilitate -->
-        <div class="card">
-          <div class="card-hdr" style="display:flex;align-items:center;justify-content:space-between">
-            <div style="font-weight:700;color:#003366;font-size:14px">Calendar disponibilitate</div>
-            <span class="chip chip-ai"><span class="pulse-dot" style="width:4px;height:4px;margin-right:3px"></span>Live</span>
-          </div>
-          <div style="padding:20px">
-            <p style="font-size:13px;color:#6B7A8D;line-height:1.7;margin-bottom:16px">Click pe zile pentru a seta disponibilitatea. Darrin AI alocă rezervările doar în zilele marcate ca <strong style="color:#1A7A3A">disponibil</strong>.</p>
-            <!-- Calendar header -->
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-              <button onclick="calPrev()" style="width:30px;height:30px;border-radius:8px;border:1px solid #D5DFE8;background:#fff;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">‹</button>
-              <div style="font-weight:700;color:#003366;font-size:13.5px" id="cal-month-label">Iunie 2026</div>
-              <button onclick="calNext()" style="width:30px;height:30px;border-radius:8px;border:1px solid #D5DFE8;background:#fff;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">›</button>
-            </div>
-            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:6px">
-              <div style="text-align:center;font-size:10px;font-weight:700;color:#8C9BAD;padding:3px">Lu</div>
-              <div style="text-align:center;font-size:10px;font-weight:700;color:#8C9BAD;padding:3px">Ma</div>
-              <div style="text-align:center;font-size:10px;font-weight:700;color:#8C9BAD;padding:3px">Mi</div>
-              <div style="text-align:center;font-size:10px;font-weight:700;color:#8C9BAD;padding:3px">Jo</div>
-              <div style="text-align:center;font-size:10px;font-weight:700;color:#8C9BAD;padding:3px">Vi</div>
-              <div style="text-align:center;font-size:10px;font-weight:700;color:#C0392B;padding:3px">Sâ</div>
-              <div style="text-align:center;font-size:10px;font-weight:700;color:#C0392B;padding:3px">Du</div>
-            </div>
-            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px" id="avail-grid"></div>
-            <!-- Legenda -->
-            <div style="display:flex;gap:14px;margin-top:14px;font-size:11px;color:#6B7A8D">
-              <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:4px;background:#D4EDDA;border:1px solid rgba(26,122,58,.3)"></div>Disponibil</div>
-              <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:4px;background:#FDECEA;border:1px solid rgba(220,38,38,.3)"></div>Rezervat</div>
-              <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:4px;background:#F4F7F9;border:1px solid #D5DFE8"></div>Indisponibil</div>
-            </div>
-            <button onclick="saveAvail()" class="btn-s" style="width:100%;margin-top:16px;justify-content:center">Salvează disponibilitate</button>
-          </div>
-        </div>
+    <!-- FIX (30 sept. 2026, decizia „marketplace, punctul 5"): formularele de
+         adăugare produs (materiale/echipamente) erau aici, dar afișau deja
+         date vechi/fictive (furnizor "ACA BUSINESS GROUP", 3 produse
+         hardcodate, calendar de disponibilitate care doar arăta un mesaj de
+         succes fals la salvare) — rămășițe de dinainte ca saveMaterial()/
+         saveEchipament() să fie conectate real (audit 2 August 2026).
+         Gestiunea reală a produselor (CRUD, imagini, CSV, toggle live/
+         offline) s-a mutat integral în dashboardul furnizorului, unde un
+         cont existent are deja sesiune — pagina asta rămâne doar marketing
+         + înregistrare cont nou. -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-hdr"><div style="font-weight:700;color:#003366;font-size:14px">Ai deja cont de furnizor?</div></div>
+      <div style="padding:22px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <p style="font-size:13px;color:#6B7A8D;line-height:1.7;margin:0;max-width:520px">Adaugă produse individual sau prin CSV, urcă imagini, activează/dezactivează un produs și vezi comenzile — totul din dashboardul tău.</p>
+        <a href="mydarrin-dashboard-furnizor.html" class="btn-p" style="text-decoration:none;white-space:nowrap">Deschide dashboardul →</a>
       </div>
     </div>
 
     <!-- ══ TAB: CONT FURNIZOR ══ -->
-    <div id="mptab-cont" style="display:none">
+    <div id="mptab-cont">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px" class="mp-2col">
         <div class="card">
           <div class="card-hdr"><div style="font-weight:700;color:#003366;font-size:14px">Înregistrare cont furnizor</div></div>
@@ -1766,52 +1514,14 @@ function triggerHeaderSearch(){
 
     <!-- ══ TAB: COMISIOANE & PLĂȚI ══ -->
     <div id="mptab-comision" style="display:none">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px" class="mp-2col">
-
-        <!-- Comision configurabil BO -->
-        <div class="card">
-          <div class="card-hdr" style="display:flex;align-items:center;justify-content:space-between">
-            <div style="font-weight:700;color:#003366;font-size:14px">Comisioane configurabile din Backoffice</div>
-            <span class="chip chip-acc">Admin BO</span>
-          </div>
-          <div style="padding:22px">
-            <div style="background:#0F1923;border-radius:16px;padding:20px;margin-bottom:20px">
-              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#4A6080;margin-bottom:14px">BO → Marketplace → Comisioane → Furnizor</div>
-              <!-- Simulare config BO dark -->
-              <div style="display:flex;flex-direction:column;gap:12px">
-                <div style="display:flex;align-items:center;gap:10px">
-                  <span style="font-size:12px;color:#8BA3C0;width:180px;flex-shrink:0">Furnizor</span>
-                  <div style="flex:1;background:#192433;border-radius:8px;border:1px solid #2D3F55;padding:7px 12px;font-family:monospace;font-size:12px;color:#E2E8F0">ACA BUSINESS GROUP</div>
-                </div>
-                <div style="display:flex;align-items:center;gap:10px">
-                  <span style="font-size:12px;color:#8BA3C0;width:180px;flex-shrink:0">Tip</span>
-                  <div style="flex:1;background:#192433;border-radius:8px;border:1px solid #2D3F55;padding:7px 12px;font-family:monospace;font-size:12px;color:#0E9E99">Materiale + Echipamente</div>
-                </div>
-                <div style="display:flex;align-items:center;gap:10px">
-                  <span style="font-size:12px;color:#8BA3C0;width:180px;flex-shrink:0">Com. materiale (%)</span>
-                  <div style="flex:1;background:#192433;border-radius:8px;border:1px solid #FF8C00;padding:7px 12px;font-family:monospace;font-size:14px;color:#FF8C00;font-weight:700">7.5%</div>
-                </div>
-                <div style="display:flex;align-items:center;gap:10px">
-                  <span style="font-size:12px;color:#8BA3C0;width:180px;flex-shrink:0">Com. echipamente (%)</span>
-                  <div style="flex:1;background:#192433;border-radius:8px;border:1px solid #FF8C00;padding:7px 12px;font-family:monospace;font-size:14px;color:#FF8C00;font-weight:700">10%</div>
-                </div>
-                <div style="display:flex;align-items:center;gap:10px">
-                  <span style="font-size:12px;color:#8BA3C0;width:180px;flex-shrink:0">Perioadă promo</span>
-                  <div style="flex:1;background:#192433;border-radius:8px;border:1px solid #2D3F55;padding:7px 12px;font-family:monospace;font-size:12px;color:#1A7A3A">0% · până 13.09.2026</div>
-                </div>
-                <div style="display:flex;align-items:center;gap:10px">
-                  <span style="font-size:12px;color:#8BA3C0;width:180px;flex-shrink:0">Plată Escrow (zile)</span>
-                  <div style="flex:1;background:#192433;border-radius:8px;border:1px solid #2D3F55;padding:7px 12px;font-family:monospace;font-size:12px;color:#7AB3E0">24–48h</div>
-                </div>
-              </div>
-              <button style="width:100%;margin-top:14px;padding:10px;border-radius:10px;border:none;background:#FF8C00;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" onclick="showToast('Configurație comision salvată în Backoffice · Activă din 13.06.2026','success')">Salvează configurație → Backoffice</button>
-            </div>
-
-            <div style="font-size:11px;color:#8C9BAD;line-height:1.7;padding:12px 16px;background:#FFF8EE;border-radius:12px;border:1px solid #FFD980">
-              <strong style="color:#CC7000">Configurare Backoffice:</strong> Fiecare furnizor poate avea comision diferit, negociat contractual. Admin setează procentul exact, data de intrare în vigoare și eventualele perioade promoționale. Furnizorul vede comisionul aplicat și suma netă în dashboard-ul său.
-            </div>
-          </div>
-        </div>
+      <!-- FIX (30 sept. 2026): cardul „Comisioane configurabile din Backoffice"
+           era un mockup — furnizor fictiv „ACA BUSINESS GROUP", procente
+           statice (7,5%/10%) și un buton „Salvează" care doar arăta un toast,
+           fără back-office real în spate. Eliminat, nu înlocuit cu alt mock
+           (politica „fără UI placeholder"). Rămâne doar simulatorul de mai
+           jos, un calcul real, făcut pe loc, niciodată prezentat ca date
+           reale ale unui furnizor. -->
+      <div style="display:grid;grid-template-columns:1fr;gap:20px;max-width:520px;margin:0 auto" class="mp-2col">
 
         <!-- Simulator venituri -->
         <div class="card">
@@ -2315,7 +2025,6 @@ function submitNewsletter() {
 
 </footer>
 
-
 <!-- ════ FOOTER RESPONSIVE CSS ════ -->
 <style>
 @media (max-width: 900px) {
@@ -2325,8 +2034,6 @@ function submitNewsletter() {
   .footer-grid { grid-template-columns: 1fr !important; }
 }
 </style>
-
-
 
 <!-- ══════════════════════════════════════════
      MODAL: DEVINO INVESTITOR
@@ -2648,7 +2355,6 @@ function showToastMsg(msg) {
   setTimeout(() => t.remove(), 3000);
 }
 
-
 function toggleAuthModal(){
   const m=document.getElementById('auth-modal');
   if(!m) return;
@@ -2696,7 +2402,6 @@ function applyCurrency(cur) {
 
 // ── PARTNER MODAL ──
 
-
 // ── INVESTOR MODAL ──
 function openInvestorModal() {
   document.getElementById('investor-modal').classList.remove('hidden');
@@ -2736,9 +2441,6 @@ function animateCounter(el){
 const cobs=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting&&!x.target.dataset.done){x.target.dataset.done='1';animateCounter(x.target);}}),{threshold:.5});
 document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
 </script>
-
-
-
 
 <script id="partner-router">
 /* ═══════════════════════════════════════════════════════════════════
@@ -3090,10 +2792,10 @@ document.addEventListener('myd-geo-update', function(e) {
 
 <script>
 // ── TABS ──
-let mpTabActiv = 'materiale';
+let mpTabActiv = 'cont';
 function switchMpTab(tab, btn){
   mpTabActiv = tab;
-  ['materiale','echipamente','cont','comision'].forEach(t=>{
+  ['cont','comision'].forEach(t=>{
     const el = document.getElementById('mptab-'+t);
     if(el) el.style.display='none';
     const tb = document.getElementById('mpt-'+t);
@@ -3625,8 +3327,13 @@ async function incarcaDocumenteKyc(input) {
   }
 }
 
-document.addEventListener('DOMContentLoaded', incarcaCategoriiMp);
-document.addEventListener('DOMContentLoaded', incarcaTaxonomieMp);
+// FIX (30 sept. 2026): formularul care avea nevoie de aceste liste a fost
+// mutat în dashboardul furnizorului — apelurile de mai jos rulau pe orice
+// vizitator al paginii publice, degeaba (elementele țintă nu mai există).
+// incarcaCategoriiMp/incarcaTaxonomieMp și tot ce ține strict de formularul
+// vechi (saveMaterial, saveEchipament, incarcaFisiereMp, CSV import) au
+// rămas cod orfan aici — nefolosite, dar inofensive; de curățat la
+// inventarul „Cod/Schemă Orfană".
 
 // ── UTILS ──
 function setEl(id,val){ const e=document.getElementById(id); if(e) e.textContent=val; }
@@ -3789,7 +3496,6 @@ function daiSendMessage(){
   daiRespond(text);
 }
 </script>
-
 
 <div id="auth-modal" class="hidden fixed inset-0 z-[400] flex items-center justify-center p-4">
   <div class="absolute inset-0 bg-black/45 backdrop-blur-sm" onclick="toggleAuthModal()"></div>

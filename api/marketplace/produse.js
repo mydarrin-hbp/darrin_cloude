@@ -129,6 +129,24 @@ async function handleSterge(req, res, user, admin) {
   return res.status(200).json({ ok: true });
 }
 
+// Faza 2 (30 sept. 2026): toggle live/offline din lista de produse a
+// dashboardului — nu re-validează tot produsul (formularul complet nu e
+// retrimis la un simplu switch), doar flipuiește `activ` pe un rând deja
+// aprobat. Nu schimbă `status` (aprobare admin) — un produs respins rămâne
+// respins indiferent de acest toggle.
+async function handleToggleActiv(req, res, user, admin) {
+  const { tip, id, activ } = req.body || {};
+  if (!TABEL[tip] || !id || typeof activ !== 'boolean') {
+    return res.status(400).json({ error: "tip, id și activ (boolean) sunt obligatorii." });
+  }
+  let query = supabaseAdmin.from(TABEL[tip]).update({ activ, actualizat_la: new Date().toISOString() }).eq('id', id);
+  if (!admin) query = query.eq('furnizor_id', user.id);
+  const { data, error } = await query.select();
+  if (error) return res.status(500).json({ error: error.message });
+  if (!data || !data.length) return res.status(404).json({ error: 'Produsul nu există sau nu îți aparține.' });
+  return res.status(200).json({ ok: true, produs: data[0] });
+}
+
 async function handler(req, res, user) {
   const admin = await esteAdmin(user.id);
 
@@ -138,6 +156,7 @@ async function handler(req, res, user) {
   const { action } = req.body || {};
   if (action === 'salveaza') return handleSalveaza(req, res, user, admin);
   if (action === 'sterge') return handleSterge(req, res, user, admin);
+  if (action === 'toggle_activ') return handleToggleActiv(req, res, user, admin);
   return res.status(400).json({ error: `action necunoscută: ${action}` });
 }
 

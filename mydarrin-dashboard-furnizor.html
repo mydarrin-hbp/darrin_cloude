@@ -345,6 +345,24 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 .ch-b{background:rgba(0,51,102,.1);color:#003366;border:1px solid rgba(0,51,102,.15)}
 .ch-t{background:rgba(14,158,153,.1);color:#0B7A76;border:1px solid rgba(14,158,153,.2)}
 .ch-gr{background:rgba(74,96,128,.1);color:#4A6080;border:1px solid rgba(74,96,128,.2)}
+/* ── FORM (Faza 2, 30 sept. 2026 — mutat din mydarrin-marketplace.html odată
+     cu formularul de produse, aceleași clase, ca să nu dubleze stilul) ── */
+.f-label{display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:6px}
+.f-input{width:100%;border:1.5px solid #D5DFE8;border-radius:12px;padding:11px 14px;font-size:13.5px;font-family:inherit;color:#2D2D2D;outline:none;background:#fff;transition:border-color .18s}
+.f-input:focus{border-color:#003366;box-shadow:0 0 0 3px rgba(0,51,102,.08)}
+.f-select{width:100%;border:1.5px solid #D5DFE8;border-radius:12px;padding:11px 14px;font-size:13.5px;font-family:inherit;color:#2D2D2D;outline:none;appearance:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7A8D' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 14px center;cursor:pointer;transition:border-color .18s}
+.f-select:focus{border-color:#003366}
+.f-textarea{width:100%;border:1.5px solid #D5DFE8;border-radius:12px;padding:11px 14px;font-size:13.5px;font-family:inherit;color:#2D2D2D;outline:none;resize:vertical;min-height:80px;background:#fff;transition:border-color .18s}
+.f-textarea:focus{border-color:#003366}
+.f-textarea::placeholder,.f-input::placeholder{color:#8C9BAD}
+.upload-dz{border:2px dashed #D5DFE8;border-radius:16px;padding:28px;text-align:center;cursor:pointer;transition:all .2s}
+.upload-dz:hover,.upload-dz.dz-over{border-color:#0E9E99;background:rgba(14,158,153,.04)}
+.toggle-sw{position:relative;display:inline-block;width:38px;height:22px;flex-shrink:0}
+.toggle-sw input{opacity:0;width:0;height:0}
+.toggle-sw .slider{position:absolute;inset:0;background:#D5DFE8;border-radius:99px;cursor:pointer;transition:.2s}
+.toggle-sw .slider:before{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+.toggle-sw input:checked+.slider{background:#1A7A3A}
+.toggle-sw input:checked+.slider:before{transform:translateX(16px)}
 .btn-p{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:10px;font-size:12.5px;font-weight:700;border:none;cursor:pointer;font-family:inherit;background:var(--accent,#003366);color:#fff;transition:all .18s}
 .btn-p:hover{opacity:.88;transform:translateY(-1px)}
 .btn-s{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:600;border:1.5px solid #D5DFE8;cursor:pointer;font-family:inherit;background:#fff;color:#5A6B7D;transition:all .18s}
@@ -403,6 +421,8 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
      login — sesiunea reală era mereu invizibilă aici, indiferent de cheie. -->
 <script type="module" src="lib/supabaseClient.js"></script>
 <script src="account-system.js"></script>
+<!-- Faza 2 (30 sept. 2026): import CSV real, mutat aici din mydarrin-marketplace.html -->
+<script src="/myd-csv.js"></script>
 <script src="seo-meta.js"></script>
 <script src="cookie-consent.js" defer></script>
 <script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="analytics-loader.js" defer></script>
@@ -593,6 +613,7 @@ function showPanel(id){
   };
   c.innerHTML = (panels[id]||(()=>'<div class="f-card"><div class="f-card-body">Coming soon</div></div>'))();
   if (id === 'produse') loadProduseLive();
+  if (id === 'stocuri') loadStocuriLive();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -662,126 +683,551 @@ function renderComenzi(){
   </div>`;
 }
 
+// Faza 2 (30 sept. 2026, decizia „marketplace, punctul 5"): formularul de
+// gestiune (CRUD) mutat complet aici din mydarrin-marketplace.html, care
+// rămâne doar pagină publică de marketing + înregistrare cont nou.
+// „Stocuri" era 8 rânduri hardcodate (Calorifer Purmo, Parchet...), la fel
+// de fals ca FINANCIAL_STATE — arată acum aceleași produse reale ca
+// „Produse", doar cu accent pe coloana de stoc.
+async function _fetchProduseLive(){
+  const { data: sessionData } = await window.supabaseClient.auth.getSession();
+  const session = sessionData?.session;
+  if (!session) throw new Error('Autentifică-te pentru a vedea produsele.');
+  const tip = currentType === 'inchirieri' ? 'echipamente' : 'materiale';
+  const res = await fetch('/api/marketplace/produse?tip=' + tip, { headers: { Authorization: 'Bearer ' + session.access_token } });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'eroare necunoscută');
+  return { tip, produse: json.produse || [], token: session.access_token };
+}
+
+const STATUS_CHIP_PRODUS = { in_asteptare: ['ch-o', 'În așteptare'], live: ['ch-g', 'Live'], respins: ['ch-r', 'Respins'], suspendat: ['ch-r', 'Suspendat'] };
+
 function renderStocuri(){
-  const prods=[
-    {n:'Calorifer Purmo C11 600/10',cat:'Termice',stoc:48,min:10,pret:'310 Lei/buc',st:'ok'},
-    {n:'Parchet stratificat 8mm AC3',cat:'Finisaje',stoc:240,min:50,pret:'45 Lei/m²',st:'ok'},
-    {n:'Vopsea lavabilă Caparol 15L',cat:'Finisaje',stoc:3,min:10,pret:'65 Lei/găl.',st:'critic'},
-    {n:'Țeavă PP-R 20mm',cat:'Sanitare',stoc:12,min:20,pret:'8 Lei/ml',st:'atentie'},
-    {n:'Cablu NYY 3×2.5mm²',cat:'Electrice',stoc:85,min:30,pret:'12 Lei/ml',st:'ok'},
-    {n:'Gresie Rectificată 60×60',cat:'Finisaje',stoc:7,min:15,pret:'62 Lei/m²',st:'atentie'},
-    {n:'Ciment CEM II 42.5R',cat:'Construcții',stoc:150,min:40,pret:'28 Lei/sac',st:'ok'},
-    {n:'OSB 18mm 122×244',cat:'Construcții',stoc:44,min:10,pret:'86 Lei/pl.',st:'ok'},
-  ];
   return `
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px">
-    <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Stocuri live · 248 produse</h2>
-    <div style="display:flex;gap:8px">
-      <input type="text" placeholder="Caută produs..." style="border:1.5px solid #D5DFE8;border-radius:10px;padding:8px 14px;font-size:12.5px;font-family:inherit;outline:none;width:220px"/>
-      <button class="btn-p" onclick="showPanel('import')">+ Import stoc</button>
-    </div>
+    <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Stocuri live</h2>
+    <button class="btn-p" onclick="showPanel('produse')">Gestionează produsele →</button>
   </div>
   <div class="f-card">
     <table class="f-table">
-      <thead><tr><th>Produs</th><th>Categorie</th><th>Stoc</th><th>Minim</th><th>Preț</th><th>Status</th><th>Acțiuni</th></tr></thead>
-      <tbody>
-        ${prods.map(p=>{
-          const col=p.st==='ok'?'#1A7A3A':p.st==='atentie'?'#CC7000':'#C0392B';
-          const pct=Math.min(100,Math.round(p.stoc/(p.min*3)*100));
-          const sc=p.st==='ok'?'ch-g':p.st==='atentie'?'ch-o':'ch-r';
-          const sl=p.st==='ok'?'OK':p.st==='atentie'?'Atenție':'Critic';
-          return `<tr><td><div style="font-weight:600">${p.n}</div><div class="stoc-bar"><div class="stoc-fill" style="width:${pct}%;background:${col}"></div></div></td><td style="color:#5A6B7D">${p.cat}</td><td style="font-weight:700;color:${col};font-size:15px">${p.stoc}</td><td style="color:#5A6B7D">${p.min}</td><td style="color:#8C9BAD">${p.pret}</td><td><span class="chip ${sc}">${sl}</span></td><td><button class="btn-s" style="font-size:10.5px;padding:4px 10px">Actualizează</button></td></tr>`;
-        }).join('')}
-      </tbody>
+      <thead><tr><th>Produs</th><th>Categorie</th><th>Stoc</th><th>Preț</th><th>Status</th></tr></thead>
+      <tbody id="stocuri-live-tbody"><tr><td colspan="5" style="text-align:center;color:#8C9BAD;padding:20px">Se încarcă...</td></tr></tbody>
     </table>
   </div>`;
 }
 
-function renderProduse(){
-  return `
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
-    <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Produse active în Marketplace</h2>
-    <div style="display:flex;gap:8px">
-      <a href="mydarrin-marketplace.html#mp-tabs-section" class="btn-s" style="text-decoration:none">⬆ Import CSV</a>
-      <a href="mydarrin-marketplace.html#mp-tabs-section" class="btn-p" style="text-decoration:none">+ Adaugă produs</a>
-    </div>
-  </div>
-  <div class="f-card">
-    <table class="f-table">
-      <thead><tr><th>Produs</th><th>Cod</th><th>Preț</th><th>Stoc</th><th>Status</th></tr></thead>
-      <tbody id="produse-live-tbody"><tr><td colspan="5" style="text-align:center;color:#8C9BAD;padding:20px">Se încarcă...</td></tr></tbody>
-    </table>
-  </div>`;
-}
-
-// FIX (audit 2 August 2026): tabelul de mai sus era 5 rânduri hardcodate
-// (Calorifer Purmo, Parchet, Vopsea...) — fake, la fel ca FINANCIAL_STATE.
-// Adăugarea/importul de produse se fac acum real din mydarrin-marketplace.html
-// (api/marketplace/produse.js); acest tabel doar le AFIȘEAZĂ, real, din
-// aceeași sursă — nu duplică formularul de adăugare.
-async function loadProduseLive(){
-  const tbody = document.getElementById('produse-live-tbody');
+async function loadStocuriLive(){
+  const tbody = document.getElementById('stocuri-live-tbody');
   if (!tbody) return;
   try {
-    const { data: sessionData } = await window.supabaseClient.auth.getSession();
-    const session = sessionData?.session;
-    if (!session) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#8C9BAD;padding:20px">Autentifică-te pentru a vedea produsele.</td></tr>'; return; }
-    const tip = currentType === 'inchirieri' ? 'echipamente' : 'materiale';
-    const res = await fetch('/api/marketplace/produse?tip=' + tip, { headers: { Authorization: 'Bearer ' + session.access_token } });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'eroare necunoscută');
-    const produse = json.produse || [];
-    if (!produse.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#8C9BAD;padding:20px">Niciun produs încă — adaugă din pagina Marketplace.</td></tr>'; return; }
-    const STATUS_CHIP = { in_asteptare: ['ch-o', 'În așteptare'], live: ['ch-g', 'Live'], respins: ['ch-r', 'Respins'], suspendat: ['ch-r', 'Suspendat'] };
+    const { tip, produse } = await _fetchProduseLive();
+    if (!produse.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#8C9BAD;padding:20px">Niciun produs încă — adaugă din panoul „Produse".</td></tr>'; return; }
     tbody.innerHTML = produse.map((p) => {
+      const stoc = tip === 'materiale' ? p.stoc_disponibil : p.buc_disponibile;
+      const critic = Number(stoc) <= 5;
       const pretAfisat = tip === 'materiale' ? `${p.pret_fara_tva} ${p.moneda}/${p.unitate_masura}` : `${p.tarif_zi} ${p.moneda}/zi`;
-      const stocAfisat = tip === 'materiale' ? p.stoc_disponibil : p.buc_disponibile;
-      const [chipCls, chipLabel] = STATUS_CHIP[p.status] || ['ch-o', p.status];
-      return `<tr><td style="font-weight:600">${escapeHTML(p.denumire)}</td><td style="color:#5A6B7D">${escapeHTML(p.cod_produs_furnizor || '—')}</td><td style="color:#8C9BAD">${escapeHTML(String(pretAfisat))}</td><td>${escapeHTML(String(stocAfisat))}</td><td><span class="chip ${chipCls}">${escapeHTML(chipLabel)}</span></td></tr>`;
+      const [chipCls, chipLabel] = STATUS_CHIP_PRODUS[p.status] || ['ch-o', p.status];
+      return `<tr><td style="font-weight:600">${escapeHTML(p.denumire)}</td><td style="color:#5A6B7D">${escapeHTML(p.cod_produs_furnizor || '—')}</td><td style="font-weight:700;color:${critic ? '#C0392B' : '#1A7A3A'}">${escapeHTML(String(stoc))}</td><td style="color:#8C9BAD">${escapeHTML(pretAfisat)}</td><td><span class="chip ${chipCls}">${escapeHTML(chipLabel)}</span></td></tr>`;
     }).join('');
   } catch (e) {
-    console.error('[dashboard-furnizor] loadProduseLive', e);
+    console.error('[dashboard-furnizor] loadStocuriLive', e);
     tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#C0392B;padding:20px">Eroare: ${escapeHTML(e.message)}</td></tr>`;
   }
 }
 
-// FIX (29 septembrie 2026, cerere fondator): cardul „Integrări active"
-// (WooCommerce „248 produse sync", Shopify, API REST/ERP „SAGA/WinMentor —
-// activ", „API Key furnizor myd_furn_...") era 100% decorativ — niciun
-// endpoint, nicio tabelă, nicio cheie API reală în spate. Eliminat, nu
-// înlocuit cu alt mock (politica „fără UI placeholder"). Rămâne doar
-// cardul de import CSV, singurul canal real azi. Panoul se rescrie oricum
-// la mutarea formularului CRUD aici (vezi decizia „marketplace, punctul 5").
+function renderProduse(){
+  const tip = currentType === 'inchirieri' ? 'echipamente' : 'materiale';
+  return `
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:8px">
+    <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Produsele mele</h2>
+    <button class="btn-p" id="btn-toggle-form-produs" onclick="toggleFormularProdus()">+ Adaugă produs</button>
+  </div>
+  <div class="f-card" style="margin-bottom:18px">
+    <table class="f-table">
+      <thead><tr><th>Produs</th><th>Cod</th><th>Preț</th><th>Stoc</th><th>Status</th><th>Live</th><th></th></tr></thead>
+      <tbody id="produse-live-tbody"><tr><td colspan="7" style="text-align:center;color:#8C9BAD;padding:20px">Se încarcă...</td></tr></tbody>
+    </table>
+  </div>
+  <div id="formular-produs-wrap" style="display:none">${tip === 'materiale' ? formularMaterial() : formularEchipament()}</div>`;
+}
+
+async function loadProduseLive(){
+  const tbody = document.getElementById('produse-live-tbody');
+  if (!tbody) return;
+  try {
+    const { tip, produse } = await _fetchProduseLive();
+    if (!produse.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#8C9BAD;padding:20px">Niciun produs încă — adaugă mai jos.</td></tr>'; return; }
+    tbody.innerHTML = produse.map((p) => {
+      const pretAfisat = tip === 'materiale' ? `${p.pret_fara_tva} ${p.moneda}/${p.unitate_masura}` : `${p.tarif_zi} ${p.moneda}/zi`;
+      const stocAfisat = tip === 'materiale' ? p.stoc_disponibil : p.buc_disponibile;
+      const [chipCls, chipLabel] = STATUS_CHIP_PRODUS[p.status] || ['ch-o', p.status];
+      const poateActiva = p.status === 'live';
+      return `<tr>
+        <td style="font-weight:600">${escapeHTML(p.denumire)}${p.este_consumabil ? ' <span class="chip ch-gr" style="font-size:9px">consumabil</span>' : ''}</td>
+        <td style="color:#5A6B7D">${escapeHTML(p.cod_produs_furnizor || '—')}</td>
+        <td style="color:#8C9BAD">${escapeHTML(String(pretAfisat))}</td>
+        <td>${escapeHTML(String(stocAfisat))}</td>
+        <td><span class="chip ${chipCls}">${escapeHTML(chipLabel)}</span></td>
+        <td>${poateActiva
+          ? `<label class="toggle-sw" title="${p.activ ? 'Live pentru clienți' : 'Oprit — nu apare la clienți'}"><input type="checkbox" ${p.activ ? 'checked' : ''} onchange="toggleActivProdus('${tip}','${p.id}',this.checked)"/><span class="slider"></span></label>`
+          : '<span style="color:#8C9BAD;font-size:11px">—</span>'}</td>
+        <td><button class="btn-s" style="font-size:10.5px;padding:4px 9px;color:#C0392B" onclick="stergeProdus('${tip}','${p.id}','${escapeHTML(p.denumire).replace(/'/g, "\\'")}')">Șterge</button></td>
+      </tr>`;
+    }).join('');
+  } catch (e) {
+    console.error('[dashboard-furnizor] loadProduseLive', e);
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#C0392B;padding:20px">Eroare: ${escapeHTML(e.message)}</td></tr>`;
+  }
+}
+
+async function toggleActivProdus(tip, id, activ){
+  try {
+    const { data: sessionData } = await window.supabaseClient.auth.getSession();
+    const session = sessionData?.session;
+    if (!session) throw new Error('Sesiune expirată.');
+    const res = await fetch('/api/marketplace/produse', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token }, body: JSON.stringify({ action: 'toggle_activ', tip, id, activ }) });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'eroare necunoscută');
+    showToast(activ ? '✓ Produs live pentru clienți' : 'Produs oprit — nu mai apare la clienți');
+  } catch (e) {
+    showToast('Eroare: ' + e.message);
+    loadProduseLive();
+  }
+}
+
+async function stergeProdus(tip, id, denumire){
+  if (!confirm(`Ștergi „${denumire}"? Nu poate fi anulat.`)) return;
+  try {
+    const { data: sessionData } = await window.supabaseClient.auth.getSession();
+    const session = sessionData?.session;
+    if (!session) throw new Error('Sesiune expirată.');
+    const res = await fetch('/api/marketplace/produse', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token }, body: JSON.stringify({ action: 'sterge', tip, id }) });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'eroare necunoscută');
+    showToast('Produs șters');
+    loadProduseLive();
+  } catch (e) {
+    showToast('Eroare: ' + e.message);
+  }
+}
+
+function toggleFormularProdus(){
+  const el = document.getElementById('formular-produs-wrap');
+  if (!el) return;
+  const arata = el.style.display === 'none';
+  el.style.display = arata ? 'block' : 'none';
+  document.getElementById('btn-toggle-form-produs').textContent = arata ? '✕ Închide formularul' : '+ Adaugă produs';
+  if (arata) { incarcaCategoriiMp(); incarcaTaxonomieMp(); }
+}
+
+function formularMaterial(){
+  return `
+  <div class="f-card">
+    <div class="f-card-hdr"><strong>Adaugă material</strong><span class="chip chip-ai" style="background:rgba(14,158,153,.1);color:#0B7A76">Manual</span></div>
+    <div class="f-card-body" style="display:flex;flex-direction:column;gap:14px">
+      <div><label class="f-label">Denumire produs *</label><input type="text" class="f-input" id="prod-denumire" placeholder="Ex: Calorifer Purmo C11 600×10 elemenți"/></div>
+      <div>
+        <label class="f-label">Descriere * <span style="font-weight:400;color:#8C9BAD">(100-1000 caractere)</span></label>
+        <textarea class="f-textarea" id="prod-descriere" maxlength="1000" oninput="document.getElementById('prod-descriere-count').textContent=this.value.length" placeholder="Descriere completă a produsului — minimum 100 de caractere."></textarea>
+        <div style="text-align:right;font-size:10.5px;color:#8C9BAD"><span id="prod-descriere-count">0</span>/1000 (minim 100)</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <div><label class="f-label">Categorie *</label><select class="f-select" id="prod-categorie"><option value="">Se încarcă...</option></select></div>
+        <div><label class="f-label">Cod CAEN/NACE *</label><select class="f-select" id="prod-nace"><option value="">Se încarcă...</option></select></div>
+        <div><label class="f-label">Cod Uniclass <span style="font-weight:400;color:#8C9BAD">(opțional)</span></label><select class="f-select" id="prod-uniclass"><option value="">— fără —</option></select></div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px">
+        <div><label class="f-label">Preț unitar (fără TVA) *</label><input type="number" class="f-input" placeholder="245.00" min="0.01" step="0.01" id="prod-pret"/></div>
+        <div><label class="f-label">Monedă *</label><select class="f-select" id="prod-moneda"><option>RON</option><option>EUR</option><option>MDL</option><option>BGN</option></select></div>
+        <div><label class="f-label">U.M. *</label><select class="f-select" id="prod-um"><option>buc</option><option>m²</option><option>ml</option><option>kg</option><option>l</option><option>set</option><option>m³</option><option>găleată</option></select></div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px">
+        <div><label class="f-label">Descriere preț *</label><input type="text" class="f-input" id="prod-descriere-pret" placeholder="Ex: Preț per bucată, Preț per palet"/></div>
+        <div><label class="f-label">Ambalaj</label><input type="text" class="f-input" id="prod-ambalaj" placeholder="opțional"/></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><label class="f-label">Stoc disponibil</label><input type="number" class="f-input" placeholder="48" min="0" id="prod-stoc"/></div>
+        <div><label class="f-label">Lead time livrare (zile)</label><input type="number" class="f-input" id="prod-leadtime" placeholder="2" min="0"/></div>
+      </div>
+      <div><label class="f-label">Furnizor comercial</label><input type="text" class="f-input" id="prod-furnizor-comercial" placeholder="opțional"/></div>
+      <div><label class="f-label">Specificații tehnice</label><textarea class="f-textarea" id="prod-specificatii" placeholder="Marcă, dimensiuni, certificări, standard EN/ISO, note montaj..."></textarea></div>
+      <div><label class="f-label">Video (link YouTube/Vimeo, opțional)</label><input type="url" class="f-input" id="prod-video" placeholder="https://www.youtube.com/watch?v=..."/></div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#5A6B7D;cursor:pointer">
+        <input type="checkbox" id="prod-consumabil" style="width:16px;height:16px"/>
+        Produs consumabil (o singură folosire — vopsea, ciment, șuruburi etc.) — nu poate fi listat și la închiriere
+      </label>
+      <div>
+        <label class="f-label">Imagini * (minim 1, maxim 6)</label>
+        <div class="upload-dz" onclick="document.getElementById('mat-file-input').click()">
+          <input type="file" id="mat-file-input" multiple accept="image/*,.pdf" style="display:none" onchange="incarcaFisiereMp(this,'materiale')"/>
+          <div style="font-size:13px;font-weight:600;color:#5A6B7D">📷 Urcă imagini sau fișă tehnică (PDF)</div>
+        </div>
+        <div id="mat-file-preview" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
+      </div>
+      <button id="mat-save-btn" class="btn-p" style="width:100%;justify-content:center;padding:13px" onclick="saveMaterial()">Salvează produsul</button>
+      <p style="font-size:11px;color:#8C9BAD;text-align:center">Produsele noi intră în aprobare (max. 24h) înainte să devină vizibile clienților.</p>
+    </div>
+  </div>`;
+}
+
+function formularEchipament(){
+  return `
+  <div class="f-card">
+    <div class="f-card-hdr"><strong>Adaugă echipament</strong><span class="chip chip-ai" style="background:rgba(14,158,153,.1);color:#0B7A76">Manual</span></div>
+    <div class="f-card-body" style="display:flex;flex-direction:column;gap:14px">
+      <div><label class="f-label">Denumire echipament *</label><input type="text" class="f-input" id="ech-denumire" placeholder="Ex: Excavator mini JCB 8025 · 2.5T"/></div>
+      <div>
+        <label class="f-label">Descriere * <span style="font-weight:400;color:#8C9BAD">(100-1000 caractere)</span></label>
+        <textarea class="f-textarea" id="ech-descriere" maxlength="1000" oninput="document.getElementById('ech-descriere-count').textContent=this.value.length" placeholder="Descriere completă a echipamentului — minimum 100 de caractere."></textarea>
+        <div style="text-align:right;font-size:10.5px;color:#8C9BAD"><span id="ech-descriere-count">0</span>/1000 (minim 100)</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><label class="f-label">Categorie *</label><select class="f-select" id="ech-categorie"><option value="">Se încarcă...</option></select></div>
+        <div><label class="f-label">Operator</label>
+          <select class="f-select" id="ech-operator">
+            <option value="fara_operator">Fără operator</option>
+            <option value="cu_operator_optional">Cu operator (opțional)</option>
+            <option value="operator_obligatoriu">Operator obligatoriu</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <div><label class="f-label">Tarif/oră</label><input type="number" class="f-input" id="ech-pret-ora" placeholder="—" min="0"/></div>
+        <div><label class="f-label">Tarif/zi *</label><input type="number" class="f-input" placeholder="800" min="0.01" id="ech-pret-zi"/></div>
+        <div><label class="f-label">Tarif/săpt.</label><input type="number" class="f-input" id="ech-pret-saptamana" placeholder="4500" min="0"/></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <div><label class="f-label">Monedă *</label><select class="f-select" id="ech-moneda"><option>RON</option><option>EUR</option><option>MDL</option><option>BGN</option></select></div>
+        <div><label class="f-label">Cod CAEN/NACE *</label><select class="f-select" id="ech-nace"><option value="">Se încarcă...</option></select></div>
+        <div><label class="f-label">Cod Uniclass <span style="font-weight:400;color:#8C9BAD">(opțional)</span></label><select class="f-select" id="ech-uniclass"><option value="">— fără —</option></select></div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px">
+        <div><label class="f-label">Descriere preț *</label><input type="text" class="f-input" id="ech-descriere-pret" placeholder="Ex: Tarif pe zi, fără combustibil"/></div>
+        <div><label class="f-label">Buc disponibile *</label><input type="number" class="f-input" id="ech-buc" placeholder="3" min="0"/></div>
+      </div>
+      <div><label class="f-label">Specificații tehnice</label><textarea class="f-textarea" id="ech-specificatii" placeholder="Greutate, dimensiuni, capacitate, accesorii, certificări operator ISCIR..."></textarea></div>
+      <div><label class="f-label">Video (link YouTube/Vimeo, opțional)</label><input type="url" class="f-input" id="ech-video" placeholder="https://www.youtube.com/watch?v=..."/></div>
+      <div>
+        <label class="f-label">Imagini * (minim 1, maxim 6)</label>
+        <div class="upload-dz" onclick="document.getElementById('ech-file-input').click()">
+          <input type="file" id="ech-file-input" multiple accept="image/*,.pdf" style="display:none" onchange="incarcaFisiereMp(this,'echipamente')"/>
+          <div style="font-size:13px;font-weight:600;color:#5A6B7D">📷 Urcă imagini sau fișă tehnică (PDF)</div>
+        </div>
+        <div id="ech-file-preview" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
+      </div>
+      <button id="ech-save-btn" class="btn-p" style="width:100%;justify-content:center;padding:13px" onclick="saveEchipament()">Salvează echipamentul</button>
+      <p style="font-size:11px;color:#8C9BAD;text-align:center">Produsele noi intră în aprobare (max. 24h) înainte să devină vizibile clienților.</p>
+    </div>
+  </div>`;
+}
+
+let mpCategoriiMateriale = [], mpCategoriiInchiriere = [];
+let mpState = { materiale: { imagini: [], fisa_tehnica_url: null }, echipamente: { imagini: [], fisa_tehnica_url: null } };
+
+async function incarcaCategoriiMp(){
+  const selMat = document.getElementById('prod-categorie');
+  const selEch = document.getElementById('ech-categorie');
+  try {
+    const { data, error } = await window.supabaseClient.from('categorii').select('id,title,category_type').in('category_type', ['materiale', 'inchiriere']).is('parent_id', null).order('display_order', { ascending: true });
+    if (error) throw error;
+    mpCategoriiMateriale = (data || []).filter((c) => c.category_type === 'materiale');
+    mpCategoriiInchiriere = (data || []).filter((c) => c.category_type === 'inchiriere');
+    const optiuni = (lista) => '<option value="">Selectează...</option>' + lista.map((c) => `<option value="${c.id}">${escapeHTML(c.title)}</option>`).join('');
+    if (selMat) selMat.innerHTML = optiuni(mpCategoriiMateriale);
+    if (selEch) selEch.innerHTML = optiuni(mpCategoriiInchiriere);
+  } catch (e) {
+    console.error('[dashboard-furnizor] categorii', e);
+    if (selMat) selMat.innerHTML = '<option value="">(eroare la încărcare)</option>';
+    if (selEch) selEch.innerHTML = '<option value="">(eroare la încărcare)</option>';
+  }
+}
+
+// Faza 1 (29 sept. 2026): taxonomie controlată — vezi lib/valideaza-produs-marketplace.js.
+async function incarcaTaxonomieMp(){
+  const selectoareNace = [document.getElementById('prod-nace'), document.getElementById('ech-nace')];
+  const selectoareUniclass = [document.getElementById('prod-uniclass'), document.getElementById('ech-uniclass')];
+  try {
+    const r = await fetch('/api/public/nace-lista');
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'eroare necunoscută');
+    const optiuni = '<option value="">Selectează...</option>' + (j.clase || []).map((c) => `<option value="${escapeHTML(c.cod)}">${escapeHTML(c.cod)} — ${escapeHTML(c.denumire_ro)}</option>`).join('');
+    selectoareNace.forEach((el) => { if (el) el.innerHTML = optiuni; });
+  } catch (e) {
+    console.error('[dashboard-furnizor] nace-lista', e);
+    selectoareNace.forEach((el) => { if (el) el.innerHTML = '<option value="">(eroare la încărcare)</option>'; });
+  }
+  try {
+    const r = await fetch('/api/public/uniclass-lista');
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'eroare necunoscută');
+    const optiuni = '<option value="">— fără —</option>' + (j.coduri || []).map((c) => `<option value="${escapeHTML(c.code)}">${escapeHTML(c.code)} — ${escapeHTML(c.title_ro)}</option>`).join('');
+    selectoareUniclass.forEach((el) => { if (el) el.innerHTML = optiuni; });
+  } catch (e) {
+    console.error('[dashboard-furnizor] uniclass-lista', e);
+    selectoareUniclass.forEach((el) => { if (el) el.innerHTML = '<option value="">(eroare la încărcare)</option>'; });
+  }
+}
+
+async function incarcaFisiereMp(input, tip){
+  const previewId = tip === 'materiale' ? 'mat-file-preview' : 'ech-file-preview';
+  const preview = document.getElementById(previewId);
+  const stare = mpState[tip];
+  const files = Array.from(input.files);
+  input.value = '';
+  const { data: sessionData } = await window.supabaseClient.auth.getSession();
+  const user = sessionData?.session?.user;
+  if (!user) { showToast('Trebuie să fii autentificat ca să încarci fișiere.'); return; }
+  for (const f of files) {
+    const esteImagine = f.type.startsWith('image/');
+    const estePdf = f.type === 'application/pdf';
+    if (!esteImagine && !estePdf) { showToast(`„${f.name}" ignorat — doar imagini sau PDF.`); continue; }
+    if (f.size > 20 * 1024 * 1024) { showToast(`„${f.name}" depășește 20MB.`); continue; }
+    if (esteImagine && stare.imagini.length >= 6) { showToast('Maximum 6 imagini per produs.'); continue; }
+    const item = document.createElement('div');
+    item.style.cssText = 'padding:6px 12px;border-radius:8px;background:#F4F7F9;border:1px solid #D5DFE8;font-size:11.5px;color:#6B7A8D;display:flex;align-items:center;gap:5px';
+    const nume = f.name.length > 24 ? f.name.substring(0, 24) + '...' : f.name;
+    item.textContent = `⏳ ${nume}`;
+    preview.appendChild(item);
+    try {
+      const ext = (f.name.split('.').pop() || 'bin').toLowerCase();
+      const path = `${user.id}/${tip}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error: upErr } = await window.supabaseClient.storage.from('marketplace-media').upload(path, f, { contentType: f.type });
+      if (upErr) throw upErr;
+      const { data: pub } = window.supabaseClient.storage.from('marketplace-media').getPublicUrl(path);
+      if (esteImagine) {
+        stare.imagini.push({ url: pub.publicUrl, ordine: stare.imagini.length });
+        item.textContent = `✓ ${nume}`;
+      } else {
+        stare.fisa_tehnica_url = pub.publicUrl;
+        item.textContent = `✓ (fișă tehnică) ${nume}`;
+      }
+      item.style.color = '#1A7A3A';
+    } catch (e) {
+      console.error('[dashboard-furnizor] upload fișier', e);
+      item.textContent = `✕ ${nume} — eroare la încărcare`;
+      item.style.color = '#C0392B';
+    }
+  }
+}
+
+async function _dfAuthHeader(){
+  const { data } = await window.supabaseClient.auth.getSession();
+  if (!data?.session) throw new Error('Trebuie să fii autentificat.');
+  return { 'Content-Type': 'application/json', Authorization: 'Bearer ' + data.session.access_token };
+}
+
+function _resetCampuriMaterial(){
+  ['prod-denumire', 'prod-descriere', 'prod-descriere-pret', 'prod-ambalaj', 'prod-nace', 'prod-uniclass', 'prod-pret', 'prod-stoc', 'prod-leadtime', 'prod-furnizor-comercial', 'prod-specificatii', 'prod-video'].forEach((id) => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const c = document.getElementById('prod-descriere-count'); if (c) c.textContent = '0';
+  const cons = document.getElementById('prod-consumabil'); if (cons) cons.checked = false;
+  const preview = document.getElementById('mat-file-preview'); if (preview) preview.innerHTML = '';
+  mpState.materiale = { imagini: [], fisa_tehnica_url: null };
+}
+
+async function saveMaterial(){
+  const { imagini, fisa_tehnica_url } = mpState.materiale;
+  if (imagini.length < 1) { showToast('Adaugă cel puțin o imagine înainte de a salva.'); return; }
+  const payload = {
+    action: 'salveaza', tip: 'materiale',
+    denumire: document.getElementById('prod-denumire').value.trim(),
+    descriere: document.getElementById('prod-descriere').value,
+    descriere_pret: document.getElementById('prod-descriere-pret').value.trim(),
+    ambalaj: document.getElementById('prod-ambalaj').value.trim() || null,
+    categorie_id: document.getElementById('prod-categorie').value || null,
+    nace_cod: document.getElementById('prod-nace').value || null,
+    cod_uniclass: document.getElementById('prod-uniclass').value || null,
+    este_consumabil: !!document.getElementById('prod-consumabil').checked,
+    pret_fara_tva: Number(document.getElementById('prod-pret').value),
+    moneda: document.getElementById('prod-moneda').value,
+    unitate_masura: document.getElementById('prod-um').value,
+    stoc_disponibil: Number(document.getElementById('prod-stoc').value) || 0,
+    lead_time_zile: Number(document.getElementById('prod-leadtime').value) || 0,
+    furnizor_comercial: document.getElementById('prod-furnizor-comercial').value.trim() || null,
+    specificatii_tehnice: document.getElementById('prod-specificatii').value.trim() || null,
+    video_url: document.getElementById('prod-video').value.trim() || null,
+    imagini, fisa_tehnica_url,
+  };
+  try {
+    const headers = await _dfAuthHeader();
+    const res = await fetch('/api/marketplace/produse', { method: 'POST', headers, body: JSON.stringify(payload) });
+    const json = await res.json();
+    if (!res.ok) {
+      const detalii = (json.erori || []).map((e) => `• ${e.mesaj}`).join('\n');
+      showToast(`Nu s-a salvat: ${json.error || 'eroare necunoscută'}${detalii ? '\n' + detalii : ''}`);
+      return;
+    }
+    showToast('Produs adăugat · în aprobare (max. 24h)');
+    _resetCampuriMaterial();
+    toggleFormularProdus();
+    loadProduseLive();
+  } catch (e) {
+    console.error('[dashboard-furnizor] saveMaterial', e);
+    showToast('Eroare: ' + e.message);
+  }
+}
+
+function _resetCampuriEchipament(){
+  ['ech-denumire', 'ech-descriere', 'ech-descriere-pret', 'ech-nace', 'ech-uniclass', 'ech-pret-ora', 'ech-pret-zi', 'ech-pret-saptamana', 'ech-buc', 'ech-specificatii', 'ech-video'].forEach((id) => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const c = document.getElementById('ech-descriere-count'); if (c) c.textContent = '0';
+  const preview = document.getElementById('ech-file-preview'); if (preview) preview.innerHTML = '';
+  mpState.echipamente = { imagini: [], fisa_tehnica_url: null };
+}
+
+async function saveEchipament(){
+  const { imagini, fisa_tehnica_url } = mpState.echipamente;
+  if (imagini.length < 1) { showToast('Adaugă cel puțin o imagine înainte de a salva.'); return; }
+  const tarifOraRaw = document.getElementById('ech-pret-ora').value;
+  const tarifSaptamanaRaw = document.getElementById('ech-pret-saptamana').value;
+  const payload = {
+    action: 'salveaza', tip: 'echipamente',
+    denumire: document.getElementById('ech-denumire').value.trim(),
+    descriere: document.getElementById('ech-descriere').value,
+    descriere_pret: document.getElementById('ech-descriere-pret').value.trim(),
+    categorie_id: document.getElementById('ech-categorie').value || null,
+    nace_cod: document.getElementById('ech-nace').value || null,
+    cod_uniclass: document.getElementById('ech-uniclass').value || null,
+    operator_inclus: document.getElementById('ech-operator').value,
+    tarif_ora: tarifOraRaw ? Number(tarifOraRaw) : null,
+    tarif_zi: Number(document.getElementById('ech-pret-zi').value),
+    tarif_saptamana: tarifSaptamanaRaw ? Number(tarifSaptamanaRaw) : null,
+    moneda: document.getElementById('ech-moneda').value,
+    buc_disponibile: Number(document.getElementById('ech-buc').value) || 0,
+    specificatii_tehnice: document.getElementById('ech-specificatii').value.trim() || null,
+    video_url: document.getElementById('ech-video').value.trim() || null,
+    imagini, fisa_tehnica_url,
+  };
+  try {
+    const headers = await _dfAuthHeader();
+    const res = await fetch('/api/marketplace/produse', { method: 'POST', headers, body: JSON.stringify(payload) });
+    const json = await res.json();
+    if (!res.ok) {
+      const detalii = (json.erori || []).map((e) => `• ${e.mesaj}`).join('\n');
+      showToast(`Nu s-a salvat: ${json.error || 'eroare necunoscută'}${detalii ? '\n' + detalii : ''}`);
+      return;
+    }
+    showToast('Echipament adăugat · în aprobare (max. 24h)');
+    _resetCampuriEchipament();
+    toggleFormularProdus();
+    loadProduseLive();
+  } catch (e) {
+    console.error('[dashboard-furnizor] saveEchipament', e);
+    showToast('Eroare: ' + e.message);
+  }
+}
+
+// ── CSV bulk import (materiale) — vezi api/marketplace/importa-csv.js ──
+const MP_CSV_HEADERE = ['denumire_produs', 'descriere', 'descriere_pret', 'ambalaj', 'categorie', 'nace_cod', 'cod_uniclass', 'pret_fara_tva', 'moneda', 'unitate_masura', 'stoc_disponibil', 'lead_time_zile', 'furnizor_comercial', 'cui_furnizor', 'specificatii_tehnice', 'cod_produs_furnizor', 'imagine_url_1', 'imagine_url_2', 'imagine_url_3', 'imagine_url_4', 'imagine_url_5', 'imagine_url_6', 'video_url'];
+let mpCsvRanduri = [];
+
+function dlTemplateMp(){
+  const randExemplu = {
+    denumire_produs: 'Calorifer Purmo C11 600x10 elemenți',
+    descriere: 'Completează aici o descriere reală, de minimum 100 de caractere, care explică marca, dimensiunile și utilizarea produsului.',
+    descriere_pret: 'Preț per bucată', ambalaj: '', categorie: 'Electrice & Cabluri', nace_cod: '43.22',
+    cod_uniclass: 'Pr_70_60_36_73 (opțional — vezi lista din formular)',
+    pret_fara_tva: '245.00', moneda: 'RON', unitate_masura: 'buc', stoc_disponibil: '48', lead_time_zile: '2',
+    furnizor_comercial: '', cui_furnizor: '', specificatii_tehnice: '', cod_produs_furnizor: 'SKU-001',
+    imagine_url_1: '(obligatoriu — urcă imaginea individual mai întâi, apoi copiază URL-ul aici)',
+    imagine_url_2: '', imagine_url_3: '', imagine_url_4: '', imagine_url_5: '', imagine_url_6: '', video_url: '',
+  };
+  window._mydCSV.download('template-marketplace-materiale.csv', MP_CSV_HEADERE, [randExemplu]);
+  showToast('Template CSV descărcat · completează și reimportă');
+}
+
+function _mapeazaRandCsvMaterial(rec){
+  const cheieCategorie = (rec.categorie || '').trim().toLowerCase();
+  const categorie = mpCategoriiMateriale.find((c) => c.title.trim().toLowerCase() === cheieCategorie);
+  const imagini = [];
+  for (let i = 1; i <= 6; i++) {
+    const url = (rec['imagine_url_' + i] || '').trim();
+    if (url) imagini.push({ url, ordine: imagini.length });
+  }
+  return {
+    denumire: rec.denumire_produs || '', descriere: rec.descriere || '', descriere_pret: rec.descriere_pret || '',
+    ambalaj: rec.ambalaj || null, categorie_id: categorie ? categorie.id : null, nace_cod: rec.nace_cod || null,
+    cod_uniclass: rec.cod_uniclass || null,
+    pret_fara_tva: Number(rec.pret_fara_tva), moneda: (rec.moneda || '').toUpperCase(), unitate_masura: rec.unitate_masura || '',
+    stoc_disponibil: Number(rec.stoc_disponibil) || 0, lead_time_zile: Number(rec.lead_time_zile) || 0,
+    furnizor_comercial: rec.furnizor_comercial || null, cui_furnizor: rec.cui_furnizor || null,
+    specificatii_tehnice: rec.specificatii_tehnice || null, cod_produs_furnizor: rec.cod_produs_furnizor || null,
+    imagini, video_url: rec.video_url || null,
+  };
+}
+
+async function handleCSVUploadMp(input){
+  const file = input.files[0];
+  input.value = '';
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const { records } = window._mydCSV.parse(text);
+    if (!records.length) { showToast('CSV gol sau needitat.'); return; }
+    mpCsvRanduri = records.map(_mapeazaRandCsvMaterial);
+    const log = document.getElementById('mp-import-progres');
+    if (log) log.textContent = `„${file.name}" — ${mpCsvRanduri.length} rânduri citite. Apasă „Importă acum".`;
+    showToast(`${mpCsvRanduri.length} rânduri citite din „${file.name}"`);
+  } catch (e) {
+    console.error('[dashboard-furnizor] handleCSVUploadMp', e);
+    showToast('Nu am putut citi fișierul: ' + e.message);
+  }
+}
+
+async function importaCsvMpAcum(){
+  if (!mpCsvRanduri.length) { showToast('Încarcă întâi un fișier CSV.'); return; }
+  const log = document.getElementById('mp-import-progres');
+  try {
+    const headers = await _dfAuthHeader();
+    let jobId = null, ramase = mpCsvRanduri;
+    while (true) {
+      const res = await fetch('/api/marketplace/importa-csv', { method: 'POST', headers, body: JSON.stringify({ tip: 'materiale', randuri: ramase, job_id: jobId }) });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'eroare necunoscută');
+      jobId = json.job_id || jobId;
+      if (log) log.textContent = `Import în curs — ${json.procesate || 0}/${mpCsvRanduri.length} procesate (${json.reusite || 0} reușite, ${json.esuate || 0} eșuate).`;
+      if (!json.continua) { showToast(`Import finalizat — ${json.reusite || 0} produse adăugate.`); break; }
+    }
+    mpCsvRanduri = [];
+    loadProduseLive();
+  } catch (e) {
+    console.error('[dashboard-furnizor] importaCsvMpAcum', e);
+    if (log) log.textContent = 'Eroare: ' + e.message;
+    showToast('Eroare la import: ' + e.message);
+  }
+}
+
 function renderImport(){
   return `
   <div style="margin-bottom:18px"><h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Import CSV</h2></div>
-  <div style="display:grid;grid-template-columns:1fr;gap:18px;max-width:520px">
+  <div style="display:grid;grid-template-columns:1fr;gap:18px;max-width:560px">
     <div class="f-card">
-      <div class="f-card-hdr"><strong>📊 Import CSV / Excel</strong></div>
+      <div class="f-card-hdr"><strong>📊 Import CSV / Excel — materiale</strong></div>
       <div class="f-card-body">
         <div style="background:#F0F4F8;border-radius:12px;padding:14px;margin-bottom:14px;font-family:monospace;font-size:11.5px;line-height:1.9;color:#1A2332;border:1px solid #D5DFE8">
           <div style="color:#5A6B7D;margin-bottom:5px">// Schema CSV My Darrin</div>
           <div><span style="color:#0E9E99">denumire_produs</span> · text · obligatoriu</div>
-          <div><span style="color:#0E9E99">categorie</span> · text</div>
+          <div><span style="color:#0E9E99">categorie</span> · text (nume exact din listă)</div>
+          <div><span style="color:#FF8C00">nace_cod</span> · text · obligatoriu (ex: 43.22)</div>
           <div><span style="color:#FF8C00">pret_fara_tva</span> · număr · obligatoriu</div>
-          <div><span style="color:#FF8C00">moneda</span> · RON/EUR/MDL</div>
+          <div><span style="color:#FF8C00">moneda</span> · RON/EUR/MDL/BGN</div>
           <div><span style="color:#1A5FAD">stoc_disponibil</span> · număr</div>
-          <div><span style="color:#1A5FAD">lead_time_zile</span> · număr</div>
-          <div><span style="color:#7C3AED">tip</span> · material/rental</div>
+          <div><span style="color:#1A5FAD">imagine_url_1..6</span> · urcate individual în prealabil</div>
         </div>
-        <div style="border:2px dashed #D5DFE8;border-radius:12px;padding:20px;text-align:center">
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <button class="btn-s" style="flex:1" onclick="dlTemplateMp()">⬇ Descarcă template</button>
+        </div>
+        <div class="upload-dz" onclick="document.getElementById('mp-csv-input').click()">
+          <input type="file" id="mp-csv-input" accept=".csv" style="display:none" onchange="handleCSVUploadMp(this)"/>
           <div style="font-size:28px;margin-bottom:8px">📎</div>
-          <div style="font-size:13px;font-weight:600;color:#5A6B7D">Import-ul CSV real se face din pagina Marketplace</div>
-          <div style="font-size:11px;color:#8C9BAD;margin-top:4px">Aici doar vizualizezi produsele deja importate.</div>
+          <div style="font-size:13px;font-weight:600;color:#5A6B7D">Alege fișierul CSV completat</div>
         </div>
+        <div id="mp-import-progres" style="margin-top:12px;font-size:11.5px;color:#6B7A8D;white-space:pre-line"></div>
         <div style="margin-top:12px">
-          <a href="mydarrin-marketplace.html#mp-tabs-section" class="btn-p" style="width:100%;justify-content:center;text-decoration:none">Deschide Marketplace → Import CSV</a>
+          <button class="btn-p" style="width:100%;justify-content:center" onclick="importaCsvMpAcum()">Importă acum</button>
         </div>
       </div>
     </div>
   </div>`;
 }
-
 
 
 function renderDocumente(){
