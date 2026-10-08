@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="ro">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script>
   window.__ENV__ = {
     SUPABASE_URL: 'https://aacojyvujhywanaulvuu.supabase.co',
@@ -224,6 +226,29 @@ input:valid:not(:placeholder-shown):not([type="checkbox"]) {
   border-color: #1A7A3A !important;
 }
 
+/* ── Checkout pe tabletă și telefon (8 oct. 2026) ──
+   Regula UV14 de mai jos prindea și „lg:grid-cols-3" și forța două coloane,
+   iar rezumatul comenzii ieșea din ecran în dreapta. Sub 1024 px: o singură
+   coloană, rezumatul sub formular. Sub 768 px: bară fixă cu totalul. */
+@media (max-width: 1023px) {
+  #checkout-container { grid-template-columns: minmax(0,1fr) !important; }
+  #checkout-container > * { min-width: 0; }
+  #summary-panel > div { position: static !important; }
+}
+#co-bara-mobil { display: none; }
+@media (max-width: 767px) {
+  #co-bara-mobil.are-total {
+    display: flex; position: fixed; left: 0; right: 0; z-index: 60;
+    align-items: center; gap: 12px; padding: 10px 16px;
+    background: #fff; border-top: 1px solid #D5DFE8; box-shadow: 0 -6px 20px rgba(0,51,102,.10);
+  }
+  #co-bara-mobil .co-bara-total { flex: 1; min-width: 0; }
+  #co-bara-mobil .co-bara-eticheta { font-size: 11px; color: #6B7A8D; font-weight: 600; }
+  #co-bara-mobil .co-bara-suma { font-size: 18px; font-weight: 800; color: #003366; white-space: nowrap; }
+  #co-bara-mobil button { min-height: 44px; padding: 0 16px; border-radius: 12px; border: none; background: #FF8C00; color: #fff; font-weight: 700; font-size: 14px; max-width: 60%; }
+  .co-spatiu-bara { height: 72px; }
+}
+
 /* ── UV14: RESPONSIVE GRID FIX cataloguri ── */
 @media (max-width: 640px) {
   .inv-3col { grid-template-columns: 1fr !important; }
@@ -309,8 +334,6 @@ input:valid:not(:placeholder-shown):not([type="checkbox"]) {
 })();
 </script>
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Coș & Checkout — Escrow securizat | My Darrin</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
@@ -3799,6 +3822,77 @@ function daiSendMessage(){
   }
   document.addEventListener('DOMContentLoaded', afiseaza);
   window.addEventListener('myd:geo', afiseaza);
+})();
+</script>
+<!-- Bară fixă cu totalul, doar sub 768 px (vezi CSS #co-bara-mobil) -->
+<div class="co-spatiu-bara" aria-hidden="true"></div>
+<div id="co-bara-mobil" role="region" aria-label="Total comandă">
+  <div class="co-bara-total">
+    <div class="co-bara-eticheta">Total Escrow</div>
+    <div class="co-bara-suma" id="co-bara-suma">—</div>
+  </div>
+  <button type="button" id="co-bara-btn">Continuă</button>
+</div>
+<script>
+// Bara repetă totalul din rezumat și butonul principal al pasului vizibil
+// (același buton, apăsat programatic) — nu are logică proprie de comandă.
+(function () {
+  var bara = document.getElementById('co-bara-mobil');
+  var suma = document.getElementById('co-bara-suma');
+  var btn = document.getElementById('co-bara-btn');
+  var PASI = ['step-cart', 'step-details', 'step-payment', 'step-confirm'];
+  function pasCurent() {
+    for (var i = 0; i < PASI.length; i++) {
+      var el = document.getElementById(PASI[i]);
+      if (el && !el.classList.contains('hidden')) return el;
+    }
+    return null;
+  }
+  function butonPrincipal() {
+    var pas = pasCurent();
+    if (!pas) return null;
+    var lista = Array.prototype.filter.call(pas.querySelectorAll('button.btn-accent'), function (b) { return b.offsetParent !== null; });
+    return lista.length ? lista[lista.length - 1] : null;
+  }
+  var programat = false;
+  function actualizeaza() {
+    programat = false;
+    var total = document.getElementById('total-price');
+    var text = total ? total.textContent.trim() : '';
+    var principal = butonPrincipal();
+    suma.textContent = text || '—';
+    if (principal) btn.textContent = principal.textContent.replace(/\s+/g, ' ').trim();
+    bara.classList.toggle('are-total', !!text && !!principal);
+    var nav = document.getElementById('mobile-bottom-nav');
+    // offsetParent e null pentru elementele fixed, deci verificăm direct stilul.
+    var navVizibil = nav && getComputedStyle(nav).display !== 'none' && getComputedStyle(nav).visibility !== 'hidden';
+    var h = navVizibil ? Math.round(nav.getBoundingClientRect().height) : 0;
+    var jos = h + 'px';
+    if (bara.style.bottom !== jos) bara.style.bottom = jos;
+    // Butonul plutitor Darrin AI urcă deasupra barei, ca să nu acopere butonul ei.
+    var fab = document.getElementById('dai-fab');
+    if (fab) {
+      // Regula de mobil pentru #dai-fab folosește !important, deci și aici.
+      var activ = getComputedStyle(bara).display !== 'none';
+      if (activ) {
+        var tinta = (h + Math.round(bara.getBoundingClientRect().height) + 12) + 'px';
+        if (fab.style.getPropertyValue('bottom') !== tinta) fab.style.setProperty('bottom', tinta, 'important');
+      } else if (fab.style.getPropertyPriority('bottom') === 'important') {
+        fab.style.setProperty('bottom', '24px');
+      }
+    }
+  }
+  function programeaza() { if (!programat) { programat = true; requestAnimationFrame(actualizeaza); } }
+  btn.addEventListener('click', function () { var b = butonPrincipal(); if (b) b.click(); });
+  function observa() {
+    var total = document.getElementById('total-price');
+    var obs = new MutationObserver(programeaza);
+    if (total) obs.observe(total, { childList: true, characterData: true, subtree: true });
+    PASI.forEach(function (id) { var el = document.getElementById(id); if (el) obs.observe(el, { attributes: true, attributeFilter: ['class'] }); });
+    programeaza();
+  }
+  window.addEventListener('resize', programeaza);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', observa); else observa();
 })();
 </script>
 </body>

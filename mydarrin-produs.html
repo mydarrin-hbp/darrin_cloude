@@ -674,7 +674,8 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 .qty-val{width:58px;text-align:center;font-size:16px;font-weight:800;color:#003366;border:none;outline:none;background:transparent;font-family:inherit;border-left:1px solid #D5DFE8;border-right:1px solid #D5DFE8;height:44px}
 
 /* ── TIER TABLE (ca în screenshot) ── */
-.tier-table-wrap{border-radius:18px;overflow:hidden;border:1px solid #2D3F55;background:#1E2A3B}
+.tier-table-wrap{border-radius:18px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;border:1px solid #2D3F55;background:#1E2A3B}
+#main-grid > *{min-width:0}
 .tier-table{width:100%;border-collapse:collapse}
 .tier-table th{padding:14px 16px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:#8BA3C0;background:#192433;border-bottom:1px solid #2D3F55;text-align:center}
 .tier-table th:first-child{text-align:left}
@@ -754,8 +755,15 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:#B8C8D8;border-radius:3px}
 
 @media(max-width:900px){
-  #main-grid{grid-template-columns:1fr!important}
+  /* minmax(0,1fr): coloana nu mai crește după conținutul cel mai lat
+     (tabelul de niveluri împingea grila la 648 px pe telefoane de 360 px). */
+  #main-grid{grid-template-columns:minmax(0,1fr)!important;padding:16px!important}
   .sticky-sum{position:static!important}
+  /* Tabelul de niveluri se derulează în propriul container, nu toată pagina. */
+  .tier-table{min-width:480px}
+}
+@media(max-width:600px){
+  .qty-type-grid{grid-template-columns:minmax(0,1fr)!important}
 }
 </style>
 
@@ -1560,7 +1568,7 @@ function triggerHeaderSearch(){
 </div>
 
 <!-- MAIN -->
-<div id="main-grid" style="max-width:1160px;margin:0 auto;padding:24px;display:grid;grid-template-columns:1fr 330px;gap:22px;align-items:start">
+<div id="main-grid" style="max-width:1160px;margin:0 auto;padding:24px;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:22px;align-items:start">
 
   <!-- ═══ LEFT COLUMN ═══ -->
   <div>
@@ -1667,7 +1675,7 @@ function triggerHeaderSearch(){
         </div>
 
         <!-- Cantitate -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+        <div class="qty-type-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
           <div>
             <label class="f-label" id="qty-label-lbl">Cantitate</label>
             <div style="display:flex;align-items:center;gap:10px">
