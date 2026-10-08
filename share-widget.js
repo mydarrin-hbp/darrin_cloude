@@ -94,6 +94,19 @@
     return a;
   }
 
+  // Pe mobil, bara de navigare de jos (#mobile-bottom-nav) ar acoperi butonul:
+  // îl ridicăm la înălțimea ei + 12 px (8 oct. 2026 — acoperea „Partener”).
+  function pozitioneaza() {
+    const fab = document.getElementById('myd-share-fab');
+    const panel = document.getElementById('myd-share-panel');
+    if (!fab) return;
+    const nav = document.getElementById('mobile-bottom-nav');
+    const navVizibil = nav && getComputedStyle(nav).display !== 'none' && getComputedStyle(nav).visibility !== 'hidden';
+    const jos = navVizibil ? Math.round(nav.getBoundingClientRect().height) + 12 : 24;
+    fab.style.bottom = jos + 'px';
+    if (panel) panel.style.bottom = (jos + 60) + 'px';
+  }
+
   function creeazaWidget() {
     if (document.getElementById('myd-share-fab')) return;
 
@@ -140,6 +153,10 @@
 
     document.body.appendChild(fab);
     document.body.appendChild(panel);
+    pozitioneaza();
+    window.addEventListener('resize', pozitioneaza);
+    // Bara de jos poate apărea după scriptul nostru (randată de alt script).
+    setTimeout(pozitioneaza, 1500);
 
     let deschis = false;
     fab.addEventListener('click', async () => {

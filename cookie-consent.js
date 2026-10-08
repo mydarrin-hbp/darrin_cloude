@@ -79,9 +79,15 @@
       '.myd-consent-toggle.on::after{left:21px}' +
       '.myd-consent-toggle.locked{opacity:.6;cursor:default}' +
       '#myd-consent-panel-actions{display:flex;gap:8px;margin-top:16px}' +
+      // Pe mobil (8 oct. 2026): pe coloană, flex-basis 320px al paragrafului
+      // devenea 320px de înălțime (bannerul ocupa ~52% din ecran, mult gol).
+      // Acum: text compact, cel mult ~30% din ecran, butoanele de 44px mereu
+      // vizibile fără derulare (doar textul se derulează, dacă e nevoie).
       '@media (max-width:640px){#myd-consent-bar{flex-direction:column;' +
-      'align-items:stretch;text-align:left}#myd-consent-actions{justify-content:stretch}' +
-      '.myd-consent-btn{flex:1}}';
+      'align-items:stretch;text-align:left;gap:10px;padding:12px 16px;max-height:30vh}' +
+      '#myd-consent-bar p{flex:0 1 auto;min-height:0;overflow-y:auto;font-size:12px;line-height:1.5}' +
+      '#myd-consent-actions{justify-content:stretch;flex-wrap:nowrap;flex-shrink:0}' +
+      '.myd-consent-btn{flex:1;min-height:44px;padding:8px 6px;white-space:normal}}';
     document.head.appendChild(s);
   }
 
