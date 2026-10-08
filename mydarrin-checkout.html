@@ -1359,14 +1359,6 @@ function triggerHeaderSearch(){
         </div>
 
 
-        <!-- Cod promoțional -->
-        <div class="bg-white rounded-2xl border border-[#D5DFE8] p-5" id="promo-box" style="display:none">
-          <div class="flex gap-3">
-            <input type="text" placeholder="Cod promoțional / voucher" class="flex-1 border border-[#D5DFE8] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white" id="promo-input"/>
-            <button onclick="applyPromo()" class="btn-ghost" style="padding:10px 18px;font-size:13px;border-radius:12px">Aplică</button>
-          </div>
-          <div id="promo-msg" class="hidden mt-2 text-xs text-[#0E9E99] font-semibold">Cod DARRIN10 aplicat — -10% reducere!</div>
-        </div>
 
         <button onclick="goToStep('details')" id="cart-continua" class="w-full btn-accent justify-center py-4 text-[15px] mt-4" style="display:none">
           Continuă → Detalii comandă
@@ -1527,10 +1519,6 @@ function triggerHeaderSearch(){
               <div class="text-xs text-[#8C9BAD]" id="sum-item-nivel">—</div>
             </div>
             <span class="font-bold text-sm" id="sum-item-pret">—</span>
-          </div>
-          <div class="order-summary-row text-[#0E9E99]" id="promo-row" style="display:none">
-            <span class="font-semibold text-sm">Reducere DARRIN10 (-10%)</span>
-            <span class="font-bold text-sm">-172 Lei</span>
           </div>
           <div class="order-summary-row" id="insurance-row" style="display:none">
             <span class="text-sm text-[#2D2D2D]">Poliță asigurare extinsă</span>
@@ -2538,7 +2526,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // catalog cu preț propriu (alocare pe zonă/disponibilitate, nu listă).
       //
       // Fallback (acces direct la /cos, fără să treci prin produs.html —
-      // MYD_CFG e null): comportamentul de la G15, cu BASE_SUBTOTAL/promo/
+      // MYD_CFG e null): comportamentul de la G15, cu BASE_SUBTOTAL și
       // bifa de asigurare proprie a checkout-ului.
       let cost_baza_servicii, cost_asigurare, cost_materiale, cost_chirie_scule;
       if (MYD_CFG) {
@@ -2548,7 +2536,6 @@ document.addEventListener('DOMContentLoaded', function() {
         cost_chirie_scule = MYD_CFG.inchirieriPrice || 0;
       } else {
         cost_baza_servicii = BASE_SUBTOTAL;
-        if (PROMO_ACTIVE) cost_baza_servicii -= PROMO_DISCOUNT;
         cost_asigurare = document.getElementById('cb-insurance')?.checked ? INSURANCE_PRICE : 0;
         cost_materiale = 0;
         cost_chirie_scule = 0;
@@ -3288,21 +3275,13 @@ function selectPartnerType(type){const PM={servicii:{icon:"",title:"Furnizor de 
 function resetPartnerType(){document.getElementById("partner-cards").classList.remove("hidden");document.getElementById("partner-form").classList.add("hidden");}
 
 function removeItem(id){if(confirm("Elimini serviciul din coș?"))alert("Serviciu eliminat din coș.");}
-function applyPromo(){
-  const val=document.getElementById("promo-input").value.trim().toUpperCase();
-  if(val==="DARRIN10"){
-    document.getElementById("promo-msg").classList.remove("hidden");
-    document.getElementById("promo-row").style.display="flex";
-    PROMO_ACTIVE = true;
-    recalcCheckoutTotal();
-  } else { alert("Cod invalid sau expirat."); }
-}
 
 // ── ASIGURARE EXTINSĂ OPȚIONALĂ ──
 let BASE_SUBTOTAL = null; // setat doar de applyChecoutConfigReal(), din configurația reală
-const PROMO_DISCOUNT = 172;
+// Codul promoțional DARRIN10 (−172 lei fix, doar afișat) a fost eliminat pe
+// 8 oct. 2026: nu există un sistem real de coduri, iar clientul trebuie să
+// vadă exact suma pe care o plătește.
 const INSURANCE_PRICE = 89;
-let PROMO_ACTIVE = false;
 
 function toggleInsuranceOption(){
   const checked = document.getElementById('cb-insurance').checked;
@@ -3313,7 +3292,6 @@ function toggleInsuranceOption(){
 function recalcCheckoutTotal(){
   if (BASE_SUBTOTAL == null) { document.getElementById('total-price').textContent = ''; return; }
   let total = BASE_SUBTOTAL;
-  if (PROMO_ACTIVE) total -= PROMO_DISCOUNT;
   const insuranceChecked = document.getElementById('cb-insurance')?.checked;
   if (insuranceChecked) total += INSURANCE_PRICE;
   const textTotal = window.formatCurrency ? window.formatCurrency(total) : total.toLocaleString('ro-RO') + ' Lei';
@@ -3388,9 +3366,6 @@ function applyChecoutConfigReal(){
     if (cbIns) { cbIns.checked = false; cbIns.disabled = true; }
     const cbInsLabel = cbIns?.closest('label');
     if (cbInsLabel) cbInsLabel.title = 'Indisponibil pentru acest serviciu (mod pilot).';
-
-    const promoInput = document.getElementById('promo-input');
-    if (promoInput) { promoInput.disabled = true; promoInput.placeholder = 'Indisponibil pentru acest serviciu'; }
   }
 
   recalcCheckoutTotal();
@@ -3513,13 +3488,13 @@ function arataCosGol(){
   BASE_SUBTOTAL = null;
   setEl2('cart-count-label', '0 servicii');
   ['cos-gol'].forEach((id) => { const el = document.getElementById(id); if (el) el.style.display = ''; });
-  ['cart-item-1', 'promo-box', 'cart-continua', 'sum-item-1', 'sum-calendar'].forEach((id) => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+  ['cart-item-1', 'cart-continua', 'sum-item-1', 'sum-calendar'].forEach((id) => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
   recalcCheckoutTotal();
 }
 
 function arataServiciu(cfg){
   const gol = document.getElementById('cos-gol'); if (gol) gol.style.display = 'none';
-  ['cart-item-1', 'promo-box', 'cart-continua', 'sum-item-1'].forEach((id) => { const el = document.getElementById(id); if (el) el.style.display = ''; });
+  ['cart-item-1', 'cart-continua', 'sum-item-1'].forEach((id) => { const el = document.getElementById(id); if (el) el.style.display = ''; });
   const titlu = cfg.titlu || cfg.slug || 'Serviciu';
   const adr = document.getElementById('co-adresa');
   if (adr && !adr.value && cfg.addr) adr.value = cfg.addr;
