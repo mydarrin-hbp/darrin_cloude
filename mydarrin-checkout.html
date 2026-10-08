@@ -684,6 +684,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 <script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
 <script src="myd-unavail-msg.js"></script>
 <script src="format-currency.js"></script>
+<script src="tva-config.js"></script>
 <script src="seo-meta.js"></script>
 <script src="cookie-consent.js" defer></script>
 <script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="analytics-loader.js" defer></script>
@@ -1553,7 +1554,7 @@ function triggerHeaderSearch(){
             <span class="font-bold text-sm" id="insurance-price-display">+89 Lei</span>
           </div>
           <div class="order-summary-row">
-            <span class="text-[#6B7A8D] text-sm">TVA (19%)</span>
+            <span class="text-[#6B7A8D] text-sm">TVA (<span class="tva-pct">—</span>)</span>
             <span class="text-sm text-[#6B7A8D]">inclus</span>
           </div>
           <div class="order-summary-row border-t-2 border-[#D5DFE8] pt-3">
@@ -3784,5 +3785,21 @@ function daiSendMessage(){
 
   </div>
 </div>
+<script>
+// Procentul TVA din rezumat, pe țara comenzii, din tax_configurations
+// (tva-config.js) — nu mai e scris direct „19%".
+(function () {
+  function afiseaza() {
+    if (!window.MDTva) return;
+    var cfg = (typeof MYD_CFG !== 'undefined' && MYD_CFG) || {};
+    var tara = cfg.tara_cod || (window.MYD_GEO_LAST && window.MYD_GEO_LAST.cc) || 'RO';
+    window.MDTva.cota(tara).then(function (c) {
+      document.querySelectorAll('.tva-pct').forEach(function (e) { e.textContent = window.MDTva.procent(c); });
+    });
+  }
+  document.addEventListener('DOMContentLoaded', afiseaza);
+  window.addEventListener('myd:geo', afiseaza);
+})();
+</script>
 </body>
 </html>

@@ -832,6 +832,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 </script>
 <script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
 <script src="seo-meta.js"></script>
+<script src="tva-config.js"></script>
 <script src="cookie-consent.js" defer></script>
 <script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="analytics-loader.js" defer></script>
   <!-- DOMPurify — sanitizare XSS (audit 2026-07-10) -->
@@ -4284,7 +4285,7 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
       <span style="width:6px;height:6px;border-radius:50%;background:#1A7A3A;display:inline-block"></span>
       <span id="cart-zone-text">Zona 1 · +5% · Bacău · RO</span>
     </div>
-    <span style="font-size:10px;color:#8C9BAD;margin-left:auto" id="cart-currency-text">RON · TVA 19%</span>
+    <span style="font-size:10px;color:#8C9BAD;margin-left:auto" id="cart-currency-text">RON</span>
   </div>
 
   <!-- Darrin AI notice -->
@@ -4312,7 +4313,7 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
         <span>Costuri platformă (HBP + overhead)</span><span id="cart-platform">0 Lei</span>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:12px;color:#6B7A8D;margin-bottom:5px">
-        <span>TVA (<span id="cart-tva-pct">19%</span>)</span><span id="cart-tva">0 Lei</span>
+        <span>TVA (<span id="cart-tva-pct" class="tva-pct">—</span>)</span><span id="cart-tva">0 Lei</span>
       </div>
       <div id="vmc-warning" style="display:none;background:#FFF0D6;border-radius:8px;border:1px solid #FFD980;padding:8px 10px;font-size:11px;color:#CC7000;margin-bottom:8px">
         VMC aplicat — minim <span id="vmc-amount">100 Lei</span>
@@ -6680,7 +6681,18 @@ let cartIdCounter = 0;
 const RATES = {RON:1, EUR:0.2, MDL:5};
 const VMC_MAP = {RON:100, EUR:25, MDL:400};
 const PLATFORM_PCT = 0.15 + 0.10 + 0.03 + 0.03; // HBP+indirect+marketing+maint
-const TVA = 0.19;
+// TVA pe țara vizitatorului, din tax_configurations (tva-config.js), nu
+// scris direct în pagină. Setat la detectarea zonei; până atunci RO.
+let TVA = null;
+function seteazaTva(cc) {
+  if (!window.MDTva) return Promise.resolve();
+  return window.MDTva.cota(cc || 'RO').then((c) => {
+    TVA = c;
+    document.querySelectorAll('.tva-pct').forEach((e) => { e.textContent = window.MDTva.procent(c); });
+    if (typeof updateCartDisplay === 'function') updateCartDisplay();
+  });
+}
+seteazaTva('RO');
 
 // ── INIT ──
 document.addEventListener('DOMContentLoaded', ()=>{
@@ -6822,7 +6834,6 @@ async function tariActive(){
   return _tariActiveCache;
 }
 
-const TVA_AFISAT = {RO:0.19,MD:0.20,DE:0.19,FR:0.20,BG:0.20};
 const MONEDA_AFISATA = {RO:'RON',MD:'MDL',DE:'EUR',FR:'EUR',BG:'BGN'};
 
 async function detectZoneAndActivateCart(){
@@ -6843,9 +6854,9 @@ async function detectZoneAndActivateCart(){
     const fab = document.getElementById('cart-fab');
     if(fab){ fab.style.display='block'; }
     const cur = MONEDA_AFISATA[cc] || 'EUR';
-    const tva = TVA_AFISAT[cc] ?? 0.19;
     setEl('cart-zone-text', loc);
-    setEl('cart-currency-text', cur+' · TVA '+(tva*100).toFixed(0)+'%');
+    await seteazaTva(cc);
+    setEl('cart-currency-text', cur+(TVA != null && window.MDTva ? ' · TVA '+window.MDTva.procent(TVA) : ''));
     const hdrBtn = document.getElementById('cart-btn');
     if(hdrBtn){
       hdrBtn.style.cursor='pointer';
@@ -7059,7 +7070,7 @@ function updateCartDisplay(){
   if(vmcWarning) vmcWarning.style.display = subtotalLocal < vmc ? 'block' : 'none';
 
   const platform = effectiveSubtotal * PLATFORM_PCT;
-  const tva = (effectiveSubtotal + platform) * TVA;
+  const tva = TVA != null ? (effectiveSubtotal + platform) * TVA : 0;
   const total = effectiveSubtotal + platform + tva;
 
   setEl('cart-subtotal', effectiveSubtotal.toFixed(0)+' '+activeCur);
