@@ -3981,6 +3981,9 @@ const PILOT_SERVICII_MAP = {
 };
 const NIVEL_RANG = { Bronze: 0, Silver: 1, Gold: 2, Platinum: 3 };
 const NIVEL_LABEL = { Bronze: 'BRONZ', Silver: 'ARGINT', Gold: 'AUR', Platinum: 'PLATINUM' };
+// Numele nivelului transmis la checkout (S.tierLabel); fără el rămânea
+// valoarea implicită „Aur — Pachet complet”, oricare ar fi fost nivelul ales.
+const NIVEL_NUME = { Bronze: 'Bronz', Silver: 'Argint', Gold: 'Aur', Platinum: 'Platinum' };
 const NIVEL_COLOR = { Bronze: '#CD7F32', Silver: '#8BA3C0', Gold: '#FF8C00', Platinum: '#7AB3E0' };
 let _pilotPretConfirmat = false;
 let _pilotDebounce = null;
@@ -4072,6 +4075,7 @@ async function initPilotProdus(slug, serviciuId) {
   // deci ar fi afișat mereu 0 Lei pentru orice addon, silențios. Sincronizat
   // aici + în selectPilotNivel() de mai jos, cu numele real al nivelului.
   S.tier = implicit.nivel;
+  S.tierLabel = NIVEL_NUME[implicit.nivel] || implicit.nivel;
   // Bug real găsit la testarea „Montaj Parchet Laminat" (29 august 2026):
   // cele 5 servicii pilot anterioare erau toate pe oră — unitatea era
   // hardcodată. Primul serviciu pilot facturat pe altă unitate (mp) ar fi
@@ -4205,7 +4209,7 @@ function renderPilotTierUI() {
 function selectPilotNivel(nivelId) {
   S.pilotNivelId = nivelId;
   const nivelObj = S.pilotNiveluri.find((n) => n.nivel_id === nivelId);
-  if (nivelObj) S.tier = nivelObj.nivel;
+  if (nivelObj) { S.tier = nivelObj.nivel; S.tierLabel = NIVEL_NUME[nivelObj.nivel] || nivelObj.nivel; }
   document.querySelectorAll('#tier-table thead [data-pilot-nivel]').forEach((th) => {
     th.classList.toggle('selected-col', th.dataset.pilotNivel === nivelId);
   });
