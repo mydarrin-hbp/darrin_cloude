@@ -67,9 +67,13 @@ async function handler(req, res, user) {
   const costMateriale = numarPozitiv(body.cost_materiale);
   const costChirieScule = numarPozitiv(body.cost_chirie_scule);
   const costCurier = numarPozitiv(body.cost_curier);
-  const costAsigurare = numarPozitiv(body.cost_asigurare);
+  // Asigurare lipsă → undefined, ca lib/calculeaza-pret.js să aplice
+  // procentul configurat din costul de bază (cost_asigurare_pct, implicit 1%).
+  // Trimisă explicit (inclusiv 0) → folosită ca atare.
+  const asigurareTrimisa = body.cost_asigurare !== undefined && body.cost_asigurare !== null;
+  const costAsigurare = asigurareTrimisa ? numarPozitiv(body.cost_asigurare) : undefined;
 
-  const subtotalCerut = costBazaServicii + costMateriale + costChirieScule + costCurier + costAsigurare;
+  const subtotalCerut = costBazaServicii + costMateriale + costChirieScule + costCurier + (costAsigurare || 0);
   if (subtotalCerut <= 0) {
     return res.status(400).json({ error: 'Cel puțin o componentă de cost (servicii/materiale/scule/curier/asigurare) trebuie să fie pozitivă' });
   }

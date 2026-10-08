@@ -31,6 +31,7 @@ async function handler(req, res, admin) {
       .from('backoffice_config')
       .select('cheie, valoare')
       .eq('sectiune', 'email')
+      .eq('tara_cod', 'ALL')
       .like('cheie', 'nume_expeditor_%');
     const numeExpeditorPerLimba = {};
     (numeExpeditor || []).forEach((r) => { numeExpeditorPerLimba[r.cheie.replace('nume_expeditor_', '')] = r.valoare; });
@@ -45,7 +46,7 @@ async function handler(req, res, admin) {
     }
     const { error } = await supabaseAdmin
       .from('backoffice_config')
-      .upsert({ cheie: `nume_expeditor_${limba}`, valoare: nume_expeditor, sectiune: 'email', tara_cod: 'ALL', tip: 'text', eticheta: `Nume expeditor (${limba})` }, { onConflict: 'cheie' });
+      .upsert({ cheie: `nume_expeditor_${limba}`, valoare: nume_expeditor, sectiune: 'email', tara_cod: 'ALL', tip: 'text', eticheta: `Nume expeditor (${limba})` }, { onConflict: 'cheie,tara_cod' });
     if (error) return res.status(500).json({ error: error.message });
     await inregistreazaAudit({ admin, req, actiune: 'actualizare_nume_expeditor_email', entitate: 'backoffice_config', entitate_id: `nume_expeditor_${limba}`, detalii: { limba, nume_expeditor } });
     return res.status(200).json({ ok: true });

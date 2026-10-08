@@ -51,6 +51,7 @@ async function handler(req, res, user) {
       .select('valoare')
       .eq('sectiune', 'darrin_ai')
       .eq('cheie', 'audit_aplicare_activ')
+      .eq('tara_cod', 'ALL') // cheia e unică pe (cheie, tara_cod); fără filtru, maybeSingle eșuează la un rând pe țară
       .maybeSingle();
     const darrin_ai_activ = flagRand?.valoare === 'true';
 

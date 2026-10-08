@@ -1147,6 +1147,14 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
           <div class="sa-card-hdr"><div style="font-weight:700;color:#1A2332;font-size:13.5px">Asigurări</div></div>
           <div class="sa-card-body">
             <div style="background:#FFFFFF;border-radius:12px;padding:14px;border:1px solid #D5DFE8;margin-bottom:14px">
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:10px">Asigurare inclusă în prețul serviciului</div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="font-size:13px;color:#8BA3C0;min-width:210px">Cost asigurare inclus în preț (% din costul de bază)</span>
+                <input type="number" id="cost-asigurare-pct" value="1" min="0" max="100" step="0.1" style="background:#0F1923;border:1px solid #2D3F55;border-radius:7px;padding:6px 10px;color:#E2E8F0;font-weight:700;width:80px;font-family:inherit;font-size:14px"/>
+                <span style="color:#4A6080">%</span>
+              </div>
+            </div>
+            <div style="background:#FFFFFF;border-radius:12px;padding:14px;border:1px solid #D5DFE8;margin-bottom:14px">
               <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:10px">Intermediere poliță</div>
               <div style="display:flex;align-items:center;gap:12px">
                 <span style="font-size:13px;color:#8BA3C0;min-width:210px">Comision My Darrin din primă</span>
@@ -1627,13 +1635,14 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
         <p>Sursă unică: <code>lib/calculeaza-pret.js</code>, folosită de <code>api/deviz/calculate.js</code> și <code>api/comenzi/creeaza.js</code>. Formula e <strong style="color:#fff">aditivă</strong>, nu multiplicativă. Fiecare componentă de cost corespunde unui rol plătit separat din escrow.</p>
         <table>
           <tr><th>Pas</th><th>Calcul</th></tr>
-          <tr><td>1. Subtotal</td><td><code>cost_baza_servicii + cost_materiale + cost_chirie_scule + cost_curier + cost_asigurare + cost_transport_greutate + cost_ajutor</code></td></tr>
-          <tr><td>2. Taxe platformă</td><td><code>marketing = subtotal × 3%</code> · <code>mentenanță = subtotal × 2%</code> · <code>comision = subtotal × 12%</code></td></tr>
+          <tr><td>0. Cost de bază</td><td><code>cost_baza = cost_baza_servicii + cost_materiale + cost_chirie_scule</code> (manoperă + materiale + utilaje)</td></tr>
+          <tr><td>1. Subtotal</td><td><code>cost_asigurare = cost_baza × 1%</code> (dacă nu e trimisă explicit) · <code>subtotal = cost_baza + cost_curier + cost_asigurare + cost_transport_greutate + cost_ajutor</code></td></tr>
+          <tr><td>2. Taxe platformă</td><td><code>marketing = subtotal × 3%</code> · <code>mentenanță = subtotal × 2%</code> · <code>comision = cost_baza × 12%</code></td></tr>
           <tr><td>3. TVA</td><td><code>tva = (subtotal + marketing + mentenanță + comision) × cota_tva(țară)</code></td></tr>
           <tr><td>4. Preț final</td><td><code>pret_final = max( subtotal + taxe platformă + tva , prag_minim_comanda(țară) )</code></td></tr>
         </table>
-        <p>Procentele (3 / 2 / 12) sunt citite din <code>backoffice_config</code> (secțiunea <code>pricing</code>), TVA-ul și pragul minim din <code>tax_configurations</code>. Serverul <strong style="color:#fff">respinge cu 400</strong> orice câmp de preț trimis din client (<code>comision_pct</code>, <code>tva</code>, <code>mydarrin_pct</code>, <code>zone_coef</code>, <code>urgency_coef</code> etc.).</p>
-        <p><strong style="color:#fff">Exemplu numeric (RO, subtotal 1000 Lei):</strong> marketing 30 + mentenanță 20 + comision 120 = 1170 · TVA 21% = 245,70 · total 1415,70 Lei (peste pragul minim de 150 Lei, deci se păstrează).</p>
+        <p>Procentele (3 / 2 / 12) sunt citite din <code>backoffice_config</code> (secțiunea <code>pricing</code>), procentul de asigurare (1) din secțiunea <code>asigurari</code>, cheia <code>cost_asigurare_pct</code>, iar TVA-ul și pragul minim din <code>tax_configurations</code>. Comisionul și asigurarea se calculează pe costul de bază, nu pe subtotal. O asigurare trimisă explicit de apelant (inclusiv 0, de exemplu altă poliță aleasă de client) înlocuiește procentul. Serverul <strong style="color:#fff">respinge cu 400</strong> orice câmp de preț trimis din client (<code>comision_pct</code>, <code>tva</code>, <code>mydarrin_pct</code>, <code>zone_coef</code>, <code>urgency_coef</code> etc.).</p>
+        <p><strong style="color:#fff">Exemplu numeric (RO, manoperă 1000 + materiale 500 Lei, fără transport):</strong> cost de bază 1500 · asigurare 15 · subtotal 1515 · marketing 45,45 + mentenanță 30,30 + comision 180 = 1770,75 · TVA 21% = 371,86 · total 2142,61 Lei (peste pragul minim de 150 Lei, deci se păstrează).</p>
         <div class="man-callout c-warn">⚠️ Pragul minim (VMC) se aplică <strong>după</strong> TVA, pe prețul final, nu pe costul de bază înainte de taxe.</div>
         <h4>Valori live în baza de date (28 sept. 2026)</h4>
         <table>
@@ -6799,6 +6808,7 @@ async function loadComisioaneConfig() {
     'comision-bricolaj': cfg['comision_bricolaj_contractat_pct'] ?? '15',
     'comision-inchiriere': cfg['comision_inchiriere_contractat_pct'] ?? '15',
     'comision-asigurare': cfg['comision_intermediere_pct'] ?? '15',
+    'cost-asigurare-pct': cfg['cost_asigurare_pct'] ?? '1',
   };
   Object.entries(map).forEach(function([id, val]) {
     var el = document.getElementById(id);
@@ -6821,6 +6831,7 @@ async function saveAllComisioaneConfig() {
     { cheie: 'comision_bricolaj_contractat_pct', valoare: document.getElementById('comision-bricolaj')?.value, sectiune: 'pricing', tara_cod: tara, tip: 'number', unitate: '%', eticheta: 'Comision reținut — Furnizori Materiale' },
     { cheie: 'comision_inchiriere_contractat_pct', valoare: document.getElementById('comision-inchiriere')?.value, sectiune: 'pricing', tara_cod: tara, tip: 'number', unitate: '%', eticheta: 'Comision reținut — Furnizori Închirieri' },
     { cheie: 'comision_intermediere_pct', valoare: document.getElementById('comision-asigurare')?.value, sectiune: 'asigurari', tara_cod: tara, tip: 'number', unitate: '%', eticheta: 'Comision My Darrin din prima de asigurare (%)' },
+    { cheie: 'cost_asigurare_pct', valoare: document.getElementById('cost-asigurare-pct')?.value, sectiune: 'asigurari', tara_cod: tara, tip: 'number', unitate: '%', eticheta: 'Cost asigurare inclus în preț (% din costul de bază)' },
   ].filter(function(r) { return r.valoare !== undefined && r.valoare !== null && r.valoare !== ''; })
    .map(function(r) { return Object.assign({ updated_at: new Date().toISOString(), editabil_de: 'superadmin' }, r); });
 
@@ -6851,6 +6862,7 @@ const COMISIOANE_CHEI = {
   comision_bricolaj_contractat_pct: { domId: 'comision-bricolaj', sectiune: 'pricing', eticheta: 'Comision reținut — Furnizori Materiale' },
   comision_inchiriere_contractat_pct: { domId: 'comision-inchiriere', sectiune: 'pricing', eticheta: 'Comision reținut — Furnizori Închirieri' },
   comision_intermediere_pct: { domId: 'comision-asigurare', sectiune: 'asigurari', eticheta: 'Comision My Darrin din prima de asigurare' },
+  cost_asigurare_pct: { domId: 'cost-asigurare-pct', sectiune: 'asigurari', eticheta: 'Cost asigurare inclus în preț (% din costul de bază)' },
 };
 
 function exportaComisioaneCSV() {
