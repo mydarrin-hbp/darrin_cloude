@@ -1640,6 +1640,15 @@ let selectedPartnerType = 'servicii';
 // ══════════════════════════════════════════════════════════════
 // OPEN / CLOSE
 // ══════════════════════════════════════════════════════════════
+// Întrebările frecvente (reconstruit din istoric, 79f1e8b; 9 oct. 2026).
+function toggleFAQ(btn){
+  var item=btn.closest(".faq-item");
+  if(!item) return;
+  var deschis=item.classList.contains("open");
+  document.querySelectorAll(".faq-item").forEach(function(i){i.classList.remove("open");});
+  if(!deschis) item.classList.add("open");
+}
+
 function handlePartnerNavigation(type) {
   // Wrapper — toate navigările din mega-menu/sidebar trec prin gardă de cont, identic openPartnerModal
   if (typeof openPartnerModal === 'function') {
@@ -1894,30 +1903,6 @@ function renderStep2(d, stepTitle) {
 
   if (isAsig && d.tarife) {
     extraHtml = `
-    <!-- BC4: SANDBOX MODE WIDGET -->
-    <div style="margin-bottom:14px;background:linear-gradient(135deg,rgba(124,58,237,.08),rgba(124,58,237,.04));border:1.5px solid rgba(124,58,237,.25);border-radius:13px;padding:14px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-        <div>
-          <div style="font-size:12.5px;font-weight:700;color:#1A2332">Mod API — Sandbox / Live</div>
-          <div style="font-size:10.5px;color:#5A6B7D;margin-top:2px">Testează integrarea înainte de go-live fără costuri reale sau polițe ASF valide.</div>
-        </div>
-        <button id="btn-sandbox-mode" onclick="if(window.toggleSandboxMode)toggleSandboxMode(this);else this.style.background='#1A7A3A'&&(this.textContent='Live')"
-                style="padding:8px 16px;border-radius:9px;border:none;background:#7C3AED;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
-          Sandbox (Test)
-        </button>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button onclick="if(window.testSandboxAPI)testSandboxAPI();else alert('Sandbox test: OK (simulat)')"
-                style="font-size:11.5px;padding:7px 14px;border-radius:8px;border:1.5px solid rgba(124,58,237,.3);background:rgba(124,58,237,.08);color:#7C3AED;cursor:pointer;font-family:inherit;font-weight:600">
-          ▶ Test endpoint API
-        </button>
-        <button onclick="alert('Poliță simulată emisă\nNr: TEST-RO-ASF-0000\nTip: Work Guarantee\nValoare: 16 Lei\nStatus: OK (sandbox)')"
-                style="font-size:11.5px;padding:7px 14px;border-radius:8px;border:1.5px solid rgba(124,58,237,.3);background:rgba(124,58,237,.08);color:#7C3AED;cursor:pointer;font-family:inherit;font-weight:600">
-          Test emisie poliță
-        </button>
-      </div>
-      <div style="font-size:10px;color:#8C9BAD;margin-top:8px">Înainte de trecerea în Live, verifică că endpoint-ul returnează: <code>{ status:'emisa', polita_nr:'RO-ASF-YYYY-xxxxx', prima: X }</code></div>
-    </div>
     <!-- Tarife -->
     <div style="margin-top:4px;margin-bottom:12px">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:8px">Configurare tarife & limite</div>
@@ -2535,8 +2520,8 @@ function setLang(code,flag,label){
   }
 }
 document.addEventListener('click',e=>{
-  if(!document.getElementById('langDd').contains(e.target))
-    document.getElementById('langDd').classList.remove('open');
+  const dd=document.getElementById('langDd');
+  if(dd&&!dd.contains(e.target)) dd.classList.remove('open');
 });
 
 // Location modal
@@ -2788,51 +2773,10 @@ const PARTNER_META = {
   curier:     { icon:'', title:'Curier de Cartier',       color:'#7C3AED', bg:'linear-gradient(135deg,#F3EEFF,#E9D8FD)', dashLink:'mydarrin-dashboard-partener.html?type=curier' },
   asigurari:  { icon:'', title:'Furnizor de Asigurări',   color:'#1A7A3A', bg:'linear-gradient(135deg,#D4EDDA,#B8DFC5)', dashLink:'mydarrin-dashboard-partener.html?type=asigurari' },
 };
-
-function openPartnerModal(type) {
-  if (typeof isAccountCreated === 'function' && !isAccountCreated()) {
-    if (typeof toggleAuthModal === 'function') {
-      toggleAuthModal();
-      if (typeof switchAuthTab === 'function') switchAuthTab('register');
-    }
-    if (typeof showToastMsg === 'function') {
-      showToastMsg('Creează-ți contul mai întâi — apoi continui ca partener.');
-    }
-    return;
-  }
-  const modal = document.getElementById('partner-modal');
-  if (modal) { modal.classList.remove('hidden'); modal.style.display = 'flex'; }
-  document.body.style.overflow = 'hidden';
-  if (type) {
-    setTimeout(() => selectPartnerType(type), 80);
-  } else {
-    resetPartnerType();
-  }
-}
-
-function closePartnerModal() {
-  const modal = document.getElementById('partner-modal');
-  if (modal) { modal.classList.add('hidden'); modal.style.display = 'none'; }
-  document.body.style.overflow = '';
-  resetPartnerType();
-}
-
-function selectPartnerType(type) {
-  const meta = PARTNER_META[type];
-  if (!meta) return;
-  // Hide cards, show form
-  document.getElementById('partner-cards').classList.add('hidden');
-  document.getElementById('partner-form').classList.remove('hidden');
-  document.getElementById('pf-icon').textContent = meta.icon;
-  document.getElementById('pf-icon').style.background = meta.bg;
-  document.getElementById('pf-title').textContent = meta.title;
-  document.getElementById('pf-title').style.color = meta.color;
-}
-
-function resetPartnerType() {
-  document.getElementById('partner-cards').classList.remove('hidden');
-  document.getElementById('partner-form').classList.add('hidden');
-}
+// openPartnerModal / closePartnerModal / selectPartnerType / resetPartnerType
+// vechi (modalul cu carduri, dinainte de wizard) erau definite aici și
+// suprascriau wizard-ul de mai sus: ?type=… ducea la „partner-cards is null”.
+// Eliminate 9 oct. 2026; PARTNER_META rămâne (îl folosește wizard-ul).
 
 // ── INVESTOR MODAL ──
 function openInvestorModal() {
@@ -3646,5 +3590,6 @@ function collectLeadFromInactiveZone(email, cc, tara) {
 
 <script src="share-widget.js" defer></script>
 <script src="statistici-publice.js" defer></script>
+<script src="ui-comun.js" defer></script>
 </body>
 </html>

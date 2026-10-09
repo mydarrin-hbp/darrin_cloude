@@ -3367,8 +3367,11 @@ function applyGeoData(data){
   var address=data.address||[city,region].filter(Boolean).join(', ')||country;
 
   // Prețuri / monedă
-  var cur=CURRENCIES[country]||CURRENCIES.DEFAULT;
-  applyCurrency(cur);
+  // Pagina nu afișează prețuri: CURRENCIES/applyCurrency nu există aici
+  // („CURRENCIES is not defined” la fiecare încărcare, 9 oct. 2026).
+  if(typeof CURRENCIES!=='undefined'&&typeof applyCurrency==='function'){
+    applyCurrency(CURRENCIES[country]||CURRENCIES.DEFAULT);
+  }
 
   // Display locație desktop
   var locEl=document.getElementById('loc-display');
@@ -4272,4 +4275,5 @@ function submitNewsletter() {
 <script src="seo-meta.js"></script>
 <script src="cookie-consent.js" defer></script>
 <script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="analytics-loader.js" defer></script>
+<script src="ui-comun.js" defer></script>
 </body>

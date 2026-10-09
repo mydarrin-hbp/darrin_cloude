@@ -1188,7 +1188,7 @@ function triggerHeaderSearch(){
       <span class="text-[#0E9E99] text-[10px] font-bold uppercase tracking-wider">Darrin AI</span>
     </div>
     <p class="text-white/50 text-xs leading-relaxed">Devize automate, prețuri în timp real, asistență completă.</p>
-    <button onclick="closeSidebar(); document.getElementById('flux').scrollIntoView({behavior:'smooth'})"
+    <button onclick="closeSidebar(); var f=document.getElementById('flux'); if(f) f.scrollIntoView({behavior:'smooth'}); else location.href='mydarrin-cum-functioneaza.html#flux'"
             class="mt-3 w-full bg-[#FF8C00] text-white text-xs font-bold py-2.5 rounded-xl hover:bg-[#CC7000] transition">
       Generează Deviz Gratuit →
     </button>
@@ -2073,6 +2073,13 @@ window.addEventListener('scroll',()=>{
 });
 
 // Sidebar
+// Filele de nivel (reconstruit din istoric, f3cc635^; 9 oct. 2026).
+function switchLvl(l,btn){
+  ["bronz","argint","aur","platinum"].forEach(function(x){var c=document.getElementById("lvl-"+x);if(c)c.classList.add("hidden");});
+  document.querySelectorAll(".lvl-tab").forEach(function(t){t.classList.remove("active");});
+  var card=document.getElementById("lvl-"+l);if(card)card.classList.remove("hidden");
+  if(btn)btn.classList.add("active");
+}
 function openSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebar-overlay').classList.add('show');document.body.style.overflow='hidden';}
 function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('show');document.body.style.overflow='';}
 
@@ -2095,8 +2102,8 @@ function setLang(code,flag,label){
   // In real app: reload page with locale
 }
 document.addEventListener('click',e=>{
-  if(!document.getElementById('langDd').contains(e.target))
-    document.getElementById('langDd').classList.remove('open');
+  const dd=document.getElementById('langDd');
+  if(dd&&!dd.contains(e.target)) dd.classList.remove('open');
 });
 
 // Location modal
@@ -2950,5 +2957,6 @@ function daiSendMessage(){
   </div>
 </div>
 <script src="statistici-publice.js" defer></script>
+<script src="ui-comun.js" defer></script>
 </body>
 </html>

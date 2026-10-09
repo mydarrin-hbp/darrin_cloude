@@ -2458,8 +2458,8 @@ function setLang(code,flag,label){
   }
 }
 document.addEventListener('click',e=>{
-  if(!document.getElementById('langDd').contains(e.target))
-    document.getElementById('langDd').classList.remove('open');
+  const dd=document.getElementById('langDd');
+  if(dd&&!dd.contains(e.target)) dd.classList.remove('open');
 });
 
 // Location modal
@@ -2677,6 +2677,16 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener('DOMContentLoaded', () => {
   try {
     const params = new URLSearchParams(window.location.search);
+    // ui-comun.js trimite aici (?reason=cont) de pe paginile fără fereastra
+    // de cont (9 oct. 2026): deschidem direct autentificarea.
+    if (params.get('reason') === 'cont') {
+      const modal = document.getElementById('auth-modal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+      }
+      if (typeof switchAuthTab === 'function') switchAuthTab('login');
+    }
     if (params.get('reason') === 'auth_required') {
       const redirect = params.get('redirect');
       if (redirect) sessionStorage.setItem('myd_post_auth_redirect', redirect);
@@ -3766,5 +3776,6 @@ if(document.readyState==='loading'){
 <script src="share-widget.js" defer></script>
 <script src="i18n-loader.js" defer></script>
 <script src="cos-indicator.js" defer></script>
+<script src="ui-comun.js" defer></script>
 </body>
 </html>
