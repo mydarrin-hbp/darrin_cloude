@@ -38,12 +38,15 @@ Branch: `corectii-public` → `main`
 - Pagina de contact: butonul „Scrie-ne pe WhatsApp” e primul canal, urmat de telefon, email, suport și program.
 - Subsolul a 33 de pagini are un bloc Contact.
 - Pe investitori apare `investitori_email`; pe paginile de confidențialitate și GDPR, `gdpr_email`; pe reclamații și checkout, `suport_email`.
+- Nici emailurile trimise de server nu mai au adrese scrise direct: footerul de dezabonare folosește `contact_email`, iar nota GDPR `gdpr_email`, ambele din aceeași sursă (`lib/contact-platforma.js`, cu cache). Dacă o cheie lipsește, rândul nu apare.
 - Nicio pagină publică nu mai are telefoane sau emailuri scrise direct. Au dispărut și adresele care nu existau în back-office (`support@`, `dpo@`, `parteneri@`, `marketplace@`) și CUI-ul inventat din termeni.
 
 **Promisiuni**
 - „Rating ≥4.8★ = bonus lunar” a fost scos.
 - „24/7” rămâne doar pentru chatul Darrin AI și pentru programul de contact; aparițiile care promiteau intervenții non-stop au fost scoase.
 - „48h” rămâne.
+- Scos și „Top curier al lunii = voucher extra” (curier de cartier).
+- „Partener la ușa ta în sub 4 ore” și „<4h Timp răspuns urgențe” au fost înlocuite cu „Cerere prioritară — îți confirmăm disponibilitatea partenerilor din zona ta”, până când SLA-ul pentru urgențe va fi live.
 
 **Comandă primită și notificări (Etapa 0 SLA)**
 - La plasare, clientul primește „Am primit comanda ta”, fără termen promis.
@@ -73,6 +76,10 @@ Branch: `corectii-public` → `main`
 | `d2930e3` | Promisiuni: scos bonusul pentru rating ≥4.8★ și „24/7” care promitea intervenții non-stop |
 | `700ecad` | Etapa 0 SLA: „comandă primită” la plasare, email către partenerul alocat și către admin fără partener |
 | `71c6bb7` | Subsol: programul de contact afișat lizibil pe fundal închis |
+| `aebdaea` | PR.md: contacte, promisiuni, Etapa 0 SLA |
+| `16eff68` | Emailuri: adresa din footerul de dezabonare și din nota GDPR, din back-office |
+| `4fc163d` | Curier de cartier: scos „Top curier al lunii = voucher extra” |
+| `a3a0946` | Urgențe: „sub 4 ore” / „<4h” înlocuite cu „Cerere prioritară…” |
 
 ## Migrări
 
@@ -93,6 +100,8 @@ Totul pe un server local care servește fișierele din branch și trimite `/api/
   - contul deschide fereastra de autentificare, direct sau prin index;
   - „Devino partener” duce la wizard.
 - **Cifrele reale** (pe datele live din 9 oct.): 88 de servicii active în meniu, 226 de produse publice și 6 țări în catalog, 1 partener activ și 2 comenzi pe pagina de investitori.
+- **Footerul emailurilor:** testul de plasare arată footerul cu `contact_email` când cheia există și niciun footer când lipsește.
+- **Paginile atinse ultima dată** (curier de cartier, servicii urgente, cum comanzi): 18 capturi la 6 lățimi, fără erori și fără depășiri.
 - **Contactele:** pe 9 pagini, la 390 și 1366 px, toate valorile vin din back-office și au linkurile corecte (`wa.me/40755511777`, `tel:`, `mailto:`), fără erori. Endpoint-ul nou nu există încă în producție; local a fost simulat cu aceleași date.
 - **Plasarea comenzii** pe `api/comenzi/creeaza.js` real, cu baza în memorie și Resend interceptat:
   - cu partener: clientul primește „primită” plus proforma; partenerul primește „comandă alocată”; clientul primește apoi codul de verificare; statusul devine `acceptata`;
@@ -120,6 +129,5 @@ Totul pe un server local care servește fișierele din branch și trimite `/api/
 
 ## De decis de LM (nemodificate)
 
-- Încă afișate pe pagini: „Partener la ușa ta în sub 4 ore” (servicii-urgente) și „<4h Timp răspuns urgențe” (cum-comanzi).
-- Footerul de dezabonare din emailuri (`lib/i18n.js`, în 11 limbi) are `contact@homebestpal.com` scris direct.
-- `mydarrin-serviciu.html` (accesibilă doar din superadmin) încă afișează prețuri scrise direct în pagină (280 / 460 Lei).
+- `mydarrin-serviciu.html` (accesibilă doar din superadmin) încă afișează prețuri și recenzii scrise direct în pagină (280 / 460 Lei, „4.97 · 312 recenzii”).
+- „Marfa transportată este asigurată automat prin My Darrin” (curier de cartier): de confirmat că asigurarea există pentru curieri.
