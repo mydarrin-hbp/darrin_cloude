@@ -763,6 +763,8 @@ function renderNav(type) {
 }
 
 // ── SHOW PANEL ──
+const PANOURI_DEMO = new Set(['calendar','curse','activ']);
+const BANNER_DEMO = '<div class="myd-demo-banner" role="note" style="display:flex;align-items:center;gap:8px;margin:0 0 14px;padding:10px 14px;border-radius:10px;background:#FFF4E5;border:1.5px solid #FFB866;color:#8A4B00;font-size:12.5px;font-weight:700;line-height:1.4">⚠ Date demonstrative — secțiunea nu este încă conectată</div>';
 function showPanel(id) {
   currentPanel = id;
   const t = TYPES[currentType];
@@ -804,6 +806,9 @@ function showPanel(id) {
   else if (id === 'daune')      { content.innerHTML = renderDaune(); loadDosareDaunaReal(); }
   else if (id === 'zona-acoperire') { content.innerHTML = renderZonaCurier(); loadZonaCurierReal(); }
   else if (id === 'tipuri-polita')  { content.innerHTML = renderTipuriPolita(); loadTipuriPolitaReal(); }
+  // Calendarul și cursele (CURSE_DEMO) sunt încă date scrise direct în pagină
+  // (9 oct. 2026); restul panourilor citesc din API.
+  if (PANOURI_DEMO.has(id)) content.insertAdjacentHTML('afterbegin', BANNER_DEMO);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1097,6 +1102,7 @@ function renderPortofoliu() {
   <div class="dp-card">
     <div class="dp-card-hdr"><strong style="color:#1A2332">📸 Portofoliu lucrări recente</strong><button class="btn-s" style="font-size:11px">+ Adaugă poze</button></div>
     <div class="dp-card-body">
+      ${BANNER_DEMO}
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
         ${['🔧 Montaj lavoar','🔥 Centrală Ariston','🚿 Cadă hidromasaj','💧 Instalație PPR'].map(l=>`
         <div style="background:#F0F4F8;border-radius:10px;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;font-size:22px;border:1.5px dashed #D5DFE8;transition:all .18s" onmouseover="this.style.borderColor='#FF8C00'" onmouseout="this.style.borderColor='#D5DFE8'">

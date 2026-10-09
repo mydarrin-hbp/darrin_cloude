@@ -591,6 +591,8 @@ function renderNav(type){
   }).join('');
 }
 
+const PANOURI_DEMO = new Set(['overview','comenzi','venituri','garantii','documente','rezervari','echipamente','calendar','alerte']);
+const BANNER_DEMO = '<div class="myd-demo-banner" role="note" style="display:flex;align-items:center;gap:8px;margin:0 0 14px;padding:10px 14px;border-radius:10px;background:#FFF4E5;border:1.5px solid #FFB866;color:#8A4B00;font-size:12.5px;font-weight:700;line-height:1.4">⚠ Date demonstrative — secțiunea nu este încă conectată</div>';
 function showPanel(id){
   currentPanel=id;
   const titles={overview:'Overview',comenzi:'Comenzi primite',stocuri:'Stocuri live',produse:'Produse active',import:'Import CSV / API',venituri:'Venituri & Comisioane',garantii:'Garanții',documente:'Documentele mele',rezervari:'Rezervări active',echipamente:'Echipamente & Stoc',calendar:'Calendar disponibilitate',alerte:'Alerte siguranță'};
@@ -612,6 +614,10 @@ function showPanel(id){
     alerte:      renderAlerte,
   };
   c.innerHTML = (panels[id]||(()=>'<div class="f-card"><div class="f-card-body">Coming soon</div></div>'))();
+  // Panourile care încă afișează date scrise direct în pagină (firme, sume,
+  // comenzi inventate) primesc un banner (9 oct. 2026). Stocuri, Produse și
+  // Import citesc date reale (/api/marketplace/*).
+  if (PANOURI_DEMO.has(id)) c.insertAdjacentHTML('afterbegin', BANNER_DEMO);
   if (id === 'produse') loadProduseLive();
   if (id === 'stocuri') loadStocuriLive();
 }
