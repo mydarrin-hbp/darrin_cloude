@@ -29,8 +29,29 @@ Branch: `corectii-public` → `main`
 **Date inventate eliminate**
 - Recenzii inventate (Elena S., Radu M. etc.) și cifre fără sursă: „2.140+”, „4.87★ din 1.834+”, „4.9★”, „4.92”, „26+”, „5+”, „1.800+ / 1.200+”, „276+ servicii active”.
 - Unde există o sursă reală, cifra se citește din bază (`statistici-publice.js`): servicii publice, produse publice, țări active, parteneri, comenzi. O cifră egală cu 0 nu se afișează.
-- Contact: telefonul și emailul se citesc din `backoffice_config`, secțiunea `contact`. Numărul de WhatsApp inventat (+40 721 234 567) a fost scos și din antetul a 26 de pagini.
+- Numărul de WhatsApp inventat (+40 721 234 567) a fost scos, inclusiv din antetul a 26 de pagini.
 - Dashboard-urile furnizor, partener și client: secțiunile încă neconectate au un banner „Date demonstrative — secțiunea nu este încă conectată”.
+
+**Contacte din back-office**
+- Endpoint nou, public și doar pentru citire: `/api/public/contact`. Întoarce numai cheile din `backoffice_config`, secțiunea `contact`.
+- `contact-public.js` completează datele pe pagini. O cheie lipsă înseamnă că rândul nu se afișează.
+- Pagina de contact: butonul „Scrie-ne pe WhatsApp” e primul canal, urmat de telefon, email, suport și program.
+- Subsolul a 33 de pagini are un bloc Contact.
+- Pe investitori apare `investitori_email`; pe paginile de confidențialitate și GDPR, `gdpr_email`; pe reclamații și checkout, `suport_email`.
+- Nicio pagină publică nu mai are telefoane sau emailuri scrise direct. Au dispărut și adresele care nu existau în back-office (`support@`, `dpo@`, `parteneri@`, `marketplace@`) și CUI-ul inventat din termeni.
+
+**Promisiuni**
+- „Rating ≥4.8★ = bonus lunar” a fost scos.
+- „24/7” rămâne doar pentru chatul Darrin AI și pentru programul de contact; aparițiile care promiteau intervenții non-stop au fost scoase.
+- „48h” rămâne.
+
+**Comandă primită și notificări (Etapa 0 SLA)**
+- La plasare, clientul primește „Am primit comanda ta”, fără termen promis.
+- Confirmarea (partenerul și codul de verificare) pleacă doar dacă există un partener alocat.
+- Partenerul alocat automat primește imediat un email cu serviciul, data, intervalul și localitatea, iar comanda îi apare la Sarcini.
+- O comandă fără partener declanșează un email imediat la `suport_email`.
+- Panoul „Comenzi Globale” din superadmin arată date reale: comenzile fără partener apar primele, cu vechimea în minute. Înainte era o machetă cu „247 active”.
+- Au fost scoase promisiunile de timp la alocare: „<15 min”, „în sub 2 minute”, „Primești imediat confirmarea”, „Ai 5 minute să confirmi”.
 
 ## Commit-uri
 
@@ -47,6 +68,11 @@ Branch: `corectii-public` → `main`
 | `780c314` | Butoane moarte: funcțiile comune într-un singur script (`ui-comun.js`) |
 | `08309f3` | Checkout: migrare propusă pentru datele de contact; cod mort cu date inventate șters |
 | `357d63c` | Ultimele date inventate de pe paginile publice; banner pe secțiunile demonstrative |
+| `b82ae31` | PR.md (prima versiune) |
+| `86d64d1` | Contacte din back-office: `/api/public/contact`, WhatsApp primul canal, nicio adresă scrisă direct |
+| `d2930e3` | Promisiuni: scos bonusul pentru rating ≥4.8★ și „24/7” care promitea intervenții non-stop |
+| `700ecad` | Etapa 0 SLA: „comandă primită” la plasare, email către partenerul alocat și către admin fără partener |
+| `71c6bb7` | Subsol: programul de contact afișat lizibil pe fundal închis |
 
 ## Migrări
 
@@ -66,12 +92,17 @@ Totul pe un server local care servește fișierele din branch și trimite `/api/
   - GPS-ul actualizează adresa (cu poziție simulată);
   - contul deschide fereastra de autentificare, direct sau prin index;
   - „Devino partener” duce la wizard.
-- **Cifrele reale** (pe datele live din 9 oct.): 88 de servicii active în meniu, 226 de produse publice și 6 țări în catalog, 1 partener activ și 2 comenzi pe pagina de investitori. Cardurile de contact sunt ascunse, pentru că cheile nu există încă.
+- **Cifrele reale** (pe datele live din 9 oct.): 88 de servicii active în meniu, 226 de produse publice și 6 țări în catalog, 1 partener activ și 2 comenzi pe pagina de investitori.
+- **Contactele:** pe 9 pagini, la 390 și 1366 px, toate valorile vin din back-office și au linkurile corecte (`wa.me/40755511777`, `tel:`, `mailto:`), fără erori. Endpoint-ul nou nu există încă în producție; local a fost simulat cu aceleași date.
+- **Plasarea comenzii** pe `api/comenzi/creeaza.js` real, cu baza în memorie și Resend interceptat:
+  - cu partener: clientul primește „primită” plus proforma; partenerul primește „comandă alocată”; clientul primește apoi codul de verificare; statusul devine `acceptata`;
+  - fără partener: clientul primește doar „primită”; adminul primește „Comandă fără partener”; statusul rămâne `in_cautare_partener`.
 
 ## Ce nu s-a testat
 
 - **O comandă reală, cu cont autentificat, până la plată și confirmare.** În test, butonul de finalizare a fost oprit înainte de trimitere.
-- **Dashboard-urile** (client, furnizor, partener, superadmin) și paginile interne (business-model, design-system, deviz-engine) redirecționează fără cont. Pe ele am verificat doar sintaxa scripturilor și analiza statică a funcțiilor, nu și click-uri în browser. Bannerele demonstrative nu au fost văzute în browser.
+- **Dashboard-urile** (client, furnizor, partener, superadmin) și paginile interne (business-model, design-system, deviz-engine) redirecționează fără cont. Pe ele am verificat doar sintaxa scripturilor și analiza statică a funcțiilor, nu și click-uri în browser. Bannerele demonstrative și panoul „Comenzi Globale” nu au fost văzute în browser.
+- **Emailurile reale** prin Resend (livrare, aspect în clienții de email).
 - **Testele cu Safari sau iOS:** s-a folosit doar Chromium (Playwright).
 
 ## Verificări după publicare
@@ -81,11 +112,14 @@ Totul pe un server local care servește fișierele din branch și trimite `/api/
 - [ ] Pe `cum-comanzi.html` și `intrebari-frecvente-clienti.html`, la 390 px, meniul ≡ se deschide (prima deschidere încarcă meniul din index). „Cont” duce la index cu fereastra de autentificare deschisă.
 - [ ] „Devino partener” → `mydarrin-devino-partener.html?type=servicii` deschide wizard-ul, fără eroare în consolă.
 - [ ] Meniul „Servicii” arată numărul real de servicii; hero-ul din catalog arată produsele și țările; investitorii arată partenerii și comenzile.
-- [ ] Contact: după ce LM adaugă `contact_telefon` și `contact_email` în `backoffice_config` (secțiunea `contact`), cardurile apar.
+- [ ] `/api/public/contact` răspunde cu cele 7 chei; pagina de contact arată butonul WhatsApp primul; subsolul arată blocul Contact.
+- [ ] O comandă de test cu partener disponibil: clientul primește „Am primit comanda ta” și codul de verificare, iar partenerul primește „Comandă nouă alocată ție” și o vede la Sarcini.
+- [ ] O comandă de test fără partener: emailul „Comandă fără partener” ajunge la `suport_email`, iar comanda apare prima în „Comenzi Globale”.
 - [ ] Dashboard-urile: bannerul „Date demonstrative” apare pe secțiunile listate în raport.
 - [ ] Consola browserului: fără erori pe index, catalog, produs, checkout, despre-noi și contact.
 
 ## De decis de LM (nemodificate)
 
-- Promisiunile „48h Aprobare”, „Rating ≥4.8★ = bonus lunar 10%” și „24/7”: tabelul cu fiecare apariție e în raportul de publicare.
+- Încă afișate pe pagini: „Partener la ușa ta în sub 4 ore” (servicii-urgente) și „<4h Timp răspuns urgențe” (cum-comanzi).
+- Footerul de dezabonare din emailuri (`lib/i18n.js`, în 11 limbi) are `contact@homebestpal.com` scris direct.
 - `mydarrin-serviciu.html` (accesibilă doar din superadmin) încă afișează prețuri scrise direct în pagină (280 / 460 Lei).
