@@ -235,6 +235,13 @@ input:valid:not(:placeholder-shown):not([type="checkbox"]) {
   [style*="grid-template-columns:repeat(3"] { 
     grid-template-columns: 1fr 1fr !important; 
   }
+  /* Grilele cu exact 3 căsuțe (ex. Escrow securizat / AI alocă / Garanție
+     digitală) rămân pe 3 coloane egale: pe 2 coloane a treia rămânea singură
+     pe rând (9 oct. 2026). */
+  [style*="grid-template-columns:repeat(3"]:not(:has(> :nth-child(4))),
+  [class*="grid-cols-3"]:not(:has(> :nth-child(4))) {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
   [style*="grid-template-columns:1fr 1fr 1fr"] {
     grid-template-columns: 1fr 1fr !important;
   }
