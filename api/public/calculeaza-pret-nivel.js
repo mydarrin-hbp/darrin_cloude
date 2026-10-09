@@ -48,6 +48,11 @@ module.exports = async function handler(req, res) {
   try {
     const cost = await calculeazaCostNivel({ nivelId: nivel_id, taraCod, cantitate: cantitateNum, regiune: typeof regiune === 'string' ? regiune.slice(0, 80) : null });
 
+    // Reguli pe niveluri (9 oct. 2026): un nivel dezactivat de LM nu se afișează.
+    if (cost.nivel_activ === false) {
+      return res.status(200).json({ ok: true, disponibil: false, motiv: 'nivel_inactiv' });
+    }
+
     if (cost.resurse_fara_pret.length) {
       return res.status(200).json({
         ok: true, disponibil: false, motiv: 'resurse_fara_pret',
@@ -99,6 +104,10 @@ module.exports = async function handler(req, res) {
       prag_minim_comanda: calc.prag_minim_comanda,
       subtotal_variabil: calc.subtotal,
       defalcare,
+      // Ce include nivelul, doar pentru afișare: materiale (nu / consumabile /
+      // complet), curățenie, testare, raport digital, timp de răspuns și
+      // materialele furnizate de client. Fără coeficienți interni.
+      include: cost.nivel_include || null,
       addon_materiale: addonRezultat.itemi,
       cantitate: cantitateNum, tara_cod: taraCod, moneda,
     });

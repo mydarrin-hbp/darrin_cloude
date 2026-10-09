@@ -4109,6 +4109,7 @@ async function initPilotProdus(slug, serviciuId) {
       });
       const data = await res.json();
       if (data?.ok && data.disponibil) { nivel.stare = 'pret'; nivel.pret_final = data.pret_final; }
+      else if (data?.ok && data.motiv === 'nivel_inactiv') nivel.stare = 'inactiv';
       else if (data?.ok) nivel.stare = 'evaluare';
     } catch (e) {
       console.warn('[pilot] calcul preț eșuat pentru nivel', n.id, e);
@@ -4117,6 +4118,11 @@ async function initPilotProdus(slug, serviciuId) {
   }));
 
   niveluri.sort((a, b) => (NIVEL_RANG[a.nivel] ?? 9) - (NIVEL_RANG[b.nivel] ?? 9));
+  // Nivelurile dezactivate din reguli_niveluri nu apar pe pagină.
+  // Dacă toate ar fi inactive, serviciul cu rețetă nu cade pe prețurile
+  // statice din TIER_DB: rămâne „Preț după evaluare tehnică”.
+  if (niveluri.every((n) => n.stare === 'inactiv')) niveluri.forEach((n) => { n.stare = 'evaluare'; });
+  else for (let i = niveluri.length - 1; i >= 0; i--) if (niveluri[i].stare === 'inactiv') niveluri.splice(i, 1);
   const implicit = niveluri.find((n) => n.stare === 'pret') || niveluri[0];
 
   S.pilotMode = true;
