@@ -399,4 +399,158 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pornestePlutitoare);
   else pornestePlutitoare();
 
+  // ── Locația, păstrată între pagini (9 oct. 2026) ──────────────────────
+  // Raport LM: pe unele pagini bara de jos arăta orașul, pe altele doar
+  // „Locație”; pe paginile fără #loc-modal butonul era mort. Cauze:
+  //  - locația aleasă / detectată nu se salva nicăieri;
+  //  - unele pagini ascultă `myd-geo-update` pe document, dar evenimentul
+  //    e emis pe window — ascultătorul nu primea nimic;
+  //  - openLocModal() nu făcea nimic fără #loc-modal.
+  // Acum: localStorage `myd_locatie` (try/catch), aplicată la încărcarea
+  // oricărei pagini (bara de jos, antet, câmpul din fereastră); schimbarea
+  // emite `myd-geo-update` pe window ȘI pe document. Fără #loc-modal se
+  // deschide o fereastră simplă: GPS + oraș cu sugestii.
+  var CHEIE_LOC = 'myd_locatie';
+  var ORASE = ['București', 'Cluj-Napoca', 'Timișoara', 'Iași', 'Constanța', 'Craiova', 'Brașov', 'Galați', 'Ploiești', 'Oradea', 'Brăila', 'Arad', 'Pitești', 'Sibiu', 'Bacău', 'Târgu Mureș', 'Baia Mare', 'Buzău', 'Botoșani', 'Satu Mare', 'Râmnicu Vâlcea', 'Suceava', 'Piatra Neamț', 'Târgu Neamț', 'Drobeta-Turnu Severin', 'Focșani', 'Târgu Jiu', 'Tulcea', 'Târgoviște', 'Reșița', 'Bistrița', 'Slatina', 'Călărași', 'Alba Iulia', 'Giurgiu', 'Deva', 'Hunedoara', 'Zalău', 'Sfântu Gheorghe', 'Bârlad', 'Vaslui', 'Roman', 'Turda', 'Mediaș', 'Slobozia', 'Alexandria', 'Voluntari', 'Lugoj', 'Medgidia', 'Onești', 'Miercurea Ciuc', 'Chișinău'];
+
+  function citesteLocatie() {
+    try { var v = JSON.parse(localStorage.getItem(CHEIE_LOC) || 'null'); return v && v.oras ? v : null; } catch (e) { return null; }
+  }
+  function scrieLocatie(d) {
+    try { localStorage.setItem(CHEIE_LOC, JSON.stringify(d)); } catch (e) {}
+  }
+  function emiteGeo(d) {
+    var detaliu = { country: d.tara || 'RO', city: d.oras, region: d.regiune || '', address: d.adresa || '', source: d.sursa || 'manual', din_ui_comun: true };
+    try { window.dispatchEvent(new CustomEvent('myd-geo-update', { detail: detaliu })); } catch (e) {}
+    try { document.dispatchEvent(new CustomEvent('myd-geo-update', { detail: detaliu })); } catch (e) {}
+  }
+  function afiseazaLocatie(d) {
+    if (!d || !d.oras) return;
+    var text = d.adresa || d.oras;
+    var disp = el('loc-display'), inp = el('loc-input'), mbn = el('mbn-loc-text'), loc2 = el('myd-loc-oras');
+    if (disp && disp.textContent !== text) disp.textContent = text;
+    if (inp && document.activeElement !== inp) inp.value = text;
+    if (mbn && mbn.textContent !== d.oras) mbn.textContent = d.oras;
+    if (loc2 && document.activeElement !== loc2) loc2.value = d.oras;
+  }
+  function salveazaSiAplica(d) {
+    d.ts = Date.now();
+    scrieLocatie(d);
+    afiseazaLocatie(d);
+    emiteGeo(d);
+  }
+
+  // Fereastra simplă, pentru paginile fără #loc-modal.
+  function fereastraLocatie() {
+    var f = el('myd-loc-fereastra');
+    if (!f) {
+      f = document.createElement('div');
+      f.id = 'myd-loc-fereastra';
+      f.setAttribute('role', 'dialog');
+      f.setAttribute('aria-label', 'Alege locația');
+      f.style.cssText = 'position:fixed;inset:0;z-index:3100;display:none;align-items:center;justify-content:center;padding:16px';
+      f.innerHTML =
+        '<div style="position:absolute;inset:0;background:rgba(0,0,0,.45)" data-inchide="1"></div>' +
+        '<div style="position:relative;background:#fff;border-radius:18px;width:100%;max-width:380px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.25);font-family:inherit">' +
+          '<div style="font-size:17px;font-weight:800;color:#1A2332;margin-bottom:4px">Locația ta</div>' +
+          '<div style="font-size:12.5px;color:#6B7A8D;margin-bottom:14px">O folosim pentru partenerii din zonă și pentru prețuri.</div>' +
+          '<button type="button" id="myd-loc-gps" style="width:100%;min-height:48px;border:none;border-radius:12px;background:#FF8C00;color:#fff;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit;margin-bottom:12px">Folosește locația mea (GPS)</button>' +
+          '<label for="myd-loc-oras" style="font-size:12px;font-weight:700;color:#5A6B7D">Sau scrie orașul</label>' +
+          '<input id="myd-loc-oras" list="myd-loc-sugestii" autocomplete="address-level2" placeholder="ex. Iași" style="width:100%;box-sizing:border-box;margin-top:6px;padding:12px;border:1.5px solid #D5DFE8;border-radius:12px;font-size:15px;font-family:inherit"/>' +
+          '<datalist id="myd-loc-sugestii">' + ORASE.map(function (o) { return '<option value="' + o + '"></option>'; }).join('') + '</datalist>' +
+          '<div style="display:flex;gap:8px;margin-top:14px">' +
+            '<button type="button" data-inchide="1" style="flex:1;min-height:44px;border:1.5px solid #D5DFE8;border-radius:12px;background:#fff;color:#5A6B7D;font-weight:700;cursor:pointer;font-family:inherit">Renunță</button>' +
+            '<button type="button" id="myd-loc-salveaza" style="flex:2;min-height:44px;border:none;border-radius:12px;background:#003366;color:#fff;font-weight:800;cursor:pointer;font-family:inherit">Salvează locația</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(f);
+      f.addEventListener('click', function (e) { if (e.target.getAttribute && e.target.getAttribute('data-inchide')) inchideFereastra(); });
+      el('myd-loc-gps').onclick = function () { inchideFereastra(); window.detectFromGPS(); };
+      el('myd-loc-salveaza').onclick = function () {
+        var v = (el('myd-loc-oras').value || '').trim();
+        if (!v) { el('myd-loc-oras').focus(); return; }
+        salveazaSiAplica({ oras: v, tara: v === 'Chișinău' ? 'MD' : 'RO', sursa: 'manual' });
+        inchideFereastra();
+        window.showGeoToast && window.showGeoToast('Locația a fost salvată: ' + v);
+      };
+    }
+    var d = citesteLocatie();
+    el('myd-loc-oras').value = d ? d.oras : '';
+    f.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+  function inchideFereastra() {
+    var f = el('myd-loc-fereastra');
+    if (f) f.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
+  // openLocModal: pagina are #loc-modal → al ei (cu buton GPS adăugat);
+  // altfel fereastra de mai sus. Se înlocuiește și varianta paginii, ca
+  // butonul să nu mai fie mort nicăieri.
+  var openLocPagina = typeof window.openLocModal === 'function' ? window.openLocModal : null;
+  window.openLocModal = function () {
+    var m = el('loc-modal');
+    if (!m) { fereastraLocatie(); return; }
+    if (!m.querySelector('#myd-loc-gps-modal')) {
+      var inp = el('loc-input');
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.id = 'myd-loc-gps-modal';
+      b.textContent = 'Folosește locația mea (GPS)';
+      b.style.cssText = 'width:100%;min-height:44px;border:none;border-radius:12px;background:#FF8C00;color:#fff;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;margin-bottom:12px';
+      b.onclick = function () { window.closeLocModal(); window.detectFromGPS(); };
+      var tinta = inp ? inp.closest('div') : null;
+      if (tinta && tinta.parentNode) tinta.parentNode.insertBefore(b, tinta);
+    }
+    if (openLocPagina) openLocPagina(); else { m.classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
+  };
+
+  // saveLocation (al paginii sau al nostru) → și salvăm.
+  var saveLocPagina = typeof window.saveLocation === 'function' ? window.saveLocation : null;
+  window.saveLocation = function () {
+    var inp = el('loc-input');
+    var v = inp ? (inp.value || '').trim() : '';
+    if (saveLocPagina) saveLocPagina.apply(this, arguments);
+    else window.closeLocModal();
+    if (v) salveazaSiAplica({ oras: v.split(',')[0].trim(), adresa: v, tara: 'RO', sursa: 'manual' });
+  };
+
+  // Tab-ul „Locație” din bara de jos deschide fereastra (GPS + oraș), nu
+  // doar GPS-ul direct — în browserul Facebook GPS-ul e adesea blocat.
+  document.addEventListener('click', function (e) {
+    var t = e.target && e.target.closest && e.target.closest('#mbn-gps');
+    if (!t) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    window.openLocModal();
+  }, true);
+
+  // Detectările (GPS / adresă) salvează; IP-ul nu suprascrie o alegere.
+  function laGeo(e) {
+    var d = e && e.detail;
+    if (!d || d.din_ui_comun) return;
+    var salvata = citesteLocatie();
+    if ((d.source === 'gps' || d.source === 'manual') && d.city) {
+      scrieLocatie({ oras: d.city, regiune: d.region || '', adresa: d.address || '', tara: d.country || 'RO', sursa: d.source, ts: Date.now() });
+      if (el('mbn-loc-text')) el('mbn-loc-text').textContent = d.city;
+    } else if (salvata) {
+      setTimeout(function () { afiseazaLocatie(salvata); }, 0);
+    }
+  }
+  window.addEventListener('myd-geo-update', laGeo);
+
+  function pornesteLocatie() {
+    var d = citesteLocatie();
+    if (!d) return;
+    afiseazaLocatie(d);
+    // Detectările automate ale paginii (IP, cache) rulează după încărcare și
+    // ar rescrie afișajul — reaplicăm alegerea salvată.
+    setTimeout(function () { afiseazaLocatie(citesteLocatie()); }, 1500);
+    setTimeout(function () { afiseazaLocatie(citesteLocatie()); }, 4000);
+    emiteGeo(d);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pornesteLocatie);
+  else pornesteLocatie();
+
 })();
