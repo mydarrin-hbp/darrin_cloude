@@ -34,7 +34,7 @@ module.exports = async function handler(req, res) {
   const allowed = await checkRateLimit(req, { key: 'calculeaza-pret-nivel', limit: 60, windowSeconds: 60 });
   if (!allowed) return res.status(429).json({ error: 'Prea multe cereri. Încearcă din nou mai târziu.' });
 
-  const { nivel_id, cantitate = 1, tara_cod = 'RO', addon_materiale = [] } = req.body || {};
+  const { nivel_id, cantitate = 1, tara_cod = 'RO', regiune = null, addon_materiale = [] } = req.body || {};
 
   if (!nivel_id || typeof nivel_id !== 'string') {
     return res.status(400).json({ error: 'nivel_id (uuid) este obligatoriu.' });
@@ -46,7 +46,7 @@ module.exports = async function handler(req, res) {
   const taraCod = String(tara_cod || 'RO').toUpperCase();
 
   try {
-    const cost = await calculeazaCostNivel({ nivelId: nivel_id, taraCod, cantitate: cantitateNum });
+    const cost = await calculeazaCostNivel({ nivelId: nivel_id, taraCod, cantitate: cantitateNum, regiune: typeof regiune === 'string' ? regiune.slice(0, 80) : null });
 
     if (cost.resurse_fara_pret.length) {
       return res.status(200).json({

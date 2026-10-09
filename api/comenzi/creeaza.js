@@ -202,7 +202,7 @@ async function handler(req, res, user) {
   let addonMaterialeSelectate = [];
   if (areNivelId) {
     const taraCalcul = tara_cod ? String(tara_cod).toUpperCase() : 'RO';
-    const cost = await calculeazaCostNivel({ nivelId: nivel_id, taraCod: taraCalcul, cantitate: cantitateNivel });
+    const cost = await calculeazaCostNivel({ nivelId: nivel_id, taraCod: taraCalcul, cantitate: cantitateNivel, regiune: regiune || null });
     if (cost.resurse_fara_pret.length) {
       return res.status(400).json({
         error: 'Rețeta tehnică a acestui serviciu nu are toate resursele tarifate — comanda nu poate fi calculată automat.',
