@@ -2404,26 +2404,6 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-// ── B4: GUEST ORDER SAVE ──
-function saveGuestOrder(orderData) {
-  const order = {
-    id:       orderData.id || 'CMD-' + Date.now(),
-    email:    orderData.email || '',
-    service:  orderData.service || 'Înlocuire calorifer',
-    address:  orderData.address || 'Str. Gorjului 118, Sector 6',
-    price:    orderData.price || 0,
-    status:   'alocat',
-    partener: { name:'Valentin P.', rating:4.97, eta: new Date(Date.now()+25*60000).toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'}) },
-    timestamp: new Date().toISOString(),
-    isGuest:  true
-  };
-  try {
-    sessionStorage.setItem('myd_guest_order', JSON.stringify(order));
-    sessionStorage.setItem('myd_last_order_id', order.id);
-  } catch(e) { console.warn('sessionStorage unavailable:', e); }
-  return order;
-}
-
 // ── CONFIRMARE COMANDĂ ──
 // FIX (audit 2026-07-11): fostul showETAScreen() afișa un partener și un
 // ETA hardcodate ("Valentin P. 4.97", 25 min) — ficțiune totală, arătată
@@ -2470,7 +2450,7 @@ function showComandaInregistrataScreen(numarComanda, mesajCustom) {
 
 // ── HOOK PE SUBMIT CHECKOUT ──
 // FIX (audit 2026-07-11): trimitea comanda doar în sessionStorage
-// (saveGuestOrder), niciodată către backend — acum: cere un cont real
+// (funcția saveGuestOrder, ștearsă 9 oct. 2026), niciodată către backend — acum: cere un cont real
 // (deschide modalul de autentificare dacă nu ești logat) și apelează
 // /api/comenzi/creeaza, care inserează efectiv un rând în `comenzi`.
 document.addEventListener('DOMContentLoaded', function() {
