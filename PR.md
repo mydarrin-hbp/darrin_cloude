@@ -1,56 +1,91 @@
-# Rețetă de preț, pasul 2–3: asigurare inclusă, discounturi parteneri, escrow pe discount
+# Corecturi pe paginile publice: preț real, checkout funcțional, mobil, fără date inventate
 
-Branch: `pret-reteta-pas2` → `main`
+Branch: `corectii-public` → `main`
 
-## Ce schimbă
+## Ce se schimbă pentru client
 
-**Prețul către client** (`lib/calculeaza-pret.js`)
-- Costurile fixe de manoperă se adună o singură dată pe meserie.
-- Asigurarea e inclusă în preț: 1% din costul de bază, configurabil (`asigurari.cost_asigurare_pct`); devizul o primește automat când clientul nu o trimite.
-- Comisionul platformei se calculează pe costul de bază, nu pe subtotal.
-- Procentele din panou se citesc pe țară, cu `ALL` ca valoare implicită.
+**Preț real**
+- Prețul de pe pagina de produs vine din motorul de rețete (`/api/public/calculeaza-pret-nivel`), nu din tabele scrise în pagină. Nivelurile fără rețetă afișează „preț după evaluare”.
+- TVA-ul se citește din `tax_configurations`: 21% în România.
 
-**Discounturile partenerilor** (decizie LM, 7 octombrie 2026)
-- Furnizorii de materiale, închirieri și asigurări acordă Home Best Pal un discount negociat, între 5% și 15% (limite în `backoffice_config`, verificate în API și în trigger).
-- Partenerul își propune discountul din dashboard (`api/partener/discounturi.js`); back-office-ul îl setează, îl aprobă sau îl dezactivează (`api/admin/discounturi-parteneri.js`, cu `audit_log`).
-- Discountul nu e vizibil clientului și nu apare în API-urile publice.
+**Checkout funcțional**
+- Pașii Coș → Detalii → Plată se parcurg cu validare. Comanda pleacă doar din butonul de finalizare și cere cont.
+- Scos codul promoțional `DARRIN10` (reducere calculată în browser) și codul mort cu comandă, adresă și partener inventate (`saveGuestOrder`).
+- Datele de contact din pasul „Detalii” încă nu se salvează: `comenzi` nu are coloane pentru ele. Migrarea propusă e mai jos.
 
-**Eliberarea escrow-ului** (`lib/elibereaza-escrow.js`)
-- Discountul partenerului înlocuiește reținerea fixă de 15%. Furnizorul primește preț public × (1 − discount%). Ordinea surselor: factura partenerului → profilul partenerului → procentul din panou.
-- Fiecare rând din `comanda_subcontractori` păstrează procentul aplicat și sursa lui.
-- Asigurarea fără asigurător partener devine rând `rezerva_daune` la Home Best Pal (nu e venit). Cu asigurător, se reține discountul lui sau comisionul de intermediere, în `comisioane.comision_retinut_asigurari`.
-- Calea legacy rămâne neschimbată.
+**Mobil**
+- Pagina de produs și checkout-ul încap în ecran între 360 și 1920 px.
+- Antetul, butoanele plutitoare, țintele de atingere și bannerul de cookie-uri sunt reparate.
 
-**`backoffice_config` unic pe (cheie, țară)**
-- Citirile pe o singură cheie filtrează pe `tara_cod = 'ALL'`.
-- `api/admin/email-gateway.js` face upsert pe `cheie,tara_cod`. Azi, în producție, salvarea numelui expeditorului eșuează, pentru că `UNIQUE(cheie)` nu mai există.
+**Butoane care nu făceau nimic**
+- 153 de apeluri către funcții inexistente, pe 31 de pagini: meniul ≡, locația, GPS, contul, „Devino partener”, „Rolurile mele”.
+- Cauza: paginile publicate în 15–19 iulie au primit antetul fără scriptul comun.
+- Repararea e făcută o singură dată, în `ui-comun.js`, inclus pe 39 de pagini.
+- Pe paginile fără meniu lateral, meniul se preia din `index.html`. Pe cele fără fereastră de cont, utilizatorul ajunge la `index.html?reason=cont`.
+- Alte reparații:
+  - `openConsultanta` din catalog se apela pe ea însăși la nesfârșit;
+  - pe „Devino partener”, wizard-ul era suprascris de un modal vechi, iar `?type=…` arunca o eroare.
 
-## Ordinea de lansare
+**Date inventate eliminate**
+- Recenzii inventate (Elena S., Radu M. etc.) și cifre fără sursă: „2.140+”, „4.87★ din 1.834+”, „4.9★”, „4.92”, „26+”, „5+”, „1.800+ / 1.200+”, „276+ servicii active”.
+- Unde există o sursă reală, cifra se citește din bază (`statistici-publice.js`): servicii publice, produse publice, țări active, parteneri, comenzi. O cifră egală cu 0 nu se afișează.
+- Contact: telefonul și emailul se citesc din `backoffice_config`, secțiunea `contact`. Numărul de WhatsApp inventat (+40 721 234 567) a fost scos și din antetul a 26 de pagini.
+- Dashboard-urile furnizor, partener și client: secțiunile încă neconectate au un banner „Date demonstrative — secțiunea nu este încă conectată”.
 
-Migrările sunt în `docs/migrations-propuse/` și nu sunt aplicate. Ordinea contează: fiecare pas depinde de cel dinainte.
+## Commit-uri
 
-| # | Pas | De ce în această ordine |
-|---|---|---|
-| 1 | `2026-10-07_backoffice_config_unic_pe_tara.sql` | Pașii 2 și 3 inserează și citesc pe `(cheie, tara_cod)`. În producție schimbarea pare deja făcută direct; migrarea e idempotentă și nu schimbă nimic acolo. |
-| 2 | `2026-10-07_escrow_discount_aplicat.sql` | Adaugă coloanele pe care codul nou le scrie la eliberarea escrow-ului (`discount_pct_aplicat`, `discount_sursa`, `comision_retinut_asigurari`) și `rezerva_daune` în check-ul `rol_tip`. Fără ea, orice eliberare de escrow eșuează. |
-| 3 | `2026-10-06_parteneri_discounturi.sql` | Creează `discount_categorii`, `parteneri_discounturi`, limitele 5–15% și coloanele de discount pe `facturi_parteneri`. Până atunci escrow-ul cade pe procentul din panou (testat). |
-| 4 | Deploy cod (merge în `main`) | Doar după ce 1–3 sunt aplicate și verificate. |
+| Commit | Descriere |
+|---|---|
+| `56bda73` | Reguli de lucru pentru proiect (CLAUDE.md) |
+| `ce011bd` | Prețul de pe pagina de produs vine din motorul real; TVA din `tax_configurations` |
+| `acfb5c2` | Mobil: pagina de produs și checkout încap în ecran la 360–1920 px |
+| `4284ba3` | Date false eliminate de pe paginile publice |
+| `720a872` | Antet, butoane plutitoare, ținte de atingere și banner cookie pe mobil |
+| `b94871a` | Checkout: navigarea între pași reconstruită, cu validare; comanda pleacă doar din butonul de finalizare |
+| `12295d5` | Checkout: eliminat codul promoțional DARRIN10 și reducerea calculată în browser |
+| `5bcd5e7` | Date inventate eliminate: parteneri, indicatori pentru investitori, specialiști |
+| `780c314` | Butoane moarte: funcțiile comune într-un singur script (`ui-comun.js`) |
+| `08309f3` | Checkout: migrare propusă pentru datele de contact; cod mort cu date inventate șters |
+| `357d63c` | Ultimele date inventate de pe paginile publice; banner pe secțiunile demonstrative |
 
-### Înainte de pasul 4
-- [ ] `select conname from pg_constraint where conrelid = 'public.backoffice_config'::regclass;` arată `backoffice_config_cheie_tara_key` și nu `backoffice_config_cheie_key`.
-- [ ] `comanda_subcontractori` are `discount_pct_aplicat` și `discount_sursa`; `comisioane` are `comision_retinut_asigurari`.
-- [ ] `backoffice_config` are `discount_partener_min_pct = 5` și `discount_partener_max_pct = 15` (rânduri `ALL`).
-- [ ] `discount_categorii` e populată (de stabilit cu LM), altfel partenerii nu pot salva discounturi.
+## Migrări
 
-### După deploy
-- [ ] O eliberare de escrow pe o comandă de test: suma rândurilor + total reținut = `suma_totala_platita`.
-- [ ] Salvarea numelui expeditorului din back-office (Email Gateway) merge.
+Codul din acest PR **nu are nevoie** de nicio migrare.
 
-## Rămâne deschis
-- Factura partenerului e legată de `comanda_subcontractori`, care se creează abia la eliberarea escrow-ului. Sursa `factura` devine activă doar când partenerii vor factura înainte de eliberare.
-- Un rând de escrow nu are categorie de produs. Dacă partenerul are discounturi pe mai multe categorii, se aplică cel mai mic. De confirmat cu LM.
-- Plata dosarelor de daună din rezervă nu e încă implementată; rezerva doar se înregistrează.
-- Dashboard-ul admin (`api/admin/dashboard-stats.js`) numără ca venit doar `comision_platforma`, fără reținerile de la furnizori și asigurători.
-- Contractul-cadru partener afișează procentele din panou ca reținere fixă; după decizia LM, ele sunt doar valoarea implicită când partenerul nu are discount.
+`docs/migrations-propuse/2026-10-09_comenzi_date_contact.sql` e doar o propunere: adaugă pe `comenzi` coloanele de contact și observații. Se aplică doar dacă LM o aprobă, iar codul care le folosește vine într-un PR separat.
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
+## Ce s-a testat
+
+Totul pe un server local care servește fișierele din branch și trimite `/api/*` la producție. Scrierile au fost interceptate și nu au ajuns la producție: `/api/comenzi/**` și POST pe coș.
+
+- **Capturi** la 360, 390, 768, 1024, 1366 și 1920 px pentru index, catalog, produs „Înlocuire becuri”, checkout (până la ecranul de plată), despre-noi și contact. Rezultat: 36 din 36 fără erori JS și fără depășire pe orizontală.
+- **Butoane:** pe cele 29 de pagini din inventar accesibile fără cont (din 36), la 390 și 1366 px, a fost apăsat fiecare buton distinct care apela o funcție lipsă: 1.070 de click-uri. Erorile găsite au fost reparate, iar paginile au fost retestate; rezultatul final e 0 erori `is not defined`. Pe fiecare pagină au fost verificate:
+  - meniul ≡ se deschide și se închide;
+  - o secțiune din meniu se extinde;
+  - locația se salvează;
+  - GPS-ul actualizează adresa (cu poziție simulată);
+  - contul deschide fereastra de autentificare, direct sau prin index;
+  - „Devino partener” duce la wizard.
+- **Cifrele reale** (pe datele live din 9 oct.): 88 de servicii active în meniu, 226 de produse publice și 6 țări în catalog, 1 partener activ și 2 comenzi pe pagina de investitori. Cardurile de contact sunt ascunse, pentru că cheile nu există încă.
+
+## Ce nu s-a testat
+
+- **O comandă reală, cu cont autentificat, până la plată și confirmare.** În test, butonul de finalizare a fost oprit înainte de trimitere.
+- **Dashboard-urile** (client, furnizor, partener, superadmin) și paginile interne (business-model, design-system, deviz-engine) redirecționează fără cont. Pe ele am verificat doar sintaxa scripturilor și analiza statică a funcțiilor, nu și click-uri în browser. Bannerele demonstrative nu au fost văzute în browser.
+- **Testele cu Safari sau iOS:** s-a folosit doar Chromium (Playwright).
+
+## Verificări după publicare
+
+- [ ] Pagina „Înlocuire becuri”: prețul și TVA 21% apar la toate nivelurile cu rețetă; nivelurile fără rețetă spun „preț după evaluare”.
+- [ ] O comandă de test, cu un cont real, pleacă din checkout și apare în `comenzi` și în dashboard-ul clientului.
+- [ ] Pe `cum-comanzi.html` și `intrebari-frecvente-clienti.html`, la 390 px, meniul ≡ se deschide (prima deschidere încarcă meniul din index). „Cont” duce la index cu fereastra de autentificare deschisă.
+- [ ] „Devino partener” → `mydarrin-devino-partener.html?type=servicii` deschide wizard-ul, fără eroare în consolă.
+- [ ] Meniul „Servicii” arată numărul real de servicii; hero-ul din catalog arată produsele și țările; investitorii arată partenerii și comenzile.
+- [ ] Contact: după ce LM adaugă `contact_telefon` și `contact_email` în `backoffice_config` (secțiunea `contact`), cardurile apar.
+- [ ] Dashboard-urile: bannerul „Date demonstrative” apare pe secțiunile listate în raport.
+- [ ] Consola browserului: fără erori pe index, catalog, produs, checkout, despre-noi și contact.
+
+## De decis de LM (nemodificate)
+
+- Promisiunile „48h Aprobare”, „Rating ≥4.8★ = bonus lunar 10%” și „24/7”: tabelul cu fiecare apariție e în raportul de publicare.
+- `mydarrin-serviciu.html` (accesibilă doar din superadmin) încă afișează prețuri scrise direct în pagină (280 / 460 Lei).
