@@ -199,10 +199,24 @@ async function handler(req, res, user) {
   // mai jos să poată fi determinat.
   let catalogServiciuIdEfectiv = catalog_serviciu_id;
   let manoperaEscoBreakdown = null;
+  let manoperaDefalcare = null;
   let addonMaterialeSelectate = [];
   if (areNivelId) {
     const taraCalcul = tara_cod ? String(tara_cod).toUpperCase() : 'RO';
     const cost = await calculeazaCostNivel({ nivelId: nivel_id, taraCod: taraCalcul, cantitate: cantitateNivel, regiune: regiune || null });
+    if (cost.nivel_activ === false) {
+      return res.status(400).json({ error: 'Acest nivel nu mai este disponibil pentru comandă.', code: 'NIVEL_INACTIV' });
+    }
+    // Venitul defalcat al partenerului (9 oct. 2026): manoperă + costuri fixe,
+    // fără comisioanele platformei. Salvat după inserare (vezi mai jos).
+    if (cost.defalcare_cost_baza) {
+      const d = cost.defalcare_cost_baza;
+      manoperaDefalcare = {
+        manopera: d.manopera, deplasare: d.deplasare, uzura_scule: d.uzura, consumabile: d.consumabile,
+        echipament_testare: d.testare, optiuni_nivel: d.optiuni_nivel || 0, alte_costuri_fixe: d.alte_costuri_fixe || 0,
+        total: d.total, reguli_costuri_fixe: cost.reguli_costuri_fixe || {}, regula_nivel_id: cost.regula_nivel_id || null,
+      };
+    }
     if (cost.resurse_fara_pret.length) {
       return res.status(400).json({
         error: 'Rețeta tehnică a acestui serviciu nu are toate resursele tarifate — comanda nu poate fi calculată automat.',
@@ -364,6 +378,13 @@ async function handler(req, res, user) {
       .single();
 
     if (error) throw error;
+
+    // Separat de insert, ca o coloană încă neadăugată (migrarea 2026-10-09
+    // neaplicată) să nu blocheze crearea comenzii.
+    if (manoperaDefalcare) {
+      const { error: defErr } = await supabaseAdmin.from('comenzi').update({ manopera_defalcare: manoperaDefalcare }).eq('id', data.id);
+      if (defErr) console.warn('[comenzi/creeaza] manopera_defalcare nesalvată:', defErr.message);
+    }
 
     // FIX (G6, audit Secțiunea 6/36, 29 Iulie 2026): `invoices` există din
     // prima trecere de audit (23 Iulie 2026), dar nimic nu insera vreodată o

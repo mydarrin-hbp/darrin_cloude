@@ -18,6 +18,9 @@
 --      devize_resurse.este_consumabil (implicit false).
 --   3. catalog_servicii: unelte_necesare, fise_tehnice ([{titlu, url,
 --      sursa}]), caracteristici_tehnice — toate jsonb, opționale.
+--   4. comenzi.manopera_defalcare (jsonb): venitul defalcat al partenerului
+--      (manoperă, deplasare, uzură, consumabile, testare), salvat la crearea
+--      comenzii. Index unic (partener_id, cod_esco) pe partener_competente.
 --
 -- Cum se aplică
 --   O singură tranzacție, poate fi rulată de mai multe ori (if not exists /
@@ -181,6 +184,16 @@ alter table public.catalog_servicii add constraint catalog_servicii_caracteristi
 comment on column public.catalog_servicii.fise_tehnice is
   'Listă [{titlu, url, sursa}]. Completată de admin; propunerile automate (ex. AI) se aprobă înainte de publicare.';
 
+-- ── 4. Competențe și venitul defalcat al partenerului ───────────
+alter table public.comenzi
+  add column if not exists manopera_defalcare jsonb;
+comment on column public.comenzi.manopera_defalcare is
+  'Venitul partenerului pe componente (manoperă, deplasare, uzură scule, consumabile, echipament testare), fără comisioanele platformei.';
+
+-- Un partener bifează un cod ESCO o singură dată (tabelul are azi 0 rânduri).
+create unique index if not exists partener_competente_partener_esco
+  on public.partener_competente (partener_id, cod_esco);
+
 -- ═══ VERIFICARE ═══════════════════════════════════════════════════
 do $$
 begin
@@ -208,6 +221,12 @@ begin
   if (select count(*) from information_schema.columns where table_schema = 'public' and table_name = 'catalog_servicii'
       and column_name in ('unelte_necesare', 'fise_tehnice', 'caracteristici_tehnice')) <> 3 then
     raise exception 'Lipsesc coloanele noi din catalog_servicii';
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'comenzi' and column_name = 'manopera_defalcare') then
+    raise exception 'Lipsește comenzi.manopera_defalcare';
+  end if;
+  if to_regclass('public.partener_competente_partener_esco') is null then
+    raise exception 'Lipsește indexul unic pe partener_competente';
   end if;
 end;
 $$;
