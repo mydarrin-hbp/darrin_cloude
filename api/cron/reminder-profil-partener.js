@@ -14,6 +14,7 @@
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { renderEmailReminderProfilIncomplet, limbaProfilEmailComportamental } = require('../../lib/i18n');
+const { incarcaContactPlatformaSigur } = require('../../lib/contact-platforma');
 const { esteSuprimat } = require('../../lib/email-suppression');
 const { esteProfilComplet } = require('../../lib/verifica-profil-complet-partener');
 
@@ -26,6 +27,7 @@ async function trimiteReminder(email, limba, nume) {
     return;
   }
   if (await esteSuprimat(email)) return;
+  await incarcaContactPlatformaSigur(); // footerul de dezabonare / GDPR din back-office
   const { subiect, html } = renderEmailReminderProfilIncomplet(limba, { nume });
   await fetch('https://api.resend.com/emails', {
     method: 'POST',

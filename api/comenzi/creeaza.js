@@ -74,7 +74,9 @@ const { calculeazaPret, citestePragMinimComanda } = require('../../lib/calculeaz
 const { calculeazaCostNivel } = require('../../lib/calculeaza-cost-recipe');
 const { rezolvaAddonMateriale } = require('../../lib/rezolva-addon-materiale');
 const { genereazaProformaPDF } = require('../../lib/genereaza-proforma-pdf');
-const { renderEmailPrimaComanda, renderEmailComandaConfirmata, limbaProfilEmailComportamental } = require('../../lib/i18n');
+const { renderEmailComandaPrimita, limbaProfilEmailComportamental } = require('../../lib/i18n');
+const { incarcaContactPlatformaSigur } = require('../../lib/contact-platforma');
+const { notificaAdminFaraPartener } = require('../../lib/notificari-comanda');
 const { fromHeader } = require('../../lib/email-sender');
 
 async function handler(req, res, user) {
@@ -363,10 +365,6 @@ async function handler(req, res, user) {
 
     if (error) throw error;
 
-    const alocare = catalogServiciuIdEfectiv
-      ? await incearcaAlocarePartener(data.id)
-      : { alocat: false, motiv: 'fara_serviciu_specificat' };
-
     // FIX (G6, audit Secțiunea 6/36, 29 Iulie 2026): `invoices` există din
     // prima trecere de audit (23 Iulie 2026), dar nimic nu insera vreodată o
     // proformă la creare comandă — tabela era complet goală (0 rânduri live,
@@ -414,19 +412,13 @@ async function handler(req, res, user) {
       console.error('[comenzi/creeaza] proformă', invoiceErr);
     }
 
-    // Email „comandă confirmată" — trimis la FIECARE comandă (30 august
-    // 2026, cerere fondator: "rezolvă și pe acesta", gap semnalat anterior —
-    // înainte se trimitea doar la prima comandă a clientului). Prima
-    // comandă păstrează textul special ("prima comandă"), cele următoare
-    // primesc textul generic (renderEmailComandaConfirmata) — aceeași
-    // structură, link real + proformă atașată, doar formularea diferă, ca
-    // să nu inducă în eroare un client care a mai comandat. Izolat în
-    // propriul try/catch, nu blochează comanda deja înregistrată.
+    // Email „comandă primită” (Etapa 0 SLA, 9 oct. 2026, decizie LM) — la
+    // plasare comanda NU e încă confirmată. Confirmarea (partener + cod de
+    // verificare) pleacă separat, din lib/aloca-partener.js, doar dacă există
+    // un partener alocat. Înlocuiește emailul „comandă confirmată” trimis
+    // până acum la fiecare comandă, chiar și fără partener. Proforma rămâne
+    // atașată. Izolat în propriul try/catch, nu blochează comanda.
     try {
-      const { count: nrComenziClient } = await supabaseAdmin
-        .from('comenzi')
-        .select('id', { count: 'exact', head: true })
-        .eq('client_id', user.id);
       if (process.env.RESEND_API_KEY) {
         const { data: profilClient } = await supabaseAdmin
           .from('profiles')
@@ -435,8 +427,8 @@ async function handler(req, res, user) {
           .maybeSingle();
         if (profilClient?.email) {
           const limba = limbaProfilEmailComportamental(profilClient);
-          const renderEmail = nrComenziClient === 1 ? renderEmailPrimaComanda : renderEmailComandaConfirmata;
-          const { subiect, html } = renderEmail(limba, { nume: null, numarComanda: data.nr_comanda || data.id, comandaId: data.id, numarProforma });
+          await incarcaContactPlatformaSigur(); // footerul de dezabonare / GDPR din back-office
+          const { subiect, html } = renderEmailComandaPrimita(limba, { numarComanda: data.nr_comanda || data.id, comandaId: data.id, numarProforma });
 
           // Cerere fondator (30 august 2026): factura proformă trebuie
           // ATAȘATĂ efectiv la email, nu doar menționată. Generată doar dacă
@@ -474,8 +466,18 @@ async function handler(req, res, user) {
         }
       }
     } catch (emailErr) {
-      console.error('[comenzi/creeaza] email confirmare comandă', emailErr);
+      console.error('[comenzi/creeaza] email comandă primită', emailErr);
     }
+
+    // Alocarea automată — după emailul „comandă primită”, ca acesta să ajungă
+    // primul. Cu partener: lib/aloca-partener.js trimite clientului codul de
+    // verificare (confirmarea) și partenerului emailul de alocare. Fără
+    // partener: comanda rămâne in_cautare_partener și adminul e anunțat
+    // imediat (Etapa 0 SLA).
+    const alocare = catalogServiciuIdEfectiv
+      ? await incearcaAlocarePartener(data.id)
+      : { alocat: false, motiv: 'fara_serviciu_specificat' };
+    if (!alocare.alocat) await notificaAdminFaraPartener(data, alocare.motiv);
 
     return res.status(200).json({ ok: true, comanda: data, alocare });
   } catch (err) {

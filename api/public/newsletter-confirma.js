@@ -9,6 +9,7 @@
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { renderEmailNewsletterBunVenit } = require('../../lib/i18n');
+const { incarcaContactPlatformaSigur } = require('../../lib/contact-platforma');
 const { fromHeader } = require('../../lib/email-sender');
 
 const REDIRECT_SUCCES = 'https://mydarrin.homebestpal.com/?newsletter=confirmat';
@@ -29,6 +30,7 @@ async function trimiteEmailBunVenit(email, limba) {
     return;
   }
   try {
+    await incarcaContactPlatformaSigur(); // footerul de dezabonare / GDPR din back-office
     const { subiect, html } = renderEmailNewsletterBunVenit(limba);
     await fetch('https://api.resend.com/emails', {
       method: 'POST',

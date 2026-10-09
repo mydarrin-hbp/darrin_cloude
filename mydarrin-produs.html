@@ -674,7 +674,8 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 .qty-val{width:58px;text-align:center;font-size:16px;font-weight:800;color:#003366;border:none;outline:none;background:transparent;font-family:inherit;border-left:1px solid #D5DFE8;border-right:1px solid #D5DFE8;height:44px}
 
 /* ── TIER TABLE (ca în screenshot) ── */
-.tier-table-wrap{border-radius:18px;overflow:hidden;border:1px solid #2D3F55;background:#1E2A3B}
+.tier-table-wrap{border-radius:18px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;border:1px solid #2D3F55;background:#1E2A3B}
+#main-grid > *{min-width:0}
 .tier-table{width:100%;border-collapse:collapse}
 .tier-table th{padding:14px 16px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:#8BA3C0;background:#192433;border-bottom:1px solid #2D3F55;text-align:center}
 .tier-table th:first-child{text-align:left}
@@ -754,8 +755,15 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:#B8C8D8;border-radius:3px}
 
 @media(max-width:900px){
-  #main-grid{grid-template-columns:1fr!important}
+  /* minmax(0,1fr): coloana nu mai crește după conținutul cel mai lat
+     (tabelul de niveluri împingea grila la 648 px pe telefoane de 360 px). */
+  #main-grid{grid-template-columns:minmax(0,1fr)!important;padding:16px!important}
   .sticky-sum{position:static!important}
+  /* Tabelul de niveluri se derulează în propriul container, nu toată pagina. */
+  .tier-table{min-width:480px}
+}
+@media(max-width:600px){
+  .qty-type-grid{grid-template-columns:minmax(0,1fr)!important}
 }
 </style>
 
@@ -924,6 +932,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 <script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
 <script src="myd-unavail-msg.js"></script>
 <script src="format-currency.js"></script>
+<script src="tva-config.js"></script>
 <script src="seo-meta.js"></script>
 <script src="cookie-consent.js" defer></script>
 <script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="analytics-loader.js" defer></script>
@@ -945,6 +954,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
         : escapeHTML(html);
     }
   </script>
+<link rel="stylesheet" href="ui-public.css">
 </head>
 <body>
 
@@ -959,7 +969,6 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
     <a href="https://www.linkedin.com/showcase/my-darrin/?viewAsMember=true" target="_blank" class="text-white/40 hover:text-white transition" title="LinkedIn"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
     <a href="https://x.com/My_Darrin_hbp" target="_blank" class="text-white/40 hover:text-white transition" title="X"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
     <a href="https://www.tiktok.com/@darrinhbp" target="_blank" class="text-white/40 hover:text-white transition" title="TikTok"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.75a8.18 8.18 0 004.78 1.52V6.79a4.85 4.85 0 01-1.01-.1z"/></svg></a>
-    <a href="https://wa.me/40721234567" target="_blank" class="text-white/40 hover:text-white transition" title="WhatsApp"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>
   </div>
 
   <!-- AI status center -->
@@ -1095,7 +1104,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
               <a href="mydarrin-catalog.html?cat=servicii" onclick="event.preventDefault();window.location.href='mydarrin-catalog.html?cat=Exterior'" class="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-[#F4F7F9] transition group/d"><span class="text-lg"><i data-lucide="leaf" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span><div><div class="font-semibold text-sm text-[#2D2D2D] group-hover/d:text-[#FF8C00] transition">Grădinărit & Agri</div><div class="text-[11px] text-gray-400">Amenajare, irigații</div></div></a>
             </div>
             <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-              <span class="text-xs text-gray-400"><span class="w-1.5 h-1.5 rounded-full bg-[#FF8C00] inline-block mr-1.5"></span>276+ servicii active</span>
+              <span class="text-xs text-gray-400" data-stat-celula="servicii" style="display:none"><span class="w-1.5 h-1.5 rounded-full bg-[#FF8C00] inline-block mr-1.5"></span><span data-stat="servicii-active"></span></span>
               <a href="#catalog" class="text-xs font-bold text-[#FF8C00] flex items-center gap-1 hover:underline">Toate <i data-lucide="arrow-right" class="w-3 h-3"></i></a>
             </div>
           </div>
@@ -1150,7 +1159,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 
             </div>
             <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-              <span class="text-xs text-gray-400">1.840+ parteneri activi pe platformă</span>
+              <span class="text-xs text-gray-400" data-stat="parteneri-verificati" style="display:none"></span>
               <a href="mydarrin-devino-partener.html" class="text-xs font-bold text-[#FF8C00] flex items-center gap-1 hover:underline" style="text-decoration:none">
                 Toate tipurile <i data-lucide="arrow-right" class="w-3 h-3"></i>
               </a>
@@ -1220,10 +1229,6 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
         <span class="hidden md:inline">Cont</span>
       </button>
 
-      <!-- Burger mobil -->
-      <button class="lg:hidden p-2.5 rounded-xl hover:bg-[#EBF4FB] transition" onclick="openSidebar()">
-        <i data-lucide="menu" class="w-5 h-5"></i>
-      </button>
     </div>
   </div>
 </header>
@@ -1509,7 +1514,7 @@ function triggerHeaderSearch(){
       <span class="text-[#0E9E99] text-[10px] font-bold uppercase tracking-wider">Darrin AI</span>
     </div>
     <p class="text-white/50 text-xs leading-relaxed">Devize automate, prețuri în timp real, asistență completă.</p>
-    <button onclick="closeSidebar(); document.getElementById('flux').scrollIntoView({behavior:'smooth'})"
+    <button onclick="closeSidebar(); var f=document.getElementById('flux'); if(f) f.scrollIntoView({behavior:'smooth'}); else location.href='mydarrin-cum-functioneaza.html#flux'"
             class="mt-3 w-full bg-[#FF8C00] text-white text-xs font-bold py-2.5 rounded-xl hover:bg-[#CC7000] transition">
       Generează Deviz Gratuit →
     </button>
@@ -1519,7 +1524,7 @@ function triggerHeaderSearch(){
 
 <!-- BREADCRUMB -->
 <div style="background:#fff;border-bottom:1px solid #D5DFE8;padding:9px 24px">
-  <div style="max-width:1160px;margin:0 auto;display:flex;align-items:center;gap:6px;font-size:12px;color:#8C9BAD;flex-wrap:wrap">
+  <div class="myd-breadcrumb" style="max-width:1160px;margin:0 auto;display:flex;align-items:center;gap:6px;font-size:12px;color:#8C9BAD;flex-wrap:wrap">
     <a href="/" style="color:#6B7A8D;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='#6B7A8D'">Acasă</a>
     <span style="color:#D5DFE8">/</span>
     <a href="mydarrin-catalog.html" style="color:#6B7A8D;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='#6B7A8D'">Catalog</a>
@@ -1559,7 +1564,7 @@ function triggerHeaderSearch(){
 </div>
 
 <!-- MAIN -->
-<div id="main-grid" style="max-width:1160px;margin:0 auto;padding:24px;display:grid;grid-template-columns:1fr 330px;gap:22px;align-items:start">
+<div id="main-grid" style="max-width:1160px;margin:0 auto;padding:24px;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:22px;align-items:start">
 
   <!-- ═══ LEFT COLUMN ═══ -->
   <div>
@@ -1589,10 +1594,6 @@ function triggerHeaderSearch(){
             </div>
             <h1 style="font-size:20px;font-weight:800;color:#003366;margin-bottom:6px;letter-spacing:-.01em;line-height:1.2" id="prod-title">Se încarcă...</h1>
             <p style="font-size:13px;color:#6B7A8D;line-height:1.65;margin-bottom:8px" id="prod-desc"></p>
-            <div style="display:flex;align-items:center;gap:8px">
-              <span style="color:#FF8C00;font-size:14px">★★★★★</span>
-              <span style="font-size:12px;color:#8C9BAD" id="prod-rating">4.9 (280 rec.)</span>
-            </div>
           </div>
         </div>
 
@@ -1666,7 +1667,7 @@ function triggerHeaderSearch(){
         </div>
 
         <!-- Cantitate -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+        <div class="qty-type-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
           <div>
             <label class="f-label" id="qty-label-lbl">Cantitate</label>
             <div style="display:flex;align-items:center;gap:10px">
@@ -1835,7 +1836,7 @@ function triggerHeaderSearch(){
             <div class="price-row"><span style="color:#6B7A8D">Tip comandă</span><span style="font-weight:600" id="dv-tip">Programat ×1.0</span></div>
             <div class="price-row"><span style="color:#6B7A8D">Asigurare</span><span style="font-weight:600" id="dv-ins">Bază (inclusă)</span></div>
             <div class="price-row"><span style="color:#6B7A8D">Costuri platformă + HBP</span><span style="font-weight:600" id="dv-platform">—</span></div>
-            <div class="price-row"><span style="color:#6B7A8D">TVA (19%)</span><span style="font-weight:600" id="dv-tva">—</span></div>
+            <div class="price-row"><span style="color:#6B7A8D">TVA (<span class="tva-pct">—</span>)</span><span style="font-weight:600" id="dv-tva">—</span></div>
             <div style="display:flex;justify-content:space-between;border-top:2px solid #FF8C00;padding-top:12px;margin-top:4px">
               <span style="font-weight:800;font-size:15px;color:#003366">TOTAL ESCROW</span>
               <span style="font-weight:800;font-size:18px;color:#FF8C00" id="dv-total">—</span>
@@ -2053,7 +2054,7 @@ function triggerHeaderSearch(){
         <div class="price-row"><span style="color:#6B7A8D">Tip</span><span style="font-weight:600" id="s-tip">Programat ×1.0</span></div>
         <div class="price-row"><span style="color:#6B7A8D">Asigurare</span><span style="font-weight:600" id="s-ins">Bază (incl.)</span></div>
         <div class="price-row"><span style="color:#6B7A8D">Platformă + HBP</span><span style="font-weight:600" id="s-plat">—</span></div>
-        <div class="price-row"><span style="color:#6B7A8D">TVA (19%)</span><span style="font-weight:600" id="s-tva">—</span></div>
+        <div class="price-row"><span style="color:#6B7A8D">TVA (<span class="tva-pct">—</span>)</span><span style="font-weight:600" id="s-tva">—</span></div>
       </div>
       <!-- Total -->
       <div style="background:linear-gradient(135deg,#FFF0D6,#FFF8EE);border-radius:14px;border:1px solid #FFD980;padding:16px;margin-bottom:16px;text-align:center">
@@ -2182,35 +2183,7 @@ function triggerHeaderSearch(){
   </div>
   <div>
     <span class="ftr-nh">Aplicație</span>
-        <div class="ftr-app-btns" style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px">
-
-          <!-- Apple App Store: negru #000000, logo  alb -->
-          <a href="#" style="display:inline-flex;align-items:center;gap:9px;background:#000000;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 14px;text-decoration:none;transition:opacity .15s" onmouseover="this.style.opacity='.82'" onmouseout="this.style.opacity='1'">
-            <!-- Apple logo SVG oficial -->
-            <svg width="18" height="22" viewBox="0 0 18 22" fill="#ffffff">
-              <path d="M14.94 11.66c-.02-2.26 1.85-3.35 1.93-3.4-1.05-1.54-2.69-1.75-3.27-1.77-1.39-.14-2.72.82-3.43.82-.71 0-1.8-.8-2.96-.78-1.52.02-2.93.89-3.71 2.25-1.59 2.75-.41 6.82 1.14 9.05.76 1.09 1.66 2.32 2.84 2.28 1.14-.05 1.57-.73 2.95-.73 1.38 0 1.77.73 2.98.71 1.23-.02 2-1.1 2.75-2.2.87-1.26 1.23-2.49 1.25-2.55-.03-.01-2.45-.94-2.47-3.68zM12.68 4.57c.63-.77 1.06-1.83.94-2.9-.91.04-2.01.61-2.66 1.37-.58.67-1.09 1.75-.96 2.78 1.02.08 2.05-.52 2.68-1.25z"/>
-            </svg>
-            <div>
-              <div style="color:rgba(255,255,255,.55);font-size:9px;line-height:1;letter-spacing:.04em">Download on the</div>
-              <div style="color:#fff;font-size:13.5px;font-weight:700;line-height:1.3;letter-spacing:-.01em">App Store</div>
-            </div>
-          </a>
-
-          <!-- Google Play: paleta Google (#4285F4 #34A853 #FBBC05 #EA4335) -->
-          <a href="#" style="display:inline-flex;align-items:center;gap:9px;background:#1C1C1E;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 14px;text-decoration:none;transition:opacity .15s" onmouseover="this.style.opacity='.82'" onmouseout="this.style.opacity='1'">
-            <!-- Google Play triangle logo — culorile oficiale -->
-            <svg width="20" height="22" viewBox="0 0 20 22" fill="none">
-              <path d="M1.5 1.27L11.09 11 1.5 20.73A1.5 1.5 0 0 1 1 19.5V2.5A1.5 1.5 0 0 1 1.5 1.27z" fill="#EA4335"/>
-              <path d="M17.5 9.5L14.41 11 11.09 11 1.5 1.27C1.83 1.1 2.22 1 2.62 1.14L17.5 9.5z" fill="#FBBC05"/>
-              <path d="M17.5 12.5L2.62 20.86C2.22 21 1.83 20.9 1.5 20.73L11.09 11 14.41 11 17.5 12.5z" fill="#34A853"/>
-              <path d="M17.5 9.5L14.41 11 11.09 11 14.41 11 17.5 12.5C18.5 11.95 18.5 10.05 17.5 9.5z" fill="#4285F4"/>
-            </svg>
-            <div>
-              <div style="color:rgba(255,255,255,.55);font-size:9px;line-height:1;letter-spacing:.04em">Get it on</div>
-              <div style="color:#fff;font-size:13.5px;font-weight:700;line-height:1.3;letter-spacing:-.01em">Google Play</div>
-            </div>
-          </a>
-        </div>
+        <div class="ftr-app-btns" style="margin-bottom:24px"><span style="color:rgba(255,255,255,.65);font-size:13px;line-height:1.5">Aplicațiile mobile My Darrin — în curând</span></div>
   </div>
 </div>
 
@@ -2269,6 +2242,16 @@ function triggerHeaderSearch(){
       <li><a href="mydarrin-contact.html#formular">Formular contact</a></li>
       <li><a href="reclamatii.html">Reclamații</a></li>
     </ul>
+    <!-- Contact: din back-office (/api/public/contact, contact-public.js) -->
+    <div data-contact-bloc style="display:none;margin-top:16px">
+      <span class="ftr-nh">Contact</span>
+      <ul class="ftr-ul">
+        <li data-contact-rand style="display:none"><a data-contact="contact_whatsapp" data-contact-text href="#">Scrie-ne pe WhatsApp</a></li>
+        <li data-contact-rand style="display:none"><a data-contact="contact_telefon" href="#"></a></li>
+        <li data-contact-rand style="display:none"><a data-contact="contact_email" href="#"></a></li>
+        <li data-contact-rand style="display:none"><span style="color:rgba(255,255,255,.55)">Program: </span><span data-contact="contact_program" style="color:rgba(255,255,255,.8)"></span></li>
+      </ul>
+    </div>
   </div>
 
 </div><!-- /r2 -->
@@ -2447,19 +2430,19 @@ function submitNewsletter() {
       <div class="inline-flex items-center gap-2 bg-[#FF8C00]/15 border border-[#FF8C00]/30 text-[#FF8C00] text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-3">Devino Investitor</div>
       <h2 class="font-bold text-2xl text-white mb-1" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Investește în My Darrin</h2>
       <p class="text-sm text-white/50">Platformă hibrid clasic & AI · Multi-țară · Servicii integrate la cerere</p>
-      <!-- KPIs mini -->
-      <div class="grid grid-cols-3 gap-3 mt-5">
-        <div class="bg-white/08 rounded-xl p-3 border border-white/10 text-center">
-          <div class="font-bold text-lg text-white" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">12.4K</div>
-          <div class="text-[10px] text-white/40 mt-0.5">Clienți activi</div>
+      <!-- Indicatori reali (RPC get_live_investor_kpis, statistici-publice.js); 0 nu se afișează -->
+      <div class="grid grid-cols-3 gap-3 mt-5" data-kpi-bloc style="display:none">
+        <div class="bg-white/08 rounded-xl p-3 border border-white/10 text-center" data-kpi="comenzi_total" style="display:none">
+          <div class="font-bold text-lg text-white" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif" data-kpi-valoare></div>
+          <div class="text-[10px] text-white/40 mt-0.5">Comenzi</div>
         </div>
-        <div class="bg-white/08 rounded-xl p-3 border border-white/10 text-center">
-          <div class="font-bold text-lg text-[#FF8C00]" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">1.840</div>
-          <div class="text-[10px] text-white/40 mt-0.5">Parteneri</div>
+        <div class="bg-white/08 rounded-xl p-3 border border-white/10 text-center" data-kpi="parteneri_activi" style="display:none">
+          <div class="font-bold text-lg text-[#FF8C00]" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif" data-kpi-valoare></div>
+          <div class="text-[10px] text-white/40 mt-0.5">Parteneri activi</div>
         </div>
-        <div class="bg-white/08 rounded-xl p-3 border border-white/10 text-center">
-          <div class="font-bold text-lg text-[#0E9E99]" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">384K</div>
-          <div class="text-[10px] text-white/40 mt-0.5">Lei în Escrow</div>
+        <div class="bg-white/08 rounded-xl p-3 border border-white/10 text-center" data-kpi="gmv_total" style="display:none">
+          <div class="font-bold text-lg text-[#0E9E99]" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif" data-kpi-valoare></div>
+          <div class="text-[10px] text-white/40 mt-0.5">Valoare comenzi (Lei)</div>
         </div>
       </div>
     </div>
@@ -2560,8 +2543,8 @@ function setLang(code,flag,label){
   }
 }
 document.addEventListener('click',e=>{
-  if(!document.getElementById('langDd').contains(e.target))
-    document.getElementById('langDd').classList.remove('open');
+  const dd=document.getElementById('langDd');
+  if(dd&&!dd.contains(e.target)) dd.classList.remove('open');
 });
 
 // Location modal
@@ -2879,7 +2862,7 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
     <tbody id="tier-comparison-body">
       <tr><td style="padding:8px 12px;border-bottom:1px solid #EEF2F7;color:#5A6B7D">Garanție lucrare</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7">12 luni</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7">24 luni</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7;font-weight:700;color:#FF8C00">36 luni</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7;font-weight:700;color:#5B8DEF">36 luni</td></tr>
       <tr><td style="padding:8px 12px;border-bottom:1px solid #EEF2F7;color:#5A6B7D">Materiale incluse</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7">De bază</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7">Premium</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7;font-weight:700;color:#FF8C00">Top brand</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7;font-weight:700;color:#5B8DEF">Top brand + extins</td></tr>
-      <tr><td style="padding:8px 12px;border-bottom:1px solid #EEF2F7;color:#5A6B7D">Prioritate alocare</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7">Standard</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7">Ridicată</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7;font-weight:700;color:#FF8C00">Urgentă</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7;font-weight:700;color:#5B8DEF">VIP imediat</td></tr>
+      <tr><td style="padding:8px 12px;border-bottom:1px solid #EEF2F7;color:#5A6B7D">Prioritate alocare</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7">Standard</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7">Ridicată</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7;font-weight:700;color:#FF8C00">Urgentă</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7;font-weight:700;color:#5B8DEF">VIP</td></tr>
       <tr><td style="padding:8px 12px;border-bottom:1px solid #EEF2F7;color:#5A6B7D">Partener alocat</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7">Disponibil</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7">Senior</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7;font-weight:700;color:#FF8C00">Expert</td><td style="padding:8px 12px;text-align:center;border-bottom:1px solid #EEF2F7;font-weight:700;color:#5B8DEF">Expert + supervizor</td></tr>
       <tr><td style="padding:8px 12px;color:#5A6B7D">Preț manoperă</td><td style="padding:8px 12px;text-align:center;font-weight:600">280 Lei</td><td style="padding:8px 12px;text-align:center;font-weight:600">380 Lei</td><td style="padding:8px 12px;text-align:center;font-weight:700;color:#FF8C00">520 Lei</td><td style="padding:8px 12px;text-align:center;font-weight:700;color:#5B8DEF">750 Lei</td></tr>
     </tbody>
@@ -3432,52 +3415,52 @@ document.addEventListener('myd-geo-update', function(e) {
 
 <script>
 // ══ TIER DATA (all 26 products) ══
-const TIER_DB = {"inlocuire-calorifer": {"features": ["Manoperă instalator ISCIR", "Consumabile & fitinguri", "Calorifer + livrare (ACA)", "Poliță asigurare lucrare", "Curățenie finală"], "tiers": {"bronz": {"price": 520, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Instalator autorizat ISCIR, scule profesionale, probe etanșeitate + purjare. Caloriferul este furnizat de client.", "garantie": 6}, "argint": {"price": 605, "includes": [true, true, false, false, false], "label": "Manoperă + Consumabile", "desc": "Bronz + fitinguri, teflon, robineți termostatici incluși. Caloriferul este furnizat de client.", "garantie": 12}, "aur": {"price": 1063, "includes": [true, true, true, true, false], "label": "Pachet complet", "desc": "Argint + calorifer Purmo/Radox livrat de ACA + transport + poliță asigurare lucrare inclusă.", "garantie": 24}, "platinum": {"price": 1383, "includes": [true, true, true, true, true], "label": "Tot inclus", "desc": "Aur + curățenie finală post-lucrare + calorifer premium Vogel&Noot + Priority Support 24/7.", "garantie": 36}}}, "instalatii-sanitare": {"features": ["Manoperă instalator", "Materiale sanitare de bază", "Înlocuire baterie/robinet", "Poliță asigurare", "Curățenie & evacuare"], "tiers": {"bronz": {"price": 85, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Instalator autorizat, scule profesionale. Materialele sunt furnizate de client.", "garantie": 6}, "argint": {"price": 180, "includes": [true, true, false, false, false], "label": "+ Materiale bază", "desc": "Bronz + garnituri, teflon, dibluri, accesorii montaj.", "garantie": 12}, "aur": {"price": 350, "includes": [true, true, true, true, false], "label": "Complet + Asigurare", "desc": "Argint + înlocuire baterie/robinet + poliță asigurare daune accidentale.", "garantie": 24}, "platinum": {"price": 520, "includes": [true, true, true, true, true], "label": "Premium all-in", "desc": "Aur + curățenie și evacuare deșeuri + garanție extinsă + Priority Support.", "garantie": 36}}}, "instalatii-electrice": {"features": ["Manoperă electrician", "Materiale electrice bază", "Tablou + siguranțe", "Automatizare smart", "Verificare ANRE"], "tiers": {"bronz": {"price": 75, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Electrician autorizat ANRE, scule profesionale. Materialele sunt furnizate de client.", "garantie": 6}, "argint": {"price": 160, "includes": [true, true, false, false, false], "label": "+ Materiale", "desc": "Bronz + prize, întrerupătoare, doze, cabluri NYM.", "garantie": 12}, "aur": {"price": 380, "includes": [true, true, true, false, true], "label": "+ Tablou & Verificare", "desc": "Argint + tablou electric echipat + verificare și certificat ANRE.", "garantie": 24}, "platinum": {"price": 680, "includes": [true, true, true, true, true], "label": "Smart & Certificat", "desc": "Aur + automatizare smart (prize inteligente, dimmer) + verificare ANRE completă.", "garantie": 36}}}, "constructii-renovari": {"features": ["Manoperă echipă", "Materiale construcție", "Demolare + evacuare", "Finisaj de suprafață", "Curățenie finală"], "tiers": {"bronz": {"price": 120, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Echipă calificată, scule. Materialele sunt furnizate de client.", "garantie": 6}, "argint": {"price": 280, "includes": [true, true, false, false, false], "label": "+ Materiale", "desc": "Bronz + materiale construcție de bază (ciment, BCA, ipsos).", "garantie": 12}, "aur": {"price": 520, "includes": [true, true, true, false, false], "label": "+ Demolare & Evacuare", "desc": "Argint + demolare controlată + evacuare moluz + transport la depozit autorizat.", "garantie": 24}, "platinum": {"price": 780, "includes": [true, true, true, true, true], "label": "La cheie", "desc": "Aur + finisaj suprafețe + grunduire + glet + curățenie completă post-lucrare.", "garantie": 36}}}, "hvac-climatizare": {"features": ["Manoperă instalator", "Unitate internă + externă", "Suporți & țeavă cupru", "Poliță asigurare", "Revizie anuală inclusă"], "tiers": {"bronz": {"price": 350, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Instalator HVAC, scule profesionale. Aparatul este furnizat de client.", "garantie": 12}, "argint": {"price": 850, "includes": [true, true, false, false, false], "label": "+ Unitate AC", "desc": "Bronz + unitate AC 9000 BTU furnizată + instalare completă.", "garantie": 24}, "aur": {"price": 1200, "includes": [true, true, true, true, false], "label": "Complet + Asigurare", "desc": "Argint + suporți, țeavă cupru, izolaţie, drenaj + poliță asigurare echipament.", "garantie": 24}, "platinum": {"price": 1500, "includes": [true, true, true, true, true], "label": "Premium + Revizie", "desc": "Aur + revizie anuală gratuită + AC 12000 BTU inverter + Priority Support.", "garantie": 36}}}, "zugraveli-finisaje": {"features": ["Manoperă zugrav", "Materiale zugrăvit", "Glet & grunduire", "Tapet / Decoruri", "Curățenie finală"], "tiers": {"bronz": {"price": 18, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Zugrav profesional, vopsire 1 strat. Vopseaua este furnizată de client.", "garantie": 6}, "argint": {"price": 35, "includes": [true, true, false, false, false], "label": "+ Vopsea 2 straturi", "desc": "Bronz + vopsea lavabilă 2 straturi, grund inclus.", "garantie": 12}, "aur": {"price": 55, "includes": [true, true, true, false, false], "label": "+ Glet & Grund", "desc": "Argint + glet alb, grunduire profesională, suprafață netedă perfectă.", "garantie": 24}, "platinum": {"price": 85, "includes": [true, true, true, true, true], "label": "Finisaj premium", "desc": "Aur + tapet sau decoruri speciale + curățenie completă post-lucrare.", "garantie": 36}}}, "gradinărit-agri": {"features": ["Manoperă grădinar", "Materiale plantare", "Toaletare copaci", "Sistem irigații", "Gazon + Îngrășăminte"], "tiers": {"bronz": {"price": 60, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Grădinar profesionist, scule. Plantele și materialele sunt furnizate de client.", "garantie": 3}, "argint": {"price": 120, "includes": [true, true, false, false, false], "label": "+ Materiale", "desc": "Bronz + flori, arbori, bulbi, pământ de flori, gunoi de grajd.", "garantie": 6}, "aur": {"price": 280, "includes": [true, true, true, false, false], "label": "+ Toaletare", "desc": "Argint + toaletare copaci/tufe, curățenie spații verzi, evacuare resturi vegetale.", "garantie": 12}, "platinum": {"price": 480, "includes": [true, true, true, true, true], "label": "Amenajare completă", "desc": "Aur + sistem irigații automatizat + gazon semănat + îngrășăminte + plan peisagistic.", "garantie": 24}}}, "tamplarie-geamuri": {"features": ["Manoperă montaj", "Fereastră PVC/Aluminiu", "Glaf interior + exterior", "Jaluzele/Rulouri", "Curățenie & evacuare vechi"], "tiers": {"bronz": {"price": 200, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Montaj fereastra furnizată de client. Verificare etanșeitate și izolare.", "garantie": 12}, "argint": {"price": 550, "includes": [true, true, false, false, false], "label": "+ Fereastră PVC", "desc": "Bronz + fereastră PVC standard 5 camere, alb, inclusă.", "garantie": 24}, "aur": {"price": 780, "includes": [true, true, true, false, false], "label": "+ Glafuri", "desc": "Argint + glaf interior PVC și glaf exterior aluminiu sau piatră.", "garantie": 24}, "platinum": {"price": 950, "includes": [true, true, true, true, true], "label": "Complet + Curățenie", "desc": "Aur + jaluzele/rulouri montate + evacuare fereastră veche + curățenie completă.", "garantie": 36}}}, "curatenie-profesionala": {"features": ["Curățenie generală", "Dezinfecție suprafețe", "Curățenie post-construcție", "Spălat geamuri ext.", "Curățenie mochete/tapițerie"], "tiers": {"bronz": {"price": 45, "includes": [true, false, false, false, false], "label": "Curățenie generală", "desc": "Echipă curățenie, aspirare, mopuire, ștergere suprafețe. Produse de bază incluse.", "garantie": 0}, "argint": {"price": 80, "includes": [true, true, false, false, false], "label": "+ Dezinfecție", "desc": "Bronz + dezinfecție completă suprafețe cu produse certificate, baie și bucătărie.", "garantie": 0}, "aur": {"price": 160, "includes": [true, true, true, true, false], "label": "Post-construcție", "desc": "Argint + curățenie post-construcție (moluz, praf, reziduuri) + spălat geamuri exterior.", "garantie": 0}, "platinum": {"price": 280, "includes": [true, true, true, true, true], "label": "Curățenie completă", "desc": "Aur + curățenie mochete, tapițerie mobilier, fotolii + polish pardoseli.", "garantie": 0}}}, "montaj-gresie-faianta": {"features": ["Manoperă placare", "Adeziv & rosturi", "Gresie/Faianță (client)", "Impermeabilizare", "Curățenie finală"], "tiers": {"bronz": {"price": 45, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Placare profesională. Gresie/faianță și adeziv furnizate de client.", "garantie": 12}, "argint": {"price": 75, "includes": [true, true, false, false, false], "label": "+ Adeziv & Rosturi", "desc": "Bronz + adeziv, rosturi, profile de trecere. Gresie/faianță furnizată de client.", "garantie": 24}, "aur": {"price": 140, "includes": [true, true, false, true, false], "label": "+ Impermeabilizare", "desc": "Argint + impermeabilizare suprafață (baie, bucătărie) înainte de placare.", "garantie": 24}, "platinum": {"price": 220, "includes": [true, true, true, true, true], "label": "Complet furnizat", "desc": "Aur + gresie/faianță premium din catalog ACA BG + curățenie finală.", "garantie": 36}}}, "acoperis-sarpanta": {"features": ["Manoperă echipă", "Țiglă/Tablă acoperire", "Astereală + Folie", "Jgheaburi & Burlane", "Izolație termică"], "tiers": {"bronz": {"price": 35, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Echipă specializată acoperiș, scule. Materialele sunt furnizate de client.", "garantie": 12}, "argint": {"price": 80, "includes": [true, true, false, false, false], "label": "+ Acoperire", "desc": "Bronz + țiglă beton sau tablă zincată, fixare profesională.", "garantie": 24}, "aur": {"price": 140, "includes": [true, true, true, true, false], "label": "+ Sistem complet", "desc": "Argint + astereală, folie anticondens, jgheaburi și burlane montate.", "garantie": 24}, "platinum": {"price": 220, "includes": [true, true, true, true, true], "label": "Acoperiș complet", "desc": "Aur + izolație termică pod (vată minerală 15cm) + inspecție finală certificată.", "garantie": 36}}}, "pavaje-alei": {"features": ["Manoperă echipă", "Pavele/Dale furnizate", "Fundație & Nisip", "Borduri montate", "Curățenie finală"], "tiers": {"bronz": {"price": 55, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Echipă pavaje, compactor. Materialele sunt furnizate de client.", "garantie": 12}, "argint": {"price": 100, "includes": [true, false, true, false, false], "label": "+ Fundație", "desc": "Bronz + pregătire fundație (strat nisip + pietriș compactat).", "garantie": 12}, "aur": {"price": 180, "includes": [true, true, true, true, false], "label": "Complet furnizat", "desc": "Argint + pavele beton sau dale naturale din catalog + borduri montate.", "garantie": 24}, "platinum": {"price": 280, "includes": [true, true, true, true, true], "label": "La cheie", "desc": "Aur + pavele premium + drenaj, rigole + curățenie și finisaj complet.", "garantie": 36}}}, "mat-zidarie-beton": {"features": ["Livrare standard", "Livrare express azi", "Paletizat & Asigurat", "Descarcare la adresă", "Retur garantat"], "tiers": {"bronz": {"price": 8, "includes": [true, false, false, false, false], "label": "Ridicare depozit", "desc": "Ridicare personală din depozit ACA BUSINESS GROUP · Bacău, Calea Moinești 24.", "garantie": 0}, "argint": {"price": 15, "includes": [true, true, false, false, true], "label": "Livrare standard", "desc": "Bronz + livrare la adresă 24-48h, cantitate minimă 0.5 paletă.", "garantie": 0}, "aur": {"price": 22, "includes": [true, true, true, true, true], "label": "Livrare express", "desc": "Argint + livrare în aceeași zi, paletizat și asigurat, descărcare la adresă.", "garantie": 0}, "platinum": {"price": 30, "includes": [true, true, true, true, true], "label": "Premium + Retur", "desc": "Aur + retur garantat surplus + consiliere tehnică gratuită + factură detaliată.", "garantie": 0}}}, "mat-parchet": {"features": ["Livrare standard", "Livrare express", "Accesorii montaj", "Covor antifonare", "Consiliere tehnică"], "tiers": {"bronz": {"price": 45, "includes": [true, false, false, false, false], "label": "Parchet simplu", "desc": "Parchet stratificat 8mm clasă uzură AC3 · Livrare 48h · diverse culori disponibile.", "garantie": 0}, "argint": {"price": 65, "includes": [true, true, false, true, false], "label": "+ Accesorii", "desc": "Bronz + covor antifonare 2mm + profile de trecere + dilatație incluse.", "garantie": 0}, "aur": {"price": 90, "includes": [true, true, true, true, true], "label": "Complet", "desc": "Argint + parchet masiv 15mm clasă uzură AC5 + livrare express + consiliere.", "garantie": 0}, "platinum": {"price": 135, "includes": [true, true, true, true, true], "label": "Premium", "desc": "Aur + parchet masiv premium stejar/nuc + finisaj ulei + livrare urgentă.", "garantie": 0}}}, "mat-sanitare-termo": {"features": ["Livrare standard", "Livrare express azi", "Piese de schimb incluse", "Garanție produs", "Consiliere tehnică"], "tiers": {"bronz": {"price": 5, "includes": [true, false, false, false, false], "label": "Standard", "desc": "Produse sanitare și termice standard · Branduri: Purmo, Herz, Watts · Livrare 24-48h.", "garantie": 12}, "argint": {"price": 8, "includes": [true, true, false, true, false], "label": "+ Express", "desc": "Bronz + livrare în aceeași zi + garanție extinsă producător.", "garantie": 24}, "aur": {"price": 12, "includes": [true, true, true, true, true], "label": "Complet", "desc": "Argint + piese de schimb incluse + consiliere tehnică de instalare.", "garantie": 24}, "platinum": {"price": 18, "includes": [true, true, true, true, true], "label": "Premium", "desc": "Aur + produse premium Purmo/Caleffi + serviciu prioritar.", "garantie": 36}}}, "mat-electrice": {"features": ["Livrare standard", "Livrare express", "Trasabilitate cablu", "Certificat calitate", "Suport tehnic"], "tiers": {"bronz": {"price": 3, "includes": [true, false, false, false, false], "label": "Standard", "desc": "Cabluri și accesorii electrice standard · Branduri: Cabelte, Elcoline · Livrare 24-48h.", "garantie": 12}, "argint": {"price": 5, "includes": [true, true, false, true, false], "label": "+ Express", "desc": "Bronz + livrare în aceeași zi + certificat calitate CE.", "garantie": 24}, "aur": {"price": 8, "includes": [true, true, true, true, true], "label": "Complet", "desc": "Argint + trasabilitate lot + suport tehnic + accesorii montaj incluse.", "garantie": 24}, "platinum": {"price": 12, "includes": [true, true, true, true, true], "label": "Premium", "desc": "Aur + cabluri Legrand/Schneider + livrare urgentă + factură detaliiată.", "garantie": 36}}}, "mat-vopsele": {"features": ["Livrare standard", "Livrare express", "Paletă culori custom", "Grund inclus", "Cantitate exactă calculată"], "tiers": {"bronz": {"price": 45, "includes": [true, false, false, false, false], "label": "Vopsea standard", "desc": "Vopsea lavabilă standard · Alb sau culori standard · Găleată 15L · Caparol, Kober.", "garantie": 0}, "argint": {"price": 65, "includes": [true, true, false, true, false], "label": "+ Grund", "desc": "Bronz + grund de impregnare inclus + livrare rapidă.", "garantie": 0}, "aur": {"price": 95, "includes": [true, true, true, true, true], "label": "+ Culori custom", "desc": "Argint + amestecare culori personalizate (RAL/NCS) + grund + cantitate calculată.", "garantie": 0}, "platinum": {"price": 140, "includes": [true, true, true, true, true], "label": "Premium Baumit", "desc": "Aur + Baumit premium + tencuială decorativă + consultant culori gratuit.", "garantie": 0}}}, "mat-lemn": {"features": ["Livrare standard", "Livrare express", "Material uscat certificat", "Tratament anti-fungic", "Tăiere la dimensiune"], "tiers": {"bronz": {"price": 12, "includes": [true, false, false, false, false], "label": "Cherestea brută", "desc": "Cherestea rășinoase brută · Pin/Brad · Diverse secțiuni · Livrare 48-72h.", "garantie": 0}, "argint": {"price": 18, "includes": [true, true, false, true, false], "label": "+ Uscat", "desc": "Bronz + cherestea uscată în cameră (umiditate ≤15%) + certificat calitate.", "garantie": 0}, "aur": {"price": 28, "includes": [true, true, true, true, false], "label": "Tratat", "desc": "Argint + tratament anti-fungic/anti-insecte + uscat certificat.", "garantie": 0}, "platinum": {"price": 45, "includes": [true, true, true, true, true], "label": "La dimensiune", "desc": "Aur + tăiere la dimensiunile solicitate + livrare express + ramă paletizată.", "garantie": 0}}}, "mat-metal": {"features": ["Livrare standard", "Livrare express", "Tăiere la lungime", "Sudură cap la cap", "Certificat calitate"], "tiers": {"bronz": {"price": 25, "includes": [true, false, false, false, false], "label": "Standard", "desc": "Profile metalice standard (UPN, IPE, platbandă) · Livrare 48-72h din stoc ACA.", "garantie": 0}, "argint": {"price": 35, "includes": [true, true, false, false, true], "label": "+ Express", "desc": "Bronz + livrare express + certificat calitate EN/ISO.", "garantie": 0}, "aur": {"price": 50, "includes": [true, true, true, false, true], "label": "Tăiate", "desc": "Argint + tăiere la lungimile solicitate fără cost suplimentar.", "garantie": 0}, "platinum": {"price": 75, "includes": [true, true, true, true, true], "label": "Prelucrate", "desc": "Aur + sudură cap la cap + găurire + zincare la cald la cerere.", "garantie": 0}}}, "mat-acoperis": {"features": ["Livrare standard", "Livrare express", "Accesorii montaj", "Folie anticondens", "Calcul suprafață gratuit"], "tiers": {"bronz": {"price": 35, "includes": [true, false, false, false, false], "label": "Material bază", "desc": "Tablă zincată sau țiglă beton · Livrare 48h · Diverse culori disponibile.", "garantie": 10}, "argint": {"price": 50, "includes": [true, true, false, false, true], "label": "+ Express & Calcul", "desc": "Bronz + calcul suprafață gratuit + livrare express.", "garantie": 10}, "aur": {"price": 70, "includes": [true, true, true, false, true], "label": "+ Accesorii", "desc": "Argint + accesorii montaj (șuruburi, garnituri, coame, sorțuri).", "garantie": 15}, "platinum": {"price": 100, "includes": [true, true, true, true, true], "label": "Sistem complet", "desc": "Aur + folie anticondens + membrane izolatoare + livrare urgentă paletizată.", "garantie": 15}}}, "inch-utilaje-grele": {"features": ["Utilaj + operatorul", "Livrare la șantier", "Motorină inclusă", "Asigurare utilaj", "Suport tehnic 24/7"], "tiers": {"bronz": {"price": 400, "includes": [false, false, false, false, false], "label": "Fără operator", "desc": "Utilaj fără operator. Clientul furnizează operatorul autorizat. Min 1 zi.", "garantie": 0}, "argint": {"price": 800, "includes": [true, false, false, false, false], "label": "Cu operator", "desc": "Bronz + operator autorizat ISCIR inclus. Livrare pe propria platforma.", "garantie": 0}, "aur": {"price": 1050, "includes": [true, true, true, false, false], "label": "+ Livrare & Motorină", "desc": "Argint + livrare-aducere la șantier + motorină pentru 8h de lucru incluse.", "garantie": 0}, "platinum": {"price": 1300, "includes": [true, true, true, true, true], "label": "Complet asigurat", "desc": "Aur + asigurare utilaj pe durata închirierii + suport tehnic 24/7 + prioritate disponibilitate.", "garantie": 0}}}, "inch-scule": {"features": ["Scule verificate", "Livrare la adresă", "Consumabile incluse", "Asigurare scule", "Instruire utilizare"], "tiers": {"bronz": {"price": 40, "includes": [true, false, false, false, false], "label": "Ridicare depozit", "desc": "Ridicare personală din depozit ACA · Scule verificate și calibrate.", "garantie": 0}, "argint": {"price": 80, "includes": [true, true, false, false, false], "label": "+ Livrare", "desc": "Bronz + livrare la adresă în 2-4h și ridicare la final.", "garantie": 0}, "aur": {"price": 120, "includes": [true, true, true, false, true], "label": "+ Consumabile", "desc": "Argint + consumabile (discuri, burghie, baterii) + instruire utilizare.", "garantie": 0}, "platinum": {"price": 170, "includes": [true, true, true, true, true], "label": "Complet asigurat", "desc": "Aur + asigurare scule + prioritate disponibilitate + schimb rapid dacă defect.", "garantie": 0}}}, "inch-acces": {"features": ["Schele standard", "Livrare montaj", "Inspecție SSM", "Ancoraj inclus", "Livrare urgentă"], "tiers": {"bronz": {"price": 200, "includes": [true, false, false, false, false], "label": "Ridicare depozit", "desc": "Schele tubulare standard, fără montaj. Min 1 săptămână.", "garantie": 0}, "argint": {"price": 350, "includes": [true, true, false, false, false], "label": "+ Montaj", "desc": "Bronz + echipă de montaj și demontaj schele + transport.", "garantie": 0}, "aur": {"price": 500, "includes": [true, true, true, true, false], "label": "+ SSM & Ancoraj", "desc": "Argint + inspecție SSM + ancoraj de siguranță conform normelor europene.", "garantie": 0}, "platinum": {"price": 700, "includes": [true, true, true, true, true], "label": "Complet urgent", "desc": "Aur + livrare urgentă 4h + schele acces dificil (fațade, acoperișuri înalte).", "garantie": 0}}}, "inch-transport": {"features": ["Vehicul disponibil", "Șofer inclus", "Combustibil inclus", "Asigurare marfă", "GPS tracking live"], "tiers": {"bronz": {"price": 150, "includes": [true, false, false, false, false], "label": "Fără șofer", "desc": "Autoutilitară sau platform 1.5T. Clientul conduce. Min 1 zi. Permis categoria B.", "garantie": 0}, "argint": {"price": 250, "includes": [true, true, false, false, false], "label": "Cu șofer", "desc": "Bronz + șofer profesionist inclus + combustibil în limita a 100km/zi.", "garantie": 0}, "aur": {"price": 380, "includes": [true, true, true, true, false], "label": "+ Asigurare", "desc": "Argint + combustibil nelimitat + asigurare marfă transportată.", "garantie": 0}, "platinum": {"price": 520, "includes": [true, true, true, true, true], "label": "Premium tracking", "desc": "Aur + GPS tracking live + vehicul refrigerat la cerere + prioritate alocare.", "garantie": 0}}}, "inch-personal": {"features": ["Personal verificat", "Contracte HBP", "Echipament protecție", "Supervizare inclus", "Prelungire flexibilă"], "tiers": {"bronz": {"price": 45, "includes": [true, true, false, false, false], "label": "Zilier necalificat", "desc": "Personal pentru muncă necalificată (transport, curățenie, sortare). Contract zilnic HBP.", "garantie": 0}, "argint": {"price": 65, "includes": [true, true, true, false, false], "label": "Muncitor calificat", "desc": "Bronz + personal calificat (zidar, zugar, instalator) + echipament protecție.", "garantie": 0}, "aur": {"price": 90, "includes": [true, true, true, true, false], "label": "+ Supervizor", "desc": "Argint + supervizor șantier inclus + rapoarte zilnice de progres.", "garantie": 0}, "platinum": {"price": 130, "includes": [true, true, true, true, true], "label": "Echipă completă", "desc": "Aur + echipă 3-5 persoane + prelungire flexibilă fără penalități + priority.", "garantie": 0}}}, "inch-gradinărit": {"features": ["Echipament verificat", "Livrare la adresă", "Combustibil inclus", "Asigurare echipament", "Instruire gratuită"], "tiers": {"bronz": {"price": 25, "includes": [true, false, false, false, false], "label": "Ridicare depozit", "desc": "Echipament grădinărit (motocoasă, tocătoare etc.) · Ridicare ACA Bacău.", "garantie": 0}, "argint": {"price": 50, "includes": [true, true, false, false, true], "label": "+ Livrare", "desc": "Bronz + livrare și ridicare la adresă + instruire utilizare gratuită.", "garantie": 0}, "aur": {"price": 75, "includes": [true, true, true, false, true], "label": "+ Combustibil", "desc": "Argint + combustibil pentru 8h funcționare + consumabile incluse.", "garantie": 0}, "platinum": {"price": 110, "includes": [true, true, true, true, true], "label": "Complet asigurat", "desc": "Aur + asigurare echipament + schimb rapid dacă defect + prioritate disponibilitate.", "garantie": 0}}}, "reparatie-cuptor-electric": {"features": ["Manoperă tehnician", "Piese de schimb", "Verificare siguranță electrică", "Curățenie post-reparație", "Garanție extinsă"], "tiers": {"bronz": {"price": 120, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Tehnician autorizat, scule profesionale, diagnostic complet. Piesele/materialele sunt furnizate de client.", "garantie": 6}, "argint": {"price": 250, "includes": [true, true, false, false, false], "label": "+ Piese/Materiale", "desc": "Bronz + piese de schimb originale sau materiale consumabile incluse.", "garantie": 12}, "aur": {"price": 600, "includes": [true, true, true, true, false], "label": "+ Verificare extinsă", "desc": "Argint + verificare completă a sistemului + raport tehnic detaliat.", "garantie": 24}, "platinum": {"price": 1080, "includes": [true, true, true, true, true], "label": "Tot inclus", "desc": "Aur + curățenie finală post-lucrare + Priority Support 24/7 + garanție extinsă.", "garantie": 36}}}, "inlocuire-becuri-corpuri": {"features": ["Manoperă electrician", "Corpuri de iluminat", "Montaj la înălțime", "Reciclare corpuri vechi", "Verificare circuit"], "tiers": {"bronz": {"price": 35, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Tehnician autorizat, scule profesionale, diagnostic complet. Piesele/materialele sunt furnizate de client.", "garantie": 6}, "argint": {"price": 75, "includes": [true, true, false, false, false], "label": "+ Piese/Materiale", "desc": "Bronz + piese de schimb originale sau materiale consumabile incluse.", "garantie": 12}, "aur": {"price": 175, "includes": [true, true, true, true, false], "label": "+ Verificare extinsă", "desc": "Argint + verificare completă a sistemului + raport tehnic detaliat.", "garantie": 24}, "platinum": {"price": 315, "includes": [true, true, true, true, true], "label": "Tot inclus", "desc": "Aur + curățenie finală post-lucrare + Priority Support 24/7 + garanție extinsă.", "garantie": 36}}}, "inlocuire-instalatie-debara": {"features": ["Manoperă electrician", "Materiale electrice", "Tablou local nou", "Verificare ANRE", "Curățenie finală"], "tiers": {"bronz": {"price": 180, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Tehnician autorizat, scule profesionale, diagnostic complet. Piesele/materialele sunt furnizate de client.", "garantie": 6}, "argint": {"price": 380, "includes": [true, true, false, false, false], "label": "+ Piese/Materiale", "desc": "Bronz + piese de schimb originale sau materiale consumabile incluse.", "garantie": 12}, "aur": {"price": 900, "includes": [true, true, true, true, false], "label": "+ Verificare extinsă", "desc": "Argint + verificare completă a sistemului + raport tehnic detaliat.", "garantie": 24}, "platinum": {"price": 1620, "includes": [true, true, true, true, true], "label": "Tot inclus", "desc": "Aur + curățenie finală post-lucrare + Priority Support 24/7 + garanție extinsă.", "garantie": 36}}}, "testare-instalatie-electrica": {"features": ["Manoperă electrician", "Echipament testare", "Buletin testare ANRE", "Identificare defecte", "Raport detaliat"], "tiers": {"bronz": {"price": 250, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Tehnician autorizat, scule profesionale, diagnostic complet. Piesele/materialele sunt furnizate de client.", "garantie": 6}, "argint": {"price": 525, "includes": [true, true, false, false, false], "label": "+ Piese/Materiale", "desc": "Bronz + piese de schimb originale sau materiale consumabile incluse.", "garantie": 12}, "aur": {"price": 1250, "includes": [true, true, true, true, false], "label": "+ Verificare extinsă", "desc": "Argint + verificare completă a sistemului + raport tehnic detaliat.", "garantie": 24}, "platinum": {"price": 2250, "includes": [true, true, true, true, true], "label": "Tot inclus", "desc": "Aur + curățenie finală post-lucrare + Priority Support 24/7 + garanție extinsă.", "garantie": 36}}}, "montaj-tablou-electric": {"features": ["Manoperă electrician", "Tablou + siguranțe", "Automatizare smart", "Verificare ANRE", "Certificat conformitate"], "tiers": {"bronz": {"price": 450, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Tehnician autorizat, scule profesionale, diagnostic complet. Piesele/materialele sunt furnizate de client.", "garantie": 6}, "argint": {"price": 945, "includes": [true, true, false, false, false], "label": "+ Piese/Materiale", "desc": "Bronz + piese de schimb originale sau materiale consumabile incluse.", "garantie": 12}, "aur": {"price": 2250, "includes": [true, true, true, true, false], "label": "+ Verificare extinsă", "desc": "Argint + verificare completă a sistemului + raport tehnic detaliat.", "garantie": 24}, "platinum": {"price": 4050, "includes": [true, true, true, true, true], "label": "Tot inclus", "desc": "Aur + curățenie finală post-lucrare + Priority Support 24/7 + garanție extinsă.", "garantie": 36}}}, "consultanta-proiectare-electrica": {"features": ["Consultanță electrician", "Proiect tehnic", "Calcul necesar putere", "Plan tablou electric", "Avizare proiect"], "tiers": {"bronz": {"price": 600, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Tehnician autorizat, scule profesionale, diagnostic complet. Piesele/materialele sunt furnizate de client.", "garantie": 6}, "argint": {"price": 1260, "includes": [true, true, false, false, false], "label": "+ Piese/Materiale", "desc": "Bronz + piese de schimb originale sau materiale consumabile incluse.", "garantie": 12}, "aur": {"price": 3000, "includes": [true, true, true, true, false], "label": "+ Verificare extinsă", "desc": "Argint + verificare completă a sistemului + raport tehnic detaliat.", "garantie": 24}, "platinum": {"price": 5400, "includes": [true, true, true, true, true], "label": "Tot inclus", "desc": "Aur + curățenie finală post-lucrare + Priority Support 24/7 + garanție extinsă.", "garantie": 36}}}};
+const TIER_DB = {"inlocuire-calorifer": {"features": ["Manoperă instalator ISCIR", "Consumabile & fitinguri", "Calorifer + livrare (ACA)", "Poliță asigurare lucrare", "Curățenie finală"], "tiers": {"bronz": {"price": 520, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Instalator autorizat ISCIR, scule profesionale, probe etanșeitate + purjare. Caloriferul este furnizat de client.", "garantie": 6}, "argint": {"price": 605, "includes": [true, true, false, false, false], "label": "Manoperă + Consumabile", "desc": "Bronz + fitinguri, teflon, robineți termostatici incluși. Caloriferul este furnizat de client.", "garantie": 12}, "aur": {"price": 1063, "includes": [true, true, true, true, false], "label": "Pachet complet", "desc": "Argint + calorifer Purmo/Radox livrat de ACA + transport + poliță asigurare lucrare inclusă.", "garantie": 24}, "platinum": {"price": 1383, "includes": [true, true, true, true, true], "label": "Tot inclus", "desc": "Aur + curățenie finală post-lucrare + calorifer premium Vogel&Noot.", "garantie": 36}}}, "instalatii-sanitare": {"features": ["Manoperă instalator", "Materiale sanitare de bază", "Înlocuire baterie/robinet", "Poliță asigurare", "Curățenie & evacuare"], "tiers": {"bronz": {"price": 85, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Instalator autorizat, scule profesionale. Materialele sunt furnizate de client.", "garantie": 6}, "argint": {"price": 180, "includes": [true, true, false, false, false], "label": "+ Materiale bază", "desc": "Bronz + garnituri, teflon, dibluri, accesorii montaj.", "garantie": 12}, "aur": {"price": 350, "includes": [true, true, true, true, false], "label": "Complet + Asigurare", "desc": "Argint + înlocuire baterie/robinet + poliță asigurare daune accidentale.", "garantie": 24}, "platinum": {"price": 520, "includes": [true, true, true, true, true], "label": "Premium all-in", "desc": "Aur + curățenie și evacuare deșeuri + garanție extinsă + Priority Support.", "garantie": 36}}}, "instalatii-electrice": {"features": ["Manoperă electrician", "Materiale electrice bază", "Tablou + siguranțe", "Automatizare smart", "Verificare ANRE"], "tiers": {"bronz": {"price": 75, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Electrician autorizat ANRE, scule profesionale. Materialele sunt furnizate de client.", "garantie": 6}, "argint": {"price": 160, "includes": [true, true, false, false, false], "label": "+ Materiale", "desc": "Bronz + prize, întrerupătoare, doze, cabluri NYM.", "garantie": 12}, "aur": {"price": 380, "includes": [true, true, true, false, true], "label": "+ Tablou & Verificare", "desc": "Argint + tablou electric echipat + verificare și certificat ANRE.", "garantie": 24}, "platinum": {"price": 680, "includes": [true, true, true, true, true], "label": "Smart & Certificat", "desc": "Aur + automatizare smart (prize inteligente, dimmer) + verificare ANRE completă.", "garantie": 36}}}, "constructii-renovari": {"features": ["Manoperă echipă", "Materiale construcție", "Demolare + evacuare", "Finisaj de suprafață", "Curățenie finală"], "tiers": {"bronz": {"price": 120, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Echipă calificată, scule. Materialele sunt furnizate de client.", "garantie": 6}, "argint": {"price": 280, "includes": [true, true, false, false, false], "label": "+ Materiale", "desc": "Bronz + materiale construcție de bază (ciment, BCA, ipsos).", "garantie": 12}, "aur": {"price": 520, "includes": [true, true, true, false, false], "label": "+ Demolare & Evacuare", "desc": "Argint + demolare controlată + evacuare moluz + transport la depozit autorizat.", "garantie": 24}, "platinum": {"price": 780, "includes": [true, true, true, true, true], "label": "La cheie", "desc": "Aur + finisaj suprafețe + grunduire + glet + curățenie completă post-lucrare.", "garantie": 36}}}, "hvac-climatizare": {"features": ["Manoperă instalator", "Unitate internă + externă", "Suporți & țeavă cupru", "Poliță asigurare", "Revizie anuală inclusă"], "tiers": {"bronz": {"price": 350, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Instalator HVAC, scule profesionale. Aparatul este furnizat de client.", "garantie": 12}, "argint": {"price": 850, "includes": [true, true, false, false, false], "label": "+ Unitate AC", "desc": "Bronz + unitate AC 9000 BTU furnizată + instalare completă.", "garantie": 24}, "aur": {"price": 1200, "includes": [true, true, true, true, false], "label": "Complet + Asigurare", "desc": "Argint + suporți, țeavă cupru, izolaţie, drenaj + poliță asigurare echipament.", "garantie": 24}, "platinum": {"price": 1500, "includes": [true, true, true, true, true], "label": "Premium + Revizie", "desc": "Aur + revizie anuală gratuită + AC 12000 BTU inverter + Priority Support.", "garantie": 36}}}, "zugraveli-finisaje": {"features": ["Manoperă zugrav", "Materiale zugrăvit", "Glet & grunduire", "Tapet / Decoruri", "Curățenie finală"], "tiers": {"bronz": {"price": 18, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Zugrav profesional, vopsire 1 strat. Vopseaua este furnizată de client.", "garantie": 6}, "argint": {"price": 35, "includes": [true, true, false, false, false], "label": "+ Vopsea 2 straturi", "desc": "Bronz + vopsea lavabilă 2 straturi, grund inclus.", "garantie": 12}, "aur": {"price": 55, "includes": [true, true, true, false, false], "label": "+ Glet & Grund", "desc": "Argint + glet alb, grunduire profesională, suprafață netedă perfectă.", "garantie": 24}, "platinum": {"price": 85, "includes": [true, true, true, true, true], "label": "Finisaj premium", "desc": "Aur + tapet sau decoruri speciale + curățenie completă post-lucrare.", "garantie": 36}}}, "gradinărit-agri": {"features": ["Manoperă grădinar", "Materiale plantare", "Toaletare copaci", "Sistem irigații", "Gazon + Îngrășăminte"], "tiers": {"bronz": {"price": 60, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Grădinar profesionist, scule. Plantele și materialele sunt furnizate de client.", "garantie": 3}, "argint": {"price": 120, "includes": [true, true, false, false, false], "label": "+ Materiale", "desc": "Bronz + flori, arbori, bulbi, pământ de flori, gunoi de grajd.", "garantie": 6}, "aur": {"price": 280, "includes": [true, true, true, false, false], "label": "+ Toaletare", "desc": "Argint + toaletare copaci/tufe, curățenie spații verzi, evacuare resturi vegetale.", "garantie": 12}, "platinum": {"price": 480, "includes": [true, true, true, true, true], "label": "Amenajare completă", "desc": "Aur + sistem irigații automatizat + gazon semănat + îngrășăminte + plan peisagistic.", "garantie": 24}}}, "tamplarie-geamuri": {"features": ["Manoperă montaj", "Fereastră PVC/Aluminiu", "Glaf interior + exterior", "Jaluzele/Rulouri", "Curățenie & evacuare vechi"], "tiers": {"bronz": {"price": 200, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Montaj fereastra furnizată de client. Verificare etanșeitate și izolare.", "garantie": 12}, "argint": {"price": 550, "includes": [true, true, false, false, false], "label": "+ Fereastră PVC", "desc": "Bronz + fereastră PVC standard 5 camere, alb, inclusă.", "garantie": 24}, "aur": {"price": 780, "includes": [true, true, true, false, false], "label": "+ Glafuri", "desc": "Argint + glaf interior PVC și glaf exterior aluminiu sau piatră.", "garantie": 24}, "platinum": {"price": 950, "includes": [true, true, true, true, true], "label": "Complet + Curățenie", "desc": "Aur + jaluzele/rulouri montate + evacuare fereastră veche + curățenie completă.", "garantie": 36}}}, "curatenie-profesionala": {"features": ["Curățenie generală", "Dezinfecție suprafețe", "Curățenie post-construcție", "Spălat geamuri ext.", "Curățenie mochete/tapițerie"], "tiers": {"bronz": {"price": 45, "includes": [true, false, false, false, false], "label": "Curățenie generală", "desc": "Echipă curățenie, aspirare, mopuire, ștergere suprafețe. Produse de bază incluse.", "garantie": 0}, "argint": {"price": 80, "includes": [true, true, false, false, false], "label": "+ Dezinfecție", "desc": "Bronz + dezinfecție completă suprafețe cu produse certificate, baie și bucătărie.", "garantie": 0}, "aur": {"price": 160, "includes": [true, true, true, true, false], "label": "Post-construcție", "desc": "Argint + curățenie post-construcție (moluz, praf, reziduuri) + spălat geamuri exterior.", "garantie": 0}, "platinum": {"price": 280, "includes": [true, true, true, true, true], "label": "Curățenie completă", "desc": "Aur + curățenie mochete, tapițerie mobilier, fotolii + polish pardoseli.", "garantie": 0}}}, "montaj-gresie-faianta": {"features": ["Manoperă placare", "Adeziv & rosturi", "Gresie/Faianță (client)", "Impermeabilizare", "Curățenie finală"], "tiers": {"bronz": {"price": 45, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Placare profesională. Gresie/faianță și adeziv furnizate de client.", "garantie": 12}, "argint": {"price": 75, "includes": [true, true, false, false, false], "label": "+ Adeziv & Rosturi", "desc": "Bronz + adeziv, rosturi, profile de trecere. Gresie/faianță furnizată de client.", "garantie": 24}, "aur": {"price": 140, "includes": [true, true, false, true, false], "label": "+ Impermeabilizare", "desc": "Argint + impermeabilizare suprafață (baie, bucătărie) înainte de placare.", "garantie": 24}, "platinum": {"price": 220, "includes": [true, true, true, true, true], "label": "Complet furnizat", "desc": "Aur + gresie/faianță premium din catalog ACA BG + curățenie finală.", "garantie": 36}}}, "acoperis-sarpanta": {"features": ["Manoperă echipă", "Țiglă/Tablă acoperire", "Astereală + Folie", "Jgheaburi & Burlane", "Izolație termică"], "tiers": {"bronz": {"price": 35, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Echipă specializată acoperiș, scule. Materialele sunt furnizate de client.", "garantie": 12}, "argint": {"price": 80, "includes": [true, true, false, false, false], "label": "+ Acoperire", "desc": "Bronz + țiglă beton sau tablă zincată, fixare profesională.", "garantie": 24}, "aur": {"price": 140, "includes": [true, true, true, true, false], "label": "+ Sistem complet", "desc": "Argint + astereală, folie anticondens, jgheaburi și burlane montate.", "garantie": 24}, "platinum": {"price": 220, "includes": [true, true, true, true, true], "label": "Acoperiș complet", "desc": "Aur + izolație termică pod (vată minerală 15cm) + inspecție finală certificată.", "garantie": 36}}}, "pavaje-alei": {"features": ["Manoperă echipă", "Pavele/Dale furnizate", "Fundație & Nisip", "Borduri montate", "Curățenie finală"], "tiers": {"bronz": {"price": 55, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Echipă pavaje, compactor. Materialele sunt furnizate de client.", "garantie": 12}, "argint": {"price": 100, "includes": [true, false, true, false, false], "label": "+ Fundație", "desc": "Bronz + pregătire fundație (strat nisip + pietriș compactat).", "garantie": 12}, "aur": {"price": 180, "includes": [true, true, true, true, false], "label": "Complet furnizat", "desc": "Argint + pavele beton sau dale naturale din catalog + borduri montate.", "garantie": 24}, "platinum": {"price": 280, "includes": [true, true, true, true, true], "label": "La cheie", "desc": "Aur + pavele premium + drenaj, rigole + curățenie și finisaj complet.", "garantie": 36}}}, "mat-zidarie-beton": {"features": ["Livrare standard", "Livrare express azi", "Paletizat & Asigurat", "Descarcare la adresă", "Retur garantat"], "tiers": {"bronz": {"price": 8, "includes": [true, false, false, false, false], "label": "Ridicare depozit", "desc": "Ridicare personală din depozit ACA BUSINESS GROUP · Bacău, Calea Moinești 24.", "garantie": 0}, "argint": {"price": 15, "includes": [true, true, false, false, true], "label": "Livrare standard", "desc": "Bronz + livrare la adresă 24-48h, cantitate minimă 0.5 paletă.", "garantie": 0}, "aur": {"price": 22, "includes": [true, true, true, true, true], "label": "Livrare express", "desc": "Argint + livrare în aceeași zi, paletizat și asigurat, descărcare la adresă.", "garantie": 0}, "platinum": {"price": 30, "includes": [true, true, true, true, true], "label": "Premium + Retur", "desc": "Aur + retur garantat surplus + consiliere tehnică gratuită + factură detaliată.", "garantie": 0}}}, "mat-parchet": {"features": ["Livrare standard", "Livrare express", "Accesorii montaj", "Covor antifonare", "Consiliere tehnică"], "tiers": {"bronz": {"price": 45, "includes": [true, false, false, false, false], "label": "Parchet simplu", "desc": "Parchet stratificat 8mm clasă uzură AC3 · Livrare 48h · diverse culori disponibile.", "garantie": 0}, "argint": {"price": 65, "includes": [true, true, false, true, false], "label": "+ Accesorii", "desc": "Bronz + covor antifonare 2mm + profile de trecere + dilatație incluse.", "garantie": 0}, "aur": {"price": 90, "includes": [true, true, true, true, true], "label": "Complet", "desc": "Argint + parchet masiv 15mm clasă uzură AC5 + livrare express + consiliere.", "garantie": 0}, "platinum": {"price": 135, "includes": [true, true, true, true, true], "label": "Premium", "desc": "Aur + parchet masiv premium stejar/nuc + finisaj ulei + livrare urgentă.", "garantie": 0}}}, "mat-sanitare-termo": {"features": ["Livrare standard", "Livrare express azi", "Piese de schimb incluse", "Garanție produs", "Consiliere tehnică"], "tiers": {"bronz": {"price": 5, "includes": [true, false, false, false, false], "label": "Standard", "desc": "Produse sanitare și termice standard · Branduri: Purmo, Herz, Watts · Livrare 24-48h.", "garantie": 12}, "argint": {"price": 8, "includes": [true, true, false, true, false], "label": "+ Express", "desc": "Bronz + livrare în aceeași zi + garanție extinsă producător.", "garantie": 24}, "aur": {"price": 12, "includes": [true, true, true, true, true], "label": "Complet", "desc": "Argint + piese de schimb incluse + consiliere tehnică de instalare.", "garantie": 24}, "platinum": {"price": 18, "includes": [true, true, true, true, true], "label": "Premium", "desc": "Aur + produse premium Purmo/Caleffi + serviciu prioritar.", "garantie": 36}}}, "mat-electrice": {"features": ["Livrare standard", "Livrare express", "Trasabilitate cablu", "Certificat calitate", "Suport tehnic"], "tiers": {"bronz": {"price": 3, "includes": [true, false, false, false, false], "label": "Standard", "desc": "Cabluri și accesorii electrice standard · Branduri: Cabelte, Elcoline · Livrare 24-48h.", "garantie": 12}, "argint": {"price": 5, "includes": [true, true, false, true, false], "label": "+ Express", "desc": "Bronz + livrare în aceeași zi + certificat calitate CE.", "garantie": 24}, "aur": {"price": 8, "includes": [true, true, true, true, true], "label": "Complet", "desc": "Argint + trasabilitate lot + suport tehnic + accesorii montaj incluse.", "garantie": 24}, "platinum": {"price": 12, "includes": [true, true, true, true, true], "label": "Premium", "desc": "Aur + cabluri Legrand/Schneider + livrare urgentă + factură detaliiată.", "garantie": 36}}}, "mat-vopsele": {"features": ["Livrare standard", "Livrare express", "Paletă culori custom", "Grund inclus", "Cantitate exactă calculată"], "tiers": {"bronz": {"price": 45, "includes": [true, false, false, false, false], "label": "Vopsea standard", "desc": "Vopsea lavabilă standard · Alb sau culori standard · Găleată 15L · Caparol, Kober.", "garantie": 0}, "argint": {"price": 65, "includes": [true, true, false, true, false], "label": "+ Grund", "desc": "Bronz + grund de impregnare inclus + livrare rapidă.", "garantie": 0}, "aur": {"price": 95, "includes": [true, true, true, true, true], "label": "+ Culori custom", "desc": "Argint + amestecare culori personalizate (RAL/NCS) + grund + cantitate calculată.", "garantie": 0}, "platinum": {"price": 140, "includes": [true, true, true, true, true], "label": "Premium Baumit", "desc": "Aur + Baumit premium + tencuială decorativă + consultant culori gratuit.", "garantie": 0}}}, "mat-lemn": {"features": ["Livrare standard", "Livrare express", "Material uscat certificat", "Tratament anti-fungic", "Tăiere la dimensiune"], "tiers": {"bronz": {"price": 12, "includes": [true, false, false, false, false], "label": "Cherestea brută", "desc": "Cherestea rășinoase brută · Pin/Brad · Diverse secțiuni · Livrare 48-72h.", "garantie": 0}, "argint": {"price": 18, "includes": [true, true, false, true, false], "label": "+ Uscat", "desc": "Bronz + cherestea uscată în cameră (umiditate ≤15%) + certificat calitate.", "garantie": 0}, "aur": {"price": 28, "includes": [true, true, true, true, false], "label": "Tratat", "desc": "Argint + tratament anti-fungic/anti-insecte + uscat certificat.", "garantie": 0}, "platinum": {"price": 45, "includes": [true, true, true, true, true], "label": "La dimensiune", "desc": "Aur + tăiere la dimensiunile solicitate + livrare express + ramă paletizată.", "garantie": 0}}}, "mat-metal": {"features": ["Livrare standard", "Livrare express", "Tăiere la lungime", "Sudură cap la cap", "Certificat calitate"], "tiers": {"bronz": {"price": 25, "includes": [true, false, false, false, false], "label": "Standard", "desc": "Profile metalice standard (UPN, IPE, platbandă) · Livrare 48-72h din stoc ACA.", "garantie": 0}, "argint": {"price": 35, "includes": [true, true, false, false, true], "label": "+ Express", "desc": "Bronz + livrare express + certificat calitate EN/ISO.", "garantie": 0}, "aur": {"price": 50, "includes": [true, true, true, false, true], "label": "Tăiate", "desc": "Argint + tăiere la lungimile solicitate fără cost suplimentar.", "garantie": 0}, "platinum": {"price": 75, "includes": [true, true, true, true, true], "label": "Prelucrate", "desc": "Aur + sudură cap la cap + găurire + zincare la cald la cerere.", "garantie": 0}}}, "mat-acoperis": {"features": ["Livrare standard", "Livrare express", "Accesorii montaj", "Folie anticondens", "Calcul suprafață gratuit"], "tiers": {"bronz": {"price": 35, "includes": [true, false, false, false, false], "label": "Material bază", "desc": "Tablă zincată sau țiglă beton · Livrare 48h · Diverse culori disponibile.", "garantie": 10}, "argint": {"price": 50, "includes": [true, true, false, false, true], "label": "+ Express & Calcul", "desc": "Bronz + calcul suprafață gratuit + livrare express.", "garantie": 10}, "aur": {"price": 70, "includes": [true, true, true, false, true], "label": "+ Accesorii", "desc": "Argint + accesorii montaj (șuruburi, garnituri, coame, sorțuri).", "garantie": 15}, "platinum": {"price": 100, "includes": [true, true, true, true, true], "label": "Sistem complet", "desc": "Aur + folie anticondens + membrane izolatoare + livrare urgentă paletizată.", "garantie": 15}}}, "inch-utilaje-grele": {"features": ["Utilaj + operatorul", "Livrare la șantier", "Motorină inclusă", "Asigurare utilaj", "Suport tehnic"], "tiers": {"bronz": {"price": 400, "includes": [false, false, false, false, false], "label": "Fără operator", "desc": "Utilaj fără operator. Clientul furnizează operatorul autorizat. Min 1 zi.", "garantie": 0}, "argint": {"price": 800, "includes": [true, false, false, false, false], "label": "Cu operator", "desc": "Bronz + operator autorizat ISCIR inclus. Livrare pe propria platforma.", "garantie": 0}, "aur": {"price": 1050, "includes": [true, true, true, false, false], "label": "+ Livrare & Motorină", "desc": "Argint + livrare-aducere la șantier + motorină pentru 8h de lucru incluse.", "garantie": 0}, "platinum": {"price": 1300, "includes": [true, true, true, true, true], "label": "Complet asigurat", "desc": "Aur + asigurare utilaj pe durata închirierii + suport tehnic + prioritate disponibilitate.", "garantie": 0}}}, "inch-scule": {"features": ["Scule verificate", "Livrare la adresă", "Consumabile incluse", "Asigurare scule", "Instruire utilizare"], "tiers": {"bronz": {"price": 40, "includes": [true, false, false, false, false], "label": "Ridicare depozit", "desc": "Ridicare personală din depozit ACA · Scule verificate și calibrate.", "garantie": 0}, "argint": {"price": 80, "includes": [true, true, false, false, false], "label": "+ Livrare", "desc": "Bronz + livrare la adresă în 2-4h și ridicare la final.", "garantie": 0}, "aur": {"price": 120, "includes": [true, true, true, false, true], "label": "+ Consumabile", "desc": "Argint + consumabile (discuri, burghie, baterii) + instruire utilizare.", "garantie": 0}, "platinum": {"price": 170, "includes": [true, true, true, true, true], "label": "Complet asigurat", "desc": "Aur + asigurare scule + prioritate disponibilitate + schimb rapid dacă defect.", "garantie": 0}}}, "inch-acces": {"features": ["Schele standard", "Livrare montaj", "Inspecție SSM", "Ancoraj inclus", "Livrare urgentă"], "tiers": {"bronz": {"price": 200, "includes": [true, false, false, false, false], "label": "Ridicare depozit", "desc": "Schele tubulare standard, fără montaj. Min 1 săptămână.", "garantie": 0}, "argint": {"price": 350, "includes": [true, true, false, false, false], "label": "+ Montaj", "desc": "Bronz + echipă de montaj și demontaj schele + transport.", "garantie": 0}, "aur": {"price": 500, "includes": [true, true, true, true, false], "label": "+ SSM & Ancoraj", "desc": "Argint + inspecție SSM + ancoraj de siguranță conform normelor europene.", "garantie": 0}, "platinum": {"price": 700, "includes": [true, true, true, true, true], "label": "Complet urgent", "desc": "Aur + livrare urgentă 4h + schele acces dificil (fațade, acoperișuri înalte).", "garantie": 0}}}, "inch-transport": {"features": ["Vehicul disponibil", "Șofer inclus", "Combustibil inclus", "Asigurare marfă", "GPS tracking live"], "tiers": {"bronz": {"price": 150, "includes": [true, false, false, false, false], "label": "Fără șofer", "desc": "Autoutilitară sau platform 1.5T. Clientul conduce. Min 1 zi. Permis categoria B.", "garantie": 0}, "argint": {"price": 250, "includes": [true, true, false, false, false], "label": "Cu șofer", "desc": "Bronz + șofer profesionist inclus + combustibil în limita a 100km/zi.", "garantie": 0}, "aur": {"price": 380, "includes": [true, true, true, true, false], "label": "+ Asigurare", "desc": "Argint + combustibil nelimitat + asigurare marfă transportată.", "garantie": 0}, "platinum": {"price": 520, "includes": [true, true, true, true, true], "label": "Premium tracking", "desc": "Aur + GPS tracking live + vehicul refrigerat la cerere + prioritate alocare.", "garantie": 0}}}, "inch-personal": {"features": ["Personal verificat", "Contracte HBP", "Echipament protecție", "Supervizare inclus", "Prelungire flexibilă"], "tiers": {"bronz": {"price": 45, "includes": [true, true, false, false, false], "label": "Zilier necalificat", "desc": "Personal pentru muncă necalificată (transport, curățenie, sortare). Contract zilnic HBP.", "garantie": 0}, "argint": {"price": 65, "includes": [true, true, true, false, false], "label": "Muncitor calificat", "desc": "Bronz + personal calificat (zidar, zugar, instalator) + echipament protecție.", "garantie": 0}, "aur": {"price": 90, "includes": [true, true, true, true, false], "label": "+ Supervizor", "desc": "Argint + supervizor șantier inclus + rapoarte zilnice de progres.", "garantie": 0}, "platinum": {"price": 130, "includes": [true, true, true, true, true], "label": "Echipă completă", "desc": "Aur + echipă 3-5 persoane + prelungire flexibilă fără penalități + priority.", "garantie": 0}}}, "inch-gradinărit": {"features": ["Echipament verificat", "Livrare la adresă", "Combustibil inclus", "Asigurare echipament", "Instruire gratuită"], "tiers": {"bronz": {"price": 25, "includes": [true, false, false, false, false], "label": "Ridicare depozit", "desc": "Echipament grădinărit (motocoasă, tocătoare etc.) · Ridicare ACA Bacău.", "garantie": 0}, "argint": {"price": 50, "includes": [true, true, false, false, true], "label": "+ Livrare", "desc": "Bronz + livrare și ridicare la adresă + instruire utilizare gratuită.", "garantie": 0}, "aur": {"price": 75, "includes": [true, true, true, false, true], "label": "+ Combustibil", "desc": "Argint + combustibil pentru 8h funcționare + consumabile incluse.", "garantie": 0}, "platinum": {"price": 110, "includes": [true, true, true, true, true], "label": "Complet asigurat", "desc": "Aur + asigurare echipament + schimb rapid dacă defect + prioritate disponibilitate.", "garantie": 0}}}, "reparatie-cuptor-electric": {"features": ["Manoperă tehnician", "Piese de schimb", "Verificare siguranță electrică", "Curățenie post-reparație", "Garanție extinsă"], "tiers": {"bronz": {"price": 120, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Tehnician autorizat, scule profesionale, diagnostic complet. Piesele/materialele sunt furnizate de client.", "garantie": 6}, "argint": {"price": 250, "includes": [true, true, false, false, false], "label": "+ Piese/Materiale", "desc": "Bronz + piese de schimb originale sau materiale consumabile incluse.", "garantie": 12}, "aur": {"price": 600, "includes": [true, true, true, true, false], "label": "+ Verificare extinsă", "desc": "Argint + verificare completă a sistemului + raport tehnic detaliat.", "garantie": 24}, "platinum": {"price": 1080, "includes": [true, true, true, true, true], "label": "Tot inclus", "desc": "Aur + curățenie finală post-lucrare + garanție extinsă.", "garantie": 36}}}, "inlocuire-becuri-corpuri": {"features": ["Manoperă electrician", "Corpuri de iluminat", "Montaj la înălțime", "Reciclare corpuri vechi", "Verificare circuit"], "tiers": {"bronz": {"price": 35, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Tehnician autorizat, scule profesionale, diagnostic complet. Piesele/materialele sunt furnizate de client.", "garantie": 6}, "argint": {"price": 75, "includes": [true, true, false, false, false], "label": "+ Piese/Materiale", "desc": "Bronz + piese de schimb originale sau materiale consumabile incluse.", "garantie": 12}, "aur": {"price": 175, "includes": [true, true, true, true, false], "label": "+ Verificare extinsă", "desc": "Argint + verificare completă a sistemului + raport tehnic detaliat.", "garantie": 24}, "platinum": {"price": 315, "includes": [true, true, true, true, true], "label": "Tot inclus", "desc": "Aur + curățenie finală post-lucrare + garanție extinsă.", "garantie": 36}}}, "inlocuire-instalatie-debara": {"features": ["Manoperă electrician", "Materiale electrice", "Tablou local nou", "Verificare ANRE", "Curățenie finală"], "tiers": {"bronz": {"price": 180, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Tehnician autorizat, scule profesionale, diagnostic complet. Piesele/materialele sunt furnizate de client.", "garantie": 6}, "argint": {"price": 380, "includes": [true, true, false, false, false], "label": "+ Piese/Materiale", "desc": "Bronz + piese de schimb originale sau materiale consumabile incluse.", "garantie": 12}, "aur": {"price": 900, "includes": [true, true, true, true, false], "label": "+ Verificare extinsă", "desc": "Argint + verificare completă a sistemului + raport tehnic detaliat.", "garantie": 24}, "platinum": {"price": 1620, "includes": [true, true, true, true, true], "label": "Tot inclus", "desc": "Aur + curățenie finală post-lucrare + garanție extinsă.", "garantie": 36}}}, "testare-instalatie-electrica": {"features": ["Manoperă electrician", "Echipament testare", "Buletin testare ANRE", "Identificare defecte", "Raport detaliat"], "tiers": {"bronz": {"price": 250, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Tehnician autorizat, scule profesionale, diagnostic complet. Piesele/materialele sunt furnizate de client.", "garantie": 6}, "argint": {"price": 525, "includes": [true, true, false, false, false], "label": "+ Piese/Materiale", "desc": "Bronz + piese de schimb originale sau materiale consumabile incluse.", "garantie": 12}, "aur": {"price": 1250, "includes": [true, true, true, true, false], "label": "+ Verificare extinsă", "desc": "Argint + verificare completă a sistemului + raport tehnic detaliat.", "garantie": 24}, "platinum": {"price": 2250, "includes": [true, true, true, true, true], "label": "Tot inclus", "desc": "Aur + curățenie finală post-lucrare + garanție extinsă.", "garantie": 36}}}, "montaj-tablou-electric": {"features": ["Manoperă electrician", "Tablou + siguranțe", "Automatizare smart", "Verificare ANRE", "Certificat conformitate"], "tiers": {"bronz": {"price": 450, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Tehnician autorizat, scule profesionale, diagnostic complet. Piesele/materialele sunt furnizate de client.", "garantie": 6}, "argint": {"price": 945, "includes": [true, true, false, false, false], "label": "+ Piese/Materiale", "desc": "Bronz + piese de schimb originale sau materiale consumabile incluse.", "garantie": 12}, "aur": {"price": 2250, "includes": [true, true, true, true, false], "label": "+ Verificare extinsă", "desc": "Argint + verificare completă a sistemului + raport tehnic detaliat.", "garantie": 24}, "platinum": {"price": 4050, "includes": [true, true, true, true, true], "label": "Tot inclus", "desc": "Aur + curățenie finală post-lucrare + garanție extinsă.", "garantie": 36}}}, "consultanta-proiectare-electrica": {"features": ["Consultanță electrician", "Proiect tehnic", "Calcul necesar putere", "Plan tablou electric", "Avizare proiect"], "tiers": {"bronz": {"price": 600, "includes": [true, false, false, false, false], "label": "Manoperă pură", "desc": "Tehnician autorizat, scule profesionale, diagnostic complet. Piesele/materialele sunt furnizate de client.", "garantie": 6}, "argint": {"price": 1260, "includes": [true, true, false, false, false], "label": "+ Piese/Materiale", "desc": "Bronz + piese de schimb originale sau materiale consumabile incluse.", "garantie": 12}, "aur": {"price": 3000, "includes": [true, true, true, true, false], "label": "+ Verificare extinsă", "desc": "Argint + verificare completă a sistemului + raport tehnic detaliat.", "garantie": 24}, "platinum": {"price": 5400, "includes": [true, true, true, true, true], "label": "Tot inclus", "desc": "Aur + curățenie finală post-lucrare + garanție extinsă.", "garantie": 36}}}};
 
 // ══ PRODUCTS DB ══
 const PRODUCTS_DB = {
-  'inlocuire-calorifer':{title:'Înlocuire calorifer',icon:'',nace:'F 43.22',unit:'buc',type:'serviciu',urgent:true,rating:'4.97 (312 rec.)',req:'La Bronz/Argint: caloriferul furnizat de client. La Aur/Platinum: My Darrin livrează totul.'},
-  'reparatie-garnituri-calorifer':{title:'Reparație garnituri & probă presiune calorifer',icon:'',nace:'F 43.22',unit:'interv.',type:'serviciu',urgent:true,rating:'4.9 (187 rec.)',req:'Scurgere identificată la robinetul caloriferului. Acces liber la calorifer pentru izolare circuit și probă presiune.',price:150,
+  'inlocuire-calorifer':{title:'Înlocuire calorifer',icon:'',nace:'F 43.22',unit:'buc',type:'serviciu',urgent:true,req:'La Bronz/Argint: caloriferul furnizat de client. La Aur/Platinum: My Darrin livrează totul.'},
+  'reparatie-garnituri-calorifer':{title:'Reparație garnituri & probă presiune calorifer',icon:'',nace:'F 43.22',unit:'interv.',type:'serviciu',urgent:true,req:'Scurgere identificată la robinetul caloriferului. Acces liber la calorifer pentru izolare circuit și probă presiune.',price:150,
     tiers:{
       bronz:{label:'Garnituri standard',garantie:'6 luni',materiale:'Garnituri cauciuc standard',pret:150},
       argint:{label:'Garnituri + robinet nou',garantie:'12 luni',materiale:'Garnituri + robinet termostatic',pret:280},
       aur:{label:'Kit complet + probă presiune extinsă',garantie:'24 luni',materiale:'Garnituri premium + robinet + probă presiune sistem complet',pret:420},
       platinum:{label:'Înlocuire completă punct racord',garantie:'36 luni',materiale:'Robinet + racorduri + garnituri premium + verificare întreg circuit',pret:650},
     }},
-  'instalatii-sanitare':{title:'Instalații sanitare',icon:'',nace:'F 43.22',unit:'ore',type:'serviciu',urgent:true,rating:'4.9 (340 rec.)',req:'Accesul la instalații trebuie să fie degajat. Robinetele principale de apă să fie funcționale.'},
-  'instalatii-electrice':{title:'Instalații electrice',icon:'',nace:'F 43.21',unit:'ore',type:'serviciu',urgent:true,rating:'4.8 (280 rec.)',req:'Tabloul electric trebuie să fie accesibil. Sursă de alimentare temporară disponibilă.'},
-  'reparatie-cuptor-electric':{title:'Reparație cuptor electric',icon:'',nace:'F 43.21',unit:'interv.',type:'serviciu',urgent:true,rating:'4.7 (96 rec.)',req:'Cuptorul trebuie deconectat de la curent înainte de diagnoză. Acces liber la panoul din spate.',price:120},
-  'inlocuire-becuri-corpuri':{title:'Înlocuire becuri & corpuri de iluminat',icon:'',nace:'F 43.21',unit:'buc',type:'serviciu',urgent:true,rating:'4.9 (211 rec.)',req:'Specificați tipul corpului (LED, spot, plafonieră). Înălțime montaj peste 3m necesită scară proprie.',price:35},
-  'inlocuire-instalatie-debara':{title:'Înlocuire instalație electrică debara/cămară',icon:'',nace:'F 43.21',unit:'punct',type:'serviciu',urgent:false,rating:'4.8 (74 rec.)',req:'Acces la tabloul electric pentru izolarea circuitului. Spațiul trebuie golit de obiecte depozitate.',price:180},
-  'testare-instalatie-electrica':{title:'Testare & verificare instalație electrică',icon:'',nace:'F 43.21',unit:'interv.',type:'serviciu',urgent:false,rating:'4.9 (158 rec.)',req:'Toate circuitele trebuie să fie accesibile pentru măsurători. Buletin de verificare emis la final.',price:250},
-  'montaj-tablou-electric':{title:'Montaj tablou electric nou',icon:'',nace:'F 43.21',unit:'buc',type:'serviciu',urgent:false,rating:'4.9 (132 rec.)',req:'Sursă de alimentare temporară pe durata lucrării. Spațiu liber minim 60cm în fața tabloului.',price:450},
-  'consultanta-proiectare-electrica':{title:'Consultanță & proiectare instalație electrică',icon:'',nace:'F 43.21',unit:'proiect',type:'serviciu',urgent:false,rating:'4.8 (61 rec.)',req:'Plan/schiță locuință pentru evaluare precisă. Vizită la fața locului recomandată pentru proiecte >50mp.',price:600},
-  'consultanta-design-amenajare':{title:'Consultanță & Design Amenajare Interioară',icon:'',nace:'M 74.10',unit:'proiect',type:'serviciu',urgent:false,rating:'4.9 (143 rec.)',req:'Plan locuință + fotografii spațiu actual. Designer dedicat propune 2-3 variante de amenajare.',price:450},
-  'inchiriere-echipamente-vacanta':{title:'Închiriere Echipamente Vacanță & Outdoor',icon:'',nace:'N 77.21',unit:'set/zi',type:'inchiriere',urgent:false,rating:'4.7 (98 rec.)',req:'Șezlonguri, umbrele de plajă, rucsacuri trekking, corturi. Ridicare/predare la adresă în zona acoperită.',price:45},
-  'service-auto':{title:'Service Auto la domiciliu',icon:'',nace:'G 45.20',unit:'interv.',type:'serviciu',urgent:true,rating:'4.8 (217 rec.)',req:'Acces la mașină în parcare/garaj. Pentru schimb ulei/filtre se recomandă spațiu plan, fără pantă.',price:180},
-  'constructii-renovari':{title:'Construcții & Renovări',icon:'',nace:'F 43.11',unit:'m²',type:'serviciu',urgent:false,rating:'4.9 (520 rec.)',req:'Zona de lucru trebuie eliberată de mobilier. Acces garantat pe toată durata lucrării.'},
-  'hvac-climatizare':{title:'HVAC & Climatizare',icon:'',nace:'F 43.22',unit:'buc',type:'serviciu',urgent:true,rating:'4.7 (190 rec.)',req:'Accesul la peretele exterior pentru unitatea externă. Priză 220V în apropierea unității interne.'},
-  'zugraveli-finisaje':{title:'Zugrăveli & Finisaje',icon:'',nace:'F 43.34',unit:'m²',type:'serviciu',urgent:false,rating:'4.8 (410 rec.)',req:'Camera trebuie eliberată de mobilier sau acoperit cu prelate. Accesul la apă obligatoriu.'},
-  'gradinărit-agri':{title:'Grădinărit & Agri',icon:'',nace:'A 01.61',unit:'ore',type:'serviciu',urgent:false,rating:'4.6 (155 rec.)',req:'Accesul la spațiul verde trebuie să fie liber. Sursa de apă să fie disponibilă la fața locului.'},
-  'tamplarie-geamuri':{title:'Tâmplărie & Geamuri',icon:'',nace:'F 43.32',unit:'buc',type:'serviciu',urgent:false,rating:'4.9 (220 rec.)',req:'Zona ferestrei să fie accesibilă interior și exterior. Dacă la etaj, scara de acces disponibilă.'},
-  'curatenie-profesionala':{title:'Curățenie profesională',icon:'',nace:'N 81.21',unit:'m²',type:'serviciu',urgent:true,rating:'4.8 (380 rec.)',req:'Accesul la sursă de apă și curent electric. Zona să fie accesibilă echipei.'},
-  'montaj-gresie-faianta':{title:'Montaj gresie & faianță',icon:'',nace:'F 43.33',unit:'m²',type:'serviciu',urgent:false,rating:'4.8 (267 rec.)',req:'Suportul existent trebuie verificat și consolidat dacă necesar. Acces la apă obligatoriu.'},
-  'acoperis-sarpanta':{title:'Acoperiș & Șarpantă',icon:'',nace:'F 43.91',unit:'m²',type:'serviciu',urgent:false,rating:'4.7 (143 rec.)',req:'Accesul la acoperiș trebuie să fie sigur. Podul casei accesibil pentru inspecție preliminară.'},
-  'pavaje-alei':{title:'Pavaje & Alei',icon:'',nace:'F 43.12',unit:'m²',type:'serviciu',urgent:false,rating:'4.6 (98 rec.)',req:'Zona de pavare trebuie marcată și curățată. Accesul utilajelor de compactare asigurat.'},
-  'mat-zidarie-beton':{title:'Zidărie & Beton',icon:'',nace:'F 41',unit:'buc/kg',type:'material',urgent:false,rating:'4.8 (890 rec.)',req:'Locul de descărcare accesibil camionului. Spațiu de depozitare protejat de intemperii.'},
-  'mat-parchet':{title:'Parchet & Pardoseli',icon:'',nace:'F 43.33',unit:'m²',type:'material',urgent:false,rating:'4.9 (540 rec.)',req:'Materialul trebuie aclimatizat 48h înainte de montaj. Pardoseala suport să fie uscată și plană.'},
-  'mat-sanitare-termo':{title:'Sanitare & Termo',icon:'',nace:'F 43.22',unit:'buc',type:'material',urgent:true,rating:'4.8 (720 rec.)',req:'Verifică compatibilitatea cu sistemul existent înainte de comandă. Disponibil consiliere gratuită.'},
-  'mat-electrice':{title:'Electrice & Cabluri',icon:'',nace:'F 43.21',unit:'ml/buc',type:'material',urgent:true,rating:'4.7 (430 rec.)',req:'Verifică secțiunea cablului necesară în funcție de puterea instalată. Diagrama electrică disponibilă.'},
-  'mat-vopsele':{title:'Vopsele & Finisaje',icon:'',nace:'F 43.34',unit:'găleată',type:'material',urgent:false,rating:'4.9 (310 rec.)',req:'Suprafața de vopsit trebuie să fie curată și uscată. Grunduire recomandată înainte de aplicare.'},
-  'mat-lemn':{title:'Lemn & Cherestea',icon:'',nace:'F 43.32',unit:'m³/ml',type:'material',urgent:false,rating:'4.6 (205 rec.)',req:'Locul de descărcare accesibil. Cherestea să fie depozitată în spații aerisite, ferite de umiditate.'},
-  'mat-metal':{title:'Metalurgie & Profile',icon:'',nace:'F 43',unit:'kg/ml',type:'material',urgent:false,rating:'4.7 (178 rec.)',req:'Specificați dimensiunile exacte la comandă pentru tăiere precisă. Cantitate minimă 10kg.'},
-  'mat-acoperis':{title:'Acoperiș & Izolații',icon:'',nace:'F 43.91',unit:'m²',type:'material',urgent:false,rating:'4.6 (145 rec.)',req:'Calculul suprafaței include 10% pierderi. Disponibil calcul gratuit la cerere.'},
-  'inch-utilaje-grele':{title:'Utilaje & Echipamente Grele',icon:'',nace:'N 77.32',unit:'zile',type:'inchiriere',urgent:true,rating:'4.9 (89 rec.)',req:'Operatorul trebuie să dețină autorizație ISCIR valabilă (dacă fără operator). Acces șantier asigurat.'},
-  'inch-scule':{title:'Scule & Echipamente Mici',icon:'',nace:'N 77.32',unit:'zile',type:'inchiriere',urgent:true,rating:'4.7 (124 rec.)',req:'La returnare, sculele trebuie să fie curate și complete. Pierdere sau deteriorare → tarif suplimentar.'},
-  'inch-acces':{title:'Acces & Siguranță',icon:'',nace:'N 77.32',unit:'săptămâni',type:'inchiriere',urgent:false,rating:'4.8 (67 rec.)',req:'Suprafața de montaj a schelelor să fie stabilă și nivelată. Ancoraje în structura clădirii obligatorii.'},
-  'inch-transport':{title:'Vehicule & Transport',icon:'',nace:'N 77.32',unit:'zile',type:'inchiriere',urgent:true,rating:'4.9 (201 rec.)',req:'Permis de conducere categoria B (sau C) valabil. Documentele vehiculului disponibile la livrare.'},
-  'inch-personal':{title:'Personal calificat zilnic',icon:'',nace:'N 81.10',unit:'ore',type:'inchiriere',urgent:true,rating:'4.9 (312 rec.)',req:'Echipamentul de protecție SSM este furnizat la pachetele Argint+. Supervizorul de șantier disponibil.'},
-  'inch-gradinărit':{title:'Echipamente grădinărit',icon:'',nace:'N 77.32',unit:'zile',type:'inchiriere',urgent:false,rating:'4.6 (45 rec.)',req:'Combustibilul este inclus la Aur+. La returnare echipamentul trebuie curățat.'},
+  'instalatii-sanitare':{title:'Instalații sanitare',icon:'',nace:'F 43.22',unit:'ore',type:'serviciu',urgent:true,req:'Accesul la instalații trebuie să fie degajat. Robinetele principale de apă să fie funcționale.'},
+  'instalatii-electrice':{title:'Instalații electrice',icon:'',nace:'F 43.21',unit:'ore',type:'serviciu',urgent:true,req:'Tabloul electric trebuie să fie accesibil. Sursă de alimentare temporară disponibilă.'},
+  'reparatie-cuptor-electric':{title:'Reparație cuptor electric',icon:'',nace:'F 43.21',unit:'interv.',type:'serviciu',urgent:true,req:'Cuptorul trebuie deconectat de la curent înainte de diagnoză. Acces liber la panoul din spate.',price:120},
+  'inlocuire-becuri-corpuri':{title:'Înlocuire becuri & corpuri de iluminat',icon:'',nace:'F 43.21',unit:'buc',type:'serviciu',urgent:true,req:'Specificați tipul corpului (LED, spot, plafonieră). Înălțime montaj peste 3m necesită scară proprie.',price:35},
+  'inlocuire-instalatie-debara':{title:'Înlocuire instalație electrică debara/cămară',icon:'',nace:'F 43.21',unit:'punct',type:'serviciu',urgent:false,req:'Acces la tabloul electric pentru izolarea circuitului. Spațiul trebuie golit de obiecte depozitate.',price:180},
+  'testare-instalatie-electrica':{title:'Testare & verificare instalație electrică',icon:'',nace:'F 43.21',unit:'interv.',type:'serviciu',urgent:false,req:'Toate circuitele trebuie să fie accesibile pentru măsurători. Buletin de verificare emis la final.',price:250},
+  'montaj-tablou-electric':{title:'Montaj tablou electric nou',icon:'',nace:'F 43.21',unit:'buc',type:'serviciu',urgent:false,req:'Sursă de alimentare temporară pe durata lucrării. Spațiu liber minim 60cm în fața tabloului.',price:450},
+  'consultanta-proiectare-electrica':{title:'Consultanță & proiectare instalație electrică',icon:'',nace:'F 43.21',unit:'proiect',type:'serviciu',urgent:false,req:'Plan/schiță locuință pentru evaluare precisă. Vizită la fața locului recomandată pentru proiecte >50mp.',price:600},
+  'consultanta-design-amenajare':{title:'Consultanță & Design Amenajare Interioară',icon:'',nace:'M 74.10',unit:'proiect',type:'serviciu',urgent:false,req:'Plan locuință + fotografii spațiu actual. Designer dedicat propune 2-3 variante de amenajare.',price:450},
+  'inchiriere-echipamente-vacanta':{title:'Închiriere Echipamente Vacanță & Outdoor',icon:'',nace:'N 77.21',unit:'set/zi',type:'inchiriere',urgent:false,req:'Șezlonguri, umbrele de plajă, rucsacuri trekking, corturi. Ridicare/predare la adresă în zona acoperită.',price:45},
+  'service-auto':{title:'Service Auto la domiciliu',icon:'',nace:'G 45.20',unit:'interv.',type:'serviciu',urgent:true,req:'Acces la mașină în parcare/garaj. Pentru schimb ulei/filtre se recomandă spațiu plan, fără pantă.',price:180},
+  'constructii-renovari':{title:'Construcții & Renovări',icon:'',nace:'F 43.11',unit:'m²',type:'serviciu',urgent:false,req:'Zona de lucru trebuie eliberată de mobilier. Acces garantat pe toată durata lucrării.'},
+  'hvac-climatizare':{title:'HVAC & Climatizare',icon:'',nace:'F 43.22',unit:'buc',type:'serviciu',urgent:true,req:'Accesul la peretele exterior pentru unitatea externă. Priză 220V în apropierea unității interne.'},
+  'zugraveli-finisaje':{title:'Zugrăveli & Finisaje',icon:'',nace:'F 43.34',unit:'m²',type:'serviciu',urgent:false,req:'Camera trebuie eliberată de mobilier sau acoperit cu prelate. Accesul la apă obligatoriu.'},
+  'gradinărit-agri':{title:'Grădinărit & Agri',icon:'',nace:'A 01.61',unit:'ore',type:'serviciu',urgent:false,req:'Accesul la spațiul verde trebuie să fie liber. Sursa de apă să fie disponibilă la fața locului.'},
+  'tamplarie-geamuri':{title:'Tâmplărie & Geamuri',icon:'',nace:'F 43.32',unit:'buc',type:'serviciu',urgent:false,req:'Zona ferestrei să fie accesibilă interior și exterior. Dacă la etaj, scara de acces disponibilă.'},
+  'curatenie-profesionala':{title:'Curățenie profesională',icon:'',nace:'N 81.21',unit:'m²',type:'serviciu',urgent:true,req:'Accesul la sursă de apă și curent electric. Zona să fie accesibilă echipei.'},
+  'montaj-gresie-faianta':{title:'Montaj gresie & faianță',icon:'',nace:'F 43.33',unit:'m²',type:'serviciu',urgent:false,req:'Suportul existent trebuie verificat și consolidat dacă necesar. Acces la apă obligatoriu.'},
+  'acoperis-sarpanta':{title:'Acoperiș & Șarpantă',icon:'',nace:'F 43.91',unit:'m²',type:'serviciu',urgent:false,req:'Accesul la acoperiș trebuie să fie sigur. Podul casei accesibil pentru inspecție preliminară.'},
+  'pavaje-alei':{title:'Pavaje & Alei',icon:'',nace:'F 43.12',unit:'m²',type:'serviciu',urgent:false,req:'Zona de pavare trebuie marcată și curățată. Accesul utilajelor de compactare asigurat.'},
+  'mat-zidarie-beton':{title:'Zidărie & Beton',icon:'',nace:'F 41',unit:'buc/kg',type:'material',urgent:false,req:'Locul de descărcare accesibil camionului. Spațiu de depozitare protejat de intemperii.'},
+  'mat-parchet':{title:'Parchet & Pardoseli',icon:'',nace:'F 43.33',unit:'m²',type:'material',urgent:false,req:'Materialul trebuie aclimatizat 48h înainte de montaj. Pardoseala suport să fie uscată și plană.'},
+  'mat-sanitare-termo':{title:'Sanitare & Termo',icon:'',nace:'F 43.22',unit:'buc',type:'material',urgent:true,req:'Verifică compatibilitatea cu sistemul existent înainte de comandă. Disponibil consiliere gratuită.'},
+  'mat-electrice':{title:'Electrice & Cabluri',icon:'',nace:'F 43.21',unit:'ml/buc',type:'material',urgent:true,req:'Verifică secțiunea cablului necesară în funcție de puterea instalată. Diagrama electrică disponibilă.'},
+  'mat-vopsele':{title:'Vopsele & Finisaje',icon:'',nace:'F 43.34',unit:'găleată',type:'material',urgent:false,req:'Suprafața de vopsit trebuie să fie curată și uscată. Grunduire recomandată înainte de aplicare.'},
+  'mat-lemn':{title:'Lemn & Cherestea',icon:'',nace:'F 43.32',unit:'m³/ml',type:'material',urgent:false,req:'Locul de descărcare accesibil. Cherestea să fie depozitată în spații aerisite, ferite de umiditate.'},
+  'mat-metal':{title:'Metalurgie & Profile',icon:'',nace:'F 43',unit:'kg/ml',type:'material',urgent:false,req:'Specificați dimensiunile exacte la comandă pentru tăiere precisă. Cantitate minimă 10kg.'},
+  'mat-acoperis':{title:'Acoperiș & Izolații',icon:'',nace:'F 43.91',unit:'m²',type:'material',urgent:false,req:'Calculul suprafaței include 10% pierderi. Disponibil calcul gratuit la cerere.'},
+  'inch-utilaje-grele':{title:'Utilaje & Echipamente Grele',icon:'',nace:'N 77.32',unit:'zile',type:'inchiriere',urgent:true,req:'Operatorul trebuie să dețină autorizație ISCIR valabilă (dacă fără operator). Acces șantier asigurat.'},
+  'inch-scule':{title:'Scule & Echipamente Mici',icon:'',nace:'N 77.32',unit:'zile',type:'inchiriere',urgent:true,req:'La returnare, sculele trebuie să fie curate și complete. Pierdere sau deteriorare → tarif suplimentar.'},
+  'inch-acces':{title:'Acces & Siguranță',icon:'',nace:'N 77.32',unit:'săptămâni',type:'inchiriere',urgent:false,req:'Suprafața de montaj a schelelor să fie stabilă și nivelată. Ancoraje în structura clădirii obligatorii.'},
+  'inch-transport':{title:'Vehicule & Transport',icon:'',nace:'N 77.32',unit:'zile',type:'inchiriere',urgent:true,req:'Permis de conducere categoria B (sau C) valabil. Documentele vehiculului disponibile la livrare.'},
+  'inch-personal':{title:'Personal calificat zilnic',icon:'',nace:'N 81.10',unit:'ore',type:'inchiriere',urgent:true,req:'Echipamentul de protecție SSM este furnizat la pachetele Argint+. Supervizorul de șantier disponibil.'},
+  'inch-gradinărit':{title:'Echipamente grădinărit',icon:'',nace:'N 77.32',unit:'zile',type:'inchiriere',urgent:false,req:'Combustibilul este inclus la Aur+. La returnare echipamentul trebuie curățat.'},
 };
 
 const INS_PRICES = {none:0,standard:85,premium:165};
@@ -3485,15 +3468,18 @@ const INS_LABELS = {none:'Polița de bază (inclusă)',standard:'Standard Extins
 const TIER_ICONS = {bronz:'',argint:'',aur:'',platinum:''};
 const TIER_COLORS = {bronz:'#CD7F32',argint:'#8BA3C0',aur:'#FF8C00',platinum:'#7AB3E0'};
 const PLATFORM_PCT = 0.31;
-const TVA = 0.19;
+// TVA pe țara comenzii, citit din tax_configurations (tva-config.js), nu
+// scris direct în pagină. Setat de actualizeazaTva() la încărcare și când
+// adresa schimbă țara; până atunci recalc() așteaptă.
+let TVA = null;
 const VMC = 100;
 const ZONE_PCT = 1.05;
 
 
 // ── SERVICII CONSULTANȚĂ (adăugate din Backoffice) ──
-PRODUCTS_DB['consultanta-bronz'] = {title:'Consultanță Darrin AI',icon:'',nace:'N 81.10',unit:'sesiune',type:'serviciu',urgent:false,rating:'4.9 (1.240 rec.)',req:'Descrie problema și încarcă imagini/video. Darrin AI analizează și recomandă serviciul potrivit.'};
-PRODUCTS_DB['consultanta-argint'] = {title:'Consultanță online cu specialist',icon:'',nace:'N 81.10',unit:'sesiune',type:'serviciu',urgent:true,rating:'4.97 (312 sesiuni)',req:'Selectează un specialist disponibil și modul de contact preferat (video/chat/telefon).'};
-PRODUCTS_DB['consultanta-aur'] = {title:'Evaluare la adresă',icon:'',nace:'N 81.10',unit:'vizită',type:'serviciu',urgent:false,rating:'4.95 (189 vizite)',req:'Asigură accesul la zona problemei. Specialistul vine cu echipamentul de diagnostic.'};
+PRODUCTS_DB['consultanta-bronz'] = {title:'Consultanță Darrin AI',icon:'',nace:'N 81.10',unit:'sesiune',type:'serviciu',urgent:false,req:'Descrie problema și încarcă imagini/video. Darrin AI analizează și recomandă serviciul potrivit.'};
+PRODUCTS_DB['consultanta-argint'] = {title:'Consultanță online cu specialist',icon:'',nace:'N 81.10',unit:'sesiune',type:'serviciu',urgent:true,req:'Selectează un specialist disponibil și modul de contact preferat (video/chat/telefon).'};
+PRODUCTS_DB['consultanta-aur'] = {title:'Evaluare la adresă',icon:'',nace:'N 81.10',unit:'vizită',type:'serviciu',urgent:false,req:'Asigură accesul la zona problemei. Specialistul vine cu echipamentul de diagnostic.'};
 
 TIER_DB['consultanta-bronz'] = {
   features:['Analiză AI problemă','Upload imagini & video','Recomandare serviciu','Deviz estimativ AI','Redirect specialist uman'],
@@ -3508,7 +3494,7 @@ TIER_DB['consultanta-argint'] = {
   features:['Video call HD','Chat text live','Partajare ecran','Raport PDF scris','Redirectare evaluare adresă'],
   tiers:{
     bronz:{price:0,includes:[false,false,false,false,false],label:'N/A',desc:'',garantie:0},
-    argint:{price:50,includes:[true,true,true,true,true],label:'Consultant online · 50 Lei min.',desc:'Specialist tehnic verificat disponibil imediat. Durată 30 min. Primești raport PDF cu concluzii și recomandări după sesiune.',garantie:0},
+    argint:{price:50,includes:[true,true,true,true,true],label:'Consultant online · 50 Lei min.',desc:'Specialist tehnic verificat. Durată 30 min. Primești raport PDF cu concluzii și recomandări după sesiune.',garantie:0},
     aur:{price:100,includes:[true,true,true,true,true],label:'+ Evaluare la adresă · 100 Lei',desc:'Dacă sesiunea online nu a rezolvat problema, specialistul te redirecționează spre evaluare fizică la adresa ta.',garantie:0},
     platinum:{price:0,includes:[false,false,false,false,false],label:'N/A',desc:'',garantie:0},
   }
@@ -3728,7 +3714,16 @@ function renderAddonList() {
   const el = document.getElementById('addon-list');
   if (!el) return;
   const query = (document.getElementById('addon-search')?.value || '').toLowerCase().trim();
-  const toate = ADDON_DB[addonActiveTab] || [];
+  // Doar materialele cu preț real pe nivelul curent (8 oct. 2026): înainte
+  // apăreau rânduri „0 Lei / m”. Fără niciun material cu preț, pe nicio
+  // filă, secțiunea întreagă se ascunde.
+  const cuPret = (lista) => (lista || []).filter((i) => _addonPretNivel(i) > 0);
+  const wrap = document.getElementById('addon-section-wrap');
+  if (wrap) {
+    const areCeva = cuPret(ADDON_DB.materiale).length + cuPret(ADDON_DB.inchirieri).length > 0;
+    wrap.style.display = areCeva ? '' : 'none';
+  }
+  const toate = cuPret(ADDON_DB[addonActiveTab]);
   const filtrate = query ? toate.filter((i) => i.titlu.toLowerCase().includes(query)) : toate;
 
   if (!toate.length) {
@@ -3953,6 +3948,9 @@ function renderAddonSelected() {
 // număr fix. Corecție explicită a utilizatorului (22 august 2026): NICIUN
 // nivel nu se afișează dezactivat/„în curând" — doar cele cu preț real intră
 // în grilă; dacă e unul singur, nu se mai arată nicio grilă de comparație.
+// Rezervă: folosită doar dacă /api/public/servicii-cu-reteta nu răspunde.
+// Sursa principală e endpoint-ul, care citește din baza de date ce servicii
+// au rețetă tehnică legată (devize_articole.catalog_nivel_id).
 const PILOT_SERVICII_MAP = {
   'gradinărit-agri': '581ee944-f0fc-434c-8d46-7b1f7cb21826',
   'servicii-mutari': '0893a391-b386-456b-a367-23c0eebf4116',
@@ -3992,12 +3990,49 @@ const PILOT_SERVICII_MAP = {
 };
 const NIVEL_RANG = { Bronze: 0, Silver: 1, Gold: 2, Platinum: 3 };
 const NIVEL_LABEL = { Bronze: 'BRONZ', Silver: 'ARGINT', Gold: 'AUR', Platinum: 'PLATINUM' };
+// Numele nivelului transmis la checkout (S.tierLabel); fără el rămânea
+// valoarea implicită „Aur — Pachet complet”, oricare ar fi fost nivelul ales.
+const NIVEL_NUME = { Bronze: 'Bronz', Silver: 'Argint', Gold: 'Aur', Platinum: 'Platinum' };
 const NIVEL_COLOR = { Bronze: '#CD7F32', Silver: '#8BA3C0', Gold: '#FF8C00', Platinum: '#7AB3E0' };
 let _pilotPretConfirmat = false;
 let _pilotDebounce = null;
 
-async function initPilotProdus(slug) {
-  const serviciuId = PILOT_SERVICII_MAP[slug];
+// Lista serviciilor cu rețetă, din baza de date. null = endpoint indisponibil.
+let _serviciiCuRetetaPromis = null;
+function incarcaServiciiCuReteta() {
+  if (!_serviciiCuRetetaPromis) {
+    _serviciiCuRetetaPromis = fetch('/api/public/servicii-cu-reteta')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d?.ok || !Array.isArray(d.servicii)) return null;
+        const map = {};
+        d.servicii.forEach((s) => { map[s.id_serviciu] = s.serviciu_id; });
+        return map;
+      })
+      .catch(() => null);
+  }
+  return _serviciiCuRetetaPromis;
+}
+
+async function serviciuCuReteta(slug) {
+  const map = await incarcaServiciiCuReteta();
+  if (map) return map[slug] || null;
+  return PILOT_SERVICII_MAP[slug] || null;
+}
+
+async function actualizeazaTva() {
+  TVA = window.MDTva ? await window.MDTva.cota(S.tara_cod || 'RO') : null;
+  afiseazaProcentTva(TVA);
+}
+
+function afiseazaProcentTva(cota) {
+  const text = cota != null && window.MDTva ? window.MDTva.procent(cota) : '—';
+  document.querySelectorAll('.tva-pct').forEach((e) => { e.textContent = text; });
+}
+
+const PRET_EVALUARE = 'Preț după evaluare tehnică';
+
+async function initPilotProdus(slug, serviciuId) {
   if (!serviciuId || !SUPA_PROD_ANON) return false;
 
   let servRow, niveluriRows;
@@ -4014,39 +4049,42 @@ async function initPilotProdus(slug) {
   }
   if (!servRow || !niveluriRows?.length) return false;
 
+  // Toate nivelurile apar, fiecare cu starea prețului lui (8 oct. 2026):
+  //  - 'pret': preț real de la server;
+  //  - 'evaluare': rețeta are resurse fără tarif -> „Preț după evaluare tehnică";
+  //  - 'eroare': serverul n-a răspuns.
+  // Un serviciu cu rețetă nu mai cade niciodată pe prețurile statice din TIER_DB.
   const taraCod = S.tara_cod || 'RO';
-  const preturiReale = [];
-  for (const n of niveluriRows) {
+  const niveluri = await Promise.all(niveluriRows.map(async (n) => {
+    const nivel = { nivel_id: n.id, nivel: n.nivel, descriere: n.descriere, stare: 'eroare', pret_final: null };
     try {
       const res = await fetch('/api/public/calculeaza-pret-nivel', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nivel_id: n.id, cantitate: 1, tara_cod: taraCod }),
       });
       const data = await res.json();
-      if (data?.ok && data.disponibil) {
-        preturiReale.push({ nivel_id: n.id, nivel: n.nivel, descriere: n.descriere, pret_final: data.pret_final });
-      }
+      if (data?.ok && data.disponibil) { nivel.stare = 'pret'; nivel.pret_final = data.pret_final; }
+      else if (data?.ok) nivel.stare = 'evaluare';
     } catch (e) {
       console.warn('[pilot] calcul preț eșuat pentru nivel', n.id, e);
     }
-  }
-  // Onest: dacă niciun nivel nu are azi preț real calculabil (rețetă
-  // incompletă), pagina cade pe calea veche (fallback „în lucru" din
-  // buildFallbackProduct) — nu forțează un mod pilot fără nimic real de arătat.
-  if (!preturiReale.length) return false;
+    return nivel;
+  }));
 
-  preturiReale.sort((a, b) => (NIVEL_RANG[a.nivel] ?? 9) - (NIVEL_RANG[b.nivel] ?? 9));
+  niveluri.sort((a, b) => (NIVEL_RANG[a.nivel] ?? 9) - (NIVEL_RANG[b.nivel] ?? 9));
+  const implicit = niveluri.find((n) => n.stare === 'pret') || niveluri[0];
 
   S.pilotMode = true;
   S.pilotServiciuId = serviciuId;
-  S.pilotNiveluri = preturiReale;
-  S.pilotNivelId = preturiReale[0].nivel_id;
+  S.pilotNiveluri = niveluri;
+  S.pilotNivelId = implicit.nivel_id;
   // Faza 2/3 CAT (29 august 2026) — bug real găsit la un-hide-ul selectorului
   // de addon-uri: S.tier nu era NICIODATĂ setat în mod pilot (doar de calea
   // veche, setType/selTier) — _addonPretNivel(item) citește item.preturi[S.tier],
   // deci ar fi afișat mereu 0 Lei pentru orice addon, silențios. Sincronizat
   // aici + în selectPilotNivel() de mai jos, cu numele real al nivelului.
-  S.tier = preturiReale[0].nivel;
+  S.tier = implicit.nivel;
+  S.tierLabel = NIVEL_NUME[implicit.nivel] || implicit.nivel;
   // Bug real găsit la testarea „Montaj Parchet Laminat" (29 august 2026):
   // cele 5 servicii pilot anterioare erau toate pe oră — unitatea era
   // hardcodată. Primul serviciu pilot facturat pe altă unitate (mp) ar fi
@@ -4074,7 +4112,6 @@ async function initPilotProdus(slug) {
   // cele 6 servicii pilot. Fallback la textul vechi doar dacă serviciul n-are
   // încă o descriere reală populată.
   setEl('prod-desc', servRow.descriere || 'Serviciu furnizat de parteneri verificați · Preț calculat live din rețeta tehnică reală');
-  setEl('prod-rating', 'Nou · preț calculat live');
   setEl('prod-type-chip', 'Serviciu');
 
   const etapeWrap = document.getElementById('etape-wrap');
@@ -4143,6 +4180,12 @@ async function initPilotProdus(slug) {
   return true;
 }
 
+function etichetaPretNivel(n) {
+  if (n.stare === 'pret') return fmtCurrency(n.pret_final);
+  if (n.stare === 'evaluare') return PRET_EVALUARE;
+  return 'Preț indisponibil momentan';
+}
+
 function renderPilotTierUI() {
   const niv = S.pilotNiveluri;
   const tierSection = document.getElementById('tier-section');
@@ -4158,11 +4201,13 @@ function renderPilotTierUI() {
   const tfootRow = document.querySelector('#tier-table tfoot tr');
   if (!theadRow || !tbody || !tfootRow) return;
 
-  theadRow.innerHTML = '<th style="text-align:left;min-width:160px">NIVEL</th>' +
-    niv.map((n, i) => `<th class="tier-col-header${i === 0 ? ' selected-col' : ''}" data-pilot-nivel="${n.nivel_id}" style="color:${NIVEL_COLOR[n.nivel] || '#8BA3C0'};cursor:pointer">${NIVEL_LABEL[n.nivel] || String(n.nivel || '').toUpperCase()}</th>`).join('');
+  theadRow.innerHTML = '<th style="text-align:left;min-width:120px">NIVEL</th>' +
+    niv.map((n) => `<th class="tier-col-header${n.nivel_id === S.pilotNivelId ? ' selected-col' : ''}" data-pilot-nivel="${n.nivel_id}" style="color:${NIVEL_COLOR[n.nivel] || '#8BA3C0'};cursor:pointer">${NIVEL_LABEL[n.nivel] || String(n.nivel || '').toUpperCase()}</th>`).join('');
   tbody.innerHTML = `<tr><td style="text-align:left">Descriere</td>${niv.map(n => `<td>${n.descriere || '—'}</td>`).join('')}</tr>`;
   tfootRow.innerHTML = '<td style="color:#4A6080;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:12px 16px">Preț (Lei)</td>' +
-    niv.map(n => `<td style="text-align:center;font-weight:800;color:${NIVEL_COLOR[n.nivel] || '#8BA3C0'};font-size:14px" data-pilot-price="${n.nivel_id}">${n.pret_final}</td>`).join('');
+    niv.map(n => n.stare === 'pret'
+      ? `<td style="text-align:center;font-weight:800;color:${NIVEL_COLOR[n.nivel] || '#8BA3C0'};font-size:14px" data-pilot-price="${n.nivel_id}">${etichetaPretNivel(n)}</td>`
+      : `<td style="text-align:center;font-weight:600;color:#8BA3C0;font-size:11.5px;line-height:1.35" data-pilot-price="${n.nivel_id}">${etichetaPretNivel(n)}</td>`).join('');
 
   theadRow.querySelectorAll('[data-pilot-nivel]').forEach((th) => {
     th.onclick = () => selectPilotNivel(th.dataset.pilotNivel);
@@ -4173,7 +4218,7 @@ function renderPilotTierUI() {
 function selectPilotNivel(nivelId) {
   S.pilotNivelId = nivelId;
   const nivelObj = S.pilotNiveluri.find((n) => n.nivel_id === nivelId);
-  if (nivelObj) S.tier = nivelObj.nivel;
+  if (nivelObj) { S.tier = nivelObj.nivel; S.tierLabel = NIVEL_NUME[nivelObj.nivel] || nivelObj.nivel; }
   document.querySelectorAll('#tier-table thead [data-pilot-nivel]').forEach((th) => {
     th.classList.toggle('selected-col', th.dataset.pilotNivel === nivelId);
   });
@@ -4192,11 +4237,30 @@ function recalcPilot() {
   _pilotDebounce = setTimeout(() => _recalcPilotNow(qty), 350);
 }
 
+function afiseazaPilotFaraPret(text) {
+  const contBtn = document.querySelector('#sec-1 .btn-primary');
+  _pilotPretConfirmat = false;
+  if (contBtn) contBtn.disabled = true;
+  ['s-base', 's-ins', 's-plat', 's-tva', 'dv-ins', 'dv-platform', 'dv-tva'].forEach((id) => setEl(id, '—'));
+  setEl('s-total', text);
+  setEl('dv-total', text);
+  toggleEl('s-vmc', false);
+}
+
 async function _recalcPilotNow(qty) {
   const nivelId = S.pilotNivelId;
   if (!nivelId) return;
   const taraCod = S.tara_cod || 'RO';
   const contBtn = document.querySelector('#sec-1 .btn-primary');
+  const nivelCurent = S.pilotNiveluri.find((n) => n.nivel_id === nivelId);
+  setEl('s-nivel', nivelCurent ? (NIVEL_LABEL[nivelCurent.nivel] || nivelCurent.nivel) : 'Standard');
+  setEl('s-qty', qty + ' ' + S.unit);
+  // Nivel fără preț real: nu se poate comanda direct și nu cerem serverului
+  // un preț pe care știm că nu-l are (răspunsul ar fi tot resurse_fara_pret).
+  if (nivelCurent && nivelCurent.stare === 'evaluare') {
+    afiseazaPilotFaraPret(PRET_EVALUARE);
+    return;
+  }
   // Faza 2/3 CAT (29 august 2026) — materialele/echipamentele opționale
   // adăugate din selector merg în previzualizarea live, identic cum vor fi
   // recalculate la creare comandă (aceeași sursă de adevăr, vezi
@@ -4217,10 +4281,8 @@ async function _recalcPilotNow(qty) {
     return;
   }
   if (!data?.ok || !data.disponibil) {
-    _pilotPretConfirmat = false;
-    setEl('s-total', data?.motiv === 'addon_fara_pret' ? (data.mesaj || 'Material indisponibil') : 'Indisponibil');
-    setEl('dv-total', 'Indisponibil');
-    if (contBtn) contBtn.disabled = true;
+    if (data?.motiv === 'addon_fara_pret') afiseazaPilotFaraPret(data.mesaj || 'Material indisponibil');
+    else afiseazaPilotFaraPret(data?.ok ? PRET_EVALUARE : 'Preț indisponibil momentan');
     return;
   }
   _pilotPretConfirmat = true;
@@ -4231,15 +4293,33 @@ async function _recalcPilotNow(qty) {
   S.bazaRaw = data.subtotal_variabil;
   S.tierPrice = data.subtotal_variabil;
 
-  const nivelSel = S.pilotNiveluri.find((n) => n.nivel_id === nivelId);
-  setEl('s-nivel', nivelSel ? (NIVEL_LABEL[nivelSel.nivel] || nivelSel.nivel) : 'Standard');
-  setEl('s-qty', qty + ' ' + S.unit);
-  setEl('s-base', fmtCurrency(data.subtotal_variabil));
+  // Sumele vin de la server (defalcare); pagina nu le recalculează.
+  const d = data.defalcare;
   setEl('s-zone', 'Preț calculat live din rețetă');
   setEl('s-tip', '');
-  setEl('s-ins', 'Bază (inclusă)');
-  setEl('s-plat', '—');
-  setEl('s-tva', '—');
+  setEl('dv-zone', 'Preț calculat live din rețetă');
+  setEl('dv-tip', '—');
+  if (d) {
+    setEl('s-base', fmtCurrency(d.cost_baza + (d.transport || 0)));
+    setEl('s-ins', fmtCurrency(d.asigurare));
+    setEl('s-plat', fmtCurrency(d.taxe_platforma));
+    setEl('s-tva', fmtCurrency(d.tva_suma));
+    setEl('dv-ins', fmtCurrency(d.asigurare));
+    setEl('dv-platform', fmtCurrency(d.taxe_platforma));
+    setEl('dv-tva', fmtCurrency(d.tva_suma));
+    afiseazaProcentTva(d.tva_pct / 100);
+    const vmc = document.getElementById('s-vmc');
+    if (vmc) {
+      vmc.textContent = 'Prag minim de comandă aplicat: ' + fmtCurrency(data.prag_minim_comanda);
+      vmc.style.display = d.prag_aplicat ? 'block' : 'none';
+    }
+  } else {
+    // Server mai vechi, fără defalcare: doar totalul e sigur.
+    setEl('s-base', fmtCurrency(data.subtotal_variabil));
+    setEl('s-ins', 'Inclusă');
+    setEl('s-plat', '—');
+    setEl('s-tva', '—');
+  }
   setEl('s-total', data.pret_final.toLocaleString('ro-RO'));
 
   setEl('dv-total', fmtCurrency(data.pret_final));
@@ -4252,6 +4332,7 @@ async function _recalcPilotNow(qty) {
 
 // ══ INIT ══
 document.addEventListener('DOMContentLoaded',async ()=>{
+  await actualizeazaTva();
   await loadFromURL();
   initCal();
   initReveal();
@@ -4278,8 +4359,7 @@ function buildFallbackProduct(slug, type) {
   if (stored) {
     return {
       title: stored.title || slug, icon: '', nace: '', unit: stored.unit || 'buc',
-      type: prodType, urgent: false, rating: stored.rating || 'Nou',
-      req: stored.desc || 'Detalii complete în curând.',
+      type: prodType, urgent: false, req: stored.desc || 'Detalii complete în curând.',
       price: stored.price, img: stored.img,
     };
   }
@@ -4288,8 +4368,7 @@ function buildFallbackProduct(slug, type) {
   // produs la întâmplare.
   return {
     title: slug.replace(/-/g, ' '), icon: '', nace: '', unit: 'buc',
-    type: prodType, urgent: false, rating: 'Nou',
-    req: 'Fișa completă a acestui produs este în lucru.', price: null,
+    type: prodType, urgent: false, req: 'Fișa completă a acestui produs este în lucru.', price: null,
   };
 }
 
@@ -4306,8 +4385,9 @@ async function loadFromURL(){
   // (PRODUCTS_DB/TIER_DB, ~26 produse + fallback-ul de categorie) rămâne pe
   // calea veche, neatinsă. Dacă eșuează (rețea, sau slug pilot fără niciun
   // nivel disponibil azi), cade pe calea veche ca înainte de acest fix.
-  if (PILOT_SERVICII_MAP[slug]) {
-    const ok = await initPilotProdus(slug);
+  const serviciuId = await serviciuCuReteta(slug);
+  if (serviciuId) {
+    const ok = await initPilotProdus(slug, serviciuId);
     if (ok) return;
   }
 
@@ -4364,7 +4444,6 @@ async function loadFromURL(){
     'Material din catalogul My Darrin · Furnizor verificat ACA BUSINESS GROUP · Livrare la adresă':
     prod.type==='inchiriere'?'Echipament disponibil pentru închiriere · Darrin AI alocă furnizorul':
     'Serviciu furnizat de parteneri verificați · Alocat automat de Darrin AI');
-  setEl('prod-rating',prod.rating);
   const typeChipMap = {serviciu:'Serviciu',material:'Material',inchiriere:'Închiriere'};
   setEl('prod-type-chip',typeChipMap[prod.type]||'Serviciu');
   // Produsele cu o imagine reală (din fallback-ul de categorie) o afișează
@@ -4489,6 +4568,7 @@ function recalc(){
   // Mod pilot: prețul e calculat integral server-side (rețetă reală), nu
   // client-side ca mai jos — vezi recalcPilot()/_recalcPilotNow().
   if (S.pilotMode) { recalcPilot(); return; }
+  if (TVA === null) { if (window.MDTva) actualizeazaTva().then(recalc); return; }
   const qty = parseInt(document.getElementById('qty-input')?.value||1)||1;
   S.qty = qty;
   const brut = S.tierPrice * qty;
@@ -4621,6 +4701,7 @@ async function geocodeazaAdresaComenzii(adresa){
     // Mod pilot: pragul minim/TVA sunt per țară — recalculăm cu tara_cod real
     // odată detectată adresa (până atunci, calculul inițial folosise fallback 'RO').
     if (S.pilotMode) recalcPilot();
+    else actualizeazaTva().then(recalc);
   }catch(e){
     if(zoneEl) zoneEl.textContent='adresă nedetectată — se folosește zona implicită';
   }
@@ -5143,5 +5224,8 @@ function daiSendMessage(){
 
   </div>
 </div>
+<script src="statistici-publice.js" defer></script>
+<script src="ui-comun.js" defer></script>
+<script src="contact-public.js" defer></script>
 </body>
 </html>

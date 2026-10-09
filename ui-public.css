@@ -1,0 +1,33 @@
+/* ui-public.css — reguli comune pentru antetul și subsolul paginilor publice
+   (8 oct. 2026). Fiecare pagină are propria copie de antet/subsol; regulile
+   de aici le aliniază fără să rescrie fiecare copie. */
+
+/* Antetul la 1024–1279 px: navigația + căutarea + coșul + „Cont” nu încap,
+   butonul „Cont” ieșea din ecran. Căutarea din antet se ascunde doar în acest
+   interval; rămâne în meniul lateral. */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  #hdr .search-bar { display: none !important; }
+}
+
+/* Ținte de atingere de cel puțin 44 × 44 px pe telefon și tabletă. */
+@media (max-width: 767px) {
+  #hdr .search-bar { min-height: 44px; padding-top: 0; padding-bottom: 0; box-sizing: border-box; }
+  #header-search { min-height: 40px; }
+
+  .ftr-ul a { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; }
+
+  /* Bifa GDPR de la newsletter: toată eticheta e zona de atingere. */
+  label:has(> #ftr-nl-gdpr) { min-height: 44px; align-items: center !important; }
+  #ftr-nl-gdpr { width: 22px !important; height: 22px !important; margin-top: 0 !important; }
+
+  #quick-nav-bar a { min-height: 44px; }
+  .myd-breadcrumb a { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; }
+}
+
+/* Antetul la 360 px: căutarea avea minim 170 px (input de 130 px) și împingea
+   coșul cu 4 px în afara ecranului. Sub 400 px se micșorează după spațiu. */
+@media (max-width: 400px) {
+  #hdr .py-3 > div:last-child { min-width: 0; flex: 1 1 auto; justify-content: flex-end; }
+  #hdr .search-bar { min-width: 0; flex: 1 1 auto; padding-left: 10px; padding-right: 10px; }
+  #header-search { width: 100% !important; min-width: 0; }
+}

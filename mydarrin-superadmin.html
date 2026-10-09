@@ -2354,11 +2354,19 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       </div>
     </div>
 
-    <div id="panel-comenzi" style="display:none;text-align:center;padding:60px 20px">
-      <div style="font-size:48px;margin-bottom:16px">📦</div>
-      <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:8px">Comenzi Globale — 247 active</div>
-      <p style="color:#4A6080;margin-bottom:20px">Urmărire live · Escrow · Alocare AI</p>
-      <a href="mydarrin-dashboard-client.html" class="btn-p">→ Dashboard Client</a>
+    <!-- Comenzi Globale (Etapa 0 SLA, 9 oct. 2026): date reale din
+         /api/admin/comenzi-globale. Comenzile fără partener sunt primele, cu
+         vechimea în minute; înainte, panoul era o machetă („247 active”). -->
+    <div id="panel-comenzi" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+        <div>
+          <div style="font-size:18px;font-weight:700;color:#fff">Comenzi Globale</div>
+          <div style="font-size:12px;color:#8BA3C0;margin-top:3px">Fără partener (de tratat manual), apoi ultimele 50 de comenzi. Se reîncarcă la fiecare minut.</div>
+        </div>
+        <button onclick="loadComenziGlobale()" class="btn-p" style="font-size:12px;padding:8px 14px">↻ Reîncarcă</button>
+      </div>
+      <div id="cg-fara-partener" style="margin-bottom:22px;color:#8BA3C0;font-size:13px">Se încarcă...</div>
+      <div id="cg-recente" style="color:#8BA3C0;font-size:13px"></div>
     </div>
 
 
@@ -4770,6 +4778,7 @@ window.showPanel = function(id) {
   if (id === 'email-gateway') loadEmailGateway();
   if (id === 'facturare-parteneri') { loadEntitatiJuridice(); loadFacturiParteneri(); }
   if (id === 'b2g-plati') { loadComenziB2G(); loadMetodePlataConfig(); }
+  if (id === 'comenzi') loadComenziGlobale();
   if (id === 'preturi-niveluri') loadNiveluriPret();
   if (id === 'tarife-transport') loadTarifeTransport();
   if (id === 'tarife-manopera') loadTarifeManopera();
@@ -5148,6 +5157,53 @@ async function confirmaPlataFacturaPartener(id) {
 }
 
 // ── B2G & METODE DE PLATĂ (audit Secțiunea 43/44, 31 Iulie 2026) ──
+// ── Comenzi Globale (Etapa 0 SLA, 9 oct. 2026) ──
+const _CG_STATUS = { in_cautare_partener: 'Fără partener', acceptata: 'Alocată', in_executie: 'În execuție', finalizata: 'Finalizată', confirmata_client: 'Confirmată de client', anulata: 'Anulată' };
+let _cgTimer = null;
+function _cgTabel(lista, cuVechime) {
+  const ora = (v) => (v ? String(v).slice(0, 5) : '');
+  const vechime = (m) => m == null ? '—' : m < 60 ? m + ' min' : m < 1440 ? Math.floor(m / 60) + ' h ' + (m % 60) + ' min' : Math.floor(m / 1440) + ' zile';
+  return `<table style="width:100%;border-collapse:collapse;font-size:12.5px">
+    <thead><tr style="text-align:left;color:#4A6080;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em">
+      <th style="padding:8px 10px">Comandă</th>${cuVechime ? '<th style="padding:8px 10px">Vechime</th>' : '<th style="padding:8px 10px">Status</th>'}
+      <th style="padding:8px 10px">Serviciu</th><th style="padding:8px 10px">Programare</th><th style="padding:8px 10px">Localitate</th><th style="padding:8px 10px">Valoare</th>
+    </tr></thead>
+    <tbody>${lista.map(c => `
+      <tr style="border-top:1px solid #2D3F55">
+        <td style="padding:8px 10px;color:#fff;font-weight:600">${escapeHTML(c.nr_comanda || c.id.slice(0, 8))}</td>
+        ${cuVechime
+          ? `<td style="padding:8px 10px;font-weight:800;color:${c.vechime_min >= 15 ? '#E57373' : '#F2B84B'}">${vechime(c.vechime_min)}</td>`
+          : `<td style="padding:8px 10px;color:#8BA3C0">${escapeHTML(_CG_STATUS[c.status] || c.status)}</td>`}
+        <td style="padding:8px 10px;color:#8BA3C0">${escapeHTML(c.serviciu || '—')}</td>
+        <td style="padding:8px 10px;color:#8BA3C0">${c.data_programata ? escapeHTML(c.data_programata) + (c.ora_inceput_programata ? ' · ' + ora(c.ora_inceput_programata) + '–' + ora(c.ora_sfarsit_programata) : '') : '—'}</td>
+        <td style="padding:8px 10px;color:#8BA3C0">${escapeHTML([c.localitate, c.regiune].filter(Boolean).join(', ') || '—')}</td>
+        <td style="padding:8px 10px;color:#FF8C00;font-weight:700">${c.suma_totala_platita != null ? escapeHTML(c.suma_totala_platita + ' ' + (c.moneda || '')) : '—'}</td>
+      </tr>`).join('')}</tbody>
+  </table>`;
+}
+async function loadComenziGlobale() {
+  const elFara = document.getElementById('cg-fara-partener');
+  const elRec = document.getElementById('cg-recente');
+  if (!elFara) return;
+  try {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/comenzi-globale', { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    elFara.innerHTML = `<div style="font-size:13px;font-weight:700;color:${data.fara_partener.length ? '#E57373' : '#81C784'};margin-bottom:8px">Fără partener: ${data.fara_partener.length}</div>`
+      + (data.fara_partener.length ? _cgTabel(data.fara_partener, true) : '<div style="padding:12px 0">Nicio comandă fără partener.</div>');
+    elRec.innerHTML = `<div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:8px">Ultimele comenzi</div>`
+      + (data.recente.length ? _cgTabel(data.recente, false) : '<div style="padding:12px 0">Nicio comandă.</div>');
+  } catch (e) {
+    elFara.innerHTML = `<div style="color:#E57373">Eroare: ${escapeHTML(e.message)}</div>`;
+  }
+  clearTimeout(_cgTimer);
+  _cgTimer = setTimeout(() => {
+    const panou = document.getElementById('panel-comenzi');
+    if (panou && panou.style.display !== 'none') loadComenziGlobale();
+  }, 60000);
+}
+
 async function loadComenziB2G() {
   const el = document.getElementById('b2g-comenzi-list');
   el.textContent = 'Se încarcă...';
@@ -7011,5 +7067,18 @@ window.showPanel = function(id) {
 };
 </script>
 
+<script src="ui-comun.js" defer></script>
+<script>
+// Deschide direct un panou din link (ex. emailul „Comandă fără partener”:
+// ?panel=comenzi), după ce pagina și verificarea de acces s-au încărcat.
+window.addEventListener('load', function () {
+  try {
+    var panou = new URLSearchParams(window.location.search).get('panel');
+    if (panou && /^[a-z0-9-]+$/.test(panou) && document.getElementById('panel-' + panou) && typeof window.showPanel === 'function') {
+      setTimeout(function () { window.showPanel(panou); }, 600);
+    }
+  } catch (e) {}
+});
+</script>
 </body>
 </html>

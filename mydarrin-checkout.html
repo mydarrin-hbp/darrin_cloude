@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="ro">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script>
   window.__ENV__ = {
     SUPABASE_URL: 'https://aacojyvujhywanaulvuu.supabase.co',
@@ -224,6 +226,29 @@ input:valid:not(:placeholder-shown):not([type="checkbox"]) {
   border-color: #1A7A3A !important;
 }
 
+/* ── Checkout pe tabletă și telefon (8 oct. 2026) ──
+   Regula UV14 de mai jos prindea și „lg:grid-cols-3" și forța două coloane,
+   iar rezumatul comenzii ieșea din ecran în dreapta. Sub 1024 px: o singură
+   coloană, rezumatul sub formular. Sub 768 px: bară fixă cu totalul. */
+@media (max-width: 1023px) {
+  #checkout-container { grid-template-columns: minmax(0,1fr) !important; }
+  #checkout-container > * { min-width: 0; }
+  #summary-panel > div { position: static !important; }
+}
+#co-bara-mobil { display: none; }
+@media (max-width: 767px) {
+  #co-bara-mobil.are-total {
+    display: flex; position: fixed; left: 0; right: 0; z-index: 60;
+    align-items: center; gap: 12px; padding: 10px 16px;
+    background: #fff; border-top: 1px solid #D5DFE8; box-shadow: 0 -6px 20px rgba(0,51,102,.10);
+  }
+  #co-bara-mobil .co-bara-total { flex: 1; min-width: 0; }
+  #co-bara-mobil .co-bara-eticheta { font-size: 11px; color: #6B7A8D; font-weight: 600; }
+  #co-bara-mobil .co-bara-suma { font-size: 18px; font-weight: 800; color: #003366; white-space: nowrap; }
+  #co-bara-mobil button { min-height: 44px; padding: 0 16px; border-radius: 12px; border: none; background: #FF8C00; color: #fff; font-weight: 700; font-size: 14px; max-width: 60%; }
+  .co-spatiu-bara { height: 72px; }
+}
+
 /* ── UV14: RESPONSIVE GRID FIX cataloguri ── */
 @media (max-width: 640px) {
   .inv-3col { grid-template-columns: 1fr !important; }
@@ -309,8 +334,6 @@ input:valid:not(:placeholder-shown):not([type="checkbox"]) {
 })();
 </script>
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Coș & Checkout — Escrow securizat | My Darrin</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
@@ -684,6 +707,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 <script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
 <script src="myd-unavail-msg.js"></script>
 <script src="format-currency.js"></script>
+<script src="tva-config.js"></script>
 <script src="seo-meta.js"></script>
 <script src="cookie-consent.js" defer></script>
 <script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="analytics-loader.js" defer></script>
@@ -734,6 +758,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
     }
   </script>
 
+<link rel="stylesheet" href="ui-public.css">
 </head>
 <body>
 
@@ -748,7 +773,6 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
     <a href="https://www.linkedin.com/showcase/my-darrin/?viewAsMember=true" target="_blank" class="text-white/40 hover:text-white transition" title="LinkedIn"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
     <a href="https://x.com/My_Darrin_hbp" target="_blank" class="text-white/40 hover:text-white transition" title="X"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
     <a href="https://www.tiktok.com/@darrinhbp" target="_blank" class="text-white/40 hover:text-white transition" title="TikTok"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.75a8.18 8.18 0 004.78 1.52V6.79a4.85 4.85 0 01-1.01-.1z"/></svg></a>
-    <a href="https://wa.me/40721234567" target="_blank" class="text-white/40 hover:text-white transition" title="WhatsApp"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>
   </div>
 
   <!-- AI status center -->
@@ -853,7 +877,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
               <a href="mydarrin-catalog.html?cat=servicii" onclick="event.preventDefault();window.location.href='mydarrin-catalog.html?cat=Exterior'" class="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-[#F4F7F9] transition group/d"><span class="text-lg"><i data-lucide="leaf" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span><div><div class="font-semibold text-sm text-[#2D2D2D] group-hover/d:text-[#FF8C00] transition">Grădinărit & Agri</div><div class="text-[11px] text-gray-400">Amenajare, irigații</div></div></a>
             </div>
             <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-              <span class="text-xs text-gray-400"><span class="w-1.5 h-1.5 rounded-full bg-[#FF8C00] inline-block mr-1.5"></span>276+ servicii active</span>
+              <span class="text-xs text-gray-400" data-stat-celula="servicii" style="display:none"><span class="w-1.5 h-1.5 rounded-full bg-[#FF8C00] inline-block mr-1.5"></span><span data-stat="servicii-active"></span></span>
               <a href="#catalog" class="text-xs font-bold text-[#FF8C00] flex items-center gap-1 hover:underline">Toate <i data-lucide="arrow-right" class="w-3 h-3"></i></a>
             </div>
           </div>
@@ -908,7 +932,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 
             </div>
             <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-              <span class="text-xs text-gray-400">1.840+ parteneri activi pe platformă</span>
+              <span class="text-xs text-gray-400" data-stat="parteneri-verificati" style="display:none"></span>
               <a href="mydarrin-devino-partener.html" class="text-xs font-bold text-[#FF8C00] flex items-center gap-1 hover:underline" style="text-decoration:none">
                 Toate tipurile <i data-lucide="arrow-right" class="w-3 h-3"></i>
               </a>
@@ -978,10 +1002,6 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
         <span class="hidden md:inline">Cont</span>
       </button>
 
-      <!-- Burger mobil -->
-      <button class="lg:hidden p-2.5 rounded-xl hover:bg-[#EBF4FB] transition" onclick="openSidebar()">
-        <i data-lucide="menu" class="w-5 h-5"></i>
-      </button>
     </div>
   </div>
 </header>
@@ -1259,7 +1279,7 @@ function triggerHeaderSearch(){
       <span class="text-[#0E9E99] text-[10px] font-bold uppercase tracking-wider">Darrin AI</span>
     </div>
     <p class="text-white/50 text-xs leading-relaxed">Devize automate, prețuri în timp real, asistență completă.</p>
-    <button onclick="closeSidebar(); document.getElementById('flux').scrollIntoView({behavior:'smooth'})"
+    <button onclick="closeSidebar(); var f=document.getElementById('flux'); if(f) f.scrollIntoView({behavior:'smooth'}); else location.href='mydarrin-cum-functioneaza.html#flux'"
             class="mt-3 w-full bg-[#FF8C00] text-white text-xs font-bold py-2.5 rounded-xl hover:bg-[#CC7000] transition">
       Generează Deviz Gratuit →
     </button>
@@ -1289,38 +1309,44 @@ function triggerHeaderSearch(){
       <!-- STEP 1: COȘ -->
       <div id="step-cart" class="reveal">
         <h2 class="text-xl font-bold text-[#003366] mb-5 flex items-center gap-2">
-          <i data-lucide="shopping-cart" class="w-5 h-5"></i>Coșul tău (<span id="cart-count-label">2 servicii</span>)
+          <i data-lucide="shopping-cart" class="w-5 h-5"></i>Coșul tău (<span id="cart-count-label">0 servicii</span>)
         </h2>
 
-        <!-- Item 1 — suprascris dinamic din sessionStorage (myd_checkout_config), dacă vine de la un flux real de configurare din mydarrin-produs.html -->
-        <div class="cart-item mb-3" id="cart-item-1">
+        <!-- Coș gol: singura stare afișată fără o configurație reală (8 oct. 2026 —
+             înainte apăreau 2 servicii, sume, firme și adrese inventate). -->
+        <div class="cart-item mb-4 text-center" id="cos-gol" style="padding:32px 20px">
+          <div class="font-bold text-[#003366] text-lg mb-2">Coșul tău e gol</div>
+          <p class="text-sm text-[#6B7A8D] mb-5">Alege un serviciu din catalog și configurează-l; revii aici pentru detalii și plată.</p>
+          <a href="mydarrin-catalog.html" class="btn-accent inline-flex justify-center items-center py-3 px-6 text-[14px]" style="min-height:44px">Mergi la catalog</a>
+        </div>
+
+        <!-- Serviciul configurat — completat din sessionStorage (myd_checkout_config), salvat de mydarrin-produs.html -->
+        <div class="cart-item mb-3" id="cart-item-1" style="display:none">
           <div class="flex items-start gap-4">
             <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0 bg-gradient-to-br from-[#EBF4FB] to-[#DDE6F5]"><i data-lucide="zap" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
             <div class="flex-1 min-w-0">
               <div class="flex items-start justify-between gap-2 flex-wrap">
                 <div>
-                  <div class="font-bold text-[#003366] text-[15px]" id="ci1-title">Instalare tablou electric</div>
+                  <div class="font-bold text-[#003366] text-[15px]" id="ci1-title">—</div>
                   <!-- Bug real găsit 31 august 2026 (fondator: "nu există
                        descrierile serviciului... pe checkout") — descrierea
                        reală a serviciului + a materialelor/accesoriilor
                        adăugate, vizibile aici doar dacă există (mod pilot). -->
                   <div class="text-xs text-[#6B7A8D] mt-1" id="ci1-desc" style="display:none;line-height:1.5"></div>
                   <div class="flex flex-wrap gap-2 mt-1.5">
-                    <span class="chip chip-accent text-[10px]" id="ci1-tier">Pachet Aur</span>
-                    <span class="chip chip-primary text-[10px]">Electro Profesional SRL</span>
-                    <span class="chip chip-ai text-[10px]"><span class="pulse-dot mr-1"></span>ANRE Cl.I</span>
+                    <span class="chip chip-accent text-[10px]" id="ci1-tier">—</span>
                   </div>
                   <div id="ci1-materiale" style="display:none;margin-top:8px"></div>
                 </div>
-                <button onclick="removeItem(1)" class="text-[#8C9BAD] hover:text-red-400 transition p-1 flex-shrink-0"><i data-lucide="x" class="w-4 h-4"></i></button>
+                <button onclick="eliminaServiciuDinCos()" aria-label="Elimină serviciul din coș" style="min-width:44px;min-height:44px" class="text-[#8C9BAD] hover:text-red-400 transition p-1 flex-shrink-0"><i data-lucide="x" class="w-4 h-4"></i></button>
               </div>
               <div class="flex flex-wrap items-center gap-4 mt-3 text-sm text-[#6B7A8D]">
-                <span class="flex items-center gap-1.5"><i data-lucide="calendar" class="w-3.5 h-3.5"></i><span id="ci1-date">15 iun. 2026, 10:00–14:00</span></span>
-                <span class="flex items-center gap-1.5"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i><span id="ci1-addr">Str. Victoriei 24, București</span></span>
+                <span class="flex items-center gap-1.5"><i data-lucide="calendar" class="w-3.5 h-3.5"></i><span id="ci1-date">—</span></span>
+                <span class="flex items-center gap-1.5"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i><span id="ci1-addr">—</span></span>
               </div>
             </div>
             <div class="text-right flex-shrink-0">
-              <div class="font-bold text-xl text-[#003366]"><span id="ci1-price">1.240</span> <span class="text-sm font-normal text-[#8C9BAD]">Lei</span></div>
+              <div class="font-bold text-xl text-[#003366]"><span id="ci1-price">—</span> <span class="text-sm font-normal text-[#8C9BAD]">Lei</span></div>
               <div class="text-xs text-[#8C9BAD]">incl. TVA</div>
             </div>
           </div>
@@ -1331,47 +1357,9 @@ function triggerHeaderSearch(){
           </div>
         </div>
 
-        <!-- Item 2 — mock, ascuns automat când avem un flux real cu un singur serviciu configurat (vezi applyChecko​utConfigReal) -->
-        <div class="cart-item mb-4" id="cart-item-2">
-          <div class="flex items-start gap-4">
-            <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0 bg-gradient-to-br from-[#FFF0D6] to-[#FDE8C4]"><i data-lucide="wrench" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-start justify-between gap-2 flex-wrap">
-                <div>
-                  <div class="font-bold text-[#003366] text-[15px]">Reparare instalații sanitare</div>
-                  <div class="flex flex-wrap gap-2 mt-1.5">
-                    <span class="chip chip-primary text-[10px]">Pachet Argint</span>
-                    <span class="chip chip-primary text-[10px]">InstalaȚii Pro SRL</span>
-                  </div>
-                </div>
-                <button onclick="removeItem(2)" class="text-[#8C9BAD] hover:text-red-400 transition p-1 flex-shrink-0"><i data-lucide="x" class="w-4 h-4"></i></button>
-              </div>
-              <div class="flex flex-wrap items-center gap-4 mt-3 text-sm text-[#6B7A8D]">
-                <span class="flex items-center gap-1.5"><i data-lucide="calendar" class="w-3.5 h-3.5"></i>16 iun. 2026, 08:00–12:00</span>
-                <span class="flex items-center gap-1.5"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i>Str. Victoriei 24, București</span>
-              </div>
-            </div>
-            <div class="text-right flex-shrink-0">
-              <div class="font-bold text-xl text-[#003366]">480 <span class="text-sm font-normal text-[#8C9BAD]">Lei</span></div>
-              <div class="text-xs text-[#8C9BAD]">incl. TVA</div>
-            </div>
-          </div>
-          <div class="mt-4 pt-4 border-t border-[#F4F7F9] flex items-center gap-2">
-            <i data-lucide="shield-check" class="w-4 h-4 text-[#0E9E99] flex-shrink-0"></i>
-            <span class="text-xs text-[#6B7A8D]">Suma va fi blocată în Escrow My Darrin.</span>
-          </div>
-        </div>
 
-        <!-- Cod promoțional -->
-        <div class="bg-white rounded-2xl border border-[#D5DFE8] p-5">
-          <div class="flex gap-3">
-            <input type="text" placeholder="Cod promoțional / voucher" class="flex-1 border border-[#D5DFE8] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white" id="promo-input"/>
-            <button onclick="applyPromo()" class="btn-ghost" style="padding:10px 18px;font-size:13px;border-radius:12px">Aplică</button>
-          </div>
-          <div id="promo-msg" class="hidden mt-2 text-xs text-[#0E9E99] font-semibold">Cod DARRIN10 aplicat — -10% reducere!</div>
-        </div>
 
-        <button onclick="goToStep('details')" class="w-full btn-accent justify-center py-4 text-[15px] mt-4">
+        <button onclick="goToStep('details')" id="cart-continua" class="w-full btn-accent justify-center py-4 text-[15px] mt-4" style="display:none">
           Continuă → Detalii comandă
         </button>
       </div>
@@ -1383,17 +1371,17 @@ function triggerHeaderSearch(){
         </h2>
         <div class="bg-white rounded-2xl border border-[#D5DFE8] p-6 space-y-4">
           <div class="grid grid-cols-2 gap-4">
-            <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Prenume</label><input type="text" value="Alexandru" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
-            <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Nume</label><input type="text" value="Moldovan" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
+            <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Prenume</label><input type="text" value="" placeholder="Prenume" id="co-prenume" name="co-prenume" autocomplete="given-name" required class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
+            <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Nume</label><input type="text" value="" placeholder="Nume" id="co-nume" name="co-nume" autocomplete="family-name" required class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
           </div>
           <div class="grid grid-cols-2 gap-4">
-            <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Telefon</label><input type="tel" value="+40721234567" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
-            <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Email</label><input type="email" value="alex@email.ro" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
+            <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Telefon</label><input type="tel" value="" placeholder="+40 7xx xxx xxx" id="co-telefon" name="co-telefon" autocomplete="tel" required class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
+            <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Email</label><input type="email" value="" placeholder="adresa@exemplu.ro" id="co-email" name="co-email" autocomplete="email" required class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
           </div>
-          <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Adresă completă</label><input type="text" value="Str. Victoriei nr. 24, ap. 5, Sector 1" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
+          <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Adresă completă</label><input type="text" value="" placeholder="Strada, număr, bloc, apartament" id="co-adresa" name="co-adresa" autocomplete="street-address" required class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
           <div class="grid grid-cols-2 gap-4">
-            <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Oraș</label><input type="text" value="București" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
-            <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Județ</label><select class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white cursor-pointer"><option>Ilfov</option><option selected>Sector 1</option><option>Sector 6</option></select></div>
+            <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Oraș</label><input type="text" value="" placeholder="Oraș" id="co-oras" name="co-oras" autocomplete="address-level2" required class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
+            <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Județ</label><select class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white cursor-pointer" id="co-judet" name="co-judet" autocomplete="address-level1" required><option value="">Alege județul</option><option>Alba</option><option>Arad</option><option>Argeș</option><option>Bacău</option><option>Bihor</option><option>Bistrița-Năsăud</option><option>Botoșani</option><option>Brăila</option><option>Brașov</option><option>București</option><option>Buzău</option><option>Călărași</option><option>Caraș-Severin</option><option>Cluj</option><option>Constanța</option><option>Covasna</option><option>Dâmbovița</option><option>Dolj</option><option>Galați</option><option>Giurgiu</option><option>Gorj</option><option>Harghita</option><option>Hunedoara</option><option>Ialomița</option><option>Iași</option><option>Ilfov</option><option>Maramureș</option><option>Mehedinți</option><option>Mureș</option><option>Neamț</option><option>Olt</option><option>Prahova</option><option>Sălaj</option><option>Satu Mare</option><option>Sibiu</option><option>Suceava</option><option>Teleorman</option><option>Timiș</option><option>Tulcea</option><option>Vâlcea</option><option>Vaslui</option><option>Vrancea</option></select></div>
           </div>
           <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Instrucțiuni acces (opțional)</label><textarea rows="2" placeholder="Ex: Interfon 45, cod poartă 1234..." class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition resize-none bg-white"></textarea></div>
         </div>
@@ -1481,7 +1469,7 @@ function triggerHeaderSearch(){
 
         <div class="flex gap-3">
           <button onclick="goToStep('details')" class="btn-ghost flex-shrink-0" style="padding:12px 20px;font-size:13px"><span data-i18n="checkout.btn_back">← Înapoi</span></button>
-          <button onclick="goToStep('confirm')" class="btn-accent flex-1 justify-center py-4 text-[15px]">
+          <button id="btn-finalizeaza" onclick="confirmaFinalizarea(event)" class="btn-accent flex-1 justify-center py-4 text-[15px]">
             <i data-lucide="lock" class="w-5 h-5"></i><span data-i18n="checkout.btn_finalize">Finalizează & Blochează Escrow</span>
           </button>
         </div>
@@ -1495,18 +1483,12 @@ function triggerHeaderSearch(){
           </div>
           <div class="chip chip-green mx-auto mb-4" data-i18n="checkout.success.chip">Comandă plasată cu succes</div>
           <h2 class="text-2xl font-bold text-[#003366] mb-2" data-i18n="checkout.success.title">Suma blocată în Escrow!</h2>
-          <p class="text-[#6B7A8D] text-sm leading-relaxed mb-6 max-w-sm mx-auto">Suma totală de <strong class="text-[#003366]">1.720 Lei</strong> a fost blocată securizat în Escrow My Darrin. Partenerii au fost notificați și vor confirma execuția.</p>
+          <p class="text-[#6B7A8D] text-sm leading-relaxed mb-6 max-w-sm mx-auto">Suma totală de <strong class="text-[#003366] conf-total">—</strong> a fost blocată securizat în Escrow My Darrin. Partenerii au fost notificați și vor confirma execuția.</p>
           <!-- Escrow status block -->
           <div class="bg-[#EBF4FB] rounded-2xl p-5 text-left mb-6 space-y-3 max-w-md mx-auto">
             <div class="flex items-center justify-between text-sm">
               <span class="flex items-center gap-2 font-semibold text-[#003366]"><i data-lucide="lock" class="w-4 h-4"></i>Escrow blocat</span>
-              <span class="font-bold text-[#1A5FAD]">1.720 Lei</span>
-            </div>
-            <div class="flex items-center justify-between text-sm text-[#6B7A8D]">
-              <span>Nr. comandă</span><span class="font-mono font-bold text-[#2D2D2D]">#MD-20260615-0142</span>
-            </div>
-            <div class="flex items-center justify-between text-sm text-[#6B7A8D]">
-              <span>Termen confirmare</span><span class="font-bold text-[#2D2D2D]">20 iun. 2026</span>
+              <span class="font-bold text-[#1A5FAD] conf-total">—</span>
             </div>
           </div>
           <div class="flex flex-col sm:flex-row gap-3 justify-center">
@@ -1530,35 +1512,24 @@ function triggerHeaderSearch(){
         </h3>
 
         <div class="space-y-0 mb-4">
-          <div class="order-summary-row">
+          <div class="order-summary-row" id="sum-item-1" style="display:none">
             <div>
-              <div class="font-semibold text-sm text-[#2D2D2D]">Instalare tablou electric</div>
-              <div class="text-xs text-[#8C9BAD]">Aur · Electro Profesional</div>
+              <div class="font-semibold text-sm text-[#2D2D2D]" id="sum-item-titlu">—</div>
+              <div class="text-xs text-[#8C9BAD]" id="sum-item-nivel">—</div>
             </div>
-            <span class="font-bold text-sm">1.240 Lei</span>
-          </div>
-          <div class="order-summary-row">
-            <div>
-              <div class="font-semibold text-sm text-[#2D2D2D]">Reparare instalații sanitare</div>
-              <div class="text-xs text-[#8C9BAD]">Argint · InstalaȚii Pro</div>
-            </div>
-            <span class="font-bold text-sm">480 Lei</span>
-          </div>
-          <div class="order-summary-row text-[#0E9E99]" id="promo-row" style="display:none">
-            <span class="font-semibold text-sm">Reducere DARRIN10 (-10%)</span>
-            <span class="font-bold text-sm">-172 Lei</span>
+            <span class="font-bold text-sm" id="sum-item-pret">—</span>
           </div>
           <div class="order-summary-row" id="insurance-row" style="display:none">
             <span class="text-sm text-[#2D2D2D]">Poliță asigurare extinsă</span>
             <span class="font-bold text-sm" id="insurance-price-display">+89 Lei</span>
           </div>
           <div class="order-summary-row">
-            <span class="text-[#6B7A8D] text-sm">TVA (19%)</span>
+            <span class="text-[#6B7A8D] text-sm">TVA (<span class="tva-pct">—</span>)</span>
             <span class="text-sm text-[#6B7A8D]">inclus</span>
           </div>
           <div class="order-summary-row border-t-2 border-[#D5DFE8] pt-3">
             <span class="font-bold text-[#003366]">Total Escrow</span>
-            <span class="font-bold text-xl text-[#003366]" id="total-price">1.720 Lei</span>
+            <span class="font-bold text-xl text-[#003366]" id="total-price"></span>
           </div>
         </div>
 
@@ -1585,22 +1556,18 @@ function triggerHeaderSearch(){
           <p class="text-[11px] text-[#0B7A76] leading-relaxed">Suma este blocată la plasarea comenzii și eliberată partenerului după confirmarea ta finală. Maxim 5 zile.</p>
         </div>
 
-        <!-- Timeline -->
-        <div class="space-y-3 mb-4">
+        <!-- Calendarul execuției — doar dacă clientul a ales o dată -->
+        <div class="space-y-3 mb-4" id="sum-calendar" style="display:none">
           <div class="text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-2">Calendarul execuției</div>
           <div class="flex items-start gap-3">
             <div class="w-6 h-6 rounded-full bg-[#FF8C00] flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">1</div>
-            <div><div class="text-xs font-bold text-[#2D2D2D]">15 iun. · 10:00</div><div class="text-[11px] text-[#8C9BAD]">Tablou electric</div></div>
-          </div>
-          <div class="flex items-start gap-3">
-            <div class="w-6 h-6 rounded-full bg-[#003366] flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">2</div>
-            <div><div class="text-xs font-bold text-[#2D2D2D]">16 iun. · 08:00</div><div class="text-[11px] text-[#8C9BAD]">Instalații sanitare</div></div>
+            <div><div class="text-xs font-bold text-[#2D2D2D]" id="sum-cal-data">—</div><div class="text-[11px] text-[#8C9BAD]" id="sum-cal-titlu">—</div></div>
           </div>
         </div>
 
-        <div class="flex items-center gap-2 text-[11px] text-[#8C9BAD] border-t border-[#F4F7F9] pt-3">
-          <i data-lucide="phone" class="w-3.5 h-3.5"></i>
-          Suport: <a href="tel:+40800123456" class="text-[#003366] font-semibold hover:underline">0800 123 456</a>
+        <div data-contact-rand class="flex items-center gap-2 text-[11px] text-[#8C9BAD] border-t border-[#F4F7F9] pt-3" style="display:none">
+          <i data-lucide="mail" class="w-3.5 h-3.5"></i>
+          Suport: <span data-contact="suport_email" class="text-[#003366] font-semibold" style="user-select:all"></span>
         </div>
       </div>
     </div>
@@ -1705,35 +1672,7 @@ function triggerHeaderSearch(){
   </div>
   <div>
     <span class="ftr-nh">Aplicație</span>
-        <div class="ftr-app-btns" style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px">
-
-          <!-- Apple App Store: negru #000000, logo  alb -->
-          <a href="#" style="display:inline-flex;align-items:center;gap:9px;background:#000000;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 14px;text-decoration:none;transition:opacity .15s" onmouseover="this.style.opacity='.82'" onmouseout="this.style.opacity='1'">
-            <!-- Apple logo SVG oficial -->
-            <svg width="18" height="22" viewBox="0 0 18 22" fill="#ffffff">
-              <path d="M14.94 11.66c-.02-2.26 1.85-3.35 1.93-3.4-1.05-1.54-2.69-1.75-3.27-1.77-1.39-.14-2.72.82-3.43.82-.71 0-1.8-.8-2.96-.78-1.52.02-2.93.89-3.71 2.25-1.59 2.75-.41 6.82 1.14 9.05.76 1.09 1.66 2.32 2.84 2.28 1.14-.05 1.57-.73 2.95-.73 1.38 0 1.77.73 2.98.71 1.23-.02 2-1.1 2.75-2.2.87-1.26 1.23-2.49 1.25-2.55-.03-.01-2.45-.94-2.47-3.68zM12.68 4.57c.63-.77 1.06-1.83.94-2.9-.91.04-2.01.61-2.66 1.37-.58.67-1.09 1.75-.96 2.78 1.02.08 2.05-.52 2.68-1.25z"/>
-            </svg>
-            <div>
-              <div style="color:rgba(255,255,255,.55);font-size:9px;line-height:1;letter-spacing:.04em">Download on the</div>
-              <div style="color:#fff;font-size:13.5px;font-weight:700;line-height:1.3;letter-spacing:-.01em">App Store</div>
-            </div>
-          </a>
-
-          <!-- Google Play: paleta Google (#4285F4 #34A853 #FBBC05 #EA4335) -->
-          <a href="#" style="display:inline-flex;align-items:center;gap:9px;background:#1C1C1E;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 14px;text-decoration:none;transition:opacity .15s" onmouseover="this.style.opacity='.82'" onmouseout="this.style.opacity='1'">
-            <!-- Google Play triangle logo — culorile oficiale -->
-            <svg width="20" height="22" viewBox="0 0 20 22" fill="none">
-              <path d="M1.5 1.27L11.09 11 1.5 20.73A1.5 1.5 0 0 1 1 19.5V2.5A1.5 1.5 0 0 1 1.5 1.27z" fill="#EA4335"/>
-              <path d="M17.5 9.5L14.41 11 11.09 11 1.5 1.27C1.83 1.1 2.22 1 2.62 1.14L17.5 9.5z" fill="#FBBC05"/>
-              <path d="M17.5 12.5L2.62 20.86C2.22 21 1.83 20.9 1.5 20.73L11.09 11 14.41 11 17.5 12.5z" fill="#34A853"/>
-              <path d="M17.5 9.5L14.41 11 11.09 11 14.41 11 17.5 12.5C18.5 11.95 18.5 10.05 17.5 9.5z" fill="#4285F4"/>
-            </svg>
-            <div>
-              <div style="color:rgba(255,255,255,.55);font-size:9px;line-height:1;letter-spacing:.04em">Get it on</div>
-              <div style="color:#fff;font-size:13.5px;font-weight:700;line-height:1.3;letter-spacing:-.01em">Google Play</div>
-            </div>
-          </a>
-        </div>
+        <div class="ftr-app-btns" style="margin-bottom:24px"><span style="color:rgba(255,255,255,.65);font-size:13px;line-height:1.5">Aplicațiile mobile My Darrin — în curând</span></div>
   </div>
 </div>
 
@@ -1792,6 +1731,16 @@ function triggerHeaderSearch(){
       <li><a href="mydarrin-contact.html#formular">Formular contact</a></li>
       <li><a href="reclamatii.html">Reclamații</a></li>
     </ul>
+    <!-- Contact: din back-office (/api/public/contact, contact-public.js) -->
+    <div data-contact-bloc style="display:none;margin-top:16px">
+      <span class="ftr-nh">Contact</span>
+      <ul class="ftr-ul">
+        <li data-contact-rand style="display:none"><a data-contact="contact_whatsapp" data-contact-text href="#">Scrie-ne pe WhatsApp</a></li>
+        <li data-contact-rand style="display:none"><a data-contact="contact_telefon" href="#"></a></li>
+        <li data-contact-rand style="display:none"><a data-contact="contact_email" href="#"></a></li>
+        <li data-contact-rand style="display:none"><span style="color:rgba(255,255,255,.55)">Program: </span><span data-contact="contact_program" style="color:rgba(255,255,255,.8)"></span></li>
+      </ul>
+    </div>
   </div>
 
 </div><!-- /r2 -->
@@ -1970,19 +1919,19 @@ function submitNewsletter() {
       <div class="inline-flex items-center gap-2 bg-[#FF8C00]/15 border border-[#FF8C00]/30 text-[#FF8C00] text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-3">Devino Investitor</div>
       <h2 class="font-bold text-2xl text-white mb-1" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Investește în My Darrin</h2>
       <p class="text-sm text-white/50">Platformă hibrid clasic & AI · Multi-țară · Servicii integrate la cerere</p>
-      <!-- KPIs mini -->
-      <div class="grid grid-cols-3 gap-3 mt-5">
-        <div class="bg-white/08 rounded-xl p-3 border border-white/10 text-center">
-          <div class="font-bold text-lg text-white" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">12.4K</div>
-          <div class="text-[10px] text-white/40 mt-0.5">Clienți activi</div>
+      <!-- Indicatori reali (RPC get_live_investor_kpis, statistici-publice.js); 0 nu se afișează -->
+      <div class="grid grid-cols-3 gap-3 mt-5" data-kpi-bloc style="display:none">
+        <div class="bg-white/08 rounded-xl p-3 border border-white/10 text-center" data-kpi="comenzi_total" style="display:none">
+          <div class="font-bold text-lg text-white" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif" data-kpi-valoare></div>
+          <div class="text-[10px] text-white/40 mt-0.5">Comenzi</div>
         </div>
-        <div class="bg-white/08 rounded-xl p-3 border border-white/10 text-center">
-          <div class="font-bold text-lg text-[#FF8C00]" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">1.840</div>
-          <div class="text-[10px] text-white/40 mt-0.5">Parteneri</div>
+        <div class="bg-white/08 rounded-xl p-3 border border-white/10 text-center" data-kpi="parteneri_activi" style="display:none">
+          <div class="font-bold text-lg text-[#FF8C00]" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif" data-kpi-valoare></div>
+          <div class="text-[10px] text-white/40 mt-0.5">Parteneri activi</div>
         </div>
-        <div class="bg-white/08 rounded-xl p-3 border border-white/10 text-center">
-          <div class="font-bold text-lg text-[#0E9E99]" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">384K</div>
-          <div class="text-[10px] text-white/40 mt-0.5">Lei în Escrow</div>
+        <div class="bg-white/08 rounded-xl p-3 border border-white/10 text-center" data-kpi="gmv_total" style="display:none">
+          <div class="font-bold text-lg text-[#0E9E99]" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif" data-kpi-valoare></div>
+          <div class="text-[10px] text-white/40 mt-0.5">Valoare comenzi (Lei)</div>
         </div>
       </div>
     </div>
@@ -2083,8 +2032,8 @@ function setLang(code,flag,label){
   }
 }
 document.addEventListener('click',e=>{
-  if(!document.getElementById('langDd').contains(e.target))
-    document.getElementById('langDd').classList.remove('open');
+  const dd=document.getElementById('langDd');
+  if(dd&&!dd.contains(e.target)) dd.classList.remove('open');
 });
 
 // Location modal
@@ -2464,26 +2413,6 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-// ── B4: GUEST ORDER SAVE ──
-function saveGuestOrder(orderData) {
-  const order = {
-    id:       orderData.id || 'CMD-' + Date.now(),
-    email:    orderData.email || '',
-    service:  orderData.service || 'Înlocuire calorifer',
-    address:  orderData.address || 'Str. Gorjului 118, Sector 6',
-    price:    orderData.price || 0,
-    status:   'alocat',
-    partener: { name:'Valentin P.', rating:4.97, eta: new Date(Date.now()+25*60000).toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'}) },
-    timestamp: new Date().toISOString(),
-    isGuest:  true
-  };
-  try {
-    sessionStorage.setItem('myd_guest_order', JSON.stringify(order));
-    sessionStorage.setItem('myd_last_order_id', order.id);
-  } catch(e) { console.warn('sessionStorage unavailable:', e); }
-  return order;
-}
-
 // ── CONFIRMARE COMANDĂ ──
 // FIX (audit 2026-07-11): fostul showETAScreen() afișa un partener și un
 // ETA hardcodate ("Valentin P. 4.97", 25 min) — ficțiune totală, arătată
@@ -2530,11 +2459,14 @@ function showComandaInregistrataScreen(numarComanda, mesajCustom) {
 
 // ── HOOK PE SUBMIT CHECKOUT ──
 // FIX (audit 2026-07-11): trimitea comanda doar în sessionStorage
-// (saveGuestOrder), niciodată către backend — acum: cere un cont real
+// (funcția saveGuestOrder, ștearsă 9 oct. 2026), niciodată către backend — acum: cere un cont real
 // (deschide modalul de autentificare dacă nu ești logat) și apelează
 // /api/comenzi/creeaza, care inserează efectiv un rând în `comenzi`.
 document.addEventListener('DOMContentLoaded', function() {
-  const submitBtns = document.querySelectorAll('[class*="submit"],[id*="submit"],[onclick*="submit"],[onclick*="plat"],[onclick*="confirm"]');
+  // 8 oct. 2026: selectorul vechi ('[class*="submit"],[onclick*="plat"],
+  // [onclick*="confirm"]'...) lega trimiterea comenzii și de newsletter,
+  // formularul de investitori, „Confirmă codul" și o întrebare rapidă AI.
+  const submitBtns = document.querySelectorAll('#btn-finalizeaza');
   submitBtns.forEach(btn => {
     btn.addEventListener('click', async function(e) {
       // FIX (Etapa 4, audit 2026-07-12): verificare reală de zonă înainte de
@@ -2559,8 +2491,12 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
 
-      const addrEl = document.querySelector('[id*="addr"], [class*="addr"]');
-      const adresa = addrEl ? addrEl.textContent.trim() : '';
+      // Adresa confirmată de client în pasul „Detalii" (validată de
+      // valideazaPas('details')); înainte se citea textul primului element
+      // cu „addr" în id, care putea fi „Adresă necompletată".
+      const adresa = ['co-adresa', 'co-oras', 'co-judet']
+        .map((id) => (document.getElementById(id)?.value || '').trim())
+        .filter(Boolean).join(', ');
       // FIX (G15, 25 Iulie 2026 · extins G16, 26 Iulie 2026): până acum se
       // trimitea un singur număr (valoare_totala, citit din textul afișat al
       // totalului) — backend-ul accepta deja componentele itemizate
@@ -2579,7 +2515,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // catalog cu preț propriu (alocare pe zonă/disponibilitate, nu listă).
       //
       // Fallback (acces direct la /cos, fără să treci prin produs.html —
-      // MYD_CFG e null): comportamentul de la G15, cu BASE_SUBTOTAL/promo/
+      // MYD_CFG e null): comportamentul de la G15, cu BASE_SUBTOTAL și
       // bifa de asigurare proprie a checkout-ului.
       let cost_baza_servicii, cost_asigurare, cost_materiale, cost_chirie_scule;
       if (MYD_CFG) {
@@ -2589,7 +2525,6 @@ document.addEventListener('DOMContentLoaded', function() {
         cost_chirie_scule = MYD_CFG.inchirieriPrice || 0;
       } else {
         cost_baza_servicii = BASE_SUBTOTAL;
-        if (PROMO_ACTIVE) cost_baza_servicii -= PROMO_DISCOUNT;
         cost_asigurare = document.getElementById('cb-insurance')?.checked ? INSURANCE_PRICE : 0;
         cost_materiale = 0;
         cost_chirie_scule = 0;
@@ -3329,21 +3264,13 @@ function selectPartnerType(type){const PM={servicii:{icon:"",title:"Furnizor de 
 function resetPartnerType(){document.getElementById("partner-cards").classList.remove("hidden");document.getElementById("partner-form").classList.add("hidden");}
 
 function removeItem(id){if(confirm("Elimini serviciul din coș?"))alert("Serviciu eliminat din coș.");}
-function applyPromo(){
-  const val=document.getElementById("promo-input").value.trim().toUpperCase();
-  if(val==="DARRIN10"){
-    document.getElementById("promo-msg").classList.remove("hidden");
-    document.getElementById("promo-row").style.display="flex";
-    PROMO_ACTIVE = true;
-    recalcCheckoutTotal();
-  } else { alert("Cod invalid sau expirat."); }
-}
 
 // ── ASIGURARE EXTINSĂ OPȚIONALĂ ──
-let BASE_SUBTOTAL = 1720; // suprascris mai jos de applyChecoutConfigReal(), dacă vine dintr-un flux real
-const PROMO_DISCOUNT = 172;
+let BASE_SUBTOTAL = null; // setat doar de applyChecoutConfigReal(), din configurația reală
+// Codul promoțional DARRIN10 (−172 lei fix, doar afișat) a fost eliminat pe
+// 8 oct. 2026: nu există un sistem real de coduri, iar clientul trebuie să
+// vadă exact suma pe care o plătește.
 const INSURANCE_PRICE = 89;
-let PROMO_ACTIVE = false;
 
 function toggleInsuranceOption(){
   const checked = document.getElementById('cb-insurance').checked;
@@ -3352,19 +3279,21 @@ function toggleInsuranceOption(){
 }
 
 function recalcCheckoutTotal(){
+  if (BASE_SUBTOTAL == null) { document.getElementById('total-price').textContent = ''; return; }
   let total = BASE_SUBTOTAL;
-  if (PROMO_ACTIVE) total -= PROMO_DISCOUNT;
   const insuranceChecked = document.getElementById('cb-insurance')?.checked;
   if (insuranceChecked) total += INSURANCE_PRICE;
-  document.getElementById('total-price').textContent = window.formatCurrency ? window.formatCurrency(total) : total.toLocaleString('ro-RO') + ' Lei';
+  const textTotal = window.formatCurrency ? window.formatCurrency(total) : total.toLocaleString('ro-RO') + ' Lei';
+  document.getElementById('total-price').textContent = textTotal;
+  document.querySelectorAll('.conf-total').forEach((el) => { el.textContent = textTotal; });
 }
 
 // Suprascrie mock-ul de 2 servicii cu configurația reală salvată de
 // mydarrin-produs.html (myd_checkout_config, sessionStorage) — fără asta,
 // checkout arăta mereu aceleași 2 servicii fictive și un total fix (1.720
-// Lei), indiferent ce configura clientul efectiv. Dacă nu există nicio
-// configurație salvată (acces direct la /cos, fără să treci prin produs),
-// păstrăm mock-ul existent ca fallback, nu o pagină goală.
+// Lei), indiferent ce configura clientul efectiv. Fără configurație salvată
+// (acces direct la /cos), pagina arată „Coșul tău e gol” (8 oct. 2026 —
+// mock-ul cu servicii, firme și adrese inventate a fost eliminat).
 // G16 (26 Iulie 2026) — configurația completă salvată de mydarrin-produs.html,
 // păstrată la nivel de modul ca hook-ul de submit s-o poată citi direct (nu
 // doar valoarea afișată BASE_SUBTOTAL, care e deja majorată cu TVA/platformă
@@ -3375,10 +3304,11 @@ function applyChecoutConfigReal(){
   let cfg;
   try { cfg = JSON.parse(sessionStorage.getItem('myd_checkout_config') || 'null'); }
   catch(e) { cfg = null; }
-  if (!cfg) return;
+  if (!cfg) { arataCosGol(); return; }
   MYD_CFG = cfg;
 
-  BASE_SUBTOTAL = cfg.total || BASE_SUBTOTAL;
+  BASE_SUBTOTAL = Number(cfg.total) > 0 ? Number(cfg.total) : null;
+  arataServiciu(cfg);
 
   setEl2('ci1-title', cfg.titlu || cfg.slug);
   setEl2('ci1-tier', cfg.tierLabel || cfg.tier);
@@ -3407,8 +3337,6 @@ function applyChecoutConfigReal(){
     }
   }
 
-  const item2 = document.getElementById('cart-item-2');
-  if (item2) item2.style.display = 'none';
   setEl2('cart-count-label', '1 serviciu');
 
   // Mod pilot (22 august 2026) — pe calea nivel_id, api/comenzi/creeaza.js
@@ -3427,14 +3355,170 @@ function applyChecoutConfigReal(){
     if (cbIns) { cbIns.checked = false; cbIns.disabled = true; }
     const cbInsLabel = cbIns?.closest('label');
     if (cbInsLabel) cbInsLabel.title = 'Indisponibil pentru acest serviciu (mod pilot).';
-
-    const promoInput = document.getElementById('promo-input');
-    if (promoInput) { promoInput.disabled = true; promoInput.placeholder = 'Indisponibil pentru acest serviciu'; }
   }
 
   recalcCheckoutTotal();
 }
 function setEl2(id, text){ const el = document.getElementById(id); if (el) el.textContent = text; }
+
+// ── Navigarea între pași (8 oct. 2026) ──
+// goToStep fusese șters pe 19 iunie (încărcarea f3cc635): butoanele „Continuă"
+// aruncau „goToStep is not defined" și niciun client nu trecea de coș.
+// Reconstruit după versiunea veche, cu validare la fiecare pas înainte.
+const STEPS = ['cart', 'details', 'payment', 'confirm'];
+let pasCheckout = 'cart';
+
+function goToStep(step) {
+  const idxNou = STEPS.indexOf(step);
+  const idxVechi = STEPS.indexOf(pasCheckout);
+  if (idxNou < 0) return;
+  // Înainte: fiecare pas parcurs trebuie să fie valid. Înapoi: fără validare.
+  for (let i = idxVechi; i < idxNou; i++) {
+    if (!valideazaPas(STEPS[i])) return;
+  }
+  STEPS.forEach((s) => {
+    const el = document.getElementById('step-' + s);
+    if (!el) return;
+    if (s === step) { el.classList.remove('hidden'); setTimeout(() => el.classList.add('visible'), 10); }
+    else el.classList.add('hidden');
+  });
+  document.querySelectorAll('.cart-step').forEach((c, i) => {
+    c.classList.remove('active', 'done', 'pending');
+    c.classList.add(i < idxNou ? 'done' : i === idxNou ? 'active' : 'pending');
+  });
+  pasCheckout = step;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function arataEroareCamp(el, mesaj) {
+  if (!el) return;
+  let e = el.parentElement.querySelector('.co-eroare');
+  if (!e) {
+    e = document.createElement('div');
+    e.className = 'co-eroare';
+    e.setAttribute('role', 'alert');
+    e.style.cssText = 'color:#C0392B;font-size:12px;font-weight:600;margin-top:4px;line-height:1.4';
+    el.insertAdjacentElement('afterend', e);
+  }
+  e.textContent = mesaj;
+  el.setAttribute('aria-invalid', 'true');
+  el.style.setProperty('border-color', '#C0392B', 'important');
+}
+
+function stergeEroareCamp(el) {
+  if (!el) return;
+  const e = el.parentElement.querySelector('.co-eroare');
+  if (e) e.remove();
+  el.removeAttribute('aria-invalid');
+  el.style.removeProperty('border-color');
+}
+
+const REGULI_DETALII = [
+  ['co-prenume', (v) => v.length >= 2, 'Completează prenumele.'],
+  ['co-nume', (v) => v.length >= 2, 'Completează numele.'],
+  ['co-telefon', (v) => /^\+?[0-9][0-9 ().-]{7,}$/.test(v), 'Introdu un număr de telefon valid, de exemplu +40 721 000 000.'],
+  ['co-email', (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v), 'Introdu o adresă de email validă.'],
+  ['co-adresa', (v) => v.length >= 5, 'Completează adresa: strada și numărul.'],
+  ['co-oras', (v) => v.length >= 2, 'Completează orașul.'],
+  ['co-judet', (v) => v.length > 0, 'Alege județul.'],
+];
+
+function valideazaPas(pas) {
+  if (pas === 'cart') {
+    const ok = !!MYD_CFG && BASE_SUBTOTAL > 0;
+    if (!ok) arataEroareCamp(document.getElementById('cart-continua'), 'Coșul e gol: alege un serviciu din catalog.');
+    return ok;
+  }
+  if (pas === 'details') {
+    let primul = null;
+    REGULI_DETALII.forEach(([id, valid, mesaj]) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (valid((el.value || '').trim())) stergeEroareCamp(el);
+      else { arataEroareCamp(el, mesaj); primul = primul || el; }
+    });
+    if (primul) { primul.focus({ preventScroll: false }); return false; }
+    return true;
+  }
+  if (pas === 'payment') {
+    if (!document.getElementById('b2g-toggle')?.checked) return true;
+    let primul = null;
+    const den = document.getElementById('b2g-denumire');
+    const cui = document.getElementById('b2g-cui');
+    if (den && (den.value || '').trim().length < 3) { arataEroareCamp(den, 'Completează denumirea instituției sau a companiei.'); primul = den; } else stergeEroareCamp(den);
+    if (cui && !/^(RO)?\s?\d{2,10}$/i.test((cui.value || '').trim())) { arataEroareCamp(cui, 'Introdu un CUI valid, de exemplu RO12345678.'); primul = primul || cui; } else stergeEroareCamp(cui);
+    if (primul) { primul.focus(); return false; }
+    return true;
+  }
+  return true;
+}
+
+// Butonul „Finalizează": validează tot, apoi lasă hook-ul de mai jos să
+// trimită comanda. Ecranul de succes apare doar după răspunsul serverului
+// (showComandaInregistrataScreen), niciodată înainte.
+function confirmaFinalizarea(e) {
+  const ok = valideazaPas('cart') && valideazaPas('details') && valideazaPas('payment');
+  if (ok) return;
+  if (e) e.stopImmediatePropagation();
+  if (!valideazaPas('details')) goToStep('details');
+}
+
+document.addEventListener('input', (e) => {
+  if (e.target && e.target.matches && e.target.matches('[aria-invalid="true"]')) stergeEroareCamp(e.target);
+});
+document.addEventListener('change', (e) => {
+  if (e.target && e.target.matches && e.target.matches('select[aria-invalid="true"]')) stergeEroareCamp(e.target);
+});
+
+// Coș gol: fără servicii, sume sau date inventate; doar mesajul și calea spre catalog.
+function arataCosGol(){
+  MYD_CFG = null;
+  BASE_SUBTOTAL = null;
+  setEl2('cart-count-label', '0 servicii');
+  ['cos-gol'].forEach((id) => { const el = document.getElementById(id); if (el) el.style.display = ''; });
+  ['cart-item-1', 'cart-continua', 'sum-item-1', 'sum-calendar'].forEach((id) => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+  recalcCheckoutTotal();
+}
+
+function arataServiciu(cfg){
+  const gol = document.getElementById('cos-gol'); if (gol) gol.style.display = 'none';
+  ['cart-item-1', 'cart-continua', 'sum-item-1'].forEach((id) => { const el = document.getElementById(id); if (el) el.style.display = ''; });
+  const titlu = cfg.titlu || cfg.slug || 'Serviciu';
+  const adr = document.getElementById('co-adresa');
+  if (adr && !adr.value && cfg.addr) adr.value = cfg.addr;
+  const oras = document.getElementById('co-oras');
+  if (oras && !oras.value && cfg.localitate) oras.value = cfg.localitate;
+  setEl2('sum-item-titlu', titlu);
+  setEl2('sum-item-nivel', cfg.tierLabel || cfg.tier || '');
+  setEl2('sum-item-pret', Number(cfg.total) > 0 ? (window.formatCurrency ? window.formatCurrency(Number(cfg.total)) : Number(cfg.total).toLocaleString('ro-RO') + ' Lei') : '—');
+  const cal = document.getElementById('sum-calendar');
+  if (cal) {
+    if (cfg.selDate) {
+      setEl2('sum-cal-data', cfg.selDate + (cfg.selTime ? ' · ' + cfg.selTime : ''));
+      setEl2('sum-cal-titlu', titlu);
+      cal.style.display = '';
+    } else cal.style.display = 'none';
+  }
+}
+
+// Elimină serviciul configurat (înainte: confirm()+alert() care nu eliminau nimic).
+async function eliminaServiciuDinCos(){
+  try { sessionStorage.removeItem('myd_checkout_config'); } catch (e) {}
+  arataCosGol();
+  try {
+    const session = (await window.supabaseClient?.auth.getSession())?.data?.session;
+    let url = '/api/client/cos';
+    const headers = {};
+    if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+    else {
+      const guestToken = localStorage.getItem('myd_guest_token');
+      if (!guestToken) return;
+      url += `?sesiune_token=${encodeURIComponent(guestToken)}`;
+    }
+    await fetch(url, { method: 'DELETE', headers });
+  } catch (e) { /* copia de pe server e doar o rezervă */ }
+}
 
 // Etapa 1 (26 august 2026) — dacă sessionStorage nu are nimic (tab nou,
 // revenire după închiderea browserului, sau login pe alt dispozitiv),
@@ -3784,5 +3868,95 @@ function daiSendMessage(){
 
   </div>
 </div>
+<script>
+// Procentul TVA din rezumat, pe țara comenzii, din tax_configurations
+// (tva-config.js) — nu mai e scris direct „19%".
+(function () {
+  function afiseaza() {
+    if (!window.MDTva) return;
+    var cfg = (typeof MYD_CFG !== 'undefined' && MYD_CFG) || {};
+    var tara = cfg.tara_cod || (window.MYD_GEO_LAST && window.MYD_GEO_LAST.cc) || 'RO';
+    window.MDTva.cota(tara).then(function (c) {
+      document.querySelectorAll('.tva-pct').forEach(function (e) { e.textContent = window.MDTva.procent(c); });
+    });
+  }
+  document.addEventListener('DOMContentLoaded', afiseaza);
+  window.addEventListener('myd:geo', afiseaza);
+})();
+</script>
+<!-- Bară fixă cu totalul, doar sub 768 px (vezi CSS #co-bara-mobil) -->
+<div class="co-spatiu-bara" aria-hidden="true"></div>
+<div id="co-bara-mobil" role="region" aria-label="Total comandă">
+  <div class="co-bara-total">
+    <div class="co-bara-eticheta">Total Escrow</div>
+    <div class="co-bara-suma" id="co-bara-suma">—</div>
+  </div>
+  <button type="button" id="co-bara-btn">Continuă</button>
+</div>
+<script>
+// Bara repetă totalul din rezumat și butonul principal al pasului vizibil
+// (același buton, apăsat programatic) — nu are logică proprie de comandă.
+(function () {
+  var bara = document.getElementById('co-bara-mobil');
+  var suma = document.getElementById('co-bara-suma');
+  var btn = document.getElementById('co-bara-btn');
+  var PASI = ['step-cart', 'step-details', 'step-payment', 'step-confirm'];
+  function pasCurent() {
+    for (var i = 0; i < PASI.length; i++) {
+      var el = document.getElementById(PASI[i]);
+      if (el && !el.classList.contains('hidden')) return el;
+    }
+    return null;
+  }
+  function butonPrincipal() {
+    var pas = pasCurent();
+    if (!pas) return null;
+    var lista = Array.prototype.filter.call(pas.querySelectorAll('button.btn-accent'), function (b) { return b.offsetParent !== null; });
+    return lista.length ? lista[lista.length - 1] : null;
+  }
+  var programat = false;
+  function actualizeaza() {
+    programat = false;
+    var total = document.getElementById('total-price');
+    var text = total ? total.textContent.trim() : '';
+    var principal = butonPrincipal();
+    suma.textContent = text || '—';
+    if (principal) btn.textContent = principal.textContent.replace(/\s+/g, ' ').trim();
+    bara.classList.toggle('are-total', !!text && !!principal);
+    var nav = document.getElementById('mobile-bottom-nav');
+    // offsetParent e null pentru elementele fixed, deci verificăm direct stilul.
+    var navVizibil = nav && getComputedStyle(nav).display !== 'none' && getComputedStyle(nav).visibility !== 'hidden';
+    var h = navVizibil ? Math.round(nav.getBoundingClientRect().height) : 0;
+    var jos = h + 'px';
+    if (bara.style.bottom !== jos) bara.style.bottom = jos;
+    // Butonul plutitor Darrin AI urcă deasupra barei, ca să nu acopere butonul ei.
+    var fab = document.getElementById('dai-fab');
+    if (fab) {
+      // Regula de mobil pentru #dai-fab folosește !important, deci și aici.
+      var activ = getComputedStyle(bara).display !== 'none';
+      if (activ) {
+        var tinta = (h + Math.round(bara.getBoundingClientRect().height) + 12) + 'px';
+        if (fab.style.getPropertyValue('bottom') !== tinta) fab.style.setProperty('bottom', tinta, 'important');
+      } else if (fab.style.getPropertyPriority('bottom') === 'important') {
+        fab.style.setProperty('bottom', '24px');
+      }
+    }
+  }
+  function programeaza() { if (!programat) { programat = true; requestAnimationFrame(actualizeaza); } }
+  btn.addEventListener('click', function () { var b = butonPrincipal(); if (b) b.click(); });
+  function observa() {
+    var total = document.getElementById('total-price');
+    var obs = new MutationObserver(programeaza);
+    if (total) obs.observe(total, { childList: true, characterData: true, subtree: true });
+    PASI.forEach(function (id) { var el = document.getElementById(id); if (el) obs.observe(el, { attributes: true, attributeFilter: ['class'] }); });
+    programeaza();
+  }
+  window.addEventListener('resize', programeaza);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', observa); else observa();
+})();
+</script>
+<script src="statistici-publice.js" defer></script>
+<script src="ui-comun.js" defer></script>
+<script src="contact-public.js" defer></script>
 </body>
 </html>

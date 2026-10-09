@@ -78,11 +78,27 @@ module.exports = async function handler(req, res) {
       tara: taraCod,
     });
 
+    // Defalcarea afișată clientului pe pagina de produs (8 oct. 2026): aceleași
+    // sume din care serverul compune prețul, ca pagina să nu le mai recalculeze.
+    // Nu conține costuri interne (tarife de resurse, discounturi de partener).
+    const taxePlatforma = Math.round((calc.comision_platforma + calc.cost_marketing + calc.cost_mentenanta) * 100) / 100;
+    const inaintePrag = Math.round((calc.subtotal + taxePlatforma + calc.tva_suma) * 100) / 100;
+    const defalcare = {
+      cost_baza: calc.cost_baza,
+      asigurare: calc.cost_asigurare,
+      transport: Math.round((calc.cost_curier + calc.cost_transport_greutate + calc.cost_ajutor) * 100) / 100,
+      taxe_platforma: taxePlatforma,
+      tva_pct: calc.tva_pct,
+      tva_suma: calc.tva_suma,
+      prag_aplicat: calc.pret_final > inaintePrag,
+    };
+
     return res.status(200).json({
       ok: true, disponibil: true,
       pret_final: calc.pret_final,
       prag_minim_comanda: calc.prag_minim_comanda,
       subtotal_variabil: calc.subtotal,
+      defalcare,
       addon_materiale: addonRezultat.itemi,
       cantitate: cantitateNum, tara_cod: taraCod, moneda,
     });

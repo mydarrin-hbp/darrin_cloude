@@ -13,6 +13,7 @@
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { renderEmailBunVenitClient, limbaProfilEmailComportamental } = require('../../lib/i18n');
+const { incarcaContactPlatformaSigur } = require('../../lib/contact-platforma');
 const { fromHeader } = require('../../lib/email-sender');
 
 const TIP_EMAIL = 'bun_venit_client';
@@ -50,6 +51,7 @@ module.exports = async function handler(req, res) {
     }
 
     const limba = limbaProfilEmailComportamental(profil);
+    await incarcaContactPlatformaSigur(); // footerul de dezabonare / GDPR din back-office
     const { subiect, html } = renderEmailBunVenitClient(limba, { nume: null });
     await fetch('https://api.resend.com/emails', {
       method: 'POST',

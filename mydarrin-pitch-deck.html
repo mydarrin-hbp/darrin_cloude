@@ -193,7 +193,7 @@ const SLIDES_REZERVA = [
     {h:'Multiplicator de randament estimat', d:'De la evaluarea Post-Money de 4M EUR (Runda I) la o țintă de 25–40M EUR la orizontul de 4 ani — multiplu estimat 6×–10× pe capitalul investit din Runda I.'},
   ]},
   // 18. Contact
-  { tip:'contact', eyebrow:'Contact', titlu:'Să construim viitorul împreună', subtitlu:'Contactați-ne pentru a accesa Data Room-ul complet.', contacte:['Cristian Popa, CEO','contact@homebestpal.com','investor@homebestpal.com','mydarrin.homebestpal.com'] },
+  { tip:'contact', eyebrow:'Contact', titlu:'Să construim viitorul împreună', subtitlu:'Contactați-ne pentru a accesa Data Room-ul complet.', contacte:['Cristian Popa, CEO',{contact:'contact_email'},{contact:'investitori_email'},'mydarrin.homebestpal.com'] },
 ];
 
 let SLIDES = SLIDES_REZERVA;
@@ -249,7 +249,7 @@ function randSlide(s){
       </div>`;
   } else if (s.tip === 'contact') {
     inner = `<div class="eyebrow">${esc(s.eyebrow)}</div><h1>${esc(s.titlu)}</h1><p class="subtitlu">${esc(s.subtitlu)}</p>
-      <div class="slide-body" style="margin-bottom:26px">${s.contacte.map(c=>`<div style="font-size:14px;color:rgba(255,255,255,.7);margin-bottom:6px">${esc(c)}</div>`).join('')}</div>
+      <div class="slide-body" style="margin-bottom:26px">${s.contacte.map(c=>typeof c==='string'?`<div style="font-size:14px;color:rgba(255,255,255,.7);margin-bottom:6px">${esc(c)}</div>`:`<div data-contact-rand style="display:none;font-size:14px;color:rgba(255,255,255,.7);margin-bottom:6px"><span data-contact="${c.contact}"></span></div>`).join('')}</div>
       <a href="mydarrin-investitori.html" style="display:inline-block;background:var(--orange);color:#fff;padding:14px 30px;border-radius:12px;font-weight:800;font-size:14px;text-decoration:none">Investește în My Darrin</a>`;
   }
   return `<div class="slide">${inner}</div>`;
@@ -297,5 +297,6 @@ document.addEventListener('keydown', (e) => {
   }
 })();
 </script>
+<script src="contact-public.js" defer></script>
 </body>
 </html>

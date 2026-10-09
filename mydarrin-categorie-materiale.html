@@ -102,6 +102,7 @@ h1,h2,h3 { font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif; }
        IMPLICIT (localStorage), izolat per subdomeniu — nu storage-ul comun pe
        cookie-uri pe care middleware.js (bariera de acces) îl citește. -->
   <script type="module" src="lib/supabaseClient.js"></script>
+<link rel="stylesheet" href="ui-public.css">
 </head>
 <body class="bg-[#F4F7F9]" style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
 
@@ -190,7 +191,6 @@ h1,h2,h3 { font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif; }
         <option value="default">Recomandat</option>
         <option value="price-asc">Preț crescător</option>
         <option value="price-desc">Preț descrescător</option>
-        <option value="rating">Rating</option>
       </select>
     </div>
     <div style="display:flex;align-items:center;gap:8px;min-width:180px">
@@ -349,35 +349,7 @@ h1,h2,h3 { font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif; }
   </div>
   <div>
     <span class="ftr-nh">Aplicație</span>
-        <div class="ftr-app-btns" style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px">
-
-          <!-- Apple App Store: negru #000000, logo  alb -->
-          <a href="#" style="display:inline-flex;align-items:center;gap:9px;background:#000000;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 14px;text-decoration:none;transition:opacity .15s" onmouseover="this.style.opacity='.82'" onmouseout="this.style.opacity='1'">
-            <!-- Apple logo SVG oficial -->
-            <svg width="18" height="22" viewBox="0 0 18 22" fill="#ffffff">
-              <path d="M14.94 11.66c-.02-2.26 1.85-3.35 1.93-3.4-1.05-1.54-2.69-1.75-3.27-1.77-1.39-.14-2.72.82-3.43.82-.71 0-1.8-.8-2.96-.78-1.52.02-2.93.89-3.71 2.25-1.59 2.75-.41 6.82 1.14 9.05.76 1.09 1.66 2.32 2.84 2.28 1.14-.05 1.57-.73 2.95-.73 1.38 0 1.77.73 2.98.71 1.23-.02 2-1.1 2.75-2.2.87-1.26 1.23-2.49 1.25-2.55-.03-.01-2.45-.94-2.47-3.68zM12.68 4.57c.63-.77 1.06-1.83.94-2.9-.91.04-2.01.61-2.66 1.37-.58.67-1.09 1.75-.96 2.78 1.02.08 2.05-.52 2.68-1.25z"/>
-            </svg>
-            <div>
-              <div style="color:rgba(255,255,255,.55);font-size:9px;line-height:1;letter-spacing:.04em">Download on the</div>
-              <div style="color:#fff;font-size:13.5px;font-weight:700;line-height:1.3;letter-spacing:-.01em">App Store</div>
-            </div>
-          </a>
-
-          <!-- Google Play: paleta Google (#4285F4 #34A853 #FBBC05 #EA4335) -->
-          <a href="#" style="display:inline-flex;align-items:center;gap:9px;background:#1C1C1E;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 14px;text-decoration:none;transition:opacity .15s" onmouseover="this.style.opacity='.82'" onmouseout="this.style.opacity='1'">
-            <!-- Google Play triangle logo — culorile oficiale -->
-            <svg width="20" height="22" viewBox="0 0 20 22" fill="none">
-              <path d="M1.5 1.27L11.09 11 1.5 20.73A1.5 1.5 0 0 1 1 19.5V2.5A1.5 1.5 0 0 1 1.5 1.27z" fill="#EA4335"/>
-              <path d="M17.5 9.5L14.41 11 11.09 11 1.5 1.27C1.83 1.1 2.22 1 2.62 1.14L17.5 9.5z" fill="#FBBC05"/>
-              <path d="M17.5 12.5L2.62 20.86C2.22 21 1.83 20.9 1.5 20.73L11.09 11 14.41 11 17.5 12.5z" fill="#34A853"/>
-              <path d="M17.5 9.5L14.41 11 11.09 11 14.41 11 17.5 12.5C18.5 11.95 18.5 10.05 17.5 9.5z" fill="#4285F4"/>
-            </svg>
-            <div>
-              <div style="color:rgba(255,255,255,.55);font-size:9px;line-height:1;letter-spacing:.04em">Get it on</div>
-              <div style="color:#fff;font-size:13.5px;font-weight:700;line-height:1.3;letter-spacing:-.01em">Google Play</div>
-            </div>
-          </a>
-        </div>
+        <div class="ftr-app-btns" style="margin-bottom:24px"><span style="color:rgba(255,255,255,.65);font-size:13px;line-height:1.5">Aplicațiile mobile My Darrin — în curând</span></div>
   </div>
 </div>
 
@@ -436,6 +408,16 @@ h1,h2,h3 { font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif; }
       <li><a href="mydarrin-contact.html#formular">Formular contact</a></li>
       <li><a href="reclamatii.html">Reclamații</a></li>
     </ul>
+    <!-- Contact: din back-office (/api/public/contact, contact-public.js) -->
+    <div data-contact-bloc style="display:none;margin-top:16px">
+      <span class="ftr-nh">Contact</span>
+      <ul class="ftr-ul">
+        <li data-contact-rand style="display:none"><a data-contact="contact_whatsapp" data-contact-text href="#">Scrie-ne pe WhatsApp</a></li>
+        <li data-contact-rand style="display:none"><a data-contact="contact_telefon" href="#"></a></li>
+        <li data-contact-rand style="display:none"><a data-contact="contact_email" href="#"></a></li>
+        <li data-contact-rand style="display:none"><span style="color:rgba(255,255,255,.55)">Program: </span><span data-contact="contact_program" style="color:rgba(255,255,255,.8)"></span></li>
+      </ul>
+    </div>
   </div>
 
 </div><!-- /r2 -->
@@ -595,12 +577,12 @@ const SUBCATEGORY_DB = {
     title:'Materiale electrice', subtitle:'Cabluri, prize, tablouri, siguranțe și accesorii electrice.',
     badgeColor:'#CC7000', badgeBg:'rgba(204,112,0,.12)',
     items:[
-      { slug:'cablu-nyy-3x2-5', title:'Cablu NYY 3×2.5mm²', desc:'Cablu cupru izolat PVC, instalații interioare/exterioare. Vândut la metru.', price:8.5, unit:'/ metru', rating:'4.8 (143 rec.)', badge:'top', img:'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=500&q=80' },
-      { slug:'priza-schuko-dubla', title:'Priză Schuko dublă', desc:'Priză dublă cu împământare, IP20. Compatibilă Legrand, Schneider, Gewiss.', price:24, unit:'/ buc', rating:'4.9 (287 rec.)', badge:'hot', img:'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=500&q=80' },
-      { slug:'tablou-electric-12mod', title:'Tablou electric 12 module', desc:'Tablou distribuție 12 module IP40, șină DIN 35mm montată, ușă transparentă.', price:195, unit:'/ buc', rating:'4.9 (67 rec.)', badge:'top', img:'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=500&q=80' },
-      { slug:'led-spot-gu10-7w', title:'Spot LED GU10 7W 4000K', desc:'Spot LED încastrat 7W, 560lm, dimabil, 25.000h durată de viață.', price:32, unit:'/ buc', rating:'4.6 (154 rec.)', badge:'', img:'https://images.unsplash.com/photo-1565538810643-b5bde5b2e2f3?w=500&q=80' },
-      { slug:'siguranta-automata-16a', title:'Siguranță automată 16A tip B', desc:'Siguranță automată 16A, 6kA, certificare CE. Standard DIN.', price:22, unit:'/ buc', rating:'4.8 (201 rec.)', badge:'', img:'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=500&q=80' },
-      { slug:'cablu-utp-cat6', title:'Cablu UTP Cat6 — colac 305m', desc:'Cablu de date UTP Cat6, 4×2×0.5mm, colac 305m. Certificat GHMT.', price:420, unit:'/ colac', rating:'4.9 (89 rec.)', badge:'top', img:'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=500&q=80' },
+      { slug:'cablu-nyy-3x2-5', title:'Cablu NYY 3×2.5mm²', desc:'Cablu cupru izolat PVC, instalații interioare/exterioare. Vândut la metru.', price:8.5, unit:'/ metru', badge:'top', img:'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=500&q=80' },
+      { slug:'priza-schuko-dubla', title:'Priză Schuko dublă', desc:'Priză dublă cu împământare, IP20. Compatibilă Legrand, Schneider, Gewiss.', price:24, unit:'/ buc', badge:'hot', img:'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=500&q=80' },
+      { slug:'tablou-electric-12mod', title:'Tablou electric 12 module', desc:'Tablou distribuție 12 module IP40, șină DIN 35mm montată, ușă transparentă.', price:195, unit:'/ buc', badge:'top', img:'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=500&q=80' },
+      { slug:'led-spot-gu10-7w', title:'Spot LED GU10 7W 4000K', desc:'Spot LED încastrat 7W, 560lm, dimabil, 25.000h durată de viață.', price:32, unit:'/ buc', badge:'', img:'https://images.unsplash.com/photo-1565538810643-b5bde5b2e2f3?w=500&q=80' },
+      { slug:'siguranta-automata-16a', title:'Siguranță automată 16A tip B', desc:'Siguranță automată 16A, 6kA, certificare CE. Standard DIN.', price:22, unit:'/ buc', badge:'', img:'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=500&q=80' },
+      { slug:'cablu-utp-cat6', title:'Cablu UTP Cat6 — colac 305m', desc:'Cablu de date UTP Cat6, 4×2×0.5mm, colac 305m. Certificat GHMT.', price:420, unit:'/ colac', badge:'top', img:'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=500&q=80' },
     ]
   },
   /* ── Zidărie & Beton ───────────────────────────── */
@@ -610,12 +592,12 @@ const SUBCATEGORY_DB = {
     title:'Zidărie & Beton', subtitle:'Beton preparat, cărămidă, BCA, mortar, armătură și produse structurale.',
     badgeColor:'#5A6472', badgeBg:'rgba(90,100,114,.12)',
     items:[
-      { slug:'beton-c20-25-mc', title:'Beton C20/25 — mc', desc:'Beton gata preparat C20/25 cu autobetoniera. Min 1mc. Pompare la cerere.', price:390, unit:'/ mc', rating:'4.8 (89 rec.)', badge:'top', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
-      { slug:'bca-b3-5-60x24x24', title:'BCA B3.5 600×240×240mm', desc:'Bloc BCA B3.5, termoizolant, tăiat precis. Palet 54 buc. Livrare șantier.', price:14.5, unit:'/ buc', rating:'4.8 (178 rec.)', badge:'hot', img:'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=500&q=80' },
-      { slug:'mortar-zidarie-m10', title:'Mortar zidărie M10 — 25kg', desc:'Mortar uscat M10 pentru zidărie cărămidă și BCA. 14kg/mc consum.', price:28, unit:'/ sac', rating:'4.7 (203 rec.)', badge:'', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
-      { slug:'fier-beton-pc52-12mm', title:'Fier beton PC52 Ø12mm / 12m', desc:'Oțel ribat PC52, Ø12mm, bară 12m. Livrare macara la șantier.', price:38, unit:'/ bară', rating:'4.8 (112 rec.)', badge:'', img:'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=500&q=80' },
-      { slug:'plasa-sudura-4mm', title:'Plasă sudată Ø4mm 2×1m', desc:'Plasă sudată pentru șape și fundații, Ø4mm, ochi 15×15cm.', price:42, unit:'/ foaie', rating:'4.7 (67 rec.)', badge:'', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
-      { slug:'xps-extrudat-10cm', title:'XPS extrudat 10cm termoizolație', desc:'Polistiren extrudat 10cm, 300kPa. Fundație, terasă, podea.', price:48, unit:'/ m²', rating:'4.9 (94 rec.)', badge:'hot', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
+      { slug:'beton-c20-25-mc', title:'Beton C20/25 — mc', desc:'Beton gata preparat C20/25 cu autobetoniera. Min 1mc. Pompare la cerere.', price:390, unit:'/ mc', badge:'top', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
+      { slug:'bca-b3-5-60x24x24', title:'BCA B3.5 600×240×240mm', desc:'Bloc BCA B3.5, termoizolant, tăiat precis. Palet 54 buc. Livrare șantier.', price:14.5, unit:'/ buc', badge:'hot', img:'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=500&q=80' },
+      { slug:'mortar-zidarie-m10', title:'Mortar zidărie M10 — 25kg', desc:'Mortar uscat M10 pentru zidărie cărămidă și BCA. 14kg/mc consum.', price:28, unit:'/ sac', badge:'', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
+      { slug:'fier-beton-pc52-12mm', title:'Fier beton PC52 Ø12mm / 12m', desc:'Oțel ribat PC52, Ø12mm, bară 12m. Livrare macara la șantier.', price:38, unit:'/ bară', badge:'', img:'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=500&q=80' },
+      { slug:'plasa-sudura-4mm', title:'Plasă sudată Ø4mm 2×1m', desc:'Plasă sudată pentru șape și fundații, Ø4mm, ochi 15×15cm.', price:42, unit:'/ foaie', badge:'', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
+      { slug:'xps-extrudat-10cm', title:'XPS extrudat 10cm termoizolație', desc:'Polistiren extrudat 10cm, 300kPa. Fundație, terasă, podea.', price:48, unit:'/ m²', badge:'hot', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
     ]
   },
   /* ── Lemn & Cherestea ──────────────────────────── */
@@ -625,12 +607,12 @@ const SUBCATEGORY_DB = {
     title:'Lemn & Cherestea', subtitle:'Parchet, lambriu, cherestea rășinoase și lemn masiv.',
     badgeColor:'#8B5E34', badgeBg:'rgba(139,94,52,.12)',
     items:[
-      { slug:'parchet-laminat-8mm', title:'Parchet laminat 8mm AC4', desc:'Parchet AC4, 8mm, model stejar rustic, 2.4m²/pachet. Sistem click.', price:42, unit:'/ m²', rating:'4.8 (234 rec.)', badge:'hot', img:'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=500&q=80' },
-      { slug:'cherestea-molid-4x8', title:'Cherestea molid 4×8cm / 4m', desc:'Molid uscat în aer, 4×8cm, L=4m. Șarpante, rame tâmplărie.', price:22, unit:'/ bară', rating:'4.7 (89 rec.)', badge:'', img:'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=500&q=80' },
-      { slug:'lambriu-pin-10cm', title:'Lambriu pin 10cm profil V', desc:'Pin nordic, profil V, 12mm grosime, lățime netă 10cm, L=4m.', price:28, unit:'/ m²', rating:'4.8 (145 rec.)', badge:'', img:'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=500&q=80' },
-      { slug:'parchet-masiv-stejar', title:'Parchet masiv stejar 20mm', desc:'Stejar românesc, 20mm, 12cm lățime, șlefuit lacuit. Clasă I.', price:185, unit:'/ m²', rating:'5.0 (34 rec.)', badge:'top', img:'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=500&q=80' },
-      { slug:'placa-mdf-18mm', title:'Placă MDF 18mm 2800×2070', desc:'MDF standard 18mm, format mare. Mobilier, tâmplărie, decorațiuni.', price:165, unit:'/ placă', rating:'4.7 (201 rec.)', badge:'', img:'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=500&q=80' },
-      { slug:'placa-osb-18mm', title:'Placă OSB/3 18mm 2500×1250', desc:'OSB/3 rezistentă umiditate, 18mm. Acoperișuri, cofraje, planșee.', price:92, unit:'/ placă', rating:'4.9 (67 rec.)', badge:'top', img:'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=500&q=80' },
+      { slug:'parchet-laminat-8mm', title:'Parchet laminat 8mm AC4', desc:'Parchet AC4, 8mm, model stejar rustic, 2.4m²/pachet. Sistem click.', price:42, unit:'/ m²', badge:'hot', img:'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=500&q=80' },
+      { slug:'cherestea-molid-4x8', title:'Cherestea molid 4×8cm / 4m', desc:'Molid uscat în aer, 4×8cm, L=4m. Șarpante, rame tâmplărie.', price:22, unit:'/ bară', badge:'', img:'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=500&q=80' },
+      { slug:'lambriu-pin-10cm', title:'Lambriu pin 10cm profil V', desc:'Pin nordic, profil V, 12mm grosime, lățime netă 10cm, L=4m.', price:28, unit:'/ m²', badge:'', img:'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=500&q=80' },
+      { slug:'parchet-masiv-stejar', title:'Parchet masiv stejar 20mm', desc:'Stejar românesc, 20mm, 12cm lățime, șlefuit lacuit. Clasă I.', price:185, unit:'/ m²', badge:'top', img:'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=500&q=80' },
+      { slug:'placa-mdf-18mm', title:'Placă MDF 18mm 2800×2070', desc:'MDF standard 18mm, format mare. Mobilier, tâmplărie, decorațiuni.', price:165, unit:'/ placă', badge:'', img:'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=500&q=80' },
+      { slug:'placa-osb-18mm', title:'Placă OSB/3 18mm 2500×1250', desc:'OSB/3 rezistentă umiditate, 18mm. Acoperișuri, cofraje, planșee.', price:92, unit:'/ placă', badge:'top', img:'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=500&q=80' },
     ]
   },
   /* ── Bricolaj & Consumabile ────────────────────── */
@@ -640,12 +622,12 @@ const SUBCATEGORY_DB = {
     title:'Bricolaj & Consumabile', subtitle:'Vopsele, adezivi, dibluri, șuruburi și consumabile pentru orice lucrare.',
     badgeColor:'#C23B75', badgeBg:'rgba(194,59,117,.12)',
     items:[
-      { slug:'vopsea-lavabila-alba-15l', title:'Vopsea lavabilă albă 15L', desc:'Vopsea lavabilă interior, covrire excelentă, mat, 15L = ~75m².', price:89, unit:'/ bidon', rating:'4.8 (312 rec.)', badge:'hot', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
-      { slug:'adeziv-gresie-25kg', title:'Adeziv gresie & faianță 25kg', desc:'Adeziv C1 flex pentru gresie și faianță interior/exterior. Timp deschis 30min.', price:45, unit:'/ sac', rating:'4.7 (189 rec.)', badge:'', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
-      { slug:'diblu-nylon-8mm-set100', title:'Dibluri nylon 8mm — set 100 buc', desc:'Dibluri universale nylon 8mm cu șurub, rezistență 50kg/buc.', price:24, unit:'/ set', rating:'4.9 (445 rec.)', badge:'top', img:'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=500&q=80' },
-      { slug:'silicon-transparent-310ml', title:'Silicon transparent 310ml', desc:'Silicon neutru transparent, aderență universală, -40°C +150°C.', price:18, unit:'/ tub', rating:'4.8 (267 rec.)', badge:'', img:'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=500&q=80' },
-      { slug:'glet-finisaj-25kg', title:'Glet de finisaj 25kg', desc:'Glet alb pasta pentru finisaje interioare, aplicare umedă pe glet, tencuieli.', price:38, unit:'/ sac', rating:'4.7 (156 rec.)', badge:'', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
-      { slug:'folie-vapori-50mp', title:'Folie barieră vapori 50m²', desc:'Folie PE barieră vapori 0.2mm, 50m². Pardoseli, pod, mansardă.', price:65, unit:'/ rolă', rating:'4.8 (98 rec.)', badge:'', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
+      { slug:'vopsea-lavabila-alba-15l', title:'Vopsea lavabilă albă 15L', desc:'Vopsea lavabilă interior, covrire excelentă, mat, 15L = ~75m².', price:89, unit:'/ bidon', badge:'hot', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
+      { slug:'adeziv-gresie-25kg', title:'Adeziv gresie & faianță 25kg', desc:'Adeziv C1 flex pentru gresie și faianță interior/exterior. Timp deschis 30min.', price:45, unit:'/ sac', badge:'', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
+      { slug:'diblu-nylon-8mm-set100', title:'Dibluri nylon 8mm — set 100 buc', desc:'Dibluri universale nylon 8mm cu șurub, rezistență 50kg/buc.', price:24, unit:'/ set', badge:'top', img:'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=500&q=80' },
+      { slug:'silicon-transparent-310ml', title:'Silicon transparent 310ml', desc:'Silicon neutru transparent, aderență universală, -40°C +150°C.', price:18, unit:'/ tub', badge:'', img:'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=500&q=80' },
+      { slug:'glet-finisaj-25kg', title:'Glet de finisaj 25kg', desc:'Glet alb pasta pentru finisaje interioare, aplicare umedă pe glet, tencuieli.', price:38, unit:'/ sac', badge:'', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
+      { slug:'folie-vapori-50mp', title:'Folie barieră vapori 50m²', desc:'Folie PE barieră vapori 0.2mm, 50m². Pardoseli, pod, mansardă.', price:65, unit:'/ rolă', badge:'', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
     ]
   },
   /* ── Electrocasnice ────────────────────────────── */
@@ -655,12 +637,12 @@ const SUBCATEGORY_DB = {
     title:'Electrocasnice', subtitle:'Mașini de spălat, frigidere, cuptoare, hote și electrocasnice livrate cu montaj.',
     badgeColor:'#0E9E99', badgeBg:'rgba(14,158,153,.12)',
     items:[
-      { slug:'masina-spalat-8kg-1200rpm', title:'Mașină spălat 8kg 1200rpm', desc:'Mașină spălat A+++ 8kg, 1200rpm, 15 programe, inox cuvă. Livrare + montaj.', price:1290, unit:'/ buc', rating:'4.9 (234 rec.)', badge:'hot', img:'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&q=80' },
-      { slug:'frigider-combi-300l', title:'Frigider combi No Frost 300L', desc:'Frigider 300L A++ No Frost, display, dozator apă. Livrare etaj inclus.', price:2190, unit:'/ buc', rating:'4.8 (178 rec.)', badge:'top', img:'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&q=80' },
-      { slug:'cuptor-incorporat-60cm', title:'Cuptor electric incorporat 60cm', desc:'Cuptor încorporat 65L, pirolitic, 9 funcții, inox. Montaj electrica inclus.', price:1850, unit:'/ buc', rating:'4.9 (145 rec.)', badge:'top', img:'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=500&q=80' },
-      { slug:'plita-inductie-4-zone', title:'Plită inducție 4 zone 60cm', desc:'Plită inducție 7200W, 4 zone, boost, control touch, temporizator.', price:1450, unit:'/ buc', rating:'4.8 (112 rec.)', badge:'', img:'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=500&q=80' },
-      { slug:'masina-vase-integrata', title:'Mașină vase integrabilă 60cm', desc:'Mașină vase 14 seturi, A++, 8 programe, inox. Montaj mobilier inclus.', price:1680, unit:'/ buc', rating:'4.9 (89 rec.)', badge:'hot', img:'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&q=80' },
-      { slug:'aer-conditionat-12000btu', title:'Aer condiționat 12000 BTU A++', desc:'Split 12000 BTU A++, Wi-Fi, Inverter. Include montaj și punere în funcțiune.', price:2890, unit:'/ buc', rating:'5.0 (67 rec.)', badge:'top', img:'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=500&q=80' },
+      { slug:'masina-spalat-8kg-1200rpm', title:'Mașină spălat 8kg 1200rpm', desc:'Mașină spălat A+++ 8kg, 1200rpm, 15 programe, inox cuvă. Livrare + montaj.', price:1290, unit:'/ buc', badge:'hot', img:'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&q=80' },
+      { slug:'frigider-combi-300l', title:'Frigider combi No Frost 300L', desc:'Frigider 300L A++ No Frost, display, dozator apă. Livrare etaj inclus.', price:2190, unit:'/ buc', badge:'top', img:'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&q=80' },
+      { slug:'cuptor-incorporat-60cm', title:'Cuptor electric incorporat 60cm', desc:'Cuptor încorporat 65L, pirolitic, 9 funcții, inox. Montaj electrica inclus.', price:1850, unit:'/ buc', badge:'top', img:'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=500&q=80' },
+      { slug:'plita-inductie-4-zone', title:'Plită inducție 4 zone 60cm', desc:'Plită inducție 7200W, 4 zone, boost, control touch, temporizator.', price:1450, unit:'/ buc', badge:'', img:'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=500&q=80' },
+      { slug:'masina-vase-integrata', title:'Mașină vase integrabilă 60cm', desc:'Mașină vase 14 seturi, A++, 8 programe, inox. Montaj mobilier inclus.', price:1680, unit:'/ buc', badge:'hot', img:'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&q=80' },
+      { slug:'aer-conditionat-12000btu', title:'Aer condiționat 12000 BTU A++', desc:'Split 12000 BTU A++, Wi-Fi, Inverter. Include montaj și punere în funcțiune.', price:2890, unit:'/ buc', badge:'top', img:'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=500&q=80' },
     ]
   },
   /* ── Materiale industriale ─────────────────────── */
@@ -670,12 +652,12 @@ const SUBCATEGORY_DB = {
     title:'Materiale industriale', subtitle:'Profile metalice, țevi, fitinguri, materiale de sudură și produse industriale.',
     badgeColor:'#37475A', badgeBg:'rgba(55,71,90,.12)',
     items:[
-      { slug:'teava-rectangulara-40x40', title:'Țeavă rectangulară 40×40×3mm', desc:'Profil rectangular oțel S235, 40×40×3mm, lungime 6m. Livrare camion.', price:85, unit:'/ buc', rating:'4.8 (78 rec.)', badge:'', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
-      { slug:'profil-upe-120', title:'Profil UPE 120 / 6m', desc:'UPE 120 oțel laminat la cald S275, L=6m. Certificate EN 10365.', price:245, unit:'/ buc', rating:'4.9 (45 rec.)', badge:'top', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
-      { slug:'tabla-zincata-1mm', title:'Tablă zincată 1mm 1250×2000', desc:'Tablă oțel zincată Z275, 1mm, 1250×2000mm. Acoperișuri, garduri.', price:145, unit:'/ foaie', rating:'4.7 (112 rec.)', badge:'hot', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
-      { slug:'electrod-sudura-e6013', title:'Electrozi sudură E6013 Ø3.2mm', desc:'Electrozi rutilici E6013 Ø3.2mm, pachet 5kg. Toate pozițiile de sudare.', price:68, unit:'/ pachet 5kg', rating:'4.8 (89 rec.)', badge:'', img:'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=500&q=80' },
-      { slug:'disc-polizor-125mm', title:'Disc polizor inox 125mm — set 10', desc:'Discuri tăiere inox 125×1×22.2mm, set 10 buc. Fără stropire, INOX safe.', price:48, unit:'/ set 10 buc', rating:'4.9 (234 rec.)', badge:'top', img:'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=500&q=80' },
-      { slug:'lant-ridicare-g80', title:'Lanț ridicare G80 Ø8mm / 3m', desc:'Lanț ridicare G80 galvanizat Ø8mm, L=3m, WLL 2T. Certificat CE/TUV.', price:185, unit:'/ buc', rating:'5.0 (34 rec.)', badge:'top', img:'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=500&q=80' },
+      { slug:'teava-rectangulara-40x40', title:'Țeavă rectangulară 40×40×3mm', desc:'Profil rectangular oțel S235, 40×40×3mm, lungime 6m. Livrare camion.', price:85, unit:'/ buc', badge:'', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
+      { slug:'profil-upe-120', title:'Profil UPE 120 / 6m', desc:'UPE 120 oțel laminat la cald S275, L=6m. Certificate EN 10365.', price:245, unit:'/ buc', badge:'top', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
+      { slug:'tabla-zincata-1mm', title:'Tablă zincată 1mm 1250×2000', desc:'Tablă oțel zincată Z275, 1mm, 1250×2000mm. Acoperișuri, garduri.', price:145, unit:'/ foaie', badge:'hot', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
+      { slug:'electrod-sudura-e6013', title:'Electrozi sudură E6013 Ø3.2mm', desc:'Electrozi rutilici E6013 Ø3.2mm, pachet 5kg. Toate pozițiile de sudare.', price:68, unit:'/ pachet 5kg', badge:'', img:'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=500&q=80' },
+      { slug:'disc-polizor-125mm', title:'Disc polizor inox 125mm — set 10', desc:'Discuri tăiere inox 125×1×22.2mm, set 10 buc. Fără stropire, INOX safe.', price:48, unit:'/ set 10 buc', badge:'top', img:'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=500&q=80' },
+      { slug:'lant-ridicare-g80', title:'Lanț ridicare G80 Ø8mm / 3m', desc:'Lanț ridicare G80 galvanizat Ø8mm, L=3m, WLL 2T. Certificat CE/TUV.', price:185, unit:'/ buc', badge:'top', img:'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=500&q=80' },
     ]
   },
   /* ── Materiale construcții (general) ───────────── */
@@ -685,12 +667,12 @@ const SUBCATEGORY_DB = {
     title:'Materiale de construcții', subtitle:'Faianță, gresie, izolații, hidroizolații și materiale generale de construcție.',
     badgeColor:'#003366', badgeBg:'rgba(0,51,102,.12)',
     items:[
-      { slug:'faianta-baie-30x60', title:'Faianță baie 30×60cm (m²)', desc:'Faianță ceramică 30×60cm, mat, disponibilă alb/gri/bej. Consum 5.5 buc/m².', price:65, unit:'/ m²', rating:'4.8 (189 rec.)', badge:'hot', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
-      { slug:'gresie-exterior-60x60', title:'Gresie exterior 60×60cm (m²)', desc:'Gresie porțelan exterior R11, 60×60cm, antiderapantă. Ger rezistentă.', price:78, unit:'/ m²', rating:'4.9 (145 rec.)', badge:'top', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
-      { slug:'vata-minerala-10cm', title:'Vată minerală 10cm (m²)', desc:'Vată minerală bazaltică 10cm, 140kg/mc, λ=0.035. Pereți, tavane.', price:38, unit:'/ m²', rating:'4.8 (112 rec.)', badge:'', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
-      { slug:'hidroizolatie-membrana-4mm', title:'Membrană bituminoasă 4mm', desc:'Membrană SBS 4mm, poliester, aplicare la flacără. Terase, fundații.', price:32, unit:'/ m²', rating:'4.7 (78 rec.)', badge:'', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
-      { slug:'rigips-12-5mm', title:'Placă Rigips 12.5mm 2.6m', desc:'Placă gips-carton standard 12.5mm, 1250×2600mm. Pereți, tavane false.', price:42, unit:'/ placă', rating:'4.9 (267 rec.)', badge:'hot', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
-      { slug:'profil-metalic-cd60', title:'Profil metalic CD60 / 4m', desc:'Profil CD60 galvanizat 0.6mm, L=4m. Structuri tavane false rigips.', price:18, unit:'/ buc', rating:'4.8 (345 rec.)', badge:'top', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
+      { slug:'faianta-baie-30x60', title:'Faianță baie 30×60cm (m²)', desc:'Faianță ceramică 30×60cm, mat, disponibilă alb/gri/bej. Consum 5.5 buc/m².', price:65, unit:'/ m²', badge:'hot', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
+      { slug:'gresie-exterior-60x60', title:'Gresie exterior 60×60cm (m²)', desc:'Gresie porțelan exterior R11, 60×60cm, antiderapantă. Ger rezistentă.', price:78, unit:'/ m²', badge:'top', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
+      { slug:'vata-minerala-10cm', title:'Vată minerală 10cm (m²)', desc:'Vată minerală bazaltică 10cm, 140kg/mc, λ=0.035. Pereți, tavane.', price:38, unit:'/ m²', badge:'', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
+      { slug:'hidroizolatie-membrana-4mm', title:'Membrană bituminoasă 4mm', desc:'Membrană SBS 4mm, poliester, aplicare la flacără. Terase, fundații.', price:32, unit:'/ m²', badge:'', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
+      { slug:'rigips-12-5mm', title:'Placă Rigips 12.5mm 2.6m', desc:'Placă gips-carton standard 12.5mm, 1250×2600mm. Pereți, tavane false.', price:42, unit:'/ placă', badge:'hot', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
+      { slug:'profil-metalic-cd60', title:'Profil metalic CD60 / 4m', desc:'Profil CD60 galvanizat 0.6mm, L=4m. Structuri tavane false rigips.', price:18, unit:'/ buc', badge:'top', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
     ]
   },
   /* ── Betoane ────────────────────────────────────── */
@@ -700,12 +682,12 @@ const SUBCATEGORY_DB = {
     title:'Betoane', subtitle:'Beton preparat, agregate, mixuri uscate și aditivi de betonare.',
     badgeColor:'#5A6472', badgeBg:'rgba(90,100,114,.12)',
     items:[
-      { slug:'beton-c12-15', title:'Beton C12/15 fundații', desc:'Beton C12/15, slump S3, pompabil. Min 0.5mc. Autobetoniera + pompă.', price:310, unit:'/ mc', rating:'4.7 (67 rec.)', badge:'', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
-      { slug:'beton-c25-30', title:'Beton C25/30 structuri', desc:'Beton C25/30, S4, impermeabil W8. Stâlpi, grinzi, planșee armate.', price:430, unit:'/ mc', rating:'4.9 (112 rec.)', badge:'top', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
-      { slug:'nisip-sort-0-4-mc', title:'Nisip sort 0-4mm / mc', desc:'Nisip de râu spălat 0-4mm. Mortare, tencuieli, șape. Livrare basculantă.', price:145, unit:'/ mc', rating:'4.8 (89 rec.)', badge:'', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
-      { slug:'pietris-sort-8-16-mc', title:'Pietriș 8-16mm / mc', desc:'Pietriș sortat 8-16mm, spălat. Betoane, drenaje, fundații. Livrare auto.', price:135, unit:'/ mc', rating:'4.8 (78 rec.)', badge:'', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
-      { slug:'ciment-portland-25kg', title:'Ciment Portland CEM I 42.5R — 25kg', desc:'Ciment gri CEM I 42.5R, sac 25kg. Betoane structurale, mortare.', price:32, unit:'/ sac', rating:'4.9 (456 rec.)', badge:'hot', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
-      { slug:'aditiv-impermeabilizant', title:'Aditiv impermeabilizant 10L', desc:'Aditiv cristalizant pentru beton, 10L = 100kg ciment. Fundații, rezervoare.', price:185, unit:'/ can', rating:'4.8 (45 rec.)', badge:'top', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
+      { slug:'beton-c12-15', title:'Beton C12/15 fundații', desc:'Beton C12/15, slump S3, pompabil. Min 0.5mc. Autobetoniera + pompă.', price:310, unit:'/ mc', badge:'', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
+      { slug:'beton-c25-30', title:'Beton C25/30 structuri', desc:'Beton C25/30, S4, impermeabil W8. Stâlpi, grinzi, planșee armate.', price:430, unit:'/ mc', badge:'top', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
+      { slug:'nisip-sort-0-4-mc', title:'Nisip sort 0-4mm / mc', desc:'Nisip de râu spălat 0-4mm. Mortare, tencuieli, șape. Livrare basculantă.', price:145, unit:'/ mc', badge:'', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
+      { slug:'pietris-sort-8-16-mc', title:'Pietriș 8-16mm / mc', desc:'Pietriș sortat 8-16mm, spălat. Betoane, drenaje, fundații. Livrare auto.', price:135, unit:'/ mc', badge:'', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
+      { slug:'ciment-portland-25kg', title:'Ciment Portland CEM I 42.5R — 25kg', desc:'Ciment gri CEM I 42.5R, sac 25kg. Betoane structurale, mortare.', price:32, unit:'/ sac', badge:'hot', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
+      { slug:'aditiv-impermeabilizant', title:'Aditiv impermeabilizant 10L', desc:'Aditiv cristalizant pentru beton, 10L = 100kg ciment. Fundații, rezervoare.', price:185, unit:'/ can', badge:'top', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
     ]
   },
   /* ── Articole sportive ──────────────────────────── */
@@ -715,12 +697,12 @@ const SUBCATEGORY_DB = {
     title:'Articole sportive', subtitle:'Echipament sport, fitness, ciclism, drumeție și articole outdoor.',
     badgeColor:'#1A7A3A', badgeBg:'rgba(26,122,58,.12)',
     items:[
-      { slug:'bicicleta-mtb-27-5', title:'Bicicletă MTB 27.5" 21 viteze', desc:'MTB aluminiu 27.5", furca suspensie, frâne disc mecanice, 21 viteze Shimano.', price:1290, unit:'/ buc', rating:'4.8 (167 rec.)', badge:'hot', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
-      { slug:'saltea-yoga-6mm', title:'Saltea yoga 6mm TPE', desc:'Saltea TPE 6mm, 183×61cm, antiderapantă față/spate, geantă transport.', price:145, unit:'/ buc', rating:'4.9 (312 rec.)', badge:'top', img:'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=500&q=80' },
-      { slug:'set-gantere-2-20kg', title:'Set gantere reglabile 2-20kg', desc:'Set gantere cu discuri reglabile 2-20kg, mâner ergonomic, suport inclus.', price:650, unit:'/ set', rating:'4.8 (234 rec.)', badge:'', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
-      { slug:'cort-trekking-2p', title:'Cort trekking 2 persoane', desc:'Cort ultraușor 2P, 1.5kg, impermeabil 3000mm, dublu perete, montaj rapid.', price:450, unit:'/ buc', rating:'4.9 (89 rec.)', badge:'top', img:'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=500&q=80' },
-      { slug:'ghete-trekking-impermeabile', title:'Ghete trekking impermeabile', desc:'Ghete gore-tex, talpă Vibram, glezna înaltă. Disponibile 37-48.', price:520, unit:'/ pereche', rating:'4.8 (145 rec.)', badge:'hot', img:'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=500&q=80' },
-      { slug:'role-fitness-adulti', title:'Role fitness adulți ABEC-7', desc:'Role inline fitness, rulmenți ABEC-7, sistem ajustare 37-41, protecții incluse.', price:285, unit:'/ pereche', rating:'4.7 (78 rec.)', badge:'', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
+      { slug:'bicicleta-mtb-27-5', title:'Bicicletă MTB 27.5" 21 viteze', desc:'MTB aluminiu 27.5", furca suspensie, frâne disc mecanice, 21 viteze Shimano.', price:1290, unit:'/ buc', badge:'hot', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
+      { slug:'saltea-yoga-6mm', title:'Saltea yoga 6mm TPE', desc:'Saltea TPE 6mm, 183×61cm, antiderapantă față/spate, geantă transport.', price:145, unit:'/ buc', badge:'top', img:'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=500&q=80' },
+      { slug:'set-gantere-2-20kg', title:'Set gantere reglabile 2-20kg', desc:'Set gantere cu discuri reglabile 2-20kg, mâner ergonomic, suport inclus.', price:650, unit:'/ set', badge:'', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
+      { slug:'cort-trekking-2p', title:'Cort trekking 2 persoane', desc:'Cort ultraușor 2P, 1.5kg, impermeabil 3000mm, dublu perete, montaj rapid.', price:450, unit:'/ buc', badge:'top', img:'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=500&q=80' },
+      { slug:'ghete-trekking-impermeabile', title:'Ghete trekking impermeabile', desc:'Ghete gore-tex, talpă Vibram, glezna înaltă. Disponibile 37-48.', price:520, unit:'/ pereche', badge:'hot', img:'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=500&q=80' },
+      { slug:'role-fitness-adulti', title:'Role fitness adulți ABEC-7', desc:'Role inline fitness, rulmenți ABEC-7, sistem ajustare 37-41, protecții incluse.', price:285, unit:'/ pereche', badge:'', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
     ]
   },
   /* ── Asfalt ─────────────────────────────────────── */
@@ -730,12 +712,12 @@ const SUBCATEGORY_DB = {
     title:'Asfalt', subtitle:'Mixuri asfaltice, emulsii bituminoase și materiale pentru drumuri și parcări.',
     badgeColor:'#2D2D2D', badgeBg:'rgba(45,45,45,.12)',
     items:[
-      { slug:'asfalt-ba8-tona', title:'Asfalt BA8 finisaj — tonă', desc:'Mix asfaltic BA8 pentru stratul de uzură. Min 5T. Transport + asfaltare.', price:680, unit:'/ tonă', rating:'4.8 (45 rec.)', badge:'top', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
-      { slug:'emulsie-bituminoasa-180kg', title:'Emulsie bituminoasă cationică 180kg', desc:'Emulsie C60B4 pentru imprimarea suportului, 180kg butoi.', price:1250, unit:'/ butoi', rating:'4.7 (23 rec.)', badge:'', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
-      { slug:'pavaj-beton-6cm', title:'Pavaj beton 6cm (m²)', desc:'Pavaj beton vibrat 6cm, diverse culori și formate. Rezistență -20°C.', price:55, unit:'/ m²', rating:'4.9 (156 rec.)', badge:'hot', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
-      { slug:'bordura-beton-20x25x100', title:'Bordură beton 20×25×100cm', desc:'Bordură betonată 20×25×100cm, rezistentă la îngheț-dezgheț. Palet 20 buc.', price:42, unit:'/ buc', rating:'4.8 (89 rec.)', badge:'', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
-      { slug:'geotextil-200g-50mp', title:'Geotextil 200g/m² — rolă 50m²', desc:'Geotextil nețesut 200g/m², separare straturi asfaltice și drenaj.', price:185, unit:'/ rolă 50m²', rating:'4.9 (34 rec.)', badge:'top', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
-      { slug:'vopsea-marcaj-rutier-1l', title:'Vopsea marcaj rutier 1L', desc:'Vopsea rutieră clorocauciuc alb/galben, uscare rapidă 15min. 1L = 3-5m².', price:85, unit:'/ litru', rating:'4.7 (67 rec.)', badge:'', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
+      { slug:'asfalt-ba8-tona', title:'Asfalt BA8 finisaj — tonă', desc:'Mix asfaltic BA8 pentru stratul de uzură. Min 5T. Transport + asfaltare.', price:680, unit:'/ tonă', badge:'top', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
+      { slug:'emulsie-bituminoasa-180kg', title:'Emulsie bituminoasă cationică 180kg', desc:'Emulsie C60B4 pentru imprimarea suportului, 180kg butoi.', price:1250, unit:'/ butoi', badge:'', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
+      { slug:'pavaj-beton-6cm', title:'Pavaj beton 6cm (m²)', desc:'Pavaj beton vibrat 6cm, diverse culori și formate. Rezistență -20°C.', price:55, unit:'/ m²', badge:'hot', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
+      { slug:'bordura-beton-20x25x100', title:'Bordură beton 20×25×100cm', desc:'Bordură betonată 20×25×100cm, rezistentă la îngheț-dezgheț. Palet 20 buc.', price:42, unit:'/ buc', badge:'', img:'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=500&q=80' },
+      { slug:'geotextil-200g-50mp', title:'Geotextil 200g/m² — rolă 50m²', desc:'Geotextil nețesut 200g/m², separare straturi asfaltice și drenaj.', price:185, unit:'/ rolă 50m²', badge:'top', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
+      { slug:'vopsea-marcaj-rutier-1l', title:'Vopsea marcaj rutier 1L', desc:'Vopsea rutieră clorocauciuc alb/galben, uscare rapidă 15min. 1L = 3-5m².', price:85, unit:'/ litru', badge:'', img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=500&q=80' },
     ]
   },
 };
@@ -866,7 +848,6 @@ function applySubFilters(){
 
   if (sortBy === 'price-asc') filtered.sort((a,b) => a.price - b.price);
   else if (sortBy === 'price-desc') filtered.sort((a,b) => b.price - a.price);
-  else if (sortBy === 'rating') filtered.sort((a,b) => parseFloat(b.rating) - parseFloat(a.rating));
 
   renderGrid(filtered, CURRENT_TAB);
 }
@@ -938,10 +919,6 @@ function renderGrid(items, tab){
       <div class="card-body">
         <div class="card-title">${it.title}</div>
         <div class="card-desc">${it.desc}</div>
-        <div class="card-rating">
-          <span class="stars">★★★★★</span>
-          <span class="rating-val">${it.rating}</span>
-        </div>
         <div class="card-footer">
           <div class="card-price">
             <span class="price-from">De la</span>
@@ -970,8 +947,7 @@ function openProductPage(slug, type){
     try {
       sessionStorage.setItem('myd-fallback-product-' + slug, JSON.stringify({
         title: item.title, desc: item.desc, price: item.price,
-        unit: item.unit, img: item.img, rating: item.rating,
-      }));
+        unit: item.unit, img: item.img, }));
     } catch (e) {}
   }
   window.location.href = `mydarrin-produs.html?slug=${slug}&type=${type}`;
@@ -1090,5 +1066,7 @@ document.addEventListener('DOMContentLoaded', () => { loadCategory(); detectUser
 <script src="seo-meta.js"></script>
 <script src="cookie-consent.js" defer></script>
 <script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="analytics-loader.js" defer></script>
+<script src="ui-comun.js" defer></script>
+<script src="contact-public.js" defer></script>
 </body>
 </html>

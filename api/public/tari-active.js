@@ -16,16 +16,27 @@ module.exports = async function handler(req, res) {
   try {
     const { data, error } = await supabaseAdmin
       .from('tax_configurations')
-      .select('tara_cod, tara_nume')
-      .eq('checkout_activ', true)
+      .select('tara_cod, tara_nume, cota_tva, checkout_activ')
       .eq('activ', true);
     if (error) throw error;
+
+    const rows = data || [];
+    const cuCheckout = rows.filter((t) => t.checkout_activ);
+    // Cota de TVA pe țară (procent), pentru afișarea prețurilor pe paginile
+    // publice (tva-config.js) — tax_configurations nu se poate citi direct
+    // cu cheia anon. Pentru toate țările active, nu doar cele cu checkout.
+    const tva = {};
+    for (const t of rows) {
+      const cota = Number(t.cota_tva);
+      if (t.cota_tva != null && Number.isFinite(cota)) tva[t.tara_cod] = cota;
+    }
 
     res.setHeader('Cache-Control', 'public, max-age=300');
     return res.status(200).json({
       ok: true,
-      active: (data || []).map(t => t.tara_cod),
-      tari: data || [],
+      active: cuCheckout.map(t => t.tara_cod),
+      tari: cuCheckout.map(({ tara_cod, tara_nume }) => ({ tara_cod, tara_nume })),
+      tva,
     });
   } catch (err) {
     console.error('[tari-active]', err);
