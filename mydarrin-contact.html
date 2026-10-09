@@ -1213,20 +1213,34 @@ function triggerHeaderSearch(){
       <p style="font-size:14.5px;color:#6B7A8D;max-width:460px;margin:0 auto;line-height:1.7">Scrie-ne, sună-ne sau completează formularul. Răspundem în maximum 24 de ore.</p>
     </div>
 
-    <!-- Date contact: din backoffice_config (secțiunea contact, cheile
-         contact_telefon / contact_email), prin statistici-publice.js. Fără
-         cheie, cardul rămâne ascuns. Numărul de WhatsApp inventat
-         (+40 721 234 567) a fost scos, 9 oct. 2026. -->
+    <!-- Date contact: din back-office (/api/public/contact, contact-public.js),
+         secțiunea contact. WhatsApp e primul canal. O cheie lipsă = cardul
+         rămâne ascuns (9 oct. 2026). -->
+    <div data-contact-rand style="display:none;margin-bottom:14px">
+      <a data-contact-href="contact_whatsapp" href="#" style="display:flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:14px 20px;border-radius:14px;background:#25D366;color:#fff;font-size:15px;font-weight:800;text-decoration:none">
+        <i data-lucide="message-circle" style="width:20px;height:20px"></i>Scrie-ne pe WhatsApp
+      </a>
+    </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:40px">
-      <div data-stat-celula="contact-email" style="display:none;background:#EBF4FB;border-radius:14px;padding:18px;text-align:center">
-        <div style="font-size:24px;margin-bottom:8px"><i data-lucide="mail" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-        <div style="font-size:12px;font-weight:700;color:#003366">Email</div>
-        <a data-contact="email" href="#" style="font-size:12.5px;color:#1A5FAD;text-decoration:none"></a>
-      </div>
-      <div data-stat-celula="contact-telefon" style="display:none;background:#E0F5F4;border-radius:14px;padding:18px;text-align:center">
+      <div data-contact-rand style="display:none;background:#E0F5F4;border-radius:14px;padding:18px;text-align:center">
         <div style="font-size:24px;margin-bottom:8px"><i data-lucide="phone" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
         <div style="font-size:12px;font-weight:700;color:#0E9E99">Telefon</div>
-        <a data-contact="telefon" href="#" style="font-size:12.5px;color:#0E9E99;text-decoration:none"></a>
+        <a data-contact="contact_telefon" href="#" style="font-size:12.5px;color:#0E9E99;text-decoration:none;word-break:break-word"></a>
+      </div>
+      <div data-contact-rand style="display:none;background:#EBF4FB;border-radius:14px;padding:18px;text-align:center">
+        <div style="font-size:24px;margin-bottom:8px"><i data-lucide="mail" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
+        <div style="font-size:12px;font-weight:700;color:#003366">Email</div>
+        <a data-contact="contact_email" href="#" style="font-size:12.5px;color:#003366;text-decoration:none;word-break:break-word"></a>
+      </div>
+      <div data-contact-rand style="display:none;background:#FFF0D6;border-radius:14px;padding:18px;text-align:center">
+        <div style="font-size:24px;margin-bottom:8px"><i data-lucide="life-buoy" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
+        <div style="font-size:12px;font-weight:700;color:#CC7000">Comenzi, reclamații, asistență</div>
+        <a data-contact="suport_email" href="#" style="font-size:12.5px;color:#CC7000;text-decoration:none;word-break:break-word"></a>
+      </div>
+      <div data-contact-rand style="display:none;background:#F4F7F9;border-radius:14px;padding:18px;text-align:center">
+        <div style="font-size:24px;margin-bottom:8px"><i data-lucide="clock" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
+        <div style="font-size:12px;font-weight:700;color:#5A6B7D">Program</div>
+        <span data-contact="contact_program" style="font-size:12.5px;color:#5A6B7D"></span>
       </div>
     </div>
 
@@ -1556,6 +1570,16 @@ function submitContact() {
       <li><a href="mydarrin-contact.html#formular">Formular contact</a></li>
       <li><a href="reclamatii.html">Reclamații</a></li>
     </ul>
+    <!-- Contact: din back-office (/api/public/contact, contact-public.js) -->
+    <div data-contact-bloc style="display:none;margin-top:16px">
+      <span class="ftr-nh">Contact</span>
+      <ul class="ftr-ul">
+        <li data-contact-rand style="display:none"><a data-contact="contact_whatsapp" data-contact-text href="#">Scrie-ne pe WhatsApp</a></li>
+        <li data-contact-rand style="display:none"><a data-contact="contact_telefon" href="#"></a></li>
+        <li data-contact-rand style="display:none"><a data-contact="contact_email" href="#"></a></li>
+        <li data-contact-rand style="display:none"><span style="color:rgba(255,255,255,.55)">Program: </span><span data-contact="contact_program"></span></li>
+      </ul>
+    </div>
   </div>
 
 </div><!-- /r2 -->
@@ -2452,5 +2476,6 @@ function daiSendMessage(){
 </div>
 <script src="statistici-publice.js" defer></script>
 <script src="ui-comun.js" defer></script>
+<script src="contact-public.js" defer></script>
 </body>
 </html>

@@ -120,7 +120,7 @@
       <div class="mt-6 p-3 bg-[#E0F5F4] rounded-xl border border-[#0E9E99]/20">
         <div class="text-[10px] font-bold text-[#0B7A76] uppercase tracking-widest mb-1">Drepturile tale</div>
         <div class="text-[11px] text-gray-600">Poți solicita accesul, rectificarea sau ștergerea datelor tale în orice moment.</div>
-        <a href="mailto:dpo@homebestpal.com" class="mt-2 block text-[11px] text-[#003366] font-semibold hover:underline">Contactează DPO →</a>
+        <a data-contact-href="gdpr_email" data-contact-rand href="#" style="display:none" class="mt-2 block text-[11px] text-[#003366] font-semibold hover:underline">Contactează DPO →</a>
       </div>
     </div>
   </aside>
@@ -138,8 +138,8 @@
       <ul>
         <li><strong>Denumire:</strong> Home Best Pal SRL</li>
         <li><strong>Țara de înregistrare:</strong> România</li>
-        <li><strong>Email:</strong> contact@homebestpal.com</li>
-        <li><strong>DPO (Responsabil cu Protecția Datelor):</strong> dpo@homebestpal.com</li>
+        <li data-contact-rand style="display:none"><strong>Email:</strong> <a data-contact="contact_email" href="#"></a></li>
+        <li data-contact-rand style="display:none"><strong>Protecția datelor (GDPR):</strong> <a data-contact="gdpr_email" href="#"></a></li>
       </ul>
 
       <h2 id="art2">2. Datele pe care le colectăm</h2>
@@ -232,7 +232,7 @@
         <div class="right-card"><h4>📦 Dreptul la portabilitate</h4><p>Puteți primi datele într-un format structurat, lizibil automat.</p></div>
         <div class="right-card"><h4>🚫 Dreptul de opoziție</h4><p>Vă puteți opune prelucrării bazate pe interes legitim sau marketing direct.</p></div>
       </div>
-      <p>Pentru exercitarea drepturilor, trimiteți un email la <a href="mailto:dpo@homebestpal.com">dpo@homebestpal.com</a>. Vom răspunde în termen de 30 de zile. Aveți de asemenea dreptul de a depune o plângere la <strong>ANSPDCP</strong> (Autoritatea Națională de Supraveghere a Prelucrării Datelor cu Caracter Personal) — <a href="https://www.dataprotection.ro" target="_blank" rel="noopener">dataprotection.ro</a>.</p>
+      <p><span data-contact-rand style="display:none">Pentru exercitarea drepturilor, trimiteți un email la <a data-contact="gdpr_email" href="#"></a>. </span>Vom răspunde în termen de 30 de zile. Aveți de asemenea dreptul de a depune o plângere la <strong>ANSPDCP</strong> (Autoritatea Națională de Supraveghere a Prelucrării Datelor cu Caracter Personal) — <a href="https://www.dataprotection.ro" target="_blank" rel="noopener">dataprotection.ro</a>.</p>
 
       <h2 id="art9">9. Securitatea datelor</h2>
       <p>Implementăm măsuri tehnice și organizatorice adecvate pentru protecția datelor:</p>
@@ -254,8 +254,8 @@
       <h2 id="art12">12. Contact și DPO</h2>
       <p>Pentru orice întrebări legate de prelucrarea datelor personale:</p>
       <ul>
-        <li><strong>Email DPO:</strong> dpo@homebestpal.com</li>
-        <li><strong>Email general:</strong> contact@homebestpal.com</li>
+        <li data-contact-rand style="display:none"><strong>Email protecția datelor:</strong> <a data-contact="gdpr_email" href="#"></a></li>
+        <li data-contact-rand style="display:none"><strong>Email general:</strong> <a data-contact="contact_email" href="#"></a></li>
         <li><strong>ANSPDCP:</strong> <a href="https://www.dataprotection.ro" target="_blank" rel="noopener">dataprotection.ro</a></li>
         <li><strong>SOL (UE):</strong> <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener">ec.europa.eu/consumers/odr</a></li>
       </ul>
@@ -432,6 +432,16 @@
       <li><a href="mydarrin-contact.html#formular">Formular contact</a></li>
       <li><a href="reclamatii.html">Reclamații</a></li>
     </ul>
+    <!-- Contact: din back-office (/api/public/contact, contact-public.js) -->
+    <div data-contact-bloc style="display:none;margin-top:16px">
+      <span class="ftr-nh">Contact</span>
+      <ul class="ftr-ul">
+        <li data-contact-rand style="display:none"><a data-contact="contact_whatsapp" data-contact-text href="#">Scrie-ne pe WhatsApp</a></li>
+        <li data-contact-rand style="display:none"><a data-contact="contact_telefon" href="#"></a></li>
+        <li data-contact-rand style="display:none"><a data-contact="contact_email" href="#"></a></li>
+        <li data-contact-rand style="display:none"><span style="color:rgba(255,255,255,.55)">Program: </span><span data-contact="contact_program"></span></li>
+      </ul>
+    </div>
   </div>
 
 </div><!-- /r2 -->
@@ -601,5 +611,6 @@ function submitNewsletter() {
   sections.forEach(s=>obs.observe(s));
   lucide.createIcons();
 </script>
+<script src="contact-public.js" defer></script>
 </body>
 </html>

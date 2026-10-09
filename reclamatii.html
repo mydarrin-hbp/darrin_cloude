@@ -1642,8 +1642,8 @@ function triggerHeaderSearch(){
 
         <div style="background:#FFF4E8;border-radius:12px;padding:14px 18px;max-width:380px;margin:0 auto 28px;border:1px solid #FFD980;text-align:left">
           <p style="font-size:12.5px;color:#7A3200;line-height:1.6">
-            <strong>Ai primit emailul de confirmare?</strong> Dacă nu, verifică folderul Spam sau contactează-ne la
-            <a href="mailto:support@homebestpal.com" style="color:var(--org);font-weight:700">support@homebestpal.com</a>
+            <strong>Ai primit emailul de confirmare?</strong> Dacă nu, verifică folderul Spam<span data-contact-rand style="display:none"> sau scrie-ne la
+            <a data-contact="suport_email" href="#" style="color:var(--org);font-weight:700"></a></span>.
           </p>
         </div>
 
@@ -1699,7 +1699,7 @@ function triggerHeaderSearch(){
     <button onclick="toggleChat()" style="margin-left:auto;background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:18px;line-height:1">×</button>
   </div>
   <div class="chat-msgs" id="chat-msgs">
-    <div class="msg ai">Bună! Chat-ul automat nu e disponibil momentan. Completează formularul de reclamație de mai sus sau scrie-ne direct la <a href="mailto:support@homebestpal.com" style="color:inherit;text-decoration:underline">support@homebestpal.com</a> — răspundem în 24-48 ore.</div>
+    <div class="msg ai">Bună! Chat-ul automat nu e disponibil momentan. Completează formularul de reclamație de mai sus<span data-contact-rand style="display:none"> sau scrie-ne direct la <a data-contact="suport_email" href="#" style="color:inherit;text-decoration:underline"></a></span> — răspundem în 24-48 ore.</div>
   </div>
   <div style="padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid #F4F7F9">
     <button onclick="chatQuick('Vreau să înregistrez o reclamație')" style="font-size:11px;padding:5px 11px;border-radius:99px;border:1px solid #E8F0FB;background:#fff;cursor:pointer;color:#6B7A8D;font-family:inherit;transition:all .15s" onmouseover="this.style.background='#E9F7F6'" onmouseout="this.style.background='#fff'">Înregistrez reclamație</button>
@@ -1919,6 +1919,16 @@ function triggerHeaderSearch(){
       <li><a href="mydarrin-contact.html#formular">Formular contact</a></li>
       <li><a href="reclamatii.html">Reclamații</a></li>
     </ul>
+    <!-- Contact: din back-office (/api/public/contact, contact-public.js) -->
+    <div data-contact-bloc style="display:none;margin-top:16px">
+      <span class="ftr-nh">Contact</span>
+      <ul class="ftr-ul">
+        <li data-contact-rand style="display:none"><a data-contact="contact_whatsapp" data-contact-text href="#">Scrie-ne pe WhatsApp</a></li>
+        <li data-contact-rand style="display:none"><a data-contact="contact_telefon" href="#"></a></li>
+        <li data-contact-rand style="display:none"><a data-contact="contact_email" href="#"></a></li>
+        <li data-contact-rand style="display:none"><span style="color:rgba(255,255,255,.55)">Program: </span><span data-contact="contact_program"></span></li>
+      </ul>
+    </div>
   </div>
 
 </div><!-- /r2 -->
@@ -2304,7 +2314,7 @@ function submitReclamatie() {
     btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Trimite reclamația';
 
     if (r && r.error) {
-      err.textContent = 'Eroare la trimitere. Încearcă din nou sau scrie la support@homebestpal.com';
+      err.textContent = 'Eroare la trimitere. Încearcă din nou' + ((window.mydContact && mydContact('suport_email')) ? ' sau scrie la ' + mydContact('suport_email') : '') + '.';
       err.style.display = 'block';
       return;
     }
@@ -2367,12 +2377,13 @@ function sendChat() {
 
   var aiMsg = document.createElement('div');
   aiMsg.className = 'msg ai';
-  aiMsg.textContent = 'Chat-ul automat nu e disponibil momentan. Te rog să completezi formularul de reclamație de mai sus sau să ne scrii direct la support@homebestpal.com — răspundem în 24-48 ore.';
+  aiMsg.textContent = 'Chat-ul automat nu e disponibil momentan. Te rog să completezi formularul de reclamație de mai sus' + ((window.mydContact && mydContact('suport_email')) ? ' sau să ne scrii direct la ' + mydContact('suport_email') : '') + ' — răspundem în 24-48 ore.';
   msgs.appendChild(aiMsg);
   msgs.scrollTop = msgs.scrollHeight;
 }
 </script>
 <script src="statistici-publice.js" defer></script>
 <script src="ui-comun.js" defer></script>
+<script src="contact-public.js" defer></script>
 </body>
 </html>

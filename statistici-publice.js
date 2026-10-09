@@ -11,8 +11,6 @@
 //  - [data-stat="catalog-public"] / [data-stat="tari-active"] (hero-ul din
 //    catalog): toate produsele publice / țările din /api/public/tari-active;
 //  - [data-kpi-text] (text cu cifre, investitori): aceeași sursă ca [data-kpi];
-//  - [data-contact="telefon"|"email"] (pagina de contact): backoffice_config,
-//    secțiunea contact, cheile contact_telefon / contact_email.
 // Regula LM: o cifră egală cu 0 nu se afișează; un bloc fără nicio cifră
 // rămâne ascuns. Elementul de afișat e cel mai apropiat [data-stat-celula].
 (function () {
@@ -84,33 +82,6 @@
     }
   }
 
-  function contact() {
-    var els = document.querySelectorAll('[data-contact]');
-    if (!els.length || !SUPA_ANON) return;
-    fetch(SUPA_URL + '/rest/v1/backoffice_config?sectiune=eq.contact&cheie=in.(contact_telefon,contact_email)&select=cheie,valoare,tara_cod', {
-      headers: { apikey: SUPA_ANON, Authorization: 'Bearer ' + SUPA_ANON },
-    })
-      .then(function (r) { return r.ok ? r.json() : []; })
-      .then(function (rows) {
-        // Rândul țării vizitatorului, apoi ALL, apoi oricare.
-        var tara = (window.MYD_GEO && window.MYD_GEO.data && window.MYD_GEO.data.country) || 'RO';
-        function valoare(cheie) {
-          var r = rows.filter(function (x) { return x.cheie === cheie && x.valoare; });
-          var ales = r.find(function (x) { return x.tara_cod === tara; }) || r.find(function (x) { return x.tara_cod === 'ALL'; }) || r[0];
-          return ales ? String(ales.valoare).trim() : '';
-        }
-        els.forEach(function (el) {
-          var tip = el.getAttribute('data-contact');
-          var v = valoare(tip === 'telefon' ? 'contact_telefon' : 'contact_email');
-          if (!v) return;
-          el.textContent = v;
-          el.href = tip === 'telefon' ? 'tel:' + v.replace(/[^0-9+]/g, '') : 'mailto:' + v;
-          arata(el);
-        });
-      })
-      .catch(function () {});
-  }
-
   function investitoriText() {
     var els = document.querySelectorAll('[data-kpi-text]');
     if (!els.length || !SUPA_ANON) return;
@@ -162,7 +133,7 @@
       .catch(function () {});
   }
 
-  function porneste() { parteneri(); investitori(); servicii(); contact(); investitoriText(); }
+  function porneste() { parteneri(); investitori(); servicii(); investitoriText(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', porneste);
   else porneste();
 })();

@@ -777,7 +777,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
         <div class="faq-ans"><div class="faq-text">Factura se generează automat din Dashboard după confirmare. Tu (subcontractor) emiți factura CĂTRE Home Best Pal SRL (antreprenor general), pentru suma netă alocată ție. TVA se configurează din Backoffice.</div></div>
       </div>
     </div>
-    <p class="text-center text-[13px] text-[#8C9BAD] mt-8">Alte întrebări? <a href="mailto:parteneri@homebestpal.com" class="text-[#FF8C00] hover:underline" style="text-decoration:none">parteneri@homebestpal.com</a></p>
+    <p data-contact-rand class="text-center text-[13px] text-[#8C9BAD] mt-8" style="display:none">Alte întrebări? <a data-contact="contact_email" href="#" class="text-[#FF8C00] hover:underline" style="text-decoration:none"></a></p>
   </div>
 </section>
 
@@ -980,6 +980,16 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
       <li><a href="mydarrin-contact.html#formular">Formular contact</a></li>
       <li><a href="reclamatii.html">Reclamații</a></li>
     </ul>
+    <!-- Contact: din back-office (/api/public/contact, contact-public.js) -->
+    <div data-contact-bloc style="display:none;margin-top:16px">
+      <span class="ftr-nh">Contact</span>
+      <ul class="ftr-ul">
+        <li data-contact-rand style="display:none"><a data-contact="contact_whatsapp" data-contact-text href="#">Scrie-ne pe WhatsApp</a></li>
+        <li data-contact-rand style="display:none"><a data-contact="contact_telefon" href="#"></a></li>
+        <li data-contact-rand style="display:none"><a data-contact="contact_email" href="#"></a></li>
+        <li data-contact-rand style="display:none"><span style="color:rgba(255,255,255,.55)">Program: </span><span data-contact="contact_program"></span></li>
+      </ul>
+    </div>
   </div>
 
 </div><!-- /r2 -->
@@ -1262,11 +1272,11 @@ function submitNewsletter() {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
           <div>
             <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Email *</label>
-            <input type="email" id="f-email" placeholder="valentin@constructval.ro" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
+            <input type="email" id="f-email" placeholder="nume@firma.ro" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
           </div>
           <div>
             <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Telefon *</label>
-            <input type="tel" id="f-tel" placeholder="+40 721 456 789" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
+            <input type="tel" id="f-tel" placeholder="+40 7xx xxx xxx" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
           </div>
         </div>
         <!-- Cont bancar + Zona -->
@@ -3588,5 +3598,6 @@ function collectLeadFromInactiveZone(email, cc, tara) {
 <script src="share-widget.js" defer></script>
 <script src="statistici-publice.js" defer></script>
 <script src="ui-comun.js" defer></script>
+<script src="contact-public.js" defer></script>
 </body>
 </html>
