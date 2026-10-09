@@ -16,6 +16,8 @@
 --      Regulile implicite globale se creează INACTIVE (activ = false):
 --      nu schimbă niciun preț până nu le activează LM.
 --      devize_resurse.este_consumabil (implicit false).
+--   3. catalog_servicii: unelte_necesare, fise_tehnice ([{titlu, url,
+--      sursa}]), caracteristici_tehnice — toate jsonb, opționale.
 --
 -- Cum se aplică
 --   O singură tranzacție, poate fi rulată de mai multe ori (if not exists /
@@ -160,6 +162,25 @@ values
   ('Platinum', 'complet',     true,  true,  true,  false, date '2026-01-01')
 on conflict ((coalesce(serviciu_id::text, '')), (coalesce(categorie_id::text, '')), nivel) do nothing;
 
+-- ── 3. Fișa de serviciu ──────────────────────────────────────────
+alter table public.catalog_servicii
+  add column if not exists unelte_necesare        jsonb,
+  add column if not exists fise_tehnice           jsonb,
+  add column if not exists caracteristici_tehnice jsonb;
+
+alter table public.catalog_servicii drop constraint if exists catalog_servicii_unelte_necesare_lista;
+alter table public.catalog_servicii add constraint catalog_servicii_unelte_necesare_lista
+  check (unelte_necesare is null or jsonb_typeof(unelte_necesare) = 'array');
+alter table public.catalog_servicii drop constraint if exists catalog_servicii_fise_tehnice_lista;
+alter table public.catalog_servicii add constraint catalog_servicii_fise_tehnice_lista
+  check (fise_tehnice is null or jsonb_typeof(fise_tehnice) = 'array');
+alter table public.catalog_servicii drop constraint if exists catalog_servicii_caracteristici_obiect;
+alter table public.catalog_servicii add constraint catalog_servicii_caracteristici_obiect
+  check (caracteristici_tehnice is null or jsonb_typeof(caracteristici_tehnice) in ('object', 'array'));
+
+comment on column public.catalog_servicii.fise_tehnice is
+  'Listă [{titlu, url, sursa}]. Completată de admin; propunerile automate (ex. AI) se aprobă înainte de publicare.';
+
 -- ═══ VERIFICARE ═══════════════════════════════════════════════════
 do $$
 begin
@@ -183,6 +204,10 @@ begin
   end if;
   if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'devize_resurse' and column_name = 'este_consumabil') then
     raise exception 'Lipsește devize_resurse.este_consumabil';
+  end if;
+  if (select count(*) from information_schema.columns where table_schema = 'public' and table_name = 'catalog_servicii'
+      and column_name in ('unelte_necesare', 'fise_tehnice', 'caracteristici_tehnice')) <> 3 then
+    raise exception 'Lipsesc coloanele noi din catalog_servicii';
   end if;
 end;
 $$;
