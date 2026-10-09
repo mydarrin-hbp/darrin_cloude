@@ -12,6 +12,7 @@ const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 const { incearcaAlocarePartener } = require('../../lib/aloca-partener');
+const { notificaAdminFaraPartener } = require('../../lib/notificari-comanda');
 
 async function handler(req, res, admin) {
   if (req.method === 'GET') {
@@ -74,6 +75,8 @@ async function handler(req, res, admin) {
       const alocare = comanda.catalog_serviciu_id
         ? await incearcaAlocarePartener(comanda_id)
         : { alocat: false, motiv: 'fara_serviciu_specificat' };
+      // Etapa 0 SLA (9 oct. 2026): comanda rămasă fără partener → email admin.
+      if (!alocare.alocat) await notificaAdminFaraPartener(updated, alocare.motiv);
 
       return res.status(200).json({ ok: true, comanda: updated, alocare });
     }
