@@ -4226,6 +4226,16 @@ function selectPilotNivel(nivelId) {
   recalcPilot();
 }
 
+// Țara aleasă din meniul lateral (ui-comun.js, 9 oct. 2026): prețul și TVA-ul
+// se recalculează pe țara aleasă.
+window.addEventListener('myd:tara', function (e) {
+  var cc = e && e.detail && e.detail.tara;
+  if (!cc || S.tara_cod === cc) return;
+  S.tara_cod = cc;
+  if (S.pilotMode) recalcPilot();
+  else if (typeof actualizeazaTva === 'function') actualizeazaTva().then(recalc);
+});
+
 function recalcPilot() {
   const qty = parseInt(document.getElementById('qty-input')?.value || 1) || 1;
   S.qty = qty;

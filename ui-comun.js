@@ -553,4 +553,114 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pornesteLocatie);
   else pornesteLocatie();
 
+
+  // ── Limba și țara, sus în meniul lateral (9 oct. 2026) ─────────────────
+  // Pe mobil nu exista niciun selector: cel de limbă (#langDd) stă în bara
+  // de sus, ascunsă sub 768 px, și există doar pe 6 pagini. Acum, pe toate
+  // paginile, sus în meniul lateral: limba (fișierele din /i18n) și țara
+  // (țările cu checkout activ, /api/public/tari-active).
+  //  - limba: i18n-loader.js (încărcat aici dacă pagina nu-l are), salvată
+  //    în localStorage `myd_lang_v1`, ca pe desktop;
+  //  - țara: localStorage `myd_tara`; se aplică prin mecanismul paginii
+  //    (MYD_GEO.setCountry / setManual / applyGeoData) și evenimentul
+  //    `myd:tara` (pagina de produs recalculează prețul și TVA-ul).
+  var LIMBI = [['ro', '🇷🇴', 'Română'], ['en', '🇬🇧', 'English'], ['de', '🇩🇪', 'Deutsch'], ['fr', '🇫🇷', 'Français'], ['tr', '🇹🇷', 'Türkçe'], ['bg', '🇧🇬', 'Български'], ['el', '🇬🇷', 'Ελληνικά']];
+  var STEAGURI = { RO: '🇷🇴', MD: '🇲🇩', AT: '🇦🇹', BG: '🇧🇬', GR: '🇬🇷', GB: '🇬🇧', DE: '🇩🇪', FR: '🇫🇷', HU: '🇭🇺', PL: '🇵🇱' };
+  var CHEIE_LIMBA = 'myd_lang_v1', CHEIE_TARA = 'myd_tara';
+  function citeste(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function scrie(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+  var promI18n = null;
+  function asiguraI18n() {
+    if (window.MYD_I18N) return Promise.resolve(window.MYD_I18N);
+    if (promI18n) return promI18n;
+    promI18n = new Promise(function (ok) {
+      var s = document.createElement('script');
+      s.src = 'i18n-loader.js';
+      s.onload = function () { ok(window.MYD_I18N || null); };
+      s.onerror = function () { ok(null); };
+      document.head.appendChild(s);
+    });
+    return promI18n;
+  }
+
+  function schimbaLimba(cod) {
+    var l = LIMBI.find(function (x) { return x[0] === cod; }) || LIMBI[0];
+    var tradusa = (document.documentElement.lang || 'ro').slice(0, 2) !== 'ro';
+    scrie(CHEIE_LIMBA, cod);
+    // i18n-loader nu păstrează textele românești originale: înapoi la română
+    // după o traducere, pagina se reîncarcă (textele vin din HTML).
+    if (cod === 'ro' && tradusa) { location.reload(); return; }
+    asiguraI18n().then(function (i18n) { if (i18n) i18n.setLanguage(cod, { persist: true }); });
+    var f = el('lang-flag'), lb = el('lang-label');
+    if (f) f.textContent = l[1];
+    if (lb) lb.textContent = l[2];
+  }
+
+  function aplicaTara(cc, emite) {
+    if (!cc) return;
+    var loc = citesteLocatie();
+    try {
+      if (window.MYD_GEO && typeof window.MYD_GEO.setCountry === 'function') window.MYD_GEO.setCountry(cc);
+      else if (window.MYD_GEO && typeof window.MYD_GEO.setManual === 'function') window.MYD_GEO.setManual(cc);
+      else if (typeof window.applyGeoData === 'function') window.applyGeoData({ country: cc, city: (loc && loc.oras) || '', source: 'manual' });
+    } catch (e) { console.warn('[ui-comun] aplicarea țării a eșuat:', e.message); }
+    if (emite !== false) { try { window.dispatchEvent(new CustomEvent('myd:tara', { detail: { tara: cc } })); } catch (e) {} }
+  }
+
+  function schimbaTara(cc) {
+    scrie(CHEIE_TARA, cc);
+    aplicaTara(cc, true);
+  }
+
+  var tariCache = null;
+  function incarcaTari() {
+    if (tariCache) return Promise.resolve(tariCache);
+    return fetch('/api/public/tari-active').then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) { tariCache = (d && d.tari) || [{ tara_cod: 'RO', tara_nume: 'România' }]; return tariCache; })
+      .catch(function () { return [{ tara_cod: 'RO', tara_nume: 'România' }]; });
+  }
+
+  function adaugaSelectorInMeniu() {
+    var sb = el('sidebar');
+    if (!sb || sb.querySelector('#sb-limba-tara')) return;
+    var bloc = document.createElement('div');
+    bloc.id = 'sb-limba-tara';
+    bloc.style.cssText = 'display:flex;gap:8px;padding:12px 20px;border-bottom:1px solid #F0F2F7;flex-wrap:wrap';
+    var limba = citeste(CHEIE_LIMBA) || (document.documentElement.lang || 'ro').slice(0, 2);
+    var stil = 'flex:1 1 120px;min-height:44px;border:1.5px solid #D5DFE8;border-radius:10px;padding:0 10px;font-size:14px;font-family:inherit;background:#fff;color:#1A2332';
+    bloc.innerHTML =
+      '<label style="flex:1 1 120px;display:flex;flex-direction:column;gap:4px;font-size:10.5px;font-weight:700;color:#8C9BAD;text-transform:uppercase;letter-spacing:.06em">Limba' +
+        '<select id="sb-limba" aria-label="Limba" style="' + stil + '">' + LIMBI.map(function (l) { return '<option value="' + l[0] + '"' + (l[0] === limba ? ' selected' : '') + '>' + l[1] + ' ' + l[2] + '</option>'; }).join('') + '</select></label>' +
+      '<label style="flex:1 1 120px;display:flex;flex-direction:column;gap:4px;font-size:10.5px;font-weight:700;color:#8C9BAD;text-transform:uppercase;letter-spacing:.06em">Țara' +
+        '<select id="sb-tara" aria-label="Țara" style="' + stil + '"><option value="RO">🇷🇴 România</option></select></label>';
+    // sub antetul meniului (logo + închidere)
+    var antet = sb.firstElementChild;
+    if (antet && antet.nextSibling) sb.insertBefore(bloc, antet.nextSibling); else sb.insertBefore(bloc, sb.firstChild);
+    el('sb-limba').onchange = function () { schimbaLimba(this.value); };
+    incarcaTari().then(function (tari) {
+      var sel = el('sb-tara');
+      if (!sel) return;
+      var curenta = citeste(CHEIE_TARA) || 'RO';
+      sel.innerHTML = tari.map(function (t) { return '<option value="' + t.tara_cod + '"' + (t.tara_cod === curenta ? ' selected' : '') + '>' + (STEAGURI[t.tara_cod] || '') + ' ' + t.tara_nume + '</option>'; }).join('');
+      sel.onchange = function () { schimbaTara(this.value); };
+    });
+  }
+
+  function pornesteLimbaTara() {
+    adaugaSelectorInMeniu();
+    try { new MutationObserver(function () { adaugaSelectorInMeniu(); }).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
+    // Limba aleasă (alt cod decât ro) pe o pagină fără i18n-loader.js.
+    var limba = citeste(CHEIE_LIMBA);
+    if (limba && limba !== 'ro' && !window.MYD_I18N) asiguraI18n();
+    // Țara aleasă se reaplică după detectarea automată a paginii (IP / cache).
+    var tara = citeste(CHEIE_TARA);
+    if (tara) {
+      setTimeout(function () { aplicaTara(tara, true); }, 1200);
+      setTimeout(function () { aplicaTara(tara, false); }, 3500);
+    }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pornesteLimbaTara);
+  else pornesteLimbaTara();
+
 })();
