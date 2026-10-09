@@ -3400,7 +3400,7 @@ function applyGeoData(data){
     fetch(window.__ENV__.SUPABASE_URL+'/rest/v1/geo_context_cache',{
       method:'POST',
       headers:{apikey:window.__ENV__.SUPABASE_ANON_KEY,Authorization:'Bearer '+window.__ENV__.SUPABASE_ANON_KEY,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},
-      body:JSON.stringify({ip_hash:'browser_'+Math.random().toString(36).slice(2,8),tara_cod:country,regiune:region,oras:city,moneda:cur.symbol,creat_la:new Date().toISOString(),expira_la:new Date(Date.now()+86400000).toISOString()})
+      body:JSON.stringify({ip_hash:'browser_'+Math.random().toString(36).slice(2,8),tara_cod:country,regiune:region,oras:city,moneda:((typeof CURRENCIES!=='undefined'&&(CURRENCIES[country]||CURRENCIES.DEFAULT))||{}).symbol||null,creat_la:new Date().toISOString(),expira_la:new Date(Date.now()+86400000).toISOString()})
     }).catch(function(){});
   }
   geoSave(data);

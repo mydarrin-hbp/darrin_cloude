@@ -281,4 +281,386 @@
     }).catch(function (e) { console.warn('[ui-comun] rolurile nu au putut fi citite:', e && e.message); });
   });
 
+  // ── Butoanele plutitoare și straturile pe mobil (9 oct. 2026) ────────
+  // Regulile vizuale sunt în ui-public.css; aici doar stările:
+  //  - iconițele butonului Darrin AI: pe multe pagini butonul apare în HTML
+  //    DUPĂ ultimul lucide.createIcons(), așa că <i data-lucide> rămânea gol
+  //    (cercul închis fără iconiță). Le transformăm după încărcare; dacă
+  //    biblioteca nu e disponibilă (ex. blocată în browserul Facebook),
+  //    punem o iconiță SVG inline. Plus eticheta „Darrin AI” (vizibilă pe mobil);
+  //  - html.myd-are-mbn: bara de jos e vizibilă (butonul urcă deasupra ei);
+  //  - html.myd-strat-deschis: meniul lateral sau o fereastră e deschisă —
+  //    butonul plutitor se ascunde;
+  //  - share-ul trece în meniul lateral (butonul plutitor de share e ascuns
+  //    pe mobil din CSS).
+  var SVG_BOT = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>';
+
+  function iconiteFab() {
+    try { if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons(); } catch (e) {}
+    var fab = el('dai-fab');
+    if (!fab) return;
+    var chat = el('dai-fab-icon-chat');
+    if (!fab.querySelector('svg')) {
+      var loc = el('dai-fab-icon') || fab;
+      var inchis = chat && chat.style && chat.style.display === 'none';
+      loc.innerHTML = '<span id="dai-fab-icon-chat"' + (inchis ? ' style="display:none"' : '') + '>' + SVG_BOT + '</span>' +
+        '<span id="dai-fab-icon-close" style="display:' + (inchis ? '' : 'none') + ';color:#fff;font-size:22px;line-height:1">×</span>';
+    }
+    if (!fab.querySelector('.myd-fab-eticheta')) {
+      var et = document.createElement('span');
+      et.className = 'myd-fab-eticheta';
+      et.textContent = 'Darrin AI';
+      fab.appendChild(et);
+    }
+    if (!fab.getAttribute('aria-label')) fab.setAttribute('aria-label', 'Darrin AI — asistentul My Darrin');
+    document.body.classList.add('myd-are-fab');
+  }
+
+  function vizibil(x) {
+    if (!x) return false;
+    var cs = getComputedStyle(x);
+    if (cs.display === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) === 0) return false;
+    var r = x.getBoundingClientRect();
+    return r.width > 0 && r.height > 0 && r.right > 0 && r.left < window.innerWidth;
+  }
+
+  function stareBaraJos() {
+    var nav = el('mobile-bottom-nav');
+    var areBara = vizibil(nav);
+    document.documentElement.classList.toggle('myd-are-mbn', areBara);
+    if (areBara) document.documentElement.style.setProperty('--myd-mbn-h', Math.round(nav.getBoundingClientRect().height) + 'px');
+    if (el('chat-toggle')) document.body.classList.add('myd-are-fab');
+  }
+
+  var SELECTOR_STRAT = '[id$="-modal"],[id$="-overlay"],[id$="-drawer"],#basket-panel,#zone-unavailable,#myd-loc-fereastra';
+  function stratDeschis() {
+    var sb = el('sidebar');
+    if (sb && sb.classList.contains('open')) return true;
+    var noduri = document.querySelectorAll(SELECTOR_STRAT);
+    for (var i = 0; i < noduri.length; i++) {
+      var n = noduri[i];
+      if (n.id === 'sidebar-overlay' || n.id === 'dai-chat-panel') continue;
+      if (getComputedStyle(n).position !== 'fixed' || !vizibil(n)) continue;
+      var r = n.getBoundingClientRect();
+      if (r.width * r.height > window.innerWidth * window.innerHeight * 0.3) return true;
+    }
+    return false;
+  }
+  var programat = false;
+  function actualizeazaStraturi() {
+    if (programat) return;
+    programat = true;
+    requestAnimationFrame(function () {
+      programat = false;
+      document.documentElement.classList.toggle('myd-strat-deschis', stratDeschis());
+      stareBaraJos();
+    });
+  }
+
+  // Share în meniul lateral (sus), pe paginile cu share-widget.js.
+  function adaugaShareInMeniu() {
+    var sb = el('sidebar');
+    if (!sb || sb.querySelector('#sb-share') || !(window.MydShare || navigator.share)) return;
+    var a = document.createElement('a');
+    a.href = '#';
+    a.id = 'sb-share';
+    a.className = 'sb-item';
+    a.innerHTML = '<div class="sb-ico" style="background:#EBF4FB"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#003366" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>Distribuie pagina';
+    a.onclick = function (e) {
+      e.preventDefault();
+      var date = window.MydShare ? window.MydShare.datePagina() : { title: document.title, url: location.href };
+      if (navigator.share) { navigator.share(date).catch(function () {}); return; }
+      try {
+        navigator.clipboard.writeText(date.url).then(function () { window.showGeoToast && window.showGeoToast('Linkul paginii a fost copiat.'); });
+      } catch (err) {}
+    };
+    // după antetul meniului (primul copil), înaintea restului elementelor
+    var tinta = sb.querySelector('.sb-item');
+    if (tinta && tinta.parentNode) tinta.parentNode.insertBefore(a, tinta);
+    else sb.appendChild(a);
+  }
+
+  function pornestePlutitoare() {
+    iconiteFab();
+    stareBaraJos();
+    adaugaShareInMeniu();
+    actualizeazaStraturi();
+    try {
+      new MutationObserver(function (lista) {
+        for (var i = 0; i < lista.length; i++) {
+          if (lista[i].type === 'childList') { adaugaShareInMeniu(); break; }
+        }
+        actualizeazaStraturi();
+      }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class', 'style'] });
+    } catch (e) {}
+    window.addEventListener('resize', actualizeazaStraturi);
+    window.addEventListener('load', function () { iconiteFab(); actualizeazaStraturi(); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pornestePlutitoare);
+  else pornestePlutitoare();
+
+  // ── Locația, păstrată între pagini (9 oct. 2026) ──────────────────────
+  // Raport LM: pe unele pagini bara de jos arăta orașul, pe altele doar
+  // „Locație”; pe paginile fără #loc-modal butonul era mort. Cauze:
+  //  - locația aleasă / detectată nu se salva nicăieri;
+  //  - unele pagini ascultă `myd-geo-update` pe document, dar evenimentul
+  //    e emis pe window — ascultătorul nu primea nimic;
+  //  - openLocModal() nu făcea nimic fără #loc-modal.
+  // Acum: localStorage `myd_locatie` (try/catch), aplicată la încărcarea
+  // oricărei pagini (bara de jos, antet, câmpul din fereastră); schimbarea
+  // emite `myd-geo-update` pe window ȘI pe document. Fără #loc-modal se
+  // deschide o fereastră simplă: GPS + oraș cu sugestii.
+  var CHEIE_LOC = 'myd_locatie';
+  var ORASE = ['București', 'Cluj-Napoca', 'Timișoara', 'Iași', 'Constanța', 'Craiova', 'Brașov', 'Galați', 'Ploiești', 'Oradea', 'Brăila', 'Arad', 'Pitești', 'Sibiu', 'Bacău', 'Târgu Mureș', 'Baia Mare', 'Buzău', 'Botoșani', 'Satu Mare', 'Râmnicu Vâlcea', 'Suceava', 'Piatra Neamț', 'Târgu Neamț', 'Drobeta-Turnu Severin', 'Focșani', 'Târgu Jiu', 'Tulcea', 'Târgoviște', 'Reșița', 'Bistrița', 'Slatina', 'Călărași', 'Alba Iulia', 'Giurgiu', 'Deva', 'Hunedoara', 'Zalău', 'Sfântu Gheorghe', 'Bârlad', 'Vaslui', 'Roman', 'Turda', 'Mediaș', 'Slobozia', 'Alexandria', 'Voluntari', 'Lugoj', 'Medgidia', 'Onești', 'Miercurea Ciuc', 'Chișinău'];
+
+  function citesteLocatie() {
+    try { var v = JSON.parse(localStorage.getItem(CHEIE_LOC) || 'null'); return v && v.oras ? v : null; } catch (e) { return null; }
+  }
+  function scrieLocatie(d) {
+    try { localStorage.setItem(CHEIE_LOC, JSON.stringify(d)); } catch (e) {}
+  }
+  function emiteGeo(d) {
+    var detaliu = { country: d.tara || 'RO', city: d.oras, region: d.regiune || '', address: d.adresa || '', source: d.sursa || 'manual', din_ui_comun: true };
+    try { window.dispatchEvent(new CustomEvent('myd-geo-update', { detail: detaliu })); } catch (e) {}
+    try { document.dispatchEvent(new CustomEvent('myd-geo-update', { detail: detaliu })); } catch (e) {}
+  }
+  function afiseazaLocatie(d) {
+    if (!d || !d.oras) return;
+    var text = d.adresa || d.oras;
+    var disp = el('loc-display'), inp = el('loc-input'), mbn = el('mbn-loc-text'), loc2 = el('myd-loc-oras');
+    if (disp && disp.textContent !== text) disp.textContent = text;
+    if (inp && document.activeElement !== inp) inp.value = text;
+    if (mbn && mbn.textContent !== d.oras) mbn.textContent = d.oras;
+    if (loc2 && document.activeElement !== loc2) loc2.value = d.oras;
+  }
+  function salveazaSiAplica(d) {
+    d.ts = Date.now();
+    scrieLocatie(d);
+    afiseazaLocatie(d);
+    emiteGeo(d);
+  }
+
+  // Fereastra simplă, pentru paginile fără #loc-modal.
+  function fereastraLocatie() {
+    var f = el('myd-loc-fereastra');
+    if (!f) {
+      f = document.createElement('div');
+      f.id = 'myd-loc-fereastra';
+      f.setAttribute('role', 'dialog');
+      f.setAttribute('aria-label', 'Alege locația');
+      f.style.cssText = 'position:fixed;inset:0;z-index:3100;display:none;align-items:center;justify-content:center;padding:16px';
+      f.innerHTML =
+        '<div style="position:absolute;inset:0;background:rgba(0,0,0,.45)" data-inchide="1"></div>' +
+        '<div style="position:relative;background:#fff;border-radius:18px;width:100%;max-width:380px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.25);font-family:inherit">' +
+          '<div style="font-size:17px;font-weight:800;color:#1A2332;margin-bottom:4px">Locația ta</div>' +
+          '<div style="font-size:12.5px;color:#6B7A8D;margin-bottom:14px">O folosim pentru partenerii din zonă și pentru prețuri.</div>' +
+          '<button type="button" id="myd-loc-gps" style="width:100%;min-height:48px;border:none;border-radius:12px;background:#FF8C00;color:#fff;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit;margin-bottom:12px">Folosește locația mea (GPS)</button>' +
+          '<label for="myd-loc-oras" style="font-size:12px;font-weight:700;color:#5A6B7D">Sau scrie orașul</label>' +
+          '<input id="myd-loc-oras" list="myd-loc-sugestii" autocomplete="address-level2" placeholder="ex. Iași" style="width:100%;box-sizing:border-box;margin-top:6px;padding:12px;border:1.5px solid #D5DFE8;border-radius:12px;font-size:15px;font-family:inherit"/>' +
+          '<datalist id="myd-loc-sugestii">' + ORASE.map(function (o) { return '<option value="' + o + '"></option>'; }).join('') + '</datalist>' +
+          '<div style="display:flex;gap:8px;margin-top:14px">' +
+            '<button type="button" data-inchide="1" style="flex:1;min-height:44px;border:1.5px solid #D5DFE8;border-radius:12px;background:#fff;color:#5A6B7D;font-weight:700;cursor:pointer;font-family:inherit">Renunță</button>' +
+            '<button type="button" id="myd-loc-salveaza" style="flex:2;min-height:44px;border:none;border-radius:12px;background:#003366;color:#fff;font-weight:800;cursor:pointer;font-family:inherit">Salvează locația</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(f);
+      f.addEventListener('click', function (e) { if (e.target.getAttribute && e.target.getAttribute('data-inchide')) inchideFereastra(); });
+      el('myd-loc-gps').onclick = function () { inchideFereastra(); window.detectFromGPS(); };
+      el('myd-loc-salveaza').onclick = function () {
+        var v = (el('myd-loc-oras').value || '').trim();
+        if (!v) { el('myd-loc-oras').focus(); return; }
+        salveazaSiAplica({ oras: v, tara: v === 'Chișinău' ? 'MD' : 'RO', sursa: 'manual' });
+        inchideFereastra();
+        window.showGeoToast && window.showGeoToast('Locația a fost salvată: ' + v);
+      };
+    }
+    var d = citesteLocatie();
+    el('myd-loc-oras').value = d ? d.oras : '';
+    f.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+  function inchideFereastra() {
+    var f = el('myd-loc-fereastra');
+    if (f) f.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
+  // openLocModal: pagina are #loc-modal → al ei (cu buton GPS adăugat);
+  // altfel fereastra de mai sus. Se înlocuiește și varianta paginii, ca
+  // butonul să nu mai fie mort nicăieri.
+  var openLocPagina = typeof window.openLocModal === 'function' ? window.openLocModal : null;
+  window.openLocModal = function () {
+    var m = el('loc-modal');
+    if (!m) { fereastraLocatie(); return; }
+    if (!m.querySelector('#myd-loc-gps-modal')) {
+      var inp = el('loc-input');
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.id = 'myd-loc-gps-modal';
+      b.textContent = 'Folosește locația mea (GPS)';
+      b.style.cssText = 'width:100%;min-height:44px;border:none;border-radius:12px;background:#FF8C00;color:#fff;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;margin-bottom:12px';
+      b.onclick = function () { window.closeLocModal(); window.detectFromGPS(); };
+      var tinta = inp ? inp.closest('div') : null;
+      if (tinta && tinta.parentNode) tinta.parentNode.insertBefore(b, tinta);
+    }
+    if (openLocPagina) openLocPagina(); else { m.classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
+  };
+
+  // saveLocation (al paginii sau al nostru) → și salvăm.
+  var saveLocPagina = typeof window.saveLocation === 'function' ? window.saveLocation : null;
+  window.saveLocation = function () {
+    var inp = el('loc-input');
+    var v = inp ? (inp.value || '').trim() : '';
+    if (saveLocPagina) saveLocPagina.apply(this, arguments);
+    else window.closeLocModal();
+    if (v) salveazaSiAplica({ oras: v.split(',')[0].trim(), adresa: v, tara: 'RO', sursa: 'manual' });
+  };
+
+  // Tab-ul „Locație” din bara de jos deschide fereastra (GPS + oraș), nu
+  // doar GPS-ul direct — în browserul Facebook GPS-ul e adesea blocat.
+  document.addEventListener('click', function (e) {
+    var t = e.target && e.target.closest && e.target.closest('#mbn-gps');
+    if (!t) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    window.openLocModal();
+  }, true);
+
+  // Detectările (GPS / adresă) salvează; IP-ul nu suprascrie o alegere.
+  function laGeo(e) {
+    var d = e && e.detail;
+    if (!d || d.din_ui_comun) return;
+    var salvata = citesteLocatie();
+    if ((d.source === 'gps' || d.source === 'manual') && d.city) {
+      scrieLocatie({ oras: d.city, regiune: d.region || '', adresa: d.address || '', tara: d.country || 'RO', sursa: d.source, ts: Date.now() });
+      if (el('mbn-loc-text')) el('mbn-loc-text').textContent = d.city;
+    } else if (salvata) {
+      setTimeout(function () { afiseazaLocatie(salvata); }, 0);
+    }
+  }
+  window.addEventListener('myd-geo-update', laGeo);
+
+  function pornesteLocatie() {
+    var d = citesteLocatie();
+    if (!d) return;
+    afiseazaLocatie(d);
+    // Detectările automate ale paginii (IP, cache) rulează după încărcare și
+    // ar rescrie afișajul — reaplicăm alegerea salvată.
+    setTimeout(function () { afiseazaLocatie(citesteLocatie()); }, 1500);
+    setTimeout(function () { afiseazaLocatie(citesteLocatie()); }, 4000);
+    emiteGeo(d);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pornesteLocatie);
+  else pornesteLocatie();
+
+
+  // ── Limba și țara, sus în meniul lateral (9 oct. 2026) ─────────────────
+  // Pe mobil nu exista niciun selector: cel de limbă (#langDd) stă în bara
+  // de sus, ascunsă sub 768 px, și există doar pe 6 pagini. Acum, pe toate
+  // paginile, sus în meniul lateral: limba (fișierele din /i18n) și țara
+  // (țările cu checkout activ, /api/public/tari-active).
+  //  - limba: i18n-loader.js (încărcat aici dacă pagina nu-l are), salvată
+  //    în localStorage `myd_lang_v1`, ca pe desktop;
+  //  - țara: localStorage `myd_tara`; se aplică prin mecanismul paginii
+  //    (MYD_GEO.setCountry / setManual / applyGeoData) și evenimentul
+  //    `myd:tara` (pagina de produs recalculează prețul și TVA-ul).
+  var LIMBI = [['ro', '🇷🇴', 'Română'], ['en', '🇬🇧', 'English'], ['de', '🇩🇪', 'Deutsch'], ['fr', '🇫🇷', 'Français'], ['tr', '🇹🇷', 'Türkçe'], ['bg', '🇧🇬', 'Български'], ['el', '🇬🇷', 'Ελληνικά']];
+  var STEAGURI = { RO: '🇷🇴', MD: '🇲🇩', AT: '🇦🇹', BG: '🇧🇬', GR: '🇬🇷', GB: '🇬🇧', DE: '🇩🇪', FR: '🇫🇷', HU: '🇭🇺', PL: '🇵🇱' };
+  var CHEIE_LIMBA = 'myd_lang_v1', CHEIE_TARA = 'myd_tara';
+  function citeste(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function scrie(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+  var promI18n = null;
+  function asiguraI18n() {
+    if (window.MYD_I18N) return Promise.resolve(window.MYD_I18N);
+    if (promI18n) return promI18n;
+    promI18n = new Promise(function (ok) {
+      var s = document.createElement('script');
+      s.src = 'i18n-loader.js';
+      s.onload = function () { ok(window.MYD_I18N || null); };
+      s.onerror = function () { ok(null); };
+      document.head.appendChild(s);
+    });
+    return promI18n;
+  }
+
+  function schimbaLimba(cod) {
+    var l = LIMBI.find(function (x) { return x[0] === cod; }) || LIMBI[0];
+    var tradusa = (document.documentElement.lang || 'ro').slice(0, 2) !== 'ro';
+    scrie(CHEIE_LIMBA, cod);
+    // i18n-loader nu păstrează textele românești originale: înapoi la română
+    // după o traducere, pagina se reîncarcă (textele vin din HTML).
+    if (cod === 'ro' && tradusa) { location.reload(); return; }
+    asiguraI18n().then(function (i18n) { if (i18n) i18n.setLanguage(cod, { persist: true }); });
+    var f = el('lang-flag'), lb = el('lang-label');
+    if (f) f.textContent = l[1];
+    if (lb) lb.textContent = l[2];
+  }
+
+  function aplicaTara(cc, emite) {
+    if (!cc) return;
+    var loc = citesteLocatie();
+    try {
+      if (window.MYD_GEO && typeof window.MYD_GEO.setCountry === 'function') window.MYD_GEO.setCountry(cc);
+      else if (window.MYD_GEO && typeof window.MYD_GEO.setManual === 'function') window.MYD_GEO.setManual(cc);
+      else if (typeof window.applyGeoData === 'function') window.applyGeoData({ country: cc, city: (loc && loc.oras) || '', source: 'manual' });
+    } catch (e) { console.warn('[ui-comun] aplicarea țării a eșuat:', e.message); }
+    if (emite !== false) { try { window.dispatchEvent(new CustomEvent('myd:tara', { detail: { tara: cc } })); } catch (e) {} }
+  }
+
+  function schimbaTara(cc) {
+    scrie(CHEIE_TARA, cc);
+    aplicaTara(cc, true);
+  }
+
+  var tariCache = null;
+  function incarcaTari() {
+    if (tariCache) return Promise.resolve(tariCache);
+    return fetch('/api/public/tari-active').then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) { tariCache = (d && d.tari) || [{ tara_cod: 'RO', tara_nume: 'România' }]; return tariCache; })
+      .catch(function () { return [{ tara_cod: 'RO', tara_nume: 'România' }]; });
+  }
+
+  function adaugaSelectorInMeniu() {
+    var sb = el('sidebar');
+    if (!sb || sb.querySelector('#sb-limba-tara')) return;
+    var bloc = document.createElement('div');
+    bloc.id = 'sb-limba-tara';
+    bloc.style.cssText = 'display:flex;gap:8px;padding:12px 20px;border-bottom:1px solid #F0F2F7;flex-wrap:wrap';
+    var limba = citeste(CHEIE_LIMBA) || (document.documentElement.lang || 'ro').slice(0, 2);
+    var stil = 'flex:1 1 120px;min-height:44px;border:1.5px solid #D5DFE8;border-radius:10px;padding:0 10px;font-size:14px;font-family:inherit;background:#fff;color:#1A2332';
+    bloc.innerHTML =
+      '<label style="flex:1 1 120px;display:flex;flex-direction:column;gap:4px;font-size:10.5px;font-weight:700;color:#8C9BAD;text-transform:uppercase;letter-spacing:.06em">Limba' +
+        '<select id="sb-limba" aria-label="Limba" style="' + stil + '">' + LIMBI.map(function (l) { return '<option value="' + l[0] + '"' + (l[0] === limba ? ' selected' : '') + '>' + l[1] + ' ' + l[2] + '</option>'; }).join('') + '</select></label>' +
+      '<label style="flex:1 1 120px;display:flex;flex-direction:column;gap:4px;font-size:10.5px;font-weight:700;color:#8C9BAD;text-transform:uppercase;letter-spacing:.06em">Țara' +
+        '<select id="sb-tara" aria-label="Țara" style="' + stil + '"><option value="RO">🇷🇴 România</option></select></label>';
+    // sub antetul meniului (logo + închidere)
+    var antet = sb.firstElementChild;
+    if (antet && antet.nextSibling) sb.insertBefore(bloc, antet.nextSibling); else sb.insertBefore(bloc, sb.firstChild);
+    el('sb-limba').onchange = function () { schimbaLimba(this.value); };
+    incarcaTari().then(function (tari) {
+      var sel = el('sb-tara');
+      if (!sel) return;
+      var curenta = citeste(CHEIE_TARA) || 'RO';
+      sel.innerHTML = tari.map(function (t) { return '<option value="' + t.tara_cod + '"' + (t.tara_cod === curenta ? ' selected' : '') + '>' + (STEAGURI[t.tara_cod] || '') + ' ' + t.tara_nume + '</option>'; }).join('');
+      sel.onchange = function () { schimbaTara(this.value); };
+    });
+  }
+
+  function pornesteLimbaTara() {
+    adaugaSelectorInMeniu();
+    try { new MutationObserver(function () { adaugaSelectorInMeniu(); }).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
+    // Limba aleasă (alt cod decât ro) pe o pagină fără i18n-loader.js.
+    var limba = citeste(CHEIE_LIMBA);
+    if (limba && limba !== 'ro' && !window.MYD_I18N) asiguraI18n();
+    // Țara aleasă se reaplică după detectarea automată a paginii (IP / cache).
+    var tara = citeste(CHEIE_TARA);
+    if (tara) {
+      setTimeout(function () { aplicaTara(tara, true); }, 1200);
+      setTimeout(function () { aplicaTara(tara, false); }, 3500);
+    }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pornesteLimbaTara);
+  else pornesteLimbaTara();
+
 })();

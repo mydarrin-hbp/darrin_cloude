@@ -235,6 +235,13 @@ input:valid:not(:placeholder-shown):not([type="checkbox"]) {
   [style*="grid-template-columns:repeat(3"] { 
     grid-template-columns: 1fr 1fr !important; 
   }
+  /* Grilele cu exact 3 căsuțe (ex. Escrow securizat / AI alocă / Garanție
+     digitală) rămân pe 3 coloane egale: pe 2 coloane a treia rămânea singură
+     pe rând (9 oct. 2026). */
+  [style*="grid-template-columns:repeat(3"]:not(:has(> :nth-child(4))),
+  [class*="grid-cols-3"]:not(:has(> :nth-child(4))) {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
   [style*="grid-template-columns:1fr 1fr 1fr"] {
     grid-template-columns: 1fr 1fr !important;
   }
@@ -765,6 +772,35 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 @media(max-width:600px){
   .qty-type-grid{grid-template-columns:minmax(0,1fr)!important}
 }
+/* Mobil (9 oct. 2026): sub 768 px nivelurile apar ca un card pe nivel, fără
+   derulare orizontală; tabelul rămâne pe ecranele mari. */
+#tier-cards{display:none}
+@media(max-width:767px){
+  #tier-section .tier-table-wrap{display:none}
+  #tier-cards{display:flex;flex-direction:column;gap:10px}
+}
+.tier-card{background:#1E2A3B;border:1.5px solid #2D3F55;border-radius:14px;padding:14px 16px;color:#CBD5E0}
+.tier-card.tier-ales{border-color:#FF8C00;box-shadow:0 0 0 3px rgba(255,140,0,.15)}
+.tier-card-nume{font-size:14px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.tier-card-desc{font-size:13px;line-height:1.5;margin:6px 0 0;color:#CBD5E0;overflow-wrap:anywhere}
+.tier-card-incl{list-style:none;padding:0;margin:10px 0 0;font-size:12.5px;line-height:1.5}
+.tier-card-incl li{padding-left:18px;position:relative}
+.tier-card-incl li::before{content:'✓';position:absolute;left:0;color:#0E9E99;font-weight:800}
+.tier-card-gar{font-size:12px;color:#8BA3C0;margin-top:8px}
+.tier-card-jos{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;flex-wrap:wrap}
+.tier-card-pret{font-size:17px;font-weight:800}
+.tier-card-btn{min-height:44px;padding:0 22px;border-radius:10px;border:none;background:#FF8C00;color:#fff;font-weight:800;font-size:13.5px;cursor:pointer;font-family:inherit}
+.tier-card.tier-ales .tier-card-btn{background:#0E9E99}
+/* Materiale: numele pe cel mult 2 rânduri, apoi „…”; atingerea arată tot. */
+.addon-titlu{font-size:13px;font-weight:600;color:#2D2D2D;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;cursor:pointer;line-height:1.35}
+.addon-titlu.extins{display:block;-webkit-line-clamp:unset}
+/* Butonul spre marketplace: bloc pe toată lățimea, textul se rupe în rânduri. */
+#marketplace-link{display:block;white-space:normal;line-height:1.35}
+#marketplace-link .mk-scurt{display:none}
+@media(max-width:480px){#marketplace-link .mk-lung{display:none}#marketplace-link .mk-scurt{display:inline}}
+/* Rezumat: rândurile fără valoare se ascund; nota de sub preț. */
+.price-row.gol{display:none}
+#s-nota-pret{font-size:11px;color:#8C9BAD;margin-top:6px;display:none}
 </style>
 
 <script>
@@ -1651,6 +1687,9 @@ function triggerHeaderSearch(){
             </table>
           </div>
 
+          <!-- Carduri pe niveluri (mobil, sub 768 px) — generate JS -->
+          <div id="tier-cards" aria-label="Niveluri"></div>
+
           <!-- Selected tier card description -->
           <div id="tier-detail-card" style="margin-top:14px;background:#192433;border-radius:14px;border:1.5px solid #FF8C00;padding:16px;display:none">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
@@ -1736,7 +1775,7 @@ function triggerHeaderSearch(){
           <!-- Faza 4 marketplace (31 august 2026, cerere fondator) — pagină
                dedicată, cu descrieri reale de produs; selecția revine instant
                aici (?addAddon=), vezi _verificaAddAddonDinURL() mai jos. -->
-          <a href="#" id="marketplace-link" onclick="salveazaStareaCheckout()" style="display:none;margin-bottom:10px;text-align:center;padding:9px;border-radius:10px;border:1.5px solid #0E9E99;color:#0E9E99;font-size:12.5px;font-weight:700;text-decoration:none;background:#fff">🛍️ Răsfoiește în marketplace — descrieri complete</a>
+          <a href="#" id="marketplace-link" onclick="salveazaStareaCheckout()" style="display:none;margin-bottom:10px;text-align:center;padding:9px;border-radius:10px;border:1.5px solid #0E9E99;color:#0E9E99;font-size:12.5px;font-weight:700;text-decoration:none;background:#fff">🛍️ <span class="mk-lung">Răsfoiește în marketplace — descrieri complete</span><span class="mk-scurt">Vezi toate în marketplace</span></a>
           <div id="addon-list" style="max-height:220px;overflow-y:auto;border:1px solid #EEF2F7;border-radius:12px">
             <div style="padding:16px;text-align:center;color:#8C9BAD;font-size:12.5px">Se încarcă din catalog...</div>
           </div>
@@ -2061,6 +2100,7 @@ function triggerHeaderSearch(){
         <div style="font-size:11px;color:#CC7000;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Total Escrow</div>
         <div style="font-size:34px;font-weight:800;color:#003366;line-height:1" id="s-total">—</div>
         <div style="font-size:14px;color:#8C9BAD;margin-top:4px">Lei · TVA inclus</div>
+        <div id="s-nota-pret">Preț calculat live din rețetă</div>
         <div id="s-vmc" style="display:none;font-size:11px;color:#CC7000;margin-top:5px;font-weight:600">VMC aplicat: min. 100 Lei</div>
       </div>
       <!-- Progress bars -->
@@ -3748,7 +3788,7 @@ function renderAddonList() {
     return `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #F4F7F9">
       ${thumb}
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:600;color:#2D2D2D;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeAddonHTML(item.titlu)}</div>
+        <div class="addon-titlu" title="${escapeAddonHTML(item.titlu)}" onclick="this.classList.toggle('extins')">${escapeAddonHTML(item.titlu)}</div>
         ${descTrunchiata ? `<div style="font-size:10.5px;color:#8C9BAD;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeAddonHTML(descTrunchiata)}</div>` : ''}
         <div style="font-size:11px;color:#8C9BAD">${pret} Lei / ${escapeAddonHTML(item.unitate)}</div>
       </div>
@@ -4213,6 +4253,7 @@ function renderPilotTierUI() {
     th.onclick = () => selectPilotNivel(th.dataset.pilotNivel);
   });
   const dc = document.getElementById('tier-detail-card'); if (dc) dc.style.display = 'none';
+  renderTierCards();
 }
 
 function selectPilotNivel(nivelId) {
@@ -4222,9 +4263,84 @@ function selectPilotNivel(nivelId) {
   document.querySelectorAll('#tier-table thead [data-pilot-nivel]').forEach((th) => {
     th.classList.toggle('selected-col', th.dataset.pilotNivel === nivelId);
   });
+  renderTierCards();
   renderAddonList();
   recalcPilot();
 }
+
+// Carduri pe niveluri, pentru mobil (9 oct. 2026): aceleași date ca tabelul —
+// nume, descrierea întreagă, ce include și garanția (doar unde există date),
+// preț, buton „Alege”. Pe ecranele mari CSS-ul le ascunde.
+function renderTierCards() {
+  const box = document.getElementById('tier-cards');
+  if (!box) return;
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  let carduri = [];
+  if (S.pilotMode && Array.isArray(S.pilotNiveluri)) {
+    carduri = S.pilotNiveluri.map((n) => ({
+      selectat: n.nivel_id === S.pilotNivelId,
+      nume: NIVEL_LABEL[n.nivel] || String(n.nivel || '').toUpperCase(), culoare: NIVEL_COLOR[n.nivel] || '#8BA3C0',
+      desc: n.descriere || '', include: [], garantie: 0, pret: etichetaPretNivel(n),
+      alege: () => selectPilotNivel(n.nivel_id),
+    }));
+  } else {
+    const data = TIER_DB[S.slug];
+    if (!data) { box.innerHTML = ''; return; }
+    carduri = ['bronz', 'argint', 'aur', 'platinum'].filter((k) => data.tiers[k] && data.tiers[k].label !== 'N/A').map((k) => {
+      const td = data.tiers[k];
+      return {
+        selectat: S.tier === k,
+        nume: k.charAt(0).toUpperCase() + k.slice(1) + (td.label ? ' — ' + td.label : ''), culoare: TIER_COLORS[k] || '#FF8C00',
+        desc: td.desc || '', include: (data.features || []).filter((f, i) => td.includes && td.includes[i]),
+        garantie: td.garantie || 0, pret: td.price === 0 ? 'Gratuit' : fmtCurrency(td.price),
+        alege: () => selectTierCol(k),
+      };
+    });
+  }
+  box.innerHTML = carduri.map((c, i) => `<div class="tier-card${c.selectat ? ' tier-ales' : ''}">
+    <div class="tier-card-nume" style="color:${c.culoare}">${esc(c.nume)}</div>
+    ${c.desc ? `<p class="tier-card-desc">${esc(c.desc)}</p>` : ''}
+    ${c.include.length ? `<ul class="tier-card-incl">${c.include.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>` : ''}
+    ${c.garantie > 0 ? `<div class="tier-card-gar">Garanție digitală ${c.garantie} luni</div>` : ''}
+    <div class="tier-card-jos"><span class="tier-card-pret" style="color:${c.culoare}">${esc(c.pret)}</span>
+      <button type="button" class="tier-card-btn" data-card="${i}" aria-pressed="${c.selectat}">${c.selectat ? '✓ Ales' : 'Alege'}</button></div>
+  </div>`).join('');
+  box.querySelectorAll('[data-card]').forEach((b) => { b.onclick = () => carduri[+b.dataset.card].alege(); });
+}
+
+// Zona din rezumat: localitatea și județul — din adresa introdusă
+// (geocodare) sau din locația aleasă pe site (myd_locatie). Fără date, rândul
+// se ascunde.
+function textZonaRezumat() {
+  let loc = null;
+  try { loc = JSON.parse(localStorage.getItem('myd_locatie') || 'null'); } catch (e) {}
+  const oras = S.localitate || (loc && loc.oras) || '';
+  const judet = S.regiune || (loc && loc.regiune) || '';
+  return [oras, judet].filter(Boolean).join(', ');
+}
+
+// Rândurile din rezumat fără valoare (ex. „Tip” în modul pilot) se ascund.
+function ascundeRanduriGoale() {
+  document.querySelectorAll('.price-row').forEach((r) => {
+    const v = r.lastElementChild;
+    if (v && v.id) r.classList.toggle('gol', !v.textContent.trim());
+  });
+}
+document.addEventListener('DOMContentLoaded', () => {
+  ascundeRanduriGoale();
+  const z = document.getElementById('s-zone');
+  if (z) { try { new MutationObserver(ascundeRanduriGoale).observe(z.parentElement.parentElement, { subtree: true, childList: true, characterData: true }); } catch (e) {} }
+});
+
+// Țara aleasă din meniul lateral (ui-comun.js, 9 oct. 2026): prețul și TVA-ul
+// se recalculează pe țara aleasă.
+window.addEventListener('myd:tara', function (e) {
+  var cc = e && e.detail && e.detail.tara;
+  if (!cc || S.tara_cod === cc) return;
+  S.tara_cod = cc;
+  if (S.pilotMode) recalcPilot();
+  else if (typeof actualizeazaTva === 'function') actualizeazaTva().then(recalc);
+});
 
 function recalcPilot() {
   const qty = parseInt(document.getElementById('qty-input')?.value || 1) || 1;
@@ -4295,8 +4411,11 @@ async function _recalcPilotNow(qty) {
 
   // Sumele vin de la server (defalcare); pagina nu le recalculează.
   const d = data.defalcare;
-  setEl('s-zone', 'Preț calculat live din rețetă');
+  // Zonă = localitatea și județul (adresa sau locația aleasă); mențiunea
+  // despre calcul stă sub preț (9 oct. 2026).
+  setEl('s-zone', textZonaRezumat());
   setEl('s-tip', '');
+  const notaPret = document.getElementById('s-nota-pret'); if (notaPret) notaPret.style.display = 'block';
   setEl('dv-zone', 'Preț calculat live din rețetă');
   setEl('dv-tip', '—');
   if (d) {
@@ -4508,6 +4627,7 @@ function buildTierTable(slug){
       else el.textContent = td.price===0 ? 'Gratuit' : fmtCurrency(td.price);
     }
   });
+  renderTierCards();
 }
 
 // G38 (audit Secțiunea 36, 29 Iulie 2026) — wrapper subțire peste
@@ -4536,6 +4656,8 @@ function selectTierCol(tier){
       if(t===tier) th.classList.add('selected-col');
     }
   });
+
+  renderTierCards();
 
   // Highlight cells
   document.querySelectorAll('.tier-check-cell').forEach(cell=>{
