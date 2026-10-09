@@ -10,7 +10,7 @@
 //
 // GET ?tara=RO -> { ok, contact: { contact_whatsapp, contact_telefon, ... } }
 
-const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { incarcaContactPlatforma } = require('../../lib/contact-platforma');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -21,19 +21,8 @@ module.exports = async function handler(req, res) {
   const tara = /^[A-Z]{2}$/.test(String(req.query?.tara || '').toUpperCase()) ? String(req.query.tara).toUpperCase() : null;
 
   try {
-    const { data, error } = await supabaseAdmin
-      .from('backoffice_config')
-      .select('cheie, valoare, tara_cod')
-      .eq('sectiune', 'contact')
-      .in('tara_cod', tara ? ['ALL', tara] : ['ALL']);
-    if (error) throw error;
-
-    const contact = {};
-    // ALL întâi, apoi țara, care suprascrie.
-    for (const r of (data || []).sort((a, b) => (a.tara_cod === 'ALL' ? -1 : 1) - (b.tara_cod === 'ALL' ? -1 : 1))) {
-      const v = r.valoare == null ? '' : String(r.valoare).trim();
-      if (v) contact[r.cheie] = v;
-    }
+    // Aceeași sursă și același cache ca emailurile (lib/contact-platforma.js).
+    const contact = await incarcaContactPlatforma(tara);
 
     res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
     return res.status(200).json({ ok: true, contact });

@@ -75,6 +75,7 @@ const { calculeazaCostNivel } = require('../../lib/calculeaza-cost-recipe');
 const { rezolvaAddonMateriale } = require('../../lib/rezolva-addon-materiale');
 const { genereazaProformaPDF } = require('../../lib/genereaza-proforma-pdf');
 const { renderEmailComandaPrimita, limbaProfilEmailComportamental } = require('../../lib/i18n');
+const { incarcaContactPlatformaSigur } = require('../../lib/contact-platforma');
 const { notificaAdminFaraPartener } = require('../../lib/notificari-comanda');
 const { fromHeader } = require('../../lib/email-sender');
 
@@ -426,6 +427,7 @@ async function handler(req, res, user) {
           .maybeSingle();
         if (profilClient?.email) {
           const limba = limbaProfilEmailComportamental(profilClient);
+          await incarcaContactPlatformaSigur(); // footerul de dezabonare / GDPR din back-office
           const { subiect, html } = renderEmailComandaPrimita(limba, { numarComanda: data.nr_comanda || data.id, comandaId: data.id, numarProforma });
 
           // Cerere fondator (30 august 2026): factura proformă trebuie

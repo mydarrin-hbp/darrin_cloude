@@ -17,6 +17,7 @@
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { checkRateLimit } = require('../../lib/rate-limit');
 const { renderEmailNewsletterConfirmare, limbaDinTara } = require('../../lib/i18n');
+const { incarcaContactPlatformaSigur } = require('../../lib/contact-platforma');
 const { fromHeader } = require('../../lib/email-sender');
 
 async function trimiteEmailConfirmare(email, token, limba) {
@@ -25,6 +26,7 @@ async function trimiteEmailConfirmare(email, token, limba) {
     return;
   }
   const link = `https://mydarrin.homebestpal.com/api/public/newsletter-confirma?token=${token}`;
+  await incarcaContactPlatformaSigur(); // footerul de dezabonare / GDPR din back-office
   const { subiect, html } = renderEmailNewsletterConfirmare(limba, link);
   await fetch('https://api.resend.com/emails', {
     method: 'POST',

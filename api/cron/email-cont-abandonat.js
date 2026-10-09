@@ -30,6 +30,7 @@
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { renderEmailContAbandonat, limbaProfilEmailComportamental } = require('../../lib/i18n');
+const { incarcaContactPlatformaSigur } = require('../../lib/contact-platforma');
 const { esteSuprimat } = require('../../lib/email-suppression');
 
 const PRAG_ZILE = 3;
@@ -45,6 +46,7 @@ async function trimiteEmail(email, rol, limba, nume) {
     console.log('[email-cont-abandonat] adresă dezabonată, sărim peste:', email);
     return;
   }
+  await incarcaContactPlatformaSigur(); // footerul de dezabonare / GDPR din back-office
   const { subiect, html } = renderEmailContAbandonat(limba, rol, { nume });
   await fetch('https://api.resend.com/emails', {
     method: 'POST',

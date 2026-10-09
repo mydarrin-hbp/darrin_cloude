@@ -7,6 +7,7 @@
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { checkRateLimit } = require('../../lib/rate-limit');
 const { limbaDinTara, renderEmailBunVenitPartener } = require('../../lib/i18n');
+const { incarcaContactPlatformaSigur } = require('../../lib/contact-platforma');
 const { validateIBAN } = require('../../lib/iban');
 const { fromHeader } = require('../../lib/email-sender');
 
@@ -77,6 +78,7 @@ async function stareMesajResend(id) {
 async function trimiteEmailBunVenit({ email, nume, tip, limba, linkParola }) {
   if (!process.env.RESEND_API_KEY) return { ok: false, motiv: 'resend_neconfigurat' };
   const tipLabel = (TIP_LABELS[tip] && TIP_LABELS[tip][limba]) || TIP_LABELS[tip]?.ro || tip;
+  await incarcaContactPlatformaSigur(); // footerul de dezabonare / GDPR din back-office
   const { subiect, html } = renderEmailBunVenitPartener(limba, { nume, tipLabel, linkParola });
   try {
     const res = await fetch('https://api.resend.com/emails', {

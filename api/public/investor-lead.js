@@ -5,6 +5,7 @@
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { renderEmailInvestitorBunVenit, limbaDinTara } = require('../../lib/i18n');
+const { incarcaContactPlatformaSigur } = require('../../lib/contact-platforma');
 const { fromHeader } = require('../../lib/email-sender');
 
 // Email de bun venit (24 august 2026) — gap real: acest endpoint trimitea
@@ -16,6 +17,7 @@ async function trimiteEmailBunVenitInvestitor(email, limba) {
     return;
   }
   try {
+    await incarcaContactPlatformaSigur(); // footerul de dezabonare / GDPR din back-office
     const { subiect, html } = renderEmailInvestitorBunVenit(limba);
     await fetch('https://api.resend.com/emails', {
       method: 'POST',
