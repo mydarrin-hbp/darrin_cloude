@@ -31,3 +31,66 @@
   #hdr .search-bar { min-width: 0; flex: 1 1 auto; padding-left: 10px; padding-right: 10px; }
   #header-search { width: 100% !important; min-width: 0; }
 }
+
+/* ── Butoanele plutitoare și straturile pe mobil (9 oct. 2026) ─────────────
+   Raport LM (Android, browserul intern Facebook): două cercuri închise în
+   dreapta jos (share + Darrin AI cu iconița neîncărcată) acopereau tab-urile
+   barei de jos, conținutul și rămâneau peste meniul lateral deschis.
+   Regula unică, sub 768 px:
+   - un singur buton plutitor: Darrin AI (cu iconiță și eticheta „Darrin AI”);
+     share-ul trece în meniul lateral (ui-comun.js);
+   - butonul stă deasupra barei de jos: înălțimea barei + safe-area + 12 px;
+   - straturi: conținut < bara de jos (1000) < butonul plutitor (1100) <
+     meniul lateral / ferestre (3000+) < bannerul de cookie (9998);
+   - cu meniul sau o fereastră deschisă, butonul plutitor se ascunde
+     (clasa myd-strat-deschis, pusă de ui-comun.js);
+   - body are spațiu jos cât bara + butonul, ca ultimul conținut să nu fie
+     acoperit (clasa myd-are-mbn, pusă doar dacă bara de jos e vizibilă). */
+@media (max-width: 768px) {
+  :root { --myd-mbn-h: 57px; --myd-fab-h: 48px; }
+
+  #mobile-bottom-nav { z-index: 1000 !important; }
+
+  #myd-share-fab { display: none !important; }
+
+  #dai-fab, #chat-toggle {
+    z-index: 1100 !important;
+    right: 12px !important;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+    height: var(--myd-fab-h) !important;
+    width: auto !important;
+    min-width: var(--myd-fab-h) !important;
+    padding: 0 16px 0 12px !important;
+    border-radius: 999px !important;
+    gap: 8px;
+  }
+  html.myd-are-mbn #dai-fab, html.myd-are-mbn #chat-toggle {
+    bottom: calc(var(--myd-mbn-h) + env(safe-area-inset-bottom, 0px) + 12px) !important;
+  }
+  #dai-fab .myd-fab-eticheta { display: inline !important; color: #fff; font-size: 13px; font-weight: 800; white-space: nowrap; }
+  #dai-fab svg, #dai-fab-icon { flex-shrink: 0; }
+
+  #dai-chat-panel {
+    z-index: 3050 !important;
+    right: 8px !important; left: 8px !important; width: auto !important; max-width: none !important;
+    bottom: calc(12px + var(--myd-fab-h) + 8px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  html.myd-are-mbn #dai-chat-panel { bottom: calc(var(--myd-mbn-h) + 12px + var(--myd-fab-h) + 8px + env(safe-area-inset-bottom, 0px)) !important; }
+
+  #sidebar-overlay { z-index: 2990 !important; }
+  #sidebar { z-index: 3000 !important; }
+  #loc-modal, #auth-modal, #partner-modal, #investor-modal, #role-picker-modal, #zone-unavailable,
+  #consultanta-overlay, #consultanta-modal, #cart-drawer, #basket-panel, #order-confirm-overlay,
+  #myd-loc-fereastra { z-index: 3100 !important; }
+
+  html.myd-strat-deschis #dai-fab, html.myd-strat-deschis #chat-toggle,
+  html.myd-strat-deschis #myd-share-fab { display: none !important; }
+
+  html.myd-are-mbn body { padding-bottom: calc(var(--myd-mbn-h) + var(--myd-fab-h) + 24px + env(safe-area-inset-bottom, 0px)) !important; }
+  html:not(.myd-are-mbn) body.myd-are-fab { padding-bottom: calc(var(--myd-fab-h) + 24px + env(safe-area-inset-bottom, 0px)) !important; }
+}
+.myd-fab-eticheta { display: none; }
+/* Iconița Darrin AI: SVG-ul generat de lucide folosește currentColor, iar
+   butonul nu avea culoare de text — iconița ieșea închisă pe fundal închis. */
+#dai-fab { color: #fff; }
+#dai-fab svg { color: #fff; stroke: #fff; }

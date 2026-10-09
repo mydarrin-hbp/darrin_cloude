@@ -281,4 +281,122 @@
     }).catch(function (e) { console.warn('[ui-comun] rolurile nu au putut fi citite:', e && e.message); });
   });
 
+  // ── Butoanele plutitoare și straturile pe mobil (9 oct. 2026) ────────
+  // Regulile vizuale sunt în ui-public.css; aici doar stările:
+  //  - iconițele butonului Darrin AI: pe multe pagini butonul apare în HTML
+  //    DUPĂ ultimul lucide.createIcons(), așa că <i data-lucide> rămânea gol
+  //    (cercul închis fără iconiță). Le transformăm după încărcare; dacă
+  //    biblioteca nu e disponibilă (ex. blocată în browserul Facebook),
+  //    punem o iconiță SVG inline. Plus eticheta „Darrin AI” (vizibilă pe mobil);
+  //  - html.myd-are-mbn: bara de jos e vizibilă (butonul urcă deasupra ei);
+  //  - html.myd-strat-deschis: meniul lateral sau o fereastră e deschisă —
+  //    butonul plutitor se ascunde;
+  //  - share-ul trece în meniul lateral (butonul plutitor de share e ascuns
+  //    pe mobil din CSS).
+  var SVG_BOT = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>';
+
+  function iconiteFab() {
+    try { if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons(); } catch (e) {}
+    var fab = el('dai-fab');
+    if (!fab) return;
+    var chat = el('dai-fab-icon-chat');
+    if (!fab.querySelector('svg')) {
+      var loc = el('dai-fab-icon') || fab;
+      var inchis = chat && chat.style && chat.style.display === 'none';
+      loc.innerHTML = '<span id="dai-fab-icon-chat"' + (inchis ? ' style="display:none"' : '') + '>' + SVG_BOT + '</span>' +
+        '<span id="dai-fab-icon-close" style="display:' + (inchis ? '' : 'none') + ';color:#fff;font-size:22px;line-height:1">×</span>';
+    }
+    if (!fab.querySelector('.myd-fab-eticheta')) {
+      var et = document.createElement('span');
+      et.className = 'myd-fab-eticheta';
+      et.textContent = 'Darrin AI';
+      fab.appendChild(et);
+    }
+    if (!fab.getAttribute('aria-label')) fab.setAttribute('aria-label', 'Darrin AI — asistentul My Darrin');
+    document.body.classList.add('myd-are-fab');
+  }
+
+  function vizibil(x) {
+    if (!x) return false;
+    var cs = getComputedStyle(x);
+    if (cs.display === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) === 0) return false;
+    var r = x.getBoundingClientRect();
+    return r.width > 0 && r.height > 0 && r.right > 0 && r.left < window.innerWidth;
+  }
+
+  function stareBaraJos() {
+    var nav = el('mobile-bottom-nav');
+    var areBara = vizibil(nav);
+    document.documentElement.classList.toggle('myd-are-mbn', areBara);
+    if (areBara) document.documentElement.style.setProperty('--myd-mbn-h', Math.round(nav.getBoundingClientRect().height) + 'px');
+    if (el('chat-toggle')) document.body.classList.add('myd-are-fab');
+  }
+
+  var SELECTOR_STRAT = '[id$="-modal"],[id$="-overlay"],[id$="-drawer"],#basket-panel,#zone-unavailable,#myd-loc-fereastra';
+  function stratDeschis() {
+    var sb = el('sidebar');
+    if (sb && sb.classList.contains('open')) return true;
+    var noduri = document.querySelectorAll(SELECTOR_STRAT);
+    for (var i = 0; i < noduri.length; i++) {
+      var n = noduri[i];
+      if (n.id === 'sidebar-overlay' || n.id === 'dai-chat-panel') continue;
+      if (getComputedStyle(n).position !== 'fixed' || !vizibil(n)) continue;
+      var r = n.getBoundingClientRect();
+      if (r.width * r.height > window.innerWidth * window.innerHeight * 0.3) return true;
+    }
+    return false;
+  }
+  var programat = false;
+  function actualizeazaStraturi() {
+    if (programat) return;
+    programat = true;
+    requestAnimationFrame(function () {
+      programat = false;
+      document.documentElement.classList.toggle('myd-strat-deschis', stratDeschis());
+      stareBaraJos();
+    });
+  }
+
+  // Share în meniul lateral (sus), pe paginile cu share-widget.js.
+  function adaugaShareInMeniu() {
+    var sb = el('sidebar');
+    if (!sb || sb.querySelector('#sb-share') || !(window.MydShare || navigator.share)) return;
+    var a = document.createElement('a');
+    a.href = '#';
+    a.id = 'sb-share';
+    a.className = 'sb-item';
+    a.innerHTML = '<div class="sb-ico" style="background:#EBF4FB"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#003366" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>Distribuie pagina';
+    a.onclick = function (e) {
+      e.preventDefault();
+      var date = window.MydShare ? window.MydShare.datePagina() : { title: document.title, url: location.href };
+      if (navigator.share) { navigator.share(date).catch(function () {}); return; }
+      try {
+        navigator.clipboard.writeText(date.url).then(function () { window.showGeoToast && window.showGeoToast('Linkul paginii a fost copiat.'); });
+      } catch (err) {}
+    };
+    // după antetul meniului (primul copil), înaintea restului elementelor
+    var tinta = sb.querySelector('.sb-item');
+    if (tinta && tinta.parentNode) tinta.parentNode.insertBefore(a, tinta);
+    else sb.appendChild(a);
+  }
+
+  function pornestePlutitoare() {
+    iconiteFab();
+    stareBaraJos();
+    adaugaShareInMeniu();
+    actualizeazaStraturi();
+    try {
+      new MutationObserver(function (lista) {
+        for (var i = 0; i < lista.length; i++) {
+          if (lista[i].type === 'childList') { adaugaShareInMeniu(); break; }
+        }
+        actualizeazaStraturi();
+      }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class', 'style'] });
+    } catch (e) {}
+    window.addEventListener('resize', actualizeazaStraturi);
+    window.addEventListener('load', function () { iconiteFab(); actualizeazaStraturi(); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pornestePlutitoare);
+  else pornestePlutitoare();
+
 })();
