@@ -332,10 +332,14 @@ function _start() {
     if (!gpsDone) _applyCountry(DEFAULT_CC, 'ip');
   });
 
-  // Pornim GPS simultan — dacă e mai rapid sau mai precis, suprascrie IP
+  // GPS la deschiderea paginii DOAR dacă permisiunea e deja acordată (decizie
+  // LM, 10 oct. 2026): atunci browserul nu afișează nicio cerere și rafinarea
+  // în fundal rămâne. Pentru „prompt”, „denied” sau fără Permissions API:
+  // doar IP — GPS se cere numai din butonul „Folosește locația mea”, altfel
+  // vizitatorii apăsau „Nu permite” și GPS-ul nu mai putea fi cerut deloc.
   if (navigator.geolocation) {
     navigator.permissions && navigator.permissions.query({ name:'geolocation' }).then(function(p) {
-      if (p.state === 'granted' || p.state === 'prompt') {
+      if (p.state === 'granted') {
         _tryGPS(function(d) {
           gpsDone = true;
           _cache.set(d);
@@ -346,18 +350,11 @@ function _start() {
           // GPS eșuat — IP era deja aplicat sau aplicăm default
           if (!ipDone && !ipData) _applyCountry(DEFAULT_CC, 'ip');
         });
-      } else {
-        // GPS blocat de user — rămânem cu IP
-        gpsDone = true;
       }
+      // „prompt” sau „denied” — doar IP, fără cerere în browser. gpsDone rămâne
+      // false: rezultatul IP se aplică doar „if (!gpsDone)”.
     }).catch(function() {
-      // permissions API indisponibilă (vechi browser) — cerem GPS direct
-      _tryGPS(function(d) {
-        gpsDone = true;
-        _cache.set(d);
-        _applyUI(d);
-        MYD_GEO._fire(d);
-      }, function() { gpsDone = true; });
+      // Permissions API indisponibilă (browser vechi) — doar IP
     });
   }
 }

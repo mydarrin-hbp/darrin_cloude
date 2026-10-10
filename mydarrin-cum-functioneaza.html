@@ -2333,13 +2333,14 @@ function start(){
     var checkGPS=function(){
       tryGPS(function(d){gpsDone=true;applyGeo(d);},function(){gpsDone=true;});
     };
+    // GPS la deschidere DOAR cu permisiunea deja acordată (fără cerere în
+    // browser); „prompt”/„denied”/fără Permissions API: doar IP (decizie LM,
+    // 10 oct. 2026). GPS se cere din butonul „Folosește locația mea”.
+    // (gpsDone rămâne false fără GPS: rezultatul IP se aplică doar „if(!gpsDone)”)
     if(navigator.permissions){
       navigator.permissions.query({name:'geolocation'}).then(function(p){
         if(p.state==='granted')checkGPS();
-        else if(p.state==='prompt')checkGPS(); // va afișa dialog browser
-      }).catch(checkGPS);
-    }else{
-      checkGPS();
+      }).catch(function(){});
     }
   }
 }
