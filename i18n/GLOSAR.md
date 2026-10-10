@@ -123,4 +123,12 @@ Pe paginile legale, sus, doar în engleză (formularea finală o decide LM):
 ## Ce nu se traduce
 - Prețurile și monedele: rămân pe țara aleasă (o vizită în engleză din România vede tot lei, TVA 21%); formatul numerelor urmează limba (EN `226.65`, RO `226,65`).
 - Numele proprii de mai sus, numele orașelor (București, Iași, Chișinău), adresele, numerele de telefon, emailurile.
-- Codurile tehnice (NACE, ESCO, Uniclass) și numele de țară din selector (afișate în limba lor).
+- Codurile tehnice (NACE, ESCO, Uniclass), numele județelor, numele firmelor și adresele (str. → St., bd. → Blvd. doar în exemplele de adresă).
+- Numele limbilor din selector rămân în limba lor (Română, English, Deutsch); numele țărilor se traduc (România → Romania, Marea Britanie → United Kingdom).
+
+## Cum se adaugă un text nou
+- Textul român rămâne în HTML / în script; traducerea intră în `i18n/en.json` (text prezent pe 4+ pagini sau venit din baza de date) sau în `i18n/en/<pagina>.json`, la `_texte`, cu textul român exact (spațiile se normalizează) ca cheie.
+- Textele cu numere sau nume variabile: `_modele`, ex. `"{n} servicii active": "{n} active services"` — `{n}` potrivește doar numere, orice altă variabilă potrivește text (și se traduce și ea, dacă se poate).
+- În scripturi, pentru texte compuse: `t('cheie', 'Text român {x}', { x: valoare })`.
+- Conținutul din baza de date: coloana `traduceri` (`{ "en": { "titlu": "..." } }`), citită de `/api/public/traduceri-catalog`.
+- Un text care nu trebuie tradus (ex. originalul semnat al unui acord): `translate="no"` sau `data-i18n-skip` pe element.
