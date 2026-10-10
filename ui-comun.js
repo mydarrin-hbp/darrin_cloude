@@ -165,8 +165,8 @@
         });
     }, function (err) {
       if (svg) svg.classList.remove('mbn-gps-loading');
-      var mesaje = { 1: 'Permite accesul la locație în browser → Setări → Locație', 2: 'Semnal GPS slab — încearcă în exterior sau lângă fereastră', 3: 'Timeout GPS — încearcă din nou' };
-      window.showGeoToast(mesaje[err.code] || 'Eroare GPS');
+      // mesajul comun, tradus (vezi „GPS doar la cerere” mai jos)
+      window.showGeoToast(window.MYD_GPS ? window.MYD_GPS.mesajEroare(err) : 'Eroare GPS');
     }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
   });
 
@@ -430,7 +430,7 @@
         '<div style="position:relative;background:#fff;border-radius:18px;width:100%;max-width:380px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.25);font-family:inherit">' +
           '<div style="font-size:17px;font-weight:800;color:#1A2332;margin-bottom:4px">Locația ta</div>' +
           '<div style="font-size:12.5px;color:#6B7A8D;margin-bottom:14px">O folosim pentru partenerii din zonă și pentru prețuri.</div>' +
-          '<button type="button" id="myd-loc-gps" style="width:100%;min-height:48px;border:none;border-radius:12px;background:#FF8C00;color:#fff;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit;margin-bottom:12px">Folosește locația mea (GPS)</button>' +
+          '<button type="button" id="myd-loc-gps" style="width:100%;min-height:48px;border:none;border-radius:12px;background:#FF8C00;color:#fff;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit;margin-bottom:12px">' + trG('gps.buton_gps', 'Folosește locația mea (GPS)') + '</button>' +
           '<label for="myd-loc-oras" style="font-size:12px;font-weight:700;color:#5A6B7D">Sau scrie orașul</label>' +
           '<input id="myd-loc-oras" list="myd-loc-sugestii" autocomplete="address-level2" placeholder="ex. Iași" style="width:100%;box-sizing:border-box;margin-top:6px;padding:12px;border:1.5px solid #D5DFE8;border-radius:12px;font-size:15px;font-family:inherit"/>' +
           '<datalist id="myd-loc-sugestii">' + ORASE.map(function (o) { return '<option value="' + o + '"></option>'; }).join('') + '</datalist>' +
@@ -441,7 +441,7 @@
         '</div>';
       document.body.appendChild(f);
       f.addEventListener('click', function (e) { if (e.target.getAttribute && e.target.getAttribute('data-inchide')) inchideFereastra(); });
-      el('myd-loc-gps').onclick = function () { inchideFereastra(); window.detectFromGPS(); };
+      el('myd-loc-gps').onclick = function () { inchideFereastra(); gpsDinFereastra(); };
       el('myd-loc-salveaza').onclick = function () {
         var v = (el('myd-loc-oras').value || '').trim();
         if (!v) { el('myd-loc-oras').focus(); return; }
@@ -473,9 +473,9 @@
       var b = document.createElement('button');
       b.type = 'button';
       b.id = 'myd-loc-gps-modal';
-      b.textContent = 'Folosește locația mea (GPS)';
+      b.textContent = trG('gps.buton_gps', 'Folosește locația mea (GPS)');
       b.style.cssText = 'width:100%;min-height:44px;border:none;border-radius:12px;background:#FF8C00;color:#fff;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;margin-bottom:12px';
-      b.onclick = function () { window.closeLocModal(); window.detectFromGPS(); };
+      b.onclick = function () { window.closeLocModal(); gpsDinFereastra(); };
       var tinta = inp ? inp.closest('div') : null;
       if (tinta && tinta.parentNode) tinta.parentNode.insertBefore(b, tinta);
     }
@@ -529,6 +529,126 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pornesteLocatie);
   else pornesteLocatie();
 
+
+  // ── GPS doar la cerere (decizie LM, 10 oct. 2026) ─────────────────────
+  // La deschiderea paginii locația vine doar din IP (myd-geo.js / modulul GEO
+  // inline). GPS se cere numai când vizitatorul apasă explicit un buton:
+  //  - fereastra de locație și tab-ul „Locație” din bara de jos;
+  //  - „Folosește locația mea”, lângă câmpul de adresă din checkout și din
+  //    pagina de produs (completează adresa; câmpul rămâne editabil).
+  // Un singur apel getCurrentPosition pe apăsare; la refuz, mesaj tradus.
+  function trG(k, ro) { return typeof window.t === 'function' ? window.t(k, ro) : ro; }
+
+  function cereGPS() {
+    return new Promise(function (ok, fail) {
+      if (!navigator.geolocation) { fail({ code: 'no-api' }); return; }
+      navigator.geolocation.getCurrentPosition(function (pos) {
+        var lat = pos.coords.latitude, lng = pos.coords.longitude, acc = Math.round(pos.coords.accuracy);
+        var limba = (window.MYD_I18N && window.MYD_I18N.lang) === 'ro' ? 'ro' : 'en';
+        fetch('https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lng + '&format=json&addressdetails=1&accept-language=' + limba)
+          .then(function (r) { return r.json(); })
+          .then(function (geo) {
+            var a = (geo && geo.address) || {};
+            var oras = a.city || a.town || a.village || a.municipality || '';
+            var regiune = a.county || a.state || '';
+            var strada = [a.road, a.house_number].filter(Boolean).join(' ');
+            ok({ country: (a.country_code || 'ro').toUpperCase(), city: oras, region: regiune, street: strada,
+              address: [strada, oras, regiune].filter(Boolean).join(', '), lat: lat, lng: lng, accuracy: acc, source: 'gps' });
+          })
+          .catch(function () {
+            ok({ country: 'RO', city: '', region: '', street: '', address: '', lat: lat, lng: lng, accuracy: acc, source: 'gps' });
+          });
+      }, function (err) { fail(err || {}); }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+    });
+  }
+
+  function mesajEroareGPS(err) {
+    var c = err && err.code;
+    if (c === 1) return trG('gps.blocat', 'Accesul la locație e blocat. Poți scrie adresa sau poți permite locația din setările browserului.');
+    if (c === 2) return trG('gps.semnal_slab', 'Semnal GPS slab — încearcă în exterior sau lângă fereastră');
+    if (c === 3) return trG('gps.timeout', 'Timeout GPS — încearcă din nou');
+    if (c === 'no-api') return trG('gps.indisponibil', 'GPS indisponibil în acest browser');
+    return trG('gps.eroare', 'Nu am putut afla locația. Poți scrie adresa.');
+  }
+
+  window.MYD_GPS = { cere: cereGPS, mesajEroare: mesajEroareGPS };
+
+  // Butoanele GPS din fereastra de locație (pagini cu sau fără #loc-modal).
+  function gpsDinFereastra() {
+    window.showGeoToast(trG('gps.se_cauta', 'Se caută locația…'));
+    cereGPS().then(function (d) {
+      if (d.city || d.region) salveazaSiAplica({ oras: d.city || d.region, regiune: d.region, adresa: d.address, tara: d.country, sursa: 'gps' });
+      aplicaLocatie(d);
+      window.showGeoToast(trG('gps.detectata', 'Locația ta a fost detectată') + (d.city ? ': ' + d.city : ''));
+    }, function (err) { window.showGeoToast(mesajEroareGPS(err)); });
+  }
+  window.MYD_GPS.dinFereastra = gpsDinFereastra;
+
+  // „Folosește locația mea” lângă un câmp de adresă.
+  function butonGPSLangaCamp(input, umple) {
+    if (!input || input.getAttribute('data-gps-buton')) return;
+    input.setAttribute('data-gps-buton', '1');
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'myd-gps-buton';
+    b.style.cssText = 'margin-top:6px;display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:6px 12px;border-radius:10px;border:1.5px solid #D5DFE8;background:#fff;color:#003366;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit';
+    var et = document.createElement('span');
+    et.textContent = trG('gps.buton', 'Folosește locația mea');
+    b.innerHTML = '<span aria-hidden="true">📍</span>';
+    b.appendChild(et);
+    var msg = document.createElement('div');
+    msg.className = 'myd-gps-mesaj';
+    msg.setAttribute('role', 'status');
+    msg.style.cssText = 'display:none;margin-top:6px;font-size:12px;line-height:1.4;font-weight:600';
+    b.onclick = function () {
+      b.disabled = true;
+      var text = et.textContent;
+      et.textContent = trG('gps.se_cauta', 'Se caută locația…');
+      msg.style.display = 'none';
+      cereGPS().then(function (d) {
+        umple(d);
+        b.disabled = false; et.textContent = text;
+        msg.style.color = '#1A7A3A';
+        msg.textContent = '✓ ' + trG('gps.completata', 'Adresa a fost completată din locația ta — verific-o înainte de a continua.');
+        msg.style.display = 'block';
+      }, function (err) {
+        b.disabled = false; et.textContent = text;
+        msg.style.color = '#C0392B';
+        msg.textContent = mesajEroareGPS(err);
+        msg.style.display = 'block';
+      });
+    };
+    input.insertAdjacentElement('afterend', msg);
+    input.insertAdjacentElement('afterend', b);
+  }
+  function declanseaza(inp, tip) { try { inp.dispatchEvent(new Event(tip, { bubbles: true })); } catch (e) {} }
+
+  function pornesteGPSLaCerere() {
+    // pagina de produs: o singură linie de adresă (onAddr() o geocodează)
+    var addr = el('addr-input');
+    butonGPSLangaCamp(addr, function (d) {
+      addr.value = d.address || [d.city, d.region].filter(Boolean).join(', ');
+      declanseaza(addr, 'input');
+    });
+    // checkout: stradă + oraș + județ
+    var co = el('co-adresa');
+    butonGPSLangaCamp(co, function (d) {
+      if (d.street) { co.value = d.street; declanseaza(co, 'input'); }
+      var oras = el('co-oras');
+      if (oras && d.city) { oras.value = d.city; declanseaza(oras, 'input'); }
+      var jud = el('co-judet');
+      if (jud && d.region) {
+        var cauta = d.region.replace(/^(Județul|Judetul|County of)\s+/i, '').replace(/\s+County$/i, '').trim().toLowerCase();
+        var fara = function (s) { return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); };
+        for (var i = 0; i < jud.options.length; i++) {
+          var o = jud.options[i];
+          if (o.value && (fara(o.value) === fara(cauta) || (/bucure/.test(fara(cauta)) && /bucure/.test(fara(o.value))))) { jud.value = o.value; declanseaza(jud, 'change'); break; }
+        }
+      }
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pornesteGPSLaCerere);
+  else pornesteGPSLaCerere();
 
   // ── Limba și țara, sus în meniul lateral (9 oct. 2026) ─────────────────
   // Pe mobil nu exista niciun selector: cel de limbă (#langDd) stă în bara
