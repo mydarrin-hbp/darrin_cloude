@@ -584,17 +584,14 @@
     return promI18n;
   }
 
+  // Schimbarea limbii o face i18n-loader.js: salvează alegerea și reîncarcă
+  // pagina (textele românești vin din HTML, traducerea se aplică la încărcare).
   function schimbaLimba(cod) {
-    var l = LIMBI.find(function (x) { return x[0] === cod; }) || LIMBI[0];
-    var tradusa = (document.documentElement.lang || 'ro').slice(0, 2) !== 'ro';
     scrie(CHEIE_LIMBA, cod);
-    // i18n-loader nu păstrează textele românești originale: înapoi la română
-    // după o traducere, pagina se reîncarcă (textele vin din HTML).
-    if (cod === 'ro' && tradusa) { location.reload(); return; }
-    asiguraI18n().then(function (i18n) { if (i18n) i18n.setLanguage(cod, { persist: true }); });
-    var f = el('lang-flag'), lb = el('lang-label');
-    if (f) f.textContent = l[1];
-    if (lb) lb.textContent = l[2];
+    asiguraI18n().then(function (i18n) {
+      if (i18n) i18n.setLanguage(cod, { persist: true });
+      else location.reload();
+    });
   }
 
   function aplicaTara(cc, emite) {
@@ -624,10 +621,13 @@
   function adaugaSelectorInMeniu() {
     var sb = el('sidebar');
     if (!sb || sb.querySelector('#sb-limba-tara')) return;
+    // Paginile interne (superadmin, back-office) rămân în română.
+    if (window.MYD_I18N && window.MYD_I18N.intern) return;
     var bloc = document.createElement('div');
     bloc.id = 'sb-limba-tara';
     bloc.style.cssText = 'display:flex;gap:8px;padding:12px 20px;border-bottom:1px solid #F0F2F7;flex-wrap:wrap';
-    var limba = citeste(CHEIE_LIMBA) || (document.documentElement.lang || 'ro').slice(0, 2);
+    // limba activă: aleasă sau, la prima vizită, engleza (i18n-loader.js)
+    var limba = (window.MYD_I18N && window.MYD_I18N.lang) || citeste(CHEIE_LIMBA) || 'en';
     var stil = 'flex:1 1 120px;min-height:44px;border:1.5px solid #D5DFE8;border-radius:10px;padding:0 10px;font-size:14px;font-family:inherit;background:#fff;color:#1A2332';
     bloc.innerHTML =
       '<label style="flex:1 1 120px;display:flex;flex-direction:column;gap:4px;font-size:10.5px;font-weight:700;color:#8C9BAD;text-transform:uppercase;letter-spacing:.06em">Limba' +

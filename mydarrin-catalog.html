@@ -310,6 +310,11 @@ input:valid:not(:placeholder-shown):not([type="checkbox"]) {
 </script>
 
 <meta charset="UTF-8">
+<!-- Limba (10 oct. 2026): engleza implicită, româna din selector — i18n-loader.js, sincron, primul script -->
+<script src="/i18n-loader.js" data-pagina="mydarrin-catalog"></script>
+<link rel="alternate" hreflang="en" href="https://mydarrin.homebestpal.com/mydarrin-catalog?lang=en"/>
+<link rel="alternate" hreflang="ro" href="https://mydarrin.homebestpal.com/mydarrin-catalog?lang=ro"/>
+<link rel="alternate" hreflang="x-default" href="https://mydarrin.homebestpal.com/mydarrin-catalog"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Catalog servicii, materiale & închirieri | My Darrin</title>
 <meta name="description" content="Explorează cataloagele My Darrin: servicii, materiale și închirieri, cu deviz instant generat de Darrin AI."/>
@@ -6299,7 +6304,7 @@ function applyGeo(d){
   }
 
   // ── html lang ─────────────────────────────────────────────
-  if(info.lang)document.documentElement.lang=info.lang;
+  /* <html lang> îl stabilește i18n-loader.js (limba aleasă), nu geolocalizarea */
 
   // ── Dispatch event ────────────────────────────────────────
   try{window.dispatchEvent(new CustomEvent('myd:geo',{detail:d}));}catch(e){}
@@ -6988,7 +6993,6 @@ if(typeof lucide!=="undefined")lucide.createIcons();
 <script src="branding-loader.js" defer></script>
 <!-- G20 (26 Iulie 2026) — extindere pilot i18n dincolo de homepage,
      aceleași 4 limbi (EN/DE/FR/TR). Vezi i18n-loader.js. -->
-<script src="i18n-loader.js" defer></script>
 
 <!-- ════ DARRIN AI — CHAT WIDGET FLOTANT (colț dreapta-jos) ════ -->
 <button id="dai-fab" onclick="toggleDaiChat()" style="position:fixed;bottom:24px;right:24px;width:58px;height:58px;border-radius:50%;background:#1E2E4D;border:none;box-shadow:0 8px 24px rgba(30,46,77,.45);cursor:pointer;z-index:9000;display:flex;align-items:center;justify-content:center;transition:transform .2s" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">

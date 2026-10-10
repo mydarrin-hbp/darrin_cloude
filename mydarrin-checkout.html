@@ -2,6 +2,11 @@
 <html lang="ro">
 <head>
 <meta charset="UTF-8">
+<!-- Limba (10 oct. 2026): engleza implicită, româna din selector — i18n-loader.js, sincron, primul script -->
+<script src="/i18n-loader.js" data-pagina="mydarrin-checkout"></script>
+<link rel="alternate" hreflang="en" href="https://mydarrin.homebestpal.com/mydarrin-checkout?lang=en"/>
+<link rel="alternate" hreflang="ro" href="https://mydarrin.homebestpal.com/mydarrin-checkout?lang=ro"/>
+<link rel="alternate" hreflang="x-default" href="https://mydarrin.homebestpal.com/mydarrin-checkout"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script>
   window.__ENV__ = {
@@ -3097,7 +3102,7 @@ function applyGeo(d){
   }
 
   // ── html lang ─────────────────────────────────────────────
-  if(info.lang)document.documentElement.lang=info.lang;
+  /* <html lang> îl stabilește i18n-loader.js (limba aleasă), nu geolocalizarea */
 
   // ── Dispatch event ────────────────────────────────────────
   try{window.dispatchEvent(new CustomEvent('myd:geo',{detail:d}));}catch(e){}
@@ -3596,7 +3601,6 @@ async function incarcaMetodePlataB2G(){
 </script>
 <script src="branding-loader.js" defer></script>
 <!-- G27 (26 Iulie 2026) — checkout-ul nu avea deloc i18n. -->
-<script src="i18n-loader.js" defer></script>
 
 <!-- ════ DARRIN AI — CHAT WIDGET FLOTANT (colț dreapta-jos) ════ -->
 <button id="dai-fab" onclick="toggleDaiChat()" style="position:fixed;bottom:24px;right:24px;width:58px;height:58px;border-radius:50%;background:#1E2E4D;border:none;box-shadow:0 8px 24px rgba(30,46,77,.45);cursor:pointer;z-index:9000;display:flex;align-items:center;justify-content:center;transition:transform .2s" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
