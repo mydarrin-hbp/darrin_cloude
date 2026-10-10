@@ -161,8 +161,8 @@ function _applyUI(d) {
   // 5. Dispatch event pentru alte module
   try { window.dispatchEvent(new CustomEvent('myd:geo', { detail: d })); } catch(e) {}
 
-  // 6. <html lang="">
-  if (d.lang || info.lang) document.documentElement.lang = d.lang || info.lang;
+  // 6. <html lang> nu mai urmează țara (10 oct. 2026): limba o alege
+  //    vizitatorul din selector — vezi i18n-loader.js.
 }
 
 function _set(id, val) {

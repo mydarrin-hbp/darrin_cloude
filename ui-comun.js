@@ -357,39 +357,15 @@
     });
   }
 
-  // Share în meniul lateral (sus), pe paginile cu share-widget.js.
-  function adaugaShareInMeniu() {
-    var sb = el('sidebar');
-    if (!sb || sb.querySelector('#sb-share') || !(window.MydShare || navigator.share)) return;
-    var a = document.createElement('a');
-    a.href = '#';
-    a.id = 'sb-share';
-    a.className = 'sb-item';
-    a.innerHTML = '<div class="sb-ico" style="background:#EBF4FB"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#003366" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>Distribuie pagina';
-    a.onclick = function (e) {
-      e.preventDefault();
-      var date = window.MydShare ? window.MydShare.datePagina() : { title: document.title, url: location.href };
-      if (navigator.share) { navigator.share(date).catch(function () {}); return; }
-      try {
-        navigator.clipboard.writeText(date.url).then(function () { window.showGeoToast && window.showGeoToast('Linkul paginii a fost copiat.'); });
-      } catch (err) {}
-    };
-    // după antetul meniului (primul copil), înaintea restului elementelor
-    var tinta = sb.querySelector('.sb-item');
-    if (tinta && tinta.parentNode) tinta.parentNode.insertBefore(a, tinta);
-    else sb.appendChild(a);
-  }
+  // „Distribuie pagina” nu mai stă în meniul lateral (decizie LM, 10 oct. 2026):
+  // share rămâne doar butonul plutitor din share-widget.js (ascuns pe mobil).
 
   function pornestePlutitoare() {
     iconiteFab();
     stareBaraJos();
-    adaugaShareInMeniu();
     actualizeazaStraturi();
     try {
       new MutationObserver(function (lista) {
-        for (var i = 0; i < lista.length; i++) {
-          if (lista[i].type === 'childList') { adaugaShareInMeniu(); break; }
-        }
         actualizeazaStraturi();
       }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class', 'style'] });
     } catch (e) {}
@@ -584,17 +560,14 @@
     return promI18n;
   }
 
+  // Schimbarea limbii o face i18n-loader.js: salvează alegerea și reîncarcă
+  // pagina (textele românești vin din HTML, traducerea se aplică la încărcare).
   function schimbaLimba(cod) {
-    var l = LIMBI.find(function (x) { return x[0] === cod; }) || LIMBI[0];
-    var tradusa = (document.documentElement.lang || 'ro').slice(0, 2) !== 'ro';
     scrie(CHEIE_LIMBA, cod);
-    // i18n-loader nu păstrează textele românești originale: înapoi la română
-    // după o traducere, pagina se reîncarcă (textele vin din HTML).
-    if (cod === 'ro' && tradusa) { location.reload(); return; }
-    asiguraI18n().then(function (i18n) { if (i18n) i18n.setLanguage(cod, { persist: true }); });
-    var f = el('lang-flag'), lb = el('lang-label');
-    if (f) f.textContent = l[1];
-    if (lb) lb.textContent = l[2];
+    asiguraI18n().then(function (i18n) {
+      if (i18n) i18n.setLanguage(cod, { persist: true });
+      else location.reload();
+    });
   }
 
   function aplicaTara(cc, emite) {
@@ -624,16 +597,23 @@
   function adaugaSelectorInMeniu() {
     var sb = el('sidebar');
     if (!sb || sb.querySelector('#sb-limba-tara')) return;
+    // Paginile interne (superadmin, back-office) rămân în română.
+    if (window.MYD_I18N && window.MYD_I18N.intern) return;
     var bloc = document.createElement('div');
     bloc.id = 'sb-limba-tara';
-    bloc.style.cssText = 'display:flex;gap:8px;padding:12px 20px;border-bottom:1px solid #F0F2F7;flex-wrap:wrap';
-    var limba = citeste(CHEIE_LIMBA) || (document.documentElement.lang || 'ro').slice(0, 2);
-    var stil = 'flex:1 1 120px;min-height:44px;border:1.5px solid #D5DFE8;border-radius:10px;padding:0 10px;font-size:14px;font-family:inherit;background:#fff;color:#1A2332';
+    // un singur rând compact; vizibil doar când bara de sus nu-și arată selectorul
+    bloc.style.cssText = 'display:none;gap:8px;padding:10px 20px;border-bottom:1px solid #F0F2F7;align-items:flex-end';
+    // limba activă: aleasă sau, la prima vizită, engleza (i18n-loader.js)
+    var limba = (window.MYD_I18N && window.MYD_I18N.lang) || citeste(CHEIE_LIMBA) || 'en';
+    var tr = function (k, ro) { return typeof window.t === 'function' ? window.t(k, ro) : ro; };
+    var etL = tr('meniu.limba', 'Limba'), etT = tr('meniu.tara', 'Țara');
+    var stil = 'width:100%;min-height:40px;border:1.5px solid #D5DFE8;border-radius:10px;padding:0 8px;font-size:13.5px;font-family:inherit;background:#fff;color:#1A2332';
+    var stilEt = 'flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:3px;font-size:10px;font-weight:700;color:#8C9BAD;text-transform:uppercase;letter-spacing:.06em';
     bloc.innerHTML =
-      '<label style="flex:1 1 120px;display:flex;flex-direction:column;gap:4px;font-size:10.5px;font-weight:700;color:#8C9BAD;text-transform:uppercase;letter-spacing:.06em">Limba' +
-        '<select id="sb-limba" aria-label="Limba" style="' + stil + '">' + LIMBI.map(function (l) { return '<option value="' + l[0] + '"' + (l[0] === limba ? ' selected' : '') + '>' + l[1] + ' ' + l[2] + '</option>'; }).join('') + '</select></label>' +
-      '<label style="flex:1 1 120px;display:flex;flex-direction:column;gap:4px;font-size:10.5px;font-weight:700;color:#8C9BAD;text-transform:uppercase;letter-spacing:.06em">Țara' +
-        '<select id="sb-tara" aria-label="Țara" style="' + stil + '"><option value="RO">🇷🇴 România</option></select></label>';
+      '<label class="sb-lt-et" style="' + stilEt + '">' + etL +
+        '<select id="sb-limba" aria-label="' + etL + '" style="' + stil + '">' + LIMBI.map(function (l) { return '<option value="' + l[0] + '"' + (l[0] === limba ? ' selected' : '') + '>' + l[1] + ' ' + l[2] + '</option>'; }).join('') + '</select></label>' +
+      '<label class="sb-lt-et" style="' + stilEt + '">' + etT +
+        '<select id="sb-tara" aria-label="' + etT + '" style="' + stil + '"><option value="RO">🇷🇴 ' + tr('', 'România') + '</option></select></label>';
     // sub antetul meniului (logo + închidere)
     var antet = sb.firstElementChild;
     if (antet && antet.nextSibling) sb.insertBefore(bloc, antet.nextSibling); else sb.insertBefore(bloc, sb.firstChild);
@@ -642,13 +622,37 @@
       var sel = el('sb-tara');
       if (!sel) return;
       var curenta = citeste(CHEIE_TARA) || 'RO';
-      sel.innerHTML = tari.map(function (t) { return '<option value="' + t.tara_cod + '"' + (t.tara_cod === curenta ? ' selected' : '') + '>' + (STEAGURI[t.tara_cod] || '') + ' ' + t.tara_nume + '</option>'; }).join('');
+      var trN = function (s) { return typeof window.t === 'function' ? window.t('', s) : s; };
+      sel.innerHTML = tari.map(function (t) { return '<option value="' + t.tara_cod + '"' + (t.tara_cod === curenta ? ' selected' : '') + '>' + (STEAGURI[t.tara_cod] || '') + ' ' + trN(t.tara_nume) + '</option>'; }).join('');
       sel.onchange = function () { schimbaTara(this.value); };
     });
+    vizibilitateSelector();
+  }
+
+  // Selectorul din meniu apare doar când selectorul din bara de sus (#langDd /
+  // .lang-chip) nu e vizibil: bara de sus se ascunde sub 768 px (Tailwind md:),
+  // deci pe paginile cu bară de sus pragul e exact al ei; pe paginile fără
+  // selector sus, meniul rămâne singurul loc de unde se schimbă limba.
+  function selectorSusVizibil() {
+    var noduri = document.querySelectorAll('#langDd, .lang-chip, #lang-switcher');
+    for (var i = 0; i < noduri.length; i++) {
+      var n = noduri[i];
+      if (n.closest && n.closest('#sidebar')) continue;
+      var r = n.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0 && getComputedStyle(n).visibility !== 'hidden') return true;
+    }
+    return false;
+  }
+  function vizibilitateSelector() {
+    var bloc = el('sb-limba-tara');
+    if (bloc) bloc.style.display = selectorSusVizibil() ? 'none' : 'flex';
   }
 
   function pornesteLimbaTara() {
     adaugaSelectorInMeniu();
+    window.addEventListener('resize', vizibilitateSelector);
+    // și la deschiderea meniului (bara de sus poate fi ascunsă de stilurile paginii)
+    document.addEventListener('click', function () { setTimeout(vizibilitateSelector, 0); }, true);
     try { new MutationObserver(function () { adaugaSelectorInMeniu(); }).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
     // Limba aleasă (alt cod decât ro) pe o pagină fără i18n-loader.js.
     var limba = citeste(CHEIE_LIMBA);
