@@ -347,7 +347,11 @@
     setTimeout(arata, MAX_ASTEPTARE);
   } catch (e) {}
 
-  var dictionare = Promise.all([json('/i18n/' + limba + '.json'), json('/i18n/' + limba + '/' + pagina + '.json')]);
+  // + /i18n/ro.json: cheile cu nume (ex. meniu.*) au textul român acolo și
+  // traducerea în fișierul limbii — un text egal cu valoarea românească a unei
+  // chei primește traducerea cheii (meniul lateral se traduce astfel prin chei,
+  // fără data-i18n pe fiecare element, care i-ar șterge iconițele).
+  var dictionare = Promise.all([json('/i18n/' + limba + '.json'), json('/i18n/' + limba + '/' + pagina + '.json'), json('/i18n/ro.json')]);
   // Conținutul din baza de date (titluri de servicii, niveluri, categorii) —
   // nu ține pagina ascunsă; se aplică imediat ce sosește.
   var catalog = json('/api/public/traduceri-catalog?lang=' + limba);
@@ -355,6 +359,12 @@
   dictionare.then(function (d) {
     adaugaDictionar(d[0]);
     adaugaDictionar(d[1]);
+    var ro = d[2] || {};
+    for (var k in ro) {
+      if (k.charAt(0) === '_' || typeof ro[k] !== 'string' || chei[k] == null || /</.test(ro[k])) continue;
+      var n = norm(ro[k]);
+      if (n) texte[n] = chei[k];
+    }
     dupaDom(function () {
       gata = true;
       traduHead();
