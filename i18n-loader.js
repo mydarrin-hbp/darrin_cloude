@@ -107,9 +107,12 @@
     var m = d._modele || {};
     for (var r in m) {
       var nume = [];
-      var sursa = escRe(norm(r)).replace(/\\\{(\w+)\\\}/g, function (_, n) { nume.push(n); return '(.+?)'; });
-      modele.push({ re: new RegExp('^' + sursa + '$'), nume: nume, en: m[r] });
+      // {n}, {n1}… = număr; orice altă variabilă = text
+      var sursa = escRe(norm(r)).replace(/\\\{(\w+)\\\}/g, function (_, n) { nume.push(n); return /^n\d*$/.test(n) ? '(\\d+(?:[.,]\\d+)*)' : '(.+?)'; });
+      modele.push({ re: new RegExp('^' + sursa + '$'), nume: nume, en: m[r], fix: norm(r).replace(/\{\w+\}/g, '').length });
     }
+    // cel mai specific model întâi (cel mai mult text fix): „/ {u} manoperă” înaintea lui „/ {u}”
+    modele.sort(function (a, b) { return b.fix - a.fix; });
   }
 
   // Traducerea unui text român; null dacă nu există.
@@ -130,8 +133,8 @@
   }
   // Valorile din modele (ex. numele unui serviciu) se traduc și ele, dacă se poate.
   function traduceFragment(s) {
-    var n = norm(s);
-    return Object.prototype.hasOwnProperty.call(texte, n) ? texte[n] : s;
+    var t = traduce(s); // fragmentul e mai scurt decât textul: recursia se oprește
+    return t != null ? t : s;
   }
   function pastreazaSpatii(orig, nou) {
     var a = orig.match(/^[\s ]*/)[0], b = orig.match(/[\s ]*$/)[0];
@@ -157,7 +160,8 @@
     if (t != null) { var nou = pastreazaSpatii(v, t); pus.set(n, nou); if (nou !== v) n.data = nou; }
   }
   function traduAtribute(el) {
-    if (sarit(el)) return;
+    // atributele unui <textarea> se traduc (placeholder); conținutul lui, nu
+    if (sarit(el.tagName === 'TEXTAREA' ? el.parentElement : el)) return;
     for (var i = 0; i < ATRIBUTE.length; i++) {
       var a = ATRIBUTE[i], v = el.getAttribute(a);
       if (v) { var t = traduce(v); if (t != null && t !== v) el.setAttribute(a, t); }
@@ -194,7 +198,8 @@
       acceptNode: function (n) {
         if (n.nodeType === 1) {
           var tag = n.tagName;
-          return (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT' || tag === 'TEXTAREA') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+          if (tag === 'TEXTAREA') { traduAtribute(n); return NodeFilter.FILTER_REJECT; }
+          return (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
         }
         return NodeFilter.FILTER_ACCEPT;
       },

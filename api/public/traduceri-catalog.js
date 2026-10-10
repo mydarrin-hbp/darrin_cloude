@@ -23,6 +23,11 @@ const SURSE = [
 ];
 
 function adauga(texte, ro, tradus) {
+  // listele (ex. etape_lucrare) se potrivesc element cu element
+  if (Array.isArray(ro) && Array.isArray(tradus)) {
+    ro.forEach((x, i) => adauga(texte, x, tradus[i]));
+    return;
+  }
   if (typeof ro !== 'string' || typeof tradus !== 'string') return;
   const cheie = ro.replace(/\s+/g, ' ').trim();
   const val = tradus.trim();
