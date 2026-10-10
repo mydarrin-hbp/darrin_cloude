@@ -337,7 +337,10 @@
   // Ascuns vizual până se aplică traducerea (max. 800 ms).
   try {
     var st = document.createElement('style');
-    st.textContent = 'html.myd-i18n-pending{visibility:hidden!important}';
+    // opacity pe <body>, nu visibility pe <html>: unele stiluri ale paginilor pun
+    // visibility:visible pe elemente, care ar fi scăpat de ascundere (româna se
+    // vedea o clipă); opacitatea părintelui nu poate fi anulată de copii.
+    st.textContent = 'html.myd-i18n-pending body{opacity:0!important}';
     (document.head || root).appendChild(st);
     root.classList.add('myd-i18n-pending');
     ascuns = true;
