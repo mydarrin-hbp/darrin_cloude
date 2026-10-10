@@ -317,7 +317,15 @@
   dupaDom(_actualizeazaSelectoare);
 
   if (limba === 'ro') {
-    dupaDom(function () { try { window.dispatchEvent(new CustomEvent('myd:lang', { detail: { lang: 'ro' } })); } catch (e) {} });
+    // Cheile cu nume vin și în română din /i18n/ro.json (identic cu HTML-ul),
+    // ca textul să nu depindă doar de marcajul paginii. Fără ascundere.
+    var roJson = intern ? Promise.resolve(null) : json('/i18n/ro.json');
+    dupaDom(function () {
+      roJson.then(function (d) {
+        if (d) { adaugaDictionar(d); aplicaChei(document); }
+        try { window.dispatchEvent(new CustomEvent('myd:lang', { detail: { lang: 'ro' } })); } catch (e) {}
+      });
+    });
     return;
   }
 
