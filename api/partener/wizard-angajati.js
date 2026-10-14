@@ -7,8 +7,8 @@
 // GET   → angajații înregistrați (CNP mascat, nu decriptat integral)
 // POST  { angajati: [{ nume, cnp, cod_esco }, ...] }  (ADAUGĂ la roster —
 //         vezi FIX 26 august 2026 mai jos)
-// PATCH { id, disponibil }  (24 august 2026, aprobat — toggle rapid tip
-//         Uber/Bolt, folosit de lib/aloca-partener.js la alocare)
+// PATCH { id, disponibil }  (24 august 2026, aprobat — comutator rapid de
+//         disponibilitate, folosit de lib/aloca-partener.js la alocare)
 // DELETE { id }  (26 august 2026 — dezactivează un singur angajat, nu tot roster-ul)
 //
 // FIX (26 august 2026, Etapa 2/2i) — POST înlocuia ÎNTREGUL roster (ștergea

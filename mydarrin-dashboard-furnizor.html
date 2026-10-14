@@ -500,8 +500,8 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <div style="text-align:right">
-        <div style="font-size:10px;color:#4A6080">Promo comision</div>
-        <div style="font-size:12px;font-weight:700;color:#4ADE80" id="fb-promo">0% → 13.09.2026</div>
+        <div style="font-size:10px;color:#4A6080">Discount comercial</div>
+        <div style="font-size:12px;font-weight:700;color:#4ADE80" id="fb-promo">—</div>
       </div>
       <span id="fb-user-email" style="font-size:11px;color:#4A6080"></span>
       <a href="/" class="btn-s" style="font-size:11px;padding:6px 12px;color:#8BA3C0;border-color:#2D3F55;background:#192433">← Platformă</a>
@@ -522,7 +522,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 const FTYPES = {
   materiale:{
     icon:'📦',title:'ACA Business Group',sub:'Furnizor Materiale · Bacău',
-    color:'#003366', promo:'0% materiale → 13.09.2026',
+    color:'#003366',
     live:'Live · 248 produse sync',
     nav:[
       {section:'Principal'},
@@ -533,7 +533,7 @@ const FTYPES = {
       {id:'produse',icon:'🏷',label:'Produse active'},
       {id:'import',icon:'⬆',label:'Import CSV / API'},
       {section:'Financiar'},
-      {id:'venituri',icon:'💰',label:'Venituri & Comisioane'},
+      {id:'venituri',icon:'💰',label:'Venituri & Discount'},
       {id:'garantii',icon:'🛡',label:'Garanții materiale'},
       {section:'Cont'},
       {id:'documente',icon:'📋',label:'Documentele mele'},
@@ -543,7 +543,7 @@ const FTYPES = {
   },
   inchirieri:{
     icon:'🏗',title:'Rental Pro SRL',sub:'Furnizor Echipamente · București',
-    color:'#0E9E99', promo:'0% rental → 13.09.2026',
+    color:'#0E9E99',
     live:'Live · 12 echipamente',
     nav:[
       {section:'Principal'},
@@ -566,6 +566,39 @@ const FTYPES = {
 let currentType  = 'materiale';
 let currentPanel = 'overview';
 
+// Discountul comercial al furnizorului (aliniere model economic, 14 oct. 2026):
+// discounturile active din parteneri_discounturi (/api/partener/discounturi),
+// cele aprobate întâi; fără discount activ, intervalul din panou
+// (backoffice_config). Nicio cifră scrisă în cod.
+let DISCOUNT_FURNIZOR = null; // { pct } sau { min, max }
+function textDiscount() {
+  const d = DISCOUNT_FURNIZOR;
+  if (d && d.min != null) return d.min === d.max ? d.min + '%' : d.min + '–' + d.max + '%';
+  return '—';
+}
+async function incarcaDiscountFurnizor() {
+  try {
+    const { data } = await window.supabaseClient.auth.getSession();
+    const token = data?.session?.access_token;
+    if (!token) return;
+    const res = await fetch('/api/partener/discounturi', { headers: { Authorization: 'Bearer ' + token } });
+    if (!res.ok) return;
+    const j = await res.json();
+    const active = (j.discounturi || []).filter(d => d.activ);
+    const alese = active.some(d => d.aprobat) ? active.filter(d => d.aprobat) : active;
+    const pct = alese.map(d => Number(d.discount_pct)).filter(Number.isFinite);
+    DISCOUNT_FURNIZOR = pct.length
+      ? { min: Math.min(...pct), max: Math.max(...pct), pct: pct.length === 1 ? pct[0] : null }
+      : (j.limite ? { min: j.limite.min, max: j.limite.max, pct: null } : null);
+    const el = document.getElementById('fb-promo');
+    if (el) el.textContent = textDiscount();
+    if (currentPanel === 'venituri' || currentPanel === 'documente') showPanel(currentPanel);
+  } catch (e) {
+    console.warn('[discount furnizor]', e);
+  }
+}
+window.addEventListener('load', incarcaDiscountFurnizor);
+
 function switchType(type, btn) {
   currentType = type;
   const t = FTYPES[type];
@@ -577,7 +610,7 @@ function switchType(type, btn) {
   document.getElementById('fb-icon').style.background=t.color;
   document.getElementById('fb-title').textContent=t.title;
   document.getElementById('fb-sub').textContent=t.sub;
-  document.getElementById('fb-promo').textContent=t.promo;
+  document.getElementById('fb-promo').textContent=textDiscount();
   document.getElementById('fb-live').textContent=t.live;
   renderNav(type);
   showPanel('overview');
@@ -597,7 +630,7 @@ const PANOURI_DEMO = new Set(['overview','comenzi','venituri','garantii','docume
 const BANNER_DEMO = '<div class="myd-demo-banner" role="note" style="display:flex;align-items:center;gap:8px;margin:0 0 14px;padding:10px 14px;border-radius:10px;background:#FFF4E5;border:1.5px solid #FFB866;color:#8A4B00;font-size:12.5px;font-weight:700;line-height:1.4">⚠ Date demonstrative — secțiunea nu este încă conectată</div>';
 function showPanel(id){
   currentPanel=id;
-  const titles={overview:'Overview',comenzi:'Comenzi primite',stocuri:'Stocuri live',produse:'Produse active',import:'Import CSV / API',venituri:'Venituri & Comisioane',garantii:'Garanții',documente:'Documentele mele',rezervari:'Rezervări active',echipamente:'Echipamente & Stoc',calendar:'Calendar disponibilitate',alerte:'Alerte siguranță'};
+  const titles={overview:'Overview',comenzi:'Comenzi primite',stocuri:'Stocuri live',produse:'Produse active',import:'Import CSV / API',venituri:'Venituri & Discount',garantii:'Garanții',documente:'Documentele mele',rezervari:'Rezervări active',echipamente:'Echipamente & Stoc',calendar:'Calendar disponibilitate',alerte:'Alerte siguranță'};
   document.getElementById('fb-page-title').textContent=titles[id]||id;
   renderNav(currentType);
   const c=document.getElementById('fb-content'); if(!c)return;
@@ -1239,14 +1272,13 @@ function renderImport(){
 
 
 function renderDocumente(){
-  const com=currentType==='inchirieri'?'10%':'7.5%';
   return `
   <div style="margin-bottom:18px"><h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Documentele mele</h2><p style="font-size:12.5px;color:#5A6B7D">Arhivă securizată · AWS S3 / Supabase Storage · Alertă expirare automată</p></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
     <div class="f-card">
       <div class="f-card-hdr"><strong>📋 Contracte & Legal</strong></div>
       <div class="f-card-body" style="display:flex;flex-direction:column;gap:8px">
-        ${docItem('📄','Contract parteneriat My Darrin','Comision '+com+' · Semnat 16.06.2026','ok','Descarcă')}
+        ${docItem('📄','Contract parteneriat My Darrin','Discount '+textDiscount()+' · Semnat 16.06.2026','ok','Descarcă')}
         ${docItem('🔒','Acord GDPR','Semnat 16.06.2026','ok','Descarcă')}
         ${docItem('📑','Termeni specifici furnizor','v2026.1 · Acceptat','ok','Descarcă')}
       </div>
@@ -1551,10 +1583,11 @@ function payRow(id,svc,brut,com,net,data,status){
 // ── UTILS ──
 function calcSim(){
   const v=parseFloat(document.getElementById('sim-val')?.value||0);
-  const com=currentType==='inchirieri'?0.10:0.075;
+  const pct=DISCOUNT_FURNIZOR?.pct;
+  const disc=pct!=null?Math.round(v*pct)/100:null;
   document.getElementById('sim-brut').textContent=v.toLocaleString('ro-RO')+' Lei';
-  document.getElementById('sim-com').textContent='0 Lei (promo 0%)';
-  document.getElementById('sim-net').textContent=v.toLocaleString('ro-RO')+' Lei';
+  document.getElementById('sim-com').textContent=disc!=null?'-'+disc.toLocaleString('ro-RO')+' Lei':'—';
+  document.getElementById('sim-net').textContent=(disc!=null?v-disc:v).toLocaleString('ro-RO')+' Lei';
 }
 function marchezaExpediat(id){
   showToast('✅ Comandă '+id+' marcată pregătit → Alertă Curier Cartier trimisă');
@@ -1590,7 +1623,7 @@ const FINANCIAL_STATE = {
       {id:'#CMD-4810', cmd_id:'CMD-4810', desc:'Centrală Ariston + racorduri',      qty:1,   um:'proiect', pret_u:620, brut:620, com_pct:0, com:0, net:620, tva_pct:19, garantie_pct:5, garantie:31,  de_facturat:589,  status:'facturat'},
     ],
     garantie_totala: 83, garantie_eligibila: 31,
-    com_label:'15% (0% promo)', garantie_label:'5% Garanție Bună Execuție',
+    garantie_label:'5% Garanție Bună Execuție',
     emitent:{firma:'Construct Val SRL',cui:'RO32145678',adresa:'Str. Mihai Eminescu 12, Iași 700123',iban:'RO49RZBR0000060001234567',banca:'Raiffeisen Bank'},
   },
   curier: {
@@ -1601,7 +1634,7 @@ const FINANCIAL_STATE = {
       {id:'#CUR-004', cmd_id:'CUR-004', desc:'Transport motor pompă · Pipa→Nicolina',       qty:1, um:'cursă', pret_u:65, brut:65, com_pct:0, com:0, net:65, tva_pct:19, garantie_pct:0, garantie:0, de_facturat:65,  status:'facturat'},
     ],
     garantie_totala: 0, garantie_eligibila: 0,
-    com_label:'12% (0% promo)', garantie_label:'Fără reținere garanție',
+    garantie_label:'Fără reținere garanție',
     emitent:{firma:'George Ionescu PFA',cui:'RO45123456',adresa:'Str. Republicii 8, București Sector 2',iban:'RO24BCR0000000B00000001',banca:'BCR'},
   },
   asigurari: {
@@ -1611,7 +1644,7 @@ const FINANCIAL_STATE = {
       {id:'#POL-003', cmd_id:'POL-003', desc:'Poliță All Risk · Maria P. · CMD-4815',        qty:1, um:'poliță', pret_u:9,   brut:9,   com_pct:15, com:1.35, net:1.35, tva_pct:19, garantie_pct:0, garantie:0, de_facturat:1.35, status:'facturat'},
     ],
     garantie_totala: 0, garantie_eligibila: 0,
-    com_label:'15% din primă (comision intermediar)', garantie_label:'Fără reținere garanție',
+    garantie_label:'Fără reținere garanție',
     emitent:{firma:'Asig Pro SRL',cui:'RO55123456',adresa:'Bd. Unirii 78, București Sector 4',iban:'RO09BRDE410SV12345678',banca:'BRD'},
   },
   materiale: {
@@ -1622,7 +1655,7 @@ const FINANCIAL_STATE = {
       {id:'#MAT-4818', cmd_id:'MAT-4818', desc:'Ciment CEM II 42.5R',            qty:20, um:'sac',    pret_u:28,    brut:560,  com_pct:0, com:0, net:560,  tva_pct:19, garantie_pct:0, garantie:0, de_facturat:560,  status:'facturat'},
     ],
     garantie_totala: 0, garantie_eligibila: 0,
-    com_label:'7.5% (0% promo)', garantie_label:'Garanție materiale per fișă tehnică',
+    garantie_label:'Garanție materiale per fișă tehnică',
     imputari:[{id:'IMP-001',desc:'Viciu țeavă PPR · CMD-4810',val:850,status:'in_analiza'}],
     emitent:{firma:'ACA Business Group SRL',cui:'RO32667674',adresa:'Str. Industriilor 5, Bacău 600115',iban:'RO61BUCU1012012345678901',banca:'Banca Transilvania'},
   },
@@ -1633,7 +1666,7 @@ const FINANCIAL_STATE = {
       {id:'#REZ-004', cmd_id:'REZ-004', desc:'Închiriere Betonieră 250L',            qty:2,  um:'zile',   pret_u:120, brut:240,  com_pct:0, com:0, net:240,  tva_pct:19, garantie_pct:0, garantie:0, transport:0,  de_facturat:240,  status:'facturat'},
     ],
     garantie_totala: 0, garantie_eligibila: 0,
-    com_label:'10% (0% promo)', garantie_label:'Garanție echipament conform contract',
+    garantie_label:'Garanție echipament conform contract',
     emitent:{firma:'Rental Pro SRL',cui:'RO44123456',adresa:'Bd. Metalurgiei 12, București Sector 4',iban:'RO35INGB0000999900000001',banca:'ING Bank'},
   },
 };
@@ -1679,7 +1712,7 @@ function renderVenituri() {
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
     ${kpi('Datorie My Darrin',''+dat.total_net.toLocaleString('ro-RO')+' Lei',''+dat.count+' comenzi nefacturate','#FF8C00','💳')}
     ${kpi('Garanții reținute',''+(fs.garantie_totala||0)+' Lei','fond blocat My Darrin','#1A5FAD','🔒')}
-    ${kpi('Comision promo','0 Lei','0% activ → 13.09.2026','#1A7A3A','✅')}
+    ${kpi('Discount comercial',textDiscount(),'configurat din dashboard','#1A7A3A','✅')}
     ${kpi('Total facturat',''+totalFacturat.toLocaleString('ro-RO')+' Lei','luna curentă','#0E9E99','📄')}
   </div>
 
@@ -1750,12 +1783,12 @@ function renderVenituri() {
 
     <!-- SIDEBAR FINANCIAR -->
     <div style="display:flex;flex-direction:column;gap:14px">
-      <!-- Simulator comision -->
+      <!-- Discount și facturare -->
       <div class="dp-card">
         <div class="dp-card-hdr"><strong style="color:#1A2332">⚖ Structura financiară</strong></div>
         <div class="dp-card-body" style="font-size:12.5px;display:flex;flex-direction:column;gap:7px">
-          <div style="padding:8px 10px;background:#F0F4F8;border-radius:9px;display:flex;justify-content:space-between"><span style="color:#5A6B7D">Comision platformă</span><strong style="color:#1A7A3A">0% promo</strong></div>
-          <div style="padding:8px 10px;background:#F0F4F8;border-radius:9px;display:flex;justify-content:space-between"><span style="color:#5A6B7D">Standard comision</span><strong>${fs.com_label}</strong></div>
+          <div style="padding:8px 10px;background:#F0F4F8;border-radius:9px;display:flex;justify-content:space-between"><span style="color:#5A6B7D">Discount comercial</span><strong style="color:#1A7A3A">${textDiscount()}</strong></div>
+          <div style="padding:8px 10px;background:#F0F4F8;border-radius:9px;display:flex;justify-content:space-between"><span style="color:#5A6B7D">Facturare</span><strong>automată, doar pentru ce s-a livrat</strong></div>
           ${fs.garantie_totala>0?`<div style="padding:8px 10px;background:#EBF4FB;border-radius:9px;display:flex;justify-content:space-between;border:1px solid #D6E8F5"><span style="color:#5A6B7D">${fs.garantie_label}</span><strong style="color:#1A5FAD">${fs.garantie_totala} Lei blocat</strong></div>`:''}
           ${isInch?`<div style="padding:8px 10px;background:#FFF8EE;border-radius:9px;display:flex;justify-content:space-between;border:1px solid rgba(255,140,0,.2)"><span style="color:#5A6B7D">Transport Curier</span><strong style="color:#CC7000">dedus din net</strong></div>`:''}
           <div style="height:1px;background:#EEF2F7"></div>
@@ -1860,7 +1893,7 @@ function renderGarantiiBlock(type, fs) {
   // curier / asigurari
   return `
     <div style="background:#F8FAFC;border-radius:12px;padding:16px;border:1px solid #EEF2F7;font-size:12.5px;color:#5A6B7D;line-height:1.7">
-      ${type==='curier'?'Nu se aplică retenție de garanție pentru curieri. Fiecare cursă confirmată adaugă valoarea netă direct în balanța facturabilă față de My Darrin.':'Comisioanele de intermediere (15% din primă) devin datorii ale My Darrin față de tine după confirmarea plății poliței de către client. Nu există retenție de garanție.'}
+      ${type==='curier'?'Nu se aplică retenție de garanție pentru curieri. Fiecare cursă confirmată adaugă valoarea netă direct în balanța facturabilă față de My Darrin.':'Prima de asigurare, cu discountul tău configurat, devine datorie a My Darrin față de tine după confirmarea plății poliței de către client. Nu există retenție de garanție.'}
       <div style="margin-top:12px;padding:10px;background:linear-gradient(135deg,#E0F5F4,#EBF4FB);border-radius:9px;border:1px solid #D5DFE8">
         <div style="font-size:11px;font-weight:700;color:#0B7A76">Balanță facturabilă acumulată</div>
         <div style="font-size:22px;font-weight:800;color:#FF8C00;margin-top:4px">${calcDatorie(type).total_net.toFixed(2)} Lei</div>
