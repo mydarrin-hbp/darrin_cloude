@@ -1666,30 +1666,28 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     if (!window.supabaseClient) return;
 
+    // Rolul se citește din profiles.roles (rândul propriu), nu din
+    // user_metadata (14 oct. 2026). E doar pentru afișare: datele
+    // portofoliului le filtrează serverul după auth.uid().
+    async function esteInvestitor(user) {
+      if (!user) return false;
+      const { data } = await window.supabaseClient
+        .from('profiles').select('roles').eq('id', user.id).maybeSingle();
+      return Array.isArray(data?.roles) && data.roles.includes('investor');
+    }
+
     // Ascultă schimbările de auth
     window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
       if (!session) return;
-
-      const user   = session.user;
-      const roles  = user?.user_metadata?.roles || [];
-      const role   = user?.user_metadata?.role  || '';
-
-      // Verifică rol investitor
-      const esteInvestitor = roles.includes('investor') || role === 'investor';
-
-      if (esteInvestitor) {
+      if (await esteInvestitor(session.user)) {
         loadPortofoliuPrivat();
       }
     });
 
     // Verificare imediată la load
     const { data: { session } } = await window.supabaseClient.auth.getSession();
-    if (session?.user) {
-      const roles = session.user.user_metadata?.roles || [];
-      const role  = session.user.user_metadata?.role  || '';
-      if (roles.includes('investor') || role === 'investor') {
-        loadPortofoliuPrivat();
-      }
+    if (await esteInvestitor(session?.user)) {
+      loadPortofoliuPrivat();
     }
 
   } catch (e) {

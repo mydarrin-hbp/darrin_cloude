@@ -17,10 +17,20 @@ async function handler(req, res, superadmin) {
 
   try {
     // 1. Invitație prin email (Supabase creează userul + trimite magic link de invitație)
-    const { data: invited, error: inviteErr } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      data: { role: 'admin' }, // salvat direct în user_metadata, conform cerinței
-    });
+    const { data: invited, error: inviteErr } = await supabaseAdmin.auth.admin.inviteUserByEmail(email);
     if (inviteErr) throw inviteErr;
+
+    // 1b. Rolul de admin se scrie de server în profiles (singura sursă pentru
+    // acces) și în app_metadata. Nu în user_metadata: îl poate scrie
+    // utilizatorul, iar handle_new_user() nu mai acceptă de acolo roluri
+    // de admin (securitate, 14 oct. 2026).
+    const { error: rolErr } = await supabaseAdmin
+      .from('profiles').update({ role: 'admin', roles: ['admin'] }).eq('id', invited.user.id);
+    if (rolErr) throw rolErr;
+    const { error: metaErr } = await supabaseAdmin.auth.admin.updateUserById(invited.user.id, {
+      app_metadata: { ...(invited.user.app_metadata || {}), role: 'admin', roles: ['admin'] },
+    });
+    if (metaErr) console.error('[invite-admin] app_metadata', metaErr);
 
     // 2. Salvează permisiunile granulare
     const sectiuni = Object.keys(permisiuni || {});
