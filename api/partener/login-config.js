@@ -11,8 +11,9 @@
 //     `roles` (array). Rezultat: toți cei 5 parteneri înregistrați prin
 //     wizard-ul public "Devino Partener" primeau 403 la primul login,
 //     indiferent de tip. Acum citește profiles.roles (sursa autoritativă,
-//     populată de handle_new_user() din schema.sql), cu fallback pe
-//     user_metadata.role / .roles pentru rezistență la desincronizări.
+//     populată de handle_new_user() din schema.sql).
+//   - Securitate (14 oct. 2026): fără fallback pe user_metadata — îl poate
+//     scrie utilizatorul. Eroare la citirea profiles = refuz (fail-closed).
 //   - CONFIG_PER_ROL avea cheia 'furnizor_materiale' (valoarea din
 //     TYPE_TO_ENUM, nu rolul real 'partener_materiale' din TYPE_TO_ROLE)
 //     și nu avea deloc 'partener_inchirieri' — ambele tipuri de partener
@@ -47,19 +48,15 @@ const CONFIG_PER_ROL = {
 async function handler(req, res, user) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  const roles = new Set();
-
+  let roles;
   try {
-    const { data } = await supabaseAdmin.from('profiles').select('roles').eq('id', user.id).single();
-    if (Array.isArray(data?.roles)) data.roles.forEach(r => roles.add(r));
+    const { data, error } = await supabaseAdmin.from('profiles').select('roles').eq('id', user.id).single();
+    if (error) throw error;
+    roles = new Set(Array.isArray(data?.roles) ? data.roles : []);
   } catch (e) {
     console.error('[login-config] eroare la citirea profiles.roles:', e);
+    return res.status(500).json({ error: 'Eroare internă de autentificare' });
   }
-
-  const metaRole = user.user_metadata?.role;
-  const metaRoles = user.user_metadata?.roles;
-  if (metaRole) roles.add(metaRole);
-  if (Array.isArray(metaRoles)) metaRoles.forEach(r => roles.add(r));
 
   const rolPartener = [...roles].find(r => CONFIG_PER_ROL[r]);
 

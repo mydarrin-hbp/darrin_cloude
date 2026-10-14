@@ -4,15 +4,12 @@
 // (opțional restrânsă la o singură țară prin admin_permissions.tara_cod).
 
 const { supabaseAdmin } = require('../lib/supabaseAdmin');
-const { getAuthenticatedUser } = require('../lib/auth-middleware');
+const { getAuthenticatedUser, hasRole } = require('../lib/auth-middleware');
 const { inregistreazaAudit } = require('../lib/audit-log');
 
 async function checkAccountancyAccess(user, tara_cod) {
-  // Coloana din profiles e `roles` (array) — vezi schema.sql (corectat 2026-07-11).
-  const { data: profile } = await supabaseAdmin.from('profiles').select('roles').eq('id', user.id).single();
-  if (Array.isArray(profile?.roles) && profile.roles.includes('superadmin')) return true;
-  if (user.user_metadata?.role === 'superadmin') return true;
-  if (Array.isArray(user.user_metadata?.roles) && user.user_metadata.roles.includes('superadmin')) return true;
+  // Rolul doar din profiles.roles, prin hasRole — fără user_metadata (14 oct. 2026).
+  if (await hasRole(user, ['superadmin'])) return true;
 
   const { data } = await supabaseAdmin
     .from('admin_permissions')

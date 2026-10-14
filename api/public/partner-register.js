@@ -165,10 +165,14 @@ module.exports = async function handler(req, res) {
     // niciodată dovedită (niciun partener n-a confirmat vreodată un cont), iar
     // fără ea partenerul nu putea seta parola. Parola se setează cu linkul din
     // emailul trimis mai jos, prin Resend.
+    // Rolul rămâne și în user_metadata (îl citește trigger-ul, limitat la
+    // rolurile de partener) și se scrie în app_metadata, pe care doar
+    // serverul o poate scrie (securitate, 14 oct. 2026).
     const { data: invited, error: createErr } = await supabaseAdmin.auth.admin.createUser({
       email,
       email_confirm: true,
       user_metadata: { role, nume: nume || '', prenume: prenume || '' },
+      app_metadata: { role },
     });
     if (createErr) {
       if (createErr.status === 422 || /already|registered|exists/i.test(createErr.message || '')) {

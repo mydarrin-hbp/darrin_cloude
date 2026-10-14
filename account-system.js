@@ -35,9 +35,11 @@ async function getUserRoles(user) {
   if (!user) return [];
   const set = new Set();
 
-  // Sursa metadata (JWT) — utilă pentru admini invitați prin assign-role,
-  // dar poate fi desincronizată față de baza de date (nu se actualizează
-  // automat la fiecare schimbare din tabelul profiles).
+  // ATENȚIE (securitate, 14 oct. 2026): rolurile de aici servesc DOAR la
+  // afișare (meniu, linkuri). user_metadata îl poate scrie utilizatorul,
+  // deci nu dovedește nimic. Accesul real îl decide serverul, doar din
+  // profiles.roles (lib/auth-middleware.js → hasRole). Nu folosi această
+  // funcție pentru a proteja date sau acțiuni.
   const metaRole = user.user_metadata?.role;
   const metaRoles = user.user_metadata?.roles;
   if (metaRole) set.add(metaRole);
