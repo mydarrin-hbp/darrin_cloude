@@ -4,12 +4,13 @@
 <meta charset="UTF-8">
 <!-- Limba (10 oct. 2026): engleza implicită, româna din selector — i18n-loader.js, sincron, primul script -->
 <script src="/i18n-loader.js" data-pagina="mydarrin-devino-partener-wizard"></script>
-<link rel="alternate" hreflang="en" href="https://mydarrin.homebestpal.com/mydarrin-devino-partener-wizard?lang=en"/>
-<link rel="alternate" hreflang="ro" href="https://mydarrin.homebestpal.com/mydarrin-devino-partener-wizard?lang=ro"/>
-<link rel="alternate" hreflang="x-default" href="https://mydarrin.homebestpal.com/mydarrin-devino-partener-wizard"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Înregistrare Partener — 8 pași · My Darrin</title>
-<meta name="description" content="Înregistrare completă de partener My Darrin: date companie, cont bancar, coduri NACE, utilaje, angajați, certificări.">
+<!-- Completarea profilului (decizie LM, 14 oct. 2026): pagină cu cont, deschisă
+     din dashboard-ul partenerului — nu e o a doua înregistrare și nu se indexează.
+     Înregistrarea rămâne doar mydarrin-devino-partener.html. -->
+<meta name="robots" content="noindex, nofollow">
+<title>Completare profil partener · My Darrin</title>
+<meta name="description" content="Completează profilul de partener My Darrin: date companie, cont bancar, coduri NACE, utilaje, angajați, certificări și clauza de zonă.">
 <script>
   window.__ENV__ = {
     SUPABASE_URL: 'https://aacojyvujhywanaulvuu.supabase.co',
@@ -69,17 +70,21 @@ input:focus,select:focus{border-color:var(--primary)}
       <div class="logo-mark">D</div>
       <span style="font-weight:800;font-size:15px;color:#1A2332">My Darrin</span>
     </a>
-    <a href="/" style="font-size:12.5px;font-weight:600;color:#5A6B7D">← Înapoi la platformă</a>
+    <a href="mydarrin-dashboard-partener.html" style="font-size:12.5px;font-weight:600;color:#5A6B7D">← Înapoi la dashboard</a>
   </div>
 </header>
 
 <div class="wrap" style="padding-top:24px;padding-bottom:60px">
-  <h1 style="font-size:24px;font-weight:800;margin:0 0 4px">Înregistrare Partener — 8 pași</h1>
-  <p style="color:#6B7A8D;font-size:13.5px;margin:0 0 8px">Toți cei 8 pași sunt funcționali — date companie, cont bancar și CNP-uri criptate real înainte de salvare.</p>
+  <h1 style="font-size:24px;font-weight:800;margin:0 0 4px">Completare profil partener</h1>
+  <p style="color:#6B7A8D;font-size:13.5px;margin:0 0 8px">Poți reveni oricând: pașii completați rămân bifați. IBAN-ul și CNP-urile sunt criptate înainte de salvare.</p>
 
   <div class="steps-bar" id="steps-bar"></div>
 
   <div id="gate-warning" style="display:none" class="gate-banner"></div>
+  <div id="gate-actiuni" style="display:none;text-align:center;margin:-8px 0 20px">
+    <a id="gate-login" href="/?redirect=devino-partener-wizard&amp;reason=profil_partener" class="btn btn-primary">Autentifică-te</a>
+    <a href="mydarrin-devino-partener.html" class="btn btn-ghost" style="margin-left:8px">Nu ai cont? Devino partener</a>
+  </div>
 
   <!-- PASUL 1 — Auth + verificare email -->
   <div class="card" id="step-1">
@@ -135,6 +140,7 @@ input:focus,select:focus{border-color:var(--primary)}
         Contul bancar de mai jos este un cont de trezorerie (instituție publică)
       </label>
     </div>
+    <div id="s2-conturi-existente" style="display:none;font-size:12.5px;color:#0E9E99;font-weight:600;margin-bottom:12px"></div>
     <div class="grid2">
       <div>
         <label>Titular cont bancar</label>
@@ -181,6 +187,7 @@ input:focus,select:focus{border-color:var(--primary)}
   <div class="card" id="step-4" style="display:none">
     <h2>Pasul 4 · Utilaje și echipamente</h2>
     <p class="sub">Declară utilajele/echipamentele pe care le folosești în activitate.</p>
+    <div id="s4-existente"></div>
     <div id="s4-rows"></div>
     <button class="btn btn-ghost" onclick="adaugaRandUtilaj()">+ Adaugă utilaj</button>
     <div style="margin-top:16px">
@@ -193,6 +200,7 @@ input:focus,select:focus{border-color:var(--primary)}
   <div class="card" id="step-5" style="display:none">
     <h2>Pasul 5 · Registru angajați</h2>
     <p class="sub">Legat de nomenclatorul ESCO/ocupații. CNP-ul e criptat la fel ca IBAN-ul — niciodată stocat în clar.</p>
+    <div id="s5-existenti"></div>
     <div id="s5-rows"></div>
     <button class="btn btn-ghost" onclick="adaugaRandAngajat()">+ Adaugă angajat</button>
     <div style="margin-top:16px">
@@ -222,6 +230,7 @@ input:focus,select:focus{border-color:var(--primary)}
         <input type="checkbox" id="s7-clauza" style="width:auto;margin:3px 0 0">
         <span style="font-size:12.5px;color:#4A5568;line-height:1.6">Confirm că firma pe care o reprezint acceptă să primească și să onoreze comenzi alocate automat de platformă în zona declarată, conform angajaților și competențelor de mai sus.</span>
       </label>
+      <div id="s7-clauza-info" style="display:none;font-size:12px;color:#0E9E99;font-weight:600;margin-top:10px"></div>
     </div>
     <div style="margin-top:16px">
       <button class="btn btn-primary" onclick="salveazaPasul7()">Finalizează →</button>
@@ -249,12 +258,20 @@ input:focus,select:focus{border-color:var(--primary)}
 <script>
 if (typeof lucide !== 'undefined') lucide.createIcons();
 const TOTAL_PASI = 8;
+const NUME_PASI = ['Cont', 'Companie', 'NACE', 'Utilaje', 'Angajați', 'Certificări', 'Alocare', 'Succes'];
 let PAS_CURENT = 1;
 let PASI_DEBLOCATI = 1;
+// Pașii deja completați, citiți din API la deschidere: partenerul poate
+// reveni oricând, iar ce a salvat apare bifat (decizie LM, 14 oct. 2026).
+const PASI_FACUTI = new Set();
 let naceToate = [];
 let naceSelectate = { principal: null, secundare: [] };
 let escoToate = [];
 let angajatiSalvati = [];
+let utilajeExistente = [];
+let certificariExistente = [];
+let alocariExistente = [];
+let regiuneSalvata = null;
 
 function randerSteps() {
   const bar = document.getElementById('steps-bar');
@@ -262,11 +279,18 @@ function randerSteps() {
   for (let i = 1; i <= TOTAL_PASI; i++) {
     let cls = 'step-pill';
     if (i > PASI_DEBLOCATI) cls += ' locked';
-    else if (i < PAS_CURENT) cls += ' done';
     else if (i === PAS_CURENT) cls += ' active';
-    html += `<div class="${cls}" ${i <= PASI_DEBLOCATI ? `onclick="mergiLaPasul(${i})"` : ''}>${i}. ${['Cont','Companie','NACE','Utilaje','Angajați','Certificări','Alocare','Succes'][i-1]}</div>`;
+    else if (PASI_FACUTI.has(i)) cls += ' done';
+    // Numele pasului în <span> separat: se traduce exact, fără număr și bifă.
+    const bifa = PASI_FACUTI.has(i) ? '✓ ' : '';
+    html += `<div class="${cls}" ${i <= PASI_DEBLOCATI ? `onclick="mergiLaPasul(${i})"` : ''}>${bifa}${i}. <span>${NUME_PASI[i-1]}</span></div>`;
   }
   bar.innerHTML = html;
+}
+
+function marcheazaFacut(pas) {
+  PASI_FACUTI.add(pas);
+  randerSteps();
 }
 
 function mergiLaPasul(pas) {
@@ -293,26 +317,134 @@ async function accessToken() {
 }
 
 // ── PASUL 1 ──
+// Pagină cu cont: fără sesiune → autentificare, apoi înapoi aici (index.html,
+// reason=profil_partener). Cine nu are cont de partener e trimis la
+// înregistrare (mydarrin-devino-partener.html) — singura pagină de înregistrare.
+function arataBariera(text, cuAutentificare) {
+  const gate = document.getElementById('gate-warning');
+  gate.style.display = 'block';
+  gate.textContent = text;
+  document.getElementById('gate-actiuni').style.display = 'block';
+  document.getElementById('gate-login').style.display = cuAutentificare ? '' : 'none';
+}
+
 async function verificaPasul1() {
   const statusEl = document.getElementById('step1-status');
   const btn = document.getElementById('step1-continue');
-  const gate = document.getElementById('gate-warning');
   try {
+    // account-system.js se încarcă după modulul Supabase — așteptăm ambele.
+    for (let i = 0; i < 50 && !(window.MyDarrinAuth && window.supabaseClient); i++) await new Promise(r => setTimeout(r, 100));
     const user = window.MyDarrinAuth ? await window.MyDarrinAuth.getCurrentUser() : null;
-    if (user && user.email_confirmed_at) {
-      statusEl.innerHTML = `Autentificat ca <strong>${user.email}</strong> — email confirmat.`;
-      btn.disabled = false;
-      PASI_DEBLOCATI = Math.max(PASI_DEBLOCATI, 2);
-      randerSteps();
-    } else {
-      statusEl.textContent = user ? 'Emailul nu este confirmat încă.' : 'Nu ești autentificat.';
-      gate.style.display = 'block';
-      gate.textContent = 'Trebuie să ai un cont creat și emailul confirmat pentru a continua. Te redirecționăm către pagina de înregistrare...';
-      setTimeout(() => { window.location.href='/?redirect=devino-partener-wizard&reason=auth_required'; }, 3000);
+    if (!user) {
+      statusEl.textContent = 'Nu ești autentificat.';
+      arataBariera('Autentifică-te ca să-ți completezi profilul de partener. Te ducem la autentificare…', true);
+      setTimeout(() => { window.location.href = document.getElementById('gate-login').getAttribute('href'); }, 2500);
+      return;
     }
+    if (!user.email_confirmed_at) {
+      statusEl.textContent = 'Emailul nu este confirmat încă.';
+      arataBariera('Confirmă-ți emailul din mesajul primit, apoi revino aici.', false);
+      return;
+    }
+    const stare = await incarcaStareaSalvata();
+    if (!stare) {
+      statusEl.textContent = 'Contul tău nu este încă un cont de partener.';
+      arataBariera('Profilul de partener se completează după înregistrare. Înregistrează-te mai întâi ca partener.', false);
+      return;
+    }
+    statusEl.innerHTML = `Autentificat ca <strong>${escapeHTML(user.email)}</strong> — email confirmat.`;
+    btn.disabled = false;
+    PASI_FACUTI.add(1);
+    // Pașii 2–7 se pot deschide oricând; „Succes” doar după clauza de zonă.
+    PASI_DEBLOCATI = PASI_FACUTI.has(7) ? 8 : 7;
+    const ceruta = parseInt(new URLSearchParams(location.search).get('pas'), 10);
+    const primulLipsa = [2, 3, 4, 5, 7].find(p => !PASI_FACUTI.has(p));
+    if (ceruta >= 2 && ceruta <= PASI_DEBLOCATI) mergiLaPasul(ceruta);
+    else if (PASI_FACUTI.has(2)) mergiLaPasul(primulLipsa || 8);
+    else randerSteps();
   } catch (e) {
+    console.error('[wizard] verificare cont', e);
     statusEl.textContent = 'Eroare la verificarea contului.';
   }
+}
+
+// Citește ce a salvat deja partenerul (aceleași endpoint-uri ca la salvare).
+// null = utilizatorul nu are rând în partners (nu e partener).
+async function incarcaStareaSalvata() {
+  const token = await accessToken();
+  const h = { headers: { Authorization: `Bearer ${token}` } };
+  const json = (url) => fetch(url, h).then(r => r.ok ? r.json() : null).catch(() => null);
+  const [companie, nace, utilaje, angajati, certificari, alocari] = await Promise.all([
+    json('/api/partener/wizard-companie'), json('/api/partener/wizard-nace'), json('/api/partener/wizard-utilaje'),
+    json('/api/partener/wizard-angajati'), json('/api/partener/wizard-certificari'), json('/api/partener/wizard-alocare'),
+  ]);
+  const p = companie?.partner;
+  if (!p) return null;
+
+  // Pasul 2 — date companie (tipul de partener nu se mai schimbă după înregistrare)
+  const TIP_LA_SELECT = { servicii_tehnice: 'servicii', furnizor_materiale: 'materiale', inchirieri_utilaje: 'inchirieri', curier_utilitara: 'curier', asigurari: 'asigurari' };
+  const tipEl = document.getElementById('s2-tip');
+  if (TIP_LA_SELECT[p.partner_type]) { tipEl.value = TIP_LA_SELECT[p.partner_type]; tipEl.disabled = true; }
+  if (p.nume_firma) document.getElementById('s2-firma').value = p.nume_firma;
+  if (p.cui) document.getElementById('s2-cui').value = p.cui;
+  if (p.tip_entitate_legala) { document.getElementById('s2-entitate').value = p.tip_entitate_legala; toggleTrezorerie(); }
+  document.getElementById('s2-trezorerie').checked = !!p.is_treasury_account;
+  regiuneSalvata = p.regiune_cod || null;
+  const conturi = companie.conturi || [];
+  if (conturi.length) {
+    const el = document.getElementById('s2-conturi-existente');
+    el.style.display = 'block';
+    el.textContent = 'Cont bancar salvat: ' + conturi.map(c => `${c.iban_mascat || ''} (${c.banca})`).join(', ');
+  }
+  if (p.nume_firma && p.cui) PASI_FACUTI.add(2);
+
+  // Pasul 3 — NACE
+  const coduri = nace?.coduri || [];
+  if (coduri.length) {
+    naceSelectate.principal = (coduri.find(c => c.principal) || coduri[0]).cod_nace;
+    naceSelectate.secundare = coduri.filter(c => c.cod_nace !== naceSelectate.principal).map(c => c.cod_nace);
+    actualizeazaContorNace();
+    PASI_FACUTI.add(3);
+  }
+
+  // Pasul 4 — utilaje (POST adaugă; cele existente doar se afișează)
+  utilajeExistente = utilaje?.utilaje || [];
+  if (utilajeExistente.length) {
+    randerListaExistenta('s4-existente', 'Utilaje deja declarate:', utilajeExistente.map(u => `${u.denumire} × ${u.cantitate || 1}`));
+    PASI_FACUTI.add(4);
+  }
+
+  // Pasul 5 — angajați (la fel: POST adaugă)
+  angajatiSalvati = (angajati?.angajati || []).map(a => ({ id: a.id, nume: a.nume, cod_esco: a.cod_esco }));
+  if (angajatiSalvati.length) {
+    randerListaExistenta('s5-existenti', 'Angajați deja înregistrați:', angajatiSalvati.map(a => a.nume));
+    PASI_FACUTI.add(5);
+  }
+
+  // Pasul 6 — certificări (opționale dacă țara nu are cerințe)
+  certificariExistente = certificari?.certificari || [];
+  if (certificariExistente.length) PASI_FACUTI.add(6);
+
+  // Pasul 7 — alocare + clauza de zonă
+  alocariExistente = alocari?.alocari || [];
+  const acceptata = alocariExistente.find(a => a.zona_livrare_acceptata);
+  if (acceptata) {
+    const info = document.getElementById('s7-clauza-info');
+    info.style.display = 'block';
+    info.textContent = 'Clauza de zonă a fost acceptată pe ' + new Date(acceptata.clauza_acceptata_la).toLocaleString('ro-RO') + '. O poți reconfirma oricând.';
+    PASI_FACUTI.add(7);
+    PASI_FACUTI.add(8);
+  }
+  return true;
+}
+
+function randerListaExistenta(idEl, titlu, elemente) {
+  const el = document.getElementById(idEl);
+  el.innerHTML = `<div class="upcoming-card" style="border-style:solid;background:#EEF8F7;border-color:#BFE5E3">
+    <div style="font-size:12px;font-weight:700;color:#0E7C78;margin-bottom:6px">${escapeHTML(titlu)}</div>
+    <div style="font-size:12.5px;color:#1A2332;line-height:1.7">${elemente.map(escapeHTML).join('<br>')}</div>
+    <div style="font-size:11.5px;color:#6B7A8D;margin-top:6px">Rândurile de mai jos adaugă elemente noi; cele existente rămân.</div>
+  </div>`;
 }
 
 // ── PASUL 2 ──
@@ -334,6 +466,7 @@ async function incarcaRegiuni() {
     const data = await res.json();
     const regiuni = data?.regiuni || [];
     sel.innerHTML = '<option value="">Alege regiunea...</option>' + regiuni.map(r => `<option value="${r.cod}">${escapeHTML(r.denumire)}</option>`).join('');
+    if (regiuneSalvata) sel.value = regiuneSalvata;
   } catch (e) {
     sel.innerHTML = '<option value="">Nedisponibil</option>';
   }
@@ -406,6 +539,7 @@ async function salveazaPasul2() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
     msgEl.className = 'msg ok'; msgEl.textContent = 'Salvat.';
+    marcheazaFacut(2);
     PASI_DEBLOCATI = Math.max(PASI_DEBLOCATI, 3);
     setTimeout(() => mergiLaPasul(3), 500);
   } catch (e) {
@@ -487,6 +621,7 @@ async function salveazaPasul3() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
     msgEl.className = 'msg ok'; msgEl.textContent = 'Salvat.';
+    marcheazaFacut(3);
     PASI_DEBLOCATI = Math.max(PASI_DEBLOCATI, 4);
     setTimeout(() => mergiLaPasul(4), 500);
   } catch (e) {
@@ -559,7 +694,11 @@ async function salveazaPasul4() {
     tip_suprastructura: row.querySelector('.eq-suprastructura').value || null,
   })).filter(u => u.denumire);
 
-  if (!utilaje.length) { msgEl.className = 'msg err'; msgEl.textContent = 'Adaugă cel puțin un utilaj.'; return; }
+  if (!utilaje.length) {
+    // Revenire: utilajele declarate deja rămân — se poate trece mai departe fără rânduri noi.
+    if (utilajeExistente.length) { mergiLaPasul(5); return; }
+    msgEl.className = 'msg err'; msgEl.textContent = 'Adaugă cel puțin un utilaj.'; return;
+  }
   try {
     const token = await accessToken();
     const res = await fetch('/api/partener/wizard-utilaje', {
@@ -570,6 +709,11 @@ async function salveazaPasul4() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
     msgEl.className = 'msg ok'; msgEl.textContent = 'Salvat.';
+    utilajeExistente = utilajeExistente.concat(utilaje);
+    document.getElementById('s4-rows').innerHTML = '';
+    adaugaRandUtilaj();
+    randerListaExistenta('s4-existente', 'Utilaje deja declarate:', utilajeExistente.map(u => `${u.denumire} × ${u.cantitate || 1}`));
+    marcheazaFacut(4);
     PASI_DEBLOCATI = Math.max(PASI_DEBLOCATI, 5);
     setTimeout(() => mergiLaPasul(5), 500);
   } catch (e) {
@@ -616,7 +760,10 @@ async function salveazaPasul5() {
     cod_esco: row.querySelector('.emp-esco').value || null,
   })).filter(a => a.nume);
 
-  if (!angajati.length) { msgEl.className = 'msg err'; msgEl.textContent = 'Adaugă cel puțin un angajat.'; return; }
+  if (!angajati.length) {
+    if (angajatiSalvati.length) { mergiLaPasul(6); return; }
+    msgEl.className = 'msg err'; msgEl.textContent = 'Adaugă cel puțin un angajat.'; return;
+  }
   try {
     const token = await accessToken();
     const res = await fetch('/api/partener/wizard-angajati', {
@@ -626,8 +773,13 @@ async function salveazaPasul5() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
-    angajatiSalvati = (data.angajati || []).map((a, i) => ({ id: a.id, nume: angajati[i].nume, cod_esco: angajati[i].cod_esco }));
+    // POST adaugă la echipă: cei noi se alătură celor existenți.
+    angajatiSalvati = angajatiSalvati.concat((data.angajati || []).map((a, i) => ({ id: a.id, nume: angajati[i].nume, cod_esco: angajati[i].cod_esco })));
     msgEl.className = 'msg ok'; msgEl.textContent = 'Salvat.';
+    document.getElementById('s5-rows').innerHTML = '';
+    adaugaRandAngajat();
+    randerListaExistenta('s5-existenti', 'Angajați deja înregistrați:', angajatiSalvati.map(a => a.nume));
+    marcheazaFacut(5);
     PASI_DEBLOCATI = Math.max(PASI_DEBLOCATI, 6);
     setTimeout(() => mergiLaPasul(6), 500);
   } catch (e) {
@@ -662,7 +814,7 @@ async function randerPasul6() {
         <div style="font-size:11px;color:#8C9BAD;margin-bottom:8px">${t.obligatorie ? 'Obligatorie' : 'Opțională'}</div>
         <input type="file" id="cert-file-${t.id}" accept="application/pdf,image/*" style="margin-bottom:8px">
         <button class="btn btn-ghost" style="font-size:12px;padding:8px 14px" onclick="incarcaCertificare('${t.id}','${escapeHTML(t.nume_certificare).replace(/'/g, "\\'")}')">Încarcă document</button>
-        <span class="msg" id="cert-status-${t.id}" style="margin-left:10px"></span>
+        <span class="msg${certificariExistente.some(c => c.tip_certificare === t.nume_certificare) ? ' ok' : ''}" id="cert-status-${t.id}" style="margin-left:10px">${certificariExistente.some(c => c.tip_certificare === t.nume_certificare) ? 'Încărcat anterior.' : ''}</span>
       </div>`).join('');
   } catch (e) {
     rows.innerHTML = '<div style="padding:12px;color:#C0392B;font-size:12.5px">Nu am putut încărca cerințele de certificare.</div>';
@@ -690,13 +842,22 @@ async function incarcaCertificare(certId, numeCertificare) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
     statusEl.className = 'msg ok'; statusEl.textContent = 'Încărcat.';
+    marcheazaFacut(6);
   } catch (e) {
     statusEl.className = 'msg err'; statusEl.textContent = e.message || 'Eroare la încărcare.';
   }
 }
 
 // ── PASUL 7 ──
+// Alocarea salvată anterior are prioritate față de ocupația din registru.
+function codEscoAlocat(a) {
+  const alocat = alocariExistente.find(x => x.angajat_id === a.id);
+  return alocat?.cod_esco || a.cod_esco;
+}
+
 function randerPasul7() {
+  // Intrare directă la pasul 7 (?pas=7): lista ESCO nu e încă încărcată — o singură încercare.
+  if (!escoToate.length && !randerPasul7.esco) { randerPasul7.esco = true; incarcaEsco().then(randerPasul7); return; }
   const rows = document.getElementById('s7-rows');
   if (!angajatiSalvati.length) {
     rows.innerHTML = '<div style="padding:12px;color:#8C9BAD;font-size:12.5px">Niciun angajat salvat la Pasul 5 — întoarce-te și adaugă cel puțin unul.</div>';
@@ -705,7 +866,7 @@ function randerPasul7() {
   rows.innerHTML = angajatiSalvati.map(a => `
     <div class="equip-row" style="grid-template-columns:1.5fr 2fr">
       <div style="font-size:13px;font-weight:600;display:flex;align-items:center">${escapeHTML(a.nume)}</div>
-      <select class="alo-esco" data-angajat-id="${a.id}">${escoToate.map(o => `<option value="${o.cod_esco}" ${o.cod_esco === a.cod_esco ? 'selected' : ''}>${escapeHTML(o.denumire)}</option>`).join('')}</select>
+      <select class="alo-esco" data-angajat-id="${a.id}">${escoToate.map(o => `<option value="${o.cod_esco}" ${o.cod_esco === codEscoAlocat(a) ? 'selected' : ''}>${escapeHTML(o.denumire)}</option>`).join('')}</select>
     </div>`).join('');
 }
 
@@ -731,6 +892,7 @@ async function salveazaPasul7() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
     msgEl.className = 'msg ok'; msgEl.textContent = 'Salvat.';
+    PASI_FACUTI.add(7); PASI_FACUTI.add(8);
     PASI_DEBLOCATI = Math.max(PASI_DEBLOCATI, 8);
     setTimeout(() => mergiLaPasul(8), 500);
   } catch (e) {
