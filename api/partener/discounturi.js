@@ -17,6 +17,8 @@ const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const {
   PARTNER_TYPE_LA_TIP_DISCOUNT,
+  TIPURI_FARA_DISCOUNT,
+  EROARE_CURIER_FARA_DISCOUNT,
   limiteDiscountPartener,
   valideazaDiscountNou,
   raspunsEroareDiscount,
@@ -56,15 +58,20 @@ async function handler(req, res, user) {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const validare = await valideazaDiscountNou(req.body);
-  if (validare.eroare) return res.status(400).json({ error: validare.eroare });
-
-  // Partenerul poate seta discount doar pe tipul lui de activitate.
   const { data: partener } = await supabaseAdmin
     .from('partners')
     .select('partner_type')
     .eq('id', user.id)
     .maybeSingle();
+  // Curierii nu acordă discount, indiferent de tip_partener trimis.
+  if (TIPURI_FARA_DISCOUNT.includes(partener?.partner_type)) {
+    return res.status(400).json({ error: EROARE_CURIER_FARA_DISCOUNT });
+  }
+
+  const validare = await valideazaDiscountNou(req.body);
+  if (validare.eroare) return res.status(400).json({ error: validare.eroare });
+
+  // Partenerul poate seta discount doar pe tipul lui de activitate.
   if (PARTNER_TYPE_LA_TIP_DISCOUNT[partener?.partner_type] !== validare.rand.tip_partener) {
     return res.status(403).json({ error: 'Poți seta discount doar pe tipul tău de partener' });
   }
