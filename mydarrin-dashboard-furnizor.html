@@ -624,9 +624,9 @@ function renderNav(type){
   const nav=document.getElementById('fb-nav'); if(!nav)return;
   nav.innerHTML=FTYPES[type].nav.map(item=>{
     if(item.section) return `<div class="f-nav-section">${item.section}</div>`;
-    if(item.href) return `<a class="f-nav-item" href="${item.href}" style="opacity:.7">${item.icon} ${item.label}</a>`;
+    if(item.href) return `<a class="f-nav-item" href="${item.href}" style="opacity:.7">${item.icon} <span>${item.label}</span></a>`;
     const badge=item.badge?`<span class="chip ${item.badgeCls}" style="margin-left:auto;font-size:9px">${item.badge}</span>`:'';
-    return `<button class="f-nav-item${item.id===currentPanel?' active':''}" onclick="showPanel('${item.id}')">${item.icon} ${item.label}${badge}</button>`;
+    return `<button class="f-nav-item${item.id===currentPanel?' active':''}" onclick="showPanel('${item.id}')">${item.icon} <span>${item.label}</span>${badge}</button>`;
   }).join('');
 }
 

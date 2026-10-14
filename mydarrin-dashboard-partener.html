@@ -763,9 +763,9 @@ function renderNav(type) {
   if (!nav) return;
   nav.innerHTML = TYPES[type].nav.map(item => {
     if (item.section) return `<div class="dp-nav-section">${item.section}</div>`;
-    if (item.href) return `<a class="dp-nav-item" href="${item.href}" style="opacity:.7">${item.icon} ${item.label}</a>`;
+    if (item.href) return `<a class="dp-nav-item" href="${item.href}" style="opacity:.7">${item.icon} <span>${item.label}</span></a>`;
     const badge = item.badge ? `<span class="chip ${item.badgeCls}" style="margin-left:auto;font-size:9px">${item.badge}</span>` : '';
-    return `<button class="dp-nav-item${item.id===currentPanel?' active':''}" onclick="showPanel('${item.id}')">${item.icon} ${item.label}${badge}</button>`;
+    return `<button class="dp-nav-item${item.id===currentPanel?' active':''}" onclick="showPanel('${item.id}')">${item.icon} <span>${item.label}</span>${badge}</button>`;
   }).join('');
 }
 
