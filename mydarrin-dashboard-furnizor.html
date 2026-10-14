@@ -425,6 +425,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 <script src="account-system.js"></script>
 <!-- Faza 2 (30 sept. 2026): import CSV real, mutat aici din mydarrin-marketplace.html -->
 <script src="/myd-csv.js"></script>
+<script src="profil-partener-card.js"></script>
 <script src="seo-meta.js"></script>
 <script src="cookie-consent.js" defer></script>
 <script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="analytics-loader.js" defer></script>
@@ -448,6 +449,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       const fbPartner = document.getElementById('fb-partner');
       if (fbAvatar) fbAvatar.textContent = initiale;
       if (fbPartner) fbPartner.textContent = nume;
+      window.MYDProfilPartener?.afiseaza('profil-incomplet-card');
     } catch (e) {
       console.error('[dashboard-furnizor] eroare barieră:', e);
       window.location.href = 'https://mydarrin.homebestpal.com';
@@ -510,6 +512,8 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       </button>
     </div>
   </div>
+  <!-- Profil incomplet (14 oct. 2026): NACE sau clauza de zonă lipsă → link spre pasul lipsă -->
+  <div id="profil-incomplet-card" style="display:none"></div>
   <div class="f-content" id="fb-content"><!-- JS --></div>
 </main>
 </div>
@@ -620,9 +624,9 @@ function renderNav(type){
   const nav=document.getElementById('fb-nav'); if(!nav)return;
   nav.innerHTML=FTYPES[type].nav.map(item=>{
     if(item.section) return `<div class="f-nav-section">${item.section}</div>`;
-    if(item.href) return `<a class="f-nav-item" href="${item.href}" style="opacity:.7">${item.icon} ${item.label}</a>`;
+    if(item.href) return `<a class="f-nav-item" href="${item.href}" style="opacity:.7">${item.icon} <span>${item.label}</span></a>`;
     const badge=item.badge?`<span class="chip ${item.badgeCls}" style="margin-left:auto;font-size:9px">${item.badge}</span>`:'';
-    return `<button class="f-nav-item${item.id===currentPanel?' active':''}" onclick="showPanel('${item.id}')">${item.icon} ${item.label}${badge}</button>`;
+    return `<button class="f-nav-item${item.id===currentPanel?' active':''}" onclick="showPanel('${item.id}')">${item.icon} <span>${item.label}</span>${badge}</button>`;
   }).join('');
 }
 

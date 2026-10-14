@@ -1,4 +1,5 @@
-// scripts/detector-ro.js — detectorul de română pentru paginile publice (10 oct. 2026).
+// scripts/detector-ro.js — detectorul de română pentru paginile publice (10 oct. 2026)
+// și, cu --cu-cont, pentru paginile cu cont (14 oct. 2026).
 //
 // Deschide fiecare pagină publică cu localStorage gol (prima vizită → engleză)
 // și raportează, pe fiecare pagină și lățime:
@@ -13,13 +14,18 @@
 // LIMBA=ro rulează testul inversat (selector → română: doar chei netraduse,
 // erori și depășiri).
 //
+// --cu-cont: paginile cu cont (dashboard-uri și completarea profilului de
+// partener), deschise cu un utilizator simulat. Supabase (auth + interogări)
+// și /api/partener|client|comenzi răspund cu date simulate (vezi
+// sesiuneSimulata și RASPUNSURI_SIMULATE) — nimic nu ajunge la producție.
+//
 // Cerințe: un server local care servește site-ul cu /api (ex. `vercel dev`) și
 // Playwright instalat separat (nu e dependență a proiectului):
 //   npm i --no-save playwright && npx playwright install chromium
 //
 // Utilizare:
 //   node scripts/detector-ro.js [--base http://localhost:3000] [--latimi 390,1366]
-//                               [--out ./detector-out] [pagina ...]
+//                               [--out ./detector-out] [--cu-cont] [pagina ...]
 const { chromium, devices } = require('playwright');
 const fs = require('fs');
 const path = require('path');
@@ -30,19 +36,84 @@ const PUBLICE = ['index', 'servicii-urgente', 'despre-noi', 'afla-ce-facem', 'my
   'mydarrin-produs.html?slug=inlocuire-becuri-corpuri&type=servicii', 'mydarrin-serviciu', 'mydarrin-checkout', 'mydarrin-cos',
   'mydarrin-creeaza-deviz', 'confirmare-livrare', 'reset-password', 'mydarrin-cum-functioneaza', 'cum-comanzi', 'cum-platesc',
   'cum-programez-serviciu', 'cum-prestam-livram', 'intrebari-frecvente-clienti', 'intrebari-frecvente-parteneri',
-  'garantii-si-asigurari', 'ghidul-asiguratorului', 'reclamatii', 'mydarrin-devino-partener', 'mydarrin-devino-partener-wizard',
+  'garantii-si-asigurari', 'ghidul-asiguratorului', 'reclamatii', 'mydarrin-devino-partener',
   'cum-devii-partenerul-nostru', 'cum-devii-curier-de-cartier', 'cum-devii-furnizor-materiale', 'cum-devii-operator-inchirieri',
   'mydarrin-investitori', 'mydarrin-pitch-deck', 'acord-confidentialitate', 'acces-temporar', 'mydarrin-termeni',
   'mydarrin-politica-confidentialitate'];
 
+// Paginile cu cont. Wizard-ul de partener e „Completare profil partener”
+// (decizie LM, 14 oct. 2026): nu mai e pagină publică, se testează ca dashboard.
+const CU_CONT = ['mydarrin-dashboard-client', 'mydarrin-dashboard-partener', 'mydarrin-dashboard-furnizor',
+  'mydarrin-devino-partener-wizard'];
+
 const arg = process.argv.slice(2);
 const opt = (n, d) => { const i = arg.indexOf('--' + n); if (i === -1) return d; const v = arg[i + 1]; arg.splice(i, 2); return v; };
+const flag = (n) => { const i = arg.indexOf('--' + n); if (i === -1) return false; arg.splice(i, 1); return true; };
 const BASE = opt('base', 'http://localhost:3000');
 const latimi = opt('latimi', '390,1366').split(',').map(Number);
 const OUT = opt('out', path.join(process.cwd(), 'detector-out'));
-const pagini = arg.length ? arg : PUBLICE;
+const CU_CONT_MOD = flag('cu-cont');
+const pagini = arg.length ? arg : (CU_CONT_MOD ? CU_CONT : PUBLICE);
 const LIMBA = process.env.LIMBA || 'en';
 fs.mkdirSync(OUT, { recursive: true });
+
+// ── Sesiunea simulată (--cu-cont) ─────────────────────────────────────────
+const UTILIZATOR_SIMULAT = {
+  id: '00000000-0000-4000-8000-00000000d37e', email: 'partener.test@example.com',
+  email_confirmed_at: '2026-10-01T08:00:00Z', user_metadata: { nume: 'Partener Test' },
+};
+// Rulează în pagină înaintea oricărui script: window.supabaseClient și
+// window.MyDarrinAuth devin obiecte simulate, iar atribuirile din
+// lib/supabaseClient.js / account-system.js sunt ignorate.
+function sesiuneSimulata(user) {
+  const lant = (rezultat) => {
+    const p = new Proxy(function () {}, {
+      get: (t, k) => (k === 'then' ? (ok) => ok(rezultat) : () => p),
+      apply: () => p,
+    });
+    return p;
+  };
+  const sesiune = { access_token: 'token-simulat', user };
+  const client = {
+    auth: {
+      getUser: async () => ({ data: { user }, error: null }),
+      getSession: async () => ({ data: { session: sesiune }, error: null }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
+      signOut: async () => ({ error: null }),
+    },
+    from: () => lant({ data: [], error: null, count: 0 }),
+    rpc: () => lant({ data: null, error: null }),
+    storage: { from: () => lant({ data: null, error: null }) },
+    channel: () => lant({}),
+    removeChannel: () => {},
+  };
+  const auth = new Proxy({
+    getCurrentUser: async () => user,
+    getUserRoles: async () => ['partener_servicii'],
+    hasRole: async () => true,
+    performLogout: () => {},
+  }, { get: (t, k) => (k in t ? t[k] : async () => null) });
+  const fix = (nume, val) => Object.defineProperty(window, nume, { configurable: true, get: () => val, set: () => {} });
+  fix('supabaseClient', client);
+  fix('MyDarrinAuth', auth);
+}
+
+// Răspunsurile API pentru contul simulat. Profilul are compania completă,
+// dar fără coduri NACE și fără clauza de zonă.
+const RASPUNSURI_SIMULATE = {
+  '/api/partener/wizard-companie': { ok: true, partner: { nume_firma: 'Test Instalatii SRL', cui: 'RO12345678', partner_type: 'servicii_tehnice', status_verificare: 'pending_review', tip_entitate_legala: 'srl', is_treasury_account: false, regiune_cod: null }, conturi: [] },
+  '/api/partener/wizard-nace': { ok: true, coduri: [] },
+  '/api/partener/wizard-utilaje': { ok: true, utilaje: [] },
+  '/api/partener/wizard-angajati': { ok: true, angajati: [], total: 0, total_disponibili: 0 },
+  '/api/partener/wizard-certificari': { ok: true, certificari: [], cerinte: [], tara: 'RO' },
+  '/api/partener/wizard-alocare': { ok: true, alocari: [] },
+  '/api/partener/status-aplicare': { ok: true, status: 'pending_review', partner_type: 'servicii_tehnice', documente_respinse: [], darrin_ai_activ: false, darrin_ai_raport: null },
+  '/api/partener/cont': { ok: true, partner: { nume_firma: 'Test Instalatii SRL', partner_type: 'servicii_tehnice', status_verificare: 'pending_review', regiune_cod: 'BC', contract_semnat: false }, profil: { email: 'partener.test@example.com', tara: 'RO', limba: 'en' }, are_cont_bancar: false, kpi: { moneda: 'RON', comenzi_active: 0, comenzi_luna: 0, total_activ: 0, total_eliberat: 0, castig_luna: 0, castig_azi: 0 }, documente: [], facturi: [], garantii: [], polite: [] },
+  '/api/partener/escrow-tracker': { ok: true, total_activ: 0, total_eliberat: 0, moneda: 'Lei', alocari: [] },
+  '/api/partener/facturi': { ok: true, facturabile: [], facturi: [] },
+  // profil incomplet: cardul „Profil incomplet” apare și e verificat și el
+  '/api/partener/profil-status': { ok: true, complet: false, lipsa: ['nace', 'clauza_zona'], pas: 3 },
+};
 
 function detecteaza(limba) {
   const EXCEPTII = /\b(My Darrin|Darrin AI|Darrin|Home Best Pal|SRL|LTD|București|Bucureşti|Iași|Chișinău|Cluj-Napoca|Timișoara|Constanța|Brașov|Bacău|Galați|Ploiești|Pitești|Târgu(?: Mureș| Neamț| Jiu)?|Brăila|Botoșani|Buzău|Focșani|Târgoviște|Reșița|Bistrița|Călărași|Zalău|Sfântu Gheorghe|Bârlad|Mediaș|Onești|Piatra Neamț|Râmnicu Vâlcea|Neamț|România|Română|Ελληνικά|Български|Türkçe|Français|Deutsch|Magyar|Polski|Sector \d|Păcurari|Str\.|Strada|Bd\.|Calea|nr\.|jud\.|Județul \w+|Mureș)\b/g;
@@ -90,6 +161,16 @@ function detecteaza(limba) {
       const cfg = w < 800 ? { ...devices['iPhone 13'], viewport: { width: w, height: 844 } } : { viewport: { width: w, height: 900 } };
       const ctx = await b.newContext({ ...cfg, locale: 'en-GB' });
       await ctx.addInitScript((l) => { try { if (!sessionStorage.getItem('__init')) { localStorage.clear(); if (l !== 'en') localStorage.setItem('myd_lang_v1', l); sessionStorage.setItem('__init', '1'); } } catch (e) {} }, LIMBA);
+      if (CU_CONT_MOD) {
+        await ctx.addInitScript(sesiuneSimulata, UTILIZATOR_SIMULAT);
+        // Contul e simulat: nicio cerere către Supabase sau către API-urile cu cont nu pleacă.
+        await ctx.route(/\.supabase\.co\//, (r) => r.abort());
+        await ctx.route(/\/api\/(partener|client)\//, (r) => {
+          const cale = new URL(r.request().url()).pathname.replace(/\.js$/, '');
+          const corp = r.request().method() === 'GET' ? (RASPUNSURI_SIMULATE[cale] || { ok: true }) : { ok: true };
+          return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(corp) });
+        });
+      }
       const p = await ctx.newPage();
       const erori = []; p.on('pageerror', (e) => erori.push(e.message.slice(0, 120)));
       await p.route('**/api/comenzi/**', (r) => r.fulfill({ status: 599, body: '{}' }));
@@ -122,7 +203,7 @@ function detecteaza(limba) {
     }
   }
   await b.close();
-  fs.writeFileSync(path.join(OUT, `detector-${LIMBA}.json`), JSON.stringify(total, null, 1));
+  fs.writeFileSync(path.join(OUT, `detector-${LIMBA}${CU_CONT_MOD ? '-cu-cont' : ''}.json`), JSON.stringify(total, null, 1));
   for (const r of total) {
     const unice = [...new Map((r.gasite || []).map((g) => [g.text, g])).values()];
     console.log(`${r.pg.split('?')[0].padEnd(36)} ${String(r.w).padEnd(5)} lang=${r.lang} romana=${unice.length} depasire=${r.sw > r.W ? r.sw + '/' + r.W : 0} rupte=${(r.rupte || []).length} erori=${r.erori.length}`);

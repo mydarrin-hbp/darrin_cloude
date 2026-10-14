@@ -441,6 +441,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 </script>
 <script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
 <script src="format-currency.js"></script>
+<script src="profil-partener-card.js"></script>
 <script src="seo-meta.js"></script>
 <script src="cookie-consent.js" defer></script>
 <script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="analytics-loader.js" defer></script>
@@ -501,6 +502,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
       } catch (e) {
         console.warn('[dashboard-partener] nu am putut determina tipul real de partener, rămâne pe implicit:', e);
       }
+      window.MYDProfilPartener?.afiseaza('profil-incomplet-card');
     } catch (e) {
       console.error('[dashboard-partener] eroare barieră:', e);
       window.location.href = 'https://mydarrin.homebestpal.com';
@@ -634,6 +636,9 @@ function initPwaInstallPrompt() {
     </div>
   </div>
 
+  <!-- Profil incomplet (14 oct. 2026): NACE sau clauza de zonă lipsă → link spre pasul lipsă -->
+  <div id="profil-incomplet-card" style="display:none"></div>
+
   <!-- CONTENT -->
   <div class="dp-content" id="dp-content"><!-- renderizat JS --></div>
 
@@ -758,9 +763,9 @@ function renderNav(type) {
   if (!nav) return;
   nav.innerHTML = TYPES[type].nav.map(item => {
     if (item.section) return `<div class="dp-nav-section">${item.section}</div>`;
-    if (item.href) return `<a class="dp-nav-item" href="${item.href}" style="opacity:.7">${item.icon} ${item.label}</a>`;
+    if (item.href) return `<a class="dp-nav-item" href="${item.href}" style="opacity:.7">${item.icon} <span>${item.label}</span></a>`;
     const badge = item.badge ? `<span class="chip ${item.badgeCls}" style="margin-left:auto;font-size:9px">${item.badge}</span>` : '';
-    return `<button class="dp-nav-item${item.id===currentPanel?' active':''}" onclick="showPanel('${item.id}')">${item.icon} ${item.label}${badge}</button>`;
+    return `<button class="dp-nav-item${item.id===currentPanel?' active':''}" onclick="showPanel('${item.id}')">${item.icon} <span>${item.label}</span>${badge}</button>`;
   }).join('');
 }
 

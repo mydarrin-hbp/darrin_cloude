@@ -2701,6 +2701,23 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (typeof switchAuthTab === 'function') switchAuthTab('login');
     }
+    // Completarea profilului de partener (wizard-ul, 14 oct. 2026) e o pagină cu
+    // cont: autentificare, apoi înapoi la wizard. Cine nu are cont merge la
+    // înregistrare — singura pagină de înregistrare e mydarrin-devino-partener.html.
+    if (params.get('reason') === 'profil_partener') {
+      sessionStorage.setItem('myd_post_auth_redirect', 'devino-partener-wizard');
+      const modal = document.getElementById('auth-modal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+      }
+      if (typeof switchAuthTab === 'function') switchAuthTab('login');
+      const msgBox = document.getElementById('auth-modal-persistent-msg');
+      if (msgBox) {
+        msgBox.style.display = 'block';
+        msgBox.innerHTML = '<span>Autentifică-te ca să-ți completezi profilul de partener.</span> <a href="mydarrin-devino-partener.html" style="color:#065455;font-weight:700;text-decoration:underline">Nu ai cont? Devino partener</a>';
+      }
+    }
     if (params.get('reason') === 'auth_required') {
       const redirect = params.get('redirect');
       if (redirect) sessionStorage.setItem('myd_post_auth_redirect', redirect);
