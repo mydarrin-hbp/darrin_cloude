@@ -108,6 +108,9 @@ const RASPUNSURI_SIMULATE = {
   '/api/partener/wizard-certificari': { ok: true, certificari: [], cerinte: [], tara: 'RO' },
   '/api/partener/wizard-alocare': { ok: true, alocari: [] },
   '/api/partener/status-aplicare': { ok: true, status: 'pending_review', partner_type: 'servicii_tehnice', documente_respinse: [], darrin_ai_activ: false, darrin_ai_raport: null },
+  '/api/partener/cont': { ok: true, partner: { nume_firma: 'Test Instalații SRL', partner_type: 'servicii_tehnice', status_verificare: 'pending_review', regiune_cod: 'BC', contract_semnat: false }, profil: { email: 'partener.test@example.com', tara: 'RO', limba: 'en' }, are_cont_bancar: false, kpi: { moneda: 'RON', comenzi_active: 0, comenzi_luna: 0, total_activ: 0, total_eliberat: 0, castig_luna: 0, castig_azi: 0 }, documente: [], facturi: [], garantii: [], polite: [] },
+  // profil incomplet: cardul „Profil incomplet” apare și e verificat și el
+  '/api/partener/profil-status': { ok: true, complet: false, lipsa: ['nace', 'clauza_zona'], pas: 3 },
 };
 
 function detecteaza(limba) {
