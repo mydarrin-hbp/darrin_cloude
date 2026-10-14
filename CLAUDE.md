@@ -48,3 +48,15 @@
 - Internal pages (superadmin, back-office) stay in Romanian.
 - Prompts from LM come in Romanian and English, with the same content.
 - Reports to LM stay in Romanian.
+
+## Spațiu de lucru (decizie LM, 14 oct. 2026)
+- Lucrezi DOAR pe proiectul My Darrin: folderul C:\Users\admin\Desktop\darrin_cloude, repo-ul GitHub mydarrin-hbp/darrin_cloude.
+- Nu lucrezi în copii temporare (AppData\Local\Temp, scratchpad) și nu atingi alte proiecte sau foldere (de exemplu mydarrin-platform).
+- Remote-ul este https://mydarrin-hbp@github.com/mydarrin-hbp/darrin_cloude.git. Push doar cu contul mydarrin-hbp; nu folosești alt cont GitHub (de exemplu openstaffeu-lab).
+- Înainte de orice lucru: git checkout main && git pull, apoi branch nou din main.
+
+## Workspace (LM's decision, 14 Oct 2026)
+- Work ONLY on the My Darrin project: the folder C:\Users\admin\Desktop\darrin_cloude, the GitHub repo mydarrin-hbp/darrin_cloude.
+- Do not work in temporary copies (AppData\Local\Temp, scratchpad) and do not touch other projects or folders (e.g. mydarrin-platform).
+- The remote is https://mydarrin-hbp@github.com/mydarrin-hbp/darrin_cloude.git. Push only with the mydarrin-hbp account; never use another GitHub account (e.g. openstaffeu-lab).
+- Before any work: git checkout main && git pull, then a new branch from main.

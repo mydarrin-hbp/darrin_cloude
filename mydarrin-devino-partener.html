@@ -772,7 +772,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
           <span class="faq-q">Ce comision reține platforma?</span>
           <div class="faq-chev"><i data-lucide="chevron-down" class="w-3.5 h-3.5 text-gray-400"></i></div>
         </button>
-        <div class="faq-ans"><div class="faq-text">Comisionul standard este de 12% din valoarea netă a comenzii, configurat din Backoffice. Vei vedea comisionul exact în contractul de parteneriat.</div></div>
+        <div class="faq-ans"><div class="faq-text">Niciunul din manoperă: 0%. Primești 100% din prețul de manoperă afișat în dashboard. Costurile platformei (comision platformă, marketing și mentenanță) sunt incluse în prețul plătit de client, nu se scad din manoperă. Furnizorii de materiale, închirieri și asigurări acordă în schimb un discount comercial de 5–15%.</div></div>
       </div>
       <div class="faq-item reveal d4">
         <button class="faq-btn" onclick="toggleFAQ(this)">
@@ -1436,7 +1436,7 @@ const WIZARD_DATA = {
         {label:'Finisaje & vopsele (Caparol, Baumit)',sub:'Disponibil la comandă',price:'',checked:false},
         {label:'Lemn & cherestea (OSB, PAL, MDF)',sub:'Livrare la dimensiune',price:'',checked:false},
       ],
-      rateInfo:'Prețurile le introduci tu, per produs, în Catalog, după înregistrare. Comisionul platformei se stabilește în contractul-cadru.',
+      rateInfo:'Prețurile le introduci tu, per produs, în Catalog, după înregistrare. Acorzi un discount comercial de 5–15% față de prețul public, configurat la crearea contului sau din dashboard; facturarea e automată, doar pentru ce s-a livrat.',
       zones:['București','Ilfov','Iași','Cluj','Brașov','Timiș','Național'],
       zonesChecked:[true,true,false,false,false,false,false],
     },
@@ -1493,7 +1493,7 @@ const WIZARD_DATA = {
         {label:'Vehicule & Transport (camionete, dubițe, camioane)',sub:'Cu sau fără șofer',price:'',checked:false},
         {label:'Personal calificat (operator, electrician, sudor)',sub:'Trimis la șantier',price:'',checked:false},
       ],
-      rateInfo:'Tarifele le propui tu, per echipament, după înregistrare. Comisionul platformei se stabilește în contractul-cadru.',
+      rateInfo:'Tarifele le propui tu, per echipament, după înregistrare. Acorzi un discount comercial de 5–15% față de prețul public, configurat la crearea contului sau din dashboard; facturarea e automată, doar pentru ce s-a livrat.',
       zones:['Sector 1','Sector 2','Sector 3','Sector 4','Sector 5','Sector 6','Ilfov','Național'],
       zonesChecked:[true,true,true,true,false,false,false,false],
     },
@@ -1550,7 +1550,7 @@ const WIZARD_DATA = {
         {label:'Autoutilitară',sub:'Paleți, mobilă · max 500kg',price:'',checked:false},
         {label:'Livrare materiale construcții',sub:'Coordonare cu furnizori Marketplace',price:'',checked:false},
       ],
-      rateInfo:'Tarifele le propui tu, după înregistrare. Comisionul platformei se stabilește în contractul-cadru. Comenzile se alocă automat în funcție de zonă.',
+      rateInfo:'Tarifele le propui tu, după înregistrare. 0% comision: primești 100% din tariful de transport. Comenzile se alocă automat în funcție de zonă.',
       zones:['Sector 1','Sector 2','Sector 3','Sector 4','Sector 5','Sector 6'],
       zonesChecked:[false,true,true,false,false,false],
     },
@@ -1605,7 +1605,7 @@ const WIZARD_DATA = {
         {label:'Asigurare incendiu și calamități',sub:'Disponibilă la cerere client',price:'',checked:false},
         {label:'RCA parteneri flotă My Darrin',sub:'Ofertă preferențială parteneri platformă',price:'',checked:false},
       ],
-      rateInfo:'Polițele se înregistrează manual de echipa My Darrin; nu există încă integrare cu un asigurător extern. Comisionul se stabilește în contractul-cadru. Atestat ASF obligatoriu.',
+      rateInfo:'Polițele se înregistrează manual de echipa My Darrin; nu există încă integrare cu un asigurător extern. Acorzi un discount comercial de 5–15%, configurat la crearea contului sau din dashboard; facturarea e automată, doar pentru polițele emise. Atestat ASF obligatoriu.',
       zones:['Național','EU Cross-border'],
       zonesChecked:[true,false],
     },
@@ -1622,8 +1622,8 @@ const WIZARD_DATA = {
         {label:'Raportare ASF automată lunară',sub:'Export XML + raportare obligatorie ASF · Nr. poliță format RO-ASF-YYYY-xxxx',checked:false,required:false},
       ],
       tarife:[
-        {label:'Comision emitere per poliță Work Guarantee',placeholder:'ex: 3% din valoare'},
-        {label:'Comision RC Profesional partener',placeholder:'ex: 90 Lei/lună'},
+        {label:'Discount (%) — poliță Work Guarantee',placeholder:'între 5 și 15',min:5,max:15},
+        {label:'Discount (%) — RC Profesional partener',placeholder:'între 5 și 15',min:5,max:15},
         {label:'Limita maximă acoperire per eveniment',placeholder:'ex: 50.000 Lei'},
         {label:'Fransiza per eveniment',placeholder:'ex: 500 Lei'},
       ],
@@ -1878,7 +1878,7 @@ function renderStep2(d, stepTitle) {
         ${d.tarife.map(t=>`
         <div>
           <label style="display:block;font-size:10.5px;font-weight:600;color:#5A6B7D;margin-bottom:4px">${t.label}</label>
-          <input type="text" placeholder="${t.placeholder}" style="width:100%;border:1.5px solid #D5DFE8;border-radius:9px;padding:9px 12px;font-size:12.5px;font-family:inherit;outline:none"/>
+          <input ${t.min != null ? `type="number" min="${t.min}" max="${t.max}" step="0.5"` : 'type="text"'} placeholder="${t.placeholder}" style="width:100%;border:1.5px solid #D5DFE8;border-radius:9px;padding:9px 12px;font-size:12.5px;font-family:inherit;outline:none"/>
         </div>`).join('')}
       </div>
     </div>`;
@@ -1922,7 +1922,7 @@ function renderStep2(d, stepTitle) {
         ${d.tarife.map(t=>`
         <div>
           <label style="display:block;font-size:10.5px;font-weight:600;color:#5A6B7D;margin-bottom:4px">${t.label}</label>
-          <input type="text" placeholder="${t.placeholder}" style="width:100%;border:1.5px solid #D5DFE8;border-radius:9px;padding:9px 12px;font-size:12.5px;font-family:inherit;outline:none"/>
+          <input ${t.min != null ? `type="number" min="${t.min}" max="${t.max}" step="0.5"` : 'type="text"'} placeholder="${t.placeholder}" style="width:100%;border:1.5px solid #D5DFE8;border-radius:9px;padding:9px 12px;font-size:12.5px;font-family:inherit;outline:none"/>
         </div>`).join('')}
       </div>
     </div>`;
@@ -1977,11 +1977,11 @@ function renderStep4() {
   const meta  = PARTNER_META[selectedPartnerType];
   const color = meta?.color || '#FF8C00';
   const contractText = {
-    servicii:  'Partenerul prestează servicii conform devizelor calculate de platformă. Comisionul se stabilește în contractul-cadru, semnat cu cod OTP din dashboard.',
-    materiale: 'Furnizorul listează produse în Marketplace My Darrin. Comisionul se stabilește în contractul-cadru, semnat cu cod OTP din dashboard.',
-    inchirieri:'Furnizorul pune la dispoziție echipamente conform calendarului de disponibilitate. Comisionul se stabilește în contractul-cadru, semnat cu cod OTP din dashboard.',
-    curier:    'Curierul preia comenzile de livrare din zona definită. Comisionul se stabilește în contractul-cadru, semnat cu cod OTP din dashboard.',
-    asigurari: 'Asigurătorul înregistrează polițele emise pentru comenzile cu asigurare. Comisionul se stabilește în contractul-cadru, semnat cu cod OTP din dashboard. Atestat ASF obligatoriu.',
+    servicii:  'Partenerul prestează servicii conform devizelor calculate de platformă. 0% comision din manoperă: primește 100% din prețul de manoperă afișat. Contractul-cadru se semnează cu cod OTP din dashboard.',
+    materiale: 'Furnizorul listează produse în Marketplace My Darrin și acordă un discount comercial de 5–15% față de prețul public; facturarea e automată, doar pentru ce s-a livrat. Contractul-cadru se semnează cu cod OTP din dashboard.',
+    inchirieri:'Furnizorul pune la dispoziție echipamente conform calendarului de disponibilitate și acordă un discount comercial de 5–15% față de prețul public; facturarea e automată, doar pentru ce s-a livrat. Contractul-cadru se semnează cu cod OTP din dashboard.',
+    curier:    'Curierul preia comenzile de livrare din zona definită. 0% comision: primește 100% din tariful de transport. Contractul-cadru se semnează cu cod OTP din dashboard.',
+    asigurari: 'Asigurătorul înregistrează polițele emise pentru comenzile cu asigurare și acordă un discount comercial de 5–15%; facturarea e automată, doar pentru polițele emise. Contractul-cadru se semnează cu cod OTP din dashboard. Atestat ASF obligatoriu.',
   }[selectedPartnerType] || '';
 
   return `

@@ -708,7 +708,7 @@ const TYPES = {
       {id:'daune',icon:'⚠',label:'Dosare daune'},
       {id:'tipuri-polita',icon:'📝',label:'Tipuri de poliță'},
       {section:'Financiar'},
-      {id:'venituri',icon:'💰',label:'Comisioane & Plăți'},
+      {id:'venituri',icon:'💰',label:'Venituri & Plăți'},
       {section:'Cont'},
       {id:'documente',icon:'📋',label:'Documentele mele'},
       {id:'profil',icon:'👤',label:'Profil & Atestat ASF'},
@@ -1826,7 +1826,7 @@ async function togglePortofoliuItem(catalogServiciuId, activ, checkboxEl){
 // ── ECHIPA MEA (24 august 2026, aprobat) — Varianta 1 "partener unic cu
 // echipă proprie": listă angajați (deja colectați azi doar prin wizard-ul
 // de 8 pași, api/partener/wizard-angajati.js) + status de disponibilitate
-// live, tip Uber/Bolt, folosit real de lib/aloca-partener.js la alocare. ──
+// live, folosit real de lib/aloca-partener.js la alocarea automată. ──
 // ── Echipa mea / Utilajele mele / Certificările mele (Etapa 2/2i, 26 august
 // 2026) — extindere directă a secțiunii "Echipa mea" (D2b-extensie, 24
 // august), acum cu adăugare reală. Wizard-ul de 8 pași care colecta aceste
@@ -2329,13 +2329,13 @@ async function stergeZonaCurier(id){
 // ── Tipuri de poliță — asigurări (Etapa CAT-3b, 28 august 2026) ──
 // Diferit de "Polițe emise" (machetă, polițe deja emise pe comenzi reale) —
 // aici asigurătorul își declară CE tipuri de poliță oferă, cu ce limită de
-// acoperire și comision. Niciun mecanism nu exista pentru asta inainte de
+// acoperire și discount. Niciun mecanism nu exista pentru asta inainte de
 // azi. Necesar pentru testarea reala a contului inainte de campanie.
 function renderTipuriPolita() {
   return `
   <div style="margin-bottom:18px">
     <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Tipuri de poliță</h2>
-    <p style="font-size:12.5px;color:#5A6B7D;margin-top:4px">Tipurile de poliță pe care le oferi, cu limita de acoperire și comisionul negociat — distinct de „Polițe emise" (istoricul polițelor deja active pe comenzi).</p>
+    <p style="font-size:12.5px;color:#5A6B7D;margin-top:4px">Tipurile de poliță pe care le oferi, cu limita de acoperire și discountul acordat (5–15%) — distinct de „Polițe emise" (istoricul polițelor deja active pe comenzi).</p>
   </div>
   <div class="dp-card" style="margin-bottom:16px">
     <div id="tp-real-lista" style="color:#5A6B7D">Se încarcă...</div>
@@ -2345,7 +2345,7 @@ function renderTipuriPolita() {
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
       <div style="grid-column:span 3"><label style="font-size:10.5px;color:#8C9BAD">Tip poliță</label><input id="tp-tip" type="text" placeholder="Ex: RC Profesională, All Risk, Work Guarantee" style="width:100%;padding:8px;border:1px solid #D5DFE8;border-radius:8px;font-size:13px"/></div>
       <div><label style="font-size:10.5px;color:#8C9BAD">Limită acoperire (EUR, opțional)</label><input id="tp-limita" type="number" min="1" style="width:100%;padding:8px;border:1px solid #D5DFE8;border-radius:8px;font-size:13px"/></div>
-      <div><label style="font-size:10.5px;color:#8C9BAD">Comision (%, opțional)</label><input id="tp-comision" type="number" min="0" max="100" step="0.1" style="width:100%;padding:8px;border:1px solid #D5DFE8;border-radius:8px;font-size:13px"/></div>
+      <div><label style="font-size:10.5px;color:#8C9BAD">Discount (%, opțional)</label><input id="tp-comision" type="number" min="5" max="15" step="0.5" style="width:100%;padding:8px;border:1px solid #D5DFE8;border-radius:8px;font-size:13px"/></div>
     </div>
     <button class="btn-primary" style="padding:9px 16px;font-size:12.5px;margin-top:10px" onclick="adaugaTipPolita()">+ Adaugă tip</button>
     <div id="tp-msg" style="font-size:12px;margin-top:8px"></div>
@@ -2364,7 +2364,7 @@ async function loadTipuriPolitaReal(){
     if (!data.tipuri.length) { el.innerHTML = '<div style="color:#5A6B7D">Niciun tip de poliță adăugat încă.</div>'; return; }
     el.innerHTML = data.tipuri.map((t) => `
       <div style="display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid #EEF2F7">
-        <span style="flex:1"><strong style="color:#1A2332;font-size:13px">${t.tip_polita}</strong><br><span style="font-size:11px;color:#5A6B7D">${t.limita_acoperire_eur ? 'Limită: €' + t.limita_acoperire_eur : 'Fără limită declarată'}${t.comision_pct != null ? ' · Comision: ' + t.comision_pct + '%' : ''}</span></span>
+        <span style="flex:1"><strong style="color:#1A2332;font-size:13px">${t.tip_polita}</strong><br><span style="font-size:11px;color:#5A6B7D">${t.limita_acoperire_eur ? 'Limită: €' + t.limita_acoperire_eur : 'Fără limită declarată'}${t.comision_pct != null ? ' · Discount: ' + t.comision_pct + '%' : ''}</span></span>
         <button class="btn-ghost" style="padding:5px 10px;font-size:11px;color:#C0392B" onclick="stergeTipPolita('${t.id}')">Șterge</button>
       </div>
     `).join('');
@@ -2578,10 +2578,10 @@ function kpiReale(type) {
   if (!c) return [1, 2, 3, 4].map(() => kpi('…', '…', 'se încarcă', col, '⏳')).join('');
   const k = c.kpi;
   const primul = type === 'asigurari'
-    ? kpi('Polițe cu comision', String(c.polite.length), 'comenzi cu asigurare', col, '📄')
+    ? kpi('Polițe emise', String(c.polite.length), 'comenzi cu asigurare', col, '📄')
     : kpi('Comenzi active', String(k.comenzi_active), 'acceptate, în execuție sau finalizate', col, '📦');
   return primul
-    + kpi(type === 'asigurari' ? 'Comisioane luna' : 'Câștig luna', _sumaFmt(k.castig_luna, k.moneda), 'eliberat din escrow luna aceasta', col, '💰')
+    + kpi(type === 'asigurari' ? 'Încasări luna' : 'Câștig luna', _sumaFmt(k.castig_luna, k.moneda), 'eliberat din escrow luna aceasta', col, '💰')
     + kpi('Escrow activ', _sumaFmt(k.total_activ, k.moneda), 'în așteptarea eliberării', '#1A5FAD', '🔒')
     + kpi('Total eliberat', _sumaFmt(k.total_eliberat, k.moneda), 'de la început', '#0E9E99', '✅');
 }
@@ -2632,7 +2632,7 @@ function renderOverviewAsig() {
   const c = PARTENER_CONT;
   const polite = !c ? '<div style="color:#5A6B7D;font-size:12px">Se încarcă...</div>'
     : (c.polite.length ? c.polite.slice(0, 5).map((p) => `<div style="display:flex;justify-content:space-between;gap:8px;padding:8px 10px;background:#F0F4F8;border-radius:9px;font-size:12px"><span><strong>${_escD(p.nr_comanda || '—')}</strong> · ${_escD(p.numar_polita || 'poliță neînregistrată')}</span><span>${_sumaFmt(p.comision, p.moneda)}</span></div>`).join('')
-      : '<div style="color:#5A6B7D;font-size:12px">Nicio poliță cu comision deocamdată.</div>');
+      : '<div style="color:#5A6B7D;font-size:12px">Nicio poliță deocamdată.</div>');
   return `
   ${hardStopBanner()}
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">${kpiReale('asigurari')}</div>
@@ -2640,7 +2640,7 @@ function renderOverviewAsig() {
   ${facturareParteneriCard()}
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
     <div class="dp-card">
-      <div class="dp-card-hdr"><strong style="color:#1A2332">Polițe cu comision</strong><button class="btn-p" onclick="showPanel('polite')" style="font-size:11px;padding:6px 12px;background:#1A7A3A">Vezi toate →</button></div>
+      <div class="dp-card-hdr"><strong style="color:#1A2332">Polițe emise</strong><button class="btn-p" onclick="showPanel('polite')" style="font-size:11px;padding:6px 12px;background:#1A7A3A">Vezi toate →</button></div>
       <div class="dp-card-body" style="display:flex;flex-direction:column;gap:8px">${polite}</div>
     </div>
     <div class="dp-card">
@@ -2833,8 +2833,8 @@ function renderPolite() {
     <p style="font-size:12.5px;color:#5A6B7D">Comenzile cu asigurare la care ești asigurator. Polițele se înregistrează manual de echipa My Darrin; nu există încă integrare cu un asigurător extern.</p>
   </div>
   <div class="dp-card">
-    ${rows.length ? `<table class="dp-table"><thead><tr><th>Comandă</th><th>Nr. poliță</th><th>Primă</th><th>Comision</th><th>Eliberat</th><th>Document</th></tr></thead><tbody>${rows.map((r) => `<tr><td><strong>${_escD(r.nr_comanda || '—')}</strong></td><td style="font-family:monospace;font-size:11px">${_escD(r.numar_polita || 'neînregistrată')}</td><td>${_sumaFmt(r.prima, r.moneda)}</td><td style="color:#1A7A3A;font-weight:700">${_sumaFmt(r.comision, r.moneda)}</td><td style="color:#5A6B7D">${_dataFmt(r.escrow_eliberat_la)}</td><td>${/^https?:\/\//.test(r.polita_url || '') ? `<a href="${_escD(r.polita_url)}" target="_blank" rel="noopener" class="btn-s" style="font-size:10.5px;padding:4px 9px;text-decoration:none">Deschide</a>` : '—'}</td></tr>`).join('')}</tbody></table>`
-      : '<div class="dp-card-body" style="color:#5A6B7D;font-size:12.5px">Nicio poliță cu comision deocamdată.</div>'}
+    ${rows.length ? `<table class="dp-table"><thead><tr><th>Comandă</th><th>Nr. poliță</th><th>Primă</th><th>Sumă cuvenită</th><th>Eliberat</th><th>Document</th></tr></thead><tbody>${rows.map((r) => `<tr><td><strong>${_escD(r.nr_comanda || '—')}</strong></td><td style="font-family:monospace;font-size:11px">${_escD(r.numar_polita || 'neînregistrată')}</td><td>${_sumaFmt(r.prima, r.moneda)}</td><td style="color:#1A7A3A;font-weight:700">${_sumaFmt(r.comision, r.moneda)}</td><td style="color:#5A6B7D">${_dataFmt(r.escrow_eliberat_la)}</td><td>${/^https?:\/\//.test(r.polita_url || '') ? `<a href="${_escD(r.polita_url)}" target="_blank" rel="noopener" class="btn-s" style="font-size:10.5px;padding:4px 9px;text-decoration:none">Deschide</a>` : '—'}</td></tr>`).join('')}</tbody></table>`
+      : '<div class="dp-card-body" style="color:#5A6B7D;font-size:12.5px">Nicio poliță deocamdată.</div>'}
   </div>`;
 }
 
