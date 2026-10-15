@@ -21,6 +21,25 @@ const { calculeazaPret } = require('../../lib/calculeaza-pret');
 
 const CATEGORII_VALIDE = ['servicii', 'materiale', 'inchirieri'];
 
+// Ruta de încadrare (pasul 8, 15 oct. 2026): după migrarea
+// 2026-10-15_ruta_incadrare.sql, un serviciu nou se creează ca ciornă
+// (stare = 'ciorna', status_public = false) și se publică doar prin
+// api/admin/ruta-incadrare.js → publica. Fără coloana `stare`, comportamentul
+// de azi rămâne: serviciul e public imediat.
+function lipsesteColoanaStare(error) {
+  return !!error && (error.code === 'PGRST204' || error.code === '42703') && /stare/.test(error.message || '');
+}
+async function insereazaServiciu(rand) {
+  const ciorna = await supabaseAdmin.from('catalog_servicii')
+    .insert({ ...rand, stare: 'ciorna', status_public: false }).select('id').single();
+  if (!lipsesteColoanaStare(ciorna.error)) return { ...ciorna, ciorna: true };
+  const public_ = await supabaseAdmin.from('catalog_servicii')
+    .insert({ ...rand, status_public: true }).select('id').single();
+  return { ...public_, ciorna: false };
+}
+const MESAJ_CIORNA = 'Creat ca ciornă: se publică din ruta de încadrare, după validare.';
+const MESAJ_CIORNA_EN = 'Created as a draft: it is published from the classification route, after validation.';
+
 async function actionList(req, res) {
   const { categorie } = req.body || {};
   if (categorie && !CATEGORII_VALIDE.includes(categorie)) {
@@ -78,24 +97,25 @@ async function actionCreeazaServiciu(req, res, user) {
     return res.status(400).json({ error: `categorie invalidă. Trebuie: ${CATEGORII_VALIDE.join(', ')}` });
   }
 
-  const { data, error } = await supabaseAdmin
-    .from('catalog_servicii')
-    .insert({
-      id_serviciu, categorie, domeniu, titlu,
-      icon: icon || null, nace: nace || null, cod_esco: cod_esco || null, cod_uniclass: cod_uniclass || null,
-      unitate_masura: unitate_masura || null,
-      sectoare_client: Array.isArray(sectoare_client) ? sectoare_client : [],
-      status_public: true, creat_de_tip: 'admin', creat_de: user.id,
-    })
-    .select('id')
-    .single();
+  const { data, error, ciorna } = await insereazaServiciu({
+    id_serviciu, categorie, domeniu, titlu,
+    icon: icon || null, nace: nace || null, cod_esco: cod_esco || null, cod_uniclass: cod_uniclass || null,
+    unitate_masura: unitate_masura || null,
+    sectoare_client: Array.isArray(sectoare_client) ? sectoare_client : [],
+    creat_de_tip: 'admin', creat_de: user.id,
+  });
   if (error) {
     if (error.code === '23505') return res.status(409).json({ error: `id_serviciu "${id_serviciu}" există deja.` });
     console.error('[admin/catalog] creeaza_serviciu', error);
     return res.status(500).json({ error: 'Nu am putut crea serviciul.' });
   }
 
-  await inregistreazaAudit({ admin: user, req, actiune: 'catalog_creeaza_serviciu', entitate: 'catalog_servicii', entitate_id: data.id, detalii: { id_serviciu, categorie, titlu } });
+  await inregistreazaAudit({ admin: user, req, actiune: 'catalog_creeaza_serviciu', entitate: 'catalog_servicii', entitate_id: data.id, detalii: { id_serviciu, categorie, titlu, ciorna } });
+
+  // Ciorna nu se notifică: partenerii află la publicare (ruta-incadrare → publica).
+  if (ciorna) {
+    return res.status(200).json({ ok: true, id: data.id, stare: 'ciorna', parteneri_notificati: 0, mesaj: MESAJ_CIORNA, mesaj_en: MESAJ_CIORNA_EN });
+  }
 
   // G12: notifică automat partenerii eligibili (profil NACE potrivit) —
   // best-effort, nu blochează crearea serviciului dacă eșuează.
@@ -119,6 +139,18 @@ async function actionActualizeazaServiciu(req, res, user) {
   const update = {};
   permise.forEach((c) => { if (campuri[c] !== undefined) update[c] = campuri[c]; });
   if (!Object.keys(update).length) return res.status(400).json({ error: 'Niciun câmp de actualizat.' });
+
+  // După migrarea ruta_incadrare, publicarea trece doar prin ruta de încadrare;
+  // ascunderea unui serviciu publicat îl retrage (stare = 'retras').
+  if (update.status_public !== undefined) {
+    const { data: actual, error: errStare } = await supabaseAdmin.from('catalog_servicii').select('stare').eq('id', id).maybeSingle();
+    if (!lipsesteColoanaStare(errStare) && actual) {
+      if (update.status_public === true && actual.stare !== 'publicat') {
+        return res.status(409).json({ error: 'Serviciul e ciornă: se publică din ruta de încadrare, după validare.', error_en: 'The service is a draft: it is published from the classification route, after validation.' });
+      }
+      if (update.status_public === false) update.stare = 'retras';
+    }
+  }
 
   const { error } = await supabaseAdmin.from('catalog_servicii').update(update).eq('id', id);
   if (error) { console.error('[admin/catalog] actualizeaza_serviciu', error); return res.status(500).json({ error: 'Nu am putut actualiza serviciul.' }); }
@@ -366,15 +398,12 @@ async function actionGenereazaServiciiDinMaterial(req, res, user) {
       ? sablon.titlu_pattern.replace('{denumire}', material.denumire)
       : `${sablon.titlu_pattern} ${material.denumire}`;
 
-    const { data: serviciuNou, error: errServiciu } = await supabaseAdmin
-      .from('catalog_servicii')
-      .insert({
-        id_serviciu: idServiciu, categorie: 'servicii', domeniu: sablon.domeniu, titlu,
-        nace: sablon.nace || null, cod_esco: sablon.cod_esco || null, cod_uniclass: sablon.cod_uniclass || null,
-        status_public: true, creat_de_tip: 'admin', creat_de: user.id,
-      })
-      .select('id')
-      .single();
+    // Ca la creeaza_serviciu: ciornă după migrarea ruta_incadrare, publicat azi.
+    const { data: serviciuNou, error: errServiciu, ciorna } = await insereazaServiciu({
+      id_serviciu: idServiciu, categorie: 'servicii', domeniu: sablon.domeniu, titlu,
+      nace: sablon.nace || null, cod_esco: sablon.cod_esco || null, cod_uniclass: sablon.cod_uniclass || null,
+      creat_de_tip: 'admin', creat_de: user.id,
+    });
     if (errServiciu) {
       console.error('[admin/catalog] genereaza_servicii_din_material — creare serviciu', errServiciu);
       rezultate.push({ tip_serviciu: sablon.tip_serviciu, status: 'eroare', detaliu: errServiciu.message });
@@ -394,15 +423,17 @@ async function actionGenereazaServiciiDinMaterial(req, res, user) {
     });
 
     let notificati = 0;
-    try {
-      const r = await notificaParteneriEligibili({ catalogServiciuId: serviciuNou.id, nace: sablon.nace || null, titlu, categorie: 'servicii' });
-      notificati = r.notificati || 0;
-    } catch (notifErr) {
-      console.error('[admin/catalog] genereaza_servicii_din_material — notificare eșuată', notifErr);
+    if (!ciorna) {
+      try {
+        const r = await notificaParteneriEligibili({ catalogServiciuId: serviciuNou.id, nace: sablon.nace || null, titlu, categorie: 'servicii' });
+        notificati = r.notificati || 0;
+      } catch (notifErr) {
+        console.error('[admin/catalog] genereaza_servicii_din_material — notificare eșuată', notifErr);
+      }
     }
     parteneriNotificatiTotal += notificati;
 
-    rezultate.push({ tip_serviciu: sablon.tip_serviciu, status: 'creat', catalog_serviciu_id: serviciuNou.id, id_serviciu: idServiciu });
+    rezultate.push({ tip_serviciu: sablon.tip_serviciu, status: ciorna ? 'creat_ciorna' : 'creat', catalog_serviciu_id: serviciuNou.id, id_serviciu: idServiciu });
   }
 
   await inregistreazaAudit({
