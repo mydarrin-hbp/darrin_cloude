@@ -13,12 +13,15 @@
 // paginile rămân pe textul român al catalogului.
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { citesteTot } = require('../../lib/citeste-tot');
 
 const LIMBI = ['en', 'de', 'fr', 'tr', 'bg', 'el'];
-// tabel → [coloane text afișate public, filtru public]
+// tabel → [coloane text afișate public, filtru public]. Pasul 8b (15 oct.
+// 2026): nivelurile doar ale serviciilor publice — altfel traducerile
+// nivelurilor din ciorne ar intra în dicționarul public.
 const SURSE = [
   { tabel: 'catalog_servicii', campuri: ['titlu', 'domeniu', 'descriere', 'etape_lucrare', 'instructiuni_intretinere'], public: (q) => q.eq('status_public', true) },
-  { tabel: 'catalog_niveluri', campuri: ['label', 'descriere'] },
+  { tabel: 'catalog_niveluri', campuri: ['label', 'descriere'], legatura: 'catalog_servicii!inner(status_public)', public: (q) => q.eq('catalog_servicii.status_public', true) },
   { tabel: 'categorii', campuri: ['title', 'description'] },
 ];
 
@@ -45,9 +48,12 @@ module.exports = async function handler(req, res) {
 
   const texte = {};
   for (const s of SURSE) {
-    let q = supabaseAdmin.from(s.tabel).select(s.campuri.concat('traduceri').join(','));
-    if (s.public) q = s.public(q);
-    const { data, error } = await q.limit(5000);
+    // Pe pagini: un select întoarce cel mult 1.000 de rânduri (limita PostgREST).
+    const { data, error } = await citesteTot(() => {
+      let q = supabaseAdmin.from(s.tabel).select(['id', ...s.campuri, 'traduceri', ...(s.legatura ? [s.legatura] : [])].join(','));
+      if (s.public) q = s.public(q);
+      return q.order('id');
+    });
     if (error) {
       // coloana `traduceri` lipsește (migrare neaplicată) sau tabelul nu
       // răspunde: sărim sursa, fără să blocăm paginile.
