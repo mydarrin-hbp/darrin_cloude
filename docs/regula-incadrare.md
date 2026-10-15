@@ -64,7 +64,7 @@ Capitolul se calculează din clasa NACE: **clasele explicite au prioritate faț�
 | E2 | Clasa NACE a serviciului ≠ `nace_clasa` a nodului (sau serviciul nu are nod). |
 | E3 | Capitolul nodului ≠ capitolul calculat din NACE. |
 | E4 | ESCO lipsește sau nu e de tip `esco` (grupă ISCO sau cod COR). |
-| E5 | Codul Uniclass nu există în `uniclass_codes` sau e din tabelul greșit (serviciu fără `Ac_`, material fără `Pr_`). |
+| E5 | Codul Uniclass nu există în `uniclass_codes`, e retras (`is_active = false`; mesajul dă înlocuitorul din `inlocuit_de`, dacă există) sau e din tabelul greșit (serviciu fără `Ac_`, material fără `Pr_`). |
 | E6 | Un produs publicat drept serviciu. |
 | E7 | Niciun nivel cu preț activ într-o țară și nicio rețetă calculabilă. O rețetă propusă, neaprobată, nu dă preț. |
 | E8 | Lipsește titlul în RO sau în EN (EN: `traduceri.en.titlu`, după migrarea 2026-10-10). |
@@ -87,12 +87,24 @@ Când un serviciu n-are rețetă, sistemul **propune** una, ca ciornă (`retete_
    - `Ac_10_40_27` (instalații electrice): `EF` tablouri, `EC` cabluri, `EA` tuburi de protecție, `EH` probe și verificări;
    - `Ac_10_40_63` / `Ac_10_40_67` (conducte, sanitare): `RPIC`, `RPID`, `RPIE`.
 2. **Manoperă:** resurse `F` cu aceeași ocupație ESCO, altfel din aceeași grupă ESCO (de exemplu „Instalator electrician”, `7411.1`).
-3. **Ce lipsește din normele românești:** linii `resursa_noua`, cu cod Uniclass `Pr_` și **fără cantitate și fără preț**. Pentru fotovoltaice: module, structură de montaj, ancore de acoperiș, protecție la supratensiune c.c., invertor, punere în funcțiune.
+3. **Ce lipsește din normele românești:** linii `resursa_noua`, cu cod Uniclass `Pr_` și **fără cantitate și fără preț**. Pentru fotovoltaice: module (`Pr_60_70_65_63`), structură de montaj (`Pr_20_85_32_80`), ancore de acoperiș (`Pr_80_77_27_72`; `Pr_20_29_03_78` a fost retras de NBS în 2023-01), protecție la supratensiune c.c. (`Pr_65_72_27_62`), invertor, punere în funcțiune (`Ac_70_65`). Sistemul: `Ss_70_10_70_35`, scris pe articolul rețetei aprobate.
 4. Fiecare linie are un `motiv`.
 
 Adminul decide fiecare linie (`decide_linie`: acceptă, modifică cantitatea sau resursa, respinge). `aproba_reteta` trece doar dacă nicio linie nu e în așteptare și fiecare linie acceptată are cantitate. La aprobare se creează un articol nou sub indicatorul `MDR`, legat de nivel, cu rețeta lui; resursele noi primesc `sursa_catalog = 'catalog_nou_2026'`, ca rețetele manuale existente. Resursele noi fără tarif nu primesc preț inventat: prețul serviciului rămâne „la cerere” până se completează tariful.
 
-**De știut (15 oct. 2026):** `uniclass_codes` are doar 27 de coduri. `Ac_70_65` și codurile `Pr_` propuse pentru fotovoltaice nu sunt încă acolo; rămân pe linia rețetei (`cod_uniclass`), iar pe resursă se scriu doar după ce LM le adaugă (cheie externă).
+**Uniclass 2026.** LM încarcă toate cele 15 tabele Uniclass 2015, ediția NBS ianuarie 2026 (19.084 de coduri). După import, `uniclass_codes` are în plus `versiune`, `inlocuit_de`, `retras_in`, iar `title_ro` e opțional: titlul se afișează din `title_ro`, cu rezervă pe `title_en`. Până la import (azi: 27 de coduri), codurile propuse care lipsesc rămân pe linia rețetei (`cod_uniclass`) și se scriu pe resursă doar când sunt active în `uniclass_codes` (cheie externă).
+
+### 5b. Ciornele sunt private
+
+O ciornă (`stare` ≠ `publicat`) nu se citește public: după migrare, citirea publică (cheia `anon`) e permisă doar pentru serviciile cu `status_public = true` și, prin ele, pentru nivelurile și prețurile lor. Nu există scriere directă din browser în `catalog_servicii`, `catalog_niveluri`, `catalog_preturi`: totul trece prin `api/admin/*`.
+
+### 5c. Ordinea de aplicare
+
+1. Merge în `main` (codul merge și fără migrare).
+2. `docs/migrations-propuse/2026-10-10_traduceri_catalog.sql` (titlul EN al serviciului, regula E8).
+3. `docs/migrations-propuse/2026-10-15_ruta_incadrare.sql` (se oprește dacă lipsește pasul 2).
+
+Invers nu: aplicată înainte de merge, migrarea ar bloca crearea de servicii din codul vechi (`status_public = true` cu `stare` implicit `ciorna`).
 
 ### 6. Două scenarii
 
@@ -157,7 +169,7 @@ The chapter is computed from the NACE class: **explicit classes take priority ov
 | E2 | The service's NACE class ≠ the node's `nace_clasa` (or the service has no node). |
 | E3 | The node's chapter ≠ the chapter computed from NACE. |
 | E4 | ESCO missing or not of type `esco` (an ISCO group or a COR code). |
-| E5 | The Uniclass code does not exist in `uniclass_codes` or is from the wrong table (service without `Ac_`, material without `Pr_`). |
+| E5 | The Uniclass code does not exist in `uniclass_codes`, is withdrawn (`is_active = false`; the message gives the replacement from `inlocuit_de`, if any) or is from the wrong table (service without `Ac_`, material without `Pr_`). |
 | E6 | A product record published as a service. |
 | E7 | No level with an active price in any country and no computable recipe. A proposed, unapproved recipe gives no price. |
 | E8 | The RO or EN title is missing (EN: `traduceri.en.titlu`, after the 2026-10-10 migration). |
@@ -180,12 +192,24 @@ When a service has no recipe, the system **proposes** one, as a draft (`retete_p
    - `Ac_10_40_27` (electrical installation): `EF` panels, `EC` cables, `EA` protective conduits, `EH` tests and checks;
    - `Ac_10_40_63` / `Ac_10_40_67` (pipework, plumbing): `RPIC`, `RPID`, `RPIE`.
 2. **Labour:** `F` resources with the same ESCO occupation, otherwise from the same ESCO group (e.g. "Instalator electrician", `7411.1`).
-3. **What the Romanian norms lack:** `resursa_noua` lines, with a `Pr_` Uniclass code and **no quantity and no price**. For photovoltaics: modules, mounting frame, roof anchors, d.c. surge protection, inverter, commissioning.
+3. **What the Romanian norms lack:** `resursa_noua` lines, with a `Pr_` Uniclass code and **no quantity and no price**. For photovoltaics: modules (`Pr_60_70_65_63`), mounting frame (`Pr_20_85_32_80`), roof anchors (`Pr_80_77_27_72`; `Pr_20_29_03_78` was withdrawn by NBS in 2023-01), d.c. surge protection (`Pr_65_72_27_62`), inverter, commissioning (`Ac_70_65`). The system: `Ss_70_10_70_35`, written on the approved recipe item.
 4. Each line has a `motiv` (reason).
 
 The admin decides each line (`decide_linie`: accept, edit the quantity or resource, reject). `aproba_reteta` goes through only if no line is pending and every accepted line has a quantity. On approval, a new item is created under the `MDR` indicator, linked to the level, with its recipe; new resources get `sursa_catalog = 'catalog_nou_2026'`, like the existing manual recipes. New resources without a rate get no invented price: the service price stays "on request" until the rate is filled in.
 
-**Note (15 Oct 2026):** `uniclass_codes` holds only 27 codes. `Ac_70_65` and the `Pr_` codes proposed for photovoltaics are not there yet; they stay on the recipe line (`cod_uniclass`) and are written to the resource only once LM adds them (foreign key).
+**Uniclass 2026.** LM loads all 15 Uniclass 2015 tables, NBS January 2026 edition (19,084 codes). After the import, `uniclass_codes` also has `versiune`, `inlocuit_de`, `retras_in`, and `title_ro` becomes optional: the title is shown from `title_ro`, falling back to `title_en`. Until the import (today: 27 codes), proposed codes that are missing stay on the recipe line (`cod_uniclass`) and are written to the resource only when they are active in `uniclass_codes` (foreign key).
+
+### 5b. Drafts are private
+
+A draft (`stare` ≠ `publicat`) cannot be read publicly: after the migration, public reads (the `anon` key) are allowed only for services with `status_public = true` and, through them, for their levels and prices. There is no direct browser write to `catalog_servicii`, `catalog_niveluri`, `catalog_preturi`: everything goes through `api/admin/*`.
+
+### 5c. Order of application
+
+1. Merge into `main` (the code works without the migration too).
+2. `docs/migrations-propuse/2026-10-10_traduceri_catalog.sql` (the service's EN title, rule E8).
+3. `docs/migrations-propuse/2026-10-15_ruta_incadrare.sql` (it stops if step 2 is missing).
+
+Not the other way round: applied before the merge, the migration would block service creation by the old code (`status_public = true` with `stare` defaulting to `ciorna`).
 
 ### 6. Two scenarios
 

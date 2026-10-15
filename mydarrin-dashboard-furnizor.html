@@ -1058,10 +1058,10 @@ async function incarcaTaxonomieMp(){
     selectoareNace.forEach((el) => { if (el) el.innerHTML = '<option value="">(eroare la încărcare)</option>'; });
   }
   try {
-    const r = await fetch('/api/public/uniclass-lista');
+    const r = await fetch('/api/public/uniclass-lista?prefix=Pr&lang=' + encodeURIComponent(window.MYD_I18N?.lang || 'en'));
     const j = await r.json();
     if (!r.ok) throw new Error(j.error || 'eroare necunoscută');
-    const optiuni = '<option value="">— fără —</option>' + (j.coduri || []).map((c) => `<option value="${escapeHTML(c.code)}">${escapeHTML(c.code)} — ${escapeHTML(c.title_ro)}</option>`).join('');
+    const optiuni = '<option value="">— fără —</option>' + (j.coduri || []).map((c) => `<option value="${escapeHTML(c.code)}">${escapeHTML(c.code)} — ${escapeHTML(c.titlu || c.title_ro || '')}</option>`).join('');
     selectoareUniclass.forEach((el) => { if (el) el.innerHTML = optiuni; });
   } catch (e) {
     console.error('[dashboard-furnizor] uniclass-lista', e);

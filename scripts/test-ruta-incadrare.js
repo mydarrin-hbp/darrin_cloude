@@ -34,6 +34,12 @@ function interogare(tabel) {
     like(k, v) { const re = new RegExp('^' + v.replace(/[.]/g, '\\.').replace(/%/g, '.*') + '$'); st.filtre.push((r) => re.test(String(r[k] ?? ''))); return b; },
     is(k, v) { st.filtre.push((r) => (r[k] ?? null) === v); return b; },
     not(k, op, v) { st.filtre.push((r) => !(op === 'is' ? (r[k] ?? null) === v : r[k] === v)); return b; },
+    // or('col.like.X%,col.like.Y%'): doar condițiile like, suficiente pentru teste
+    or(expr) {
+      const conditii = expr.split(',').map((c) => { const [k, , v] = c.split('.'); return [k, new RegExp('^' + v.replace(/%/g, '.*').replace(/_/g, '.') + '$')]; });
+      st.filtre.push((r) => conditii.some(([k, re]) => re.test(String(r[k] ?? ''))));
+      return b;
+    },
     order(k, o = {}) { st.ordine.push([k, o.ascending !== false]); return b; },
     limit(n) { st.limita = n; return b; },
     range(a, z) { st.interval = [a, z]; return b; },
@@ -253,6 +259,14 @@ async function main() {
   verifica('ESCO 7411 (grupă ISCO) → E4', coduri(r4a.erori).includes('E4'), coduri(r4a.erori).join(','));
   const r4b = R.valideazaRuta({ ...baza4, serviciu: { ...baza4.serviciu, cod_uniclass: 'Ac_45_10_14' }, uniclass: UNICLASS.get('Ac_45_10_14') || null });
   verifica('Uniclass Ac_45_10_14 (nu există) → E5', coduri(r4b.erori).includes('E5'));
+  // După importul Uniclass 2026: un cod retras (is_active = false) dă E5, cu înlocuitorul.
+  const retras = { code: 'Ac_10_40_63', is_active: false, inlocuit_de: 'Ac_10_40_64', retras_in: '2023-01' };
+  const r4i = R.valideazaRuta({ ...baza4, uniclass: retras });
+  const e5i = r4i.erori.find((e) => e.cod === 'E5');
+  console.log(`    E5 cod retras: ${e5i && e5i.mesaj_ro} / ${e5i && e5i.mesaj_en}`);
+  verifica('Uniclass retras (is_active = false) → E5, cu înlocuitorul în mesaj (RO + EN)', !!e5i && /retras/.test(e5i.mesaj_ro) && /Ac_10_40_64/.test(e5i.mesaj_ro) && /withdrawn/.test(e5i.mesaj_en) && e5i.detalii?.inlocuit_de === 'Ac_10_40_64');
+  const r4j = R.valideazaRuta({ ...baza4, uniclass: { code: 'Ac_10_40_63', is_active: false } });
+  verifica('Uniclass retras fără înlocuitor (înainte de import, fără coloane noi) → E5 fără „folosește”', coduri(r4j.erori).includes('E5') && !/folosește/.test(r4j.erori.find((e) => e.cod === 'E5').mesaj_ro));
   const r4c = R.valideazaRuta({ ...baza4, serviciu: { ...baza4.serviciu, cod_uniclass: 'Pr_70_60_36_73' }, uniclass: UNICLASS.get('Pr_70_60_36_73') });
   verifica('serviciu cu Uniclass Pr_ → E5 (tabelul greșit)', coduri(r4c.erori).includes('E5'));
   const r4d = R.valideazaRuta({ ...baza4, serviciu: { ...baza4.serviciu, titlu: 'Proiect instalație termică', nace: '71.12', cod_esco: '2142.1' }, esco: ESCO['2142.1'], traduceri: { titlu_ro: 'Proiect instalație termică', titlu_en: 'Heating system design' } });
@@ -297,10 +311,12 @@ async function main() {
   verifica('manoperă „Instalator electrician” 7411.1 (aceeași grupă ESCO)', manopera && manopera.denumire_propusa === 'Instalator electrician' && manopera.cod_esco === '7411.1');
   const noi = linii.filter((l) => l.tip === 'resursa_noua');
   verifica('resurse noi: module, structură, ancore, protecție c.c., invertor, punere în funcțiune', noi.length === 6
-    && ['Pr_60_70_65_63', 'Pr_20_85_32_80', 'Pr_20_29_03_78', 'Pr_65_72_27_62', 'Ac_70_65'].every((c) => noi.some((l) => l.cod_uniclass === c)));
+    && ['Pr_60_70_65_63', 'Pr_20_85_32_80', 'Pr_80_77_27_72', 'Pr_65_72_27_62', 'Ac_70_65'].every((c) => noi.some((l) => l.cod_uniclass === c)));
+  verifica('ancorele folosesc Pr_80_77_27_72, nu codul retras Pr_20_29_03_78', !linii.some((l) => l.cod_uniclass === 'Pr_20_29_03_78'));
+  verifica('sistemul Uniclass al rețetei: Ss_70_10_70_35', rezumat.cod_sistem === 'Ss_70_10_70_35');
   verifica('nicio linie cu cantitate sau preț (fără date inventate)', linii.every((l) => l.consum_propus === null && !('pret' in l)));
   verifica('fiecare linie are motiv', linii.every((l) => String(l.motiv || '').length > 10));
-  verifica('codurile Pr_ lipsă din uniclass_codes sunt semnalate în motiv', noi.filter((l) => l.cod_uniclass && !UNICLASS.has(l.cod_uniclass)).every((l) => /nu e încă în uniclass_codes/.test(l.motiv)));
+  verifica('codurile Pr_ lipsă din uniclass_codes sunt semnalate în motiv', noi.filter((l) => l.cod_uniclass && !UNICLASS.has(l.cod_uniclass)).every((l) => /nu e activ în uniclass_codes/.test(l.motiv)));
 
   const v1 = verificaAprobare(linii);
   verifica('aprobare refuzată cât timp există linii în așteptare', !v1.ok && coduri(v1.erori).includes('LINII_IN_ASTEPTARE'));
@@ -371,6 +387,24 @@ async function main() {
   verifica('pasi după migrare: capitol F, nodul sanitar/termic compatibil, 7127.1 primul la ESCO', r.status === 200 && r.out.capitol?.cod === 'F' && r.out.noduri?.some((n) => n.id === 'n4322' && n.compatibil) && r.out.esco?.[0]?.cod_esco === '7127.1', `${r.status} ${JSON.stringify(r.out).slice(0, 300)}`);
   r = await apel('api/admin/ruta-incadrare.js', 'token-admin-f', { action: 'pasi', clasa: '33.12' });
   verifica('admin limitat la capitolul F: capitolul AGR apare ca nepermis', r.status === 200 && r.out.capitol?.cod === 'AGR' && r.out.capitol_permis === false, `${r.status} ${JSON.stringify(r.out).slice(0, 200)}`);
+
+  // uniclass-lista (pasul 8b): pe pagini, doar codurile active, prefix, titlu RO cu rezervă EN.
+  console.log('\n8. uniclass-lista după importul Uniclass 2026 (simulat: 1.501 coduri)');
+  const uc = [];
+  for (let i = 0; i < 1500; i++) uc.push({ code: `Pr_${String(i).padStart(4, '0')}`, table_prefix: 'Pr', title_ro: i % 2 ? null : `Produs ${i}`, title_en: `Product ${i}`, is_active: i !== 7 });
+  uc.push({ code: 'Ss_70_10_70_35', table_prefix: 'Ss', title_ro: null, title_en: 'Solar photovoltaic systems', is_active: true });
+  DB.tabele.uniclass_codes = uc;
+  const lista = async (query) => {
+    const h = require(path.join(RADACINA, 'api/public/uniclass-lista.js'));
+    let out; const res = { status() { return res; }, json(o) { out = o; return res; }, setHeader() {}, end() { return res; } };
+    await h({ method: 'GET', query }, res);
+    return out;
+  };
+  let ul = await lista({ prefix: 'Pr', lang: 'ro' });
+  verifica('?prefix=Pr: 1.499 de coduri active (peste limita de 1.000), fără cel inactiv și fără Ss_', ul.ok && ul.coduri.length === 1499 && !ul.coduri.some((c) => c.code === 'Pr_0007' || c.code.startsWith('Ss_')), `${ul.coduri && ul.coduri.length}`);
+  verifica('titlu RO, cu rezervă pe title_en când title_ro lipsește', ul.coduri.find((c) => c.code === 'Pr_0000').titlu === 'Produs 0' && ul.coduri.find((c) => c.code === 'Pr_0001').titlu === 'Product 1');
+  ul = await lista({ lang: 'en' });
+  verifica('fără prefix, ?lang=en: toate tabelele, titlu EN', ul.coduri.length === 1500 && ul.coduri.find((c) => c.code === 'Ss_70_10_70_35').titlu === 'Solar photovoltaic systems' && ul.coduri.find((c) => c.code === 'Pr_0000').titlu === 'Product 0');
 
   console.log(`\n${trecute} trecute, ${picate.length} picate${picate.length ? ': ' + picate.join(' | ') : ''}`);
   process.exitCode = picate.length ? 1 : 0;

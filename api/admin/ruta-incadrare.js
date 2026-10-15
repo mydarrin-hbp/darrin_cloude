@@ -24,7 +24,7 @@ const { notificaParteneriEligibili } = require('../../lib/notifica-servicii-noi'
 const { calculeazaCostNivel } = require('../../lib/calculeaza-cost-recipe');
 const { citesteTot } = require('../../lib/citeste-tot');
 const R = require('../../lib/ruta-incadrare');
-const { propuneReteta, verificaAprobare, planAprobare, INDICATORI_PE_ACTIVITATE } = require('../../lib/propune-reteta');
+const { propuneReteta, verificaAprobare, planAprobare, temePentruTitlu, INDICATORI_PE_ACTIVITATE, RESURSE_NOI_PE_TEMA } = require('../../lib/propune-reteta');
 
 // ── Migrarea lipsă ────────────────────────────────────────────────────────
 class MigrareLipsa extends Error {}
@@ -101,7 +101,27 @@ function lang(req) {
   const l = String(req.body?.lang || req.query?.lang || '').slice(0, 2).toLowerCase();
   return l && l !== 'ro' ? 'en' : 'ro';
 }
-const eticheta = (r, l, ro = 'denumire_ro', en = 'denumire_en') => (l === 'en' && r[en]) || r[ro];
+// Eticheta în limba cerută, cu rezervă pe cealaltă (ex. codurile Uniclass
+// noi n-au încă title_ro: se afișează title_en).
+const eticheta = (r, l, ro = 'denumire_ro', en = 'denumire_en') => (l === 'en' ? (r[en] || r[ro]) : (r[ro] || r[en])) || null;
+
+// ── Uniclass (pasul 8b) ───────────────────────────────────────────────────
+// După importul Uniclass 2026 (19.084 de coduri), uniclass_codes are și
+// inlocuit_de / retras_in; înainte de import coloanele lipsesc și se
+// verifică doar existența codului.
+const MAXIM_PAGINI_UNICLASS = 40;
+async function randUniclass(cod) {
+  const cuInlocuitor = await supabaseAdmin.from('uniclass_codes').select('code, is_active, inlocuit_de, retras_in').eq('code', cod).maybeSingle();
+  if (!eLipsaSchema(cuInlocuitor.error)) return date(cuInlocuitor);
+  return date(await supabaseAdmin.from('uniclass_codes').select('code, is_active').eq('code', cod).maybeSingle());
+}
+// Doar codurile cerute care există și sunt active.
+async function coduriUniclassActive(coduri) {
+  const lista = [...new Set((coduri || []).filter(Boolean))];
+  if (!lista.length) return new Set();
+  const randuri = date(await supabaseAdmin.from('uniclass_codes').select('code').in('code', lista).eq('is_active', true));
+  return new Set(randuri.map((u) => u.code));
+}
 
 // Catalogul de servicii, cu nivelurile și articolele legate (pentru căutare).
 async function catalogCuRetete() {
@@ -161,7 +181,8 @@ async function actionPasi(req, res, user, perm) {
       .sort((a, b) => (a.potrivire ? (a.potrivire === 'clasa' ? 0 : 1) : 2) - (b.potrivire ? (b.potrivire === 'clasa' ? 0 : 1) : 2) || a.cod_esco.localeCompare(b.cod_esco));
 
     const prefix = tip_inregistrare === 'produs' ? 'Pr_' : 'Ac_';
-    const uc = date(await supabaseAdmin.from('uniclass_codes').select('code, title_ro, title_en, nace_asociat, is_active').like('code', `${prefix}%`).order('code'));
+    const uc = date(await citesteTot(() => supabaseAdmin.from('uniclass_codes').select('code, title_ro, title_en, nace_asociat, is_active')
+      .like('code', `${prefix}%`).eq('is_active', true).order('code'), { maximPagini: MAXIM_PAGINI_UNICLASS }));
     raspuns.uniclass = uc.filter((u) => u.is_active !== false)
       .map((u) => ({ cod: u.code, denumire: eticheta(u, l, 'title_ro', 'title_en'), potrivire: R.normalizeazaNace(u.nace_asociat) === cls }))
       .sort((a, b) => Number(b.potrivire) - Number(a.potrivire) || a.cod.localeCompare(b.cod));
@@ -195,7 +216,7 @@ async function contextValidare(s, perm, body = {}) {
   const [clase, escoRow, ucRow, catalogTitluri] = await Promise.all([
     naceClase(),
     s.cod_esco ? supabaseAdmin.from('competente_esco').select('cod_esco, nace_code, tip_cod').eq('cod_esco', s.cod_esco).maybeSingle().then(date) : null,
-    s.cod_uniclass ? supabaseAdmin.from('uniclass_codes').select('code, is_active').eq('code', s.cod_uniclass).maybeSingle().then(date) : null,
+    s.cod_uniclass ? randUniclass(s.cod_uniclass) : null,
     supabaseAdmin.from('catalog_servicii').select('id, titlu').eq('categorie', 'servicii').then(date),
   ]);
 
@@ -396,7 +417,7 @@ async function actionPropuneReteta(req, res, user, perm) {
   const grupa = escoRow?.isco_group || (s.cod_esco ? String(s.cod_esco).slice(0, 4) : null);
   const resurseManopera = grupa ? date(await supabaseAdmin.from('devize_resurse')
     .select('resursa_id, cod_resursa, denumire_resursa, unitate_masura, esco_cod').eq('tip_resursa', 'F').like('esco_cod', `${grupa}%`)) : [];
-  const uniclassCoduri = date(await supabaseAdmin.from('uniclass_codes').select('code')).map((u) => u.code);
+  const uniclassCoduri = await coduriUniclassActive(RESURSE_NOI_PE_TEMA.flatMap((t) => t.resurse.map((r) => r.cod_uniclass)));
 
   const { linii, rezumat } = propuneReteta({
     serviciu: s, ruta: { clasa, esco: escoRow }, asemanatoare,
@@ -465,7 +486,8 @@ async function actionAprobaReteta(req, res, user, perm) {
   const plan = planAprobare(linii, reteteArticole);
 
   // Coduri cu cheie externă: se scriu pe resursă doar dacă există.
-  const coduriUc = new Set(date(await supabaseAdmin.from('uniclass_codes').select('code')).map((u) => u.code));
+  const temaSistem = temePentruTitlu(s.titlu).find((t) => t.cod_sistem)?.cod_sistem || null;
+  const coduriUc = await coduriUniclassActive([s.cod_uniclass, temaSistem, ...linii.map((l) => l.cod_uniclass)]);
   const escoNoi = [...new Set(plan.noi.map((n) => n.linie.cod_esco).filter(Boolean))];
   const escoExista = new Set(escoNoi.length ? date(await supabaseAdmin.from('competente_esco').select('cod_esco').in('cod_esco', escoNoi)).map((e) => e.cod_esco) : []);
 
@@ -492,6 +514,7 @@ async function actionAprobaReteta(req, res, user, perm) {
       indicator_id: 'MDR', simbol: `MDR${String(nr).padStart(4, '0')}A1`, varianta: 1,
       denumire_articol: s.titlu, unitate_masura: s.unitate_masura || 'buc',
       uniclass_activity_code: s.cod_uniclass && s.cod_uniclass.startsWith('Ac_') && coduriUc.has(s.cod_uniclass) ? s.cod_uniclass : null,
+      uniclass_system_code: temaSistem && coduriUc.has(temaSistem) ? temaSistem : null,
       catalog_nivel_id: nivelId,
     }).select('articol_id, simbol').single());
     create.articol = articol;

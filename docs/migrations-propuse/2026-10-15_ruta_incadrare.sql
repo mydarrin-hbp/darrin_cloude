@@ -31,18 +31,47 @@
 --      back-office”), sub care se creează articolele rețetelor aprobate
 --      (devize_articole.indicator_id are cheie externă spre indicatori).
 --
+--   8. RLS pe catalog_servicii / catalog_niveluri / catalog_preturi (pasul 8b):
+--      ciornele nu mai sunt publice. Citirea publică rămâne doar pentru
+--      serviciile publice și, prin ele, pentru nivelurile și prețurile lor.
+--      Se șterg politicile de scriere directă din client (pe coloana veche
+--      profiles.role), care ocoleau ruta: nicio pagină nu scrie direct în
+--      aceste tabele, totul trece prin api/admin/* cu service_role.
+--
 -- RLS: tabelele noi au RLS activ și nicio politică pentru anon /
 -- authenticated; scrie doar service_role, prin API (api/admin/ruta-incadrare.js).
+--
+-- Necesită întâi 2026-10-10_traduceri_catalog.sql
+--   Titlul în engleză al serviciului (regula E8) se citește din
+--   catalog_servicii.traduceri.en.titlu. Fără coloana `traduceri`, orice
+--   publicare ar da E8; de aceea migrarea se oprește dacă ea lipsește.
+--
+-- Ordinea de aplicare (pasul 8b, corectată)
+--   1. Merge în main (codul merge și fără migrare: crearea de servicii
+--      rămâne cea de azi, endpoint-ul de rută răspunde clar).
+--   2. 2026-10-10_traduceri_catalog.sql, în SQL Editor.
+--   3. Această migrare, în SQL Editor.
+--   Invers nu: aplicată înainte de merge, codul vechi din main ar crea
+--   servicii cu status_public = true și stare implicit 'ciorna', pe care
+--   constrângerea catalog_servicii_public_doar_publicat le-ar bloca.
 --
 -- Cum se aplică
 --   O singură tranzacție, rulabilă de mai multe ori (if not exists / drop ...
 --   if exists / on conflict do nothing). Verificarea de la final oprește
---   tranzacția dacă ceva lipsește. Codul merge și fără ea: endpoint-ul
---   răspunde „Migrarea ruta_incadrare nu e aplicată”, iar crearea de
---   servicii din catalog rămâne cea de azi.
+--   tranzacția dacă ceva lipsește.
 -- ═══════════════════════════════════════════════════════════════════
 
 begin;
+
+-- ── 0. Dependența: traducerile catalogului ───────────────────────
+do $$
+begin
+  if not exists (select 1 from information_schema.columns
+                 where table_schema = 'public' and table_name = 'catalog_servicii' and column_name = 'traduceri') then
+    raise exception 'Aplică întâi 2026-10-10_traduceri_catalog.sql';
+  end if;
+end;
+$$;
 
 -- ── 1. Capitolele meniului ───────────────────────────────────────
 create table if not exists public.meniu_capitole (
@@ -187,11 +216,60 @@ insert into public.devize_indicatoare (indicator_id, denumire_indicator, tip_luc
 values ('MDR', 'My Darrin — rețete aprobate în back-office', 'Rețete aprobate')
 on conflict (indicator_id) do nothing;
 
+-- ── 8. RLS: ciornele nu sunt publice ─────────────────────────────
+-- catalog_servicii: rămâne „catalog vizibil public” (status_public = true).
+drop policy if exists "catalog citit public" on public.catalog_servicii;
+-- Scrierea directă din client, pe coloana veche profiles.role, ocolea ruta.
+drop policy if exists "admin gestioneaza catalog servicii" on public.catalog_servicii;
+drop policy if exists "catalog scris de admini" on public.catalog_servicii;
+drop policy if exists "catalog update de admini" on public.catalog_servicii;
+
+-- catalog_niveluri: citire doar pentru nivelurile unui serviciu public.
+drop policy if exists "niveluri citite public" on public.catalog_niveluri;
+drop policy if exists "niveluri vizibile public" on public.catalog_niveluri;
+drop policy if exists "admin gestioneaza catalog niveluri" on public.catalog_niveluri;
+drop policy if exists "niveluri citite pentru servicii publice" on public.catalog_niveluri;
+create policy "niveluri citite pentru servicii publice" on public.catalog_niveluri
+  for select using (
+    exists (select 1 from public.catalog_servicii s where s.id = catalog_niveluri.serviciu_id and s.status_public)
+  );
+
+-- catalog_preturi: citire doar pentru prețurile unui nivel de serviciu public.
+drop policy if exists "preturi citite public" on public.catalog_preturi;
+drop policy if exists "admin scrie preturi" on public.catalog_preturi;
+drop policy if exists "preturi citite pentru servicii publice" on public.catalog_preturi;
+create policy "preturi citite pentru servicii publice" on public.catalog_preturi
+  for select using (
+    exists (
+      select 1 from public.catalog_niveluri n
+      join public.catalog_servicii s on s.id = n.serviciu_id
+      where n.id = catalog_preturi.nivel_id and s.status_public
+    )
+  );
+
 -- ═══ VERIFICARE ═══════════════════════════════════════════════════
 do $$
 declare
   v_n integer;
 begin
+  if not exists (select 1 from information_schema.columns
+                 where table_schema = 'public' and table_name = 'catalog_servicii' and column_name = 'traduceri') then
+    raise exception 'Aplică întâi 2026-10-10_traduceri_catalog.sql';
+  end if;
+  -- Nicio citire liberă (using true) pe catalog: ciornele rămân private.
+  if exists (select 1 from pg_policy p join pg_class c on c.oid = p.polrelid
+             join pg_namespace n on n.oid = c.relnamespace
+             where n.nspname = 'public' and c.relname in ('catalog_servicii', 'catalog_niveluri', 'catalog_preturi')
+               and p.polcmd in ('r', '*') and pg_get_expr(p.polqual, p.polrelid) = 'true') then
+    raise exception 'Există încă o politică de citire using (true) pe catalog_servicii / catalog_niveluri / catalog_preturi';
+  end if;
+  -- Nicio scriere directă din client pe catalog.
+  if exists (select 1 from pg_policy p join pg_class c on c.oid = p.polrelid
+             join pg_namespace n on n.oid = c.relnamespace
+             where n.nspname = 'public' and c.relname in ('catalog_servicii', 'catalog_niveluri', 'catalog_preturi')
+               and p.polcmd in ('a', 'w', 'd', '*')) then
+    raise exception 'Există încă o politică de scriere din client pe catalog_servicii / catalog_niveluri / catalog_preturi';
+  end if;
   select count(*) into v_n from public.meniu_capitole
   where cod in ('F', 'N', 'O81', 'T', 'AGR', 'H', 'E', 'O77', 'G', 'L', 'O78');
   if v_n <> 11 then
