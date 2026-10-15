@@ -8,15 +8,31 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { limbaNomenclator, eColoanaLipsa } = require('../../lib/limba-nomenclator');
+
+// GET ?lang= (15 oct. 2026): fiecare cod primește `denumire` în limba cerută
+// (denumire_en, cu rezervă pe denumire_ro, și înainte de migrare).
+async function coduriPartener(userId, lang) {
+  const interogare = (coloane) => supabaseAdmin
+    .from('partner_coduri_nace')
+    .select(`cod_nace, principal, nace_reference(${coloane})`)
+    .eq('partner_id', userId);
+  let { data, error } = lang === 'en' ? await interogare('denumire_ro, denumire_en') : { data: null, error: null };
+  if (lang !== 'en' || (error && eColoanaLipsa(error))) ({ data, error } = await interogare('denumire_ro'));
+  if (error) throw error;
+  return (data || []).map((c) => {
+    const ref = c.nace_reference || {};
+    return { ...c, denumire: (lang === 'en' && ref.denumire_en) || ref.denumire_ro || null };
+  });
+}
 
 async function handler(req, res, user) {
   if (req.method === 'GET') {
-    const { data, error } = await supabaseAdmin
-      .from('partner_coduri_nace')
-      .select('cod_nace, principal, nace_reference(denumire_ro)')
-      .eq('partner_id', user.id);
-    if (error) return res.status(500).json({ error: error.message });
-    return res.status(200).json({ ok: true, coduri: data || [] });
+    try {
+      return res.status(200).json({ ok: true, coduri: await coduriPartener(user.id, limbaNomenclator(req)) });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
   }
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });

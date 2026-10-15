@@ -375,7 +375,7 @@ async function incarcaStareaSalvata() {
   const h = { headers: { Authorization: `Bearer ${token}` } };
   const json = (url) => fetch(url, h).then(r => r.ok ? r.json() : null).catch(() => null);
   const [companie, nace, utilaje, angajati, certificari, alocari] = await Promise.all([
-    json('/api/partener/wizard-companie'), json('/api/partener/wizard-nace'), json('/api/partener/wizard-utilaje'),
+    json('/api/partener/wizard-companie'), json('/api/partener/wizard-nace' + '?lang=' + encodeURIComponent(window.MYD_I18N?.lang || 'en')), json('/api/partener/wizard-utilaje'),
     json('/api/partener/wizard-angajati'), json('/api/partener/wizard-certificari'), json('/api/partener/wizard-alocare'),
   ]);
   const p = companie?.partner;
@@ -551,7 +551,7 @@ async function salveazaPasul2() {
 async function incarcaNace() {
   const list = document.getElementById('s3-list');
   try {
-    const res = await fetch('/api/public/nace-lista');
+    const res = await fetch('/api/public/nace-lista' + '?lang=' + encodeURIComponent(window.MYD_I18N?.lang || 'en'));
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
     naceToate = data.clase || [];
@@ -568,7 +568,7 @@ function randerNaceList(coduri) {
     <div class="nace-row">
       <input type="radio" name="nace-principal" ${naceSelectate.principal === c.cod ? 'checked' : ''} onchange="setPrincipal('${c.cod}')">
       <input type="checkbox" ${naceSelectate.secundare.includes(c.cod) ? 'checked' : ''} onchange="toggleSecundar('${c.cod}', this.checked)" ${naceSelectate.principal === c.cod ? 'disabled' : ''}>
-      <span style="flex:1"><strong>${c.cod}</strong> — ${escapeHTML(c.denumire_ro)}</span>
+      <span style="flex:1"><strong>${c.cod}</strong> — ${escapeHTML(c.denumire || c.denumire_ro)}</span>
     </div>`).join('');
 }
 
@@ -600,7 +600,7 @@ let filtruNaceCurent = '';
 function filtrulCurentNace() {
   if (!filtruNaceCurent) return naceToate;
   const q = filtruNaceCurent.toLowerCase();
-  return naceToate.filter(c => c.cod.toLowerCase().includes(q) || c.denumire_ro.toLowerCase().includes(q));
+  return naceToate.filter(c => c.cod.toLowerCase().includes(q) || (c.denumire || c.denumire_ro || '').toLowerCase().includes(q));
 }
 function filtreazaNace() {
   filtruNaceCurent = document.getElementById('s3-search').value.trim();
@@ -724,7 +724,7 @@ async function salveazaPasul4() {
 // ── PASUL 5 ──
 async function incarcaEsco() {
   try {
-    const res = await fetch('/api/public/esco-lista');
+    const res = await fetch('/api/public/esco-lista' + '?lang=' + encodeURIComponent(window.MYD_I18N?.lang || 'en'));
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
     escoToate = data.ocupatii || [];
@@ -734,7 +734,7 @@ async function incarcaEsco() {
 
 function populeazaSelectEsco(select) {
   select.innerHTML = '<option value="">Fără ocupație declarată</option>' +
-    escoToate.map(o => `<option value="${o.cod_esco}">${escapeHTML(o.denumire)} (${escapeHTML(o.domeniu)})</option>`).join('');
+    escoToate.map(o => `<option value="${o.cod_esco}">${escapeHTML(o.denumire)} (${escapeHTML(window.MYD_I18N ? MYD_I18N.traduce(o.domeniu) : o.domeniu)})</option>`).join('');
 }
 
 function adaugaRandAngajat() {

@@ -770,8 +770,10 @@ function renderNav(type) {
 }
 
 // ── SHOW PANEL ──
-const PANOURI_DEMO = new Set(['calendar','curse','activ']);
-const BANNER_DEMO = '<div class="myd-demo-banner" role="note" style="display:flex;align-items:center;gap:8px;margin:0 0 14px;padding:10px 14px;border-radius:10px;background:#FFF4E5;border:1.5px solid #FFB866;color:#8A4B00;font-size:12.5px;font-weight:700;line-height:1.4">⚠ Date demonstrative — secțiunea nu este încă conectată</div>';
+// Stare goală, fără cifre (15 oct. 2026): secțiunile fără date reale încă.
+function stareGoala() {
+  return '<div class="dp-card"><div class="dp-card-body myd-stare-goala" style="text-align:center;color:#8C9BAD;padding:28px 16px;font-size:13px">Nu ai încă date aici.</div></div>';
+}
 function showPanel(id) {
   currentPanel = id;
   const t = TYPES[currentType];
@@ -813,9 +815,6 @@ function showPanel(id) {
   else if (id === 'daune')      { content.innerHTML = renderDaune(); loadDosareDaunaReal(); }
   else if (id === 'zona-acoperire') { content.innerHTML = renderZonaCurier(); loadZonaCurierReal(); }
   else if (id === 'tipuri-polita')  { content.innerHTML = renderTipuriPolita(); loadTipuriPolitaReal(); }
-  // Calendarul și cursele (CURSE_DEMO) sunt încă date scrise direct în pagină
-  // (9 oct. 2026); restul panourilor citesc din API.
-  if (PANOURI_DEMO.has(id)) content.insertAdjacentHTML('afterbegin', BANNER_DEMO);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1107,64 +1106,15 @@ function renderPortofoliu() {
     <div id="portofoliu-real-lista" style="padding:14px">Se încarcă...</div>
   </div>
   <div class="dp-card">
-    <div class="dp-card-hdr"><strong style="color:#1A2332">📸 Portofoliu lucrări recente</strong><button class="btn-s" style="font-size:11px">+ Adaugă poze</button></div>
-    <div class="dp-card-body">
-      ${BANNER_DEMO}
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
-        ${['🔧 Montaj lavoar','🔥 Centrală Ariston','🚿 Cadă hidromasaj','💧 Instalație PPR'].map(l=>`
-        <div style="background:#F0F4F8;border-radius:10px;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;font-size:22px;border:1.5px dashed #D5DFE8;transition:all .18s" onmouseover="this.style.borderColor='#FF8C00'" onmouseout="this.style.borderColor='#D5DFE8'">
-          ${l.split(' ')[0]}<div style="font-size:10.5px;font-weight:600;color:#5A6B7D;text-align:center;padding:0 6px">${l.split(' ').slice(1).join(' ')}</div>
-        </div>`).join('')}
-      </div>
-    </div>
+    <div class="dp-card-hdr"><strong style="color:#1A2332">📸 Portofoliu lucrări recente</strong></div>
+    ${stareGoala()}
   </div>`;
 }
 
+// Calendarul nu are încă date reale (15 oct. 2026, fără date demonstrative):
+// disponibilitatea se setează din panoul „Program de lucru”.
 function renderCalendar() {
-  const days=['Lu','Ma','Mi','Jo','Vi','Sâ','Du'];
-  const states=['av','av','res','av','av','na','na','av','res','res','av','av','na','na','today','av','av','av','av','na','na','av','av','av','res','av','na','na'];
-  const calHtml=states.slice(0,28).map((st,i)=>{
-    const d=i+1;
-    const cls=st==='today'?'border-radius:7px;background:#FF8C00;color:#fff;':st==='av'?'border-radius:7px;background:#D4EDDA;color:#1A7A3A;border:1px solid rgba(26,122,58,.2);':st==='res'?'border-radius:7px;background:rgba(255,140,0,.1);color:#CC7000;border:1px solid rgba(255,140,0,.2);':'border-radius:7px;background:#E8EDF4;color:#8C9BAD;';
-    return `<div style="${cls}aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600;cursor:pointer;transition:all .15s;min-height:32px" onclick="toggleDay(this)">${d}</div>`;
-  }).join('');
-
-  return `
-  <div style="display:grid;grid-template-columns:1fr auto;gap:18px;align-items:start">
-    <div class="dp-card">
-      <div class="dp-card-hdr">
-        <strong style="color:#1A2332">📅 Disponibilitate · Iunie 2026</strong>
-        <div style="display:flex;gap:8px">
-          <button class="btn-s" style="padding:6px 12px;font-size:11px" onclick="setAllAvail()">✓ Toate disponibil</button>
-          <button class="btn-p" style="padding:6px 12px;font-size:11px" onclick="saveCalendar()">Salvează</button>
-        </div>
-      </div>
-      <div class="dp-card-body">
-        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:6px">
-          ${days.map(d=>`<div style="text-align:center;font-size:9.5px;font-weight:700;color:#5A6B7D;padding:3px">${d}</div>`).join('')}
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">${calHtml}</div>
-        <div style="display:flex;gap:14px;margin-top:12px;flex-wrap:wrap;font-size:11px">
-          <span style="display:flex;align-items:center;gap:5px;color:#5A6B7D"><span style="width:12px;height:12px;border-radius:3px;background:#D4EDDA;border:1px solid rgba(26,122,58,.2);display:inline-block"></span>Disponibil</span>
-          <span style="display:flex;align-items:center;gap:5px;color:#5A6B7D"><span style="width:12px;height:12px;border-radius:3px;background:rgba(255,140,0,.1);border:1px solid rgba(255,140,0,.2);display:inline-block"></span>Rezervat (comenzi)</span>
-          <span style="display:flex;align-items:center;gap:5px;color:#5A6B7D"><span style="width:12px;height:12px;border-radius:3px;background:#E8EDF4;display:inline-block"></span>Indisponibil</span>
-        </div>
-      </div>
-    </div>
-    <div style="min-width:220px;display:flex;flex-direction:column;gap:14px">
-      <div class="dp-card">
-        <div class="dp-card-hdr"><strong style="color:#1A2332">Comenzi azi</strong></div>
-        <div class="dp-card-body" style="font-size:12.5px;display:flex;flex-direction:column;gap:8px">
-          <div style="padding:8px 10px;background:#F0F4F8;border-radius:9px;border-left:3px solid #0E9E99"><div style="font-weight:700;color:#1A2332">10:00–12:00</div><div style="color:#5A6B7D">Înlocuire calorifer</div><div style="color:#FF8C00;font-weight:700">~320 Lei</div></div>
-          <div style="padding:8px 10px;background:#F0F4F8;border-radius:9px;border-left:3px solid #FF8C00"><div style="font-weight:700;color:#1A2332">15:00–17:00</div><div style="color:#5A6B7D">Montaj robinet</div><div style="color:#FF8C00;font-weight:700">~180 Lei</div></div>
-        </div>
-      </div>
-      <div class="dp-card">
-        <div class="dp-card-hdr"><strong style="color:#1A2332">Urgente +30%</strong></div>
-        <div class="dp-card-body"><div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:12.5px;color:#5A6B7D">Primesc comenzi urgente</span><div class="dp-toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div></div>
-      </div>
-    </div>
-  </div>`;
+  return stareGoala();
 }
 
 function renderProgramLucru() {
@@ -1242,13 +1192,9 @@ async function salveazaProgramLucru(){
 // ═══════════════════════════════════════════════════════════════
 
 
-// Curse demonstrative, în memorie (dispecerizarea reală pe server nu există încă).
-const CURSE_DEMO = {
-  'CUR-001': { title:'Livrare materiale sanitare', pickup:'Depozit ACA Business Group · Calea Ștefan cel Mare 12', dest:'Str. Păcurari 23 · Valentin (meșter)', km:'1.2 km', price:'35 Lei', vehicul:'Utilitară', cls:'pending', badge:'📦 Materiale' },
-  'CUR-002': { title:'Transport echipament Hilti', pickup:'Rental Pro SRL · Bd. Copou 8', dest:'Bd. Unirii 12 · SC Construct', km:'2.1 km', price:'45 Lei', vehicul:'Auto', cls:'pending', badge:'🏗 Închirieri' },
-  'CUR-003': { title:'Livrare urgentă robinet', pickup:'PCB Materiale · Str. Lăpușneanu 7', dest:'Ion Vasile · Sector 2 · Bloc M3', km:'0.8 km', price:'28 Lei', vehicul:'Bicicletă', cls:'urgent', badge:'⚡ Urgent' },
-  'CUR-004': { title:'Transport motor pompă', pickup:'Apa Nova Depozit · Pipa', dest:'SC HidroServ · Șoseau Nicolina 8', km:'4.5 km', price:'65 Lei', vehicul:'Utilitară', cls:'pending', badge:'🔧 Servicii' },
-};
+// Cursele disponibile vin din dispecerizarea pe server, care nu există încă
+// (15 oct. 2026, fără date demonstrative): lista e goală până atunci.
+const CURSE = {};
 const CURSE_REFUZATE = new Set();
 
 function cursaDisponibila(id) {
@@ -1258,7 +1204,7 @@ function cursaDisponibila(id) {
 }
 
 function renderCurse() {
-  const ids = Object.keys(CURSE_DEMO);
+  const ids = Object.keys(CURSE);
   const disponibile = ids.filter(cursaDisponibila);
   const activa = CURIER_STARE.cursa_activa_id;
   const coada = CURIER_STARE.coada_curse;
@@ -1271,15 +1217,13 @@ function renderCurse() {
     <div class="dp-card" style="margin-bottom:14px">
       <div class="dp-card-hdr"><strong style="color:#1A2332">⏳ Coadă (${coada.length}) · în ordinea primirii</strong></div>
       <div class="dp-card-body" style="display:flex;flex-direction:column;gap:7px;font-size:12.5px">
-        ${coada.map((c,i) => `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 11px;background:#F0F4F8;border-radius:9px"><span><strong>${i+1}.</strong> #${c.id} · ${(CURSE_DEMO[c.id]||{}).title||''}</span><button class="btn-s" style="font-size:11px;padding:4px 10px" onclick="refuzaCursa('${c.id}')">Renunță</button></div>`).join('')}
+        ${coada.map((c,i) => `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 11px;background:#F0F4F8;border-radius:9px"><span><strong>${i+1}.</strong> #${c.id} · ${(CURSE[c.id]||{}).title||''}</span><button class="btn-s" style="font-size:11px;padding:4px 10px" onclick="refuzaCursa('${c.id}')">Renunță</button></div>`).join('')}
       </div>
     </div>` : '';
   const carduri = disponibile.length
-    ? disponibile.map(id => { const c = CURSE_DEMO[id]; return cursaCardFull('#'+id, c.title, c.pickup, c.dest, c.km, c.price, c.vehicul, c.cls, c.badge, c.greutate_kg, c.volum_L); }).join('')
-    : '<div style="padding:22px;text-align:center;font-size:12.5px;color:#5A6B7D">Nicio cursă disponibilă acum.</div>';
-  return `
-  ${BANNER_DEMO_CURSE}
-  <div style="margin-bottom:18px;display:flex;align-items:center;justify-content:space-between">
+    ? disponibile.map(id => { const c = CURSE[id]; return cursaCardFull('#'+id, c.title, c.pickup, c.dest, c.km, c.price, c.vehicul, c.cls, c.badge, c.greutate_kg, c.volum_L); }).join('')
+    : stareGoala();
+  return `  <div style="margin-bottom:18px;display:flex;align-items:center;justify-content:space-between">
     <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Dispecerat curse LIVE</h2>
     <div style="display:flex;gap:8px">
       <button class="btn-s" onclick="filterCurse('toate',this)">Toate</button>
@@ -1299,11 +1243,9 @@ function renderCurse() {
 
 function renderCursaActiva() {
   const id = CURIER_STARE.cursa_activa_id;
-  const c = id && CURSE_DEMO[id];
+  const c = id && CURSE[id];
   if (!c) {
-    return `
-    ${BANNER_DEMO_CURSE}
-    <div class="dp-card">
+    return `    <div class="dp-card">
       <div class="dp-card-body" style="text-align:center;padding:36px 20px">
         <div style="font-size:15px;font-weight:800;color:#1A2332;margin-bottom:6px">Nu ai nicio cursă activă</div>
         <div style="font-size:12.5px;color:#5A6B7D;margin-bottom:16px">Preia o cursă din lista de curse disponibile.${CURIER_STARE.coada_curse.length ? ' Ai ' + CURIER_STARE.coada_curse.length + ' curse în coadă.' : ''}</div>
@@ -1311,9 +1253,7 @@ function renderCursaActiva() {
       </div>
     </div>`;
   }
-  return `
-  ${BANNER_DEMO_CURSE}
-  <div class="dp-card" style="background:linear-gradient(135deg,#4B0082,#7C3AED);color:#fff;margin-bottom:18px">
+  return `  <div class="dp-card" style="background:linear-gradient(135deg,#4B0082,#7C3AED);color:#fff;margin-bottom:18px">
     <div style="padding:18px 20px">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.7;margin-bottom:6px">🚴 Cursă activă</div>
       <div style="font-size:18px;font-weight:800;margin-bottom:10px">${c.title} · #${id}</div>
@@ -1351,7 +1291,7 @@ function renderCursaActiva() {
 
 function pickupCursaActiva() {
   const id = CURIER_STARE.cursa_activa_id;
-  const c = id && CURSE_DEMO[id];
+  const c = id && CURSE[id];
   if (!c) return;
   confirmPickupCuCMR(id, c.pickup, c.dest, c.title, c.greutate_kg || 0, c.dimensiuni || 'n/d');
 }
@@ -1866,7 +1806,7 @@ async function _incarcaEscoSelect(elId){
   const sel = document.getElementById(elId);
   if (!sel) return;
   try {
-    const res = await fetch('/api/public/esco-lista');
+    const res = await fetch('/api/public/esco-lista' + '?lang=' + encodeURIComponent(window.MYD_I18N?.lang || 'en'));
     const data = await res.json();
     if (res.ok && data.ocupatii) {
       sel.innerHTML = '<option value="">—</option>' + data.ocupatii.map(o => `<option value="${o.cod_esco}">${o.denumire}</option>`).join('');
@@ -2514,9 +2454,6 @@ function cursaCardFull(id,title,pickup,dest,km,price,vehicul,cls,badge,greutate_
 function filterCurse(f,el){showToast('Filtrare vehicul: '+f);}
 function filterPolite(f,el){document.querySelectorAll('.dp-tab').forEach(b=>b.classList.remove('active'));el?.classList.add('active');showToast('Polițe: '+f);}
 function propuneServiciu(){showToast('📤 Propunere trimisă la Admin pentru aprobare');}
-function setAllAvail(){showToast('✓ Toate zilele setate Disponibil');}
-function saveCalendar(){showToast('✅ Calendar salvat · Darrin AI actualizat');}
-function toggleDay(el){const states=['av','res','na'];const c=el.className.split(' ').find(c=>states.includes(c))||'av';const idx=(states.indexOf(c)+1)%states.length;const s=states[idx];el.className='';const styles={av:'border-radius:7px;background:#D4EDDA;color:#1A7A3A;border:1px solid rgba(26,122,58,.2);',res:'border-radius:7px;background:rgba(255,140,0,.1);color:#CC7000;border:1px solid rgba(255,140,0,.2);',na:'border-radius:7px;background:#E8EDF4;color:#8C9BAD;'};el.style.cssText+=styles[s];el.className=s;}
 
 
 // ════════════════════════════════════════════════════════════════
@@ -2599,7 +2536,6 @@ function garantiiMiniReale() {
   return active.slice(0, 3).map((g) => `<div style="display:flex;justify-content:space-between;gap:8px;padding:8px 10px;background:#F0F4F8;border-radius:9px;font-size:12px"><span><strong>${_escD(g.nr_comanda || 'Comandă')}</strong> · ${g.durata_luni} luni</span><span style="color:#5A6B7D">expiră ${_dataFmt(g.data_expirare)}</span></div>`).join('');
 }
 
-const BANNER_DEMO_CURSE = `<div style="margin-bottom:14px;padding:11px 14px;background:#FFF8EE;border:1px solid rgba(255,140,0,.3);border-radius:11px;font-size:12px;color:#CC7000;line-height:1.6">Curse demonstrative: dispecerizarea live pe server nu este activă încă. Preluarea, coada și finalizarea funcționează doar în această pagină și se pierd la reîncărcare.</div>`;
 
 function renderOverview() {
   if (currentType === 'curier')    return renderOverviewCurier();
@@ -2629,7 +2565,7 @@ function renderOverviewCurier() {
   ${facturareParteneriCard()}
   <div class="dp-card">
     <div class="dp-card-hdr"><div style="display:flex;align-items:center;gap:7px"><strong style="color:#1A2332">Curse</strong></div><button class="btn-p" onclick="showPanel('curse')" style="font-size:11px;padding:6px 12px;background:#7C3AED">Deschide →</button></div>
-    <div class="dp-card-body" style="font-size:12.5px;color:#5A6B7D;line-height:1.6">Panourile Curse disponibile și Cursă activă afișează curse demonstrative; dispecerizarea live pe server nu este activă încă. Zona de acoperire se administrează din panoul propriu.</div>
+    <div class="dp-card-body" style="font-size:12.5px;color:#5A6B7D;line-height:1.6">Cursele disponibile apar aici când dispecerizarea pe server devine activă. Zona de acoperire se administrează din panoul propriu.</div>
   </div>`;
 }
 
@@ -3188,7 +3124,7 @@ function refuzaCursa(cursaId) {
 }
 
 function showCursaDinCoada(cursa) {
-  const c = CURSE_DEMO[cursa.id] || {};
+  const c = CURSE[cursa.id] || {};
   const overlay = document.createElement('div');
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px';
   overlay.innerHTML=`
