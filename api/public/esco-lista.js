@@ -9,25 +9,27 @@
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { limbaNomenclator, eColoanaLipsa } = require('../../lib/limba-nomenclator');
+const { citesteTot } = require('../../lib/citeste-tot');
+
+// Toate cele ~3.062 de ocupații (15 oct. 2026): fără paginare, Supabase
+// întorcea doar primele 1.000. Ordonare stabilă: domeniu, denumire, cod_esco.
+const interogare = (coloane) => () => supabaseAdmin
+  .from('competente_esco')
+  .select(coloane)
+  .order('domeniu')
+  .order('denumire')
+  .order('cod_esco');
 
 async function ocupatii(lang) {
   if (lang === 'en') {
-    const { data, error } = await supabaseAdmin
-      .from('competente_esco')
-      .select('cod_esco, denumire, denumire_en, domeniu')
-      .order('domeniu')
-      .order('denumire');
+    const { data, error } = await citesteTot(interogare('cod_esco, denumire, denumire_en, domeniu'));
     if (!error) {
       return (data || []).map((o) => ({ cod_esco: o.cod_esco, denumire: o.denumire_en || o.denumire, domeniu: o.domeniu }))
-        .sort((a, b) => String(a.domeniu || '').localeCompare(String(b.domeniu || '')) || a.denumire.localeCompare(b.denumire, 'en'));
+        .sort((a, b) => String(a.domeniu || '').localeCompare(String(b.domeniu || '')) || a.denumire.localeCompare(b.denumire, 'en') || String(a.cod_esco).localeCompare(String(b.cod_esco)));
     }
     if (!eColoanaLipsa(error)) throw error;
   }
-  const { data, error } = await supabaseAdmin
-    .from('competente_esco')
-    .select('cod_esco, denumire, domeniu')
-    .order('domeniu')
-    .order('denumire');
+  const { data, error } = await citesteTot(interogare('cod_esco, denumire, domeniu'));
   if (error) throw error;
   return data || [];
 }
