@@ -2959,10 +2959,10 @@ async function incarcaTaxonomieMp() {
   const selectoareNace = [document.getElementById('prod-nace'), document.getElementById('ech-nace')];
   const selectoareUniclass = [document.getElementById('prod-uniclass'), document.getElementById('ech-uniclass')];
   try {
-    const r = await fetch('/api/public/nace-lista');
+    const r = await fetch('/api/public/nace-lista' + '?lang=' + encodeURIComponent(window.MYD_I18N?.lang || 'en'));
     const j = await r.json();
     if (!r.ok) throw new Error(j.error || 'eroare necunoscută');
-    const optiuni = '<option value="">Selectează...</option>' + (j.clase || []).map((c) => `<option value="${escapeHTML(c.cod)}">${escapeHTML(c.cod)} — ${escapeHTML(c.denumire_ro)}</option>`).join('');
+    const optiuni = '<option value="">Selectează...</option>' + (j.clase || []).map((c) => `<option value="${escapeHTML(c.cod)}">${escapeHTML(c.cod)} — ${escapeHTML(c.denumire || c.denumire_ro)}</option>`).join('');
     selectoareNace.forEach((el) => { if (el) el.innerHTML = optiuni; });
   } catch (e) {
     console.error('[marketplace] nace-lista', e);

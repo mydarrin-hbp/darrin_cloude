@@ -2,8 +2,35 @@
 // Endpoint PUBLIC — taxonomia ESCO/ocupații (competente_esco), pentru
 // selectorul de ocupație din Pasul 5 al wizard-ului de partener (Etapa 4,
 // audit 2026-07-13). Date de referință, nesensibile.
+//
+// ?lang= (15 oct. 2026): pentru engleză, `denumire` vine din
+// competente_esco.denumire_en (exportul oficial ESCO), cu rezervă pe
+// denumirea română. Fără ?lang, româna, ca înainte.
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { limbaNomenclator, eColoanaLipsa } = require('../../lib/limba-nomenclator');
+
+async function ocupatii(lang) {
+  if (lang === 'en') {
+    const { data, error } = await supabaseAdmin
+      .from('competente_esco')
+      .select('cod_esco, denumire, denumire_en, domeniu')
+      .order('domeniu')
+      .order('denumire');
+    if (!error) {
+      return (data || []).map((o) => ({ cod_esco: o.cod_esco, denumire: o.denumire_en || o.denumire, domeniu: o.domeniu }))
+        .sort((a, b) => String(a.domeniu || '').localeCompare(String(b.domeniu || '')) || a.denumire.localeCompare(b.denumire, 'en'));
+    }
+    if (!eColoanaLipsa(error)) throw error;
+  }
+  const { data, error } = await supabaseAdmin
+    .from('competente_esco')
+    .select('cod_esco, denumire, domeniu')
+    .order('domeniu')
+    .order('denumire');
+  if (error) throw error;
+  return data || [];
+}
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -17,15 +44,9 @@ module.exports = async function handler(req, res) {
     // utilizator) — nace_code/certificare_ro eliminate, neconsumate de
     // niciun apelant, regulă de vizibilitate coduri (nu se expune public
     // mai mult decât e strict necesar funcțional).
-    const { data, error } = await supabaseAdmin
-      .from('competente_esco')
-      .select('cod_esco, denumire, domeniu')
-      .order('domeniu')
-      .order('denumire');
-    if (error) throw error;
-
+    const lista = await ocupatii(limbaNomenclator(req));
     res.setHeader('Cache-Control', 'public, max-age=3600');
-    return res.status(200).json({ ok: true, ocupatii: data || [] });
+    return res.status(200).json({ ok: true, ocupatii: lista });
   } catch (err) {
     console.error('[esco-lista]', err);
     return res.status(500).json({ error: 'Nu am putut încărca lista de ocupații ESCO' });
