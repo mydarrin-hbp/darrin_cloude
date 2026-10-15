@@ -87,6 +87,26 @@ async function ataseazaReteteTehnice(comenzi) {
   });
 }
 
+// Venitul defalcat al partenerului (9 oct. 2026): manoperă, deplasare,
+// uzură scule, consumabile, echipament testare — salvat la crearea comenzii
+// în comenzi.manopera_defalcare. Fără comisioanele platformei. Citire
+// separată, tolerantă: fără coloană (migrare neaplicată), câmpul lipsește.
+async function ataseazaVenitDefalcat(comenzi) {
+  const ids = comenzi.map((c) => c.id);
+  if (!ids.length) return;
+  const { data, error } = await supabaseAdmin.from('comenzi').select('id, manopera_defalcare').in('id', ids);
+  if (error) return;
+  const idx = new Map((data || []).map((r) => [r.id, r.manopera_defalcare]));
+  for (const c of comenzi) {
+    const d = idx.get(c.id);
+    if (!d) continue;
+    c.venit_defalcat = {
+      manopera: d.manopera, deplasare: d.deplasare, uzura_scule: d.uzura_scule, consumabile: d.consumabile,
+      echipament_testare: d.echipament_testare, optiuni_nivel: d.optiuni_nivel, total: d.total,
+    };
+  }
+}
+
 async function handler(req, res, user) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -147,6 +167,7 @@ async function handler(req, res, user) {
     ataseazaReteteTehnice(activeCuPoze),
     ataseazaReteteTehnice(finalizate || []),
   ]);
+  await ataseazaVenitDefalcat([...primiteCuReteta, ...activeCuReteta, ...finalizateCuReteta]);
 
   return res.status(200).json({ ok: true, primite: primiteCuReteta, active: activeCuReteta, finalizate: finalizateCuReteta });
 }
