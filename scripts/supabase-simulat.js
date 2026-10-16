@@ -15,7 +15,8 @@
 const path = require('path');
 const RADACINA = path.join(__dirname, '..');
 
-const DB = { tabele: {}, coloane: {}, seq: 1000, utilizatori: {} };
+// DB.implicite[tabel]: valorile implicite ale coloanelor la insert (ca DEFAULT din Postgres).
+const DB = { tabele: {}, coloane: {}, implicite: {}, seq: 1000, utilizatori: {} };
 
 function eroare(code, message) { return { code, message }; }
 
@@ -87,7 +88,7 @@ function interogare(tabel) {
         const chei = st.op === 'upsert' ? st.onConflict.split(',').map((c) => c.trim()) : null;
         const existent = chei ? rows.find((r) => chei.every((c) => r[c] != null && r[c] === d[c])) : null;
         if (existent) { Object.assign(existent, d); rezultat.push(existent); continue; }
-        const nou = { id: d.id || `id-${++DB.seq}`, ...d };
+        const nou = { id: d.id || `id-${++DB.seq}`, ...JSON.parse(JSON.stringify(DB.implicite[tabel] || {})), ...d };
         rows.push(nou);
         rezultat.push(nou);
       }
