@@ -7,16 +7,18 @@
    ÎNAINTEA acestui fișier în fiecare pagină HTML).
    ════════════════════════════════════════════════════════════════ */
 
+// Titlu și iconiță pentru insigna rolurilor. Dashboard-ul fiecărui rol vine din
+// harta unică lib/destinatie-rol.js (pasul 10b), nu de aici.
 const ROLE_META = {
-  client:             { icon:'🛍',  title:'Client',                  dashLink:'mydarrin-dashboard-client.html' },
-  partener_servicii:  { icon:'🔧',  title:'Furnizor de Servicii',     dashLink:'mydarrin-dashboard-partener.html?type=servicii' },
-  partener_materiale: { icon:'📦',  title:'Furnizor de Materiale',    dashLink:'mydarrin-dashboard-furnizor.html?type=materiale' },
-  partener_inchirieri:{ icon:'🏗',  title:'Furnizor de Închirieri',   dashLink:'mydarrin-dashboard-furnizor.html?type=inchirieri' },
-  partener_curier:    { icon:'🚚',  title:'Curier de Cartier',        dashLink:'mydarrin-dashboard-partener.html?type=curier' },
-  partener_asigurari: { icon:'🛡',  title:'Furnizor de Asigurări',    dashLink:'mydarrin-dashboard-partener.html?type=asigurari' },
-  investor:           { icon:'📈', title:'Investitor',               dashLink:'mydarrin-investitori.html' },
-  admin:              { icon:'🛠',  title:'Admin',                    dashLink:'mydarrin-superadmin.html' },
-  superadmin:         { icon:'👑', title:'Super Admin',               dashLink:'mydarrin-superadmin.html' },
+  client:             { icon:'🛍',  title:'Client' },
+  partener_servicii:  { icon:'🔧',  title:'Furnizor de Servicii' },
+  partener_materiale: { icon:'📦',  title:'Furnizor de Materiale' },
+  partener_inchirieri:{ icon:'🏗',  title:'Furnizor de Închirieri' },
+  partener_curier:    { icon:'🚚',  title:'Curier de Cartier' },
+  partener_asigurari: { icon:'🛡',  title:'Furnizor de Asigurări' },
+  investor:           { icon:'📈', title:'Investitor' },
+  admin:              { icon:'🛠',  title:'Admin' },
+  superadmin:         { icon:'👑', title:'Super Admin' },
 };
 
 function sb() {
@@ -187,6 +189,48 @@ async function performLogin(email, parola) {
   return data.user;
 }
 
+/* ── Destinația după login (pasul 10b, 16 oct. 2026) ──
+   Serverul o decide din profiles.roles (api/public/destinatie-post-login.js,
+   harta unică din lib/destinatie-rol.js): partenerul ajunge în dashboard-ul
+   lui, clientul în al lui, cine are mai multe roluri la alegerea rolului. */
+function mesajServer(j, implicit) {
+  const en = window.MYD_I18N && window.MYD_I18N.lang && window.MYD_I18N.lang !== 'ro';
+  return (en && j && j.error_en) || (j && j.error) || implicit;
+}
+
+async function destinatieDupaLogin() {
+  const session = (await sb().auth.getSession()).data.session;
+  if (!session) return null;
+  const r = await fetch('/api/public/destinatie-post-login', { headers: { Authorization: 'Bearer ' + session.access_token } });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const e = new Error(mesajServer(j, 'Nu am putut stabili destinația.'));
+    e.status = r.status;
+    throw e;
+  }
+  return j.destinatie || null;
+}
+
+// Trimite utilizatorul la destinația lui. La eroare: mesajul (dacă pagina are
+// unde să-l arate) și rămâne pe pagina curentă, reîncărcată.
+async function mergiDupaLogin(laEroare) {
+  // Revenirea la pagina cerută înainte de login (cont-dashboard.js → laLogin):
+  // pagina își verifică singură rolul și trimite mai departe, dacă e cazul.
+  let revenire = null;
+  try { revenire = sessionStorage.getItem('myd_revenire_dupa_login'); sessionStorage.removeItem('myd_revenire_dupa_login'); } catch (e) {}
+  if (revenire && /^\/(?!\/)/.test(revenire)) { window.location.href = revenire; return true; }
+  try {
+    const d = await destinatieDupaLogin();
+    if (d) { window.location.href = d; return true; }
+  } catch (e) {
+    console.warn('[account-system] destinația după login:', e.message);
+    if (typeof laEroare === 'function') { laEroare(e); return false; }
+    if (typeof window.showToastMsg === 'function') { window.showToastMsg(e.message); return false; }
+  }
+  window.location.reload();
+  return false;
+}
+
 async function performLogout() {
   await sb().auth.signOut();
   window.location.href = 'https://mydarrin.homebestpal.com';
@@ -349,4 +393,5 @@ window.MyDarrinAuth = {
   resetPasswordForEmail, emailDejaInregistrat, injecteazaLinkRecuperareParola,
   togglePasswordVisibility,
   confirmaCodEmail, retrimiteCodEmail, performOAuthLogin,
+  destinatieDupaLogin, mergiDupaLogin,
 };

@@ -2196,7 +2196,9 @@ async function submitRegistration() {
         : 'Contul e creat, dar <strong>nu am putut trimite emailul</strong> la ' + safe(email) + '. Folosește „Am uitat parola” pe pagina de autentificare, cu aceeași adresă.';
     }
     if (ocrEl) ocrEl.textContent = data.reprimit ? 'Cont existent, link retrimis' : 'Cont creat';
-    if (dashLink && meta?.dashLink) dashLink.href = meta.dashLink;
+    // Harta unică rol → dashboard (lib/destinatie-rol.js, copiată în ui-comun.js).
+    const dashUrl = window.MYD_DESTINATIE_ROL && window.MYD_DESTINATIE_ROL.dashboardPentruRol('partener_' + selectedPartnerType);
+    if (dashLink && dashUrl) dashLink.href = dashUrl;
     if (dashLink && meta) dashLink.textContent = 'Intră în dashboard (după ce îți setezi parola) →';
 
     for (let i = 0; i <= 4; i++) {
@@ -2593,7 +2595,8 @@ async function performLogin() {
     if (link) link.style.display = 'flex';
     showToastMsg('Te-ai autentificat cu succes!');
     if (redirectDupaAutentificare()) return;
-    setTimeout(() => window.location.reload(), 800);
+    // Pasul 10b: în dashboard-ul propriu, după rol (nu reload).
+    setTimeout(() => window.MyDarrinAuth.mergiDupaLogin(), 800);
   } catch (e) {
     showToastMsg('' + (e.message || 'Autentificare eșuată'));
   }
@@ -2779,11 +2782,11 @@ function applyCurrency(cur) {
 
 // ── PARTNER MODAL ──
 const PARTNER_META = {
-  servicii:   { icon:'', title:'Furnizor de Servicii',   color:'#FF8C00', bg:'linear-gradient(135deg,#FFF0D6,#FDE8C4)', dashLink:'mydarrin-dashboard-partener.html?type=servicii' },
-  materiale:  { icon:'', title:'Furnizor de Materiale',  color:'#003366', bg:'linear-gradient(135deg,#EBF4FB,#DDE6F5)', dashLink:'mydarrin-dashboard-furnizor.html?type=materiale' },
-  inchirieri: { icon:'', title:'Furnizor de Închirieri', color:'#0E9E99', bg:'linear-gradient(135deg,#E0F5F4,#C5EEEC)', dashLink:'mydarrin-dashboard-furnizor.html?type=inchirieri' },
-  curier:     { icon:'', title:'Curier de Cartier',       color:'#7C3AED', bg:'linear-gradient(135deg,#F3EEFF,#E9D8FD)', dashLink:'mydarrin-dashboard-partener.html?type=curier' },
-  asigurari:  { icon:'', title:'Furnizor de Asigurări',   color:'#1A7A3A', bg:'linear-gradient(135deg,#D4EDDA,#B8DFC5)', dashLink:'mydarrin-dashboard-partener.html?type=asigurari' },
+  servicii:   { icon:'', title:'Furnizor de Servicii',   color:'#FF8C00', bg:'linear-gradient(135deg,#FFF0D6,#FDE8C4)' },
+  materiale:  { icon:'', title:'Furnizor de Materiale',  color:'#003366', bg:'linear-gradient(135deg,#EBF4FB,#DDE6F5)' },
+  inchirieri: { icon:'', title:'Furnizor de Închirieri', color:'#0E9E99', bg:'linear-gradient(135deg,#E0F5F4,#C5EEEC)' },
+  curier:     { icon:'', title:'Curier de Cartier',       color:'#7C3AED', bg:'linear-gradient(135deg,#F3EEFF,#E9D8FD)' },
+  asigurari:  { icon:'', title:'Furnizor de Asigurări',   color:'#1A7A3A', bg:'linear-gradient(135deg,#D4EDDA,#B8DFC5)' },
 };
 // openPartnerModal / closePartnerModal / selectPartnerType / resetPartnerType
 // vechi (modalul cu carduri, dinainte de wizard) erau definite aici și

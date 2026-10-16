@@ -2,7 +2,9 @@
 // Endpoint PUBLIC — wizardul "Devino Partener" nu colectează parolă,
 // deci trimitem o invitație reală (Supabase creează contul + email cu
 // link de setare parolă), cu rolul corect deja alocat în metadate.
-// Trigger-ul handle_new_user() citește acel rol și-l pune în profiles.role/roles.
+// Rolul de partener se scrie explicit în profiles.roles după createUser
+// (pasul 10b): trigger-ul handle_new_user() rulează la inserare, înainte ca
+// app_metadata să fie scrisă, deci pune 'client'.
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { checkRateLimit } = require('../../lib/rate-limit');
@@ -10,23 +12,9 @@ const { limbaDinTara, renderEmailBunVenitPartener } = require('../../lib/i18n');
 const { incarcaContactPlatformaSigur } = require('../../lib/contact-platforma');
 const { validateIBAN } = require('../../lib/iban');
 const { fromHeader } = require('../../lib/email-sender');
+const { ROL_DUPA_TIP_PARTENER, TIP_PARTENER_DUPA_FORMULAR, asiguraRolInProfil } = require('../../lib/roluri-partener');
 
 const TIPURI_ENTITATE = ['persoana_fizica', 'pfa', 'srl', 'srl_d', 'sa', 'institutie_publica'];
-
-const TYPE_TO_ROLE = {
-  servicii: 'partener_servicii',
-  materiale: 'partener_materiale',
-  inchirieri: 'partener_inchirieri',
-  curier: 'partener_curier',
-  asigurari: 'partener_asigurari',
-};
-const TYPE_TO_ENUM = {
-  servicii: 'servicii_tehnice',
-  materiale: 'furnizor_materiale',
-  inchirieri: 'inchirieri_utilaje',
-  curier: 'curier_utilitara',
-  asigurari: 'asigurari',
-};
 
 // Etichetă tip partener, per limbă — folosită doar în emailul de bun venit.
 // Traduceri generate, nu revizuite nativ (vezi notă în lib/i18n.js).
@@ -132,8 +120,8 @@ module.exports = async function handler(req, res) {
   if (!email || !email.includes('@')) {
     return res.status(400).json({ error: 'Email valid obligatoriu.' });
   }
-  const role = TYPE_TO_ROLE[tip];
-  const enumType = TYPE_TO_ENUM[tip];
+  const enumType = TIP_PARTENER_DUPA_FORMULAR[tip];
+  const role = enumType ? ROL_DUPA_TIP_PARTENER[enumType] : null;
   if (!role) {
     return res.status(400).json({ error: 'Tip de partener invalid.' });
   }
@@ -196,6 +184,11 @@ module.exports = async function handler(req, res) {
       throw createErr;
     }
     invitedUserId = invited.user.id;
+
+    // 1b. Rolul de partener în profiles.roles (singura sursă pentru acces),
+    // adăugat lângă rolurile existente. Contul e creat de server cu emailul
+    // confirmat, deci profilul e activ, nu 'pending_otp'.
+    await asiguraRolInProfil(invited.user.id, role, { email, activeaza: true });
 
     // 2. Înregistrare în tabelul partners (documente suplimentare se completează ulterior, la aprobare)
     // FIX (audit 2026-07-12): constrângerea reală de pe partners.status_verificare

@@ -1027,74 +1027,31 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
         <span class="hidden md:inline">Backoffice</span>
       </a>
 
-      <!-- Dashboard-ul propriu — vizibil DOAR dacă ești logat ȘI ai un rol de actor (client/partener/investitor) -->
-      <a href="#" id="header-dashboard-link" style="display:none"
-         class="sm:flex items-center gap-2 bg-[#0E9E99] text-white px-4 py-2.5 rounded-xl text-xs font-semibold hover:bg-[#0c8a86] transition">
-        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-        <span class="hidden md:inline" id="header-dashboard-label">Dashboard</span>
-      </a>
-
-      <!-- Creare/logare cont — se schimbă vizual dacă ești deja logat -->
+      <!-- Contul: nelogat → login / înregistrare; logat → inițialele, numele și
+           punctul verde, click → dashboard-ul propriu, săgeata → meniul contului
+           (ui-comun.js, pasul 10b; datele din /api/cont/profil). -->
       <button onclick="toggleAuthModal()" id="header-account-btn"
               class="hidden sm:flex items-center gap-2 border border-[#D5DFE8] text-[#2D2D2D] px-4 py-2.5 rounded-xl text-xs font-semibold hover:border-[#003366] hover:text-[#003366] transition">
         <i data-lucide="user" class="w-4 h-4" id="header-account-icon"></i>
         <span class="hidden md:inline" id="header-account-label">Cont</span>
-        <span id="header-logged-dot" style="display:none;width:7px;height:7px;border-radius:50%;background:#0E9E99"></span>
-      </button>
-
-      <!-- Deconectare — vizibil DOAR când ești logat -->
-      <button onclick="window.MyDarrinAuth.performLogout()" id="header-logout-btn" style="display:none"
-              class="items-center gap-2 border border-[#D5DFE8] text-[#C0392B] px-3 py-2.5 rounded-xl text-xs font-semibold hover:bg-[#FEF2F2] hover:border-[#C0392B] transition" title="Deconectare">
-        <i data-lucide="log-out" class="w-4 h-4"></i>
       </button>
 
     </div>
   </div>
 
   <script type="module">
-    // Actualizează header-ul cu starea reală de logare + link Backoffice pentru superadmin
+    // Linkul Backoffice — doar pentru admin / superadmin, din profiles.roles
+    // (/api/cont/profil). Butonul de cont îl actualizează ui-comun.js (pasul 10b).
     (async function () {
       try {
-        // Așteaptă până se încarcă account-system.js (dependent de ordinea scripturilor)
         let tries = 0;
-        while (!window.MyDarrinAuth && tries < 50) { await new Promise(r => setTimeout(r, 100)); tries++; }
-        if (!window.MyDarrinAuth) { console.error('[header] MyDarrinAuth nu s-a încărcat după 5s'); return; }
-
-        const user = await window.MyDarrinAuth.getCurrentUser();
-        if (!user) { return; } // utilizator nelogat — stare normală
-
-        const label = document.getElementById('header-account-label');
-        const dot = document.getElementById('header-logged-dot');
-        const btn = document.getElementById('header-account-btn');
-        const logoutBtn = document.getElementById('header-logout-btn');
-        if (label) label.textContent = (user.email || 'Cont').split('@')[0];
-        if (dot) dot.style.display = 'inline-block';
-        if (btn) btn.title = 'Logat ca ' + user.email;
-        if (logoutBtn) logoutBtn.style.display = 'flex';
-
-        const roles = await window.MyDarrinAuth.getUserRoles(user);
-        // roluri detectate: 
-        if (roles.includes('superadmin') || roles.includes('admin')) {
+        while (!window.MYD_CONT && tries < 50) { await new Promise(r => setTimeout(r, 100)); tries++; }
+        const p = window.MYD_CONT ? await window.MYD_CONT.profil() : null;
+        if (!p) return; // nelogat — stare normală
+        if (p.roles.includes('superadmin') || p.roles.includes('admin')) {
           const bo = document.getElementById('header-backoffice-link');
           if (bo) bo.style.display = 'flex';
         }
-
-        // Dashboard propriu, în funcție de rol — vizibil doar dacă avem un rol recunoscut de actor
-        const DASHBOARD_MAP = [
-          { roles: ['partener_servicii', 'partener_curier', 'partener_asigurari', 'partener_inchirieri'], url: 'mydarrin-dashboard-partener.html', label: 'Dashboard Partener' },
-          { roles: ['furnizor_materiale', 'partener_materiale'], url: 'mydarrin-dashboard-furnizor.html', label: 'Dashboard Furnizor' },
-          { roles: ['investor'], url: 'mydarrin-investitori.html', label: 'Zona Investitor' },
-          { roles: ['client'], url: 'mydarrin-dashboard-client.html', label: 'Dashboard-ul meu' },
-        ];
-        const match = DASHBOARD_MAP.find(m => m.roles.some(r => roles.includes(r)));
-        if (match) {
-          const dl = document.getElementById('header-dashboard-link');
-          const dlabel = document.getElementById('header-dashboard-label');
-          if (dl) { dl.href = match.url; dl.style.display = 'flex'; }
-          if (dlabel) dlabel.textContent = match.label;
-        }
-
-        if (typeof lucide !== 'undefined') lucide.createIcons();
       } catch (e) {
         console.error('[header] eroare la inițializarea stării de logare:', e);
       }
@@ -2547,7 +2504,8 @@ async function performLogin() {
     if (link) link.style.display = 'flex';
     showToastMsg('Te-ai autentificat cu succes!');
     if (redirectDupaAutentificare()) return;
-    setTimeout(() => window.location.reload(), 800);
+    // Pasul 10b: în dashboard-ul propriu, după rol (nu reload).
+    setTimeout(() => window.MyDarrinAuth.mergiDupaLogin(), 800);
   } catch (e) {
     showToastMsg('' + (e.message || 'Autentificare eșuată'));
   }

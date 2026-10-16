@@ -441,6 +441,10 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 </script>
 <script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
 <script src="format-currency.js"></script>
+<script src="/ui-feedback.js"></script>
+<!-- Pasul 10b: harta unică rol → dashboard și paza după rol (cont-dashboard.js) -->
+<script src="lib/destinatie-rol.js"></script>
+<script src="cont-dashboard.js"></script>
 <script src="profil-partener-card.js"></script>
 <script src="seo-meta.js"></script>
 <script src="cookie-consent.js" defer></script>
@@ -454,12 +458,23 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
       let tries = 0;
       while (!window.MyDarrinAuth && tries < 50) { await new Promise(r => setTimeout(r, 100)); tries++; }
       const user = await window.MyDarrinAuth?.getCurrentUser();
-      if (!user) { window.location.href = 'https://mydarrin.homebestpal.com'; return; }
+      if (!user) { window.MYD_PAZA.laLogin(); return; }
+      // Pasul 10b: rolul din profiles.roles (/api/cont/profil); rol greșit →
+      // dashboard-ul corect, cu mesaj. Banda de stare duce la secțiunile
+      // proprii ale paginii: „Cont bancar” și contractul din Overview.
+      const paza = await window.MYD_PAZA.verifica({
+        container: 'myd-cont-antet', tema: 'intunecata',
+        actiuni: {
+          cont_bancar: () => showPanel('cont-bancar'),
+          contract: () => { showPanel('overview'); setTimeout(() => document.getElementById('hard-stop-banner')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 600); },
+        },
+      });
+      if (!paza) return;
       document.getElementById('auth-gate-overlay')?.remove();
       const emailEl = document.getElementById('dp-user-email');
       if (emailEl) emailEl.textContent = user.email;
 
-      const nume = user.user_metadata?.nume || user.email.split('@')[0];
+      const nume = paza.profil?.partener?.nume_firma || user.user_metadata?.nume || user.email.split('@')[0];
       const initiala = nume.charAt(0).toUpperCase();
       const sbAvatar = document.getElementById('sb-avatar');
       const sbName = document.getElementById('sb-partner-name');
@@ -636,6 +651,8 @@ function initPwaInstallPrompt() {
     </div>
   </div>
 
+  <!-- Pasul 10b: identitatea contului și banda de stare (cont-dashboard.js) -->
+  <div id="myd-cont-antet" style="padding:14px 18px 0"></div>
   <!-- Profil incomplet (14 oct. 2026): NACE sau clauza de zonă lipsă → link spre pasul lipsă -->
   <div id="profil-incomplet-card" style="display:none"></div>
 
@@ -1223,7 +1240,8 @@ function renderCurse() {
   const carduri = disponibile.length
     ? disponibile.map(id => { const c = CURSE[id]; return cursaCardFull('#'+id, c.title, c.pickup, c.dest, c.km, c.price, c.vehicul, c.cls, c.badge, c.greutate_kg, c.volum_L); }).join('')
     : stareGoala();
-  return `  <div style="margin-bottom:18px;display:flex;align-items:center;justify-content:space-between">
+  return `
+  <div style="margin-bottom:18px;display:flex;align-items:center;justify-content:space-between">
     <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Dispecerat curse LIVE</h2>
     <div style="display:flex;gap:8px">
       <button class="btn-s" onclick="filterCurse('toate',this)">Toate</button>
@@ -1245,7 +1263,8 @@ function renderCursaActiva() {
   const id = CURIER_STARE.cursa_activa_id;
   const c = id && CURSE[id];
   if (!c) {
-    return `    <div class="dp-card">
+    return `
+    <div class="dp-card">
       <div class="dp-card-body" style="text-align:center;padding:36px 20px">
         <div style="font-size:15px;font-weight:800;color:#1A2332;margin-bottom:6px">Nu ai nicio cursă activă</div>
         <div style="font-size:12.5px;color:#5A6B7D;margin-bottom:16px">Preia o cursă din lista de curse disponibile.${CURIER_STARE.coada_curse.length ? ' Ai ' + CURIER_STARE.coada_curse.length + ' curse în coadă.' : ''}</div>
@@ -1253,7 +1272,8 @@ function renderCursaActiva() {
       </div>
     </div>`;
   }
-  return `  <div class="dp-card" style="background:linear-gradient(135deg,#4B0082,#7C3AED);color:#fff;margin-bottom:18px">
+  return `
+  <div class="dp-card" style="background:linear-gradient(135deg,#4B0082,#7C3AED);color:#fff;margin-bottom:18px">
     <div style="padding:18px 20px">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.7;margin-bottom:6px">🚴 Cursă activă</div>
       <div style="font-size:18px;font-weight:800;margin-bottom:10px">${c.title} · #${id}</div>

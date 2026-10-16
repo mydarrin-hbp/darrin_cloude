@@ -115,6 +115,17 @@ const RASPUNSURI_SIMULATE = {
   '/api/partener/profil-status': { ok: true, complet: false, lipsa: ['nace', 'clauza_zona'], pas: 3 },
 };
 
+// Profilul contului simulat (/api/cont/profil, pasul 10b): rolurile care
+// deschid toate dashboard-urile verificate (client, partener, furnizor), ca
+// paza din cont-dashboard.js să nu redirecționeze; partener în verificare,
+// fără cont bancar — antetul de identitate și benzile de stare apar și ele.
+const PROFIL_SIMULAT = {
+  ok: true, email: 'partener.test@example.com', nume: 'Partener Test',
+  roles: ['client', 'partener_servicii', 'partener_materiale'], roluri_dashboard: ['partener_servicii', 'partener_materiale'],
+  destinatie: '/?alege_rol=1', tip_destinatie: 'alegere',
+  partener: { nume_firma: 'Test Instalatii SRL', partner_type: 'servicii_tehnice', rol: 'partener_servicii', status_verificare: 'pending_review', contract_semnat: false, cont_bancar: false, motiv_respingere: null },
+};
+
 // Pagina adminului de catalog (pasul 9): răspunsuri POST pe acțiune.
 // Antetul cu drepturi; listele încep goale (prima vizită).
 const RASPUNSURI_ADMIN = {
@@ -179,6 +190,7 @@ function detecteaza(limba) {
           try { corp = JSON.parse(r.request().postData() || '{}'); } catch (e) { corp = {}; }
           return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(RASPUNSURI_ADMIN[corp.action] || { ok: true }) });
         });
+        await ctx.route(/\/api\/cont\/profil/, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(PROFIL_SIMULAT) }));
         await ctx.route(/\/api\/(partener|client)\//, (r) => {
           const cale = new URL(r.request().url()).pathname.replace(/\.js$/, '');
           const corp = r.request().method() === 'GET' ? (RASPUNSURI_SIMULATE[cale] || { ok: true }) : { ok: true };
