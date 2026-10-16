@@ -48,7 +48,7 @@ class EroareCerere extends Error {
 async function permisiune(user) {
   const { data: profil, error } = await supabaseAdmin.from('profiles').select('roles').eq('id', user.id).maybeSingle();
   if (error || !profil) return null;
-  if ((profil.roles || []).includes('superadmin')) return { superadmin: true, capitole: '*', tara: null };
+  if ((profil.roles || []).includes('superadmin')) return { superadmin: true, capitole: '*', tara: null, userId: user.id };
   const { data: rand, error: e2 } = await supabaseAdmin
     .from('admin_permissions')
     .select('sectiune_specializata, tara_cod, poate_scrie')
@@ -56,12 +56,15 @@ async function permisiune(user) {
     .maybeSingle();
   if (e2 || !rand || !rand.sectiune_specializata) return null;
   const s = String(rand.sectiune_specializata).trim();
-  return { superadmin: false, capitole: s === '*' ? '*' : s.split(',').map((x) => x.trim()).filter(Boolean), tara: rand.tara_cod || null };
+  return { superadmin: false, capitole: s === '*' ? '*' : s.split(',').map((x) => x.trim()).filter(Boolean), tara: rand.tara_cod || null, userId: user.id };
 }
 function capitolPermis(perm, cod) {
   return perm.capitole === '*' || (cod && perm.capitole.includes(cod));
 }
-function cereCapitol(perm, cod) {
+// O ciornă fără capitol încă (fără clasă NACE și fără nod) e accesibilă
+// celui care a creat-o, ca să-și poată continua ruta (pasul 9).
+function cereCapitol(perm, cod, s = null) {
+  if (!cod && s && s.creat_de && perm.userId && s.creat_de === perm.userId) return;
   if (!capitolPermis(perm, cod)) {
     throw new EroareCerere(403,
       `Nu ai drept pe capitolul ${cod || '(necalculat)'}.`,
@@ -82,7 +85,7 @@ async function sectiuneDiviziune(div) {
   const { data } = await supabaseAdmin.from('nace_reference').select('cod_parinte').eq('nivel', 'diviziune').eq('cod', div).maybeSingle();
   return data?.cod_parinte || null;
 }
-const COLOANE_SERVICIU = 'id, id_serviciu, titlu, categorie, domeniu, descriere, nace, cod_esco, cod_uniclass, unitate_masura, icon, sectoare_client, categorie_id, subcategorie_id, status_public, nod_id, stare, creat_din_serviciu_id';
+const COLOANE_SERVICIU = 'id, id_serviciu, titlu, categorie, domeniu, descriere, nace, cod_esco, cod_uniclass, unitate_masura, icon, sectoare_client, categorie_id, subcategorie_id, status_public, nod_id, stare, creat_din_serviciu_id, creat_de';
 async function serviciu(id) {
   const s = date(await supabaseAdmin.from('catalog_servicii').select(COLOANE_SERVICIU).eq('id', id).maybeSingle());
   if (!s) throw new EroareCerere(404, 'Serviciul nu există.', 'The service does not exist.');
@@ -141,10 +144,13 @@ async function catalogCuRetete() {
 
 // ── pasi ──────────────────────────────────────────────────────────────────
 async function actionPasi(req, res, user, perm) {
-  const { sectiune, diviziune, grupa, clasa, tip_inregistrare = 'serviciu' } = req.body || {};
+  const { diviziune, grupa, clasa, tip_inregistrare = 'serviciu' } = req.body || {};
   const l = lang(req);
   const caps = await capitole(); // cere migrarea
-  const raspuns = { ok: true, lang: l };
+  // La revenirea pe o ciornă vine doar clasa (și grupa / diviziunea din ea):
+  // secțiunea se deduce din diviziune, ca toată cascada să fie precompletată.
+  const sectiune = req.body?.sectiune || (diviziune ? await sectiuneDiviziune(diviziune) : null);
+  const raspuns = { ok: true, lang: l, alese: { sectiune, diviziune: diviziune || null, grupa: grupa || null, clasa: R.normalizeazaNace(clasa) } };
 
   const sect = date(await supabaseAdmin.from('nace_sectiuni').select('litera, denumire_ro, denumire_en').order('litera'));
   raspuns.sectiuni = sect.map((s) => ({ cod: s.litera, denumire: eticheta(s, l) }));
@@ -211,7 +217,7 @@ async function contextValidare(s, perm, body = {}) {
   const caps = await capitole();
   const { nod, capitol } = await nodSiCapitol(s.nod_id, caps);
   const clasa = R.normalizeazaNace(s.nace);
-  cereCapitol(perm, capitol?.cod || R.capitolPentruNace(clasa, caps));
+  cereCapitol(perm, capitol?.cod || R.capitolPentruNace(clasa, caps), s);
 
   const [clase, escoRow, ucRow, catalogTitluri] = await Promise.all([
     naceClase(),
@@ -365,7 +371,7 @@ async function actionRetrage(req, res, user, perm) {
   const caps = await capitole();
   const s = await serviciu(serviciu_id);
   const { capitol } = await nodSiCapitol(s.nod_id, caps);
-  cereCapitol(perm, capitol?.cod || R.capitolPentruNace(s.nace, caps));
+  cereCapitol(perm, capitol?.cod || R.capitolPentruNace(s.nace, caps), s);
   date(await supabaseAdmin.from('catalog_servicii').update({ stare: 'retras', status_public: false }).eq('id', serviciu_id));
   await inregistreazaAudit({ admin: user, req, actiune: 'ruta_retrage', entitate: 'catalog_servicii', entitate_id: serviciu_id, detalii: { motiv: motiv || null } });
   return res.status(200).json({ ok: true, stare: 'retras' });
@@ -378,7 +384,7 @@ async function retetaCuServiciu(retetaId, perm) {
   const caps = await capitole();
   const s = await serviciu(reteta.catalog_serviciu_id);
   const { capitol } = await nodSiCapitol(s.nod_id, caps);
-  cereCapitol(perm, capitol?.cod || R.capitolPentruNace(s.nace, caps));
+  cereCapitol(perm, capitol?.cod || R.capitolPentruNace(s.nace, caps), s);
   return { reteta, serviciu: s };
 }
 function ceReDeschisa(reteta) {
@@ -393,7 +399,7 @@ async function actionPropuneReteta(req, res, user, perm) {
   const caps = await capitole();
   const s = await serviciu(serviciu_id);
   const { capitol } = await nodSiCapitol(s.nod_id, caps);
-  cereCapitol(perm, capitol?.cod || R.capitolPentruNace(s.nace, caps));
+  cereCapitol(perm, capitol?.cod || R.capitolPentruNace(s.nace, caps), s);
   date(await supabaseAdmin.from('retete_propuse').select('id').limit(1)); // cere migrarea
 
   const clasa = R.normalizeazaNace(s.nace);
@@ -557,8 +563,194 @@ async function actionRespingeReteta(req, res, user, perm) {
   return res.status(200).json({ ok: true, stare: 'respinsa' });
 }
 
+// ── Pagina adminului de catalog (pasul 9, mydarrin-admin-catalog.html) ────
+// Capitolul unui serviciu: al nodului, altfel cel calculat din clasa NACE.
+function capitolServiciu(s, caps, noduri = new Map()) {
+  const nod = s.nod_id ? noduri.get(s.nod_id) : null;
+  return nod?.capitol_cod || R.capitolPentruNace(s.nace, caps);
+}
+// Dreptul pe un serviciu, pentru alte endpoint-uri (api/admin/catalog.js).
+async function cereDreptServiciu(perm, serviciuId) {
+  const caps = await capitole();
+  const s = date(await supabaseAdmin.from('catalog_servicii').select('id, nace, nod_id, creat_de').eq('id', serviciuId).maybeSingle());
+  if (!s) throw new EroareCerere(404, 'Serviciul nu există.', 'The service does not exist.');
+  const { capitol } = await nodSiCapitol(s.nod_id, caps);
+  cereCapitol(perm, capitol?.cod || R.capitolPentruNace(s.nace, caps), s);
+  return s;
+}
+
+async function actionProfil(req, res, user, perm) {
+  const caps = await capitole(); // cere migrarea
+  const permise = perm.capitole === '*' ? caps : caps.filter((c) => perm.capitole.includes(c.cod));
+  return res.status(200).json({
+    ok: true,
+    superadmin: perm.superadmin,
+    toate_capitolele: perm.capitole === '*',
+    capitole: permise.map((c) => ({ cod: c.cod, titlu_ro: c.titlu_ro, titlu_en: c.titlu_en, tip_partener: c.tip_partener })),
+    tara: perm.tara,
+  });
+}
+
+async function actionServiciu(req, res, user, perm) {
+  const { serviciu_id } = req.body || {};
+  if (!serviciu_id) throw new EroareCerere(400, 'serviciu_id obligatoriu.', 'serviciu_id is required.');
+  const caps = await capitole();
+  const s = await serviciu(serviciu_id);
+  const { nod, capitol } = await nodSiCapitol(s.nod_id, caps);
+  cereCapitol(perm, capitol?.cod || R.capitolPentruNace(s.nace, caps), s);
+  const extra = date(await supabaseAdmin.from('catalog_servicii').select('ruta_rezultat, ruta_validata_la').eq('id', serviciu_id).maybeSingle());
+  const niveluri = date(await supabaseAdmin.from('catalog_niveluri').select('id').eq('serviciu_id', serviciu_id));
+  const articole = niveluri.length
+    ? date(await supabaseAdmin.from('devize_articole').select('articol_id').in('catalog_nivel_id', niveluri.map((n) => n.id)))
+    : [];
+  return res.status(200).json({
+    ok: true,
+    serviciu: { ...s, ...extra, clasa: R.normalizeazaNace(s.nace), capitol: capitol?.cod || R.capitolPentruNace(s.nace, caps), nod: nod ? { id: nod.id, title: nod.title, title_en: nod.title_en } : null, articole_reteta: articole.length },
+  });
+}
+
+const STARI = ['ciorna', 'in_verificare', 'publicat', 'retras'];
+async function actionListaServicii(req, res, user, perm) {
+  const { stare, capitol, nod_id, cu_erori } = req.body || {};
+  const caps = await capitole();
+  const interogare = () => {
+    let q = supabaseAdmin.from('catalog_servicii')
+      .select('id, id_serviciu, titlu, categorie, nace, cod_esco, cod_uniclass, nod_id, stare, status_public, ruta_rezultat, ruta_validata_la, creat_de')
+      .in('categorie', ['servicii', 'materiale']);
+    if (stare && STARI.includes(stare)) q = q.eq('stare', stare);
+    if (nod_id) q = q.eq('nod_id', nod_id);
+    return q.order('titlu').order('id');
+  };
+  const randuri = date(await citesteTot(interogare));
+  const idNoduri = [...new Set(randuri.map((s) => s.nod_id).filter(Boolean))];
+  const noduri = new Map(idNoduri.length
+    ? date(await supabaseAdmin.from('categorii').select('id, title, title_en, capitol_cod').in('id', idNoduri)).map((n) => [n.id, n])
+    : []);
+  const lista = randuri
+    .map((s) => ({ ...s, capitol: capitolServiciu(s, caps, noduri), nod: noduri.get(s.nod_id) || null }))
+    .filter((s) => capitolPermis(perm, s.capitol) || (!s.capitol && s.creat_de === perm.userId))
+    .filter((s) => !capitol || s.capitol === capitol)
+    .filter((s) => !cu_erori || (s.ruta_rezultat && s.ruta_rezultat.ok === false))
+    .map((s) => ({
+      id: s.id, id_serviciu: s.id_serviciu, titlu: s.titlu, categorie: s.categorie, stare: s.stare, status_public: s.status_public,
+      capitol: s.capitol, nod: s.nod ? { id: s.nod.id, title: s.nod.title, title_en: s.nod.title_en } : null,
+      nace: s.nace, cod_esco: s.cod_esco, cod_uniclass: s.cod_uniclass, ruta_validata_la: s.ruta_validata_la,
+      ruta: s.ruta_rezultat ? { ok: s.ruta_rezultat.ok, erori: (s.ruta_rezultat.erori || []).map((e) => e.cod), avertismente: (s.ruta_rezultat.avertismente || []).map((a) => a.cod) } : null,
+    }));
+  return res.status(200).json({ ok: true, servicii: lista });
+}
+
+// Salvează ciorna la fiecare pas al asistentului: creează serviciul la primul
+// apel, apoi actualizează câmpurile rutei. Un serviciu publicat nu se
+// modifică de aici (se retrage întâi).
+const CAMPURI_CIORNA = ['titlu', 'categorie', 'domeniu', 'nace', 'nod_id', 'cod_esco', 'cod_uniclass', 'unitate_masura', 'descriere'];
+async function actionSalveazaCiorna(req, res, user, perm) {
+  const body = req.body || {};
+  const caps = await capitole();
+  const update = {};
+  CAMPURI_CIORNA.forEach((c) => { if (body[c] !== undefined) update[c] = body[c] === '' ? null : body[c]; });
+  if (update.categorie && !['servicii', 'materiale'].includes(update.categorie)) {
+    throw new EroareCerere(400, 'Tip invalid: serviciu sau produs.', 'Invalid type: service or product.');
+  }
+  if (update.nace) {
+    const clasa = R.normalizeazaNace(update.nace);
+    if (!clasa) throw new EroareCerere(400, 'Clasa NACE trebuie să aibă 4 cifre (NN.NN).', 'The NACE class must have 4 digits (NN.NN).');
+    update.nace = clasa;
+  }
+  // Capitolul după modificare: nodul ales sau clasa NACE.
+  let nodNou = null;
+  if (update.nod_id) {
+    nodNou = date(await supabaseAdmin.from('categorii').select('id, capitol_cod, nace_clasa').eq('id', update.nod_id).maybeSingle());
+    if (!nodNou) throw new EroareCerere(404, 'Nodul de meniu nu există.', 'The menu node does not exist.');
+  }
+
+  let s = null;
+  if (body.serviciu_id) {
+    s = await serviciu(body.serviciu_id);
+    const { capitol } = await nodSiCapitol(s.nod_id, caps);
+    cereCapitol(perm, capitol?.cod || R.capitolPentruNace(s.nace, caps), s);
+    if (s.stare === 'publicat') {
+      throw new EroareCerere(409, 'Serviciul e publicat: retrage-l întâi ca să-i modifici ruta.', 'The service is published: withdraw it first to change its route.');
+    }
+  } else if (!String(update.titlu || '').trim()) {
+    throw new EroareCerere(400, 'Titlul în română e obligatoriu.', 'The Romanian title is required.');
+  }
+  const capitolNou = nodNou?.capitol_cod || R.capitolPentruNace(update.nace || s?.nace, caps);
+  if (capitolNou) cereCapitol(perm, capitolNou);
+
+  let id = body.serviciu_id;
+  if (!id) {
+    const titlu = String(update.titlu).trim();
+    const nou = date(await supabaseAdmin.from('catalog_servicii').insert({
+      id_serviciu: `${slug(titlu)}-${Date.now().toString(36)}`,
+      categorie: update.categorie || 'servicii', domeniu: update.domeniu || capitolNou || 'Ciornă', titlu,
+      nace: update.nace || null, nod_id: update.nod_id || null, cod_esco: update.cod_esco || null, cod_uniclass: update.cod_uniclass || null,
+      stare: 'ciorna', status_public: false, creat_de_tip: 'admin', creat_de: user.id,
+    }).select('id').single());
+    id = nou.id;
+  } else if (Object.keys(update).length) {
+    date(await supabaseAdmin.from('catalog_servicii').update(update).eq('id', id));
+  }
+  if (body.titlu_en !== undefined) {
+    const { data: t } = await supabaseAdmin.from('catalog_servicii').select('traduceri').eq('id', id).maybeSingle();
+    const traduceri = { ...(t?.traduceri || {}) };
+    traduceri.en = { ...(traduceri.en || {}), titlu: String(body.titlu_en || '').trim() || undefined };
+    date(await supabaseAdmin.from('catalog_servicii').update({ traduceri }).eq('id', id));
+  }
+  await inregistreazaAudit({ admin: user, req, actiune: 'ruta_salveaza_ciorna', entitate: 'catalog_servicii', entitate_id: id, detalii: { ...update, titlu_en: body.titlu_en } });
+  return res.status(200).json({ ok: true, id, stare: s?.stare || 'ciorna' });
+}
+
+// Căutare Uniclass cu filtru (tabelele au mii de coduri): doar active,
+// după cod sau titlu, în tabelul cerut (Ac_ servicii, Pr_ produse).
+async function actionCautaUniclass(req, res) {
+  const { text = '', tip = 'serviciu' } = req.body || {};
+  const prefix = tip === 'produs' ? 'Pr_' : 'Ac_';
+  const t = String(text).trim().replace(/[%,()]/g, ' ').slice(0, 60);
+  let q = supabaseAdmin.from('uniclass_codes').select('code, title_ro, title_en').like('code', `${prefix}%`).eq('is_active', true);
+  if (t) q = q.or(`code.ilike.%${t}%,title_ro.ilike.%${t}%,title_en.ilike.%${t}%`);
+  const rez = date(await q.order('code').limit(50));
+  const l = lang(req);
+  return res.status(200).json({ ok: true, coduri: rez.map((u) => ({ cod: u.code, denumire: eticheta(u, l, 'title_ro', 'title_en') })) });
+}
+
+async function actionRetetePropuseLista(req, res, user, perm) {
+  const caps = await capitole();
+  const retete = date(await supabaseAdmin.from('retete_propuse')
+    .select('id, catalog_serviciu_id, catalog_nivel_id, stare, sursa, creat_la').eq('stare', 'propusa').order('creat_la', { ascending: false }));
+  if (!retete.length) return res.status(200).json({ ok: true, retete: [] });
+  const idServ = [...new Set(retete.map((r) => r.catalog_serviciu_id))];
+  const servicii = date(await supabaseAdmin.from('catalog_servicii').select('id, titlu, nace, nod_id').in('id', idServ));
+  const idNoduri = [...new Set(servicii.map((s) => s.nod_id).filter(Boolean))];
+  const noduri = new Map(idNoduri.length ? date(await supabaseAdmin.from('categorii').select('id, capitol_cod').in('id', idNoduri)).map((n) => [n.id, n]) : []);
+  const servMap = new Map(servicii.map((s) => [s.id, { ...s, capitol: capitolServiciu(s, caps, noduri) }]));
+  const vizibile = retete.filter((r) => capitolPermis(perm, servMap.get(r.catalog_serviciu_id)?.capitol));
+  const linii = vizibile.length
+    ? date(await supabaseAdmin.from('retete_propuse_linii').select('*').in('reteta_id', vizibile.map((r) => r.id)).order('creat_la'))
+    : [];
+  const niveluri = [...new Set(vizibile.map((r) => r.catalog_nivel_id).filter(Boolean))];
+  const nivMap = new Map(niveluri.length ? date(await supabaseAdmin.from('catalog_niveluri').select('id, nivel').in('id', niveluri)).map((n) => [n.id, n.nivel]) : []);
+  return res.status(200).json({
+    ok: true,
+    retete: vizibile.map((r) => {
+      const s = servMap.get(r.catalog_serviciu_id);
+      return {
+        ...r, serviciu: { id: s.id, titlu: s.titlu, capitol: s.capitol }, nivel: nivMap.get(r.catalog_nivel_id) || null,
+        // Resursele noi n-au tarif până după aprobare: prețul rămâne „la cerere”.
+        linii: linii.filter((l) => l.reteta_id === r.id).map((l) => ({ ...l, fara_tarif: l.tip === 'resursa_noua' })),
+      };
+    }),
+  });
+}
+
 // ── Router ────────────────────────────────────────────────────────────────
 const ACTIUNI = {
+  profil: actionProfil,
+  serviciu: actionServiciu,
+  lista_servicii: actionListaServicii,
+  salveaza_ciorna: actionSalveazaCiorna,
+  cauta_uniclass: actionCautaUniclass,
+  retete_propuse_lista: actionRetetePropuseLista,
   pasi: actionPasi,
   cauta_asemanatoare: actionCautaAsemanatoare,
   valideaza: actionValideaza,
@@ -591,4 +783,4 @@ async function handler(req, res, user) {
 }
 
 module.exports = requireAuth(['admin', 'superadmin'], handler);
-module.exports._intern = { permisiune, eLipsaSchema, MESAJ_MIGRARE };
+module.exports._intern = { permisiune, eLipsaSchema, MESAJ_MIGRARE, cereDreptServiciu, MigrareLipsa, EroareCerere };

@@ -44,7 +44,7 @@ const PUBLICE = ['index', 'servicii-urgente', 'despre-noi', 'afla-ce-facem', 'my
 // Paginile cu cont. Wizard-ul de partener e „Completare profil partener”
 // (decizie LM, 14 oct. 2026): nu mai e pagină publică, se testează ca dashboard.
 const CU_CONT = ['mydarrin-dashboard-client', 'mydarrin-dashboard-partener', 'mydarrin-dashboard-furnizor',
-  'mydarrin-devino-partener-wizard'];
+  'mydarrin-devino-partener-wizard', 'mydarrin-admin-catalog'];
 
 const arg = process.argv.slice(2);
 const opt = (n, d) => { const i = arg.indexOf('--' + n); if (i === -1) return d; const v = arg[i + 1]; arg.splice(i, 2); return v; };
@@ -115,6 +115,15 @@ const RASPUNSURI_SIMULATE = {
   '/api/partener/profil-status': { ok: true, complet: false, lipsa: ['nace', 'clauza_zona'], pas: 3 },
 };
 
+// Pagina adminului de catalog (pasul 9): răspunsuri POST pe acțiune.
+// Antetul cu drepturi; listele încep goale (prima vizită).
+const RASPUNSURI_ADMIN = {
+  profil: { ok: true, superadmin: false, toate_capitolele: false, tara: null,
+    capitole: [{ cod: 'F', titlu_ro: 'Construcții și renovări', titlu_en: 'Construction and renovation', tip_partener: 'servicii' }] },
+  lista_servicii: { ok: true, servicii: [] },
+  retete_propuse_lista: { ok: true, retete: [] },
+};
+
 function detecteaza(limba) {
   const EXCEPTII = /\b(My Darrin|Darrin AI|Darrin|Home Best Pal|SRL|LTD|București|Bucureşti|Iași|Chișinău|Cluj-Napoca|Timișoara|Constanța|Brașov|Bacău|Galați|Ploiești|Pitești|Târgu(?: Mureș| Neamț| Jiu)?|Brăila|Botoșani|Buzău|Focșani|Târgoviște|Reșița|Bistrița|Călărași|Zalău|Sfântu Gheorghe|Bârlad|Mediaș|Onești|Piatra Neamț|Râmnicu Vâlcea|Neamț|România|Română|Ελληνικά|Български|Türkçe|Français|Deutsch|Magyar|Polski|Sector \d|Păcurari|Str\.|Strada|Bd\.|Calea|nr\.|jud\.|Județul \w+|Mureș)\b/g;
   // cuvinte lungi: indiferent de majuscule; scurte: doar cu literă mică (DE, LA, AL pot fi coduri)
@@ -165,6 +174,11 @@ function detecteaza(limba) {
         await ctx.addInitScript(sesiuneSimulata, UTILIZATOR_SIMULAT);
         // Contul e simulat: nicio cerere către Supabase sau către API-urile cu cont nu pleacă.
         await ctx.route(/\.supabase\.co\//, (r) => r.abort());
+        await ctx.route(/\/api\/admin\/(ruta-incadrare|catalog)$/, (r) => {
+          let corp = {};
+          try { corp = JSON.parse(r.request().postData() || '{}'); } catch (e) { corp = {}; }
+          return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(RASPUNSURI_ADMIN[corp.action] || { ok: true }) });
+        });
         await ctx.route(/\/api\/(partener|client)\//, (r) => {
           const cale = new URL(r.request().url()).pathname.replace(/\.js$/, '');
           const corp = r.request().method() === 'GET' ? (RASPUNSURI_SIMULATE[cale] || { ok: true }) : { ok: true };

@@ -3879,7 +3879,7 @@ async function loadRecomandari() {
   wrap.style.display = '';
   list.innerHTML = rezultate.slice(0, 6).map((r) => {
     const preturi = (r.catalog_niveluri || []).map(n => n.catalog_preturi?.[0]?.pret).filter(p => typeof p === 'number');
-    const pretAfisat = preturi.length ? `de la ${Math.min(...preturi)} Lei` : '';
+    const pretAfisat = preturi.length ? (typeof window.t === 'function' ? window.t(null, 'de la {pret} Lei', { pret: Math.min(...preturi) }) : `de la ${Math.min(...preturi)} Lei`) : '';
     const tip = r.categorie === 'servicii' ? 'serviciu' : r.categorie === 'materiale' ? 'materiale' : r.categorie === 'inchirieri' ? 'inchirieri' : 'serviciu';
     return `<a href="mydarrin-produs.html?slug=${encodeURIComponent(r.id_serviciu)}&type=${tip}" style="flex:0 0 auto;width:140px;padding:12px;border:1px solid #EEF2F7;border-radius:12px;text-decoration:none;background:#fff">
       <div style="font-size:12px;font-weight:700;color:#003366;line-height:1.3;margin-bottom:6px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${escapeAddonHTML(r.titlu)}</div>
