@@ -15,7 +15,7 @@
 const { requireAuth, hasRole } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
-const { curataCUI, cautaANAF } = require('../../lib/cauta-firma');
+const { curataCUI, cautaANAF, MESAJE_ANAF } = require('../../lib/cauta-firma');
 const { coloanaLipseste } = require('../../lib/furnizor-propriu');
 
 const MESAJ_MIGRARE = 'Migrarea 2026-10-16_furnizor_propriu.sql nu e aplicată: legătura cu contul de furnizor nu se poate salva încă.';
@@ -70,7 +70,8 @@ async function dinAnaf(req, res, admin) {
     anaf = await cautaANAF(cuiNumeric);
   } catch (e) {
     console.error('[admin/entitati-juridice] ANAF', e.message);
-    return res.status(502).json({ error: 'ANAF nu răspunde acum. Încearcă din nou peste câteva minute; nimic nu s-a modificat.' });
+    const mesaj = MESAJE_ANAF[e.cod] || MESAJE_ANAF.anaf_indisponibil;
+    return res.status(502).json({ error: mesaj.ro, error_en: mesaj.en, cod: e.cod || 'anaf_indisponibil' });
   }
   if (!anaf || !anaf.denumire) return res.status(404).json({ error: 'CUI-ul nu e în registrul ANAF; nimic nu s-a modificat.' });
 

@@ -13,7 +13,7 @@
 
 const { checkRateLimit } = require('../../lib/rate-limit');
 
-const { curataCUI, cautaANAF, cautaVIES, TARI_VIES } = require('../../lib/cauta-firma');
+const { curataCUI, cautaANAF, cautaVIES, TARI_VIES, MESAJE_ANAF } = require('../../lib/cauta-firma');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -50,6 +50,11 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: false, manual: true, motiv: 'Fără sursă publică de verificare pentru această țară' });
   } catch (err) {
     console.error('[cui-lookup]', tara, err.message);
+    // ANAF spune adevărul: indisponibil (trece de la sine) sau eroare de
+    // configurare (nu trece de la sine). În ambele cazuri formularul rămâne
+    // completabil manual (manual:true), deci înscrierea nu se blochează.
+    const mesaj = err.cod && MESAJE_ANAF[err.cod];
+    if (mesaj) return res.status(200).json({ ok: false, manual: true, cod: err.cod, motiv: mesaj.ro, motiv_en: mesaj.en });
     // ANAF/VIES sunt cunoscute ca instabile intermitent — eșecul de rețea nu
     // e o eroare de request, e exact cazul de fallback manual cerut de spec.
     return res.status(200).json({ ok: false, manual: true, motiv: 'Serviciul de verificare este temporar indisponibil' });
