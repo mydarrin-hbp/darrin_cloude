@@ -9,7 +9,8 @@
 // discountul curent și adaugă unul nou (istoricul rămâne, iar facturile
 // emise își păstrează discountul salvat la emitere).
 //
-// GET    → discounturile partenerului + limitele din panou
+// GET    → discounturile partenerului + limitele din panou; pentru furnizorul
+//          propriu și curieri: { discounturi: [], fara_discount }, fără limite
 // POST   { tip_partener, categorie, discount_pct, valabil_de?, valabil_pana? } → adaugă
 // DELETE { id } → dezactivează
 
@@ -29,15 +30,23 @@ const ROLURI = ['partener_materiale', 'partener_inchirieri', 'partener_asigurari
 
 async function handler(req, res, user) {
   if (req.method === 'GET') {
-    const [{ data, error }, limite] = await Promise.all([
+    const [{ data, error }, limite, { data: partener }, propriu] = await Promise.all([
       supabaseAdmin
         .from('parteneri_discounturi')
         .select('id, tip_partener, categorie, discount_pct, valabil_de, valabil_pana, activ, aprobat_de, created_at')
         .eq('partener_id', user.id)
         .order('created_at', { ascending: false }),
       limiteDiscountPartener(),
+      supabaseAdmin.from('partners').select('partner_type').eq('id', user.id).maybeSingle(),
+      esteFurnizorPropriu(user.id),
     ]);
     if (error) return res.status(500).json({ error: error.message });
+    // Pasul 11-H1 (decizia 26): furnizorul propriu și curierii nu acordă
+    // discount — fără limitele din panou, ca dashboard-ul să nu afișeze
+    // „Discount comercial 5–15%” unde nu se aplică.
+    const faraDiscount = propriu ? 'furnizor_propriu'
+      : (TIPURI_FARA_DISCOUNT.includes(partener?.partner_type) ? 'curier' : null);
+    if (faraDiscount) return res.status(200).json({ ok: true, discounturi: [], fara_discount: faraDiscount });
     const discounturi = (data || []).map(({ aprobat_de, ...d }) => ({ ...d, aprobat: aprobat_de != null }));
     return res.status(200).json({ ok: true, discounturi, limite });
   }

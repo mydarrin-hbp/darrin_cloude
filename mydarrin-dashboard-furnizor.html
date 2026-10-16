@@ -319,6 +319,8 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 .f-sidebar{width:240px;background:#16202E;border-right:1px solid #2D3F55;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100}
 .f-main{margin-left:240px;flex:1;display:flex;flex-direction:column;min-height:100vh}
 .f-topbar{background:#1E2A3B;border-bottom:1px solid #2D3F55;padding:0 22px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;gap:12px}
+.f-topbar-titlu{display:flex;align-items:center;gap:10px;min-width:0}
+.f-topbar-dreapta{display:flex;align-items:center;gap:8px;min-width:0}
 .f-content{padding:22px;flex:1;background:#F0F4F8}
 .f-logo{padding:16px 18px;border-bottom:1px solid #2D3F55;display:flex;align-items:center;gap:10px}
 .f-logo-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#fff;flex-shrink:0}
@@ -501,17 +503,16 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 <!-- ════ MAIN ════ -->
 <main class="f-main">
   <div class="f-topbar">
-    <div style="display:flex;align-items:center;gap:10px">
+    <!-- Pasul 11-H1: fără textul fix „Live · sync activ” (nu există încă o
+         sincronizare reală; revine cu pașii 11-F). -->
+    <div class="f-topbar-titlu">
       <div style="font-weight:700;color:#fff;font-size:14px" id="fb-page-title">Overview</div>
-      <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#0E9E99">
-        <span class="pdot" style="width:5px;height:5px"></span>
-        <span id="fb-live">Live · sync activ</span>
-      </div>
     </div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <div style="text-align:right">
-        <div style="font-size:10px;color:#4A6080">Discount comercial</div>
-        <div style="font-size:12px;font-weight:700;color:#4ADE80" id="fb-promo">—</div>
+    <div class="f-topbar-dreapta">
+      <!-- Discountul apare doar unde se aplică (nu la furnizorul propriu, decizia 26). -->
+      <div style="text-align:right;display:none" id="fb-promo-wrap">
+        <div style="font-size:10px;color:#8BA3C0">Discount comercial</div>
+        <div style="font-size:12px;font-weight:700;color:#4ADE80" id="fb-promo"></div>
       </div>
       <span id="fb-user-email" style="font-size:11px;color:#4A6080"></span>
       <a href="/" class="btn-s" style="font-size:11px;padding:6px 12px;color:#8BA3C0;border-color:#2D3F55;background:#192433">← Platformă</a>
@@ -582,11 +583,20 @@ let currentPanel = 'overview';
 // discounturile active din parteneri_discounturi (/api/partener/discounturi),
 // cele aprobate întâi; fără discount activ, intervalul din panou
 // (backoffice_config). Nicio cifră scrisă în cod.
+// Pasul 11-H1 (decizia 26): furnizorul propriu (și curierul) nu acordă
+// discount — API-ul nu mai trimite limitele, iar aici nu se afișează nimic.
 let DISCOUNT_FURNIZOR = null; // { pct } sau { min, max }
 function textDiscount() {
   const d = DISCOUNT_FURNIZOR;
   if (d && d.min != null) return d.min === d.max ? d.min + '%' : d.min + '–' + d.max + '%';
-  return '—';
+  return '';
+}
+function afiseazaDiscount() {
+  const text = textDiscount();
+  const el = document.getElementById('fb-promo');
+  const wrap = document.getElementById('fb-promo-wrap');
+  if (el) el.textContent = text;
+  if (wrap) wrap.style.display = text ? '' : 'none';
 }
 async function incarcaDiscountFurnizor() {
   try {
@@ -599,11 +609,10 @@ async function incarcaDiscountFurnizor() {
     const active = (j.discounturi || []).filter(d => d.activ);
     const alese = active.some(d => d.aprobat) ? active.filter(d => d.aprobat) : active;
     const pct = alese.map(d => Number(d.discount_pct)).filter(Number.isFinite);
-    DISCOUNT_FURNIZOR = pct.length
+    DISCOUNT_FURNIZOR = j.fara_discount ? null : pct.length
       ? { min: Math.min(...pct), max: Math.max(...pct), pct: pct.length === 1 ? pct[0] : null }
       : (j.limite ? { min: j.limite.min, max: j.limite.max, pct: null } : null);
-    const el = document.getElementById('fb-promo');
-    if (el) el.textContent = textDiscount();
+    afiseazaDiscount();
     if (currentPanel === 'venituri' || currentPanel === 'documente') showPanel(currentPanel);
   } catch (e) {
     console.warn('[discount furnizor]', e);
@@ -621,7 +630,7 @@ function switchType(type, btn) {
   document.getElementById('fb-icon').textContent=t.icon;
   document.getElementById('fb-icon').style.background=t.color;
   document.getElementById('fb-sub').textContent=t.sub;
-  document.getElementById('fb-promo').textContent=textDiscount();
+  afiseazaDiscount();
   aplicaAntetReal();
   renderNav(type);
   showPanel('overview');
@@ -1479,7 +1488,7 @@ function renderVenituri(){
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px">
     ${areSume ? kpi('În escrow', _bani(e.total_activ, e.moneda), '', '#FF8C00', '🔒') : ''}
     ${areSume ? kpi('Eliberat din escrow', _bani(e.total_eliberat, e.moneda), '', '#1A7A3A', '✅') : ''}
-    ${kpi('Discount comercial', textDiscount(), '', '#1A5FAD', '🏷')}
+    ${textDiscount() ? kpi('Discount comercial', textDiscount(), '', '#1A5FAD', '🏷') : ''}
   </div>`;
   const deFacturat = facturabile.length ? `
   <div class="f-card" style="margin-bottom:18px;overflow-x:auto">
