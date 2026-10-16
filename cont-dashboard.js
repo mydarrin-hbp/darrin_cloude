@@ -11,7 +11,10 @@
      - banda de stare a contului de partener (verificare, cont bancar,
        contract, respingere), cu butonul spre pasul lipsă;
      - lângă produsele furnizorului, de ce nu apar încă public (pasul 10c,
-       MYD_PAZA.bandaProduse).
+       MYD_PAZA.bandaProduse);
+     - furnizorul propriu al platformei (pasul 10c): insigna „Furnizor propriu
+       al platformei”, fără benzile de contract și cont bancar (nu semnează
+       contract cu sine; banii intră în contul entității platformei).
 
    Datele vin din /api/cont/profil (profiles.roles). Harta rol → dashboard
    e cea unică, din lib/destinatie-rol.js (window.MYD_DESTINATIE_ROL).
@@ -161,6 +164,7 @@
       '<div class="myd-id-txt"><div class="myd-id-nume" id="myd-id-nume">' + esc(nume) + '</div>' +
       '<div class="myd-id-email" id="myd-id-email" title="' + esc(p.email || '') + '">' + esc(tr('Conectat ca {email}', { email: p.email || '' })) + '</div></div>' +
       '<span class="myd-id-insigna" id="myd-id-insigna" style="background:' + esc(d.culoare) + '">' + esc(tr(d.insigna)) + '</span>' +
+      (p.furnizor_propriu ? '<span class="myd-id-insigna" id="myd-id-furnizor-propriu" style="background:#0E7C66">' + esc(tr('Furnizor propriu al platformei')) + '</span>' : '') +
       '<button type="button" class="myd-id-iesi" id="myd-id-iesi">' + esc(tr('Ieși')) + '</button>';
     container.appendChild(div);
     div.querySelector('#myd-id-iesi').onclick = function () { window.MyDarrinAuth.performLogout(); };
@@ -192,6 +196,8 @@
     if (st === 'pending_review' || !st) {
       banda(container, 'info', tr('Contul tău e în verificare. Te anunțăm prin email.'), null, null, 'myd-banda-verificare');
     }
+    // Furnizorul propriu: fără contract și fără cont bancar de partener.
+    if (p.furnizor_propriu) return;
     if (!pt.cont_bancar) {
       banda(container, 'atentie', tr('Adaugă contul bancar pentru plăți.'), tr('Adaugă contul bancar'), actiuni.cont_bancar, 'myd-banda-cont-bancar');
     }

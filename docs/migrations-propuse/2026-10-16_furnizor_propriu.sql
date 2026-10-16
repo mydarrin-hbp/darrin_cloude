@@ -6,7 +6,7 @@
 --
 -- Decizia LM (16 oct. 2026)
 --   Home Best Pal SRL (CUI RO46577229) e furnizorul real al platformei
---   pentru materiale și închirieri, cu contul bricolage@homebestpal.com.
+--   pentru materiale și închirieri, cu contul contact@homebestpal.ro.
 --   HBP SRL e și entitatea platformei (cea căreia îi facturează
 --   partenerii): pentru produsele HBP nu există factură de partener către
 --   sine și nici discount de 5–15%. HBP vinde direct clientului.

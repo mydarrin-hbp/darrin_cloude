@@ -52,7 +52,7 @@ function reseteaza({ migrareAplicata = true } = {}) {
     profiles: [
       { id: SUPER, roles: ['superadmin'], email: 's@example.com' },
       { id: ADMIN, roles: ['admin'], email: 'a@example.com' },
-      { id: HBP, roles: ['partener_materiale'], email: 'bricolage@homebestpal.com' },
+      { id: HBP, roles: ['partener_materiale'], email: 'contact@homebestpal.ro' },
       { id: ALT, roles: ['client'], email: 'alt@example.com' },
     ],
     partners: [
@@ -126,7 +126,7 @@ const tacut = (fn) => async () => { const e = console.error; console.error = () 
     egal(res.statusCode, 200);
     egal(DB.tabele.partners.find((p) => p.id === HBP).entitate_platforma_id, ENT_RO);
     const get = await apel('tok-super', null, 'GET');
-    egal(get.corp.entitati.find((e) => e.tara_cod === 'RO').furnizor_propriu.email, 'bricolage@homebestpal.com');
+    egal(get.corp.entitati.find((e) => e.tara_cod === 'RO').furnizor_propriu.email, 'contact@homebestpal.ro');
     adevarat(get.corp.furnizori_disponibili.some((p) => p.id === HBP), 'HBP lipsește din lista de conturi');
     adevarat(!get.corp.furnizori_disponibili.some((p) => p.id === ALT), 'un partener de servicii nu poate fi furnizor propriu');
   });

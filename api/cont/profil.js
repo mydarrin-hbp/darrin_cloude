@@ -3,7 +3,7 @@
 // dashboard-urilor (pasul 10b, 16 oct. 2026).
 //
 // GET, cu Authorization: Bearer <access_token>
-// → { ok, email, nume, roles, roluri_dashboard, destinatie, tip_destinatie,
+// → { ok, email, nume, roles, roluri_dashboard, destinatie, tip_destinatie, furnizor_propriu,
 //     partener: null | { nume_firma, partner_type, rol, status_verificare,
 //                        contract_semnat, cont_bancar, motiv_respingere,
 //                        poate_vinde, motiv_nu_poate_vinde } }
@@ -11,7 +11,9 @@
 // poate_vinde / motiv_nu_poate_vinde vin din regula unică
 // lib/eligibilitate-partener.js (pasul 10c): dacă produsele furnizorului pot
 // apărea public și, dacă nu, de ce (in_verificare, respins, fara_cont_bancar,
-// fara_contract, suspendat).
+// fara_contract, suspendat). furnizor_propriu (true / false): contul e
+// furnizorul propriu al platformei (partners.entitate_platforma_id setat);
+// fără alte date despre entitate.
 //
 // roles vine din profiles.roles (singura sursă pentru acces). Fără date
 // sensibile: fără IBAN (doar „are cont bancar activ: da / nu”), fără CNP,
@@ -76,6 +78,7 @@ async function handler(req, res, user) {
       roluri_dashboard: roluriCuDashboard(roles),
       destinatie: d && d.destinatie ? d.destinatie : null,
       tip_destinatie: d ? d.tip : null,
+      furnizor_propriu: !!(p && p.furnizor_propriu),
       partener,
     });
   } catch (err) {
