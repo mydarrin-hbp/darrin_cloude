@@ -460,7 +460,7 @@ async function handler(req, res, user) {
           if (numarProforma) {
             try {
               const [{ data: entitateJuridica }, { data: contBancar }, { data: serviciu }] = await Promise.all([
-                supabaseAdmin.from('entitati_juridice_platforma').select('denumire, cui, nr_reg_com, adresa').eq('tara_cod', insertBase.tara_cod || 'RO').maybeSingle(),
+                supabaseAdmin.from('entitati_juridice_platforma').select('denumire, cui, nr_reg_com, adresa').eq('tara_cod', insertBase.tara_cod || 'RO').eq('activa', true).maybeSingle(),
                 supabaseAdmin.from('bank_accounts').select('nume_afisat, banca, iban, swift').eq('tara_cod', insertBase.tara_cod || 'RO').eq('moneda', data.moneda).eq('tip', 'incasari').maybeSingle(),
                 // Deviz complet (31 august 2026, cerere fondator) — descrierea
                 // reală, etapele lucrării și instrucțiunile de întreținere ale

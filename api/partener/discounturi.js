@@ -23,6 +23,7 @@ const {
   valideazaDiscountNou,
   raspunsEroareDiscount,
 } = require('../../lib/discount-partener');
+const { esteFurnizorPropriu, EROARE_DISCOUNT_FURNIZOR_PROPRIU } = require('../../lib/furnizor-propriu');
 
 const ROLURI = ['partener_materiale', 'partener_inchirieri', 'partener_asigurari', 'partener_curier'];
 
@@ -66,6 +67,10 @@ async function handler(req, res, user) {
   // Curierii nu acordă discount, indiferent de tip_partener trimis.
   if (TIPURI_FARA_DISCOUNT.includes(partener?.partner_type)) {
     return res.status(400).json({ error: EROARE_CURIER_FARA_DISCOUNT });
+  }
+  // Furnizorul propriu al platformei nu acordă discount (16 oct. 2026).
+  if (await esteFurnizorPropriu(user.id)) {
+    return res.status(400).json({ error: EROARE_DISCOUNT_FURNIZOR_PROPRIU });
   }
 
   const validare = await valideazaDiscountNou(req.body);
