@@ -1079,19 +1079,13 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
           if (bo) bo.style.display = 'flex';
         }
 
-        // Dashboard propriu, în funcție de rol — vizibil doar dacă avem un rol recunoscut de actor
-        const DASHBOARD_MAP = [
-          { roles: ['partener_servicii', 'partener_curier', 'partener_asigurari', 'partener_inchirieri'], url: 'mydarrin-dashboard-partener.html', label: 'Dashboard Partener' },
-          { roles: ['furnizor_materiale', 'partener_materiale'], url: 'mydarrin-dashboard-furnizor.html', label: 'Dashboard Furnizor' },
-          { roles: ['investor'], url: 'mydarrin-investitori.html', label: 'Zona Investitor' },
-          { roles: ['client'], url: 'mydarrin-dashboard-client.html', label: 'Dashboard-ul meu' },
-        ];
-        const match = DASHBOARD_MAP.find(m => m.roles.some(r => roles.includes(r)));
-        if (match) {
+        // Dashboard propriu, din harta unică rol → dashboard (lib/destinatie-rol.js,
+        // copiată în ui-comun.js) — pasul 10b; DASHBOARD_MAP de aici a fost șters.
+        const DR = window.MYD_DESTINATIE_ROL;
+        const cuDashboard = DR ? DR.roluriCuDashboard(roles) : [];
+        if (cuDashboard.length) {
           const dl = document.getElementById('header-dashboard-link');
-          const dlabel = document.getElementById('header-dashboard-label');
-          if (dl) { dl.href = match.url; dl.style.display = 'flex'; }
-          if (dlabel) dlabel.textContent = match.label;
+          if (dl) { dl.href = DR.dashboardPentruRol(cuDashboard[0]); dl.style.display = 'flex'; }
         }
 
         if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -2547,7 +2541,8 @@ async function performLogin() {
     if (link) link.style.display = 'flex';
     showToastMsg('Te-ai autentificat cu succes!');
     if (redirectDupaAutentificare()) return;
-    setTimeout(() => window.location.reload(), 800);
+    // Pasul 10b: în dashboard-ul propriu, după rol (nu reload).
+    setTimeout(() => window.MyDarrinAuth.mergiDupaLogin(), 800);
   } catch (e) {
     showToastMsg('' + (e.message || 'Autentificare eșuată'));
   }

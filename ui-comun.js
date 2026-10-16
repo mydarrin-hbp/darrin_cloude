@@ -21,6 +21,91 @@
  *   - Dacă pagina nu are fereastra de cont, trimite la index.html, care o
  *     deschide (?reason=cont).
  */
+// <destinatie-rol:inceput>
+// Generat din lib/destinatie-rol.js de scripts/genereaza-destinatie-rol.js — nu edita aici.
+(function (radacina, fabrica) {
+  var api = fabrica();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else radacina.MYD_DESTINATIE_ROL = api;
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  // Ordinea contează: e ordinea din „Rolurile mele” și din alegerea rolului.
+  // tip = parametrul ?type= al dashboard-ului; formular = ?type= din „Devino partener”.
+  var ROLURI = [
+    { rol: 'client', titlu: 'Client', insigna: 'Client', pagina: '/mydarrin-dashboard-client.html', culoare: '#003366', fundal: 'linear-gradient(135deg,#EBF4FB,#DDE6F5)' },
+    { rol: 'partener_servicii', titlu: 'Furnizor de Servicii', insigna: 'Partener servicii', pagina: '/mydarrin-dashboard-partener.html', tip: 'servicii', formular: 'servicii', culoare: '#FF8C00', fundal: 'linear-gradient(135deg,#FFF0D6,#FDE8C4)' },
+    { rol: 'partener_materiale', titlu: 'Furnizor de Materiale', insigna: 'Furnizor de materiale', pagina: '/mydarrin-dashboard-furnizor.html', tip: 'materiale', formular: 'materiale', culoare: '#003366', fundal: 'linear-gradient(135deg,#EBF4FB,#DDE6F5)' },
+    { rol: 'partener_inchirieri', titlu: 'Furnizor de Închirieri', insigna: 'Furnizor de închirieri', pagina: '/mydarrin-dashboard-furnizor.html', tip: 'inchirieri', formular: 'inchirieri', culoare: '#0E9E99', fundal: 'linear-gradient(135deg,#E0F5F4,#C5EEEC)' },
+    { rol: 'partener_curier', titlu: 'Curier de Cartier', insigna: 'Curier', pagina: '/mydarrin-dashboard-partener.html', tip: 'curier', formular: 'curier', culoare: '#7C3AED', fundal: 'linear-gradient(135deg,#F3EEFF,#E9D8FD)' },
+    { rol: 'partener_asigurari', titlu: 'Furnizor de Asigurări', insigna: 'Asigurător', pagina: '/mydarrin-dashboard-partener.html', tip: 'asigurari', formular: 'asigurator', culoare: '#1A7A3A', fundal: 'linear-gradient(135deg,#D4EDDA,#B8DFC5)' },
+    { rol: 'investor', titlu: 'Investitor', insigna: 'Investitor', pagina: '/mydarrin-investitori.html', culoare: '#CC7000', fundal: 'linear-gradient(135deg,#FFF3E0,#FFE0B2)' },
+  ];
+  var PAGINA_SUPERADMIN = '/mydarrin-superadmin';
+  var PAGINA_ADMIN_CATALOG = '/mydarrin-admin-catalog';
+  var PAGINA_ALEGERE = '/?alege_rol=1';
+
+  function definitie(rol) {
+    for (var i = 0; i < ROLURI.length; i++) if (ROLURI[i].rol === rol) return ROLURI[i];
+    return null;
+  }
+
+  function dashboardPentruRol(rol) {
+    var d = definitie(rol);
+    if (!d) return null;
+    return d.tip ? d.pagina + '?type=' + d.tip : d.pagina;
+  }
+
+  // Rolul căruia îi aparține o pagină de dashboard (pagina + ?type=).
+  // mydarrin-dashboard-partener.html fără type → orice rol de partener de acolo.
+  function roluriPentruPagina(cale, type) {
+    var p = '/' + String(cale || '').replace(/^\//, '').replace(/\.html$/, '') + '.html';
+    var lista = [];
+    for (var i = 0; i < ROLURI.length; i++) {
+      var r = ROLURI[i];
+      if (r.pagina !== p) continue;
+      if (type && r.tip && r.tip !== type) continue;
+      lista.push(r.rol);
+    }
+    return lista;
+  }
+
+  // Rolurile care duc într-un dashboard, în ordinea din ROLURI; „client” nu
+  // contează lângă alt rol cu dashboard.
+  function roluriCuDashboard(roles) {
+    var lista = Array.isArray(roles) ? roles : [];
+    var cu = ROLURI.filter(function (r) { return lista.indexOf(r.rol) !== -1; }).map(function (r) { return r.rol; });
+    return cu.length > 1 ? cu.filter(function (r) { return r !== 'client'; }) : cu;
+  }
+
+  // { tip, destinatie, rol?, roluri? } sau null (niciun rol).
+  function alegeDestinatie(roles, optiuni) {
+    var lista = Array.isArray(roles) ? roles : [];
+    var opt = optiuni || {};
+    if (lista.indexOf('superadmin') !== -1) return { tip: 'superadmin', destinatie: PAGINA_SUPERADMIN };
+    var admin = lista.indexOf('admin') !== -1;
+    if (admin && opt.adminCatalog) return { tip: 'admin_catalog', destinatie: PAGINA_ADMIN_CATALOG };
+    var cu = roluriCuDashboard(lista);
+    if (cu.length === 1) return { tip: 'rol', rol: cu[0], destinatie: dashboardPentruRol(cu[0]) };
+    if (cu.length > 1) return { tip: 'alegere', destinatie: PAGINA_ALEGERE, roluri: cu };
+    if (admin) return { tip: 'admin', destinatie: PAGINA_SUPERADMIN };
+    return null;
+  }
+
+  return {
+    ROLURI: ROLURI,
+    PAGINA_SUPERADMIN: PAGINA_SUPERADMIN,
+    PAGINA_ADMIN_CATALOG: PAGINA_ADMIN_CATALOG,
+    PAGINA_ALEGERE: PAGINA_ALEGERE,
+    definitie: definitie,
+    dashboardPentruRol: dashboardPentruRol,
+    roluriPentruPagina: roluriPentruPagina,
+    roluriCuDashboard: roluriCuDashboard,
+    alegeDestinatie: alegeDestinatie,
+  };
+});
+// <destinatie-rol:sfarsit>
+
 (function () {
   'use strict';
 
@@ -221,24 +306,34 @@
 
   defineste('handlePartnerNavigation', function (tip) { window.openPartnerModal(tip); });
 
-  // ── Rolurile mele (din account-system.js înainte de f845254) ──────
-  var ROLURI = {
-    client:             { titlu: 'Client',                 culoare: '#003366', fundal: 'linear-gradient(135deg,#EBF4FB,#DDE6F5)', dashboard: 'mydarrin-dashboard-client.html' },
-    partener_servicii:  { titlu: 'Furnizor de Servicii',   culoare: '#FF8C00', fundal: 'linear-gradient(135deg,#FFF0D6,#FDE8C4)', dashboard: 'mydarrin-dashboard-partener.html?type=servicii', tip: 'servicii' },
-    partener_materiale: { titlu: 'Furnizor de Materiale',  culoare: '#003366', fundal: 'linear-gradient(135deg,#EBF4FB,#DDE6F5)', dashboard: 'mydarrin-dashboard-furnizor.html?type=materiale', tip: 'materiale' },
-    partener_inchirieri:{ titlu: 'Furnizor de Închirieri', culoare: '#0E9E99', fundal: 'linear-gradient(135deg,#E0F5F4,#C5EEEC)', dashboard: 'mydarrin-dashboard-furnizor.html?type=inchirieri', tip: 'inchirieri' },
-    partener_curier:    { titlu: 'Curier de Cartier',      culoare: '#7C3AED', fundal: 'linear-gradient(135deg,#F3EEFF,#E9D8FD)', dashboard: 'mydarrin-dashboard-partener.html?type=curier', tip: 'curier' },
-    partener_asigurari: { titlu: 'Furnizor de Asigurări',  culoare: '#1A7A3A', fundal: 'linear-gradient(135deg,#D4EDDA,#B8DFC5)', dashboard: 'mydarrin-dashboard-partener.html?type=asigurari', tip: 'asigurator' },
-    investor:           { titlu: 'Investitor',             culoare: '#CC7000', fundal: 'linear-gradient(135deg,#FFF3E0,#FFE0B2)', dashboard: 'mydarrin-investitori.html' },
-  };
+  // ── Rolurile mele ─────────────────────────────────────────────────
+  // Harta rol → dashboard e cea unică, din lib/destinatie-rol.js (pasul 10b),
+  // copiată mai jos de scripts/genereaza-destinatie-rol.js. Nu se editează aici.
+  var DR = window.MYD_DESTINATIE_ROL;
+  var CHEIE_ROL_ACTIV = 'myd_rol_activ_v1';
+  function rolActivSalvat() { try { return localStorage.getItem(CHEIE_ROL_ACTIV); } catch (e) { return null; } }
+  function salveazaRolActiv(rol) { try { if (rol) localStorage.setItem(CHEIE_ROL_ACTIV, rol); } catch (e) {} }
+  window.MYD_ROL_ACTIV = { citeste: rolActivSalvat, salveaza: salveazaRolActiv };
 
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function tr(ro) { return typeof window.t === 'function' ? window.t(null, ro) : ro; }
 
   defineste('closeRolePicker', function () {
     var m = el('role-picker-modal');
     if (m) m.style.display = 'none';
     document.body.style.overflow = '';
   });
+
+  // Rolurile active primele, cel folosit ultima dată în frunte (marcat „ACTIV”),
+  // apoi rolurile care se pot adăuga.
+  function ordineRoluri(active) {
+    var ultim = rolActivSalvat();
+    var defs = DR.ROLURI.slice();
+    function scor(d) { var a = active.indexOf(d.rol) !== -1; return (a ? 0 : 2) + (a && d.rol === ultim ? -1 : 0); }
+    return defs.map(function (d, i) { return { d: d, i: i }; })
+      .sort(function (x, y) { return scor(x.d) - scor(y.d) || x.i - y.i; })
+      .map(function (x) { return x.d; });
+  }
 
   defineste('openRolePicker', function () {
     utilizatorCurent().then(function (u) {
@@ -252,34 +347,53 @@
         if (!m) {
           m = document.createElement('div');
           m.id = 'role-picker-modal';
+          m.setAttribute('role', 'dialog');
+          m.setAttribute('aria-modal', 'true');
           m.style.cssText = 'display:none;position:fixed;inset:0;z-index:9500;align-items:center;justify-content:center;padding:16px';
           m.innerHTML =
             '<div style="position:absolute;inset:0;background:rgba(0,0,0,.5)" onclick="closeRolePicker()"></div>' +
             '<div style="position:relative;background:#fff;border-radius:20px;max-width:560px;width:100%;max-height:85vh;overflow-y:auto;padding:28px">' +
-            '<button onclick="closeRolePicker()" aria-label="Închide" style="position:absolute;top:16px;right:16px;width:44px;height:44px;border-radius:9px;border:1px solid #E2E8F0;background:#fff;cursor:pointer;font-size:18px;color:#5A6B7D">×</button>' +
-            '<h2 style="font-size:19px;font-weight:800;color:#1A2332;margin:0 44px 6px 0">Rolurile tale pe My Darrin</h2>' +
-            '<p style="font-size:12.5px;color:#5A6B7D;margin:0 0 18px;line-height:1.6">Poți avea mai multe roluri pe același cont. Rolurile de partener se activează după înregistrarea și verificarea din „Devino partener”.</p>' +
+            '<button onclick="closeRolePicker()" aria-label="' + esc(tr('Închide')) + '" style="position:absolute;top:16px;right:16px;width:44px;height:44px;border-radius:9px;border:1px solid #E2E8F0;background:#fff;cursor:pointer;font-size:18px;color:#5A6B7D">×</button>' +
+            '<h2 style="font-size:19px;font-weight:800;color:#1A2332;margin:0 44px 6px 0">' + esc(tr('Rolurile tale pe My Darrin')) + '</h2>' +
+            '<p style="font-size:12.5px;color:#5A6B7D;margin:0 0 18px;line-height:1.6">' + esc(tr('Poți avea mai multe roluri pe același cont. Rolurile de partener se activează după înregistrarea și verificarea din „Devino partener”.')) + '</p>' +
             '<div id="role-picker-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px"></div></div>';
           document.body.appendChild(m);
         }
-        el('role-picker-grid').innerHTML = Object.keys(ROLURI).map(function (cheie) {
-          var r = ROLURI[cheie];
-          var activ = active.indexOf(cheie) !== -1;
-          var tinta = activ ? r.dashboard
-            : cheie === 'investor' ? 'mydarrin-investitori.html'
-            : r.tip ? 'mydarrin-devino-partener.html?type=' + r.tip
-            : r.dashboard;
-          return '<a href="' + esc(tinta) + '" style="display:block;text-decoration:none;background:' + (activ ? r.fundal : '#F8FAFC') +
-            ';border:1.5px solid ' + (activ ? r.culoare : '#E2E8F0') + ';border-radius:14px;padding:16px;position:relative">' +
-            (activ ? '<span style="position:absolute;top:8px;right:8px;font-size:10px;background:' + r.culoare + ';color:#fff;padding:2px 8px;border-radius:99px;font-weight:700">ACTIV</span>' : '') +
-            '<div style="font-weight:700;font-size:13px;color:#1A2332">' + esc(r.titlu) + '</div>' +
-            '<div style="font-size:11px;color:#5A6B7D;margin-top:4px">' + (activ ? 'Mergi la dashboard →' : 'Adaugă acest rol →') + '</div></a>';
+        var ultim = rolActivSalvat();
+        var cuDashboard = DR.roluriCuDashboard(active);
+        var curent = cuDashboard.indexOf(ultim) !== -1 ? ultim : cuDashboard[0];
+        el('role-picker-grid').innerHTML = ordineRoluri(active).map(function (r) {
+          var activ = active.indexOf(r.rol) !== -1;
+          var tinta = activ ? DR.dashboardPentruRol(r.rol)
+            : r.formular ? 'mydarrin-devino-partener.html?type=' + r.formular
+            : DR.dashboardPentruRol(r.rol);
+          var marcat = activ && r.rol === curent;
+          return '<a href="' + esc(tinta) + '" data-rol="' + esc(r.rol) + '"' + (activ ? ' data-rol-activ="1"' : '') + (marcat ? ' aria-current="true"' : '') +
+            ' style="display:block;text-decoration:none;background:' + (activ ? r.fundal : '#F8FAFC') +
+            ';border:' + (marcat ? '2.5px' : '1.5px') + ' solid ' + (activ ? r.culoare : '#E2E8F0') + ';border-radius:14px;padding:16px;position:relative">' +
+            (marcat ? '<span style="position:absolute;top:8px;right:8px;font-size:10px;background:' + r.culoare + ';color:#fff;padding:2px 8px;border-radius:99px;font-weight:700">' + esc(tr('ACTIV')) + '</span>' : '') +
+            '<div style="font-weight:700;font-size:13px;color:#1A2332">' + esc(tr(r.titlu)) + '</div>' +
+            '<div style="font-size:11px;color:#5A6B7D;margin-top:4px">' + esc(tr(activ ? 'Mergi la dashboard →' : 'Adaugă acest rol →')) + '</div></a>';
         }).join('');
+        Array.prototype.forEach.call(el('role-picker-grid').querySelectorAll('a[data-rol-activ]'), function (a) {
+          a.addEventListener('click', function () { salveazaRolActiv(a.getAttribute('data-rol')); });
+        });
         m.style.display = 'flex';
         document.body.style.overflow = 'hidden';
       });
     }).catch(function (e) { console.warn('[ui-comun] rolurile nu au putut fi citite:', e && e.message); });
   });
+
+  // Destinația după login pentru un cont cu mai multe roluri: /?alege_rol=1
+  // (lib/destinatie-rol.js, PAGINA_ALEGERE) → se deschide alegerea rolului.
+  function alegereRolDinUrl() {
+    if (!/[?&]alege_rol=1(&|$)/.test(location.search)) return;
+    var curat = location.pathname + location.search.replace(/([?&])alege_rol=1(&|$)/, function (m, a, b) { return b ? a : ''; }).replace(/[?&]$/, '') + location.hash;
+    try { history.replaceState(null, '', curat); } catch (e) {}
+    setTimeout(function () { window.openRolePicker(); }, 300);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', alegereRolDinUrl);
+  else alegereRolDinUrl();
 
   // ── Butoanele plutitoare și straturile pe mobil (9 oct. 2026) ────────
   // Regulile vizuale sunt în ui-public.css; aici doar stările:

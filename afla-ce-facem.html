@@ -2365,7 +2365,8 @@ async function performLogin() {
     if (link) link.style.display = 'flex';
     showToastMsg('Te-ai autentificat cu succes!');
     if (redirectDupaAutentificare()) return;
-    setTimeout(() => window.location.reload(), 800);
+    // Pasul 10b: în dashboard-ul propriu, după rol (nu reload).
+    setTimeout(() => window.MyDarrinAuth.mergiDupaLogin(), 800);
   } catch (e) {
     showToastMsg('' + (e.message || 'Autentificare eșuată'));
   }
