@@ -118,6 +118,15 @@ function interogare(tabel) {
     if (st.interval) rez = rez.slice(st.interval[0], st.interval[1] + 1);
     if (st.limita != null) rez = rez.slice(0, st.limita);
     if (st.head) return { data: null, count: total, error: null };
+    // Ca PostgREST: copii, doar cu coloanele cerute (fără relații în select).
+    const simple = st.coloane !== '*' && !st.coloane.includes('(');
+    rez = rez.map((r) => {
+      const copie = JSON.parse(JSON.stringify(r));
+      if (!simple) return copie;
+      const proiectat = {};
+      cerute.forEach((c) => { if (c in copie) proiectat[c] = copie[c]; });
+      return proiectat;
+    });
     if (st.single) {
       if (!rez.length && !st.maybe) return { data: null, error: eroare('PGRST116', 'no rows') };
       return { data: rez[0] || null, error: null };
