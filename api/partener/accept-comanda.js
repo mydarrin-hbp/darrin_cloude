@@ -10,6 +10,7 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { eligibilitatePartener, poatePrimiComenzi, motivNuPoateVinde, MOTIV } = require('../../lib/eligibilitate-partener');
 
 const ROLURI_PARTENER = [
   'partener_curier', 'partener_servicii', 'partener_materiale',
@@ -19,31 +20,23 @@ const ROLURI_PARTENER = [
 // G9 (25 Iulie 2026) — hard-stop real: niciun partener nu poate prelua
 // comenzi fără (1) aprobare Backoffice, (2) cont bancar activ, (3)
 // contract semnat electronic prin OTP (vezi api/partener/contract-*-otp.js).
-// Verificat AICI, server-side, nu doar sugerat în UI — până acum
-// requireAuth(ROLURI_PARTENER) verifica DOAR rolul, nimic din cele 3.
+// Verificat AICI, server-side, nu doar sugerat în UI.
+// Pasul 10c (16 oct. 2026): regula vine din lib/eligibilitate-partener.js
+// (poatePrimiComenzi); furnizorul propriu al platformei, aprobat, nu are
+// nevoie de contract și nici de cont bancar de partener.
+const MESAJ_HARD_STOP = {
+  [MOTIV.INEXISTENT]: { code: 'PARTENER_INEXISTENT', error: 'Cont de partener inexistent.' },
+  [MOTIV.SUSPENDAT]: { code: 'CONT_SUSPENDAT', error: 'Contul tău este suspendat — nu poți prelua comenzi.' },
+  [MOTIV.RESPINS]: { code: 'PROFIL_NEAPROBAT', error: 'Profilul tău nu a fost încă aprobat de echipa My Darrin — nu poți prelua comenzi.' },
+  [MOTIV.IN_VERIFICARE]: { code: 'PROFIL_NEAPROBAT', error: 'Profilul tău nu a fost încă aprobat de echipa My Darrin — nu poți prelua comenzi.' },
+  [MOTIV.FARA_CONT_BANCAR]: { code: 'FARA_CONT_BANCAR', error: 'Adaugă mai întâi un cont bancar activ — nu poți prelua comenzi fără date de încasare.' },
+  [MOTIV.FARA_CONTRACT]: { code: 'CONTRACT_NESEMNAT', error: 'Trebuie să semnezi electronic contractul de parteneriat (cod OTP) înainte de a prelua comenzi.' },
+};
+
 async function verificaHardStop(user) {
-  const { data: partner } = await supabaseAdmin
-    .from('partners')
-    .select('status_verificare, contract_semnat')
-    .eq('id', user.id)
-    .maybeSingle();
-  if (!partner) return { ok: false, code: 'PARTENER_INEXISTENT', error: 'Cont de partener inexistent.' };
-  if (partner.status_verificare !== 'approved') {
-    return { ok: false, code: 'PROFIL_NEAPROBAT', error: 'Profilul tău nu a fost încă aprobat de echipa My Darrin — nu poți prelua comenzi.' };
-  }
-  const { data: cont } = await supabaseAdmin
-    .from('partner_conturi_bancare')
-    .select('id')
-    .eq('partner_id', user.id)
-    .eq('activ', true)
-    .maybeSingle();
-  if (!cont) {
-    return { ok: false, code: 'FARA_CONT_BANCAR', error: 'Adaugă mai întâi un cont bancar activ — nu poți prelua comenzi fără date de încasare.' };
-  }
-  if (!partner.contract_semnat) {
-    return { ok: false, code: 'CONTRACT_NESEMNAT', error: 'Trebuie să semnezi electronic contractul de parteneriat (cod OTP) înainte de a prelua comenzi.' };
-  }
-  return { ok: true };
+  const partener = await eligibilitatePartener(user.id);
+  if (poatePrimiComenzi(partener)) return { ok: true };
+  return { ok: false, ...MESAJ_HARD_STOP[motivNuPoateVinde(partener)] };
 }
 
 async function handler(req, res, user) {
