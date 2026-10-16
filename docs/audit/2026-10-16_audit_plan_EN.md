@@ -517,3 +517,109 @@ All of these share one root cause: in the database, `catalog_servicii.nod_id` is
 **Tests**
 - A new Playwright test (`scripts/test-filtre-catalog.js`, locally, with simulated responses): for each node, the visible cards = the services with that `nod_id`; no static card; a node with no services does not appear in the menu.
 - The Romanian detector in EN on `/mydarrin-catalog` (0).
+
+---
+
+### 2.6 The hybrid marketplace: the supplier's own shop through an API, or the My Darrin marketplace
+
+#### The model LM wants
+A materials / rental supplier either connects their online shop or uses the My Darrin marketplace; either way, the products appear unified and public in the My Darrin catalogue, on the platform's infrastructure.
+
+#### What exists today (with evidence)
+
+| Component | What it does | Evidence |
+|---|---|---|
+| CSV import | Rows parsed in the page, sent as JSON; batches of 300; a job in `marketplace_importuri_csv`; validation (`lib/valideaza-produs-marketplace.js`) + the classification route (`valideazaRutaProdus`); `upsert` on `(furnizor_id, cod_produs_furnizor)`; a supplier imports only for themselves, the admin for anyone (by `cui_furnizor`) | `api/marketplace/importa-csv.js:1-30`, `:190-192` |
+| Status after import | **Every imported row gets `status: 'in_asteptare'`**, including an already `live` product that is re-imported | `api/marketplace/importa-csv.js:186` |
+| Manual entry | CRUD for the supplier (only on their own `furnizor_id`) and the admin | `api/marketplace/produse.js:1-14` |
+| Images | 1–6 images required, **all uploaded to `marketplace-media`**; an external URL is refused | `lib/valideaza-produs-marketplace.js:94-100` |
+| Approval | A product becomes `live` only after admin approval | `api/admin/marketplace-aprobari.js` |
+| The "active supplier" rule (10c) | Only the products of suppliers who can sell (approved + contract + bank account, or the own supplier) appear publicly | `lib/eligibilitate-partener.js:1-20`, `:136-139`; `api/public/marketplace-produse.js:140-142` |
+| The public price | Calculated from the supplier's price with the back-office formula; the partner discount is not public | `api/public/marketplace-produse.js`, `lib/calculeaza-pret.js` |
+| Rate limit | Fixed window per IP, in Vercel KV; "fail-open" on a KV error | `lib/rate-limit.js:20-36` |
+| Integrations | `integrari_furnizori` (categories: insurance, marketplace_bricolaj, card processors, couriers …), an encrypted API key (`cripteaza_camp`) — **for the platform's own integrations, managed by the admin**, not for suppliers | `api/admin/integrari/salveaza.js:1-16`, `lib/integrare-gate.js:1-12` |
+| The supplier's panel | Called "Import CSV / API" | `mydarrin-dashboard-furnizor.html:547`, `:706` |
+| Supplier integration by API / feed | **Does not exist** (no endpoint, no per-supplier key, no sync cron) | `vercel.json` (`crons`: no product job) |
+
+Live (GET 16 Oct): 0 public products in the marketplace (materials and rentals).
+
+#### Problems
+
+| # | Problem | Severity |
+|---|---|---|
+| 1.6-a | The pages promise integrations that do not exist: "WooCommerce · Shopify verified", "plugin", "API key", "Set up in 10 minutes" (`mydarrin-marketplace.html:1359-1365`, `:1594-1646`); the panel is called "Import CSV / API" | **critical** (see also 2.2) |
+| 1.6-b | Re-importing a `live` product puts it back to `in_asteptare` — a periodic sync would take it off the site at every run | **major** (blocks any feed) |
+| 1.6-c | Images must be uploaded to the platform by hand; a feed cannot send URLs | **major** (to be solved in the architecture) |
+| 1.6-d | Rate limit per IP only, "fail-open" — not enough for a public write API | **major** (for the new API) |
+
+#### The proposed architecture
+Two input channels, **one processing pipeline** (the same validation, the same route, the same approval, the same "active supplier" rule, the same public price).
+
+**Channel A — feed (read by the platform).**
+- The supplier gives the HTTPS address of a CSV, JSON or XML file (the usual export formats: the My Darrin template, Google Merchant, WooCommerce export).
+- A scheduled job (Vercel Cron, frequency chosen by LM; proposal: every 6 hours) reads the file, splits it into batches of 300 (like today's CSV import) and passes them through the pipeline.
+- Authentication to the feed, if needed, is given as a header (`Authorization` / key), stored encrypted (`cripteaza_camp`, as for the IBAN) — **never in the URL**.
+
+**Channel B — API (sent by the supplier).**
+- `POST /api/furnizor/v1/produse` (bulk create / update, max. 500 products per call), `PATCH /api/furnizor/v1/stoc-pret` (price and stock only, fast), `DELETE /api/furnizor/v1/produse/:cod`, `GET /api/furnizor/v1/produse` (what is published and the state of each product).
+- A per-supplier key in the header: `Authorization: Bearer mdk_live_…`; the database keeps only the prefix and the hash (SHA-256); the key is shown once; rotation and revocation from the dashboard; `Idempotency-Key` on writes.
+- Rate limit per key (not only per IP), "fail-closed" for the write API.
+
+**The shared pipeline**
+1. **Normalisation:** the supplier's columns → the validator's fields, through a mapping saved per source (`mapare_coloane`).
+2. **Classification:** the supplier's category → the menu node, the NACE class and the Uniclass `Pr_` code, through the `furnizor_mapari_categorii` table (a supplier category is mapped once, by the supplier, checked by the admin). Unmapped rows are not published; they appear under "To classify" in the dashboard.
+3. **Validation:** `lib/valideaza-produs-marketplace.js` + `valideazaRutaProdus` (today's). Errors per row, in RO and EN, in the sync log.
+4. **Images:** the platform downloads the images from the feed's URLs (HTTPS only, image type, max. 5 MB, max. 6) and uploads them to `marketplace-media`; it keeps the hash so as not to download them again.
+5. **Approval:**
+   - a new product → `in_asteptare` → admin approval (as today);
+   - a change to price or stock only → applied directly, no re-approval;
+   - a change of title, description, images or category → a new "pending" version; the approved version stays live until approval.
+6. **The public price:** always from the back-office formula, starting from the supplier's `pret_fara_tva`; the supplier never sends the public price; their discount (`parteneri_discounturi`) stays internal. A price change above a threshold (proposal: ±30%) is flagged for review (LM decision).
+7. **Stock:** `stoc = 0` → the product stays published, marked "unavailable", with no order button; at checkout the stock is checked again (**not verified** today in `lib/rezolva-addon-materiale.js`; to be confirmed during implementation).
+8. **A product deleted at the supplier:**
+   - API: `DELETE` → `activ = false` (offline), not a physical deletion (old orders reference it);
+   - full feed: a product missing from 2 consecutive reads → offline; it comes back automatically if it reappears;
+   - after 90 days offline → archived (LM decision).
+9. **The "active supplier" rule:** the sources of a supplier who cannot sell yet can sync (catalogue prepared), but the products do not appear publicly until `poateVinde` is true (as today).
+10. **Log:** each run writes to `furnizor_sincronizari` (new / updated / offline / errors), visible to the supplier and the admin; repeated errors send an email (RO + EN).
+
+**Security**
+- HTTPS only; SSRF protection when reading the feed (no private IPs, `localhost`, metadata addresses; at most 3 redirects; 30 s maximum time; 20 MB maximum file).
+- XML read without external entities (XXE); JSON / CSV with a row limit per run.
+- The API key: header only, stored as a hash, with a visible prefix for identification; audit log on creation / rotation / revocation (`lib/audit-log.js`).
+- Rate limit per key and per supplier; a `429` response with `Retry-After`.
+- Strict validation of each field (the same as for CSV); no HTML accepted in the description.
+
+**WooCommerce / Shopify connectors** (phase 2): one more source type, which reads the shop's API with a **read-only** key given by the supplier and goes through the same pipeline. "Verified" is not written on the pages until it exists and has been tested.
+
+#### Database (proposed migration, one transaction, re-runnable)
+- `furnizor_surse_produse` (id, `furnizor_id`, type `feed` / `api`, format `csv` / `json` / `xml` / `woocommerce` / `shopify`, `url`, `antet_auth_criptat`, `frecventa_ore`, `mapare_coloane jsonb`, `activ`, `ultima_rulare_la`, `ultim_status`).
+- `furnizor_chei_api` (id, `furnizor_id`, `prefix`, `hash`, `scopuri`, `creat_la`, `ultima_folosire_la`, `revocat_la`).
+- `furnizor_mapari_categorii` (`furnizor_id`, `categorie_furnizor`, `nod_slug`, `nace_clasa`, `cod_uniclass`, `verificat_de`, `verificat_la`).
+- `furnizor_sincronizari` (id, `sursa_id`, start / end, counters, `erori jsonb`).
+- On `marketplace_materiale` and `marketplace_echipamente`: `sursa` (`manual` / `csv` / `feed` / `api`), `sursa_id`, `vazut_ultima_data_la`, `hash_continut`, `versiune_in_asteptare jsonb`.
+- RLS: a supplier sees only their own rows; new functions with a fixed `search_path`; nothing `security definer` executable by `anon`.
+
+#### Texts to update (RO + EN)
+- `cum-devii-furnizor-materiale.html` and `cum-devii-operator-inchirieri.html`: the two channels (marketplace or connected shop), the 10c rule, approval, the public price from the formula.
+- `intrebari-frecvente-parteneri.html`: new questions ("Can I connect my shop?", "How often are price and stock updated?", "What happens to a product I delete?").
+- `mydarrin-marketplace.html`: the "Connect your existing shop" section rewritten without "verified" / "10 minutes" (see 2.2).
+- `mydarrin-dashboard-furnizor.html`: the "Import CSV / API" panel → "Products: import and connection" (CSV, feed, API keys, mappings, log).
+- `docs/regula-incadrare.md` (RO + EN): mapping the supplier's categories to node / NACE / Uniclass.
+- `docs/sabloane/README.md`: the feed format (the same columns as the CSV template) and the API documentation.
+- The sync error emails (`lib/i18n.js`).
+
+#### Decisions for LM
+1. Which channels first: (a) CSV / JSON feed + own API (recommended), (b) also WooCommerce / Shopify connectors from the start.
+2. The feed frequency (proposal: 6 hours) and the price-change threshold that requires review (proposal: ±30%).
+3. Title / image changes after approval: re-approval (recommended) or direct publication.
+4. Products missing from the feed: offline after 2 reads, archived after 90 days?
+5. Who maps the supplier's categories: the supplier, checked by the admin (recommended), or only the admin.
+
+#### The plan
+- Steps 11-F1 … 11-F5 in chapter 3 (migration → shared pipeline and the re-import fix → API with keys → feed + cron → dashboard and texts).
+
+#### Tests
+- `scripts/test-sincronizare-produse.js` (simulated data): new product → pending; price / stock only → live, no re-approval; title changed → pending version, the old one stays live; product missing twice → offline; a supplier who cannot sell → nothing public; public price = the formula.
+- Security: a feed pointing to `http://169.254.169.254` / `localhost` → refused; XML with an external entity → refused; revoked key → `401`; over the limit → `429`.
+- The Romanian detector in EN on the changed pages and panel (0).

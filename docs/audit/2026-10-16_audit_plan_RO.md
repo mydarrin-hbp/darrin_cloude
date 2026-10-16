@@ -517,3 +517,109 @@ Toate acestea au aceeași cauză de fond: în baza de date, `catalog_servicii.no
 **Teste**
 - Test Playwright nou (`scripts/test-filtre-catalog.js`, local, cu răspunsuri simulate): pentru fiecare nod, cardurile vizibile = serviciile cu acel `nod_id`; niciun card static; un nod fără servicii nu apare în meniu.
 - Detectorul de română în EN pe `/mydarrin-catalog` (0).
+
+---
+
+### 2.6 Marketplace-ul hibrid: magazinul furnizorului prin API sau marketplace-ul My Darrin
+
+#### Modelul cerut de LM
+Un furnizor de materiale / închirieri fie își conectează magazinul online, fie folosește marketplace-ul My Darrin; în ambele cazuri, produsele apar unificat și public în catalogul My Darrin, pe infrastructura platformei.
+
+#### Ce există azi (cu dovezi)
+
+| Componentă | Ce face | Dovadă |
+|---|---|---|
+| Import CSV | Rânduri parsate în pagină, trimise ca JSON; loturi de 300; job în `marketplace_importuri_csv`; validare (`lib/valideaza-produs-marketplace.js`) + ruta de încadrare (`valideazaRutaProdus`); `upsert` pe `(furnizor_id, cod_produs_furnizor)`; furnizorul importă doar pentru sine, adminul pentru oricine (după `cui_furnizor`) | `api/marketplace/importa-csv.js:1-30`, `:190-192` |
+| Starea după import | **Fiecare rând importat primește `status: 'in_asteptare'`**, inclusiv un produs deja `live` reimportat | `api/marketplace/importa-csv.js:186` |
+| Introducere manuală | CRUD pentru furnizor (doar pe propriul `furnizor_id`) și admin | `api/marketplace/produse.js:1-14` |
+| Imagini | Obligatoriu 1–6 imagini, **toate urcate în `marketplace-media`**; un URL extern e refuzat | `lib/valideaza-produs-marketplace.js:94-100` |
+| Aprobare | Produsul devine `live` doar după aprobarea adminului | `api/admin/marketplace-aprobari.js` |
+| Regula „furnizor activ” (10c) | Public apar doar produsele furnizorilor care pot vinde (aprobat + contract + cont bancar, sau furnizorul propriu) | `lib/eligibilitate-partener.js:1-20`, `:136-139`; `api/public/marketplace-produse.js:140-142` |
+| Prețul public | Calculat din prețul furnizorului cu formula din back-office; discountul partenerului nu apare public | `api/public/marketplace-produse.js`, `lib/calculeaza-pret.js` |
+| Rate limit | Fereastră fixă pe IP, în Vercel KV; „fail-open” la eroare KV | `lib/rate-limit.js:20-36` |
+| Integrări | `integrari_furnizori` (categorii: asigurări, marketplace_bricolaj, procesatori de carduri, curieri …), cheie API criptată (`cripteaza_camp`) — **pentru integrările platformei, gestionate de admin**, nu pentru furnizori | `api/admin/integrari/salveaza.js:1-16`, `lib/integrare-gate.js:1-12` |
+| Panoul furnizorului | Se numește „Import CSV / API” | `mydarrin-dashboard-furnizor.html:547`, `:706` |
+| Integrare furnizor prin API / feed | **Nu există** (niciun endpoint, nicio cheie per furnizor, niciun cron de sincronizare) | `vercel.json` (`crons`: niciun job de produse) |
+
+Live (GET 16 oct.): 0 produse publice în marketplace (materiale și închirieri).
+
+#### Probleme
+
+| # | Problemă | Severitate |
+|---|---|---|
+| 1.6-a | Paginile promit integrări care nu există: „WooCommerce · Shopify verificate”, „plugin”, „API key”, „Instalare în 10 minute” (`mydarrin-marketplace.html:1359-1365`, `:1594-1646`); panoul se numește „Import CSV / API” | **critic** (vezi și 2.2) |
+| 1.6-b | Reimportul unui produs `live` îl trece înapoi în `in_asteptare` — o sincronizare periodică l-ar scoate de pe site la fiecare rulare | **major** (blochează orice feed) |
+| 1.6-c | Imaginile trebuie urcate manual în platformă; un feed nu poate trimite URL-uri | **major** (de rezolvat în arhitectură) |
+| 1.6-d | Rate limit doar pe IP, „fail-open” — insuficient pentru un API public de scriere | **major** (pentru API-ul nou) |
+
+#### Arhitectura propusă
+Două canale de intrare, **o singură bandă de procesare** (aceeași validare, aceeași rută, aceeași aprobare, aceeași regulă „furnizor activ”, același preț public).
+
+**Canalul A — feed (citit de platformă).**
+- Furnizorul dă o adresă HTTPS a unui fișier CSV, JSON sau XML (formatele uzuale de export: șablonul My Darrin, Google Merchant, export WooCommerce).
+- Un job programat (Vercel Cron, frecvența aleasă de LM; propunere: la 6 ore) citește fișierul, îl împarte în loturi de 300 (ca importul CSV de azi) și le trece prin bandă.
+- Autentificarea la feed, dacă e nevoie, se dă ca antet (`Authorization` / cheie), salvată criptat (`cripteaza_camp`, ca la IBAN) — **niciodată în URL**.
+
+**Canalul B — API (trimis de furnizor).**
+- `POST /api/furnizor/v1/produse` (creare / actualizare în bloc, max. 500 de produse pe apel), `PATCH /api/furnizor/v1/stoc-pret` (doar preț și stoc, rapid), `DELETE /api/furnizor/v1/produse/:cod`, `GET /api/furnizor/v1/produse` (ce e publicat și starea fiecărui produs).
+- Cheie per furnizor în antet: `Authorization: Bearer mdk_live_…`; în baza de date se păstrează doar prefixul și hash-ul (SHA-256); cheia se arată o singură dată; rotire și revocare din dashboard; `Idempotency-Key` pe scrieri.
+- Rate limit pe cheie (nu doar pe IP), „fail-closed” pentru API-ul de scriere.
+
+**Banda comună**
+1. **Normalizare:** coloanele furnizorului → câmpurile validatorului, după o mapare salvată per sursă (`mapare_coloane`).
+2. **Încadrare:** categoria furnizorului → nodul de meniu, clasa NACE și codul Uniclass `Pr_`, prin tabelul `furnizor_mapari_categorii` (o categorie a furnizorului se mapează o dată, de furnizor, verificat de admin). Rândurile fără mapare nu se publică; apar în „De încadrat” în dashboard.
+3. **Validare:** `lib/valideaza-produs-marketplace.js` + `valideazaRutaProdus` (cele de azi). Erorile per rând, în RO și EN, în jurnalul sincronizării.
+4. **Imagini:** platforma descarcă imaginile din URL-urile feed-ului (doar HTTPS, tip imagine, max. 5 MB, max. 6) și le urcă în `marketplace-media`; păstrează hash-ul ca să nu le descarce din nou.
+5. **Aprobare:**
+   - produs nou → `in_asteptare` → aprobarea adminului (ca azi);
+   - schimbare doar de preț sau stoc → aplicată direct, fără reaprobare;
+   - schimbare de titlu, descriere, imagini sau categorie → versiune nouă „în așteptare”; versiunea aprobată rămâne live până la aprobare.
+6. **Prețul public:** mereu din formula din back-office, pornind de la `pret_fara_tva` al furnizorului; furnizorul nu trimite niciodată prețul public; discountul lui (`parteneri_discounturi`) rămâne intern. O schimbare de preț peste un prag (propunere: ±30%) se marchează pentru verificare (decizie LM).
+7. **Stocul:** `stoc = 0` → produsul rămâne publicat, marcat „indisponibil”, fără buton de comandă; la checkout, stocul se verifică din nou (**neverificat** azi în `lib/rezolva-addon-materiale.js`; de confirmat la implementare).
+8. **Produs șters la furnizor:**
+   - API: `DELETE` → `activ = false` (offline), nu ștergere fizică (comenzile vechi îl referă);
+   - feed complet: un produs care lipsește din 2 citiri consecutive → offline; revine automat dacă reapare;
+   - după 90 de zile offline → arhivat (decizie LM).
+9. **Regula „furnizor activ”:** sursele unui furnizor care încă nu poate vinde se pot sincroniza (catalog pregătit), dar produsele nu apar public până când `poateVinde` e adevărat (ca azi).
+10. **Jurnal:** fiecare rulare scrie în `furnizor_sincronizari` (noi / actualizate / offline / erori), vizibil furnizorului și adminului; erorile repetate trimit un email (RO + EN).
+
+**Securitate**
+- Doar HTTPS; protecție SSRF la citirea feed-ului (fără IP-uri private, `localhost`, adrese de metadate; maximum 3 redirecționări; timp maxim 30 s; fișier maxim 20 MB).
+- XML citit fără entități externe (XXE); JSON / CSV cu limită de rânduri pe rulare.
+- Cheia API: doar în antet, păstrată ca hash, cu prefix vizibil pentru identificare; jurnal de audit la creare / rotire / revocare (`lib/audit-log.js`).
+- Rate limit pe cheie și pe furnizor; răspuns `429` cu `Retry-After`.
+- Validare strictă a fiecărui câmp (aceeași ca la CSV); niciun HTML acceptat în descriere.
+
+**Conectorii WooCommerce / Shopify** (faza 2): un tip de sursă în plus, care citește API-ul magazinului cu o cheie **doar de citire** dată de furnizor și trece prin aceeași bandă. Nu se scrie „verificat” pe pagini până nu există și nu e testat.
+
+#### Bază de date (migrare propusă, o tranzacție, rulabilă de mai multe ori)
+- `furnizor_surse_produse` (id, `furnizor_id`, tip `feed` / `api`, format `csv` / `json` / `xml` / `woocommerce` / `shopify`, `url`, `antet_auth_criptat`, `frecventa_ore`, `mapare_coloane jsonb`, `activ`, `ultima_rulare_la`, `ultim_status`).
+- `furnizor_chei_api` (id, `furnizor_id`, `prefix`, `hash`, `scopuri`, `creat_la`, `ultima_folosire_la`, `revocat_la`).
+- `furnizor_mapari_categorii` (`furnizor_id`, `categorie_furnizor`, `nod_slug`, `nace_clasa`, `cod_uniclass`, `verificat_de`, `verificat_la`).
+- `furnizor_sincronizari` (id, `sursa_id`, început / sfârșit, numărători, `erori jsonb`).
+- Pe `marketplace_materiale` și `marketplace_echipamente`: `sursa` (`manual` / `csv` / `feed` / `api`), `sursa_id`, `vazut_ultima_data_la`, `hash_continut`, `versiune_in_asteptare jsonb`.
+- RLS: furnizorul își vede doar rândurile proprii; funcțiile noi cu `search_path` fix; nimic `security definer` executabil de `anon`.
+
+#### Texte de actualizat (RO + EN)
+- `cum-devii-furnizor-materiale.html` și `cum-devii-operator-inchirieri.html`: cele două canale (marketplace sau magazin conectat), regula 10c, aprobarea, prețul public din formulă.
+- `intrebari-frecvente-parteneri.html`: întrebări noi („Pot conecta magazinul meu?”, „Cât de des se actualizează prețul și stocul?”, „Ce se întâmplă cu un produs șters la mine?”).
+- `mydarrin-marketplace.html`: secțiunea „Integrare magazin existent” rescrisă fără „verificat” / „10 minute” (vezi 2.2).
+- `mydarrin-dashboard-furnizor.html`: panoul „Import CSV / API” → „Produse: import și conectare” (CSV, feed, chei API, mapări, jurnal).
+- `docs/regula-incadrare.md` (RO + EN): maparea categoriilor furnizorului la nod / NACE / Uniclass.
+- `docs/sabloane/README.md`: formatul feed-ului (aceleași coloane ca șablonul CSV) și documentația API.
+- Emailurile de eroare de sincronizare (`lib/i18n.js`).
+
+#### Decizii pentru LM
+1. Ce canale întâi: (a) feed CSV / JSON + API propriu (recomandat), (b) și conectori WooCommerce / Shopify de la început.
+2. Frecvența feed-ului (propunere: 6 ore) și pragul de variație de preț care cere verificare (propunere: ±30%).
+3. Schimbările de titlu / imagini după aprobare: reaprobare (recomandat) sau publicare directă.
+4. Produsele lipsă din feed: offline după 2 citiri, arhivate după 90 de zile?
+5. Cine mapează categoriile furnizorului: furnizorul, cu verificarea adminului (recomandat), sau doar adminul.
+
+#### Planul
+- Pașii 11-F1 … 11-F5 din capitolul 3 (migrare → bandă comună și corectarea reimportului → API cu chei → feed + cron → dashboard și texte).
+
+#### Teste
+- `scripts/test-sincronizare-produse.js` (date simulate): produs nou → în așteptare; doar preț / stoc → live, fără reaprobare; titlu schimbat → versiune în așteptare, cea veche rămâne live; produs lipsă de 2 ori → offline; furnizor care nu poate vinde → nimic public; prețul public = formula.
+- Securitate: feed spre `http://169.254.169.254` / `localhost` → refuzat; XML cu entitate externă → refuzat; cheie revocată → `401`; peste limită → `429`.
+- Detectorul de română în EN pe paginile și panoul modificate (0).
