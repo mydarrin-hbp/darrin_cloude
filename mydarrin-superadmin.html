@@ -6012,10 +6012,17 @@ async function loadMarketplaceAprobari() {
 // dacă rolul nu s-a putut adăuga, mesajul roșu o spune (aprobarea rămâne salvată).
 async function decideFurnizor(id, decizie, buton) {
   const zona = document.getElementById('mp-apr-furnizori-msg');
+  // Motivul respingerii îl vede partenerul în banda de stare a contului (opțional).
+  let motiv = '';
+  if (decizie === 'respins') {
+    const r = window.prompt('Motivul respingerii (îl vede partenerul în contul lui; poți lăsa gol):', '');
+    if (r === null) return;
+    motiv = r.trim();
+  }
   let rolEroare = null;
   const r = await MDFeedback.salveaza(buton, zona, async () => {
     const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/verifica-document', { method: 'POST', headers, body: JSON.stringify({ tip: 'partener', id, decizie }) });
+    const res = await fetch('/api/admin/verifica-document', { method: 'POST', headers, body: JSON.stringify({ tip: 'partener', id, decizie, motiv }) });
     const j = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(j.error || 'Eroare necunoscută');
     rolEroare = j.rol_eroare || null;

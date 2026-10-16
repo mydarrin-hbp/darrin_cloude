@@ -147,6 +147,7 @@
         var a = el(id);
         if (a) a.style.display = 'flex';
       });
+      if (window.MYD_CONT) window.MYD_CONT.aplica();
     });
   }
 
@@ -280,6 +281,243 @@
       if (typeof window.switchAuthTab === 'function' && el('auth-modal')) window.switchAuthTab('login');
     });
   });
+
+  // ── Contul logat: butonul din antet și meniul lateral (pasul 10b) ──
+  // Nelogat: butoanele rămân ca înainte (login / înregistrare). Logat:
+  // inițialele într-un cerc + numele (firma, pentru partener), punct verde și
+  // „Conectat ca …”; click → dashboard-ul propriu (sau alegerea rolului, la
+  // mai multe roluri); săgeata alăturată deschide meniul mic. Datele vin din
+  // /api/cont/profil (profiles.roles). Doar afișare: accesul îl decide serverul.
+  function trC(ro, param) {
+    if (typeof window.t === 'function') return window.t(null, ro, param);
+    return ro.replace(/\{(\w+)\}/g, function (m, k) { return param && param[k] != null ? param[k] : m; });
+  }
+
+  function asteaptaAuth() {
+    return new Promise(function (ok) {
+      var n = 0;
+      (function verifica() {
+        if (window.MyDarrinAuth && window.supabaseClient) return ok(true);
+        if (++n > 50) return ok(false);
+        setTimeout(verifica, 100);
+      })();
+    });
+  }
+
+  var promProfil = null;
+  function profilCont(reincarca) {
+    if (promProfil && !reincarca) return promProfil;
+    promProfil = asteaptaAuth().then(function (gata) {
+      if (!gata) return null;
+      return window.supabaseClient.auth.getSession().then(function (r) {
+        var sesiune = r && r.data && r.data.session;
+        if (!sesiune) return null;
+        return fetch('/api/cont/profil', { headers: { Authorization: 'Bearer ' + sesiune.access_token }, cache: 'no-store' })
+          .then(function (res) {
+            if (res.status === 401) return null;
+            return res.json().then(function (j) {
+              if (!res.ok) throw new Error((j && j.error) || ('HTTP ' + res.status));
+              return j;
+            });
+          });
+      });
+    }).catch(function (e) { console.warn('[ui-comun] profilul contului:', e && e.message); promProfil = null; return null; });
+    return promProfil;
+  }
+
+  function numeCont(p) {
+    return (p.partener && p.partener.nume_firma) || p.nume || String(p.email || '').split('@')[0] || trC('Contul meu');
+  }
+  function initiale(nume) {
+    var cuv = String(nume || '').replace(/\b(SRL|S\.R\.L\.|SA|PFA|II|LTD)\b\.?/gi, '').trim().split(/[\s.\-_]+/).filter(Boolean);
+    var s = cuv.length > 1 ? cuv[0].charAt(0) + cuv[1].charAt(0) : (cuv[0] || '?').slice(0, 2);
+    return s.toUpperCase();
+  }
+
+  function mergiInDashboard(p) {
+    var roluri = p.roluri_dashboard || [];
+    if (roluri.length > 1) { window.openRolePicker(); return; }
+    if (roluri.length === 1) {
+      salveazaRolActiv(roluri[0]);
+      window.location.href = DR.dashboardPentruRol(roluri[0]);
+      return;
+    }
+    if (p.destinatie) window.location.href = p.destinatie;
+  }
+
+  function stilCont() {
+    if (el('myd-cont-stil')) return;
+    var st = document.createElement('style');
+    st.id = 'myd-cont-stil';
+    st.textContent =
+      '.myd-cont-av{position:relative;flex:0 0 auto;width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#003366,#1A5FAD);color:#fff;font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;letter-spacing:.02em}' +
+      '.myd-cont-punct{position:absolute;right:-1px;bottom:-1px;width:9px;height:9px;border-radius:50%;background:#1A9E5A;border:2px solid #fff}' +
+      '.myd-cont-nume{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+      '.myd-sr{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}' +
+      '.myd-cont-sageata{display:inline-flex;align-items:center;justify-content:center;min-width:34px;min-height:38px;padding:0 6px;border:1px solid #D5DFE8;border-radius:12px;background:#fff;color:#2D2D2D;cursor:pointer}' +
+      '.myd-cont-sageata:hover{border-color:#003366;color:#003366}' +
+      '.myd-cont-meniu{position:fixed;z-index:9400;min-width:220px;max-width:calc(100vw - 32px);background:#fff;border:1px solid #E2E8F0;border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.14);padding:6px;font-family:inherit;box-sizing:border-box}' +
+      '.myd-cont-meniu-cap{padding:10px 12px 8px;border-bottom:1px solid #EEF2F6;margin-bottom:4px}' +
+      '.myd-cont-meniu-cap b{display:block;font-size:13px;color:#1A2332;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+      '.myd-cont-meniu-cap span{display:block;font-size:11.5px;color:#1A7A3A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+      '.myd-cont-meniu .myd-cont-opt{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:10px 12px;border-radius:9px;border:0;background:none;font-size:13px;font-weight:600;color:#1A2332;cursor:pointer;font-family:inherit;min-height:44px;box-sizing:border-box}' +
+      '.myd-cont-meniu .myd-cont-opt:hover,.myd-cont-meniu .myd-cont-opt:focus{background:#F4F7F9;outline:none}' +
+      '.myd-cont-meniu .myd-cont-iesi{color:#C0392B}' +
+      '.myd-cont-sb{margin:4px 12px 8px;padding:12px;border:1px solid #E2E8F0;border-radius:14px;background:#F8FAFC;display:flex;align-items:center;gap:10px}' +
+      '.myd-cont-sb .myd-cont-av{width:36px;height:36px;font-size:13px}' +
+      '.myd-cont-sb-txt{min-width:0;flex:1}' +
+      '.myd-cont-sb-txt b{display:block;font-size:13px;color:#1A2332;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+      '.myd-cont-sb-txt span{display:block;font-size:11px;color:#1A7A3A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}';
+    (document.head || document.documentElement).appendChild(st);
+  }
+
+  function avatarHtml(p, stil) {
+    return '<span class="myd-cont-av" aria-hidden="true"' + (stil ? ' style="' + stil + '"' : '') + '>' + esc(initiale(numeCont(p))) + '<span class="myd-cont-punct"></span></span>';
+  }
+  function conectatCa(p) { return trC('Conectat ca {email}', { email: p.email || '' }); }
+
+  var meniuDeschis = null;
+  function inchideMeniuCont() {
+    if (!meniuDeschis) return;
+    meniuDeschis.meniu.remove();
+    meniuDeschis.buton.setAttribute('aria-expanded', 'false');
+    meniuDeschis = null;
+  }
+  function deschideMeniuCont(buton, p) {
+    if (meniuDeschis && meniuDeschis.buton === buton) { inchideMeniuCont(); return; }
+    inchideMeniuCont();
+    var m = document.createElement('div');
+    m.className = 'myd-cont-meniu';
+    m.id = 'myd-cont-meniu';
+    m.setAttribute('role', 'menu');
+    m.innerHTML =
+      '<div class="myd-cont-meniu-cap"><b>' + esc(numeCont(p)) + '</b><span>' + esc(conectatCa(p)) + '</span></div>' +
+      '<button type="button" role="menuitem" class="myd-cont-opt" data-actiune="dashboard">' + esc(trC('Dashboard-ul meu')) + '</button>' +
+      '<button type="button" role="menuitem" class="myd-cont-opt" data-actiune="roluri">' + esc(trC('Rolurile mele')) + '</button>' +
+      '<button type="button" role="menuitem" class="myd-cont-opt myd-cont-iesi" data-actiune="iesi">' + esc(trC('Ieși')) + '</button>';
+    document.body.appendChild(m);
+    var r = buton.getBoundingClientRect();
+    var latime = m.offsetWidth;
+    m.style.top = Math.round(r.bottom + 6) + 'px';
+    m.style.left = Math.max(16, Math.min(window.innerWidth - latime - 16, Math.round(r.right - latime))) + 'px';
+    m.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('[data-actiune]');
+      if (!b) return;
+      var a = b.getAttribute('data-actiune');
+      inchideMeniuCont();
+      if (a === 'dashboard') mergiInDashboard(p);
+      else if (a === 'roluri') window.openRolePicker();
+      else if (a === 'iesi') window.MyDarrinAuth.performLogout();
+    });
+    buton.setAttribute('aria-expanded', 'true');
+    meniuDeschis = { meniu: m, buton: buton };
+    var prima = m.querySelector('[data-actiune]');
+    if (prima) prima.focus();
+  }
+  document.addEventListener('click', function (e) {
+    if (!meniuDeschis) return;
+    if (meniuDeschis.meniu.contains(e.target) || meniuDeschis.buton.contains(e.target)) return;
+    inchideMeniuCont();
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') inchideMeniuCont(); });
+  window.addEventListener('resize', inchideMeniuCont);
+
+  // Butonul de cont din antet: #header-account-btn sau primul buton din
+  // <header> care deschide fereastra de cont.
+  function butonAntet() {
+    var b = el('header-account-btn');
+    if (b) return b;
+    var h = document.querySelector('header');
+    return h ? h.querySelector('button[onclick="toggleAuthModal()"]') : null;
+  }
+
+  function aplicaAntet(p) {
+    var btn = butonAntet();
+    if (!btn || btn.getAttribute('data-myd-cont') === '1') return;
+    btn.setAttribute('data-myd-cont', '1');
+    btn.id = btn.id || 'header-account-btn';
+    btn.removeAttribute('onclick');
+    btn.onclick = function (e) { e.preventDefault(); mergiInDashboard(p); };
+    btn.title = p.email || '';
+    btn.setAttribute('aria-label', conectatCa(p) + ' — ' + trC('Dashboard-ul meu'));
+    btn.innerHTML = avatarHtml(p) + '<span class="hidden md:inline myd-cont-nume">' + esc(numeCont(p)) + '</span>' +
+      '<span class="myd-sr">' + esc(conectatCa(p)) + '</span>';
+    var sageata = document.createElement('button');
+    sageata.type = 'button';
+    sageata.className = 'myd-cont-sageata' + (btn.classList.contains('hidden') ? ' hidden sm:inline-flex' : '');
+    sageata.id = 'myd-cont-sageata';
+    sageata.setAttribute('aria-haspopup', 'menu');
+    sageata.setAttribute('aria-expanded', 'false');
+    sageata.setAttribute('aria-label', trC('Meniul contului'));
+    sageata.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>';
+    sageata.onclick = function (e) { e.stopPropagation(); deschideMeniuCont(sageata, p); };
+    btn.insertAdjacentElement('afterend', sageata);
+  }
+
+  // Bara de jos pe mobil: „Cont” → dashboard-ul propriu, cu inițialele.
+  function aplicaBaraJos(p) {
+    var b = el('mbn-cont');
+    if (!b || b.getAttribute('data-myd-cont') === '1') return;
+    b.setAttribute('data-myd-cont', '1');
+    b.removeAttribute('onclick');
+    b.onclick = function (e) { e.preventDefault(); mergiInDashboard(p); };
+    b.title = p.email || '';
+    b.setAttribute('aria-label', conectatCa(p) + ' — ' + trC('Dashboard-ul meu'));
+    var svg = b.querySelector('svg');
+    if (svg) svg.outerHTML = avatarHtml(p, 'width:22px;height:22px;font-size:9px');
+    Array.prototype.forEach.call(b.childNodes, function (n) {
+      if (n.nodeType === 3 && n.textContent.trim()) n.textContent = ' ' + trC('Contul meu') + ' ';
+    });
+  }
+
+  // Meniul lateral: „Creare cont” / „Intră în cont” dispar; în locul lor,
+  // identitatea, „Dashboard-ul meu” și „Ieși” („Rolurile mele” există deja).
+  function aplicaMeniuLateral(p) {
+    var sb = el('sidebar');
+    if (!sb || el('myd-cont-sb')) return;
+    var vechi = Array.prototype.filter.call(sb.querySelectorAll('a.sb-item'), function (a) {
+      return /toggleAuthModal\(\)/.test(a.getAttribute('onclick') || '');
+    });
+    var reper = vechi[0] || el('sb-roluri-link');
+    if (!reper) return;
+    vechi.forEach(function (a) { a.style.display = 'none'; });
+    var cap = document.createElement('div');
+    cap.id = 'myd-cont-sb';
+    cap.className = 'myd-cont-sb';
+    cap.innerHTML = avatarHtml(p) + '<div class="myd-cont-sb-txt"><b>' + esc(numeCont(p)) + '</b><span>' + esc(conectatCa(p)) + '</span></div>';
+    var dash = document.createElement('a');
+    dash.href = '#';
+    dash.id = 'myd-cont-sb-dashboard';
+    dash.className = 'sb-item';
+    dash.innerHTML = '<div class="sb-ico" style="background:#E0F5F4"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0E9E99" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg></div>' + esc(trC('Dashboard-ul meu'));
+    dash.onclick = function (e) { e.preventDefault(); if (typeof window.closeSidebar === 'function') window.closeSidebar(); mergiInDashboard(p); };
+    var iesi = document.createElement('a');
+    iesi.href = '#';
+    iesi.id = 'myd-cont-sb-iesi';
+    iesi.className = 'sb-item';
+    iesi.style.color = '#C0392B';
+    iesi.innerHTML = '<div class="sb-ico" style="background:#FDECEA"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C0392B" stroke-width="2" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div>' + esc(trC('Ieși'));
+    iesi.onclick = function (e) { e.preventDefault(); window.MyDarrinAuth.performLogout(); };
+    reper.parentNode.insertBefore(cap, reper);
+    cap.insertAdjacentElement('afterend', dash);
+    var roluri = el('sb-roluri-link');
+    if (roluri) { roluri.style.display = 'flex'; roluri.insertAdjacentElement('afterend', iesi); }
+    else dash.insertAdjacentElement('afterend', iesi);
+  }
+
+  function aplicaCont() {
+    return profilCont().then(function (p) {
+      if (!p) return null;
+      stilCont();
+      aplicaAntet(p);
+      aplicaBaraJos(p);
+      aplicaMeniuLateral(p);
+      return p;
+    });
+  }
+  window.MYD_CONT = { profil: profilCont, aplica: aplicaCont, mergiInDashboard: mergiInDashboard, initiale: initiale, numeCont: numeCont, avatarHtml: avatarHtml, stil: stilCont };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', aplicaCont);
+  else aplicaCont();
 
   // ── Devino partener ───────────────────────────────────────────────
   defineste('openPartnerModal', function (tip) {

@@ -4,7 +4,9 @@
 // 'aprobat', ceea ce bloca definitiv gate-ul din api/partener/cmr-generare.js
 // (niciun curier nu putea genera CMR, indiferent cât de complet era dosarul).
 //
-// Body: { tip: 'document' | 'partener', id, decizie: 'aprobat' | 'respins' }
+// Body: { tip: 'document' | 'partener', id, decizie: 'aprobat' | 'respins', motiv? }
+// motiv (opțional, la respingerea unui partener) se păstrează în audit_log și
+// îl vede partenerul în banda de stare a contului (api/cont/profil.js).
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
@@ -22,6 +24,7 @@ async function handler(req, res, admin) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { tip, id, decizie } = req.body || {};
+  const motiv = typeof req.body?.motiv === 'string' ? req.body.motiv.trim().slice(0, 500) : '';
   if (!['document', 'partener'].includes(tip) || !id || !DECIZII_VALIDE.includes(decizie)) {
     return res.status(400).json({ error: "tip ('document'|'partener'), id și decizie ('aprobat'|'respins') sunt obligatorii" });
   }
@@ -49,7 +52,8 @@ async function handler(req, res, admin) {
       .single();
     if (error || !data) return res.status(404).json({ error: 'Partenerul nu există' });
     await inregistreazaAudit({
-      admin, req, actiune: `partener_${decizie}`, entitate: 'partners', entitate_id: id, detalii: { decizie },
+      admin, req, actiune: `partener_${decizie}`, entitate: 'partners', entitate_id: id,
+      detalii: { decizie, ...(decizie === 'respins' && motiv ? { motiv } : {}) },
     });
 
     // Pasul 10b: un partener aprobat trebuie să aibă rolul lui în
