@@ -11,6 +11,7 @@
 
 const { requireAuth } = require('../../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../../lib/supabaseAdmin');
+const { ANAF_URL, MESAJE_ANAF, cautaANAF } = require('../../../lib/cauta-firma');
 
 const FETCH_TIMEOUT_MS = 6000;
 
@@ -26,17 +27,16 @@ async function fetchCuTimeout(url, opts) {
 
 // Verifică doar că API-ul e viu și vorbește protocolul așteptat — nu caută
 // o firmă anume (nu presupunem un CUI real "corect" pentru orice mediu).
+// CUI 1 nu există: v9 răspunde 404 cu {"found":[],"notFound":[1]}, pe care
+// cautaANAF (aceeași adresă, ANAF_URL) îl citește ca „negăsit”, nu ca eroare.
 async function testeazaAnaf() {
-  const azi = new Date().toISOString().slice(0, 10);
-  const res = await fetchCuTimeout('https://webservicesp.anaf.ro/PlatitorTvaRest/api/v9/ws/tva', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify([{ cui: 1, data: azi }]),
-  });
-  if (!res.ok) throw new Error(`ANAF a răspuns ${res.status}`);
-  const json = await res.json();
-  if (!Array.isArray(json?.found) || !Array.isArray(json?.notFound)) throw new Error('Răspuns ANAF în format neașteptat');
-  return 'ANAF răspunde corect (format valid).';
+  try {
+    await cautaANAF('1');
+  } catch (err) {
+    const mesaj = MESAJE_ANAF[err.cod];
+    throw new Error(mesaj ? `${mesaj.ro} (${err.message})` : err.message);
+  }
+  return `ANAF răspunde corect (format valid, ${ANAF_URL}).`;
 }
 
 async function testeazaVies() {

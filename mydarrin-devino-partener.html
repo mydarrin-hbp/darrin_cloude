@@ -2105,7 +2105,9 @@ async function validateCUI(input) {
       if (sediu && data.adresa && !sediu.value.trim()) { sediu.value = data.adresa; preluat = true; }
       if (sst && preluat) sst.textContent = '· preluat din registru, verifică';
     } else if (status) {
-      status.textContent = 'Nu am găsit date — completează manual';
+      // ANAF indisponibil sau eroare de configurare: mesajul adevărat de la
+      // server (RO; dicționarul paginii îl traduce). Câmpurile rămân libere.
+      status.textContent = data.cod && data.motiv ? data.motiv : 'Nu am găsit date — completează manual';
       status.style.color = '#8C9BAD';
     }
   } catch (e) {
