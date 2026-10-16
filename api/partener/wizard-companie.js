@@ -16,14 +16,8 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { validateIBAN } = require('../../lib/iban');
+const { TIP_PARTENER_DUPA_FORMULAR } = require('../../lib/roluri-partener');
 
-const TYPE_TO_ENUM = {
-  servicii: 'servicii_tehnice',
-  materiale: 'furnizor_materiale',
-  inchirieri: 'inchirieri_utilaje',
-  curier: 'curier_utilitara',
-  asigurari: 'asigurari',
-};
 
 const TIPURI_ENTITATE = ['persoana_fizica', 'pfa', 'srl', 'srl_d', 'sa', 'institutie_publica'];
 
@@ -71,7 +65,7 @@ async function handler(req, res, user) {
       const { error } = await supabaseAdmin.from('partners').update({ nume_firma, cui, ...campuriEntitate }).eq('id', user.id);
       if (error) throw error;
     } else {
-      const enumType = TYPE_TO_ENUM[partner_type];
+      const enumType = TIP_PARTENER_DUPA_FORMULAR[partner_type];
       if (!enumType) return res.status(400).json({ error: 'partner_type invalid pentru un cont nou de partener' });
       const { error } = await supabaseAdmin.from('partners').insert({
         id: user.id, partner_type: enumType, nume_firma, cui, status_verificare: 'pending_review', ...campuriEntitate,
