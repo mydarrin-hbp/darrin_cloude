@@ -366,3 +366,87 @@ Note:
 - Script nou `scripts/test-catalog-conformitate.js`: aplică criteriul pe date simulate (fiecare condiție, pe rând).
 - Verificare după migrare: 0 rânduri „vN” publicate; 0 materiale / închirieri în `catalog_servicii` publicate.
 - Detectorul de română în EN pe `/mydarrin-catalog` și pe 3 pagini de serviciu (0).
+
+---
+
+### 2.4 Distribuirea pe rețele sociale și Open Graph
+
+#### Starea actuală (cu dovezi)
+
+**Etichetele OG / Twitter (52 de pagini HTML).** Confirmat: **27** de pagini au `og:image` și `twitter:card` (toate 27 au și `og:title`, `og:description`).
+
+| Grup | Pagini |
+|---|---|
+| Cu OG + Twitter (27) | `index`, `afla-ce-facem`, `cum-comanzi`, `cum-devii-curier-de-cartier`, `cum-devii-furnizor-materiale`, `cum-devii-operator-inchirieri`, `cum-devii-partenerul-nostru`, `cum-platesc`, `cum-prestam-livram`, `cum-programez-serviciu`, `despre-noi`, `garantii-si-asigurari`, `ghidul-asiguratorului`, `intrebari-frecvente-clienti`, `intrebari-frecvente-parteneri`, `mydarrin-app-mobile`, `mydarrin-catalog`, `mydarrin-categorie-inchirieri`, `mydarrin-categorie-materiale`, `mydarrin-categorie-servicii`, `mydarrin-cum-functioneaza`, `mydarrin-devino-partener`, `mydarrin-investitori`, `mydarrin-marketplace`, `mydarrin-produs`, `mydarrin-serviciu`, `servicii-urgente` |
+| Publice, **fără** OG (de completat) | `mydarrin-marketplace-materiale`, `mydarrin-pitch-deck` (după decizia de mai jos), `mydarrin-contact`, `mydarrin-creeaza-deviz`, `mydarrin-cos`, `mydarrin-termeni`, `mydarrin-politica-confidentialitate`, `reclamatii` |
+| Fără OG, corect așa (cont, plată, interne) | `mydarrin-checkout`, `confirmare-livrare`, `reset-password`, `acces-temporar`, `acord-confidentialitate`, cele 3 dashboard-uri, `mydarrin-devino-partener-wizard`, `mydarrin-admin-catalog`, `mydarrin-superadmin`, `mydarrin-backoffice-serviciu`, `mydarrin-deviz-engine`, `mydarrin-auth-schema`, `mydarrin-sync-architecture`, `mydarrin-business-model`, `mydarrin-design-system` |
+
+**Imaginea OG**
+- 26 de pagini folosesc aceeași fotografie de stoc Unsplash: `https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1200&q=80` (ex. `cum-devii-furnizor-materiale.html:325`). Descărcată live: **1200 × 795**, nu 1200 × 630; e o imagine de stoc externă, nu a My Darrin.
+- `index.html:329` folosește `/api/branding/logo-image?slot=header_logo` (logo-ul real): **900 × 629** PNG, nu 1200 × 630.
+- Niciuna nu declară `og:image:width` / `og:image:height`; doar `index.html` are `og:image:alt`.
+
+**Titlul și descrierea**
+- Toate etichetele OG sunt scrise în română, statice, în HTML. Engleza e limba implicită la prima vizită, dar un crawler (fără `localStorage`, fără JavaScript) primește mereu româna: `GET /?lang=en` cu agentul `facebookexternalhit` întoarce `<html lang="ro">` și titlul român.
+- `seo-meta.js:1-16` suprascrie doar `title` / `description` din JS, după răspunsul API-ului — crawlerele sociale nu-l văd (spune chiar comentariul).
+- `index.html:317-320`: descrierea OG promite „deviz AI în 60 de secunde, plată escrow securizată” (vezi 1.2-T1, 1.2-T8).
+
+**Butoanele de distribuire**
+- `share-widget.js` e inclus pe aceleași 27 de pagini cu OG (inclusiv `index` și `mydarrin-investitori`): Web Share API (`navigator.share`) pe mobil; pe desktop Facebook, WhatsApp, X, LinkedIn, Email și „Copiază linkul” (`share-widget.js:1-15`).
+- `mydarrin-serviciu.html:1530-1532` are și un bloc inline (`MydShare.creeazaBlocInline`).
+- Linkul distribuit e `location.href`, deci un link de serviciu e corect pentru om, dar crawlerul rețelei îl citește ca mai jos.
+
+**Paginile dinamice văzute de un crawler** (`curl -A "facebookexternalhit/1.1"`, producție, 16 oct.)
+
+| URL | Ce primește crawlerul |
+|---|---|
+| `/catalog/servicii/instalatii-electrice/inlocuire-becuri-corpuri` | 200, `lang="ro"`, `og:title` „Configurare comandă \| My Darrin”, `og:url` `…/mydarrin-produs` (fără slug), imaginea de stoc |
+| `/mydarrin-produs?slug=inlocuire-becuri-corpuri&type=servicii` | identic |
+| `/mydarrin-serviciu` | `og:title` „Înlocuire calorifer — Bronz→Platinum”, același pentru orice serviciu (text fix în `mydarrin-serviciu.html:310-316`) |
+| `/mydarrin-marketplace-materiale` | doar `<title>` „Materiale și închirieri”, fără OG |
+
+Concluzie: **orice serviciu sau produs distribuit apare cu același card generic**, în română, cu o imagine de stoc, iar `og:url` trimite spre pagina fără slug (rețeaua poate grupa toate distribuirile pe aceeași adresă).
+
+**Pitch deck-ul și acordul de confidențialitate**
+- `middleware.js`: `mydarrin-pitch-deck` și `mydarrin-investitori` sunt în `PAGINI_PUBLICE`; `BARIERA_GENERALA_ACTIVA = false`. Live: `GET /mydarrin-pitch-deck` → 200, fără autentificare.
+- Fluxul `/acces-temporar` + `/acord-confidentialitate` există (`middleware.js`, `treceBarieraPlatforma`, `nda_pending`), dar se aplică doar paginilor din afara `PAGINI_PUBLICE`, cu bariera generală pornită.
+- `mydarrin-investitori.html:1902-1916` spune că actele și datele sunt „Sub NDA” și cere acceptarea NDA-ului; pitch deck-ul (cu cifrele rundei) e totuși public, iar pagina de investitori are buton de distribuire. **Conflict — decizie LM.**
+
+**Constatare conexă (în afara listei, dar găsită aici).** `mydarrin-business-model` și `mydarrin-design-system` (documente interne) răspund live cu 200, fără autentificare: nu sunt nici în `PAGINI_STRICTE`, nici în `PAGINI_PUBLICE`, iar cu bariera oprită trec (`middleware.js`, `if (!BARIERA_GENERALA_ACTIVA) return next()`). `robots.txt` blochează doar variantele `.html`, nu și adresele curate (`/mydarrin-superadmin`, `/mydarrin-checkout`), cu `cleanUrls: true` în `vercel.json`.
+
+#### Probleme
+
+| # | Problemă | Severitate |
+|---|---|---|
+| 1.4-a | Serviciile și produsele distribuite apar toate cu același card generic; `og:url` fără slug | **major** |
+| 1.4-b | OG doar în română, deși engleza e implicită; crawlerul nu poate primi EN | **major** |
+| 1.4-c | Pitch deck-ul public vs. „sub NDA” pe pagina de investitori; buton de distribuire pe pagina cu cifre false (2.2) | **major** (decizie LM) |
+| 1.4-d | `mydarrin-business-model` și `mydarrin-design-system` publice | **major** |
+| 1.4-e | Imaginea OG: stoc extern, 1200 × 795; logo 900 × 629; fără dimensiuni declarate | minor |
+| 1.4-f | 8 pagini publice fără OG | minor |
+| 1.4-g | `robots.txt` nu acoperă adresele fără `.html` | minor |
+
+#### Decizii pentru LM
+1. **Pitch deck:** (a) public, cu cifre marcate „țintă” și fără date confidențiale, sau (b) în spatele NDA-ului (`/acord-confidentialitate`), scos din `PAGINI_PUBLICE`. Recomandare: **(b)** până la corectarea cifrelor din 2.2; butonul de distribuire scos de pe `mydarrin-investitori`.
+2. **Imaginea OG implicită:** o imagine de marcă 1200 × 630, făcută de echipa HBP (nu stoc); pentru servicii, prima imagine reală a serviciului, când există (vezi 1.3).
+3. **Paginile interne** (`business-model`, `design-system`): mutate în `PAGINI_STRICTE` (recomandat).
+
+#### Planul
+**Back-end**
+- Funcție nouă `api/public/pagina-meta.js` (GET): primește tipul (serviciu / produs marketplace), slug-ul și limba; citește `catalog_servicii` (titlu, descriere, prima imagine, `traduceri.en`) sau produsul din marketplace; întoarce HTML-ul paginii statice (`mydarrin-produs.html`, inclus în funcție) cu `<head>` completat pe server: `title`, `description`, `og:title`, `og:description`, `og:image` (+ `width` / `height` / `alt`), `og:url` canonic cu slug, `og:locale` (`en_GB` / `ro_RO`), `og:locale:alternate`, `twitter:*`, `link rel="canonical"` și `hreflang`. Fără cod după agent (același HTML pentru oameni și crawlere — nu e „cloaking”).
+- `middleware.js`: rutele `/catalog/:tip/:categorie/:slug` și `mydarrin-produs?slug=` se rescriu spre `api/public/pagina-meta`; la fel o rută nouă pentru produsele din marketplace (`/marketplace/:tip/:slug`).
+- Limba: `?lang=en|ro`; fără parametru → engleza (regula din CLAUDE.md); linkul copiat de `share-widget.js` adaugă `lang` după limba activă.
+- `middleware.js`: `mydarrin-business-model`, `mydarrin-design-system` în `PAGINI_STRICTE`; `mydarrin-pitch-deck` după decizia 1.
+
+**Front-end**
+- `share-widget.js`: URL-ul canonic (cu slug și `lang`), nu `location.href` brut.
+- Etichete OG pentru cele 8 pagini publice fără OG; `og:image:width/height/alt` pe toate; imaginea implicită 1200 × 630 în `assets/`.
+- `robots.txt`: și adresele fără `.html`.
+
+**Conținut (RO + EN)**
+- Titlu și descriere OG în RO și EN pentru fiecare pagină statică (în `i18n/en/<pagina>.json` există deja textele de titlu; varianta EN a etichetelor statice se servește prin aceeași funcție sau prin fișiere `?lang=en` generate).
+- Descrierea OG de pe `index` aliniată la 1.2 (fără „escrow securizat” / „60 de secunde”).
+
+**Teste**
+- Script nou `scripts/test-og-crawler.js`: pentru 3 servicii și 2 produse, `GET` cu agentul `facebookexternalhit` (local, `vercel dev`) → titlul serviciului, `og:url` cu slug, imaginea 1200 × 630 sau imaginea serviciului, EN implicit, RO cu `?lang=ro`.
+- Verificare manuală în Facebook Sharing Debugger și LinkedIn Post Inspector după publicare (LM).

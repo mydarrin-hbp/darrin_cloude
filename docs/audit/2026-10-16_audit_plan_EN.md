@@ -366,3 +366,87 @@ Notes:
 - New script `scripts/test-catalog-conformitate.js`: applies the criterion on simulated data (each condition in turn).
 - Check after the migration: 0 published "vN" rows; 0 published materials / rentals in `catalog_servicii`.
 - The Romanian detector in EN on `/mydarrin-catalog` and on 3 service pages (0).
+
+---
+
+### 2.4 Social sharing and Open Graph
+
+#### Current state (with evidence)
+
+**OG / Twitter tags (52 HTML pages).** Confirmed: **27** pages have `og:image` and `twitter:card` (all 27 also have `og:title`, `og:description`).
+
+| Group | Pages |
+|---|---|
+| With OG + Twitter (27) | `index`, `afla-ce-facem`, `cum-comanzi`, `cum-devii-curier-de-cartier`, `cum-devii-furnizor-materiale`, `cum-devii-operator-inchirieri`, `cum-devii-partenerul-nostru`, `cum-platesc`, `cum-prestam-livram`, `cum-programez-serviciu`, `despre-noi`, `garantii-si-asigurari`, `ghidul-asiguratorului`, `intrebari-frecvente-clienti`, `intrebari-frecvente-parteneri`, `mydarrin-app-mobile`, `mydarrin-catalog`, `mydarrin-categorie-inchirieri`, `mydarrin-categorie-materiale`, `mydarrin-categorie-servicii`, `mydarrin-cum-functioneaza`, `mydarrin-devino-partener`, `mydarrin-investitori`, `mydarrin-marketplace`, `mydarrin-produs`, `mydarrin-serviciu`, `servicii-urgente` |
+| Public, **without** OG (to be added) | `mydarrin-marketplace-materiale`, `mydarrin-pitch-deck` (after the decision below), `mydarrin-contact`, `mydarrin-creeaza-deviz`, `mydarrin-cos`, `mydarrin-termeni`, `mydarrin-politica-confidentialitate`, `reclamatii` |
+| Without OG, correctly so (account, payment, internal) | `mydarrin-checkout`, `confirmare-livrare`, `reset-password`, `acces-temporar`, `acord-confidentialitate`, the 3 dashboards, `mydarrin-devino-partener-wizard`, `mydarrin-admin-catalog`, `mydarrin-superadmin`, `mydarrin-backoffice-serviciu`, `mydarrin-deviz-engine`, `mydarrin-auth-schema`, `mydarrin-sync-architecture`, `mydarrin-business-model`, `mydarrin-design-system` |
+
+**The OG image**
+- 26 pages use the same Unsplash stock photo: `https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1200&q=80` (e.g. `cum-devii-furnizor-materiale.html:325`). Downloaded live: **1200 × 795**, not 1200 × 630; it is an external stock image, not a My Darrin one.
+- `index.html:329` uses `/api/branding/logo-image?slot=header_logo` (the real logo): a **900 × 629** PNG, not 1200 × 630.
+- None declares `og:image:width` / `og:image:height`; only `index.html` has `og:image:alt`.
+
+**The title and description**
+- All OG tags are written in Romanian, static, in the HTML. English is the default language on first visit, but a crawler (no `localStorage`, no JavaScript) always gets Romanian: `GET /?lang=en` with the `facebookexternalhit` agent returns `<html lang="ro">` and the Romanian title.
+- `seo-meta.js:1-16` only overrides `title` / `description` from JS, after the API responds — social crawlers do not see it (the comment itself says so).
+- `index.html:317-320`: the OG description promises "AI quote in 60 seconds, secure escrow payment" (see 1.2-T1, 1.2-T8).
+
+**The share buttons**
+- `share-widget.js` is included on the same 27 pages with OG (including `index` and `mydarrin-investitori`): the Web Share API (`navigator.share`) on mobile; on desktop Facebook, WhatsApp, X, LinkedIn, Email and "Copy link" (`share-widget.js:1-15`).
+- `mydarrin-serviciu.html:1530-1532` also has an inline block (`MydShare.creeazaBlocInline`).
+- The shared link is `location.href`, so a service link is right for a person, but the network's crawler reads it as shown below.
+
+**Dynamic pages as seen by a crawler** (`curl -A "facebookexternalhit/1.1"`, production, 16 Oct)
+
+| URL | What the crawler gets |
+|---|---|
+| `/catalog/servicii/instalatii-electrice/inlocuire-becuri-corpuri` | 200, `lang="ro"`, `og:title` "Configurare comandă \| My Darrin", `og:url` `…/mydarrin-produs` (no slug), the stock image |
+| `/mydarrin-produs?slug=inlocuire-becuri-corpuri&type=servicii` | identical |
+| `/mydarrin-serviciu` | `og:title` "Înlocuire calorifer — Bronz→Platinum", the same for every service (fixed text in `mydarrin-serviciu.html:310-316`) |
+| `/mydarrin-marketplace-materiale` | only `<title>` "Materiale și închirieri", no OG |
+
+Conclusion: **every shared service or product appears with the same generic card**, in Romanian, with a stock image, and `og:url` points to the page without the slug (the network may group every share under the same address).
+
+**The pitch deck and the confidentiality agreement**
+- `middleware.js`: `mydarrin-pitch-deck` and `mydarrin-investitori` are in `PAGINI_PUBLICE`; `BARIERA_GENERALA_ACTIVA = false`. Live: `GET /mydarrin-pitch-deck` → 200, no authentication.
+- The `/acces-temporar` + `/acord-confidentialitate` flow exists (`middleware.js`, `treceBarieraPlatforma`, `nda_pending`), but applies only to pages outside `PAGINI_PUBLICE`, with the general barrier on.
+- `mydarrin-investitori.html:1902-1916` says the documents and data are "Under NDA" and asks for the NDA to be accepted; the pitch deck (with the round's figures) is public anyway, and the investors page has a share button. **Conflict — LM decision.**
+
+**A related finding (outside the list, but found here).** `mydarrin-business-model` and `mydarrin-design-system` (internal documents) answer live with 200, with no authentication: they are neither in `PAGINI_STRICTE` nor in `PAGINI_PUBLICE`, and with the barrier off they pass (`middleware.js`, `if (!BARIERA_GENERALA_ACTIVA) return next()`). `robots.txt` only blocks the `.html` variants, not the clean addresses (`/mydarrin-superadmin`, `/mydarrin-checkout`), with `cleanUrls: true` in `vercel.json`.
+
+#### Problems
+
+| # | Problem | Severity |
+|---|---|---|
+| 1.4-a | Shared services and products all appear with the same generic card; `og:url` without the slug | **major** |
+| 1.4-b | OG in Romanian only, although English is the default; the crawler cannot get EN | **major** |
+| 1.4-c | The pitch deck is public vs. "under NDA" on the investors page; a share button on the page with false figures (2.2) | **major** (LM decision) |
+| 1.4-d | `mydarrin-business-model` and `mydarrin-design-system` are public | **major** |
+| 1.4-e | The OG image: external stock, 1200 × 795; logo 900 × 629; no declared dimensions | minor |
+| 1.4-f | 8 public pages without OG | minor |
+| 1.4-g | `robots.txt` does not cover the addresses without `.html` | minor |
+
+#### Decisions for LM
+1. **Pitch deck:** (a) public, with figures marked "target" and no confidential data, or (b) behind the NDA (`/acord-confidentialitate`), removed from `PAGINI_PUBLICE`. Recommendation: **(b)** until the figures in 2.2 are fixed; the share button removed from `mydarrin-investitori`.
+2. **The default OG image:** a 1200 × 630 brand image made by the HBP team (not stock); for services, the service's first real image, when there is one (see 1.3).
+3. **Internal pages** (`business-model`, `design-system`): moved into `PAGINI_STRICTE` (recommended).
+
+#### The plan
+**Back-end**
+- A new function `api/public/pagina-meta.js` (GET): takes the type (service / marketplace product), the slug and the language; reads `catalog_servicii` (title, description, first image, `traduceri.en`) or the marketplace product; returns the static page's HTML (`mydarrin-produs.html`, bundled with the function) with the `<head>` filled in on the server: `title`, `description`, `og:title`, `og:description`, `og:image` (+ `width` / `height` / `alt`), a canonical `og:url` with the slug, `og:locale` (`en_GB` / `ro_RO`), `og:locale:alternate`, `twitter:*`, `link rel="canonical"` and `hreflang`. No user-agent switch (the same HTML for people and crawlers — no cloaking).
+- `middleware.js`: the routes `/catalog/:tip/:categorie/:slug` and `mydarrin-produs?slug=` are rewritten to `api/public/pagina-meta`; the same for a new route for marketplace products (`/marketplace/:tip/:slug`).
+- Language: `?lang=en|ro`; with no parameter → English (the CLAUDE.md rule); the link copied by `share-widget.js` adds `lang` from the active language.
+- `middleware.js`: `mydarrin-business-model`, `mydarrin-design-system` into `PAGINI_STRICTE`; `mydarrin-pitch-deck` after decision 1.
+
+**Front-end**
+- `share-widget.js`: the canonical URL (with slug and `lang`), not the raw `location.href`.
+- OG tags for the 8 public pages without OG; `og:image:width/height/alt` everywhere; the default 1200 × 630 image in `assets/`.
+- `robots.txt`: the addresses without `.html` too.
+
+**Content (RO + EN)**
+- OG title and description in RO and EN for each static page (`i18n/en/<page>.json` already holds the title texts; the EN variant of the static tags is served by the same function or by generated `?lang=en` files).
+- The OG description on `index` aligned with 1.2 (no "secure escrow" / "60 seconds").
+
+**Tests**
+- New script `scripts/test-og-crawler.js`: for 3 services and 2 products, `GET` with the `facebookexternalhit` agent (locally, `vercel dev`) → the service title, `og:url` with the slug, the 1200 × 630 image or the service image, EN by default, RO with `?lang=ro`.
+- Manual check in the Facebook Sharing Debugger and the LinkedIn Post Inspector after publication (LM).
