@@ -1760,8 +1760,14 @@ function showToast(msg){
 
 document.addEventListener('DOMContentLoaded',()=>{
   document.documentElement.style.setProperty('--accent','#003366');
-  renderNav('materiale');
-  showPanel('overview');
+  // Pasul 11-H1: furnizorul de închirieri ajunge pe ?type=inchirieri
+  // (lib/destinatie-rol.js) și vede direct meniul lui, nu pe cel de materiale.
+  if (new URLSearchParams(location.search).get('type') === 'inchirieri') {
+    switchType('inchirieri', document.getElementById('tb-inch'));
+  } else {
+    renderNav('materiale');
+    showPanel('overview');
+  }
   if(typeof lucide!=='undefined') lucide.createIcons();
 });
 </script>
