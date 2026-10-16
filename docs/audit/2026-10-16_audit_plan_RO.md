@@ -13,7 +13,28 @@ Severitate: **critic** = bani greșiți, date expuse sau o funcție de bază car
 
 ## 1. Rezumat (o pagină)
 
-*(Se completează la final, după cele 7 puncte.)*
+**Critic** (bani greșiți, informații false cu consecințe, o funcție de bază blocată)
+1. Pagina de investitori arată ca „KPIs Live” cifre fixe, inventate (comenzi, GMV, „Escrow blocat 284.000 Lei”, NPS), procente de equity greșit calculate (25.000 EUR = „2%” în loc de 0,625%) și termeni contradictorii (equity 20% vs 12,5%; ticket minim 25K vs 1.000 EUR). Pitch deck-ul, public, prezintă „validare în 7 hub-uri” și „acorduri prealabile” fără sursă. (2.2)
+2. Paginile promit „escrow”, „card pre-autorizat”, „plată garantată”, deși singura plată e ordinul de plată, fără procesator. (2.2)
+3. `mydarrin-marketplace.html` prezintă o firmă reală (ACA BG, CUI 32667674) ca „furnizor principal” și integrări „verificate” (WooCommerce, Shopify) care nu există. (2.2, 2.6)
+4. Pragul minim de comandă: diferența până la prag nu e salvată, n-are TVA și nu e alocată în escrow; proforma arată Subtotal + TVA ≠ Total; rezerva de 100 se aplică în orice monedă, în 6 țări cu checkout activ. (2.1)
+5. Catalogul: 100 de rânduri de test publicate; 0 servicii conforme; 0 traduceri EN în baza de date. (2.3)
+6. Furnizorii de materiale / închirieri nu își pot seta zona, disponibilitatea și produsele bifate, deci nu pot primi linii din comenzile de servicii. (2.7)
+
+**Major**
+- Pragul nu e arătat clientului înainte de plată; coșul multi-serviciu îl aplică pe fiecare item; moneda afișată e mereu „Lei”; praguri și procente scrise în pagini. (2.1)
+- Texte fără sursă sau contradictorii pe toate paginile de partener: țări greșite, „5 zile lucrătoare”, aplicație mobilă, SMS, 48h vs 24h în cod; regula 10c lipsește. (2.2)
+- 38 de produse rămase în catalogul de servicii; ruta de încadrare goală; 64 de servicii fără preț calculabil. (2.3)
+- Orice serviciu distribuit apare cu același card generic, în română; pitch deck public vs. „sub NDA”; două pagini interne publice. (2.4)
+- Filtrele din catalog: subcategoriile nu filtrează deloc; categoriile arată doar o parte din servicii; 14 carduri statice. (2.5)
+- Reimportul unui produs îl scoate de pe site (blochează orice feed). (2.6)
+- Dashboard-ul furnizorului: legătura „Super Admin”, panouri goale, fără „Contul meu”, tăiat la 390 px, „Discount 5–15%” și „Live · sync activ” la HBP. (2.7)
+
+**Minor:** imaginile OG (stoc, dimensiuni greșite), `robots.txt`, contrastul meniului, `rating` inventat în baza de date, texte vechi în dicționare, câteva texte EN lipsă.
+
+**Ce e bine:** formula prețului e unică pe server și citită din back-office; regula 10c e aplicată în cod (`lib/eligibilitate-partener.js`); discountul partenerilor nu apare public; curierii nu dau discount; importul CSV validează ruta de încadrare; cifrele de catalog date de LM se confirmă exact.
+
+**Deciziile pentru LM** sunt la finalul fiecărui punct și adunate în capitolul 4.
 
 ---
 
@@ -698,3 +719,64 @@ Reguli: meniul se generează dintr-o singură definiție (un fișier comun, de e
 **Conținut (RO + EN):** etichetele din tabelul de mai sus în `i18n/en/mydarrin-dashboard-*.json`; scoaterea „CUI 32667674 · Bacău” din dicționar.
 
 **Teste:** detectorul `--cu-cont` reparat ca să randeze efectiv dashboard-urile (captura albă de azi) și rulat la 390 px și 1366 px; un test că meniul furnizorului propriu nu conține „Discounturi” / „Contract”; un test că niciun meniu de partener nu conține legături spre `mydarrin-superadmin`.
+
+---
+
+## 3. Planul de implementare
+
+Fiecare pas = o conversație Claude Code, un branch din `main`, RO + EN în același commit, detectorul de română în EN = 0 înainte de PR, migrarea (dacă există) aplicată de LM **înainte** de publicarea codului. Ordinea recomandată:
+
+| # | Pas | Scop | Fișiere principale | Migrare | Teste | Depinde de |
+|---|---|---|---|---|---|---|
+| 1 | **11-A Adevărul pe paginile publice** | Scoaterea / corectarea afirmațiilor false: fereastra „KPIs Live” fixă, equity și ticket, ACA BG, „escrow / pre-autorizat / card blocat”, integrări „verificate”, SMS, aplicația, țările active, 48h → termenul real, cifre fără sursă | `mydarrin-investitori.html`, `mydarrin-pitch-deck.html`, `mydarrin-marketplace.html`, `mydarrin-catalog.html` (insigna ACA), paginile `cum-devii-*`, `ghidul-asiguratorului.html`, `intrebari-frecvente-parteneri.html`, `mydarrin-devino-partener.html`, `mydarrin-cum-functioneaza.html`, `index.html` (OG), `i18n/en/*.json` | nu | testul „cuvinte interzise” (2.2), detectorul EN | deciziile 2.2 (1–7) |
+| 2 | **11-B Acces: pitch deck, pagini interne** | Pitch deck după decizie (NDA sau public cu ținte), `business-model` / `design-system` în `PAGINI_STRICTE`, `robots.txt`, butonul de distribuire scos de pe investitori | `middleware.js`, `robots.txt`, `mydarrin-investitori.html` | `pitch_deck_versiuni.slide_uri_en` (opțional) | `curl` local: 307 pe paginile interne | decizia 2.4-1 |
+| 3 | **11-C Valoarea minimă de comandă** | Fără rezervă 100; varianta (a) sau (b); mesaj clar în produs, marketplace, coș, checkout; moneda reală; proforma corectă | `lib/calculeaza-pret.js`, `api/comenzi/creeaza.js`, `api/public/calculeaza-pret-nivel.js`, `api/public/marketplace-produse.js`, `lib/elibereaza-escrow.js`, `lib/genereaza-proforma-pdf.js`, `format-currency.js`, `mydarrin-produs.html`, `mydarrin-checkout.html`, `mydarrin-cos.html`, `mydarrin-marketplace-materiale.html` | doar la varianta (a): `comenzi.suma_completare_prag`, `tva_completare_prag` | `scripts/test-pret-config.js` extins; test proformă; test escrow | deciziile 2.1 (1–4); LM completează pragul pe țări |
+| 4 | **11-H1 Dashboard furnizor: corecții rapide** | Fără „Super Admin”, fără „Live · sync activ”, fără discount / clauză de zonă la HBP, CSS 390 px, contrastul meniului | `mydarrin-dashboard-furnizor.html`, `api/partener/discounturi.js`, `api/partener/profil-status.js`, `i18n/en/mydarrin-dashboard-furnizor.json` | nu | detectorul `--cu-cont` reparat (390 / 1366) | decizia 2.7-2 |
+| 5 | **11-D Curățarea catalogului** | Rândurile „vN” arhivate / șterse; `rating` golit; cele 38 de produse reintroduse ca produse HBP (șabloanele din `docs/sabloane/`) și arhivate în catalog | `docs/migrations-propuse/…_catalog_curatare_test.sql`, `…_catalog_rating.sql`, `…_catalog_produse_marketplace.sql`; importul prin `api/marketplace/importa-csv.js` | da (3 fișiere) | verificările de la finalul migrărilor; detectorul EN pe catalog | deciziile 2.3 (1, 2, 5); lista de prețuri HBP |
+| 6 | **11-E Conformitatea serviciilor** | Criteriul „serviciu conform” în back-office (ce lipsește, pe serviciu), publicare refuzată pentru neconforme, minimum 3 imagini; completarea rutei (`nod_id`) din back-office | `api/admin/catalog.js`, `mydarrin-admin-catalog.html`, `api/admin/catalog-imagini.js`, `scripts/test-catalog-conformitate.js` | opțional: vederea `catalog_servicii_public` | testul de conformitate | deciziile 2.3 (3, 4); pasul 5 |
+| 7 | **11 (planificat) Meniuri din ruta de încadrare** | Meniul catalogului generat din `meniu_capitole` / `categorii`; filtre pe cod; fără `NACE_MAP` / `DOM` / carduri statice | `api/public/meniu-catalog.js` (nou), `mydarrin-catalog.html`, eventual `api/public/catalog-servicii.js` | nu (dacă migrarea rutei din 15 oct. e aplicată) | `scripts/test-filtre-catalog.js` (Playwright, date simulate) | pasul 6 (datele `nod_id` completate) |
+| 8 | **11-G Open Graph pe server** | Card corect pentru fiecare serviciu / produs, RO + EN, `og:url` canonic, imagine 1200 × 630; OG pe cele 8 pagini publice lipsă | `api/public/pagina-meta.js` (nou), `middleware.js`, `share-widget.js`, paginile fără OG, `assets/` | nu | `scripts/test-og-crawler.js`; Facebook Sharing Debugger (LM) | pașii 5–7; decizia 2.4-2 (imaginea) |
+| 9 | **11-H2 Meniul comun și „Contul meu”** | `meniu-partener.js` comun; „Contul meu” (date firmă, cont bancar, contract, documente, stare); „Zonă și disponibilitate” și produsele bifate pentru furnizori | `meniu-partener.js` (nou), ambele dashboard-uri, endpointurile `api/partener/*` deschise și furnizorilor | de verificat: constrângerile `parteneri_disponibilitate` / `partener_servicii_active` pentru furnizori | detectorul `--cu-cont`; test meniu pe roluri; test alocare materiale (`lib/aloca-subcontractori.js`) | deciziile 2.7 (1, 3, 4); pasul 4 |
+| 10 | **11-F1 Marketplace hibrid: baza de date** | Tabelele `furnizor_surse_produse`, `furnizor_chei_api`, `furnizor_mapari_categorii`, `furnizor_sincronizari`; coloanele de sursă pe produse | `docs/migrations-propuse/…_marketplace_surse.sql` | da | verificarea din migrare; testul migrării (ca `scripts/test-migrare-*`) | deciziile 2.6 (1–5) |
+| 11 | **11-F2 Banda comună + reimportul corect** | Reimportul nu mai scoate produsele live; preț / stoc fără reaprobare; versiune în așteptare pentru titlu / imagini; descărcarea imaginilor în `marketplace-media` | `api/marketplace/importa-csv.js`, `lib/valideaza-produs-marketplace.js`, `api/admin/marketplace-aprobari.js`, `lib/sincronizare-produse.js` (nou) | nu (folosește F1) | `scripts/test-sincronizare-produse.js` | pasul 10 |
+| 12 | **11-F3 API-ul pentru furnizori** | `api/furnizor/v1/*`, chei per furnizor (hash, rotire, revocare), rate limit pe cheie | `api/furnizor/v1/*.js` (nou), `lib/chei-api-furnizor.js` (nou), `lib/rate-limit.js` | nu | teste de securitate (401, 429, idempotență) | pasul 11 |
+| 13 | **11-F4 Feed-ul citit periodic** | Cron de sincronizare, protecție SSRF / XXE, offline după 2 citiri lipsă | `api/cron/sincronizeaza-feed-uri.js` (nou), `vercel.json` (`crons`) | nu | teste SSRF / XXE; produs lipsă → offline | pasul 11 |
+| 14 | **11-F5 Dashboard și texte pentru furnizori** | Panoul „Produse: import și conectare”; mapările de categorii; jurnalul; paginile `cum-devii-furnizor-materiale`, `cum-devii-operator-inchirieri`, FAQ, `docs/regula-incadrare.md`, `docs/sabloane/README.md`, emailuri | `mydarrin-dashboard-furnizor.html`, paginile de mai sus, `lib/i18n.js` | nu | detectorul EN | pașii 12–13 |
+| 15 | **11-I „Cum folosesc marketplace-ul”** | Pagina nouă, RO + EN, în meniul de subsol și în marketplace | `cum-folosesc-marketplace.html`, `i18n/en/cum-folosesc-marketplace.json`, `middleware.js`, sitemap | nu | detectorul EN | pașii 3 și 14 (prag și furnizori) |
+
+Pașii 1–4 se pot face imediat după deciziile lui LM și nu depind unul de altul. Pașii 5–8 sunt lanțul catalogului (curățare → conformitate → meniuri → OG). Pașii 10–14 sunt lanțul marketplace-ului hibrid.
+
+---
+
+## 4. Toate deciziile pentru LM
+
+| # | Punct | Decizie | Recomandare |
+|---|---|---|---|
+| 1 | 2.1 | Sub prag: clientul plătește pragul (azi) sau comanda e blocată | blocată, cu mesaj „mai adaugă X” |
+| 2 | 2.1 | Un prag pe țară (azi) sau pe monedă | pe țară |
+| 3 | 2.1 | Țară fără prag: checkout oprit sau fără prag | checkout oprit până se completează |
+| 4 | 2.1 | Coșul multi-serviciu: prag pe comandă sau pe coș | depinde de „comandă compusă cu escrow unic” |
+| 5 | 2.2 | Formularea plății până la integrarea unui procesator | „ordin de plată către Home Best Pal, distribuit după confirmare” |
+| 6 | 2.2 | Termenul real de plată către parteneri; confirmarea tacită (24h în cod vs 48h în FAQ) | LM stabilește; textele urmează codul |
+| 7 | 2.2 | ACA BG: există acord? | dacă nu, se scoate peste tot |
+| 8 | 2.2 | Cifrele oficiale pentru investitori și pitch deck; fereastra „KPIs Live” | se scoate fereastra; cifrele marcate „țintă” |
+| 9 | 2.2 | Integrările de magazin pe pagini | scoase până la pașii 11-F |
+| 10 | 2.2 | Subsolul „Home Best Pal – UK · RO” | LM alege entitățile |
+| 11 | 2.2 | Codul CAEN (ANAF: 4120) vs 41.00 / 43.xx / 43.60 | rămâne deschis |
+| 12 | 2.3 | Rândurile de test: ștergere sau arhivare | ștergere, dacă nu au legături |
+| 13 | 2.3 | Cele 38 de produse: reintroduse ca produse HBP sau șterse | reintroduse, cu prețurile HBP |
+| 14 | 2.3 | Serviciile fără rețetă: publicate „la evaluare” sau ascunse | ascunse |
+| 15 | 2.3 | Sursa imaginilor reale | fotografii HBP + parteneri cu acord; stoc doar marcat „ilustrativ” |
+| 16 | 2.3 | Câmpul `rating` | golit |
+| 17 | 2.4 | Pitch deck: public cu ținte sau sub NDA | sub NDA, până la corectarea cifrelor |
+| 18 | 2.4 | Imaginea OG implicită | imagine de marcă 1200 × 630, făcută de HBP |
+| 19 | 2.4 | Paginile interne publice | mutate în `PAGINI_STRICTE` |
+| 20 | 2.6 | Canalele întâi | feed CSV / JSON + API propriu; WooCommerce / Shopify mai târziu |
+| 21 | 2.6 | Frecvența feed-ului; pragul de variație de preț | 6 ore; ±30% |
+| 22 | 2.6 | Schimbări de titlu / imagini după aprobare | reaprobare |
+| 23 | 2.6 | Produse lipsă din feed | offline după 2 citiri; arhivate după 90 de zile |
+| 24 | 2.6 | Cine mapează categoriile furnizorului | furnizorul, verificat de admin |
+| 25 | 2.7 | Structura comună a meniului (5 secțiuni) | aprobată |
+| 26 | 2.7 | HBP: fără discount, contract, clauză de zonă | da |
+| 27 | 2.7 | Calendar / Alerte siguranță: construite acum sau scoase | calendarul construit (închirieri), alertele scoase până există |
+| 28 | 2.7 | Un singur dashboard de partener | da, pe termen mediu |

@@ -13,7 +13,28 @@ Severity: **critical** = wrong money, exposed data or a core function that does 
 
 ## 1. Summary (one page)
 
-*(Filled in at the end, after the 7 points.)*
+**Critical** (wrong money, false information with consequences, a core function blocked)
+1. The investors page shows as "KPIs Live" fixed, invented figures (orders, GMV, "Escrow blocked 284,000 Lei", NPS), wrongly calculated equity percentages (€25,000 = "2%" instead of 0.625%) and contradictory terms (equity 20% vs 12.5%; minimum ticket €25K vs €1,000). The public pitch deck presents "validation in 7 hubs" and "preliminary agreements" with no source. (2.2)
+2. The pages promise "escrow", "pre-authorised card", "guaranteed payment", although the only payment is a bank transfer, with no processor. (2.2)
+3. `mydarrin-marketplace.html` presents a real company (ACA BG, CUI 32667674) as "main supplier" and "verified" integrations (WooCommerce, Shopify) that do not exist. (2.2, 2.6)
+4. The minimum order value: the top-up to the threshold is not stored, has no VAT and is not allocated in escrow; the pro forma shows Subtotal + VAT ≠ Total; the 100 fallback applies in any currency, in 6 countries with active checkout. (2.1)
+5. The catalogue: 100 test rows published; 0 compliant services; 0 EN translations in the database. (2.3)
+6. Materials / rental suppliers cannot set their area, availability and ticked products, so they cannot receive lines from service orders. (2.7)
+
+**Major**
+- The threshold is not shown to the client before paying; the multi-service cart applies it to each item; the currency shown is always "Lei"; thresholds and percentages written in pages. (2.1)
+- Unsourced or contradictory texts on every partner page: wrong countries, "5 working days", mobile app, SMS, 48h vs 24h in the code; the 10c rule is missing. (2.2)
+- 38 products left in the service catalogue; the classification route is empty; 64 services with no computable price. (2.3)
+- Every shared service appears with the same generic card, in Romanian; the pitch deck is public vs. "under NDA"; two internal pages are public. (2.4)
+- The catalogue filters: sub-categories do not filter at all; categories show only part of the services; 14 static cards. (2.5)
+- Re-importing a product takes it off the site (blocks any feed). (2.6)
+- The supplier dashboard: the "Super Admin" link, empty panels, no "My account", cut off at 390 px, "Discount 5–15%" and "Live · sync activ" for HBP. (2.7)
+
+**Minor:** OG images (stock, wrong dimensions), `robots.txt`, menu contrast, invented `rating` in the database, old texts in dictionaries, a few missing EN texts.
+
+**What is good:** the price formula is single, on the server and read from the back office; the 10c rule is enforced in the code (`lib/eligibilitate-partener.js`); partner discounts are not public; couriers give no discount; the CSV import validates the classification route; LM's catalogue figures are confirmed exactly.
+
+**The decisions for LM** are at the end of each point and gathered in chapter 4.
 
 ---
 
@@ -698,3 +719,64 @@ Rules: the menu is generated from a single definition (a shared file, e.g. `meni
 **Content (RO + EN):** the labels in the table above in `i18n/en/mydarrin-dashboard-*.json`; remove "CUI 32667674 · Bacău" from the dictionary.
 
 **Tests:** the `--cu-cont` detector fixed so that it actually renders the dashboards (today's blank screenshot) and run at 390 px and 1366 px; a test that the own supplier's menu has no "Discounts" / "Contract"; a test that no partner menu links to `mydarrin-superadmin`.
+
+---
+
+## 3. The implementation plan
+
+Each step = one Claude Code conversation, one branch from `main`, RO + EN in the same commit, the Romanian detector in EN = 0 before the PR, the migration (if any) applied by LM **before** the code that uses it is published. Recommended order:
+
+| # | Step | Goal | Main files | Migration | Tests | Depends on |
+|---|---|---|---|---|---|---|
+| 1 | **11-A Truth on the public pages** | Remove / fix the false claims: the fixed "KPIs Live" window, equity and ticket, ACA BG, "escrow / pre-authorised / card blocked", "verified" integrations, SMS, the app, the active countries, 48h → the real term, unsourced figures | `mydarrin-investitori.html`, `mydarrin-pitch-deck.html`, `mydarrin-marketplace.html`, `mydarrin-catalog.html` (ACA badge), the `cum-devii-*` pages, `ghidul-asiguratorului.html`, `intrebari-frecvente-parteneri.html`, `mydarrin-devino-partener.html`, `mydarrin-cum-functioneaza.html`, `index.html` (OG), `i18n/en/*.json` | no | the "banned words" test (2.2), the EN detector | decisions 2.2 (1–7) |
+| 2 | **11-B Access: pitch deck, internal pages** | The pitch deck per decision (NDA or public with targets), `business-model` / `design-system` into `PAGINI_STRICTE`, `robots.txt`, the share button removed from the investors page | `middleware.js`, `robots.txt`, `mydarrin-investitori.html` | `pitch_deck_versiuni.slide_uri_en` (optional) | local `curl`: 307 on the internal pages | decision 2.4-1 |
+| 3 | **11-C Minimum order value** | No 100 fallback; option (a) or (b); a clear message on the product page, marketplace, cart, checkout; the real currency; a correct pro forma | `lib/calculeaza-pret.js`, `api/comenzi/creeaza.js`, `api/public/calculeaza-pret-nivel.js`, `api/public/marketplace-produse.js`, `lib/elibereaza-escrow.js`, `lib/genereaza-proforma-pdf.js`, `format-currency.js`, `mydarrin-produs.html`, `mydarrin-checkout.html`, `mydarrin-cos.html`, `mydarrin-marketplace-materiale.html` | only for option (a): `comenzi.suma_completare_prag`, `tva_completare_prag` | `scripts/test-pret-config.js` extended; pro forma test; escrow test | decisions 2.1 (1–4); LM fills in the threshold per country |
+| 4 | **11-H1 Supplier dashboard: quick fixes** | No "Super Admin", no "Live · sync activ", no discount / zone clause for HBP, 390 px CSS, menu contrast | `mydarrin-dashboard-furnizor.html`, `api/partener/discounturi.js`, `api/partener/profil-status.js`, `i18n/en/mydarrin-dashboard-furnizor.json` | no | the fixed `--cu-cont` detector (390 / 1366) | decision 2.7-2 |
+| 5 | **11-D Catalogue clean-up** | "vN" rows archived / deleted; `rating` emptied; the 38 products re-entered as HBP products (the templates in `docs/sabloane/`) and archived in the catalogue | `docs/migrations-propuse/…_catalog_curatare_test.sql`, `…_catalog_rating.sql`, `…_catalog_produse_marketplace.sql`; the import through `api/marketplace/importa-csv.js` | yes (3 files) | the checks at the end of the migrations; the EN detector on the catalogue | decisions 2.3 (1, 2, 5); the HBP price list |
+| 6 | **11-E Service compliance** | The "compliant service" criterion in the back office (what is missing, per service), publication refused for non-compliant ones, minimum 3 images; filling in the route (`nod_id`) from the back office | `api/admin/catalog.js`, `mydarrin-admin-catalog.html`, `api/admin/catalog-imagini.js`, `scripts/test-catalog-conformitate.js` | optional: the `catalog_servicii_public` view | the compliance test | decisions 2.3 (3, 4); step 5 |
+| 7 | **11 (planned) Menus from the classification route** | The catalogue menu generated from `meniu_capitole` / `categorii`; filters by code; no `NACE_MAP` / `DOM` / static cards | `api/public/meniu-catalog.js` (new), `mydarrin-catalog.html`, possibly `api/public/catalog-servicii.js` | no (if the 15 Oct route migration is applied) | `scripts/test-filtre-catalog.js` (Playwright, simulated data) | step 6 (`nod_id` data filled in) |
+| 8 | **11-G Open Graph on the server** | A correct card for each service / product, RO + EN, canonical `og:url`, 1200 × 630 image; OG on the 8 missing public pages | `api/public/pagina-meta.js` (new), `middleware.js`, `share-widget.js`, the pages without OG, `assets/` | no | `scripts/test-og-crawler.js`; Facebook Sharing Debugger (LM) | steps 5–7; decision 2.4-2 (the image) |
+| 9 | **11-H2 The shared menu and "My account"** | A shared `meniu-partener.js`; "My account" (company details, bank account, contract, documents, status); "Area & availability" and ticked products for suppliers | `meniu-partener.js` (new), both dashboards, the `api/partener/*` endpoints opened to suppliers | to check: the `parteneri_disponibilitate` / `partener_servicii_active` constraints for suppliers | the `--cu-cont` detector; a menu-by-role test; a materials allocation test (`lib/aloca-subcontractori.js`) | decisions 2.7 (1, 3, 4); step 4 |
+| 10 | **11-F1 Hybrid marketplace: database** | The tables `furnizor_surse_produse`, `furnizor_chei_api`, `furnizor_mapari_categorii`, `furnizor_sincronizari`; the source columns on products | `docs/migrations-propuse/…_marketplace_surse.sql` | yes | the check in the migration; a migration test (like `scripts/test-migrare-*`) | decisions 2.6 (1–5) |
+| 11 | **11-F2 Shared pipeline + correct re-import** | Re-import no longer takes live products down; price / stock without re-approval; a pending version for title / images; images downloaded into `marketplace-media` | `api/marketplace/importa-csv.js`, `lib/valideaza-produs-marketplace.js`, `api/admin/marketplace-aprobari.js`, `lib/sincronizare-produse.js` (new) | no (uses F1) | `scripts/test-sincronizare-produse.js` | step 10 |
+| 12 | **11-F3 The supplier API** | `api/furnizor/v1/*`, per-supplier keys (hash, rotation, revocation), rate limit per key | `api/furnizor/v1/*.js` (new), `lib/chei-api-furnizor.js` (new), `lib/rate-limit.js` | no | security tests (401, 429, idempotency) | step 11 |
+| 13 | **11-F4 The periodically read feed** | Sync cron, SSRF / XXE protection, offline after 2 missing reads | `api/cron/sincronizeaza-feed-uri.js` (new), `vercel.json` (`crons`) | no | SSRF / XXE tests; missing product → offline | step 11 |
+| 14 | **11-F5 Dashboard and texts for suppliers** | The "Products: import and connection" panel; category mappings; the log; the `cum-devii-furnizor-materiale`, `cum-devii-operator-inchirieri` pages, FAQ, `docs/regula-incadrare.md`, `docs/sabloane/README.md`, emails | `mydarrin-dashboard-furnizor.html`, the pages above, `lib/i18n.js` | no | the EN detector | steps 12–13 |
+| 15 | **11-I "How to use the marketplace"** | The new page, RO + EN, in the footer menu and in the marketplace | `cum-folosesc-marketplace.html`, `i18n/en/cum-folosesc-marketplace.json`, `middleware.js`, sitemap | no | the EN detector | steps 3 and 14 (threshold and suppliers) |
+
+Steps 1–4 can be done right after LM's decisions and do not depend on each other. Steps 5–8 are the catalogue chain (clean-up → compliance → menus → OG). Steps 10–14 are the hybrid marketplace chain.
+
+---
+
+## 4. All decisions for LM
+
+| # | Point | Decision | Recommendation |
+|---|---|---|---|
+| 1 | 2.1 | Below the threshold: the client pays the threshold (today) or the order is blocked | blocked, with an "add X more" message |
+| 2 | 2.1 | One threshold per country (today) or per currency | per country |
+| 3 | 2.1 | A country with no threshold: checkout stopped or no threshold | checkout stopped until filled in |
+| 4 | 2.1 | The multi-service cart: threshold per order or per cart | depends on "combined order with a single escrow" |
+| 5 | 2.2 | The payment wording until a processor is integrated | "bank transfer to Home Best Pal, distributed after confirmation" |
+| 6 | 2.2 | The real payment term to partners; tacit confirmation (24h in the code vs 48h in the FAQ) | LM sets them; the texts follow the code |
+| 7 | 2.2 | ACA BG: is there an agreement? | if not, removed everywhere |
+| 8 | 2.2 | The official figures for investors and the pitch deck; the "KPIs Live" window | window removed; figures marked "target" |
+| 9 | 2.2 | Shop integrations on the pages | removed until steps 11-F |
+| 10 | 2.2 | The "Home Best Pal – UK · RO" footer | LM picks the entities |
+| 11 | 2.2 | The CAEN code (ANAF: 4120) vs 41.00 / 43.xx / 43.60 | stays open |
+| 12 | 2.3 | Test rows: deletion or archiving | deletion, if they have no links |
+| 13 | 2.3 | The 38 products: re-entered as HBP products or deleted | re-entered, with HBP prices |
+| 14 | 2.3 | Services without a recipe: published "under assessment" or hidden | hidden |
+| 15 | 2.3 | The source of real images | HBP photos + partners with consent; stock only labelled "illustrative" |
+| 16 | 2.3 | The `rating` field | emptied |
+| 17 | 2.4 | Pitch deck: public with targets or under NDA | under NDA until the figures are fixed |
+| 18 | 2.4 | The default OG image | a 1200 × 630 brand image made by HBP |
+| 19 | 2.4 | The public internal pages | moved into `PAGINI_STRICTE` |
+| 20 | 2.6 | The channels first | CSV / JSON feed + own API; WooCommerce / Shopify later |
+| 21 | 2.6 | Feed frequency; price-change threshold | 6 hours; ±30% |
+| 22 | 2.6 | Title / image changes after approval | re-approval |
+| 23 | 2.6 | Products missing from the feed | offline after 2 reads; archived after 90 days |
+| 24 | 2.6 | Who maps the supplier's categories | the supplier, checked by the admin |
+| 25 | 2.7 | The shared menu structure (5 sections) | approved |
+| 26 | 2.7 | HBP: no discount, contract, zone clause | yes |
+| 27 | 2.7 | Calendar / Safety alerts: built now or removed | calendar built (rentals), alerts removed until they exist |
+| 28 | 2.7 | A single partner dashboard | yes, in the medium term |
