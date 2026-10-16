@@ -714,6 +714,10 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 };
 </script>
 <script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
+<script src="/ui-feedback.js"></script>
+<!-- Pasul 10b: harta unică rol → dashboard și paza după rol (cont-dashboard.js) -->
+<script src="lib/destinatie-rol.js"></script>
+<script src="cont-dashboard.js"></script>
 <script src="seo-meta.js"></script>
 <script src="cookie-consent.js" defer></script>
 <script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="analytics-loader.js" defer></script>
@@ -830,7 +834,11 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
       let tries = 0;
       while (!window.MyDarrinAuth && tries < 50) { await new Promise(r => setTimeout(r, 100)); tries++; }
       const user = await window.MyDarrinAuth?.getCurrentUser();
-      if (!user) { window.location.href = 'https://mydarrin.homebestpal.com'; return; }
+      if (!user) { window.MYD_PAZA.laLogin(); return; }
+      // Pasul 10b: rolul din profiles.roles (/api/cont/profil); un partener
+      // fără rol de client ajunge în dashboard-ul lui, cu mesaj.
+      const paza = await window.MYD_PAZA.verifica({ container: 'myd-cont-antet' });
+      if (!paza) return;
       document.getElementById('auth-gate-overlay')?.remove();
 
       if (document.readyState === 'loading') {
@@ -1384,6 +1392,9 @@ function triggerHeaderSearch(){
 
     <!-- MAIN CONTENT -->
     <div class="flex-1 min-w-0 space-y-6">
+
+      <!-- Pasul 10b: identitatea contului (cont-dashboard.js) -->
+      <div id="myd-cont-antet"></div>
 
       <!-- PAGE HEADER -->
       <div class="reveal">

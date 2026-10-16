@@ -498,6 +498,29 @@ function scrollToSection(id){
   </div>
 </nav>
 
+<!-- Pasul 10b: pagina e publică; un investitor logat își vede aici identitatea
+     (cont-dashboard.js, mod public: fără redirect pentru vizitatori). -->
+<div id="myd-cont-antet" style="max-width:1200px;margin:0 auto;padding:0 16px;box-sizing:border-box"></div>
+<script type="module" src="lib/supabaseClient.js"></script>
+<script>
+window.MyDarrinAuth = window.MyDarrinAuth || {
+  getCurrentUser: async function(){ return null; },
+  getUserRoles:   async function(){ return []; },
+  performLogout:  async function(){ window.location.href='/'; },
+};
+</script>
+<script src="account-system.js"></script>
+<script src="/ui-feedback.js"></script>
+<!-- Pasul 10b: harta unică rol → dashboard și paza după rol (cont-dashboard.js) -->
+<script src="lib/destinatie-rol.js"></script>
+<script src="cont-dashboard.js"></script>
+<script>
+  window.MYD_PAZA.verifica({ container: 'myd-cont-antet', public: true }).then(function (r) {
+    var c = document.getElementById('myd-cont-antet');
+    if (c && c.firstChild) c.style.paddingTop = '14px';
+  });
+</script>
+
 
 <!-- ════ HERO ════ -->
 <section class="inv-hero" id="hero">

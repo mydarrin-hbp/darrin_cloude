@@ -214,6 +214,11 @@ async function destinatieDupaLogin() {
 // Trimite utilizatorul la destinația lui. La eroare: mesajul (dacă pagina are
 // unde să-l arate) și rămâne pe pagina curentă, reîncărcată.
 async function mergiDupaLogin(laEroare) {
+  // Revenirea la pagina cerută înainte de login (cont-dashboard.js → laLogin):
+  // pagina își verifică singură rolul și trimite mai departe, dacă e cazul.
+  let revenire = null;
+  try { revenire = sessionStorage.getItem('myd_revenire_dupa_login'); sessionStorage.removeItem('myd_revenire_dupa_login'); } catch (e) {}
+  if (revenire && /^\/(?!\/)/.test(revenire)) { window.location.href = revenire; return true; }
   try {
     const d = await destinatieDupaLogin();
     if (d) { window.location.href = d; return true; }
