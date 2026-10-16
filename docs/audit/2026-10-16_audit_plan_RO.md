@@ -623,3 +623,78 @@ Două canale de intrare, **o singură bandă de procesare** (aceeași validare, 
 - `scripts/test-sincronizare-produse.js` (date simulate): produs nou → în așteptare; doar preț / stoc → live, fără reaprobare; titlu schimbat → versiune în așteptare, cea veche rămâne live; produs lipsă de 2 ori → offline; furnizor care nu poate vinde → nimic public; prețul public = formula.
 - Securitate: feed spre `http://169.254.169.254` / `localhost` → refuzat; XML cu entitate externă → refuzat; cheie revocată → `401`; peste limită → `429`.
 - Detectorul de română în EN pe paginile și panoul modificate (0).
+
+---
+
+### 2.7 Navigarea partenerului în propriul dashboard
+
+#### Starea actuală — `mydarrin-dashboard-furnizor.html`
+
+| Constatare | Dovadă | Severitate |
+|---|---|---|
+| Meniul furnizorului de **materiale** are legătura „Super Admin” (`href:'mydarrin-superadmin.html'`) pentru orice furnizor; pagina e protejată de `middleware.js` (redirecționează spre `/acces-temporar`), dar legătura nu are ce căuta acolo | `:553` | **major** |
+| „Calendar disponibilitate” și „Alerte siguranță” (închirieri) sunt panouri goale: `titluPanou(…) + stareGoala()` | `:565`, `:567`, `:721-722` | **major** |
+| Nu există secțiunea „Contul meu”: în meniu, la „Cont”, doar „Documentele mele” și „Platformă” (`:550-555`, `:571-573`). Datele firmei, contul bancar, contractul (vizualizare și descărcare), zona de livrare / disponibilitatea nu au un loc în dashboard-ul furnizorului. În `mydarrin-dashboard-furnizor.html`: 0 apariții `conturi-bancare`, `program-lucru`, `partener_servicii_active` (în `mydarrin-dashboard-partener.html`: 4, 8 și 10) | căutare în fișiere | **major** |
+| Furnizorul nu își poate seta zona și disponibilitatea (`parteneri_disponibilitate`) și nici produsele bifate (`partener_servicii_active`) → nu poate primi liniile de materiale din comenzile de servicii, chiar dacă e eligibil (10c) | ca mai sus; `lib/aloca-subcontractori.js:79-137` folosește aceste tabele | **critic** (blochează fluxul de comenzi) |
+| La 390 px zona principală e mai lată decât ecranul și e tăiată: `.f-main` e element flex (`flex:1`, `:320`) fără `min-width:0`, deci se lățește după tabelul cel mai lat; la ≤ 480 px `.f-layout` are `overflow-x:hidden` (`:119`), deci surplusul e ascuns, nu derulabil. Bara de sus (`:503-521`) are titlu, „Live”, discount, email și două butoane, fără rupere pe rând | CSS | **major** |
+| „Discount comercial 5–15%” apare și la furnizorul propriu HBP: `textDiscount()` (`:586-589`) afișează limitele din panou când nu există discount activ; `GET /api/partener/discounturi` întoarce `limite` pentru oricine (`api/partener/discounturi.js:32-42`; verificarea „furnizor propriu” e doar la POST, `:71`) | cod | **major** |
+| Elementul activ din meniu abia se vede: text `var(--accent,#003366)` pe fundalul barei `#16202E` (`:329`, `:319`) — două nuanțe de bleumarin închis, contrast mult sub 4,5:1 | CSS | minor |
+| „Live · sync activ” e text fix (`:508`); nu există nicio sincronizare în spate | cod | major (informație falsă) |
+| Banda „Profil incomplet — lipsesc codurile NACE și clauza de zonă” (`profil-partener-card.js`, `/api/partener/profil-status`) nu tratează furnizorul propriu: nici `api/partener/profil-status.js`, nici `lib/verifica-profil-complet-partener.js` nu folosesc `esteFurnizorPropriu`. Pentru HBP, clauza de zonă (acceptare contractuală a partenerului) nu are sens; codurile NACE ale produselor vin din ruta de încadrare | cod | minor (decizie LM) |
+| `i18n/en/mydarrin-dashboard-furnizor.json:122` traduce „CUI 32667674 · Bacău” (ACA BG) — text vechi rămas în dicționar | — | minor |
+
+**Verificare la 390 px cu detectorul:** am rulat `scripts/detector-ro.js --cu-cont` pe ambele dashboard-uri (server static local, oprit după test). Captura a ieșit **albă** (pagina nu s-a randat în sesiunea simulată), deci rezultatul „depășire = 0” **nu e valid**; constatarea de mai sus vine din CSS și din captura live a lui LM. **Neverificat vizual de mine.**
+
+#### Starea actuală — `mydarrin-dashboard-partener.html` (servicii, curier, asigurător)
+- Servicii (`:687-703`): Overview, Sarcini LIVE, Portofoliu servicii, Echipa mea, Utilajele mele, Certificările mele, Cont bancar, Status aplicare, Calendar, Program de lucru, Venituri & Plăți, Garanții execuție, Documentele mele, Profil & KYC, Platformă — 15 intrări, fără secțiuni clare de „Cont”; contul bancar e amestecat cu operațiunile.
+- Curier (`:711-720`): Overview, Curse disponibile, Cursă activă, Zona de acoperire, Venituri & Plăți, Documentele mele, Profil & Vehicul, Platformă — fără „Cont bancar” și „Contract” separate.
+- Asigurător (`:728-737`): Overview, Polițe emise, Dosare daune, Tipuri de poliță, Venituri & Plăți, Documentele mele, Profil & Atestat ASF, Platformă.
+- Fără legătura „Super Admin”; „Overview” rămâne netradus în meniul RO (minor).
+- Aceleași etichete au nume diferite între dashboard-uri („Documentele mele” vs „Profil & KYC” vs „Profil & Vehicul”).
+
+#### Structura comună propusă (toate dashboard-urile de partener)
+
+| Secțiune (RO / EN) | Intrări (RO / EN) | Servicii | Curier | Asigurător | Materiale | Închirieri |
+|---|---|---|---|---|---|---|
+| **Acasă / Home** | Rezumat / Overview | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **Activitate / Activity** | Comenzi / Orders (Sarcini, Curse, Comenzi primite, Rezervări) | ✓ | ✓ | — | ✓ | ✓ |
+| | Polițe și daune / Policies & claims | — | — | ✓ | — | — |
+| **Ofertă / Offer** | Servicii oferite / Services offered (Portofoliu) | ✓ | — | — | — | — |
+| | Produse / Products (lista, stoc, import și conectare — vezi 2.6) | — | — | — | ✓ | ✓ |
+| | Tipuri de poliță / Policy types | — | — | ✓ | — | — |
+| | Zonă și disponibilitate / Area & availability (`parteneri_disponibilitate`, program, calendar) | ✓ | ✓ | — | ✓ | ✓ |
+| | Echipă, utilaje, certificări / Team, equipment, certificates | ✓ | vehicul | atestat ASF | — | — |
+| **Bani / Money** | Venituri și plăți / Earnings & payouts | ✓ | ✓ | ✓ | ✓ | ✓ |
+| | Discounturi / Discounts (doar materiale, închirieri, asigurări; ascuns la furnizorul propriu și la curier) | — | — | ✓ | ✓ | ✓ |
+| | Garanții / Warranties | ✓ | — | — | ✓ | ✓ |
+| **Contul meu / My account** | Date firmă / Company details | ✓ | ✓ | ✓ | ✓ | ✓ |
+| | Cont bancar / Bank account | ✓ | ✓ | ✓ | ✓ | ✓ |
+| | Contract (vizualizare, descărcare PDF) / Contract (view, download) | ✓ | ✓ | ✓ | ✓ | ✓ (HBP: ascuns) |
+| | Documente și verificare / Documents & verification | ✓ | ✓ | ✓ | ✓ | ✓ |
+| | Starea contului / Account status (regula 10c: aprobat, contract, cont bancar) | ✓ | ✓ | ✓ | ✓ | ✓ |
+| — | Platformă / Platform, Deconectare / Log out | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+Reguli: meniul se generează dintr-o singură definiție (un fișier comun, de ex. `meniu-partener.js`), filtrată după rolurile contului (`profiles.roles`) și după `esteFurnizorPropriu`; nicio legătură spre pagini de admin; un panou fără date reale nu apare în meniu (în loc de „stare goală” permanentă).
+
+#### Decizii pentru LM
+1. Structura comună de mai sus (5 secțiuni) — aprobată sau modificată?
+2. Furnizorul propriu HBP: ascundem discountul, contractul și clauza de zonă? (recomandat: da)
+3. „Calendar disponibilitate” și „Alerte siguranță”: se construiesc acum (calendarul e necesar pentru închirieri) sau se scot din meniu până există?
+4. Un singur dashboard de partener (cu meniul după roluri) în locul celor două fișiere? Recomandare: da, pe termen mediu; pe termen scurt, meniul comun în ambele fișiere.
+
+#### Planul
+**Bază de date:** nicio migrare pentru meniu; `parteneri_disponibilitate` și `partener_servicii_active` există (folosite de `lib/aloca-subcontractori.js`) — de verificat la implementare dacă acceptă și furnizorii de materiale / închirieri (constrângeri de tip).
+
+**Back-end**
+- `api/partener/discounturi.js` (GET): fără `limite` pentru furnizorul propriu și pentru curier.
+- `api/partener/profil-status.js`: furnizorul propriu fără clauza de zonă.
+- Reutilizarea endpointurilor existente pentru „Contul meu”: `api/partener/conturi-bancare.js`, `api/partener/contract.js` / `contract-status.js`, `api/partener/program-lucru.js`, `api/partener/zona-curier.js`, `api/partener/competente.js` (deschise și pentru rolurile de furnizor).
+
+**Front-end**
+- `meniu-partener.js` comun (RO + EN) folosit de `mydarrin-dashboard-partener.html` și `mydarrin-dashboard-furnizor.html`; scoaterea legăturii „Super Admin” și a textului fix „Live · sync activ”.
+- Panourile noi în dashboard-ul furnizorului: Contul meu (date firmă, cont bancar, contract, documente, stare), Zonă și disponibilitate, Produse bifate pentru comenzile de servicii.
+- CSS: `.f-main{min-width:0}`, tabelele în containere cu `overflow-x:auto`, bara de sus pe două rânduri sub 480 px; scoaterea `overflow-x:hidden` de pe `.f-layout`; elementul activ din meniu cu contrast ≥ 4,5:1 (ex. text alb, bară portocalie).
+
+**Conținut (RO + EN):** etichetele din tabelul de mai sus în `i18n/en/mydarrin-dashboard-*.json`; scoaterea „CUI 32667674 · Bacău” din dicționar.
+
+**Teste:** detectorul `--cu-cont` reparat ca să randeze efectiv dashboard-urile (captura albă de azi) și rulat la 390 px și 1366 px; un test că meniul furnizorului propriu nu conține „Discounturi” / „Contract”; un test că niciun meniu de partener nu conține legături spre `mydarrin-superadmin`.
