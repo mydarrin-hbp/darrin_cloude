@@ -563,9 +563,9 @@ const FTYPES = {
       {id:'overview',icon:'▦',label:'Overview'},
       {id:'rezervari',icon:'📅',label:'Rezervări active'},
       {id:'echipamente',icon:'🏗',label:'Echipamente & Stoc'},
-      {id:'calendar',icon:'📆',label:'Calendar disponibilitate'},
-      {section:'Alerte'},
-      {id:'alerte',icon:'🔴',label:'Alerte siguranță'},
+      // Pasul 11-H1 (decizia 27): „Calendar disponibilitate” și „Alerte
+      // siguranță” nu apar până nu au date reale; calendarul revine în
+      // pasul 11-H2 („Zonă și disponibilitate”).
       {section:'Financiar'},
       {id:'venituri',icon:'💰',label:'Venituri & Tarife'},
       {id:'garantii',icon:'🛡',label:'Garanții echipamente'},
@@ -710,7 +710,17 @@ function titluPanou(text) {
   return `<div style="margin-bottom:18px"><h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">${text}</h2></div>`;
 }
 
+// Panourile fără date reale (decizia 27): nu apar în meniu și nu se deschid
+// nici prin showPanel(id); se întoarce la prezentarea generală.
+const PANOURI_ASCUNSE = new Set(['calendar', 'alerte']);
+
+// Nefolosite până la pasul 11-H2 (calendarul, cu parteneri_disponibilitate)
+// și până există alerte reale; rămân aici ca punct de plecare.
+function renderCalendar(){ return titluPanou('Calendar disponibilitate') + stareGoala(); }
+function renderAlerte(){ return titluPanou('Alerte siguranță') + stareGoala(); }
+
 function showPanel(id){
+  if (PANOURI_ASCUNSE.has(id)) id = 'overview';
   currentPanel=id;
   const titles={overview:'Overview',comenzi:'Comenzi primite',stocuri:'Stocuri live',produse:'Produse active',import:'Import CSV / API',venituri:'Venituri & Discount',garantii:'Garanții',documente:'Documentele mele',rezervari:'Rezervări active',echipamente:'Echipamente & Stoc',calendar:'Calendar disponibilitate',alerte:'Alerte siguranță'};
   document.getElementById('fb-page-title').textContent=titles[id]||id;
@@ -727,8 +737,6 @@ function showPanel(id){
     documente:   renderDocumente,
     rezervari:   ()=>renderComenzi('Rezervări active'),
     echipamente: renderStocuri,
-    calendar:    ()=>titluPanou('Calendar disponibilitate')+stareGoala(),
-    alerte:      ()=>titluPanou('Alerte siguranță')+stareGoala(),
   };
   c.innerHTML = (panels[id]||stareGoala)();
   if (id === 'produse') loadProduseLive();
