@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<!-- Limba: engleza implicită, româna din selector — i18n-loader.js, sincron, primul script -->
+<script src="/i18n-loader.js" data-pagina="mydarrin-admin-catalog"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Pagina adminilor de catalog (pasul 9, 15 oct. 2026): back-office, nu se indexează,
+     nu apare în sitemap (lib/seo-pagini.js) și nici în meniul public. Acces: admin sau
+     superadmin (middleware.js); dreptul pe catalog îl verifică din nou API-ul. -->
+<meta name="robots" content="noindex, nofollow">
+<title>Catalog servicii · My Darrin</title>
+<meta name="description" content="Back-office My Darrin: servicii noi pe ruta de încadrare, ciorne și rețete propuse.">
+<script>
+  window.__ENV__ = {
+    SUPABASE_URL: 'https://aacojyvujhywanaulvuu.supabase.co',
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhY29qeXZ1amh5d2FuYXVsdnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MjAzMzIsImV4cCI6MjA5ODQ5NjMzMn0.iwZnxctvazOL5OU_wqD7AvAKrVoOqLH_uvj1krK8-vs',
+  };
+</script>
+<style>
+:root { --primary:#003366; --accent:#FF8C00; --teal:#0E9E99; --surface:#F4F7F9; --text:#1A2332; --muted:#5A6B7D; --line:#D5DFE8;
+  --mdn-card:#F8FAFC; --mdn-input:#fff; --mdn-line:#D5DFE8; --mdn-text:#1A2332; --mdn-muted:#5A6B7D; --mdn-border:#EEF2F7; }
+*{box-sizing:border-box}
+body{font-family:'Helvetica World','Helvetica Neue',Arial,system-ui,sans-serif;background:var(--surface);color:var(--text);margin:0;-webkit-font-smoothing:antialiased;overflow-wrap:anywhere}
+.wrap{max-width:1040px;margin:0 auto;padding:0 16px}
+header{background:#fff;border-bottom:1px solid #EEF2F7;position:sticky;top:0;z-index:50}
+.hdr{min-height:64px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:8px 0}
+.logo{display:flex;align-items:center;gap:9px;font-weight:800;color:var(--primary)}
+.logo-mark{width:34px;height:34px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px}
+.drepturi{font-size:12px;color:var(--muted)}
+.drepturi b{color:var(--text)}
+select,input[type=text],input[type=search],input[type=number],textarea{border:1.5px solid var(--line);border-radius:10px;padding:9px 12px;font-size:13px;font-family:inherit;color:var(--text);background:#fff;max-width:100%;outline:none}
+select:focus,input:focus,textarea:focus{border-color:var(--primary)}
+.tabs{display:flex;gap:6px;margin:20px 0 16px;flex-wrap:wrap}
+.tab{padding:9px 16px;border-radius:999px;border:1.5px solid var(--line);background:#fff;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;font-family:inherit}
+.tab.activ{background:var(--primary);border-color:var(--primary);color:#fff}
+.card{background:#fff;border-radius:16px;border:1px solid #EEF2F7;box-shadow:0 4px 20px rgba(0,51,102,.05);padding:20px;margin-bottom:16px}
+.card h2{font-size:16px;margin:0 0 4px}
+.card .sub{font-size:12.5px;color:var(--muted);margin:0 0 14px}
+.pas-nr{display:inline-flex;width:24px;height:24px;border-radius:50%;background:var(--primary);color:#fff;font-size:12px;font-weight:800;align-items:center;justify-content:center;margin-right:8px;flex-shrink:0}
+.camp{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;flex:1;min-width:200px}
+.camp label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.rand{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start}
+.btn{padding:9px 16px;border-radius:10px;border:none;background:var(--primary);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn.sec{background:#fff;color:var(--primary);border:1.5px solid var(--line)}
+.btn.ok{background:var(--teal)}
+.btn.rosu{background:#fff;color:#C0392B;border:1.5px solid rgba(192,57,43,.35)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.lista{border:1.5px solid var(--line);border-radius:12px;max-height:260px;overflow:auto;background:#fff}
+.opt{display:flex;gap:8px;align-items:flex-start;width:100%;text-align:left;padding:8px 12px;border:none;border-bottom:1px solid #F0F4F8;background:#fff;font-size:12.5px;font-family:inherit;color:var(--text);cursor:pointer}
+.opt:hover{background:#F4F7F9}
+.opt.ales{background:#EBF4FB;font-weight:700}
+.opt code,.cod{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:var(--primary);white-space:nowrap}
+.potrivire{font-size:10.5px;font-weight:700;color:var(--teal);margin-left:auto;white-space:nowrap}
+.cascada{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.cascada .filtru{width:100%;margin-bottom:6px}
+.nota{font-size:12.5px;color:var(--muted);line-height:1.5}
+.alerta{padding:10px 13px;border-radius:10px;font-size:12.5px;line-height:1.5;margin-top:8px}
+.alerta.eroare{background:#FDECEA;color:#C0392B;border:1.5px solid #C0392B}
+.alerta.av{background:#FFF4E5;color:#8A4B00;border:1.5px solid #FFB866}
+.alerta.ok{background:#EDF7F0;color:#1A7A3A;border:1.5px solid #1A7A3A}
+.alerta.info{background:#EBF4FB;color:var(--primary);border:1.5px solid #B9D3EA}
+.chip{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;background:#EEF2F7;color:var(--muted);white-space:nowrap}
+.chip.publicat{background:#E3F4EA;color:#1A7A3A}.chip.ciorna{background:#FFF4E5;color:#8A4B00}.chip.retras{background:#FDECEA;color:#C0392B}.chip.in_verificare{background:#EBF4FB;color:var(--primary)}
+.serv{border:1px solid #EEF2F7;border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.serv-cap{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.serv-titlu{font-weight:700;font-size:13.5px;flex:1;min-width:180px}
+.mic{font-size:11.5px;color:var(--muted)}
+table.linii{width:100%;border-collapse:collapse;font-size:12px}
+table.linii th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding:6px;border-bottom:1.5px solid #EEF2F7;white-space:nowrap}
+table.linii td:first-child{min-width:96px;overflow-wrap:normal}
+table.linii td:nth-child(3){white-space:nowrap}
+table.linii td{padding:7px 6px;border-bottom:1px solid #F0F4F8;vertical-align:top}
+.tabel-scroll{overflow-x:auto}
+.ascuns{display:none!important}
+@media (max-width:640px){
+  .card{padding:16px}
+  table.linii,table.linii tbody,table.linii tr,table.linii td{display:block;width:100%}
+  table.linii thead{display:none}
+  table.linii tr{border:1px solid #EEF2F7;border-radius:10px;margin-bottom:8px;padding:6px}
+  table.linii td{border:none;padding:3px 4px}
+  table.linii td[data-eticheta]::before{content:attr(data-eticheta) ": ";font-weight:700;color:var(--muted)}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap hdr">
+    <div class="logo"><span class="logo-mark">D</span><span>Catalog servicii</span></div>
+    <div class="drepturi" id="antet-drepturi"></div>
+    <select id="lang-switcher" aria-label="Limba" onchange="window.MYD_I18N && MYD_I18N.setLanguage(this.value)">
+      <option value="ro">Română</option>
+      <option value="en">English</option>
+    </select>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="stare-incarcare" class="card nota" style="margin-top:20px">Se încarcă...</div>
+
+  <div id="acces-refuzat" class="card ascuns" style="margin-top:20px">
+    <h2>Nu ai acces la catalog. Cere-l superadminului.</h2>
+    <p class="sub">Adminii de catalog sunt numiți de superadmin, pe capitole.</p>
+  </div>
+
+  <div id="migrare-lipsa" class="card ascuns" style="margin-top:20px">
+    <h2 id="migrare-lipsa-titlu"></h2>
+    <p class="sub">Pagina funcționează după aplicarea migrărilor 2026-10-10 și 2026-10-15 (docs/regula-incadrare.md).</p>
+  </div>
+
+  <div id="continut" class="ascuns">
+    <nav class="tabs" role="tablist">
+      <button class="tab activ" role="tab" data-tab="nou" onclick="arataTab('nou')">Serviciu nou</button>
+      <button class="tab" role="tab" data-tab="servicii" onclick="arataTab('servicii')">Ciorne și servicii</button>
+      <button class="tab" role="tab" data-tab="retete" onclick="arataTab('retete')">Rețete propuse</button>
+    </nav>
+
+    <!-- ══ TAB: SERVICIU NOU ══ -->
+    <section id="tab-nou">
+      <div class="card">
+        <h2><span class="pas-nr">1</span>Ce vrei să adaugi?</h2>
+        <p class="sub">Titlul în română și în engleză. Căutăm întâi ceva asemănător: un serviciu existent poate fi folosit ca model.</p>
+        <div class="rand">
+          <div class="camp"><label for="w-titlu">Titlu (română)</label><input type="text" id="w-titlu" placeholder="ex: Reparat calorifer"></div>
+          <div class="camp"><label for="w-titlu-en">Titlu (engleză)</label><input type="text" id="w-titlu-en" placeholder="ex: Radiator repair"></div>
+        </div>
+        <div class="rand" style="align-items:center;margin-bottom:12px">
+          <span class="mic">Tip:</span>
+          <label class="mic"><input type="radio" name="w-tip" value="serviciu" checked> Serviciu</label>
+          <label class="mic"><input type="radio" name="w-tip" value="produs"> Produs</label>
+        </div>
+        <div class="rand">
+          <button class="btn" id="w-cauta" onclick="cautaAsemanatoare()">Caută servicii asemănătoare</button>
+          <button class="btn sec" id="w-fara-model" onclick="ciornaFaraModel(this)">Continuă fără model</button>
+        </div>
+        <div id="w-asemanatoare" style="margin-top:12px"></div>
+        <div id="w-msg-1" aria-live="polite"></div>
+        <div id="w-ciorna" class="alerta info ascuns"></div>
+      </div>
+
+      <div id="w-pasi" class="ascuns">
+        <div class="card">
+          <h2><span class="pas-nr">2</span>Clasa NACE</h2>
+          <p class="sub">Secțiune → diviziune → grupă → clasă. Capitolul meniului se calculează din clasă.</p>
+          <div class="cascada">
+            <div><input type="search" class="filtru" data-lista="sectiuni" placeholder="Caută secțiunea" oninput="filtreaza('sectiuni')"><div class="lista" id="l-sectiuni"></div></div>
+            <div><input type="search" class="filtru" data-lista="diviziuni" placeholder="Caută diviziunea" oninput="filtreaza('diviziuni')"><div class="lista" id="l-diviziuni"></div></div>
+            <div><input type="search" class="filtru" data-lista="grupe" placeholder="Caută grupa" oninput="filtreaza('grupe')"><div class="lista" id="l-grupe"></div></div>
+            <div><input type="search" class="filtru" data-lista="clase" placeholder="Caută clasa" oninput="filtreaza('clase')"><div class="lista" id="l-clase"></div></div>
+          </div>
+          <div id="w-capitol" aria-live="polite"></div>
+        </div>
+
+        <div class="card" id="c-nod">
+          <h2><span class="pas-nr">3</span>Nodul de meniu</h2>
+          <p class="sub">Doar nodurile compatibile cu clasa și capitolul.</p>
+          <div class="lista" id="l-noduri"></div>
+          <div id="w-msg-3" aria-live="polite"></div>
+        </div>
+
+        <div class="card" id="c-esco">
+          <h2><span class="pas-nr">4</span>Ocupația ESCO</h2>
+          <p class="sub">Ocupația care face lucrarea. Cele cu aceeași clasă NACE sunt primele.</p>
+          <input type="search" class="filtru" id="f-esco" placeholder="Caută ocupația (cod sau denumire)" oninput="randeazaEsco()" style="width:100%;margin-bottom:6px">
+          <div class="lista" id="l-esco"></div>
+          <div id="w-msg-4" aria-live="polite"></div>
+        </div>
+
+        <div class="card" id="c-uniclass">
+          <h2><span class="pas-nr">5</span>Uniclass</h2>
+          <p class="sub" id="w-uniclass-sub">Activitate (Ac_) pentru servicii, produs (Pr_) pentru produse; doar coduri active.</p>
+          <input type="search" id="f-uniclass" placeholder="Caută după cod sau titlu (ex: Ac_10_40 sau instalare)" oninput="cautaUniclassIntarziat()" style="width:100%;margin-bottom:6px">
+          <div class="lista" id="l-uniclass"></div>
+          <div id="w-msg-5" aria-live="polite"></div>
+        </div>
+
+        <div class="card" id="c-reteta">
+          <h2><span class="pas-nr">6</span>Rețeta</h2>
+          <p class="sub">Copiată din serviciul-model sau propusă automat; o rețetă propusă intră în preț doar după aprobare.</p>
+          <div id="w-reteta-stare" class="nota"></div>
+          <div class="rand" style="margin-top:10px"><button class="btn" id="w-propune" onclick="propuneReteta(this)">Propune rețetă</button></div>
+          <div id="w-msg-6" aria-live="polite"></div>
+        </div>
+
+        <div class="card" id="c-niveluri">
+          <h2><span class="pas-nr">7</span>Niveluri și prețuri</h2>
+          <p class="sub">Bronz / Argint / Aur / Platinum. Prețul din rețetă apare doar dacă rețeta e aprobată și are tarife; altfel e „la cerere”.</p>
+          <div id="w-niveluri"></div>
+        </div>
+
+        <div class="card" id="c-verificare">
+          <h2><span class="pas-nr">8</span>Verificare și publicare</h2>
+          <p class="sub">Erorile blochează publicarea; avertismentele cer confirmare.</p>
+          <div class="rand"><button class="btn sec" id="w-verifica" onclick="verificaRuta(this)">Verifică ruta</button></div>
+          <div id="w-rezultat" aria-live="polite"></div>
+          <label id="w-confirm-rand" class="mic ascuns" style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="w-confirm" onchange="actualizeazaPublica()"> Am citit avertismentele și le confirm</label>
+          <div class="rand" style="margin-top:10px"><button class="btn ok" id="w-publica" onclick="publicaCiorna(this)" disabled>Publică</button></div>
+          <div id="w-msg-8" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ TAB: CIORNE ȘI SERVICII ══ -->
+    <section id="tab-servicii" class="ascuns">
+      <div class="card">
+        <div class="rand" style="align-items:flex-end">
+          <div class="camp" style="min-width:150px"><label for="s-stare">Stare</label>
+            <select id="s-stare" onchange="incarcaServicii()">
+              <option value="">Toate</option><option value="ciorna">Ciornă</option><option value="in_verificare">În verificare</option>
+              <option value="publicat">Publicat</option><option value="retras">Retras</option>
+            </select></div>
+          <div class="camp" style="min-width:150px"><label for="s-capitol">Capitol</label><select id="s-capitol" onchange="incarcaServicii()"><option value="">Toate</option></select></div>
+          <div class="camp" style="min-width:150px"><label for="s-nod">Nod</label><select id="s-nod" onchange="randeazaServicii()"><option value="">Toate</option></select></div>
+          <label class="mic" style="display:flex;gap:6px;align-items:center;margin-bottom:14px"><input type="checkbox" id="s-erori" onchange="incarcaServicii()"> Doar cu erori de rută</label>
+        </div>
+        <div id="s-lista" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <!-- ══ TAB: REȚETE PROPUSE ══ -->
+    <section id="tab-retete" class="ascuns">
+      <div id="r-lista" aria-live="polite"></div>
+    </section>
+  </div>
+</main>
+
+<script type="module" src="lib/supabaseClient.js"></script>
+<script src="account-system.js"></script>
+<script src="ui-feedback.js"></script>
+<script src="catalog-niveluri.js"></script>
+<script>
+'use strict';
+// ════════════════════════════════════════════════════════════════
+// Pagina adminului de catalog (pasul 9, 15 oct. 2026). Toată logica rutei e
+// în api/admin/ruta-incadrare.js (lib/ruta-incadrare.js); aici doar pașii.
+// ════════════════════════════════════════════════════════════════
+const API = '/api/admin/ruta-incadrare';
+const LIMBA = () => (window.MYD_I18N && window.MYD_I18N.lang === 'ro' ? 'ro' : 'en');
+const tr = (ro, p) => { let s = typeof window.t === 'function' ? window.t(null, ro) : ro; if (p) s = s.replace(/\{(\w+)\}/g, (m, k) => (p[k] != null ? p[k] : m)); return s; };
+const esc = (s) => { const d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; };
+const $ = (id) => document.getElementById(id);
+const CHEIE_CIORNA = 'myd_admin_catalog_ciorna';
+
+let PROFIL = null;
+const W = { id: null, tip: 'serviciu', sectiune: null, diviziune: null, grupa: null, clasa: null, capitol: null, nod_id: null, cod_esco: null, cod_uniclass: null };
+const LISTE = { sectiuni: [], diviziuni: [], grupe: [], clase: [] };
+let ESCO = [];
+let ULTIMA_VALIDARE = null;
+
+async function antet() {
+  const s = (await window.supabaseClient.auth.getSession()).data.session;
+  return { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (s ? s.access_token : '') };
+}
+// Apel API: { status, date }; mesajul de eroare vine în limba activă (error / error_en).
+async function api(action, corp = {}, url = API) {
+  const r = await fetch(url, { method: 'POST', headers: await antet(), body: JSON.stringify({ action, lang: LIMBA(), ...corp }) });
+  const date = await r.json().catch(() => ({}));
+  return { status: r.status, date };
+}
+const mesajEroare = (d) => (LIMBA() === 'en' && d.error_en) || d.error || tr('Eroare necunoscută');
+function arunca(r) { if (r.status >= 400) { const e = new Error(mesajEroare(r.date)); e.status = r.status; e.date = r.date; throw e; } return r.date; }
+const mesajRuta = (m) => (LIMBA() === 'en' ? m.mesaj_en : m.mesaj_ro) || m.mesaj_ro;
+
+// ── Pornire ─────────────────────────────────────────────────────────────
+async function porneste() {
+  for (let i = 0; i < 60 && !(window.MyDarrinAuth && window.supabaseClient); i++) await new Promise((r) => setTimeout(r, 100));
+  const user = window.MyDarrinAuth ? await window.MyDarrinAuth.getCurrentUser() : null;
+  $('stare-incarcare').classList.add('ascuns');
+  if (!user) { $('acces-refuzat').classList.remove('ascuns'); return; }
+  const r = await api('profil');
+  if (r.status === 401 || r.status === 403) { $('acces-refuzat').classList.remove('ascuns'); return; }
+  if (r.status === 409) { $('migrare-lipsa-titlu').textContent = mesajEroare(r.date); $('migrare-lipsa').classList.remove('ascuns'); return; }
+  if (r.status >= 400) { $('migrare-lipsa-titlu').textContent = mesajEroare(r.date); $('migrare-lipsa').classList.remove('ascuns'); return; }
+  PROFIL = r.date;
+  randeazaAntet();
+  $('continut').classList.remove('ascuns');
+  window.MDCatalogNiveluri.reincarca = () => incarcaNiveluri();
+  let salvata = null;
+  try { salvata = localStorage.getItem(CHEIE_CIORNA); } catch (e) { salvata = null; }
+  if (salvata) await incarcaCiorna(salvata, true);
+}
+
+function titluCapitol(c) { return LIMBA() === 'en' ? c.titlu_en : c.titlu_ro; }
+function randeazaAntet() {
+  const caps = PROFIL.toate_capitolele ? tr('toate capitolele') : PROFIL.capitole.map(titluCapitol).join(', ');
+  $('antet-drepturi').innerHTML = `<span>${esc(tr('Capitole:'))}</span> <b>${esc(caps)}</b>${PROFIL.tara ? ` · <span>${esc(tr('Țara:'))}</span> <b>${esc(PROFIL.tara)}</b>` : ''}`;
+  $('s-capitol').innerHTML = `<option value="">${esc(tr('Toate'))}</option>` + PROFIL.capitole.map((c) => `<option value="${esc(c.cod)}">${esc(c.cod)} · ${esc(titluCapitol(c))}</option>`).join('');
+}
+
+function arataTab(tab) {
+  document.querySelectorAll('.tab').forEach((b) => b.classList.toggle('activ', b.dataset.tab === tab));
+  ['nou', 'servicii', 'retete'].forEach((x) => $('tab-' + x).classList.toggle('ascuns', x !== tab));
+  if (tab === 'servicii') incarcaServicii();
+  if (tab === 'retete') incarcaRetete();
+}
+
+// ── Pasul 1: titlu, tip, servicii asemănătoare ─────────────────────────
+const tipAles = () => (document.querySelector('input[name=w-tip]:checked') || {}).value || 'serviciu';
+const ETICHETA_MOTIV = { aceeasi_clasa: 'aceeași clasă NACE', aceeasi_grupa: 'aceeași grupă NACE', acelasi_esco: 'aceeași ocupație ESCO', aceiasi_indicatori: 'aceiași indicatori de deviz', cuvinte_comune: 'cuvinte comune în titlu' };
+
+async function cautaAsemanatoare() {
+  const titlu = $('w-titlu').value.trim();
+  const zona = $('w-asemanatoare');
+  if (!titlu) { MDFeedback.mesaj($('w-msg-1'), 'eroare', tr('Scrie întâi titlul în română.')); return; }
+  zona.innerHTML = `<div class="nota">${esc(tr('Se caută...'))}</div>`;
+  try {
+    const d = arunca(await api('cauta_asemanatoare', { serviciu: { titlu, nace: W.clasa || undefined, cod_esco: W.cod_esco || undefined } }));
+    const top = (d.rezultate || []).slice(0, 5);
+    if (!top.length) { zona.innerHTML = `<div class="alerta info">${esc(tr('Nu există un serviciu asemănător: continuă fără model.'))}</div>`; return; }
+    zona.innerHTML = `<div class="mic" style="margin-bottom:6px">${esc(tr('Servicii asemănătoare (cel mai apropiat primul):'))}</div>` + top.map((x, i) => `
+      <div class="serv" data-asemanator="${esc(x.serviciu.id)}">
+        <div class="serv-cap">
+          <span class="serv-titlu">${i === 0 ? '★ ' : ''}${esc(x.serviciu.titlu)}</span>
+          <span class="chip">${esc(tr(ETICHETA_MOTIV[x.motiv] || x.motiv))}</span>
+          ${x.are_reteta ? `<span class="chip publicat">${esc(tr('are rețetă'))}</span>` : ''}
+        </div>
+        <div class="mic"><span class="cod">${esc(x.serviciu.nace || '—')}</span> · <span class="cod">${esc(x.serviciu.cod_esco || '—')}</span> · <span class="cod">${esc(x.serviciu.cod_uniclass || '—')}</span></div>
+        <div class="rand" style="margin-top:8px">
+          <button class="btn sec" onclick="deschideServiciu('${esc(x.serviciu.id)}', this)">Deschide</button>
+          <button class="btn" onclick="folosesteModel('${esc(x.serviciu.id)}', this)">Folosește ca model</button>
+        </div>
+        <div class="detalii-serviciu"></div>
+      </div>`).join('');
+    if (window.MYD_I18N) window.MYD_I18N.aplica(zona);
+  } catch (e) { zona.innerHTML = ''; MDFeedback.mesaj($('w-msg-1'), 'eroare', e.message); }
+}
+
+async function deschideServiciu(id, buton) {
+  const zona = buton.closest('.serv').querySelector('.detalii-serviciu');
+  try {
+    const s = arunca(await api('serviciu', { serviciu_id: id })).serviciu;
+    zona.innerHTML = `<div class="alerta info">${esc(tr('Ruta:'))} <span class="cod">${esc(s.clasa || '—')}</span> → ${esc(s.capitol || '—')} → ${esc(s.nod ? (LIMBA() === 'en' && s.nod.title_en) || s.nod.title : tr('fără nod'))} → <span class="cod">${esc(s.cod_esco || '—')}</span> → <span class="cod">${esc(s.cod_uniclass || '—')}</span> · ${esc(tr('articole de rețetă: {n}', { n: s.articole_reteta }))}</div>`;
+  } catch (e) { MDFeedback.mesaj(zona, 'eroare', e.message); }
+}
+
+async function folosesteModel(sursaId, buton) {
+  const titlu = $('w-titlu').value.trim();
+  const titlu_en = $('w-titlu-en').value.trim();
+  await MDFeedback.salveaza(buton, $('w-msg-1'), async () => {
+    if (!titlu) throw new Error(tr('Scrie întâi titlul în română.'));
+    const d = arunca(await api('copiaza_din', { serviciu_sursa_id: sursaId, titlu, titlu_en }));
+    await incarcaCiorna(d.id);
+    return tr('Ciornă creată din model: ruta, nivelurile (fără prețuri) și rețeta au fost copiate.');
+  }, { textSalveaza: 'Se copiază…', textOk: '✓ Copiat' });
+}
+
+async function ciornaFaraModel(buton) {
+  const titlu = $('w-titlu').value.trim();
+  await MDFeedback.salveaza(buton, $('w-msg-1'), async () => {
+    if (!titlu) throw new Error(tr('Scrie întâi titlul în română.'));
+    const d = arunca(await api('salveaza_ciorna', { serviciu_id: W.id || undefined, titlu, titlu_en: $('w-titlu-en').value.trim(), categorie: tipAles() === 'produs' ? 'materiale' : 'servicii' }));
+    if (!W.id) await incarcaCiorna(d.id);
+    return tr('Ciornă salvată.');
+  });
+}
+
+// Încarcă o ciornă (nouă sau la revenire) și precompletează pașii.
+async function incarcaCiorna(id, tacut) {
+  const r = await api('serviciu', { serviciu_id: id });
+  if (r.status >= 400) {
+    try { localStorage.removeItem(CHEIE_CIORNA); } catch (e) { /* stocare indisponibilă */ }
+    if (!tacut) MDFeedback.mesaj($('w-msg-1'), 'eroare', mesajEroare(r.date));
+    return;
+  }
+  const s = r.date.serviciu;
+  Object.assign(W, { id: s.id, tip: s.categorie === 'materiale' ? 'produs' : 'serviciu', clasa: s.clasa, capitol: s.capitol, nod_id: s.nod_id, cod_esco: s.cod_esco, cod_uniclass: s.cod_uniclass });
+  W.grupa = s.clasa ? s.clasa.slice(0, 4) : null;
+  W.diviziune = s.clasa ? s.clasa.slice(0, 2) : null;
+  try { localStorage.setItem(CHEIE_CIORNA, s.id); } catch (e) { /* stocare indisponibilă */ }
+  $('w-titlu').value = s.titlu || '';
+  $('w-titlu-en').value = s.titlu_en || '';
+  document.querySelectorAll('input[name=w-tip]').forEach((x) => { x.checked = x.value === W.tip; });
+  $('w-ciorna').innerHTML = `${esc(tr('Lucrezi pe ciorna:'))} <b>${esc(s.titlu)}</b> · <span class="chip ${esc(s.stare)}">${esc(tr(ETICHETA_STARE[s.stare] || s.stare))}</span> <button class="btn sec" style="padding:4px 10px;font-size:12px;margin-left:6px" onclick="ciornaNoua()">${esc(tr('Începe alta'))}</button>`;
+  $('w-ciorna').classList.remove('ascuns');
+  $('w-pasi').classList.remove('ascuns');
+  $('w-reteta-stare').textContent = s.articole_reteta
+    ? tr('Articole de rețetă legate de niveluri (copiate sau aprobate): {n}.', { n: s.articole_reteta })
+    : tr('Nicio rețetă încă: propune una sau leag-o din editorul nivelurilor.');
+  await incarcaPasi();
+  await incarcaNiveluri();
+  $('w-rezultat').innerHTML = ''; ULTIMA_VALIDARE = null; actualizeazaPublica();
+}
+
+function ciornaNoua() {
+  try { localStorage.removeItem(CHEIE_CIORNA); } catch (e) { /* stocare indisponibilă */ }
+  Object.assign(W, { id: null, sectiune: null, diviziune: null, grupa: null, clasa: null, capitol: null, nod_id: null, cod_esco: null, cod_uniclass: null });
+  $('w-titlu').value = ''; $('w-titlu-en').value = '';
+  ['w-ciorna', 'w-pasi'].forEach((x) => $(x).classList.add('ascuns'));
+  $('w-asemanatoare').innerHTML = ''; $('w-msg-1').innerHTML = '';
+}
+
+// Salvare automată a unui pas al rutei.
+async function salveazaPas(campuri, zona) {
+  const r = await api('salveaza_ciorna', { serviciu_id: W.id, ...campuri });
+  if (r.status >= 400) { MDFeedback.mesaj(zona, 'eroare', mesajEroare(r.date)); return false; }
+  MDFeedback.mesaj(zona, 'ok', tr('Ciornă salvată.'));
+  return true;
+}
+
+// ── Pasul 2: NACE ──────────────────────────────────────────────────────
+async function incarcaPasi() {
+  const r = await api('pasi', { sectiune: W.sectiune, diviziune: W.diviziune, grupa: W.grupa, clasa: W.clasa, tip_inregistrare: W.tip });
+  if (r.status >= 400) { MDFeedback.mesaj($('w-capitol'), 'eroare', mesajEroare(r.date)); return; }
+  const d = r.date;
+  LISTE.sectiuni = (d.sectiuni || []).map((x) => ({ cod: x.cod, denumire: x.denumire }));
+  // La revenirea pe o ciornă, secțiunea vine dedusă din diviziune (d.alese).
+  if (d.alese && d.alese.sectiune) W.sectiune = d.alese.sectiune;
+  LISTE.diviziuni = d.diviziuni || [];
+  LISTE.grupe = d.grupe || [];
+  LISTE.clase = d.clase || [];
+  ['sectiuni', 'diviziuni', 'grupe', 'clase'].forEach(filtreaza);
+  randeazaCapitol(d);
+  ESCO = d.esco || [];
+  randeazaNoduri(d.noduri);
+  randeazaEsco();
+  $('w-uniclass-sub').textContent = W.tip === 'produs' ? tr('Produs (Pr_), doar coduri active.') : tr('Activitate (Ac_), doar coduri active.');
+  if (W.cod_uniclass) $('l-uniclass').innerHTML = `<button class="opt ales"><code>${esc(W.cod_uniclass)}</code> ${esc(tr('ales'))}</button>`;
+}
+
+const ALES = { sectiuni: () => W.sectiune, diviziuni: () => W.diviziune, grupe: () => W.grupa, clase: () => W.clasa };
+function filtreaza(lista) {
+  const el = $('l-' + lista);
+  const f = (document.querySelector(`.filtru[data-lista="${lista}"]`) || {}).value || '';
+  const t = f.trim().toLowerCase();
+  const opt = LISTE[lista].filter((x) => !t || x.cod.toLowerCase().includes(t) || String(x.denumire || '').toLowerCase().includes(t));
+  el.innerHTML = opt.length
+    ? opt.map((x) => `<button class="opt${ALES[lista]() === x.cod ? ' ales' : ''}" onclick="alegeNace('${lista}', '${esc(x.cod)}')"><code>${esc(x.cod)}</code><span>${esc(String(x.denumire || '').replace(new RegExp('^' + x.cod.replace('.', '\\.') + '\\s*'), ''))}</span></button>`).join('')
+    : `<div class="opt mic">${esc(tr('Nicio opțiune: alege pasul anterior.'))}</div>`;
+}
+
+async function alegeNace(lista, cod) {
+  if (lista === 'sectiuni') Object.assign(W, { sectiune: cod, diviziune: null, grupa: null, clasa: null });
+  if (lista === 'diviziuni') Object.assign(W, { diviziune: cod, grupa: null, clasa: null });
+  if (lista === 'grupe') Object.assign(W, { grupa: cod, clasa: null });
+  if (lista === 'clase') W.clasa = cod;
+  if (lista !== 'clase') { LISTE.clase = []; if (lista !== 'grupe') LISTE.grupe = []; if (lista === 'sectiuni') LISTE.diviziuni = []; }
+  await incarcaPasi();
+  if (lista === 'clase' && PROFIL_CAPITOL_PERMIS) await salveazaPas({ nace: cod }, $('w-capitol'));
+}
+
+let PROFIL_CAPITOL_PERMIS = false;
+function randeazaCapitol(d) {
+  const el = $('w-capitol');
+  PROFIL_CAPITOL_PERMIS = false;
+  if (!W.clasa) { el.innerHTML = ''; ['c-nod', 'c-esco', 'c-uniclass'].forEach((x) => $(x).classList.add('ascuns')); return; }
+  if (!d.capitol) {
+    el.innerHTML = `<div class="alerta eroare">${esc(tr('Clasa {c} nu aparține niciunui capitol al meniului.', { c: W.clasa }))}</div>`;
+  } else if (!d.capitol_permis) {
+    el.innerHTML = `<div class="alerta eroare">${esc(tr('Clasa {c} e în capitolul {cap} ({titlu}), în afara drepturilor tale. Alege altă clasă sau cere dreptul superadminului.', { c: W.clasa, cap: d.capitol.cod, titlu: d.capitol.titlu }))}</div>`;
+  } else {
+    PROFIL_CAPITOL_PERMIS = true;
+    W.capitol = d.capitol.cod;
+    el.innerHTML = `<div class="alerta ok">${esc(tr('Capitolul:'))} <b>${esc(d.capitol.cod)} · ${esc(d.capitol.titlu)}</b> · ${esc(tr('partener: {p}', { p: tr(d.capitol.tip_partener) }))} · ${esc(d.capitol.discount_permis ? tr('cu discount 5–15%') : tr('fără discount'))}</div>`;
+  }
+  ['c-nod', 'c-esco', 'c-uniclass'].forEach((x) => $(x).classList.toggle('ascuns', !PROFIL_CAPITOL_PERMIS));
+}
+
+// ── Pasul 3: nodul ─────────────────────────────────────────────────────
+function randeazaNoduri(noduri) {
+  const el = $('l-noduri');
+  const compatibile = (noduri || []).filter((n) => n.compatibil);
+  el.innerHTML = compatibile.length
+    ? compatibile.map((n) => `<button class="opt${W.nod_id === n.id ? ' ales' : ''}" onclick="alegeNod('${esc(n.id)}')"><span>${esc(n.titlu)}</span>${n.autorizare_necesara ? `<span class="potrivire">${esc(tr('cere {a}', { a: n.autorizare_necesara }))}</span>` : ''}</button>`).join('')
+    : `<div class="opt mic">${esc(tr('Nu există încă un nod de meniu pentru clasa aleasă. Nodul îl creează superadminul (pasul 10), nu se creează din asistent.'))}</div>`;
+}
+async function alegeNod(id) {
+  W.nod_id = id;
+  if (await salveazaPas({ nod_id: id }, $('w-msg-3'))) await incarcaPasi();
+}
+
+// ── Pasul 4: ESCO ──────────────────────────────────────────────────────
+function randeazaEsco() {
+  const t = ($('f-esco').value || '').trim().toLowerCase();
+  const opt = ESCO.filter((e) => !t || e.cod_esco.toLowerCase().includes(t) || String(e.denumire || '').toLowerCase().includes(t)).slice(0, 150);
+  $('l-esco').innerHTML = opt.length
+    ? opt.map((e) => `<button class="opt${W.cod_esco === e.cod_esco ? ' ales' : ''}" onclick="alegeEsco('${esc(e.cod_esco)}')"><code>${esc(e.cod_esco)}</code><span>${esc(e.denumire)}</span>${e.potrivire ? `<span class="potrivire">${esc(e.potrivire === 'clasa' ? tr('aceeași clasă') : tr('aceeași diviziune'))}</span>` : ''}</button>`).join('')
+    : `<div class="opt mic">${esc(tr('Nicio ocupație găsită.'))}</div>`;
+}
+async function alegeEsco(cod) {
+  W.cod_esco = cod;
+  randeazaEsco();
+  await salveazaPas({ cod_esco: cod }, $('w-msg-4'));
+}
+
+// ── Pasul 5: Uniclass (căutare cu filtru, nu o listă cu mii de coduri) ─
+let intarziereUc = null;
+function cautaUniclassIntarziat() { clearTimeout(intarziereUc); intarziereUc = setTimeout(cautaUniclass, 300); }
+async function cautaUniclass() {
+  const text = $('f-uniclass').value.trim();
+  const r = await api('cauta_uniclass', { text, tip: W.tip });
+  if (r.status >= 400) { MDFeedback.mesaj($('w-msg-5'), 'eroare', mesajEroare(r.date)); return; }
+  const coduri = r.date.coduri || [];
+  $('l-uniclass').innerHTML = coduri.length
+    ? coduri.map((u) => `<button class="opt${W.cod_uniclass === u.cod ? ' ales' : ''}" onclick="alegeUniclass('${esc(u.cod)}')"><code>${esc(u.cod)}</code><span>${esc(u.denumire || '')}</span></button>`).join('')
+    : `<div class="opt mic">${esc(tr('Niciun cod activ găsit.'))}</div>`;
+}
+async function alegeUniclass(cod) {
+  W.cod_uniclass = cod;
+  document.querySelectorAll('#l-uniclass .opt').forEach((b) => b.classList.toggle('ales', b.querySelector('code') && b.querySelector('code').textContent === cod));
+  await salveazaPas({ cod_uniclass: cod }, $('w-msg-5'));
+}
+
+// ── Pasul 6: rețeta propusă ────────────────────────────────────────────
+async function propuneReteta(buton) {
+  const r = await MDFeedback.salveaza(buton, $('w-msg-6'), async () => {
+    arunca(await api('propune_reteta', { serviciu_id: W.id }));
+    return tr('Rețetă propusă: deciziile pe linii se iau în tabul „Rețete propuse”.');
+  }, { textSalveaza: 'Se propune…', textOk: '✓ Propus' });
+  if (r.ok) setTimeout(() => arataTab('retete'), 900);
+}
+
+// ── Pasul 7: niveluri și prețuri (editorul comun catalog-niveluri.js) ──
+async function incarcaNiveluri() {
+  const el = $('w-niveluri');
+  if (!W.id) { el.innerHTML = ''; return; }
+  const r = await api('serviciu_cu_niveluri', { id: W.id }, '/api/admin/catalog');
+  if (r.status >= 400) { el.innerHTML = ''; MDFeedback.mesaj(el, 'eroare', mesajEroare(r.date)); return; }
+  el.innerHTML = window.MDCatalogNiveluri.html(r.date.serviciu);
+  if (window.MYD_I18N) window.MYD_I18N.aplica(el);
+}
+
+// ── Pasul 8: verificare și publicare ───────────────────────────────────
+function randeazaRezultat(rez, zona) {
+  const erori = rez.erori || [];
+  const av = rez.avertismente || [];
+  zona.innerHTML = (!erori.length && !av.length ? `<div class="alerta ok">${esc(tr('Ruta e validă: nicio eroare, niciun avertisment.'))}</div>` : '')
+    + erori.map((e) => `<div class="alerta eroare"><b>${esc(e.cod)}</b> · ${esc(mesajRuta(e))}</div>`).join('')
+    + av.map((a) => `<div class="alerta av"><b>${esc(a.cod)}</b> · ${esc(mesajRuta(a))}</div>`).join('');
+}
+async function verificaRuta(buton) {
+  const r = await MDFeedback.salveaza(buton, $('w-msg-8'), async () => {
+    const d = arunca(await api('valideaza', { serviciu_id: W.id }));
+    ULTIMA_VALIDARE = d.rezultat;
+    randeazaRezultat(d.rezultat, $('w-rezultat'));
+    return d.rezultat.ok ? tr('Verificare făcută.') : tr('Verificare făcută: ruta are erori.');
+  }, { textSalveaza: 'Se verifică…', textOk: '✓ Verificat' });
+  if (!r.ok) ULTIMA_VALIDARE = null;
+  $('w-confirm').checked = false;
+  $('w-confirm-rand').classList.toggle('ascuns', !(ULTIMA_VALIDARE && ULTIMA_VALIDARE.avertismente.length));
+  actualizeazaPublica();
+}
+function actualizeazaPublica() {
+  const v = ULTIMA_VALIDARE;
+  $('w-publica').disabled = !(v && v.ok && (!v.avertismente.length || $('w-confirm').checked));
+}
+async function publicaCiorna(buton) {
+  await MDFeedback.salveaza(buton, $('w-msg-8'), async () => {
+    const r = await api('publica', { serviciu_id: W.id, confirm_avertismente: $('w-confirm').checked });
+    if (r.status >= 400 && r.date.rezultat) { ULTIMA_VALIDARE = r.date.rezultat; randeazaRezultat(r.date.rezultat, $('w-rezultat')); }
+    arunca(r);
+    return tr('Publicat: serviciul apare în catalog.');
+  }, { textSalveaza: 'Se publică…', textOk: '✓ Publicat' });
+}
+
+// ── Tabul „Ciorne și servicii” ─────────────────────────────────────────
+const ETICHETA_STARE = { ciorna: 'Ciornă', in_verificare: 'În verificare', publicat: 'Publicat', retras: 'Retras' };
+let SERVICII = [];
+async function incarcaServicii() {
+  const zona = $('s-lista');
+  zona.innerHTML = `<div class="nota">${esc(tr('Se încarcă...'))}</div>`;
+  const r = await api('lista_servicii', { stare: $('s-stare').value || undefined, capitol: $('s-capitol').value || undefined, cu_erori: $('s-erori').checked });
+  if (r.status >= 400) { zona.innerHTML = ''; MDFeedback.mesaj(zona, 'eroare', mesajEroare(r.date)); return; }
+  SERVICII = r.date.servicii || [];
+  const noduri = new Map(SERVICII.filter((s) => s.nod).map((s) => [s.nod.id, s.nod]));
+  const ales = $('s-nod').value;
+  $('s-nod').innerHTML = `<option value="">${esc(tr('Toate'))}</option>` + [...noduri.values()].map((n) => `<option value="${esc(n.id)}"${n.id === ales ? ' selected' : ''}>${esc((LIMBA() === 'en' && n.title_en) || n.title)}</option>`).join('');
+  randeazaServicii();
+}
+function dataScurta(iso) { return iso ? new Date(iso).toLocaleString(LIMBA() === 'en' ? 'en-GB' : 'ro-RO', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'; }
+function randeazaServicii() {
+  const nod = $('s-nod').value;
+  const lista = SERVICII.filter((s) => !nod || (s.nod && s.nod.id === nod));
+  const zona = $('s-lista');
+  if (!lista.length) { zona.innerHTML = `<div class="nota">${esc(tr('Niciun serviciu pentru filtrele alese.'))}</div>`; return; }
+  zona.innerHTML = lista.map((s) => {
+    const r = s.ruta;
+    const ruta = !r ? `<span class="mic">${esc(tr('neverificat'))}</span>`
+      : r.ok ? `<span class="chip publicat">${esc(tr('rută validă'))}</span>${r.avertismente.length ? ` <span class="chip">${esc(r.avertismente.join(', '))}</span>` : ''}`
+        : `<span class="chip retras">${esc(tr('erori: {e}', { e: r.erori.join(', ') }))}</span>`;
+    const publicatCuErori = s.stare === 'publicat' && r && !r.ok;
+    return `<div class="serv" data-serviciu="${esc(s.id)}">
+      <div class="serv-cap">
+        <span class="serv-titlu">${esc(s.titlu)}</span>
+        <span class="chip ${esc(s.stare)}">${esc(tr(ETICHETA_STARE[s.stare] || s.stare))}</span>
+        ${ruta}
+      </div>
+      <div class="mic">${esc(s.capitol || '—')} · ${esc(s.nod ? (LIMBA() === 'en' && s.nod.title_en) || s.nod.title : tr('fără nod'))} · <span class="cod">${esc(s.nace || '—')}</span> · <span class="cod">${esc(s.cod_esco || '—')}</span> · <span class="cod">${esc(s.cod_uniclass || '—')}</span> · ${esc(tr('verificat: {d}', { d: dataScurta(s.ruta_validata_la) }))}</div>
+      ${publicatCuErori ? `<div class="alerta av">${esc(tr('Publicat, dar cu erori de rută: rămâne publicat; se corectează la pasul 10.'))}</div>` : ''}
+      <div class="rand" style="margin-top:8px">
+        ${s.stare !== 'publicat' ? `<button class="btn sec" onclick="continuaServiciu('${esc(s.id)}')">Continuă</button>` : ''}
+        <button class="btn sec" onclick="verificaServiciu('${esc(s.id)}', this)">Verifică</button>
+        ${s.stare !== 'publicat' ? `<button class="btn ok" onclick="publicaServiciu('${esc(s.id)}', this, false)">Publică</button>` : ''}
+        ${s.stare === 'publicat' ? `<button class="btn rosu" onclick="retrageServiciu('${esc(s.id)}', this)">Retrage</button>` : ''}
+      </div>
+      <div class="rezultat-serviciu" aria-live="polite"></div>
+    </div>`;
+  }).join('');
+  if (window.MYD_I18N) window.MYD_I18N.aplica(zona);
+}
+const zonaServiciu = (buton) => buton.closest('.serv').querySelector('.rezultat-serviciu');
+async function continuaServiciu(id) { arataTab('nou'); await incarcaCiorna(id); window.scrollTo(0, 0); }
+async function verificaServiciu(id, buton) {
+  const zona = zonaServiciu(buton);
+  const r = await MDFeedback.salveaza(buton, zona, async () => {
+    const d = arunca(await api('valideaza', { serviciu_id: id }));
+    return d.rezultat;
+  }, { textSalveaza: 'Se verifică…', textOk: '✓ Verificat' });
+  if (r.ok) { randeazaRezultat(r.rezultat, zona); }
+}
+async function publicaServiciu(id, buton, confirmat) {
+  const zona = zonaServiciu(buton);
+  const r = await api('publica', { serviciu_id: id, confirm_avertismente: !!confirmat });
+  if (r.status === 409 && r.date.cod === 'CONFIRMARE_NECESARA') {
+    randeazaRezultat(r.date.rezultat, zona);
+    zona.insertAdjacentHTML('beforeend', `<div class="rand" style="margin-top:8px"><button class="btn ok" onclick="publicaServiciu('${esc(id)}', this, true)">${esc(tr('Confirm avertismentele și public'))}</button></div>`);
+    return;
+  }
+  if (r.status >= 400) { if (r.date.rezultat) randeazaRezultat(r.date.rezultat, zona); MDFeedback.mesaj(zona, 'eroare', mesajEroare(r.date)); return; }
+  MDFeedback.mesaj(zona, 'ok', tr('Publicat: serviciul apare în catalog.'));
+  setTimeout(incarcaServicii, 1200);
+}
+async function retrageServiciu(id, buton) {
+  if (!confirm(tr('Retragi serviciul din catalog? Nu se mai afișează public până la o nouă publicare.'))) return;
+  const zona = zonaServiciu(buton);
+  const r = await MDFeedback.salveaza(buton, zona, async () => { arunca(await api('retrage', { serviciu_id: id })); return tr('Retras din catalog.'); }, { textSalveaza: 'Se retrage…', textOk: '✓ Retras' });
+  if (r.ok) setTimeout(incarcaServicii, 1200);
+}
+
+// ── Tabul „Rețete propuse” ─────────────────────────────────────────────
+const ETICHETA_TIP = { articol_existent: 'articol existent', resursa_existenta: 'resursă existentă', resursa_noua: 'resursă nouă' };
+const ETICHETA_DECIZIE = { in_asteptare: 'în așteptare', acceptata: 'acceptată', modificata: 'modificată', respinsa: 'respinsă' };
+let RETETE = [];
+async function incarcaRetete() {
+  const zona = $('r-lista');
+  zona.innerHTML = `<div class="card nota">${esc(tr('Se încarcă...'))}</div>`;
+  const r = await api('retete_propuse_lista');
+  if (r.status >= 400) { zona.innerHTML = '<div class="card"></div>'; MDFeedback.mesaj(zona.firstChild, 'eroare', mesajEroare(r.date)); return; }
+  RETETE = r.date.retete || [];
+  if (!RETETE.length) { zona.innerHTML = `<div class="card nota">${esc(tr('Nicio rețetă propusă deschisă.'))}</div>`; return; }
+  const niveluri = {};
+  for (const ret of RETETE) {
+    const rn = await api('serviciu_cu_niveluri', { id: ret.serviciu.id }, '/api/admin/catalog');
+    niveluri[ret.id] = rn.status < 400 ? (rn.date.serviciu.niveluri || []) : [];
+  }
+  zona.innerHTML = RETETE.map((ret) => cardReteta(ret, niveluri[ret.id])).join('');
+  if (window.MYD_I18N) window.MYD_I18N.aplica(zona);
+}
+// Aceeași regulă ca verificaAprobare din lib/propune-reteta.js.
+function poateAproba(linii) {
+  const acceptate = linii.filter((l) => l.decizie === 'acceptata' || l.decizie === 'modificata');
+  return !linii.some((l) => l.decizie === 'in_asteptare') && acceptate.length > 0 && acceptate.every((l) => Number(l.consum_propus) > 0);
+}
+function cardReteta(ret, niveluri) {
+  const linii = ret.linii || [];
+  const poate = poateAproba(linii);
+  return `<div class="card" data-reteta="${esc(ret.id)}">
+    <h2>${esc(ret.serviciu.titlu)}</h2>
+    <p class="sub">${esc(tr('Capitol {c} · sursa: {s} · nivel: {n}', { c: ret.serviciu.capitol || '—', s: tr(ret.sursa), n: ret.nivel || tr('neales') }))}</p>
+    <div class="tabel-scroll"><table class="linii">
+      <thead><tr><th>Tip</th><th>Denumire</th><th>Unitate</th><th>Consum</th><th>Uniclass</th><th>ESCO</th><th>Motiv</th><th>Decizie</th></tr></thead>
+      <tbody>${linii.map((l) => `<tr data-linie="${esc(l.id)}">
+        <td data-eticheta="${esc(tr('Tip'))}">${esc(tr(ETICHETA_TIP[l.tip] || l.tip))}</td>
+        <td data-eticheta="${esc(tr('Denumire'))}">${esc(l.denumire_propusa || '—')}${l.fara_tarif ? `<div class="chip ciorna" style="margin-top:4px">${esc(tr('fără tarif — prețul rămâne la cerere'))}</div>` : ''}</td>
+        <td data-eticheta="${esc(tr('Unitate'))}">${esc(l.unitate_masura || '—')}</td>
+        <td data-eticheta="${esc(tr('Consum'))}"><input type="number" step="any" min="0" class="consum" value="${l.consum_propus == null ? '' : esc(l.consum_propus)}" placeholder="—" aria-label="${esc(tr('Consum'))}" style="width:90px;padding:6px 8px"></td>
+        <td data-eticheta="Uniclass"><span class="cod">${esc(l.cod_uniclass || '—')}</span></td>
+        <td data-eticheta="ESCO"><span class="cod">${esc(l.cod_esco || '—')}</span></td>
+        <td data-eticheta="${esc(tr('Motiv'))}" class="mic">${esc(l.motiv || '')}</td>
+        <td data-eticheta="${esc(tr('Decizie'))}"><span class="chip">${esc(tr(ETICHETA_DECIZIE[l.decizie] || l.decizie))}</span>
+          <div class="rand" style="margin-top:6px;gap:4px">
+            <button class="btn ok" style="padding:5px 9px;font-size:11.5px" onclick="decideLinie('${esc(l.id)}', 'acceptata', this)">Acceptă</button>
+            <button class="btn sec" style="padding:5px 9px;font-size:11.5px" onclick="decideLinie('${esc(l.id)}', 'modificata', this)">Modifică</button>
+            <button class="btn rosu" style="padding:5px 9px;font-size:11.5px" onclick="decideLinie('${esc(l.id)}', 'respinsa', this)">Respinge</button>
+          </div><div class="mesaj-linie"></div></td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+    ${!ret.catalog_nivel_id ? `<div class="camp" style="max-width:320px;margin-top:12px"><label>${esc(tr('Nivelul de care se leagă rețeta'))}</label><select class="nivel-reteta">${niveluri.map((n) => `<option value="${esc(n.id)}">${esc(n.label || n.nivel)}</option>`).join('') || `<option value="">${esc(tr('Serviciul nu are încă niveluri'))}</option>`}</select></div>` : ''}
+    <div class="rand" style="margin-top:12px">
+      <button class="btn ok" onclick="aprobaReteta('${esc(ret.id)}', this)" ${poate ? '' : 'disabled'}>Aprobă rețeta</button>
+      <button class="btn rosu" onclick="this.closest('.card').querySelector('.respingere').classList.remove('ascuns')">Respinge</button>
+    </div>
+    ${poate ? '' : `<div class="nota" style="margin-top:6px">${esc(tr('Aprobarea se activează când nicio linie nu e în așteptare și fiecare linie acceptată are consum.'))}</div>`}
+    <div class="respingere ascuns" style="margin-top:10px">
+      <div class="camp"><label>${esc(tr('Motivul respingerii'))}</label><textarea rows="2" class="motiv-respingere"></textarea></div>
+      <button class="btn rosu" onclick="respingeReteta('${esc(ret.id)}', this)">Confirmă respingerea</button>
+    </div>
+    <div class="mesaj-reteta" aria-live="polite"></div>
+  </div>`;
+}
+async function decideLinie(linieId, decizie, buton) {
+  const rand = buton.closest('tr');
+  const val = rand.querySelector('.consum').value.trim();
+  const corp = { linie_id: linieId, decizie };
+  if (decizie !== 'respinsa' && val !== '') corp.consum_propus = Number(val);
+  const r = await MDFeedback.salveaza(buton, rand.querySelector('.mesaj-linie'), async () => { arunca(await api('decide_linie', corp)); return tr('Decizie salvată.'); });
+  if (r.ok) setTimeout(incarcaRetete, 700);
+}
+async function aprobaReteta(id, buton) {
+  const card = buton.closest('.card');
+  const sel = card.querySelector('.nivel-reteta');
+  const r = await MDFeedback.salveaza(buton, card.querySelector('.mesaj-reteta'), async () => {
+    const d = arunca(await api('aproba_reteta', { reteta_id: id, catalog_nivel_id: sel ? sel.value || undefined : undefined }));
+    return [tr('Rețetă aprobată: articolul {a} e legat de nivel.', { a: d.articol ? d.articol.simbol : '—' }), d.nota && ((LIMBA() === 'en' && d.nota_en) || d.nota)].filter(Boolean).join(' ');
+  }, { textSalveaza: 'Se aprobă…', textOk: '✓ Aprobat' });
+  if (r.ok) setTimeout(incarcaRetete, 1500);
+}
+async function respingeReteta(id, buton) {
+  const card = buton.closest('.card');
+  const motiv = card.querySelector('.motiv-respingere').value.trim();
+  const r = await MDFeedback.salveaza(buton, card.querySelector('.mesaj-reteta'), async () => {
+    if (!motiv) throw new Error(tr('Scrie motivul respingerii.'));
+    arunca(await api('respinge_reteta', { reteta_id: id, motiv }));
+    return tr('Rețetă respinsă.');
+  });
+  if (r.ok) setTimeout(incarcaRetete, 1200);
+}
+
+porneste();
+</script>
+</body>
+</html>

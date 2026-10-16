@@ -549,7 +549,29 @@ async function actionCautaArticole(req, res) {
   return res.status(200).json({ ok: true, articole: data || [] });
 }
 
+
+// Un serviciu cu nivelurile și prețurile lui (editorul de niveluri din
+// catalog-niveluri.js, folosit și de pagina adminului de catalog).
+async function actionServiciuCuNiveluri(req, res) {
+  const { id } = req.body || {};
+  if (!id) return res.status(400).json({ error: 'id obligatoriu.', error_en: 'id is required.' });
+  const { data: s, error } = await supabaseAdmin.from('catalog_servicii')
+    .select('id, id_serviciu, categorie, domeniu, titlu, nace, cod_esco, cod_uniclass, status_public').eq('id', id).maybeSingle();
+  if (error) return res.status(500).json({ error: 'Nu am putut încărca serviciul.', error_en: 'Could not load the service.' });
+  if (!s) return res.status(404).json({ error: 'Serviciul nu există.', error_en: 'The service does not exist.' });
+  const { data: niveluri } = await supabaseAdmin.from('catalog_niveluri')
+    .select('id, serviciu_id, nivel, nivel_complexitate, norma_timp, materiale_baza_estimat, label, descriere, garantie_luni')
+    .eq('serviciu_id', id).order('nivel_complexitate', { ascending: true });
+  const ids = (niveluri || []).map((n) => n.id);
+  const { data: preturi } = ids.length
+    ? await supabaseAdmin.from('catalog_preturi').select('id, nivel_id, tara_cod, regiune, localitate, moneda, pret, activ').in('nivel_id', ids)
+    : { data: [] };
+  s.niveluri = (niveluri || []).map((n) => ({ ...n, preturi: (preturi || []).filter((p) => p.nivel_id === n.id) }));
+  return res.status(200).json({ ok: true, serviciu: s });
+}
+
 const ACTIUNI = {
+  serviciu_cu_niveluri: actionServiciuCuNiveluri,
   list: actionList,
   creeaza_serviciu: actionCreeazaServiciu,
   actualizeaza_serviciu: actionActualizeazaServiciu,
@@ -568,11 +590,67 @@ const ACTIUNI = {
   cauta_articole: actionCautaArticole,
 };
 
+// Adminii de catalog (pasul 9, 15 oct. 2026): superadminul are acces la tot,
+// ca înainte. Un admin are acces doar la editorul de niveluri / prețuri /
+// rețetă, doar pe serviciile din capitolele lui (admin_permissions,
+// sectiune = 'catalog_servicii') și, dacă e limitat, doar în țara lui.
+// Fail-closed: fără drept sau fără migrarea ruta_incadrare → refuz.
+const ACTIUNI_ADMIN_CATALOG = new Set([
+  'serviciu_cu_niveluri', 'creeaza_nivel', 'actualizeaza_nivel', 'sterge_nivel', 'creeaza_pret', 'actualizeaza_pret',
+  'sterge_pret', 'recalculeaza_pret', 'leaga_articol_nivel', 'dezleaga_articol_nivel', 'listeaza_articole_nivel', 'cauta_articole',
+]);
+async function serviciuDinNivel(nivelId) {
+  if (!nivelId) return null;
+  const { data } = await supabaseAdmin.from('catalog_niveluri').select('serviciu_id').eq('id', nivelId).maybeSingle();
+  return data?.serviciu_id || null;
+}
+// Serviciul atins de acțiune (null = acțiune fără serviciu, ex. căutare).
+async function serviciuAtins(action, b) {
+  switch (action) {
+    case 'serviciu_cu_niveluri': return b.id || null;
+    case 'creeaza_nivel': return b.serviciu_id || null;
+    case 'actualizeaza_nivel': case 'sterge_nivel': return serviciuDinNivel(b.id);
+    case 'creeaza_pret': case 'recalculeaza_pret': return serviciuDinNivel(b.nivel_id);
+    case 'leaga_articol_nivel': case 'listeaza_articole_nivel': return serviciuDinNivel(b.catalog_nivel_id);
+    case 'actualizeaza_pret': case 'sterge_pret': {
+      const { data } = await supabaseAdmin.from('catalog_preturi').select('nivel_id').eq('id', b.id).maybeSingle();
+      return serviciuDinNivel(data?.nivel_id);
+    }
+    case 'dezleaga_articol_nivel': {
+      const { data } = await supabaseAdmin.from('devize_articole').select('catalog_nivel_id').eq('articol_id', b.articol_id).maybeSingle();
+      return serviciuDinNivel(data?.catalog_nivel_id);
+    }
+    default: return null;
+  }
+}
+async function cereDreptAdmin(req, res, user, action) {
+  const ruta = require('./ruta-incadrare')._intern;
+  const perm = await ruta.permisiune(user);
+  const refuz = (status, error, error_en) => { res.status(status).json({ error, error_en }); return false; };
+  if (!perm) return refuz(403, 'Nu ai drept pe catalogul de servicii.', 'You have no rights on the service catalogue.');
+  if (perm.superadmin) return true;
+  if (!ACTIUNI_ADMIN_CATALOG.has(action)) return refuz(403, 'Acțiune rezervată superadminului.', 'Action reserved for the superadmin.');
+  const b = req.body || {};
+  const tara = b.tara_cod ? String(b.tara_cod).toUpperCase() : null;
+  if (perm.tara && tara && tara !== perm.tara) return refuz(403, `Ai drept doar pentru țara ${perm.tara}.`, `You only have rights for country ${perm.tara}.`);
+  const sid = await serviciuAtins(action, b);
+  if (sid === null && action !== 'cauta_articole') return refuz(404, 'Serviciul nu există.', 'The service does not exist.');
+  if (sid) {
+    try { await ruta.cereDreptServiciu(perm, sid); } catch (e) {
+      if (e instanceof ruta.MigrareLipsa) return refuz(409, ruta.MESAJ_MIGRARE.error, ruta.MESAJ_MIGRARE.error_en);
+      if (e instanceof ruta.EroareCerere) return refuz(e.status, e.error, e.error_en);
+      throw e;
+    }
+  }
+  return true;
+}
+
 async function handler(req, res, user) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const { action } = req.body || {};
   const fn = ACTIUNI[action];
   if (!fn) return res.status(400).json({ error: `action invalidă. Trebuie una din: ${Object.keys(ACTIUNI).join(', ')}` });
+  if (!(await cereDreptAdmin(req, res, user, action))) return undefined;
   return fn(req, res, user);
 }
 

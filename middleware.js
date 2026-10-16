@@ -239,6 +239,9 @@ const PAGINI_STRICTE = [
   '/mydarrin-sync-architecture', '/mydarrin-sync-architecture.html',
 ];
 
+// Pasul 9: pagina adminilor de catalog — admin sau superadmin (vezi mai jos).
+const PAGINI_ADMIN_CATALOG = ['/mydarrin-admin-catalog', '/mydarrin-admin-catalog.html'];
+
 // FIX (27 august 2026, Etapa LANSARE, Faza A) — cerere explicită a
 // fondatorului: prima ridicare, scopită, a barierei globale de pre-lansare
 // (activă din 23 iulie 2026, vezi comentariul de sus). Provizoriu — vezi
@@ -334,6 +337,19 @@ export default async function middleware(request) {
     if (!areRolPermis) return respinge(request, `user ${user.id} autentificat dar fără rol admin/superadmin`);
     if (!user.email || user.email.toLowerCase() !== SUPERADMIN_EMAIL) {
       return respinge(request, `user ${user.id} (${user.email || 'fără email'}) are rol admin/superadmin dar nu e contul unic autorizat`);
+    }
+    return next();
+  }
+
+  // Pagina adminilor de catalog (pasul 9, 15 oct. 2026): admin sau superadmin,
+  // fără restricția de cont unic a paginilor stricte (adminii de catalog sunt
+  // numiți de superadmin). Dreptul pe catalog (admin_permissions, capitole,
+  // țară) îl verifică din nou API-ul, la fiecare cerere.
+  if (PAGINI_ADMIN_CATALOG.includes(pathname)) {
+    const user = await obtineUtilizatorAutentificat(request, supabaseAdmin);
+    if (!user) return respinge(request, 'niciun cookie de sesiune valid');
+    if (!(await verificaRoluri(supabaseAdmin, user.id))) {
+      return respinge(request, `user ${user.id} autentificat dar fără rol admin/superadmin (pagina de catalog)`);
     }
     return next();
   }
