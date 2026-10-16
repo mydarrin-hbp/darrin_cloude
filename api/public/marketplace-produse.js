@@ -17,6 +17,11 @@
 // comision + marketing + mentenanță + TVA, fără pragul minim de comandă (care
 // se aplică întregii comenzi). Discountul furnizorului nu apare nicăieri aici.
 // Furnizorul propriu al platformei apare ca „Home Best Pal”.
+//
+// Pasul 10c (16 oct. 2026): apar doar produsele furnizorilor care pot vinde
+// (regula unică din lib/eligibilitate-partener.js). Un furnizor respins sau
+// care pierde dreptul (ex. contract reziliat) dispare din marketplace, fără
+// ca produsele lui să fie șterse.
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { checkRateLimit } = require('../../lib/rate-limit');
@@ -24,6 +29,7 @@ const { incarcaConfigPret, aplicaFormulaPret, calculeazaPret } = require('../../
 const { rezolvaAddonMateriale, parseazaIdMarketplace } = require('../../lib/rezolva-addon-materiale');
 const { furnizoriProprii } = require('../../lib/furnizor-propriu');
 const { citesteTot } = require('../../lib/citeste-tot');
+const { parteneriCarePotVinde } = require('../../lib/eligibilitate-partener');
 
 const NUME_FURNIZOR_PROPRIU = 'Home Best Pal';
 const TIPURI = {
@@ -109,6 +115,7 @@ async function handleProdus(req, res) {
     incarcaConfigPret(taraCod),
   ]);
   if (!r || (moneda && r.moneda !== moneda)) return res.status(404).json({ error: 'Produsul nu mai este disponibil.' });
+  if (!(await parteneriCarePotVinde([r.furnizor_id])).has(r.furnizor_id)) return res.status(404).json({ error: 'Produsul nu mai este disponibil.' });
   const noduri = await noduriCapitol(cfg);
   const nume = await numeFurnizori([r]);
   const produs = produsPublic(r, parsat.tip, { cfgPret, numeFurnizor: nume[r.furnizor_id] || null, nod: noduri.find((n) => n.id === r.categorie_id), lang });
@@ -127,10 +134,14 @@ async function handleLista(req, res) {
   const goala = { ok: true, tip, moneda, noduri: [], produse: [], total: 0, pagina, pe_pagina: peP };
   if (!moneda) return res.status(200).json(goala);
 
-  // Nodurile cu produse live (numărul pe nod), din toată lista, nu din pagină.
-  const { data: toate, error: eroareToate } = await citesteTot(() => supabaseAdmin
-    .from(cfg.tabel).select('id, categorie_id').eq('status', 'live').eq('activ', true).eq('moneda', moneda).order('id'));
+  // Nodurile cu produse live (numărul pe nod), din toată lista, nu din pagină,
+  // doar ale furnizorilor care pot vinde.
+  const { data: toateLive, error: eroareToate } = await citesteTot(() => supabaseAdmin
+    .from(cfg.tabel).select('id, categorie_id, furnizor_id').eq('status', 'live').eq('activ', true).eq('moneda', moneda).order('id'));
   if (eroareToate) return res.status(500).json({ error: 'Nu am putut încărca produsele.' });
+  const furnizoriActivi = await parteneriCarePotVinde((toateLive || []).map((p) => p.furnizor_id));
+  if (!furnizoriActivi.size) return res.status(200).json(goala);
+  const toate = (toateLive || []).filter((p) => furnizoriActivi.has(p.furnizor_id));
   const nodPeId = new Map(noduri.map((n) => [n.id, n]));
   const numar = new Map();
   (toate || []).forEach((p) => { if (nodPeId.has(p.categorie_id)) numar.set(p.categorie_id, (numar.get(p.categorie_id) || 0) + 1); });
@@ -149,6 +160,7 @@ async function handleLista(req, res) {
     .eq('status', 'live')
     .eq('activ', true)
     .eq('moneda', moneda)
+    .in('furnizor_id', [...furnizoriActivi])
     .in('categorie_id', iduriNod)
     .order('denumire', { ascending: true })
     .order('id', { ascending: true });
