@@ -450,3 +450,70 @@ Conclusion: **every shared service or product appears with the same generic card
 **Tests**
 - New script `scripts/test-og-crawler.js`: for 3 services and 2 products, `GET` with the `facebookexternalhit` agent (locally, `vercel dev`) → the service title, `og:url` with the slug, the 1200 × 630 image or the service image, EN by default, RO with `?lang=ro`.
 - Manual check in the Facebook Sharing Debugger and the LinkedIn Post Inspector after publication (LM).
+
+---
+
+### 2.5 The filters on `/mydarrin-catalog` do nothing
+
+#### How I tested
+Playwright (Chromium), locally, on `main` (`8c5de07`): files served from the repo; `/api/*` requests and the Supabase REST API sent as **GET** to production, every other method blocked; RO language; 1366 px. For each entry in the "Services" side menu I called `filterCat('servicii', key, element)` and counted the cards left visible. No JS errors.
+
+#### The result
+
+The grid has **102 cards**: **14 static** ones, written in the HTML (`mydarrin-catalog.html:2278-3281`, with "Min. 100 Lei · +5% zonă", "ACA BG"), and **88 from the database** (every published service). The counter says "102 rezultate".
+
+| Menu entry (key) | Cards visible after the click | From the database | Real services in the database for that NACE class |
+|---|---|---|---|
+| All plumbing & heating (`F4322`) | 9 | 6 | 20 (NACE 43.22) |
+| · **Radiators** (`F4322-cal`) | **102 (all)** | 88 | 10 have "calorifer" in the title |
+| · Sanitary fittings (`F4322-ob`) | **102 (all)** | 88 | — |
+| All electrical (`F4321`) | 9 | 8 | 15 (NACE 43.21) |
+| · Light fittings (`F4321-ilum`) | **102 (all)** | 88 | — |
+| Doors, windows, parquet (`F4332`) | 2 | 1 | 1 |
+| Cleaning (`O8121`) | 2 | 1 | 5 (NACE 81.2x) |
+| Car & service (`T9531`) | 2 | 1 | 6 (NACE 95) |
+| Consultancy (`N71`) | 2 | 2 | 7 (NACE 71) |
+| Repairs & installation (`S9522`) | 1 | 1 — "Mutare mobilă și electrocasnice apartament" (a transport service) | — |
+| Hospitality (`I5510`) | 0 | 0 | 0 |
+
+#### The exact cause
+1. **Sub-categories do not filter at all.** In `NACE_MAP` (`mydarrin-catalog.html:5838-5856`), the sub-categories only have `keywords` (e.g. `'F4322-cal': {…, keywords:['calorifer','radiator','termic']}`), no `domains`. `applyFilters()` filters by category **only** when there are `domains` (`mydarrin-catalog.html:5946-5958`: `acceptedDomains` stays `null`; the condition at `:5970` is `if (acceptedDomains !== null)`). The keywords are only checked inside that condition, so they are never applied. Result: a click on "Radiators" → all 102 cards stay → "nothing happens".
+2. **Categories filter by text, not by code.** Database cards get `data-cat` / `data-subcat` from a hand-written dictionary, `DOM`, based on the text of the `domeniu` field (`mydarrin-catalog.html:5468-5530`, `mkCard` at `:5548-5557`); they get neither NACE, nor node, nor category slug (`data-nace`, read at `:5963`, is never set on the cards). The filter compares domain names from `NACE_MAP` (e.g. "Instalații sanitare") with `data-subcat` (e.g. "Sanitare & Termo") or with the title. That is why "All plumbing & heating" shows 6 of 20 services, "All electrical" 8 of 15, and "Repairs & installation" shows a removals service.
+3. **The menu is hand-written** (`mydarrin-catalog.html:1907-2071`): it has entries with no service (Hospitality, `I 55.10`) and no entries for domains that exist in the database (Transport / removals, Demolition, Concrete, Technical design, Motorcycle service). The `cat-count` counters stay "—" (the function meant to fill them, `updateSidebar` in the data module, `:5636-5654`, looks for the `sidebar-servicii-cats` container, which does not exist).
+4. **The static cards** (14) mix with the real ones and have their own `data-cat` (e.g. "Instalații", "Exterior"), so they show up in filter results.
+
+All of these share one root cause: in the database, `catalog_servicii.nod_id` is empty on all 226 rows (see 2.3), so the page has no code to filter by and ended up guessing from text.
+
+#### Problems
+
+| # | Problem | Severity |
+|---|---|---|
+| 1.5-a | The menu's sub-categories do not filter (all 102 cards stay) | **major** |
+| 1.5-b | Categories show only part of the services (6 / 20, 8 / 15, 1 / 5) or the wrong services | **major** |
+| 1.5-c | 14 static demo cards mixed with the real services | **major** |
+| 1.5-d | The menu does not match the catalogue (empty entries, missing domains), "—" counters | minor |
+
+#### Decision for LM
+- None new: the fix is the already planned step 11 (menus generated from the classification route). The recommendation is **not to repair `NACE_MAP`** (it would be one more hand-written menu).
+
+#### The plan (tied to step 11)
+**Precondition:** the classification route filled in for the published services (`catalog_servicii.nod_id` → `categorii`, chapter → `meniu_capitole`), see 2.3.
+
+**Database**
+- No new migration for the filters, if `meniu_capitole` and `categorii.capitol_cod` already exist (migration `2026-10-15_ruta_incadrare.sql`). Only filling in the data (`nod_id`) through the back office.
+
+**Back-end**
+- A new public GET endpoint, `api/public/meniu-catalog.js`: the active chapters (`meniu_capitole`, RO + EN) → the nodes (`categorii`, RO + EN, slug) → the number of published services per node; the same source for the marketplace (chapters G and O77). Short cache (60 s).
+- Optional: `api/public/catalog-servicii.js` (GET, paginated, filtered by `capitol` / `nod`), instead of reading the table directly with the anon key (linked to 1.3-g).
+
+**Front-end**
+- `mydarrin-catalog.html`: the side menu generated from the endpoint (chapter → node), no hand-written HTML; each card gets `data-capitol` and `data-nod` (slug) from the database; the filter compares the code, not the text.
+- Delete `NACE_MAP`, `NACE_MAP_MAT`, `NACE_MAP_INC`, `DOM` and the 14 static cards; counters from the endpoint.
+- The filter in the URL (`?capitol=F&nod=calorifere`), so a filter can be shared (linked to 2.4).
+
+**Content (RO + EN)**
+- Chapter and node names come from `meniu_capitole.titlu_ro/titlu_en` and `categorii.title/title_en` — no new texts in the page.
+
+**Tests**
+- A new Playwright test (`scripts/test-filtre-catalog.js`, locally, with simulated responses): for each node, the visible cards = the services with that `nod_id`; no static card; a node with no services does not appear in the menu.
+- The Romanian detector in EN on `/mydarrin-catalog` (0).

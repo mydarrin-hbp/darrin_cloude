@@ -450,3 +450,70 @@ Concluzie: **orice serviciu sau produs distribuit apare cu același card generic
 **Teste**
 - Script nou `scripts/test-og-crawler.js`: pentru 3 servicii și 2 produse, `GET` cu agentul `facebookexternalhit` (local, `vercel dev`) → titlul serviciului, `og:url` cu slug, imaginea 1200 × 630 sau imaginea serviciului, EN implicit, RO cu `?lang=ro`.
 - Verificare manuală în Facebook Sharing Debugger și LinkedIn Post Inspector după publicare (LM).
+
+---
+
+### 2.5 Filtrele din `/mydarrin-catalog` nu fac nimic
+
+#### Cum am testat
+Playwright (Chromium), local, pe `main` (`8c5de07`): fișierele servite din repo; cererile `/api/*` și REST-ul Supabase trimise ca **GET** spre producție, orice altă metodă blocată; limba RO; 1366 px. Pentru fiecare intrare din meniul lateral „Servicii” am apelat `filterCat('servicii', cheie, element)` și am numărat cardurile rămase vizibile. Nicio eroare JS.
+
+#### Rezultatul
+
+Grila are **102 carduri**: **14 statice**, scrise în HTML (`mydarrin-catalog.html:2278-3281`, cu „Min. 100 Lei · +5% zonă”, „ACA BG”), și **88 din baza de date** (toate serviciile publicate). Contorul spune „102 rezultate”.
+
+| Intrare din meniu (cheie) | Carduri vizibile după click | Din baza de date | Servicii reale în baza de date pentru acea clasă NACE |
+|---|---|---|---|
+| Toate sanitare & termice (`F4322`) | 9 | 6 | 20 (NACE 43.22) |
+| · **Calorifere & Radiatoare** (`F4322-cal`) | **102 (toate)** | 88 | 10 au „calorifer” în titlu |
+| · Obiecte sanitare (`F4322-ob`) | **102 (toate)** | 88 | — |
+| Toate electrice (`F4321`) | 9 | 8 | 15 (NACE 43.21) |
+| · Corpuri iluminat (`F4321-ilum`) | **102 (toate)** | 88 | — |
+| Uși, ferestre, parchet (`F4332`) | 2 | 1 | 1 |
+| Curățenie (`O8121`) | 2 | 1 | 5 (NACE 81.2x) |
+| Auto & Service (`T9531`) | 2 | 1 | 6 (NACE 95) |
+| Consultanță (`N71`) | 2 | 2 | 7 (NACE 71) |
+| Reparații & Instalare (`S9522`) | 1 | 1 — „Mutare mobilă și electrocasnice apartament” (un serviciu de transport) | — |
+| Ospitalitate (`I5510`) | 0 | 0 | 0 |
+
+#### Cauza exactă
+1. **Subcategoriile nu filtrează deloc.** În `NACE_MAP` (`mydarrin-catalog.html:5838-5856`), subcategoriile au doar `keywords` (ex. `'F4322-cal': {…, keywords:['calorifer','radiator','termic']}`), fără `domains`. `applyFilters()` filtrează pe categorie **doar** dacă există `domains` (`mydarrin-catalog.html:5947-5958`: `acceptedDomains` rămâne `null`; condiția de la `:5970` este `if (acceptedDomains !== null)`). Cuvintele cheie se verifică numai în interiorul acelei condiții, deci nu se aplică niciodată. Rezultat: click pe „Calorifere & Radiatoare” → toate cele 102 carduri rămân → „nu se întâmplă nimic”.
+2. **Categoriile filtrează după text, nu după cod.** Cardurile din baza de date primesc `data-cat` / `data-subcat` dintr-un dicționar scris de mână, `DOM`, după textul câmpului `domeniu` (`mydarrin-catalog.html:5468-5530`, `mkCard` la `:5548-5557`); nu primesc nici NACE, nici nod, nici slug de categorie (`data-nace`, citit la `:5963`, nu e pus pe carduri). Filtrul compară numele de domenii din `NACE_MAP` (ex. „Instalații sanitare”) cu `data-subcat` (ex. „Sanitare & Termo”) sau cu titlul. De aceea „Toate sanitare & termice” arată 6 din 20 de servicii, „Toate electrice” 8 din 15, iar „Reparații & Instalare” arată un serviciu de mutări.
+3. **Meniul e scris de mână** (`mydarrin-catalog.html:1907-2071`): are intrări fără niciun serviciu (Ospitalitate, `I 55.10`) și nu are intrări pentru domenii care există în baza de date (Transport / mutări, Demolări, Betoane, Proiectare tehnică, Service moto). Contoarele `cat-count` rămân „—” (funcția care ar trebui să le completeze, `updateSidebar` din modulul de date, `:5636-5654`, caută containerul `sidebar-servicii-cats`, care nu există).
+4. **Cardurile statice** (14) se amestecă cu cele reale și au propriile `data-cat` (ex. „Instalații”, „Exterior”), deci apar în rezultatele filtrelor.
+
+Toate acestea au aceeași cauză de fond: în baza de date, `catalog_servicii.nod_id` e gol pe toate cele 226 de rânduri (vezi 2.3), deci pagina nu are după ce cod să filtreze și a ajuns să ghicească după text.
+
+#### Probleme
+
+| # | Problemă | Severitate |
+|---|---|---|
+| 1.5-a | Subcategoriile din meniu nu filtrează (toate cele 102 carduri rămân) | **major** |
+| 1.5-b | Categoriile arată doar o parte din servicii (6 / 20, 8 / 15, 1 / 5) sau servicii greșite | **major** |
+| 1.5-c | 14 carduri statice, demonstrative, amestecate cu serviciile reale | **major** |
+| 1.5-d | Meniul nu corespunde catalogului (intrări goale, domenii lipsă), contoare „—” | minor |
+
+#### Decizie pentru LM
+- Niciuna nouă: soluția e pasul 11 deja planificat (meniuri generate din ruta de încadrare). Se recomandă **să nu se repare `NACE_MAP`** (ar fi încă un meniu scris de mână).
+
+#### Planul (legat de pasul 11)
+**Precondiție:** ruta de încadrare completată pentru serviciile publicate (`catalog_servicii.nod_id` → `categorii`, capitol → `meniu_capitole`), vezi 2.3.
+
+**Bază de date**
+- Nicio migrare nouă pentru filtre, dacă `meniu_capitole` și `categorii.capitol_cod` există deja (migrarea `2026-10-15_ruta_incadrare.sql`). Doar completarea datelor (`nod_id`) prin back-office.
+
+**Back-end**
+- Endpoint public nou, GET, `api/public/meniu-catalog.js`: capitolele active (`meniu_capitole`, RO + EN) → nodurile (`categorii`, RO + EN, slug) → numărul de servicii publicate pe nod; aceeași sursă și pentru marketplace (capitolele G și O77). Cache scurt (60 s).
+- Opțional: `api/public/catalog-servicii.js` (GET, paginat, filtrat după `capitol` / `nod`), în locul citirii directe a tabelului cu cheia anon (legat de 1.3-g).
+
+**Front-end**
+- `mydarrin-catalog.html`: meniul lateral generat din endpoint (capitol → nod), fără HTML scris de mână; fiecare card primește `data-capitol` și `data-nod` (slug) din baza de date; filtrul compară codul, nu textul.
+- Ștergerea `NACE_MAP`, `NACE_MAP_MAT`, `NACE_MAP_INC`, `DOM` și a celor 14 carduri statice; contoarele din endpoint.
+- Adresa filtrului în URL (`?capitol=F&nod=calorifere`), ca un filtru să poată fi distribuit (legat de 2.4).
+
+**Conținut (RO + EN)**
+- Numele capitolelor și nodurilor vin din `meniu_capitole.titlu_ro/titlu_en` și `categorii.title/title_en` — fără texte noi în pagină.
+
+**Teste**
+- Test Playwright nou (`scripts/test-filtre-catalog.js`, local, cu răspunsuri simulate): pentru fiecare nod, cardurile vizibile = serviciile cu acel `nod_id`; niciun card static; un nod fără servicii nu apare în meniu.
+- Detectorul de română în EN pe `/mydarrin-catalog` (0).
