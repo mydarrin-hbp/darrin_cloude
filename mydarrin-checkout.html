@@ -2596,7 +2596,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // (lib/rezolva-addon-materiale.js) rezolvă prețul real, identic cum
         // a fost previzualizat live în mydarrin-produs.html.
         const addonMateriale = [...(MYD_CFG.materiale || []), ...(MYD_CFG.inchirieri || [])].map(m => ({ id: m.id, qty: m.qty }));
-        const corpComun = MYD_CFG?.nivel_id
+        // Produse din marketplace, fără serviciu (pasul 10a, 16 oct. 2026):
+        // doar id + cantitate; api/comenzi/creeaza.js calculează prețul real.
+        const corpComun = MYD_CFG?.tip_comanda === 'marketplace'
+          ? { adresa, tara_cod: taraComanda, regiune: regiuneComanda, localitate: localitateComanda, produse_marketplace: addonMateriale, metoda_plata: metodaPlataB2C }
+          : MYD_CFG?.nivel_id
           ? { adresa, tara_cod: taraComanda, regiune: regiuneComanda, localitate: localitateComanda, nivel_id: MYD_CFG.nivel_id, cantitate: MYD_CFG.cantitate || 1, addon_materiale: addonMateriale, data_programata: dataProgramata, ora_inceput_programata: oraInceputProgramata, ora_sfarsit_programata: oraSfarsitProgramata, metoda_plata: metodaPlataB2C }
           : { adresa, tara_cod: taraComanda, regiune: regiuneComanda, localitate: localitateComanda, cost_baza_servicii, cost_asigurare, cost_materiale, cost_chirie_scule, valoare_totala, data_programata: dataProgramata, ora_inceput_programata: oraInceputProgramata, ora_sfarsit_programata: oraSfarsitProgramata, metoda_plata: metodaPlataB2C };
 
@@ -3350,7 +3354,7 @@ function applyChecoutConfigReal(){
     }
   }
 
-  setEl2('cart-count-label', '1 serviciu');
+  setEl2('cart-count-label', cfg.tip_comanda === 'marketplace' ? window.t(null, 'Produse din marketplace') : window.t(null, '1 serviciu'));
 
   // Mod pilot (22 august 2026) — pe calea nivel_id, api/comenzi/creeaza.js
   // calculează prețul EXCLUSIV din rețeta tehnică (nivel_id+cantitate),
@@ -3358,7 +3362,7 @@ function applyChecoutConfigReal(){
   // checkout (distinctă de cea din produs.html) n-au echivalent pe această
   // cale — dezactivate explicit aici ca prețul afișat să nu difere niciodată
   // de ce se încasează efectiv. Rămân itemi separați, cu aprobare proprie.
-  if (cfg.nivel_id) {
+  if (cfg.nivel_id || cfg.tip_comanda === 'marketplace') {
     const b2gToggle = document.getElementById('b2g-toggle');
     if (b2gToggle) { b2gToggle.checked = false; b2gToggle.disabled = true; }
     const b2gLabel = b2gToggle?.closest('label');

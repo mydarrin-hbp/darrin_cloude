@@ -172,8 +172,14 @@ async function handler(req, res, user) {
       continue;
     }
 
+    const traducereEn = {};
+    for (const camp of ['denumire', 'descriere', 'descriere_pret']) {
+      const v = String(rand[`${camp}_en`] || '').trim();
+      if (v) traducereEn[camp] = v;
+    }
     const payload = {
       ...rezultat.normalizat,
+      ...(Object.keys(traducereEn).length ? { traduceri: { en: traducereEn } } : {}),
       categorie_id: nod.id,
       furnizor_id: furnizorId,
       creat_de: user.id,
@@ -181,9 +187,15 @@ async function handler(req, res, user) {
       motiv_respingere: null,
       actualizat_la: new Date().toISOString(),
     };
-    const { error: upsertErr } = await supabaseAdmin
+    let { error: upsertErr } = await supabaseAdmin
       .from(TABEL[tip])
       .upsert(payload, { onConflict: 'furnizor_id,cod_produs_furnizor' });
+    // Coloana traduceri vine cu migrarea 2026-10-16_furnizor_propriu.sql; până
+    // atunci produsul se salvează fără traducere (pagina îl arată în română).
+    if (upsertErr && payload.traduceri && /traduceri/.test(upsertErr.message || '')) {
+      delete payload.traduceri;
+      ({ error: upsertErr } = await supabaseAdmin.from(TABEL[tip]).upsert(payload, { onConflict: 'furnizor_id,cod_produs_furnizor' }));
+    }
     if (upsertErr) {
       eroriLot.push({ rand: numarRand, produs, camp: '-', mesaj: upsertErr.message, mesaj_en: upsertErr.message });
       randuriEsuateLot++;

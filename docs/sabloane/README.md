@@ -32,6 +32,7 @@ Rândul `EXEMPLU` arată formatul și **se șterge** înainte de import; câmpur
 | `imagine_url_1` … `imagine_url_6` | `imagine_url_1` da | imagini urcate întâi în platformă (`marketplace-media`) |
 | `ambalaj`, `specificatii_tehnice`, `este_consumabil` | nu | |
 | `cui_furnizor` | la importul din back-office | `RO46577229`; contul de furnizor importă doar pentru sine |
+| `denumire_en`, `descriere_en`, `descriere_pret_en` | nu (recomandat) | textele în engleză, pentru pagina publică în engleză (`traduceri.en`, după aplicarea migrării `2026-10-16_furnizor_propriu.sql`); fără ele, produsul apare în română |
 
 **Închirieri** (`tip = echipamente`): aceleași reguli, cu `tarif_zi` (obligatoriu, fără TVA), `tarif_ora` și `tarif_saptamana` (opționale), `buc_disponibile`, `operator_inclus` (`fara_operator` sau `cu_operator_optional`; `operator_obligatoriu` e un serviciu, NACE 43.99, nu o închiriere), `nace_cod` din capitolul O77 (77.11, 77.12, 77.21, 77.22, 77.32, 77.39), `nod_menu` din O77, `cod_uniclass` opțional (dacă e dat: `Pr_` activ). Unitatea e ziua.
 
@@ -64,6 +65,7 @@ The `EXAMPLE` row shows the format and **is deleted** before import; the `<…>`
 | `imagine_url_1` … `imagine_url_6` | `imagine_url_1` yes | images uploaded to the platform first (`marketplace-media`) |
 | `ambalaj`, `specificatii_tehnice`, `este_consumabil` | no | |
 | `cui_furnizor` | when importing from the back office | `RO46577229`; the supplier account imports only for itself |
+| `denumire_en`, `descriere_en`, `descriere_pret_en` | no (recommended) | the English texts, for the public page in English (`traduceri.en`, once the migration `2026-10-16_furnizor_propriu.sql` is applied); without them, the product shows in Romanian |
 
 **Rentals** (`tip = echipamente`): the same rules, with `tarif_zi` (required, excl. VAT), `tarif_ora` and `tarif_saptamana` (optional), `buc_disponibile`, `operator_inclus` (`fara_operator` or `cu_operator_optional`; `operator_obligatoriu` is a service, NACE 43.99, not a rental), `nace_cod` from chapter O77 (77.11, 77.12, 77.21, 77.22, 77.32, 77.39), `nod_menu` from O77, `cod_uniclass` optional (if given: an active `Pr_`). The unit is the day.
 

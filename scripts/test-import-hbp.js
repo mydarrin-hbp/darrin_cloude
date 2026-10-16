@@ -112,6 +112,7 @@ async function importa(token, tip, randuri) {
   }
   return { ultim, erori, avertismente };
 }
+const SEP = String.fromCharCode(10);
 const eroriRand = (erori, n) => erori.filter((e) => e.rand === n);
 
 (async () => {
@@ -156,6 +157,21 @@ const eroriRand = (erori, n) => erori.filter((e) => e.rand === n);
   }
   await test('nicio eroare fără traducere EN', async () => {
     adevarat(erori.every((e) => e.mesaj_en && e.mesaj_en !== e.mesaj), JSON.stringify(erori.filter((e) => !e.mesaj_en || e.mesaj_en === e.mesaj)));
+  });
+  await test('coloanele *_en ajung în traduceri.en', async () => {
+    const coloane = COLOANE_MAT + ',denumire_en,descriere_en,descriere_pret_en';
+    await importa('tok-hbp', 'materiale', parseCSV([coloane, r('EN-1') + ',Brass ball valve,"' + 'English description of the valve. '.repeat(4) + '",Price per piece'].join(SEP)).records);
+    const p = DB.tabele.marketplace_materiale.find((x) => x.cod_produs_furnizor === 'EN-1');
+    egal(p.traduceri.en.denumire, 'Brass ball valve');
+    egal(p.traduceri.en.descriere_pret, 'Price per piece');
+  });
+  await test('fără coloana traduceri (migrare neaplicată) → produsul se salvează fără traducere', async () => {
+    DB.coloane.marketplace_materiale = Object.keys(DB.tabele.marketplace_materiale[0]).filter((c) => c !== 'traduceri');
+    const coloane = COLOANE_MAT + ',denumire_en';
+    await importa('tok-hbp', 'materiale', parseCSV([coloane, r('EN-2') + ',Valve'].join(SEP)).records);
+    const p = DB.tabele.marketplace_materiale.find((x) => x.cod_produs_furnizor === 'EN-2');
+    adevarat(p && !p.traduceri, JSON.stringify(p));
+    delete DB.coloane.marketplace_materiale;
   });
   await test('reimportul aceluiași cod actualizează rândul, nu îl dublează', async () => {
     await importa('tok-hbp', 'materiale', parseCSV([COLOANE_MAT, r('OK-1', { pret: '27.00' })].join('\n')).records);

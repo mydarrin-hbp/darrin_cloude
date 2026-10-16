@@ -29,6 +29,11 @@
 --      rămâne accesibil doar prin service role (API-urile de admin).
 --      Verificat 16 oct. 2026: nicio pagină nu citește tabela direct cu
 --      cheia anon; superadmin_write_entitati_juridice rămâne neschimbată.
+--   5. marketplace_materiale / marketplace_echipamente: coloana `traduceri`
+--      (jsonb, ca la catalog_servicii): traduceri.en = { denumire, descriere,
+--      descriere_pret }, completată la import din coloanele *_en ale
+--      șabloanelor. Fără ea, pagina publică arată textul românesc al
+--      produsului, marcat cu lang="ro".
 --
 -- Ordine de aplicare
 --   ÎNAINTE de publicarea codului din branch-ul furnizor-propriu-hbp
@@ -83,6 +88,17 @@ where tara_cod = 'MD'
 -- 4. Fără citire publică a tabelei (IBAN) ────────────────────────────
 drop policy if exists public_read_entitati_juridice on public.entitati_juridice_platforma;
 
+-- 5. Traducerile produselor din marketplace ─────────────────────────
+alter table public.marketplace_materiale
+  add column if not exists traduceri jsonb not null default '{}'::jsonb;
+alter table public.marketplace_echipamente
+  add column if not exists traduceri jsonb not null default '{}'::jsonb;
+
+comment on column public.marketplace_materiale.traduceri is
+  'Traducerile produsului: { "en": { "denumire", "descriere", "descriere_pret" } }. Româna rămâne în coloanele de bază.';
+comment on column public.marketplace_echipamente.traduceri is
+  'Traducerile produsului: { "en": { "denumire", "descriere", "descriere_pret" } }. Româna rămâne în coloanele de bază.';
+
 -- ═══ VERIFICARE ═══════════════════════════════════════════════════
 do $$
 declare
@@ -114,6 +130,12 @@ begin
     where schemaname = 'public' and tablename = 'entitati_juridice_platforma' and policyname = 'public_read_entitati_juridice'
   ) then
     raise exception 'politica public_read_entitati_juridice există încă';
+  end if;
+
+  if (select count(*) from information_schema.columns
+      where table_schema = 'public' and column_name = 'traduceri'
+        and table_name in ('marketplace_materiale', 'marketplace_echipamente')) <> 2 then
+    raise exception 'coloana traduceri lipsește din marketplace_materiale / marketplace_echipamente';
   end if;
 end;
 $$;
