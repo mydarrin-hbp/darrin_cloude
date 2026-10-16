@@ -2276,6 +2276,8 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       <div id="mp-apr-documente" style="color:#8BA3C0;font-size:13px">Se încarcă...</div>
 
       <div style="font-size:14px;font-weight:700;color:#fff;margin:22px 0 10px">Materiale în așteptare</div>
+      <div style="font-size:11.5px;color:#8BA3C0;margin:-4px 0 8px">Un produs devine live doar dacă furnizorul lui poate vinde: aprobat, cu contract semnat și cont bancar activ (furnizorul propriu al platformei: doar aprobat).</div>
+      <div id="mp-apr-produse-msg"></div>
       <div id="mp-apr-materiale" style="color:#8BA3C0;font-size:13px">Se încarcă...</div>
 
       <div style="font-size:14px;font-weight:700;color:#fff;margin:22px 0 10px">Echipamente în așteptare</div>
@@ -6003,13 +6005,27 @@ async function loadMarketplaceAprobari() {
           <button onclick="decideDocument('${d.id}','respins')" class="btn-s" style="font-size:11px;padding:6px 12px">Respinge</button>
         </div>`).join('');
 
-    const randProdus = (p, tip) => `
-        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #2D3F55">
-          <div style="flex:1"><div style="color:#fff;font-weight:600;font-size:12.5px">${escapeHTML(p.denumire)}</div>
-            <div style="color:#8BA3C0;font-size:11px">${tip === 'materiale' ? escapeHTML(String(p.pret_fara_tva)) : escapeHTML(String(p.tarif_zi))} ${escapeHTML(p.moneda)} · furnizor ${escapeHTML(p.furnizor_id)}</div></div>
-          <button onclick="decideProdus('${tip}','${p.id}','aprobat')" class="btn-p" style="font-size:11px;padding:6px 12px;background:#0E9E99">Aprobă</button>
-          <button onclick="decideProdus('${tip}','${p.id}','respins')" class="btn-s" style="font-size:11px;padding:6px 12px">Respinge</button>
+    // Pasul 10c: starea furnizorului lângă fiecare produs; „Aprobă” e blocat
+    // când furnizorul nu poate vinde (serverul refuză oricum).
+    const stareFurnizorProdus = (f) => {
+      if (!f) return '';
+      const eticheta = f.poate_vinde
+        ? (f.furnizor_propriu ? '✓ furnizorul propriu al platformei — poate vinde' : '✓ poate vinde')
+        : '✕ ' + (f.mesaj || 'Furnizorul nu poate vinde.');
+      return `<span style="color:${f.poate_vinde ? '#4CBE83' : '#F0A35E'}">${escapeHTML(eticheta)}</span>`;
+    };
+    const randProdus = (p, tip) => {
+      const f = p.furnizor_stare || null;
+      const blocat = f && !f.poate_vinde;
+      return `
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #2D3F55;flex-wrap:wrap">
+          <div style="flex:1;min-width:220px"><div style="color:#fff;font-weight:600;font-size:12.5px">${escapeHTML(p.denumire)}</div>
+            <div style="color:#8BA3C0;font-size:11px">${tip === 'materiale' ? escapeHTML(String(p.pret_fara_tva)) : escapeHTML(String(p.tarif_zi))} ${escapeHTML(p.moneda)} · furnizor ${escapeHTML((f && f.nume_firma) || p.furnizor_id)}</div>
+            <div style="font-size:11px;margin-top:2px">${stareFurnizorProdus(f)}</div></div>
+          <button onclick="decideProdus('${tip}','${p.id}','aprobat',this)" class="btn-p" style="font-size:11px;padding:6px 12px;background:#0E9E99${blocat ? ';opacity:.45;cursor:not-allowed' : ''}"${blocat ? ' disabled title="' + escapeHTML(f.mesaj || '') + '"' : ''}>Aprobă</button>
+          <button onclick="decideProdus('${tip}','${p.id}','respins',this)" class="btn-s" style="font-size:11px;padding:6px 12px">Respinge</button>
         </div>`;
+    };
 
     elMateriale.innerHTML = !data.produse_pending.materiale.length
       ? '<div style="padding:14px 0">Niciun material în așteptare.</div>'
@@ -6082,14 +6098,21 @@ async function decideDocument(id, decizie) {
   } catch (e) { alert('Eroare: ' + e.message); }
 }
 
-async function decideProdus(produsTip, id, decizie) {
-  const motiv = decizie === 'respins' ? prompt('Motiv respingere (opțional):') || null : null;
-  try {
+async function decideProdus(produsTip, id, decizie, buton) {
+  let motiv = null;
+  if (decizie === 'respins') {
+    const r = window.prompt('Motiv respingere (opțional):', '');
+    if (r === null) return;
+    motiv = r.trim() || null;
+  }
+  const r = await MDFeedback.salveaza(buton, document.getElementById('mp-apr-produse-msg'), async () => {
     const headers = await _adminAuthHeader();
     const res = await fetch('/api/admin/marketplace-aprobari', { method: 'POST', headers, body: JSON.stringify({ tip: 'produs', produs_tip: produsTip, id, decizie, motiv }) });
-    if (!res.ok) throw new Error((await res.json()).error);
-    loadMarketplaceAprobari();
-  } catch (e) { alert('Eroare: ' + e.message); }
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(j.error || 'Eroare necunoscută');
+    return decizie === 'aprobat' ? 'Produs aprobat: e live în marketplace.' : 'Produs respins.';
+  });
+  if (r.ok) loadMarketplaceAprobari();
 }
 </script>
 

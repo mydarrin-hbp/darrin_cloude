@@ -9,7 +9,12 @@
      - antetul de identitate: inițiale, numele firmei (sau numele din
        profil), emailul, insigna rolului și „Ieși”;
      - banda de stare a contului de partener (verificare, cont bancar,
-       contract, respingere), cu butonul spre pasul lipsă.
+       contract, respingere), cu butonul spre pasul lipsă;
+     - lângă produsele furnizorului, de ce nu apar încă public (pasul 10c,
+       MYD_PAZA.bandaProduse);
+     - furnizorul propriu al platformei (pasul 10c): insigna „Furnizor propriu
+       al platformei”, fără benzile de contract și cont bancar (nu semnează
+       contract cu sine; banii intră în contul entității platformei).
 
    Datele vin din /api/cont/profil (profiles.roles). Harta rol → dashboard
    e cea unică, din lib/destinatie-rol.js (window.MYD_DESTINATIE_ROL).
@@ -159,6 +164,7 @@
       '<div class="myd-id-txt"><div class="myd-id-nume" id="myd-id-nume">' + esc(nume) + '</div>' +
       '<div class="myd-id-email" id="myd-id-email" title="' + esc(p.email || '') + '">' + esc(tr('Conectat ca {email}', { email: p.email || '' })) + '</div></div>' +
       '<span class="myd-id-insigna" id="myd-id-insigna" style="background:' + esc(d.culoare) + '">' + esc(tr(d.insigna)) + '</span>' +
+      (p.furnizor_propriu ? '<span class="myd-id-insigna" id="myd-id-furnizor-propriu" style="background:#0E7C66">' + esc(tr('Furnizor propriu al platformei')) + '</span>' : '') +
       '<button type="button" class="myd-id-iesi" id="myd-id-iesi">' + esc(tr('Ieși')) + '</button>';
     container.appendChild(div);
     div.querySelector('#myd-id-iesi').onclick = function () { window.MyDarrinAuth.performLogout(); };
@@ -190,12 +196,42 @@
     if (st === 'pending_review' || !st) {
       banda(container, 'info', tr('Contul tău e în verificare. Te anunțăm prin email.'), null, null, 'myd-banda-verificare');
     }
+    // Furnizorul propriu: fără contract și fără cont bancar de partener.
+    if (p.furnizor_propriu) return;
     if (!pt.cont_bancar) {
       banda(container, 'atentie', tr('Adaugă contul bancar pentru plăți.'), tr('Adaugă contul bancar'), actiuni.cont_bancar, 'myd-banda-cont-bancar');
     }
     if (st === 'approved' && !pt.contract_semnat) {
       banda(container, 'atentie', tr('Semnează contractul ca să primești comenzi.'), tr('Semnează contractul'), actiuni.contract, 'myd-banda-contract');
     }
+  }
+
+  // ── Vizibilitatea produselor (pasul 10c) ───────────────────────────
+  // Lângă produsele furnizorului: de ce nu apar încă public. Motivul vine din
+  // regula unică de pe server (lib/eligibilitate-partener.js, prin /api/cont/profil).
+  var MESAJ_PRODUSE = {
+    in_verificare: 'Produsele tale nu apar încă public: contul e în verificare. Le poți pregăti între timp.',
+    respins: 'Produsele tale nu apar public: cererea de partener a fost respinsă.',
+    fara_cont_bancar: 'Produsele tale nu apar încă public: adaugă contul bancar.',
+    fara_contract: 'Produsele tale nu apar încă public: semnează contractul.',
+    suspendat: 'Produsele tale nu apar public: contul este suspendat.',
+  };
+
+  function bandaProduse(container, p) {
+    var c = typeof container === 'string' ? document.getElementById(container) : container;
+    var profil = p || window.__MYD_PROFIL;
+    if (!c) return null;
+    c.innerHTML = '';
+    var pt = profil && profil.partener;
+    if (!pt || pt.poate_vinde || !MESAJ_PRODUSE[pt.motiv_nu_poate_vinde]) return null;
+    stil();
+    var act = actiuniFinale(ultimaOptiune);
+    var buton = null;
+    var laClick = null;
+    if (pt.motiv_nu_poate_vinde === 'fara_cont_bancar') { buton = tr('Adaugă contul bancar'); laClick = act.cont_bancar; }
+    if (pt.motiv_nu_poate_vinde === 'fara_contract') { buton = tr('Semnează contractul'); laClick = act.contract; }
+    var tip = pt.motiv_nu_poate_vinde === 'respins' || pt.motiv_nu_poate_vinde === 'suspendat' ? 'eroare' : 'atentie';
+    return banda(c, tip, tr(MESAJ_PRODUSE[pt.motiv_nu_poate_vinde]), buton, laClick, 'myd-banda-produse');
   }
 
   // ── Ferestrele comune: cont bancar și contract (pentru paginile fără
@@ -369,5 +405,5 @@
     });
   }
 
-  window.MYD_PAZA = { verifica: verifica, laLogin: laLogin, reincarcaBenzi: reincarcaBenzi, fereastraContBancar: fereastraContBancar, fereastraContract: fereastraContract };
+  window.MYD_PAZA = { verifica: verifica, laLogin: laLogin, reincarcaBenzi: reincarcaBenzi, bandaProduse: bandaProduse, fereastraContBancar: fereastraContBancar, fereastraContract: fereastraContract };
 })();

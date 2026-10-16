@@ -853,6 +853,7 @@ function renderProduse(){
     <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Produsele mele</h2>
     <button class="btn-p" id="btn-toggle-form-produs" onclick="toggleFormularProdus()">+ Adaugă produs</button>
   </div>
+  <div id="produse-vizibilitate" style="max-width:calc(100vw - 36px)"></div>
   <div class="f-card" style="margin-bottom:18px">
     <table class="f-table">
       <thead><tr><th>Produs</th><th>Cod</th><th>Preț</th><th>Stoc</th><th>Status</th><th>Live</th><th></th></tr></thead>
@@ -865,6 +866,8 @@ function renderProduse(){
 async function loadProduseLive(){
   const tbody = document.getElementById('produse-live-tbody');
   if (!tbody) return;
+  // Pasul 10c: de ce produsele nu apar încă public (verificare / contract / cont bancar).
+  window.MYD_PAZA?.bandaProduse('produse-vizibilitate');
   try {
     const { tip, produse } = await _fetchProduseLive();
     if (!produse.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#8C9BAD;padding:20px">Niciun produs încă — adaugă mai jos.</td></tr>'; return; }

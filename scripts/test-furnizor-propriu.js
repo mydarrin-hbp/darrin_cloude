@@ -77,6 +77,8 @@ function reseteaza({ migrareAplicata = true } = {}) {
       { id: UTILAJ_HBP, furnizor_id: HBP, denumire: 'Rotopercutor', descriere: 'x', operator_inclus: 'fara_operator', tarif_zi: 60, moneda: 'RON', status: 'live', activ: true },
     ],
     audit_log: [],
+    // Pasul 10c: furnizorul extern poate vinde doar cu cont bancar activ (lib/eligibilitate-partener.js).
+    partner_conturi_bancare: [{ id: 'cb-extern', partner_id: EXTERN, activ: true }],
   };
   DB.coloane = { partners: migrareAplicata ? COLOANE_PARTNERS : COLOANE_PARTNERS.filter((c) => c !== 'entitate_platforma_id') };
   DB.utilizatori = { 'tok-hbp': { id: HBP }, 'tok-ext': { id: EXTERN }, 'tok-admin': { id: 'u-admin' } };

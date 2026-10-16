@@ -6,17 +6,23 @@
 // la accept-comanda.js, ca partenerul să știe exact ce-i lipsește:
 //   1. partners.status_verificare === 'approved'
 //   2. cel puțin un cont bancar activ în partner_conturi_bancare
+// Starea vine din regula unică lib/eligibilitate-partener.js (pasul 10c);
+// furnizorul propriu al platformei nu semnează contract.
 // Codul se hash-uiește (SHA-256) înainte de a fi scris în DB — niciodată
 // stocat în clar, la fel ca parola/IBAN-ul.
 
 const crypto = require('crypto');
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { eligibilitatePartener, MOTIV } = require('../../lib/eligibilitate-partener');
 
 const ROLURI_PARTENER = [
   'partener_curier', 'partener_servicii', 'partener_materiale',
   'partener_inchirieri', 'partener_asigurari',
 ];
+
+// Textul român e sursa; traducerea EN e în i18n/en.json (_texte).
+const EROARE_CONTRACT_FURNIZOR_PROPRIU = 'Contul acesta este furnizorul propriu al platformei: nu are nevoie de contract de parteneriat.';
 
 const COD_TTL_MS = 10 * 60 * 1000; // 10 minute
 const RETRIMITE_MIN_MS = 60 * 1000; // 1 minut între cereri
@@ -28,15 +34,19 @@ function hashCod(cod) {
 async function handler(req, res, user) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { data: partner } = await supabaseAdmin
-    .from('partners')
-    .select('status_verificare, contract_semnat')
-    .eq('id', user.id)
-    .maybeSingle();
+  const partner = await eligibilitatePartener(user.id);
   if (!partner) return res.status(404).json({ error: 'Cont de partener inexistent.' });
 
   if (partner.contract_semnat) {
     return res.status(200).json({ ok: true, deja_semnat: true });
+  }
+  // Pasul 10c: furnizorul propriu e chiar entitatea platformei — nu semnează
+  // contract cu sine (lib/eligibilitate-partener.js).
+  if (partner.furnizor_propriu) {
+    return res.status(400).json({ error: EROARE_CONTRACT_FURNIZOR_PROPRIU, code: 'FURNIZOR_PROPRIU' });
+  }
+  if (partner.motiv === MOTIV.SUSPENDAT) {
+    return res.status(403).json({ error: 'Contul tău este suspendat — contractul nu poate fi semnat.', code: 'CONT_SUSPENDAT' });
   }
   if (partner.status_verificare !== 'approved') {
     return res.status(403).json({
@@ -44,14 +54,7 @@ async function handler(req, res, user) {
       code: 'PROFIL_NEAPROBAT',
     });
   }
-
-  const { data: cont } = await supabaseAdmin
-    .from('partner_conturi_bancare')
-    .select('id')
-    .eq('partner_id', user.id)
-    .eq('activ', true)
-    .maybeSingle();
-  if (!cont) {
+  if (!partner.cont_bancar) {
     return res.status(403).json({
       error: 'Adaugă mai întâi un cont bancar activ — contractul nu poate fi semnat fără date de încasare.',
       code: 'FARA_CONT_BANCAR',

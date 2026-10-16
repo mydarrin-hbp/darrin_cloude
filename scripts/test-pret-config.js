@@ -48,6 +48,8 @@ function reset() {
   DB.tabele = {
     profiles: [{ id: 'sa', roles: ['superadmin'] }],
     partners: [{ id: HBP, nume_firma: 'Home Best Pal SRL', partner_type: 'furnizor_materiale', entitate_platforma_id: 'ent-ro', status_verificare: 'approved' }],
+    // Pasul 10c: regula furnizorului activ citește și conturile bancare (HBP, furnizor propriu, nu are nevoie de unul).
+    partner_conturi_bancare: [],
     categorii: [{ id: 'n-robinete', slug: 'robinete-colectoare', title: 'Robinete și colectoare', title_en: null, capitol_cod: 'G', category_type: 'materiale', display_order: 1, activ: true }],
     marketplace_materiale: [{
       id: PRODUS, furnizor_id: HBP, denumire: 'Robinet cu sferă 1/2 țoli', descriere: 'Robinet de test.', categorie_id: 'n-robinete',

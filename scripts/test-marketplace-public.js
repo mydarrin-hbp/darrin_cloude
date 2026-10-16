@@ -114,7 +114,8 @@ function reseteaza({ produse = 'toate' } = {}) {
     comanda_subcontractori: [],
     comisioane: [],
     audit_log: [],
-    partner_conturi_bancare: [],
+    // Pasul 10c: furnizorul extern poate vinde doar cu cont bancar activ (lib/eligibilitate-partener.js).
+    partner_conturi_bancare: [{ id: 'cb-extern', partner_id: EXTERN, activ: true }],
     catalog_servicii: [],
   };
   DB.implicite = {};

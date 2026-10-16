@@ -118,12 +118,14 @@ const RASPUNSURI_SIMULATE = {
 // Profilul contului simulat (/api/cont/profil, pasul 10b): rolurile care
 // deschid toate dashboard-urile verificate (client, partener, furnizor), ca
 // paza din cont-dashboard.js să nu redirecționeze; partener în verificare,
-// fără cont bancar — antetul de identitate și benzile de stare apar și ele.
+// fără cont bancar — antetul de identitate și benzile de stare apar și ele;
+// pasul 10c: poate_vinde / motiv_nu_poate_vinde / furnizor_propriu, ca în API.
 const PROFIL_SIMULAT = {
   ok: true, email: 'partener.test@example.com', nume: 'Partener Test',
   roles: ['client', 'partener_servicii', 'partener_materiale'], roluri_dashboard: ['partener_servicii', 'partener_materiale'],
-  destinatie: '/?alege_rol=1', tip_destinatie: 'alegere',
-  partener: { nume_firma: 'Test Instalatii SRL', partner_type: 'servicii_tehnice', rol: 'partener_servicii', status_verificare: 'pending_review', contract_semnat: false, cont_bancar: false, motiv_respingere: null },
+  destinatie: '/?alege_rol=1', tip_destinatie: 'alegere', furnizor_propriu: false,
+  partener: { nume_firma: 'Test Instalatii SRL', partner_type: 'servicii_tehnice', rol: 'partener_servicii', status_verificare: 'pending_review', contract_semnat: false, cont_bancar: false, motiv_respingere: null,
+    poate_vinde: false, motiv_nu_poate_vinde: 'in_verificare' },
 };
 
 // Pagina adminului de catalog (pasul 9): răspunsuri POST pe acțiune.

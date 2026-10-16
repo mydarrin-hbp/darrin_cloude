@@ -116,9 +116,10 @@ Invers nu: aplicată înainte de merge, migrarea ar bloca crearea de servicii di
 
 ### 7. Furnizorul propriu
 
-Decizia LM (16 oct. 2026): **Home Best Pal SRL (CUI RO46577229)** e furnizorul real al platformei pentru **materiale și închirieri**. HBP SRL e și entitatea platformei din România (cea căreia îi facturează partenerii).
+Decizia LM (16 oct. 2026): **Home Best Pal SRL (CUI RO46577229)** e furnizorul real al platformei pentru **materiale și închirieri**. HBP SRL e și entitatea platformei din România (cea căreia îi facturează partenerii). Contul de furnizor propriu este **contact@homebestpal.ro** (partener `furnizor_materiale`, aprobat; decizia LM, 16 oct. 2026).
 
 - Un partener e **furnizor propriu** când `partners.entitate_platforma_id` e setat (migrarea `2026-10-16_furnizor_propriu.sql`). O entitate are cel mult un cont de partener. Legătura o face superadminul: Entități juridice → „Leagă de contul de furnizor”.
+- **Ce poate face în fiecare stare** (regula unică `lib/eligibilitate-partener.js`, pasul 10c): un furnizor își poate pregăti catalogul în orice stare, în afară de cont suspendat; produsele lui apar public și primește comenzi doar dacă e aprobat, cu contract semnat și cont bancar activ. Furnizorul propriu, aprobat, poate vinde fără contract și fără cont bancar de partener: nu semnează contract cu sine, iar banii intră în contul entității platformei.
 - **Fără factură de partener**: furnizorul propriu nu își facturează sieși. `api/partener/facturi.js` nu îi arată alocări facturabile și refuză încărcarea unei facturi.
 - **Fără discount**: nu i se aplică `parteneri_discounturi` (5–15%) și nici procentul implicit din panou. La escrow, rândul lui rămâne cu suma întreagă, `discount_pct_aplicat = 0`, `discount_sursa = 'furnizor_propriu'`.
 - **Prețul final**: costul materialului sau al închirierii intră în prețul clientului, cu formula publică (cost de bază + asigurare + comision + marketing + mentenanță + TVA, din `backoffice_config`), facturat de entitatea platformei din țara comenzii. Prețurile de referință din norme nu se folosesc ca prețuri de vânzare.
@@ -234,9 +235,10 @@ Not the other way round: applied before the merge, the migration would block ser
 
 ### 7. Own supplier
 
-LM's decision (16 Oct 2026): **Home Best Pal SRL (CUI RO46577229)** is the platform's real supplier for **materials and rentals**. HBP SRL is also the platform's entity in Romania (the one partners invoice).
+LM's decision (16 Oct 2026): **Home Best Pal SRL (CUI RO46577229)** is the platform's real supplier for **materials and rentals**. HBP SRL is also the platform's entity in Romania (the one partners invoice). The own-supplier account is **contact@homebestpal.ro** (partner `furnizor_materiale`, approved; LM's decision, 16 Oct 2026).
 
 - A partner is the **own supplier** when `partners.entitate_platforma_id` is set (migration `2026-10-16_furnizor_propriu.sql`). An entity has at most one partner account. The superadmin makes the link: Legal entities → "Link to the supplier account".
+- **What it can do in each state** (the single rule `lib/eligibilitate-partener.js`, step 10c): a supplier can prepare its catalogue in any state except a suspended account; its products appear publicly and it receives orders only if it is approved, with a signed contract and an active bank account. The approved own supplier can sell without a contract and without a partner bank account: it does not sign a contract with itself, and the money goes into the platform entity's account.
 - **No partner invoice**: the own supplier does not invoice itself. `api/partener/facturi.js` shows it no invoiceable allocations and refuses an invoice upload.
 - **No discount**: neither `parteneri_discounturi` (5–15%) nor the panel's default percentage applies. At escrow, its row keeps the full amount, `discount_pct_aplicat = 0`, `discount_sursa = 'furnizor_propriu'`.
 - **Final price**: the cost of the material or rental goes into the client's price, with the public formula (base cost + insurance + commission + marketing + maintenance + VAT, from `backoffice_config`), invoiced by the platform entity of the order's country. The reference prices from the norms are not used as selling prices.
