@@ -1088,7 +1088,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
           <p style="font-size:12px;color:#8BA3C0;margin:0">Procentele reale folosite azi la calculul fiecărei comenzi (<code>lib/calculeaza-pret.js</code>) și la eliberarea escrow (<code>lib/elibereaza-escrow.js</code>) — citite direct din <code>backoffice_config</code>, nu simulate.</p>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button onclick="saveAllComisioaneConfig()" class="btn-p" style="background:#0E9E99">
+          <button onclick="saveAllComisioaneConfig(this)" id="comm-salveaza" class="btn-p" style="background:#0E9E99">
             Salvează tot
           </button>
           <button onclick="loadComisioaneConfig()" class="btn-s">
@@ -1127,17 +1127,17 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
                 <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:10px">Comision My Darrin (per comandă)</div>
                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
                   <span style="font-size:13px;color:#8BA3C0;min-width:210px">Comision platformă implicit</span>
-                  <input type="number" id="comision-platforma" value="12" min="0" max="100" step="0.5" style="background:#0F1923;border:1px solid #FF8C00;border-radius:7px;padding:6px 10px;color:#FF8C00;font-weight:800;width:80px;font-family:inherit;font-size:14px"/>
+                  <input type="number" id="comision-platforma" placeholder="—" oninput="exempluPretProgramat()" min="0" max="100" step="0.5" style="background:#0F1923;border:1px solid #FF8C00;border-radius:7px;padding:6px 10px;color:#FF8C00;font-weight:800;width:80px;font-family:inherit;font-size:14px"/>
                   <span style="color:#4A6080">%</span>
                 </div>
                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
                   <span style="font-size:13px;color:#8BA3C0;min-width:210px">Cost marketing</span>
-                  <input type="number" id="cost-marketing" value="3" min="0" max="100" step="0.5" style="background:#0F1923;border:1px solid #2D3F55;border-radius:7px;padding:6px 10px;color:#E2E8F0;font-weight:700;width:80px;font-family:inherit;font-size:14px"/>
+                  <input type="number" id="cost-marketing" placeholder="—" oninput="exempluPretProgramat()" min="0" max="100" step="0.5" style="background:#0F1923;border:1px solid #2D3F55;border-radius:7px;padding:6px 10px;color:#E2E8F0;font-weight:700;width:80px;font-family:inherit;font-size:14px"/>
                   <span style="color:#4A6080">%</span>
                 </div>
                 <div style="display:flex;align-items:center;gap:12px">
                   <span style="font-size:13px;color:#8BA3C0;min-width:210px">Cost mentenanță platformă</span>
-                  <input type="number" id="cost-mentenanta" value="2" min="0" max="100" step="0.5" style="background:#0F1923;border:1px solid #2D3F55;border-radius:7px;padding:6px 10px;color:#E2E8F0;font-weight:700;width:80px;font-family:inherit;font-size:14px"/>
+                  <input type="number" id="cost-mentenanta" placeholder="—" oninput="exempluPretProgramat()" min="0" max="100" step="0.5" style="background:#0F1923;border:1px solid #2D3F55;border-radius:7px;padding:6px 10px;color:#E2E8F0;font-weight:700;width:80px;font-family:inherit;font-size:14px"/>
                   <span style="color:#4A6080">%</span>
                 </div>
               </div>
@@ -1164,7 +1164,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
               <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:10px">Asigurare inclusă în prețul serviciului</div>
               <div style="display:flex;align-items:center;gap:12px">
                 <span style="font-size:13px;color:#8BA3C0;min-width:210px">Cost asigurare inclus în preț (% din costul de bază)</span>
-                <input type="number" id="cost-asigurare-pct" value="1" min="0" max="100" step="0.1" style="background:#0F1923;border:1px solid #2D3F55;border-radius:7px;padding:6px 10px;color:#E2E8F0;font-weight:700;width:80px;font-family:inherit;font-size:14px"/>
+                <input type="number" id="cost-asigurare-pct" placeholder="—" oninput="exempluPretProgramat()" min="0" max="100" step="0.1" style="background:#0F1923;border:1px solid #2D3F55;border-radius:7px;padding:6px 10px;color:#E2E8F0;font-weight:700;width:80px;font-family:inherit;font-size:14px"/>
                 <span style="color:#4A6080">%</span>
               </div>
             </div>
@@ -1182,6 +1182,21 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
           </div>
         </div>
       </div>
+      <!-- Pasul 10b: exemplu de calcul live, cu procentele din câmpurile de mai sus
+           (încă nesalvate) și TVA-ul țării; calculul îl face serverul, cu aceeași
+           formulă ca la comenzi și pe marketplace (api/admin/exemplu-pret.js). -->
+      <div class="sa-card" style="margin-top:18px">
+        <div class="sa-card-hdr"><div style="font-weight:700;color:#1A2332;font-size:13.5px">Exemplu de calcul — prețul pentru client</div></div>
+        <div class="sa-card-body">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+            <label for="exemplu-cost" style="font-size:13px;color:#5A6B7D">Cost de bază (fără TVA)</label>
+            <input type="number" id="exemplu-cost" value="25" min="0" step="0.01" oninput="exempluPretProgramat()" style="background:#fff;border:1px solid #D5DFE8;border-radius:7px;padding:6px 10px;color:#1A2332;font-weight:700;width:110px;font-family:inherit;font-size:14px"/>
+            <span id="exemplu-moneda" style="color:#5A6B7D;font-size:13px">lei</span>
+          </div>
+          <div id="exemplu-rezultat" style="font-size:13px;color:#1A2332;line-height:1.7">Se calculează…</div>
+        </div>
+      </div>
+      <div id="comm-save-msg"></div>
       <div id="comm-save-log" style="margin-top:14px;font-size:11px;color:#8BA3C0;white-space:pre-line"></div>
     </div>
 
@@ -1655,7 +1670,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
           <tr><td>3. TVA</td><td><code>tva = (subtotal + marketing + mentenanță + comision) × cota_tva(țară)</code></td></tr>
           <tr><td>4. Preț final</td><td><code>pret_final = max( subtotal + taxe platformă + tva , prag_minim_comanda(țară) )</code></td></tr>
         </table>
-        <p>Procentele (3 / 2 / 12) sunt citite din <code>backoffice_config</code> (secțiunea <code>pricing</code>), procentul de asigurare (1) din secțiunea <code>asigurari</code>, cheia <code>cost_asigurare_pct</code>, iar TVA-ul și pragul minim din <code>tax_configurations</code>. Comisionul și asigurarea se calculează pe costul de bază, nu pe subtotal. O asigurare trimisă explicit de apelant (inclusiv 0, de exemplu altă poliță aleasă de client) înlocuiește procentul. Serverul <strong style="color:#fff">respinge cu 400</strong> orice câmp de preț trimis din client (<code>comision_pct</code>, <code>tva</code>, <code>mydarrin_pct</code>, <code>zone_coef</code>, <code>urgency_coef</code> etc.).</p>
+        <p>Procentele (comision, marketing, mentenanță — valorile curente sunt în panoul „Comisioane & Tarifare”) sunt citite din <code>backoffice_config</code> (secțiunea <code>pricing</code>), procentul de asigurare din secțiunea <code>asigurari</code>, cheia <code>cost_asigurare_pct</code>, iar TVA-ul și pragul minim din <code>tax_configurations</code>. Nu există valori de rezervă în cod: o valoare lipsă oprește calculul cu eroarea <code>CONFIG_PRET_LIPSA</code>. Comisionul și asigurarea se calculează pe costul de bază, nu pe subtotal. O asigurare trimisă explicit de apelant (inclusiv 0, de exemplu altă poliță aleasă de client) înlocuiește procentul. Serverul <strong style="color:#fff">respinge cu 400</strong> orice câmp de preț trimis din client (<code>comision_pct</code>, <code>tva</code>, <code>mydarrin_pct</code>, <code>zone_coef</code>, <code>urgency_coef</code> etc.).</p>
         <p><strong style="color:#fff">Exemplu numeric (RO, manoperă 1000 + materiale 500 Lei, fără transport):</strong> cost de bază 1500 · asigurare 15 · subtotal 1515 · marketing 45,45 + mentenanță 30,30 + comision 180 = 1770,75 · TVA 21% = 371,86 · total 2142,61 Lei (peste pragul minim de 150 Lei, deci se păstrează).</p>
         <div class="man-callout c-warn">⚠️ Pragul minim (VMC) se aplică <strong>după</strong> TVA, pe prețul final, nu pe costul de bază înainte de taxe.</div>
         <h4>Valori live în baza de date (28 sept. 2026)</h4>
@@ -6803,23 +6818,29 @@ async function loadComisioaneConfig() {
 
   var r = await supabaseClient
     .from('backoffice_config')
-    .select('cheie,valoare')
+    .select('cheie,valoare,tara_cod')
     .in('sectiune', ['pricing', 'asigurari'])
     .or('tara_cod.eq.' + tara + ',tara_cod.eq.ALL');
 
   if (r.error) { if (status) status.textContent = 'Eroare: ' + r.error.message; return; }
 
+  // Ca pe server (lib/calculeaza-pret.js): întâi rândurile ALL, apoi cele ale
+  // țării, care le suprascriu. Procentele formulei publice nu au valori de
+  // rezervă (pasul 10b): un câmp gol înseamnă că valoarea lipsește din configurație.
   var cfg = {};
-  (r.data || []).forEach(function(row) { cfg[row.cheie] = row.valoare; });
+  var randuri = r.data || [];
+  randuri.filter(function(row) { return row.tara_cod === 'ALL'; })
+    .concat(randuri.filter(function(row) { return row.tara_cod !== 'ALL'; }))
+    .forEach(function(row) { cfg[row.cheie] = row.valoare; });
 
   var map = {
-    'comision-platforma': cfg['comision_platforma_default_pct'] ?? '12',
-    'cost-marketing': cfg['cost_marketing_pct'] ?? '3',
-    'cost-mentenanta': cfg['cost_mentenanta_pct'] ?? '2',
+    'comision-platforma': cfg['comision_platforma_default_pct'] ?? '',
+    'cost-marketing': cfg['cost_marketing_pct'] ?? '',
+    'cost-mentenanta': cfg['cost_mentenanta_pct'] ?? '',
     'comision-bricolaj': cfg['comision_bricolaj_contractat_pct'] ?? '15',
     'comision-inchiriere': cfg['comision_inchiriere_contractat_pct'] ?? '15',
     'comision-asigurare': cfg['comision_intermediere_pct'] ?? '15',
-    'cost-asigurare-pct': cfg['cost_asigurare_pct'] ?? '1',
+    'cost-asigurare-pct': cfg['cost_asigurare_pct'] ?? '',
   };
   Object.entries(map).forEach(function([id, val]) {
     var el = document.getElementById(id);
@@ -6827,13 +6848,62 @@ async function loadComisioaneConfig() {
   });
 
   _commConfigLoaded = true;
-  if (status) status.textContent = 'Încărcat (' + Object.keys(cfg).length + ' valori)';
+  var lipsa = ['comision_platforma_default_pct', 'cost_marketing_pct', 'cost_mentenanta_pct', 'cost_asigurare_pct'].filter(function(k) { return cfg[k] == null; });
+  if (status) status.textContent = 'Încărcat (' + Object.keys(cfg).length + ' valori)' + (lipsa.length ? ' · lipsesc: ' + lipsa.join(', ') : '');
+  exempluPret();
 }
 
-async function saveAllComisioaneConfig() {
+// ── Exemplu de calcul live (pasul 10b) ──
+var _exempluTimer = null;
+var _exempluCerere = 0;
+function exempluPretProgramat() {
+  clearTimeout(_exempluTimer);
+  _exempluTimer = setTimeout(exempluPret, 250);
+}
+function _fmtSuma(v, moneda) {
+  return Number(v).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + moneda;
+}
+async function exempluPret() {
+  var el = document.getElementById('exemplu-rezultat');
+  if (!el) return;
+  var tara = document.getElementById('comm-tara-sel')?.value || 'ALL';
+  var corp = {
+    tara: tara === 'ALL' ? 'RO' : tara,
+    cost_baza: document.getElementById('exemplu-cost')?.value,
+    comision_platforma_default_pct: document.getElementById('comision-platforma')?.value,
+    cost_marketing_pct: document.getElementById('cost-marketing')?.value,
+    cost_mentenanta_pct: document.getElementById('cost-mentenanta')?.value,
+    cost_asigurare_pct: document.getElementById('cost-asigurare-pct')?.value,
+  };
+  var nr = ++_exempluCerere;
+  try {
+    var headers = await _adminAuthHeader();
+    var res = await fetch('/api/admin/exemplu-pret', { method: 'POST', headers: headers, body: JSON.stringify(corp) });
+    var j = await res.json().catch(function() { return {}; });
+    if (nr !== _exempluCerere) return; // a sosit deja un calcul mai nou
+    if (!res.ok) { el.innerHTML = '<span style="color:#C0392B">' + escapeHTML(j.error || 'Nu am putut calcula exemplul.') + '</span>'; return; }
+    var c = j.calc;
+    var m = j.moneda === 'RON' || !j.moneda ? 'lei' : j.moneda;
+    document.getElementById('exemplu-moneda').textContent = m;
+    var rand = function(et, v) { return '<div style="display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #EEF2F6"><span>' + et + '</span><span>' + _fmtSuma(v, m) + '</span></div>'; };
+    el.innerHTML =
+      '<div style="font-size:15px;font-weight:800;margin-bottom:8px" id="exemplu-total">' + _fmtSuma(c.cost_baza, m) + ' fără TVA → ' + _fmtSuma(c.pret_final, m) + ' pentru client</div>' +
+      rand('Cost de bază', c.cost_baza) +
+      rand('Asigurare (' + corp.cost_asigurare_pct + '% din costul de bază)', c.cost_asigurare) +
+      rand('Comision platformă (' + corp.comision_platforma_default_pct + '% din costul de bază)', c.comision_platforma) +
+      rand('Marketing (' + corp.cost_marketing_pct + '% din subtotal)', c.cost_marketing) +
+      rand('Mentenanță (' + corp.cost_mentenanta_pct + '% din subtotal)', c.cost_mentenanta) +
+      rand('TVA ' + j.tara_tva + ' (' + c.tva_pct + '%)', c.tva_suma) +
+      '<div style="font-size:11px;color:#5A6B7D;margin-top:6px">Fără transport și fără pragul minim de comandă. TVA din tax_configurations' + (tara === 'ALL' ? ' (pentru „Toate țările” se arată România)' : '') + '. Procentele sunt cele din câmpuri, încă nesalvate dacă le-ai modificat.</div>';
+  } catch (e) {
+    if (nr === _exempluCerere) el.innerHTML = '<span style="color:#C0392B">' + escapeHTML(e.message || 'Nu am putut calcula exemplul.') + '</span>';
+  }
+}
+
+async function saveAllComisioaneConfig(buton) {
   var tara = document.getElementById('comm-tara-sel')?.value || 'ALL';
   var log = document.getElementById('comm-save-log');
-  if (log) log.textContent = 'Se salvează...';
+  if (log) log.textContent = '';
 
   var rows = [
     { cheie: 'comision_platforma_default_pct', valoare: document.getElementById('comision-platforma')?.value, sectiune: 'pricing', tara_cod: tara, tip: 'number', unitate: '%', eticheta: 'Comision platformă implicit (%)' },
@@ -6846,17 +6916,18 @@ async function saveAllComisioaneConfig() {
   ].filter(function(r) { return r.valoare !== undefined && r.valoare !== null && r.valoare !== ''; })
    .map(function(r) { return Object.assign({ updated_at: new Date().toISOString(), editabil_de: 'superadmin' }, r); });
 
-  var result = await supabaseClient
-    .from('backoffice_config')
-    .upsert(rows, { onConflict: 'cheie,tara_cod' });
-
-  if (result.error) {
-    if (log) log.textContent = 'Eroare la salvare: ' + result.error.message;
-  } else {
+  // Pasul 10b: rezultatul real al serverului, prin MDFeedback (nu text simplu).
+  await MDFeedback.salveaza(buton || document.getElementById('comm-salveaza'), document.getElementById('comm-save-msg'), async function () {
+    var result = await supabaseClient
+      .from('backoffice_config')
+      .upsert(rows, { onConflict: 'cheie,tara_cod' });
+    if (result.error) throw new Error('Nu s-a salvat: ' + result.error.message);
     var ts = new Date().toLocaleTimeString('ro-RO');
     if (log) log.textContent = '[' + ts + '] ' + rows.length + ' valori salvate pentru țara: ' + tara + '\n' +
       rows.map(function(r) { return '  · ' + r.cheie + ' = ' + r.valoare + '%'; }).join('\n');
-  }
+    exempluPret();
+    return rows.length + ' valori salvate pentru ' + (tara === 'ALL' ? 'toate țările' : tara) + '. Prețurile noi se aplică imediat (fără redeploy).';
+  });
 }
 
 // ── UTILITAR CSV PARTAJAT — mutat în /myd-csv.js (2 August 2026) ──
