@@ -3657,7 +3657,33 @@ async function loadAddonCatalog() {
     }
   }
   renderAddonList();
-  _restaureazaDupaMarketplace();
+  await _restaureazaDupaMarketplace();
+}
+
+// Produse din marketplace (pasul 10a, 16 oct. 2026): id „mp:<tip>:<uuid>”,
+// citite prin /api/public/marketplace-produse și puse în ADDON_DB înainte de
+// a fi adăugate. Doar în modul pilot (nivel_id): acolo prețul se calculează pe
+// server, din prețul real al furnizorului (lib/rezolva-addon-materiale.js);
+// pe calea veche costurile vin din pagină, deci produsul nu se adaugă.
+async function _incarcaProdusMarketplace(id) {
+  const m = /^mp:(materiale|echipamente):/.exec(id || '');
+  if (!m) return null;
+  const tip = m[1] === 'materiale' ? 'materiale' : 'inchirieri';
+  if (ADDON_DB[tip].some((x) => x.id === id)) return tip;
+  try {
+    const lang = window.MYD_I18N?.lang === 'ro' ? 'ro' : 'en';
+    const r = await fetch(`/api/public/marketplace-produse?id=${encodeURIComponent(id)}&lang=${lang}&tara_cod=${encodeURIComponent(S.tara_cod || 'RO')}`);
+    if (!r.ok) return null;
+    const d = await r.json();
+    ADDON_DB[tip].push({
+      id, titlu: d.produs.denumire, descriere: d.produs.descriere || '', imagini: d.produs.imagini || [],
+      unitate: d.produs.unitate, preturi: {}, marketplace: true, pret_public: d.produs.pret_cu_tva,
+    });
+    return tip;
+  } catch (e) {
+    console.warn('[marketplace] produsul nu s-a putut încărca:', id, e);
+    return null;
+  }
 }
 
 // Faza 4 marketplace (31 august 2026) — revenire din mydarrin-marketplace-materiale.html
@@ -3676,15 +3702,21 @@ async function loadAddonCatalog() {
 // restaurează aici, din sessionStorage, ÎNAINTE de a adăuga noul produs —
 // dar restaurarea re-adaugă fiecare item prin addAddonItem() (nu copiază
 // obiectul brut din storage, care n-are preturi/descriere/blocatCantitate).
-function _restaureazaDupaMarketplace() {
+async function _restaureazaDupaMarketplace() {
   const params = new URLSearchParams(window.location.search);
   const idDeAdaugat = params.get('addAddon');
   if (!idDeAdaugat) return;
+  const esteMarketplace = (id) => /^mp:/.test(id || '');
 
   try {
     const raw = sessionStorage.getItem('myd_checkout_config');
     const cfg = raw ? JSON.parse(raw) : null;
     if (cfg && cfg.slug === S.slug) {
+      if (S.pilotMode) {
+        for (const tip of ['materiale', 'inchirieri']) {
+          for (const salvat of (cfg[tip] || [])) if (esteMarketplace(salvat.id)) await _incarcaProdusMarketplace(salvat.id);
+        }
+      }
       if (typeof cfg.qty === 'number' && cfg.qty > 0) {
         const qtyInput = document.getElementById('qty-input');
         if (qtyInput) qtyInput.value = cfg.qty;
@@ -3704,6 +3736,10 @@ function _restaureazaDupaMarketplace() {
     console.warn('[marketplace] nu am putut restaura configurarea anterioară:', e);
   }
 
+  if (esteMarketplace(idDeAdaugat)) {
+    if (S.pilotMode) await _incarcaProdusMarketplace(idDeAdaugat);
+    else _aratConfirmareAddon('', window.t(null, 'Produsele din marketplace se adaugă doar la serviciile cu preț calculat automat.'));
+  }
   const inMateriale = ADDON_DB.materiale.find((x) => x.id === idDeAdaugat);
   const inInchirieri = ADDON_DB.inchirieri.find((x) => x.id === idDeAdaugat);
   const tip = inMateriale ? 'materiale' : inInchirieri ? 'inchirieri' : null;
@@ -3726,7 +3762,7 @@ function _restaureazaDupaMarketplace() {
 // trebuie să vadă clar că produsul s-a adăugat, nu doar să-l găsească tăcut
 // în listă) — reutilizează structura de toast deja consacrată în
 // mydarrin-marketplace-materiale.html, pentru consistență vizuală.
-function _aratConfirmareAddon(titlu) {
+function _aratConfirmareAddon(titlu, avertisment) {
   let toast = document.getElementById('addon-confirmare-toast');
   if (!toast) {
     toast = document.createElement('div');
@@ -3734,12 +3770,16 @@ function _aratConfirmareAddon(titlu) {
     toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:#1A7A3A;color:#fff;padding:12px 22px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 8px 28px rgba(0,0,0,.18);transition:transform .3s ease;z-index:999';
     document.body.appendChild(toast);
   }
-  toast.textContent = `✓ „${titlu}" a fost adăugat — costul s-a actualizat`;
+  toast.style.background = avertisment ? '#B7791F' : '#1A7A3A';
+  toast.textContent = avertisment || `✓ „${titlu}" a fost adăugat — costul s-a actualizat`;
   requestAnimationFrame(() => { toast.style.transform = 'translateX(-50%) translateY(0)'; });
   setTimeout(() => { toast.style.transform = 'translateX(-50%) translateY(100px)'; }, 3500);
 }
 
 function _addonPretNivel(item) {
+  // Produs din marketplace: prețul public unitar, doar pentru afișare — în
+  // modul pilot totalul vine de la server (calculeaza-pret-nivel).
+  if (item.marketplace) return typeof item.pret_public === 'number' ? item.pret_public : 0;
   const p = item.preturi?.[S.tier];
   return typeof p === 'number' ? p : 0;
 }

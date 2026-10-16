@@ -13,6 +13,7 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { esteFurnizorPropriu, EROARE_FACTURA_FURNIZOR_PROPRIU } = require('../../lib/furnizor-propriu');
 
 const ROLURI_PARTENER = [
   'partener_curier', 'partener_servicii', 'partener_materiale',
@@ -29,6 +30,9 @@ function base64Bytes(b64) {
 }
 
 async function handleGet(req, res, user) {
+  // Furnizorul propriu al platformei (16 oct. 2026) nu își facturează sieși:
+  // nu are alocări facturabile; facturile vechi, dacă există, rămân vizibile.
+  const propriu = await esteFurnizorPropriu(user.id);
   const { data: alocari, error: alocariErr } = await supabaseAdmin
     .from('comanda_subcontractori')
     .select('id, comanda_id, rol_tip, suma_neta_alocata, status, creat_la')
@@ -50,7 +54,7 @@ async function handleGet(req, res, user) {
   }
 
   const idAlocariFacturate = new Set(facturiExistente.map((f) => f.comanda_subcontractor_id));
-  const alocariFacturabile = (alocari || []).filter((a) => !idAlocariFacturate.has(a.id));
+  const alocariFacturabile = propriu ? [] : (alocari || []).filter((a) => !idAlocariFacturate.has(a.id));
 
   const idComenzi = [...new Set(alocariFacturabile.map((a) => a.comanda_id))];
   let comenziIdx = {};
@@ -68,7 +72,8 @@ async function handleGet(req, res, user) {
     const { data: entitati } = await supabaseAdmin
       .from('entitati_juridice_platforma')
       .select('id, tara_cod, denumire, cui, adresa')
-      .in('tara_cod', idTari);
+      .in('tara_cod', idTari)
+      .eq('activa', true);
     (entitati || []).forEach((e) => { entitatiIdx[e.tara_cod] = e; });
   }
 
@@ -85,7 +90,7 @@ async function handleGet(req, res, user) {
     };
   });
 
-  return res.status(200).json({ ok: true, facturabile, facturi: facturiExistente });
+  return res.status(200).json({ ok: true, facturabile, facturi: facturiExistente, furnizor_propriu: propriu });
 }
 
 async function handlePost(req, res, user) {
@@ -99,6 +104,9 @@ async function handlePost(req, res, user) {
   }
   if (base64Bytes(fisier_base64) > MAX_BYTES) {
     return res.status(400).json({ error: 'Fișierul depășește 5MB' });
+  }
+  if (await esteFurnizorPropriu(user.id)) {
+    return res.status(409).json({ error: EROARE_FACTURA_FURNIZOR_PROPRIU, code: 'FURNIZOR_PROPRIU' });
   }
 
   const { data: alocare, error: alocareErr } = await supabaseAdmin
@@ -126,6 +134,7 @@ async function handlePost(req, res, user) {
     .from('entitati_juridice_platforma')
     .select('id')
     .eq('tara_cod', comanda?.tara_cod || null)
+    .eq('activa', true)
     .maybeSingle();
 
   let buffer;

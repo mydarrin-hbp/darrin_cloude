@@ -72,7 +72,7 @@ const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { incearcaAlocarePartener } = require('../../lib/aloca-partener');
 const { calculeazaPret, citestePragMinimComanda } = require('../../lib/calculeaza-pret');
 const { calculeazaCostNivel } = require('../../lib/calculeaza-cost-recipe');
-const { rezolvaAddonMateriale } = require('../../lib/rezolva-addon-materiale');
+const { rezolvaAddonMateriale, parseazaIdMarketplace } = require('../../lib/rezolva-addon-materiale');
 const { genereazaProformaPDF } = require('../../lib/genereaza-proforma-pdf');
 const { renderEmailComandaPrimita, limbaProfilEmailComportamental } = require('../../lib/i18n');
 const { incarcaContactPlatformaSigur } = require('../../lib/contact-platforma');
@@ -91,6 +91,7 @@ async function handler(req, res, user) {
     metoda_plata = 'ordin_plata',
     nivel_id = null, cantitate = null,
     addon_materiale = [],
+    produse_marketplace = null,
   } = req.body || {};
 
   // „Preț per cantitate reală comandată", pașii 1-3 (22 august 2026, aprobat,
@@ -150,7 +151,19 @@ async function handler(req, res, user) {
   const areComponenteItemizate = [cost_baza_servicii, cost_materiale, cost_chirie_scule, cost_curier, cost_asigurare]
     .some((v) => typeof v === 'number' && v > 0) || (typeof masa_totala_kg === 'number' && masa_totala_kg > 0);
 
-  if (!areComponenteItemizate && !areNivelId) {
+  // Produse din marketplace, fără serviciu (pasul 10a, 16 oct. 2026): clientul
+  // trimite doar {id: 'mp:<tip>:<uuid>', qty}; prețul se calculează integral
+  // aici, cu aceeași formulă ca /api/public/marketplace-produse (POST), din
+  // prețul real al furnizorului. Niciun preț venit din client nu se folosește.
+  const areProduseMarketplace = !areNivelId && Array.isArray(produse_marketplace) && produse_marketplace.length > 0;
+  if (produse_marketplace !== null && !areNivelId && !areProduseMarketplace) {
+    return res.status(400).json({ error: 'produse_marketplace trebuie să fie o listă ne-goală.' });
+  }
+  if (areProduseMarketplace && (produse_marketplace.length > 50 || produse_marketplace.some((p) => !parseazaIdMarketplace(p && p.id)))) {
+    return res.status(400).json({ error: 'produse_marketplace: id de produs invalid sau prea multe produse (maximum 50).' });
+  }
+
+  if (!areComponenteItemizate && !areNivelId && !areProduseMarketplace) {
     if (typeof valoare_totala !== 'number' || !(valoare_totala > 0)) {
       return res.status(400).json({ error: 'valoare_totala (numeric, pozitiv) este obligatorie' });
     }
@@ -285,6 +298,22 @@ async function handler(req, res, user) {
     }
   }
 
+  let produseCalculate = null;
+  if (areProduseMarketplace) {
+    const taraCalcul = tara_cod ? String(tara_cod).toUpperCase() : 'RO';
+    let rez;
+    try {
+      rez = await rezolvaAddonMateriale(produse_marketplace, null, taraCalcul);
+    } catch (e) {
+      if (e.code === 'ADDON_FARA_PRET' || e.code === 'ADDON_INVALID') {
+        return res.status(400).json({ error: e.message, code: e.code });
+      }
+      throw e;
+    }
+    const calc = await calculeazaPret({ cost_materiale: rez.cost_materiale, cost_chirie_scule: rez.cost_utilaj, tara: taraCalcul });
+    produseCalculate = { itemi: rez.itemi, calc };
+  }
+
   try {
     const year = new Date().getFullYear();
     const { count } = await supabaseAdmin
@@ -338,6 +367,26 @@ async function handler(req, res, user) {
           suma_comision_platforma: nivelCalculat.calc.comision_platforma,
           tva_pct: nivelCalculat.calc.tva_pct,
           tva_suma: nivelCalculat.calc.tva_suma,
+        }
+      : produseCalculate
+      ? {
+          ...insertBase,
+          // furnizor_id rămâne pe fiecare item: escrow-ul înregistrează suma
+          // pe furnizorul produsului (lib/elibereaza-escrow.js).
+          addon_materiale_selectate: produseCalculate.itemi,
+          suma_totala_platita: produseCalculate.calc.pret_final,
+          suma_manopera: 0,
+          suma_materiale: produseCalculate.calc.cost_materiale,
+          suma_chirie_scule: produseCalculate.calc.cost_chirie_scule,
+          suma_transport: produseCalculate.calc.cost_curier,
+          suma_transport_greutate: produseCalculate.calc.cost_transport_greutate,
+          suma_ajutor: produseCalculate.calc.cost_ajutor,
+          suma_asigurare: produseCalculate.calc.cost_asigurare,
+          suma_marketing: produseCalculate.calc.cost_marketing,
+          suma_mentenanta: produseCalculate.calc.cost_mentenanta,
+          suma_comision_platforma: produseCalculate.calc.comision_platforma,
+          tva_pct: produseCalculate.calc.tva_pct,
+          tva_suma: produseCalculate.calc.tva_suma,
         }
       : areComponenteItemizate
       ? await (async () => {
@@ -460,7 +509,7 @@ async function handler(req, res, user) {
           if (numarProforma) {
             try {
               const [{ data: entitateJuridica }, { data: contBancar }, { data: serviciu }] = await Promise.all([
-                supabaseAdmin.from('entitati_juridice_platforma').select('denumire, cui, nr_reg_com, adresa').eq('tara_cod', insertBase.tara_cod || 'RO').maybeSingle(),
+                supabaseAdmin.from('entitati_juridice_platforma').select('denumire, cui, nr_reg_com, adresa').eq('tara_cod', insertBase.tara_cod || 'RO').eq('activa', true).maybeSingle(),
                 supabaseAdmin.from('bank_accounts').select('nume_afisat, banca, iban, swift').eq('tara_cod', insertBase.tara_cod || 'RO').eq('moneda', data.moneda).eq('tip', 'incasari').maybeSingle(),
                 // Deviz complet (31 august 2026, cerere fondator) — descrierea
                 // reală, etapele lucrării și instrucțiunile de întreținere ale
@@ -497,7 +546,7 @@ async function handler(req, res, user) {
     // imediat (Etapa 0 SLA).
     const alocare = catalogServiciuIdEfectiv
       ? await incearcaAlocarePartener(data.id)
-      : { alocat: false, motiv: 'fara_serviciu_specificat' };
+      : { alocat: false, motiv: produseCalculate ? 'comanda_produse_marketplace' : 'fara_serviciu_specificat' };
     if (!alocare.alocat) await notificaAdminFaraPartener(data, alocare.motiv);
 
     return res.status(200).json({ ok: true, comanda: data, alocare });

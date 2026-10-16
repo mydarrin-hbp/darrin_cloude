@@ -114,6 +114,21 @@ Invers nu: aplicată înainte de merge, migrarea ar bloca crearea de servicii di
 
 ---
 
+### 7. Furnizorul propriu
+
+Decizia LM (16 oct. 2026): **Home Best Pal SRL (CUI RO46577229)** e furnizorul real al platformei pentru **materiale și închirieri**. HBP SRL e și entitatea platformei din România (cea căreia îi facturează partenerii).
+
+- Un partener e **furnizor propriu** când `partners.entitate_platforma_id` e setat (migrarea `2026-10-16_furnizor_propriu.sql`). O entitate are cel mult un cont de partener. Legătura o face superadminul: Entități juridice → „Leagă de contul de furnizor”.
+- **Fără factură de partener**: furnizorul propriu nu își facturează sieși. `api/partener/facturi.js` nu îi arată alocări facturabile și refuză încărcarea unei facturi.
+- **Fără discount**: nu i se aplică `parteneri_discounturi` (5–15%) și nici procentul implicit din panou. La escrow, rândul lui rămâne cu suma întreagă, `discount_pct_aplicat = 0`, `discount_sursa = 'furnizor_propriu'`.
+- **Prețul final**: costul materialului sau al închirierii intră în prețul clientului, cu formula publică (cost de bază + asigurare + comision + marketing + mentenanță + TVA, din `backoffice_config`), facturat de entitatea platformei din țara comenzii. Prețurile de referință din norme nu se folosesc ca prețuri de vânzare.
+- **Produsele din marketplace** (`marketplace_materiale`, `marketplace_echipamente`) au furnizorul pe produs; la comandă, `addon_materiale_selectate` păstrează `furnizor_id`, iar escrow-ul înregistrează suma pe acel furnizor. Un furnizor extern rămâne ca azi (discountul lui, factura lui).
+- **Ruta produselor la import** (aceeași regulă ca la servicii, `valideazaRutaProdus` din `lib/ruta-incadrare.js`):
+  - materiale: clasa NACE din capitolul `G` (de exemplu 47.52, 47.54, 46.73, 46.83, 46.84), nodul de meniu din capitolul `G` și cod Uniclass `Pr_` activ;
+  - închirieri: clasa NACE din capitolul `O77` (77.11, 77.12, 77.21, 77.22, 77.32, 77.39), nodul din `O77`; un utilaj cu operator obligatoriu e un serviciu (43.99), nu o închiriere;
+  - produsele importate pornesc cu `status = 'in_asteptare'` și devin `live` doar după aprobare (`api/admin/marketplace-aprobari.js`).
+- Tranziție: până la pasul 10, nodurile de materiale existente nu au încă `capitol_cod` și `nace_clasa`. Un nod de tip `materiale` fără capitol e acceptat ca nod din `G`, cu avertisment; un nod cu alt capitol sau cu altă clasă NACE dă eroare. Pentru închirieri nu există încă niciun nod: se creează la pasul 10.
+
 ## English
 
 ### 1. The classification route
@@ -216,3 +231,18 @@ Not the other way round: applied before the merge, the migration would block ser
 **A. "Reparat calorifer" — a similar service exists.** `cauta_asemanatoare` returns "Reparație / Recondiționare calorifer" first (43.22, recipe `RPIB03A`). Route: F → 43 → 43.2 → 43.22 → node "Plumbing, heating and air conditioning" → ESCO `7127.1` → Uniclass `Ac_10_40_63`. The admin copies the service (`copiaza_din`: node, ESCO, Uniclass, levels without prices, the recipe as a new variant), fills in the EN title and the prices, validates and publishes. Validation also gives A4 (similar title): the admin confirms it is a distinct service, or drops it.
 
 **B. "Montaj panouri fotovoltaice cu instalație și punere în funcțiune" — no recipe.** NACE 43.21 (Eurostat: "photovoltaic systems on buildings") → chapter F → node "Electrical installations" → ESCO `7411.1.4` (solar energy technician) → Uniclass `Ac_10_40_27` (installation); commissioning (`Ac_70_65`) is a recipe line. `cauta_asemanatoare` suggests "Montaj tablou electric pe instalație nouă" (`EF04A1`) and "Testare & verificare instalație electrică" (`EH05B1`). `propune_reteta` gives `EF`, `EC`, `EA`, `EH` items, `7411.1` labour and the new resources in point 5. Validation: A3 (ANRE authorisation) and E7 until the recipe is approved and the prices are filled in. A ground-mounted solar farm would be 42.22 (another node): placed under 43.21, it gives E2.
+
+### 7. Own supplier
+
+LM's decision (16 Oct 2026): **Home Best Pal SRL (CUI RO46577229)** is the platform's real supplier for **materials and rentals**. HBP SRL is also the platform's entity in Romania (the one partners invoice).
+
+- A partner is the **own supplier** when `partners.entitate_platforma_id` is set (migration `2026-10-16_furnizor_propriu.sql`). An entity has at most one partner account. The superadmin makes the link: Legal entities → "Link to the supplier account".
+- **No partner invoice**: the own supplier does not invoice itself. `api/partener/facturi.js` shows it no invoiceable allocations and refuses an invoice upload.
+- **No discount**: neither `parteneri_discounturi` (5–15%) nor the panel's default percentage applies. At escrow, its row keeps the full amount, `discount_pct_aplicat = 0`, `discount_sursa = 'furnizor_propriu'`.
+- **Final price**: the cost of the material or rental goes into the client's price, with the public formula (base cost + insurance + commission + marketing + maintenance + VAT, from `backoffice_config`), invoiced by the platform entity of the order's country. The reference prices from the norms are not used as selling prices.
+- **Marketplace products** (`marketplace_materiale`, `marketplace_echipamente`) carry their supplier; on an order, `addon_materiale_selectate` keeps `furnizor_id`, and escrow records the amount against that supplier. An external supplier works as today (its discount, its invoice).
+- **Product route on import** (the same rule as services, `valideazaRutaProdus` in `lib/ruta-incadrare.js`):
+  - materials: a NACE class from chapter `G` (e.g. 47.52, 47.54, 46.73, 46.83, 46.84), a menu node from chapter `G` and an active `Pr_` Uniclass code;
+  - rentals: a NACE class from chapter `O77` (77.11, 77.12, 77.21, 77.22, 77.32, 77.39), a node from `O77`; machinery with a mandatory operator is a service (43.99), not a rental;
+  - imported products start with `status = 'in_asteptare'` and become `live` only after approval (`api/admin/marketplace-aprobari.js`).
+- Transition: until step 10, the existing material nodes do not yet have `capitol_cod` and `nace_clasa`. A `materiale` node with no chapter is accepted as a `G` node, with a warning; a node with another chapter or another NACE class gives an error. There is no rental node yet: it is created in step 10.

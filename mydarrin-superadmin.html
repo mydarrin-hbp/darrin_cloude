@@ -2066,8 +2066,30 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
         <p style="font-size:11px;color:#8BA3C0;margin:0 0 14px">Identitatea juridică/fiscală a platformei, per țară — destinatarul facturilor emise de parteneri. Necompletat (CUI/adresă/IBAN) până confirmi datele reale — nu presupunem nimic.</p>
         <div id="fp-entitati-lista"></div>
         <button onclick="adaugaRandEntitate()" class="btn-s" style="font-size:11.5px;padding:7px 12px;margin-top:8px">+ Adaugă țară</button>
-        <button onclick="salveazaEntitati()" class="btn-p" style="font-size:12.5px;padding:9px 16px;margin-top:8px;margin-left:8px">Salvează toate</button>
-        <span id="fp-entitati-salvat" style="font-size:11.5px;color:#4ADE80;margin-left:10px"></span>
+        <button onclick="salveazaEntitati(this)" class="btn-p" style="font-size:12.5px;padding:9px 16px;margin-top:8px;margin-left:8px">Salvează toate</button>
+        <div id="fp-entitati-salvat"></div>
+      </div>
+
+      <!-- Furnizorul propriu al platformei (decizie LM, 16 oct. 2026): Home Best Pal SRL
+           (CUI RO46577229) vinde materiale și închirieri direct clientului — fără factură
+           de partener către sine și fără discount. Datele firmei vin exact din ANAF;
+           IBAN-ul îl introduce LM manual, în rândul RO de mai sus. -->
+      <div id="fp-furnizor-propriu" style="background:#131B27;border:1px solid #2D3F55;border-radius:14px;padding:18px 20px;margin-bottom:18px">
+        <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:4px">Entitatea RO și furnizorul propriu</div>
+        <p style="font-size:11px;color:#8BA3C0;margin:0 0 14px">Home Best Pal SRL e și entitatea platformei, și furnizorul ei de materiale și închirieri. „Completează din ANAF” scrie denumirea, CUI-ul, nr. reg. com. și adresa exact cum le dă ANAF (IBAN-ul nu se atinge). „Leagă de contul de furnizor” face din contul ales furnizorul propriu: fără factură de partener și fără discount.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px">
+          <label for="fp-anaf-cui" style="font-size:11.5px;color:#8BA3C0">CUI</label>
+          <input id="fp-anaf-cui" value="RO46577229" style="background:#0F1826;border:1px solid #2D3F55;border-radius:8px;padding:7px 9px;color:#fff;font-size:12px;width:130px">
+          <button id="fp-anaf-btn" onclick="completeazaDinAnaf(this)" class="btn-p" style="font-size:12px;padding:8px 14px">Completează din ANAF</button>
+        </div>
+        <div id="fp-anaf-msg"></div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px">
+          <label for="fp-furnizor-select" style="font-size:11.5px;color:#8BA3C0">Contul de furnizor</label>
+          <select id="fp-furnizor-select" style="border:1.5px solid #2D3F55;background:#192433;color:#fff;border-radius:9px;padding:8px 12px;font-size:12.5px;font-family:inherit;max-width:100%;min-width:0"></select>
+          <button id="fp-leaga-btn" onclick="leagaFurnizorPropriu(this)" class="btn-p" style="font-size:12px;padding:8px 14px">Leagă de contul de furnizor</button>
+        </div>
+        <div id="fp-furnizor-stare" style="font-size:11.5px;color:#8BA3C0;margin-top:8px"></div>
+        <div id="fp-leaga-msg"></div>
       </div>
 
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
@@ -5160,6 +5182,7 @@ async function loadEntitatiJuridice() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
     renderEntitati(data.entitati.length ? data.entitati : [{ tara_cod: 'RO', denumire: '', cui: '', nr_reg_com: '', adresa: '', iban: '', activa: false }]);
+    renderFurnizorPropriu(data);
   } catch (e) {
     el.innerHTML = `<div style="color:#E57373">Eroare: ${escapeHTML(e.message)}</div>`;
   }
@@ -5198,20 +5221,68 @@ function citesteRanduriEntitati() {
   }));
 }
 
-async function salveazaEntitati() {
-  const rezultatEl = document.getElementById('fp-entitati-salvat');
-  rezultatEl.textContent = '';
-  try {
+async function salveazaEntitati(buton) {
+  const r = await MDFeedback.salveaza(buton, document.getElementById('fp-entitati-salvat'), async () => {
     const headers = await _adminAuthHeader();
     for (const rand of citesteRanduriEntitati()) {
       if (!rand.tara_cod) continue;
       const res = await fetch('/api/admin/entitati-juridice', { method: 'POST', headers, body: JSON.stringify(rand) });
-      if (!res.ok) throw new Error((await res.json()).error);
+      if (!res.ok) throw new Error((await res.json()).error || 'Eroare necunoscută');
     }
-    rezultatEl.textContent = '✓ Salvat';
-    setTimeout(() => { rezultatEl.textContent = ''; }, 3000);
-    loadEntitatiJuridice();
-  } catch (e) { alert('Eroare: ' + e.message); }
+    return 'Entitățile juridice au fost salvate.';
+  });
+  if (r.ok) loadEntitatiJuridice();
+}
+
+// ── Entitatea RO și furnizorul propriu (16 oct. 2026) ──
+const TIP_FURNIZOR_LABEL = { furnizor_materiale: 'materiale', inchirieri_utilaje: 'închirieri' };
+
+function renderFurnizorPropriu(data) {
+  const ro = (data.entitati || []).find((e) => e.tara_cod === 'RO') || null;
+  const select = document.getElementById('fp-furnizor-select');
+  const stare = document.getElementById('fp-furnizor-stare');
+  const btn = document.getElementById('fp-leaga-btn');
+  const legat = ro?.furnizor_propriu || null;
+  const optiuni = (data.furnizori_disponibili || []).map((p) =>
+    `<option value="${escapeHTML(p.id)}" ${legat && legat.id === p.id ? 'selected' : ''}>${escapeHTML(p.nume_firma || '—')} · ${escapeHTML(p.cui || '—')} · ${escapeHTML(p.email || 'fără email')} · ${escapeHTML(TIP_FURNIZOR_LABEL[p.partner_type] || p.partner_type)}</option>`);
+  select.innerHTML = `<option value="">— niciun cont (fără furnizor propriu) —</option>` + optiuni.join('');
+  if (data.migrare_furnizor_propriu === false) {
+    stare.textContent = 'Migrarea 2026-10-16_furnizor_propriu.sql nu e aplicată: legătura nu se poate salva încă.';
+    btn.disabled = true;
+  } else if (!ro || !ro.activa) {
+    stare.textContent = 'Entitatea RO lipsește sau e inactivă: salveaz-o activă înainte de legare.';
+    btn.disabled = true;
+  } else {
+    stare.textContent = legat
+      ? `Furnizor propriu acum: ${legat.nume_firma || '—'} (${legat.email || 'fără email'}).`
+      : 'Niciun cont legat încă.';
+    btn.disabled = false;
+  }
+}
+
+async function completeazaDinAnaf(buton) {
+  const cui = document.getElementById('fp-anaf-cui').value.trim();
+  const r = await MDFeedback.salveaza(buton, document.getElementById('fp-anaf-msg'), async () => {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/entitati-juridice', { method: 'POST', headers, body: JSON.stringify({ actiune: 'din_anaf', tara_cod: 'RO', cui }) });
+    const j = await res.json();
+    if (!res.ok) throw new Error(j.error || 'Eroare necunoscută');
+    const e = j.entitate;
+    return `Completat din ANAF: ${e.denumire} · CUI ${e.cui || '—'} · ${e.nr_reg_com || 'fără nr. reg. com.'} · ${e.adresa || 'fără adresă'}. IBAN-ul îl introduci manual, în rândul RO.`;
+  }, { textSalveaza: 'Se citește din ANAF…', textOk: '✓ Completat' });
+  if (r.ok) loadEntitatiJuridice();
+}
+
+async function leagaFurnizorPropriu(buton) {
+  const partenerId = document.getElementById('fp-furnizor-select').value || null;
+  const r = await MDFeedback.salveaza(buton, document.getElementById('fp-leaga-msg'), async () => {
+    const headers = await _adminAuthHeader();
+    const res = await fetch('/api/admin/entitati-juridice', { method: 'POST', headers, body: JSON.stringify({ actiune: 'leaga_furnizor', tara_cod: 'RO', partener_id: partenerId }) });
+    const j = await res.json();
+    if (!res.ok) throw new Error(j.error || 'Eroare necunoscută');
+    return partenerId ? 'Contul ales e acum furnizorul propriu al platformei.' : 'Legătura cu contul de furnizor a fost scoasă.';
+  });
+  if (r.ok) loadEntitatiJuridice();
 }
 
 const STATUS_FACTURA_PARTENER_LABEL = { emisa: 'Emisă, neplătită', platita: 'Plătită' };

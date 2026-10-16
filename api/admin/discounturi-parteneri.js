@@ -15,6 +15,7 @@ const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 const { valideazaDiscountNou, valideazaDiscountPct, raspunsEroareDiscount } = require('../../lib/discount-partener');
+const { esteFurnizorPropriu, EROARE_DISCOUNT_FURNIZOR_PROPRIU } = require('../../lib/furnizor-propriu');
 
 async function handler(req, res, admin) {
   if (req.method === 'GET') {
@@ -32,6 +33,7 @@ async function handler(req, res, admin) {
   if (req.method === 'POST') {
     const { partener_id } = req.body || {};
     if (!partener_id) return res.status(400).json({ error: 'partener_id este obligatoriu' });
+    if (await esteFurnizorPropriu(partener_id)) return res.status(400).json({ error: EROARE_DISCOUNT_FURNIZOR_PROPRIU });
     const validare = await valideazaDiscountNou(req.body);
     if (validare.eroare) return res.status(400).json({ error: validare.eroare });
 

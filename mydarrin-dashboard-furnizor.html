@@ -425,6 +425,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 <script src="account-system.js"></script>
 <!-- Faza 2 (30 sept. 2026): import CSV real, mutat aici din mydarrin-marketplace.html -->
 <script src="/myd-csv.js"></script>
+<script src="/ui-feedback.js"></script>
 <script src="profil-partener-card.js"></script>
 <script src="seo-meta.js"></script>
 <script src="cookie-consent.js" defer></script>
@@ -1216,84 +1217,133 @@ async function saveEchipament(){
   }
 }
 
-// ── CSV bulk import (materiale) — vezi api/marketplace/importa-csv.js ──
-const MP_CSV_HEADERE = ['denumire_produs', 'descriere', 'descriere_pret', 'ambalaj', 'categorie', 'nace_cod', 'cod_uniclass', 'pret_fara_tva', 'moneda', 'unitate_masura', 'stoc_disponibil', 'lead_time_zile', 'furnizor_comercial', 'cui_furnizor', 'specificatii_tehnice', 'cod_produs_furnizor', 'imagine_url_1', 'imagine_url_2', 'imagine_url_3', 'imagine_url_4', 'imagine_url_5', 'imagine_url_6', 'video_url'];
+// ── CSV bulk import (materiale + închirieri) — vezi api/marketplace/importa-csv.js ──
+// Pasul 10a (16 oct. 2026): coloanele din docs/sabloane/import-hbp-*.csv se
+// trimit așa cum sunt citite; serverul le normalizează și verifică ruta de
+// încadrare (nod_menu, nace_cod, cod_uniclass). Produsele importate așteaptă
+// aprobarea; rândurile respinse apar în raport, cu câmpul și mesajul în
+// limba activă.
+const MP_CSV_IMAGINI = ['imagine_url_1', 'imagine_url_2', 'imagine_url_3', 'imagine_url_4', 'imagine_url_5', 'imagine_url_6'];
+const MP_CSV_COLOANE = {
+  materiale: ['cod_produs_furnizor', 'denumire_produs', 'descriere', 'descriere_pret', 'unitate_masura', 'pret_fara_tva', 'cota_tva', 'moneda', 'stoc_disponibil', 'lead_time_zile', 'nod_menu', 'nace_cod', 'cod_uniclass', ...MP_CSV_IMAGINI, 'ambalaj', 'specificatii_tehnice', 'este_consumabil', 'denumire_en', 'descriere_en', 'descriere_pret_en'],
+  echipamente: ['cod_produs_furnizor', 'denumire_produs', 'descriere', 'descriere_pret', 'tarif_zi', 'tarif_ora', 'tarif_saptamana', 'cota_tva', 'moneda', 'buc_disponibile', 'operator_inclus', 'nod_menu', 'nace_cod', 'cod_uniclass', ...MP_CSV_IMAGINI, 'specificatii_tehnice', 'denumire_en', 'descriere_en', 'descriere_pret_en'],
+};
+const MP_CSV_OBLIGATORII = {
+  materiale: ['cod_produs_furnizor', 'denumire_produs', 'descriere', 'descriere_pret', 'unitate_masura', 'pret_fara_tva', 'moneda', 'nod_menu', 'nace_cod', 'cod_uniclass', 'imagine_url_1'],
+  echipamente: ['cod_produs_furnizor', 'denumire_produs', 'descriere', 'descriere_pret', 'tarif_zi', 'moneda', 'nod_menu', 'nace_cod', 'imagine_url_1'],
+};
 let mpCsvRanduri = [];
+let mpCsvTip = 'materiale';
+const _trMp = (ro, param) => (typeof window.t === 'function' ? window.t(null, ro, param) : ro.replace(/\{(\w+)\}/g, (m, x) => (param && param[x] != null ? param[x] : m)));
+const _mpLimbaEn = () => window.MYD_I18N?.lang !== 'ro';
 
-function dlTemplateMp(){
-  const randExemplu = {
-    denumire_produs: 'Calorifer Purmo C11 600x10 elemenți',
-    descriere: 'Completează aici o descriere reală, de minimum 100 de caractere, care explică marca, dimensiunile și utilizarea produsului.',
-    descriere_pret: 'Preț per bucată', ambalaj: '', categorie: 'Electrice & Cabluri', nace_cod: '43.22',
-    cod_uniclass: 'Pr_70_60_36_73 (opțional — vezi lista din formular)',
-    pret_fara_tva: '245.00', moneda: 'RON', unitate_masura: 'buc', stoc_disponibil: '48', lead_time_zile: '2',
-    furnizor_comercial: '', cui_furnizor: '', specificatii_tehnice: '', cod_produs_furnizor: 'SKU-001',
-    imagine_url_1: '(obligatoriu — urcă imaginea individual mai întâi, apoi copiază URL-ul aici)',
-    imagine_url_2: '', imagine_url_3: '', imagine_url_4: '', imagine_url_5: '', imagine_url_6: '', video_url: '',
-  };
-  window._mydCSV.download('template-marketplace-materiale.csv', MP_CSV_HEADERE, [randExemplu]);
-  showToast('Template CSV descărcat · completează și reimportă');
+function _tipImportMp() {
+  return document.getElementById('mp-csv-tip')?.value === 'echipamente' ? 'echipamente' : 'materiale';
 }
 
-function _mapeazaRandCsvMaterial(rec){
-  const cheieCategorie = (rec.categorie || '').trim().toLowerCase();
-  const categorie = mpCategoriiMateriale.find((c) => c.title.trim().toLowerCase() === cheieCategorie);
-  const imagini = [];
-  for (let i = 1; i <= 6; i++) {
-    const url = (rec['imagine_url_' + i] || '').trim();
-    if (url) imagini.push({ url, ordine: imagini.length });
-  }
-  return {
-    denumire: rec.denumire_produs || '', descriere: rec.descriere || '', descriere_pret: rec.descriere_pret || '',
-    ambalaj: rec.ambalaj || null, categorie_id: categorie ? categorie.id : null, nace_cod: rec.nace_cod || null,
-    cod_uniclass: rec.cod_uniclass || null,
-    pret_fara_tva: Number(rec.pret_fara_tva), moneda: (rec.moneda || '').toUpperCase(), unitate_masura: rec.unitate_masura || '',
-    stoc_disponibil: Number(rec.stoc_disponibil) || 0, lead_time_zile: Number(rec.lead_time_zile) || 0,
-    furnizor_comercial: rec.furnizor_comercial || null, cui_furnizor: rec.cui_furnizor || null,
-    specificatii_tehnice: rec.specificatii_tehnice || null, cod_produs_furnizor: rec.cod_produs_furnizor || null,
-    imagini, video_url: rec.video_url || null,
-  };
+function dlTemplateMp(){
+  const tip = _tipImportMp();
+  // Rândul-exemplu arată formatul; câmpurile <…> se completează din lista de
+  // prețuri reală (nicio cifră inventată). Se șterge înainte de import.
+  const exemplu = tip === 'materiale'
+    ? {
+        cod_produs_furnizor: 'EXEMPLU-001', denumire_produs: _trMp('EXEMPLU — șterge acest rând'),
+        descriere: _trMp('EXEMPLU: descrierea reală a produsului, între 100 și 1.000 de caractere: marca, dimensiunile, materialul și la ce se folosește.'),
+        descriere_pret: _trMp('Preț per bucată'), unitate_masura: 'buc', pret_fara_tva: _trMp('<preț fără TVA>'), cota_tva: '21', moneda: 'RON',
+        stoc_disponibil: _trMp('<stoc>'), lead_time_zile: _trMp('<zile livrare>'), nod_menu: 'robinete-colectoare', nace_cod: '47.52', cod_uniclass: 'Pr_65_54_95_16',
+        imagine_url_1: _trMp('<URL imagine urcată în marketplace-media>'), este_consumabil: 'false',
+      }
+    : {
+        cod_produs_furnizor: 'EXEMPLU-U01', denumire_produs: _trMp('EXEMPLU — șterge acest rând'),
+        descriere: _trMp('EXEMPLU: descrierea reală a utilajului, între 100 și 1.000 de caractere: marca, puterea, ce poate face și ce primește clientul.'),
+        descriere_pret: _trMp('Preț per zi de închiriere'), tarif_zi: _trMp('<tarif pe zi fără TVA>'), cota_tva: '21', moneda: 'RON',
+        buc_disponibile: _trMp('<bucăți disponibile>'), operator_inclus: 'fara_operator', nod_menu: _trMp('<slug nod din capitolul O77>'), nace_cod: '77.32',
+        imagine_url_1: _trMp('<URL imagine urcată în marketplace-media>'),
+      };
+  window._mydCSV.download(tip === 'materiale' ? 'import-materiale.csv' : 'import-inchirieri.csv', MP_CSV_COLOANE[tip], [exemplu]);
+  showToast(_trMp('Template CSV descărcat · completează și reimportă'));
 }
 
 async function handleCSVUploadMp(input){
   const file = input.files[0];
   input.value = '';
   if (!file) return;
+  const zona = document.getElementById('mp-import-raport');
+  if (zona) zona.innerHTML = '';
   try {
     const text = await file.text();
-    const { records } = window._mydCSV.parse(text);
-    if (!records.length) { showToast('CSV gol sau needitat.'); return; }
-    mpCsvRanduri = records.map(_mapeazaRandCsvMaterial);
+    const { header, records } = window._mydCSV.parse(text);
+    if (!records.length) { showToast(_trMp('CSV gol sau needitat.')); return; }
+    const tip = _tipImportMp();
+    const lipsa = MP_CSV_OBLIGATORII[tip].filter((c) => !header.includes(c));
+    if (lipsa.length) {
+      mpCsvRanduri = [];
+      MDFeedback.mesaj(zona, 'eroare', _trMp('Fișierul nu are coloanele obligatorii: {coloane}. Descarcă șablonul pentru tipul ales.', { coloane: lipsa.join(', ') }));
+      return;
+    }
+    mpCsvRanduri = records;
+    mpCsvTip = tip;
     const log = document.getElementById('mp-import-progres');
-    if (log) log.textContent = `„${file.name}" — ${mpCsvRanduri.length} rânduri citite. Apasă „Importă acum".`;
-    showToast(`${mpCsvRanduri.length} rânduri citite din „${file.name}"`);
+    if (log) log.textContent = _trMp('„{fisier}” — {n} rânduri citite. Apasă „Importă acum”.', { fisier: file.name, n: records.length });
   } catch (e) {
     console.error('[dashboard-furnizor] handleCSVUploadMp', e);
-    showToast('Nu am putut citi fișierul: ' + e.message);
+    MDFeedback.mesaj(zona, 'eroare', _trMp('Nu am putut citi fișierul: {eroare}', { eroare: e.message }));
   }
 }
 
-async function importaCsvMpAcum(){
-  if (!mpCsvRanduri.length) { showToast('Încarcă întâi un fișier CSV.'); return; }
+function _randeazaRaportImportMp(erori, avertismente) {
+  const zona = document.getElementById('mp-import-detalii');
+  if (!zona) return;
+  if (!erori.length && !avertismente.length) { zona.innerHTML = ''; return; }
+  const en = _mpLimbaEn();
+  const rand = (x, culoare) => `<tr><td style="padding:5px 6px;color:${culoare};font-weight:700">${x.rand}</td><td style="padding:5px 6px;word-break:break-word">${escapeHTML(x.produs || '')}</td><td style="padding:5px 6px;font-family:monospace">${escapeHTML(x.camp || '')}</td><td style="padding:5px 6px;word-break:break-word">${escapeHTML((en ? x.mesaj_en : x.mesaj) || x.mesaj || '')}</td></tr>`;
+  zona.innerHTML = `
+    <div style="overflow-x:auto;margin-top:10px">
+      <table style="width:100%;border-collapse:collapse;font-size:11.5px;color:#1A2332">
+        <thead><tr style="text-align:left;color:#5A6B7D"><th style="padding:5px 6px">${_trMp('Rând')}</th><th style="padding:5px 6px">${_trMp('Produs')}</th><th style="padding:5px 6px">${_trMp('Câmp')}</th><th style="padding:5px 6px">${_trMp('Mesaj')}</th></tr></thead>
+        <tbody>${erori.map((x) => rand(x, '#C0392B')).join('')}${avertismente.map((x) => rand(x, '#B7791F')).join('')}</tbody>
+      </table>
+    </div>
+    <button class="btn-s" style="margin-top:8px" onclick="descarcaRaportImportMp()">${_trMp('⬇ Descarcă raportul')}</button>`;
+  window._mpRaportImport = [...erori.map((x) => ({ ...x, tip: 'eroare' })), ...avertismente.map((x) => ({ ...x, tip: 'avertisment' }))];
+}
+
+function descarcaRaportImportMp() {
+  const randuri = (window._mpRaportImport || []).map((x) => ({ tip: x.tip, rand: x.rand, produs: x.produs, camp: x.camp, mesaj: x.mesaj, mesaj_en: x.mesaj_en }));
+  window._mydCSV.download(`raport-import-${new Date().toISOString().slice(0, 10)}.csv`, ['tip', 'rand', 'produs', 'camp', 'mesaj', 'mesaj_en'], randuri);
+}
+
+async function importaCsvMpAcum(buton){
+  const zona = document.getElementById('mp-import-raport');
+  if (!mpCsvRanduri.length) { MDFeedback.mesaj(zona, 'eroare', _trMp('Încarcă întâi un fișier CSV.')); return; }
   const log = document.getElementById('mp-import-progres');
-  try {
+  const erori = [];
+  const avertismente = [];
+  const r = await MDFeedback.salveaza(buton, zona, async () => {
     const headers = await _dfAuthHeader();
-    let jobId = null, ramase = mpCsvRanduri;
+    let jobId = null;
+    let ultim = null;
     while (true) {
-      const res = await fetch('/api/marketplace/importa-csv', { method: 'POST', headers, body: JSON.stringify({ tip: 'materiale', randuri: ramase, job_id: jobId }) });
+      const res = await fetch('/api/marketplace/importa-csv', { method: 'POST', headers, body: JSON.stringify({ tip: mpCsvTip, randuri: mpCsvRanduri, job_id: jobId }) });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'eroare necunoscută');
-      jobId = json.job_id || jobId;
-      if (log) log.textContent = `Import în curs — ${json.procesate || 0}/${mpCsvRanduri.length} procesate (${json.reusite || 0} reușite, ${json.esuate || 0} eșuate).`;
-      if (!json.continua) { showToast(`Import finalizat — ${json.reusite || 0} produse adăugate.`); break; }
+      if (!res.ok) throw new Error(json.error || _trMp('Eroare necunoscută la import'));
+      jobId = json.job_id;
+      ultim = json;
+      erori.push(...(json.erori || []));
+      avertismente.push(...(json.avertismente || []));
+      if (log) log.textContent = _trMp('Import în curs — {p}/{n} rânduri procesate.', { p: json.randuri_procesate, n: mpCsvRanduri.length });
+      if (!json.continua) break;
     }
-    mpCsvRanduri = [];
-    loadProduseLive();
-  } catch (e) {
-    console.error('[dashboard-furnizor] importaCsvMpAcum', e);
-    if (log) log.textContent = 'Eroare: ' + e.message;
-    showToast('Eroare la import: ' + e.message);
-  }
+    _randeazaRaportImportMp(erori, avertismente);
+    const respinse = ultim.randuri_erori;
+    const importate = ultim.randuri_procesate - respinse;
+    if (log) log.textContent = '';
+    if (!importate) throw new Error(_trMp('Niciun rând importat: {r} rânduri respinse. Vezi raportul de mai jos.', { r: respinse }));
+    return respinse
+      ? _trMp('{i} produse importate, în așteptarea aprobării; {r} rânduri respinse (vezi raportul).', { i: importate, r: respinse })
+      : _trMp('{i} produse importate, în așteptarea aprobării.', { i: importate });
+  }, { textSalveaza: 'Se importă…', textOk: '✓ Importat' });
+  if (r.ok) { mpCsvRanduri = []; loadProduseLive(); }
 }
 
 function renderImport(){
@@ -1301,16 +1351,22 @@ function renderImport(){
   <div style="margin-bottom:18px"><h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Import CSV</h2></div>
   <div style="display:grid;grid-template-columns:1fr;gap:18px;max-width:560px">
     <div class="f-card">
-      <div class="f-card-hdr"><strong>📊 Import CSV / Excel — materiale</strong></div>
+      <div class="f-card-hdr"><strong>📊 Import CSV / Excel — materiale și închirieri</strong></div>
       <div class="f-card-body">
-        <div style="background:#F0F4F8;border-radius:12px;padding:14px;margin-bottom:14px;font-family:monospace;font-size:11.5px;line-height:1.9;color:#1A2332;border:1px solid #D5DFE8">
+        <label for="mp-csv-tip" style="display:block;font-size:12px;font-weight:700;color:#1A2332;margin-bottom:6px">Ce imporți?</label>
+        <select id="mp-csv-tip" style="width:100%;padding:9px 12px;border:1.5px solid #D5DFE8;border-radius:10px;font-family:inherit;font-size:13px;margin-bottom:12px">
+          <option value="materiale">Materiale</option>
+          <option value="echipamente">Închirieri (utilaje și echipamente)</option>
+        </select>
+        <div style="background:#F0F4F8;border-radius:12px;padding:14px;margin-bottom:14px;font-family:monospace;font-size:11.5px;line-height:1.9;color:#1A2332;border:1px solid #D5DFE8;overflow-wrap:anywhere">
           <div style="color:#5A6B7D;margin-bottom:5px">// Schema CSV My Darrin</div>
-          <div><span style="color:#0E9E99">denumire_produs</span> · text · obligatoriu</div>
-          <div><span style="color:#0E9E99">categorie</span> · text (nume exact din listă)</div>
-          <div><span style="color:#FF8C00">nace_cod</span> · text · obligatoriu (ex: 43.22)</div>
-          <div><span style="color:#FF8C00">pret_fara_tva</span> · număr · obligatoriu</div>
-          <div><span style="color:#FF8C00">moneda</span> · RON/EUR/MDL/BGN</div>
-          <div><span style="color:#1A5FAD">stoc_disponibil</span> · număr</div>
+          <div><span style="color:#0E9E99">cod_produs_furnizor</span> · codul tău · obligatoriu</div>
+          <div><span style="color:#0E9E99">denumire_produs</span> · 3–200 caractere · obligatoriu</div>
+          <div><span style="color:#0E9E99">descriere</span> · 100–1.000 caractere · obligatoriu</div>
+          <div><span style="color:#FF8C00">pret_fara_tva</span> / <span style="color:#FF8C00">tarif_zi</span> · număr · obligatoriu</div>
+          <div><span style="color:#FF8C00">nod_menu</span> · slug-ul nodului de meniu · obligatoriu</div>
+          <div><span style="color:#FF8C00">nace_cod</span> · materiale: capitolul G (47.52…) · închirieri: O77 (77.32…)</div>
+          <div><span style="color:#FF8C00">cod_uniclass</span> · Pr_ activ · obligatoriu la materiale</div>
           <div><span style="color:#1A5FAD">imagine_url_1..6</span> · urcate individual în prealabil</div>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:12px">
@@ -1323,8 +1379,10 @@ function renderImport(){
         </div>
         <div id="mp-import-progres" style="margin-top:12px;font-size:11.5px;color:#6B7A8D;white-space:pre-line"></div>
         <div style="margin-top:12px">
-          <button class="btn-p" style="width:100%;justify-content:center" onclick="importaCsvMpAcum()">Importă acum</button>
+          <button class="btn-p" style="width:100%;justify-content:center" onclick="importaCsvMpAcum(this)">Importă acum</button>
         </div>
+        <div id="mp-import-raport"></div>
+        <div id="mp-import-detalii"></div>
       </div>
     </div>
   </div>`;
