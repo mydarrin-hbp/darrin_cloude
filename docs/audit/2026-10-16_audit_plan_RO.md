@@ -259,3 +259,110 @@ Severitate: **critic** = bani greșiți, date expuse sau o funcție de bază car
 - **Front-end:** un fișier comun pentru blocurile repetate (țări active din `/api/public/tari-active`, termene, metoda de plată), ca un text să nu mai fie corectat în 10 pagini; scoaterea ferestrei „KPIs Live” fixe din `mydarrin-investitori.html`.
 - **Conținut (RO + EN):** rescrierea frazelor din tabelele de mai sus, pagină cu pagină, în aceeași sesiune pentru RO și EN (dicționarele `i18n/en/<pagina>.json`); pagina nouă „Cum folosesc marketplace-ul”.
 - **Teste:** detectorul de română în EN (0) pe toate paginile atinse; un test nou care caută în HTML cuvintele interzise până la decizie („pre-autorizat”, „card blocat”, „RO · MD · DE · FR · BG”, „ACA BG”, „SMS”); verificare manuală RO / EN la 390 px și 1366 px.
+
+---
+
+### 2.3 Catalogul de servicii (România)
+
+#### Starea actuală (cu dovezi)
+
+**Confirmare live.** Pagina `/mydarrin-catalog` citește `catalog_servicii` direct prin REST-ul Supabase, cu cheia anon (`mydarrin-catalog.html:5673-5678`). Am făcut aceeași citire (GET, `select=*`, 16 oct.): `Content-Range: 0-225/226`. Toate cifrele lui LM se confirmă:
+
+| Indicator | Valoare live | Cifra LM |
+|---|---|---|
+| Rânduri | 226, toate `stare = publicat`, `status_public = true` | 226 ✓ |
+| Pe categorii | 88 `servicii`, 128 `materiale`, 10 `inchirieri` | ✓ |
+| Rânduri de test („… vN”) | 100, **toate în `materiale`** (ex. „Teava cupru 15mm v34”, „Robinet trecere sferic 1/2 v1”), numerotate v1–v100 | 100 ✓ |
+| Imagini | 223 fără, 1 cu 1–2, 2 cu ≥ 3 (singurul serviciu: „Montaj Parchet Laminat”, 3 imagini) | ✓ |
+| Descriere ≥ 100 caractere | 17 (11 servicii, 6 materiale), toate între 100 și 1.000 | 17 ✓ |
+| Caracteristici tehnice | 0; fișe tehnice 0; etape de lucru 1 | 0 ✓ |
+| Traduceri EN | 0 rânduri cu `traduceri` completat; `/api/public/traduceri-catalog?lang=en` întoarce `_texte: {}` | — |
+| Ruta de încadrare | `nod_id` completat: 0; `ruta_validata_la` completat: 0 | — |
+| Coduri | `cod_esco`: 171; `cod_uniclass`: 159; `categorie_id`: 87 | — |
+| Preț calculabil din rețetă | 24 de servicii (GET `/api/public/servicii-cu-reteta`); 33 de servicii nu au niciun rând în `catalog_niveluri` | — |
+| `rating` | 36 de rânduri au o notă 4,6–4,97 fără nicio recenzie în spate (nu e afișată azi) | — |
+| **Conforme** | **0** | 0 ✓ |
+
+- Nu există coloană de țară: catalogul e comun, prețul se calculează pe țară (`lib/calculeaza-pret.js`).
+- Cheia anon citește toate coloanele tabelului, inclusiv cele interne (`creat_de`, `ruta_rezultat`).
+- Prețurile serviciilor fără rețetă vin din pagină: `mydarrin-produs.html` are `TIER_DB` scris de mână, cu prețuri fixe pe nivel (`:3464`) și calea veche de calcul (vezi 2.1, 1.1-e, 1.1-g).
+
+#### Criteriul „serviciu conform” (propunere)
+Un rând din `catalog_servicii` cu `categorie = servicii` e **conform** dacă îndeplinește toate condițiile:
+1. Titlu în RO și în EN (`traduceri.en.titlu`).
+2. Cel puțin 3 imagini reale (`imagini`), din lucrări reale; nicio imagine generată prezentată ca lucrare reală.
+3. Descriere de 100–1.000 de caractere, în RO și în EN.
+4. Etape de lucru (`etape_lucrare`) completate, RO + EN.
+5. Specificații (`caracteristici_tehnice` sau `fise_tehnice`) completate.
+6. Preț calculabil pentru RO la fiecare nivel activ (fiecare `catalog_niveluri` al serviciului are rețetă tarifată; `api/public/calculeaza-pret-nivel.js` întoarce `disponibil: true`).
+7. Ruta de încadrare validă: `nod_id` completat, `ruta_validata_la` completat, fără erori (`lib/ruta-incadrare.js`).
+
+Verificarea se face în back-office (o coloană „conform / ce lipsește”) și într-un script de test, nu manual.
+
+#### Tabelul pe capitole de meniu
+Capitolul e calculat din clasa NACE a rândului, cu tabelul din `docs/regula-incadrare.md:40-53` (clasele explicite înaintea diviziunilor), pentru că `nod_id` e gol peste tot și `meniu_capitole` nu se poate citi cu cheia anon.
+
+| Capitol | Total | Servicii reale | Rânduri de test | Produse de mutat în marketplace | Servicii cu rețetă (preț calculabil) | Conforme |
+|---|---|---|---|---|---|---|
+| F — Construcții și renovări | 177 | 50 | 100 | 27 | 20 | 0 |
+| N — Proiectare și servicii tehnice | 9 | 9 | 0 | 0 | 0 | 0 |
+| O81 — Curățenie și spații verzi | 11 | 10 | 0 | 1 | 1 | 0 |
+| T — Reparații casă, auto, moto | 7 | 6 | 0 | 1 | 1 | 0 |
+| AGR — Servicii agricole | 1 | 1 | 0 | 0 | 1 | 0 |
+| H — Transport, mutări, curierat | 7 | 7 | 0 | 0 | 1 | 0 |
+| E — Moloz și deșeuri | 0 | 0 | 0 | 0 | 0 | 0 |
+| O77 — Închirieri | 9 | 0 | 0 | 9 | 0 | 0 |
+| G — Aprovizionare materiale | 0 | 0 | 0 | 0 | 0 | 0 |
+| L — Asigurări | 0 | 0 | 0 | 0 | 0 | 0 |
+| O78 — Personal calificat | 0 | 0 | 0 | 0 | 0 | 0 |
+| fără NACE (`nace` gol) | 5 | 5 | 0 | 0 | 0 | 0 |
+| **Total** | **226** | **88** | **100** | **38** | **24** | **0** |
+
+Note:
+- Cele 38 de produse de mutat = 28 de materiale (fără test) + 10 închirieri. Ele apar azi la capitolele F, O81, T și O77 pentru că au clasa NACE a serviciului, nu a comerțului (G) sau a închirierii (O77).
+- 9 rânduri nu au o clasă NACE completă: 5 fără NACE, 2 cu doar diviziunea (`F 41`, `F 43`), 1 cu grupa (`N 77.1`) și 1 de închiriere fără clasă. Ruta nu se poate valida pentru ele.
+- Litera secțiunii NACE din câmpul `nace` e neuniformă: aceeași diviziune 77 apare ca `O 77.32` (6 rânduri) și `N 77.32` / `N 77.39` / `N 77.1` (3 rânduri); în NACE Rev. 2.1, diviziunea 77 e în secțiunea N. La fel `O 81.10` / `N 81.30`. Capitolul se calculează corect din cifre, dar textul se uniformizează când se completează ruta.
+
+#### Probleme
+
+| # | Problemă | Severitate |
+|---|---|---|
+| 1.3-a | 100 de rânduri de test publicate, vizibile public, în catalog | **critic** |
+| 1.3-b | 0 servicii conforme; 223 de rânduri fără imagine; 0 cu caracteristici; 0 traduceri EN în baza de date (contrazice regula bilingvă) | **critic** |
+| 1.3-c | 38 de produse (materiale, închirieri) în catalogul de servicii, din modelul vechi; nu respectă regula „active supplier” (10c) și nu au furnizor | **major** |
+| 1.3-d | Ruta de încadrare goală (`nod_id`, `ruta_validata_la`) pe toate cele 226 de rânduri — de aici și meniul care nu filtrează (vezi 1.5) | **major** |
+| 1.3-e | 64 de servicii reale fără preț calculabil (88 − 24); 33 fără niciun nivel; pentru ele pagina de produs folosește prețuri scrise în cod | **major** |
+| 1.3-f | `rating` 4,6–4,97 pe 36 de rânduri, fără recenzii — date inventate (neafișate azi) | minor |
+| 1.3-g | Cheia anon citește toate coloanele `catalog_servicii` | minor |
+
+#### Decizii pentru LM
+1. **Rândurile de test:** ștergere definitivă (recomandat, dacă nu sunt legate de comenzi) sau doar ascunse (`stare = arhivat`).
+2. **Cele 38 de produse:** reintroduse ca produse HBP (furnizor propriu) în marketplace, prin șabloanele din `docs/sabloane/`, **cu prețuri din lista HBP** (recomandat), sau șterse.
+3. **Serviciile fără rețetă (64):** rămân publicate „la evaluare” (fără preț) sau se ascund până au rețetă? Recomandare: ascunse din catalog, vizibile doar în back-office.
+4. **Imaginile reale:** de unde vin — (a) fotografii HBP din lucrări proprii, (b) fotografii ale partenerilor aprobați, din portofoliu, cu acordul lor scris, (c) imagini de stoc licențiate, marcate vizibil „imagine ilustrativă”. Imaginile generate nu se folosesc ca „lucrare reală”. Recomandare: (a) + (b); (c) doar cu marcaj.
+5. **Câmpul `rating`:** se golește până există recenzii reale.
+
+#### Planul
+**Bază de date (migrări propuse, fiecare într-o tranzacție, rulabilă de mai multe ori, cu verificare la final)**
+1. `AAAA-LL-ZZ_catalog_curatare_test.sql`: listează întâi legăturile rândurilor „vN” (`catalog_relatii`, `catalog_niveluri`, `comenzi.addon_materiale_selectate`, `devize_articole`); apoi `stare = 'arhivat'`, `status_public = false`; ștergerea doar pentru rândurile fără nicio legătură. Verificare: 0 rânduri „vN” publicate.
+2. `AAAA-LL-ZZ_catalog_produse_marketplace.sql`: după importul HBP, cele 38 de produse vechi trec pe `arhivat`; legăturile `catalog_relatii` → produsele noi din marketplace (dacă LM le vrea păstrate).
+3. `AAAA-LL-ZZ_catalog_rating.sql`: `rating = null` unde nu există recenzii.
+4. Opțional: o vedere publică `catalog_servicii_public` (doar coloanele afișate), iar cheia anon citește vederea, nu tabelul.
+
+**Back-end**
+- `api/admin/catalog.js`: câmpul calculat „conform / ce lipsește” pentru fiecare serviciu, după criteriul de mai sus; filtrul „neconforme” în back-office.
+- Publicarea (`stare = publicat`) refuzată pentru un serviciu neconform (după decizia 3).
+- Importul HBP prin `api/marketplace/importa-csv.js` (deja există), cu furnizorul propriu.
+
+**Front-end**
+- `mydarrin-admin-catalog.html` / superadmin: lista neconformităților pe serviciu; încărcarea imaginilor (`api/admin/catalog-imagini.js`, deja există, max. 5) — de ridicat la minimum 3 cerute pentru conformitate.
+- `mydarrin-catalog.html` și `mydarrin-produs.html`: afișează doar serviciile publicate; fără prețuri din `TIER_DB` (legat de 2.1 și 2.5).
+
+**Conținut (RO + EN)**
+- Pentru fiecare dintre cele 88 de servicii: titlu, descriere, etape, specificații, în RO și EN (`traduceri.en`). Lucrul se împarte pe capitole (F întâi: 50 de servicii, dintre care 20 au rețetă).
+- Imaginile, după decizia 4.
+
+**Teste**
+- Script nou `scripts/test-catalog-conformitate.js`: aplică criteriul pe date simulate (fiecare condiție, pe rând).
+- Verificare după migrare: 0 rânduri „vN” publicate; 0 materiale / închirieri în `catalog_servicii` publicate.
+- Detectorul de română în EN pe `/mydarrin-catalog` și pe 3 pagini de serviciu (0).

@@ -259,3 +259,110 @@ Severity: **critical** = wrong money, exposed data or a core function that does 
 - **Front-end:** a shared file for the repeated blocks (active countries from `/api/public/tari-active`, terms, payment method), so that one text is no longer fixed in 10 pages; remove the fixed "KPIs Live" window from `mydarrin-investitori.html`.
 - **Content (RO + EN):** rewrite the sentences in the tables above, page by page, in the same session for RO and EN (the `i18n/en/<page>.json` dictionaries); the new "How to use the marketplace" page.
 - **Tests:** the Romanian detector in EN (0) on every page touched; a new test that searches the HTML for the words banned until the decision ("pre-autorizat", "card blocat", "RO · MD · DE · FR · BG", "ACA BG", "SMS"); a manual RO / EN check at 390 px and 1366 px.
+
+---
+
+### 2.3 The service catalogue (Romania)
+
+#### Current state (with evidence)
+
+**Live confirmation.** The `/mydarrin-catalog` page reads `catalog_servicii` directly through the Supabase REST API, with the anon key (`mydarrin-catalog.html:5673-5678`). I made the same read (GET, `select=*`, 16 Oct): `Content-Range: 0-225/226`. All of LM's figures are confirmed:
+
+| Indicator | Live value | LM's figure |
+|---|---|---|
+| Rows | 226, all `stare = publicat`, `status_public = true` | 226 ✓ |
+| By category | 88 `servicii`, 128 `materiale`, 10 `inchirieri` | ✓ |
+| Test rows ("… vN") | 100, **all in `materiale`** (e.g. "Teava cupru 15mm v34", "Robinet trecere sferic 1/2 v1"), numbered v1–v100 | 100 ✓ |
+| Images | 223 with none, 1 with 1–2, 2 with ≥ 3 (the only service: "Montaj Parchet Laminat", 3 images) | ✓ |
+| Description ≥ 100 characters | 17 (11 services, 6 materials), all between 100 and 1,000 | 17 ✓ |
+| Technical characteristics | 0; technical sheets 0; work stages 1 | 0 ✓ |
+| EN translations | 0 rows with `traduceri` filled in; `/api/public/traduceri-catalog?lang=en` returns `_texte: {}` | — |
+| Classification route | `nod_id` filled in: 0; `ruta_validata_la` filled in: 0 | — |
+| Codes | `cod_esco`: 171; `cod_uniclass`: 159; `categorie_id`: 87 | — |
+| Price computable from a recipe | 24 services (GET `/api/public/servicii-cu-reteta`); 33 services have no row in `catalog_niveluri` | — |
+| `rating` | 36 rows have a 4.6–4.97 rating with no review behind it (not shown today) | — |
+| **Compliant** | **0** | 0 ✓ |
+
+- There is no country column: the catalogue is shared, the price is calculated per country (`lib/calculeaza-pret.js`).
+- The anon key reads every column of the table, including internal ones (`creat_de`, `ruta_rezultat`).
+- The prices of services without a recipe come from the page: `mydarrin-produs.html` has a hand-written `TIER_DB`, with fixed prices per level (`:3464`), and the old calculation path (see 2.1, 1.1-e, 1.1-g).
+
+#### The "compliant service" criterion (proposal)
+A `catalog_servicii` row with `categorie = servicii` is **compliant** if it meets every condition:
+1. Title in RO and in EN (`traduceri.en.titlu`).
+2. At least 3 real images (`imagini`), from real work; no generated image presented as real work.
+3. A description of 100–1,000 characters, in RO and in EN.
+4. Work stages (`etape_lucrare`) filled in, RO + EN.
+5. Specifications (`caracteristici_tehnice` or `fise_tehnice`) filled in.
+6. A price computable for RO at every active level (every `catalog_niveluri` row of the service has a priced recipe; `api/public/calculeaza-pret-nivel.js` returns `disponibil: true`).
+7. A valid classification route: `nod_id` filled in, `ruta_validata_la` filled in, no errors (`lib/ruta-incadrare.js`).
+
+The check is done in the back office (a "compliant / what is missing" column) and in a test script, not by hand.
+
+#### The table per menu chapter
+The chapter is computed from the row's NACE class, with the table in `docs/regula-incadrare.md:40-53` (explicit classes before divisions), because `nod_id` is empty everywhere and `meniu_capitole` cannot be read with the anon key.
+
+| Chapter | Total | Real services | Test rows | Products to move to the marketplace | Services with a recipe (price computable) | Compliant |
+|---|---|---|---|---|---|---|
+| F — Construction and renovation | 177 | 50 | 100 | 27 | 20 | 0 |
+| N — Design and technical services | 9 | 9 | 0 | 0 | 0 | 0 |
+| O81 — Cleaning and green spaces | 11 | 10 | 0 | 1 | 1 | 0 |
+| T — Home, car, motorcycle repairs | 7 | 6 | 0 | 1 | 1 | 0 |
+| AGR — Agricultural services | 1 | 1 | 0 | 0 | 1 | 0 |
+| H — Transport, removals, courier | 7 | 7 | 0 | 0 | 1 | 0 |
+| E — Rubble and waste | 0 | 0 | 0 | 0 | 0 | 0 |
+| O77 — Rentals | 9 | 0 | 0 | 9 | 0 | 0 |
+| G — Material supplies | 0 | 0 | 0 | 0 | 0 | 0 |
+| L — Insurance | 0 | 0 | 0 | 0 | 0 | 0 |
+| O78 — Skilled staff | 0 | 0 | 0 | 0 | 0 | 0 |
+| no NACE (`nace` empty) | 5 | 5 | 0 | 0 | 0 | 0 |
+| **Total** | **226** | **88** | **100** | **38** | **24** | **0** |
+
+Notes:
+- The 38 products to move = 28 materials (non-test) + 10 rentals. Today they sit in chapters F, O81, T and O77 because they carry the service's NACE class, not the trade class (G) or the rental class (O77).
+- 9 rows have no complete NACE class: 5 without NACE, 2 with only the division (`F 41`, `F 43`), 1 with the group (`N 77.1`) and 1 rental without a class. The route cannot be validated for them.
+- The NACE section letter in the `nace` field is inconsistent: the same division 77 appears as `O 77.32` (6 rows) and as `N 77.32` / `N 77.39` / `N 77.1` (3 rows); in NACE Rev. 2.1, division 77 is in section N. The same for `O 81.10` / `N 81.30`. The chapter is computed correctly from the digits, but the text is to be made uniform when the route is filled in.
+
+#### Problems
+
+| # | Problem | Severity |
+|---|---|---|
+| 1.3-a | 100 test rows published, publicly visible, in the catalogue | **critical** |
+| 1.3-b | 0 compliant services; 223 rows with no image; 0 with characteristics; 0 EN translations in the database (contradicts the bilingual rule) | **critical** |
+| 1.3-c | 38 products (materials, rentals) in the service catalogue, left from the old model; they do not follow the "active supplier" rule (10c) and have no supplier | **major** |
+| 1.3-d | The classification route is empty (`nod_id`, `ruta_validata_la`) on all 226 rows — this is also why the menu does not filter (see 1.5) | **major** |
+| 1.3-e | 64 real services with no computable price (88 − 24); 33 with no level at all; for them the product page uses prices written in the code | **major** |
+| 1.3-f | `rating` 4.6–4.97 on 36 rows, with no reviews — invented data (not shown today) | minor |
+| 1.3-g | The anon key reads every `catalog_servicii` column | minor |
+
+#### Decisions for LM
+1. **Test rows:** permanent deletion (recommended, if they are not linked to orders) or just hidden (`stare = arhivat`).
+2. **The 38 products:** re-entered as HBP products (own supplier) in the marketplace, through the templates in `docs/sabloane/`, **with prices from the HBP price list** (recommended), or deleted.
+3. **Services without a recipe (64):** do they stay published "under assessment" (no price) or are they hidden until they have a recipe? Recommendation: hidden from the catalogue, visible only in the back office.
+4. **Real images:** where they come from — (a) HBP photos of its own work, (b) photos from approved partners, from their portfolio, with their written consent, (c) licensed stock images, visibly marked "illustrative image". Generated images are not used as "real work". Recommendation: (a) + (b); (c) only with the label.
+5. **The `rating` field:** emptied until there are real reviews.
+
+#### The plan
+**Database (proposed migrations, each in one transaction, re-runnable, with a final check)**
+1. `YYYY-MM-DD_catalog_curatare_test.sql`: first lists the links of the "vN" rows (`catalog_relatii`, `catalog_niveluri`, `comenzi.addon_materiale_selectate`, `devize_articole`); then `stare = 'arhivat'`, `status_public = false`; deletion only for rows with no link at all. Check: 0 published "vN" rows.
+2. `YYYY-MM-DD_catalog_produse_marketplace.sql`: after the HBP import, the 38 old products move to `arhivat`; `catalog_relatii` links → the new marketplace products (if LM wants them kept).
+3. `YYYY-MM-DD_catalog_rating.sql`: `rating = null` where there are no reviews.
+4. Optional: a public view `catalog_servicii_public` (only the displayed columns), and the anon key reads the view, not the table.
+
+**Back-end**
+- `api/admin/catalog.js`: the computed field "compliant / what is missing" for each service, using the criterion above; a "non-compliant" filter in the back office.
+- Publishing (`stare = publicat`) refused for a non-compliant service (after decision 3).
+- The HBP import through `api/marketplace/importa-csv.js` (already exists), with the own supplier.
+
+**Front-end**
+- `mydarrin-admin-catalog.html` / superadmin: the list of non-compliances per service; image upload (`api/admin/catalog-imagini.js`, already exists, max. 5) — with a minimum of 3 required for compliance.
+- `mydarrin-catalog.html` and `mydarrin-produs.html`: show only published services; no prices from `TIER_DB` (linked to 2.1 and 2.5).
+
+**Content (RO + EN)**
+- For each of the 88 services: title, description, stages, specifications, in RO and EN (`traduceri.en`). The work is split by chapter (F first: 50 services, of which 20 have a recipe).
+- Images, after decision 4.
+
+**Tests**
+- New script `scripts/test-catalog-conformitate.js`: applies the criterion on simulated data (each condition in turn).
+- Check after the migration: 0 published "vN" rows; 0 published materials / rentals in `catalog_servicii`.
+- The Romanian detector in EN on `/mydarrin-catalog` and on 3 service pages (0).
