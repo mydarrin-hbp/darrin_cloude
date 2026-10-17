@@ -1498,7 +1498,7 @@ function triggerHeaderSearch(){
       <div id="tab-escrow" class="hidden reveal space-y-4">
         <h2 class="text-lg font-bold text-[#003366] flex items-center gap-2"><i data-lucide="lock" class="w-5 h-5 text-[#FF8C00]"></i>Plăți Escrow</h2>
         <div class="grid grid-cols-2 gap-4">
-          <div class="kpi-card"><div class="kpi-val text-[#FF8C00]" id="esc-blocat">—</div><div class="kpi-label">Blocat în escrow</div></div>
+          <div class="kpi-card"><div class="kpi-val text-[#FF8C00]" id="esc-blocat">—</div><div class="kpi-label">Păstrat în escrow</div></div>
           <div class="kpi-card"><div class="kpi-val text-[#1A7A3A]" id="esc-eliberat">—</div><div class="kpi-label">Eliberat din escrow</div></div>
         </div>
         <div class="bg-white rounded-2xl border border-[#D5DFE8] overflow-hidden">
@@ -3009,7 +3009,7 @@ function randeazaEscrowReal() {
   if (!COMENZI_REALE.length) { lista.innerHTML = STARE_GOALA_CLIENT; return; }
   lista.innerHTML = COMENZI_REALE.map(c => `
     <div class="px-5 py-4 flex items-center justify-between gap-3">
-      <div><div class="font-semibold text-sm text-[#2D2D2D]">${c.escrow_eliberat ? 'Eliberat din escrow' : 'Blocat în escrow'}</div><div class="text-xs text-[#8C9BAD]">${_ziC(c.creat_la)} · ${_escC(c.nr_comanda || c.id.slice(0, 8))}</div></div>
+      <div><div class="font-semibold text-sm text-[#2D2D2D]">${c.escrow_eliberat ? 'Eliberat din escrow' : 'Păstrat în escrow'}</div><div class="text-xs text-[#8C9BAD]">${_ziC(c.creat_la)} · ${_escC(c.nr_comanda || c.id.slice(0, 8))}</div></div>
       <span class="font-bold ${c.escrow_eliberat ? 'text-[#1A7A3A]' : 'text-[#FF8C00]'}">${_baniC(c.suma_totala_platita, c.moneda)}</span>
     </div>`).join('');
 }
@@ -3351,7 +3351,7 @@ function daiRespond(query){
     response = 'Pentru instalații electrice avem 6 servicii disponibile: reparații, înlocuire becuri, montaj tablou, testare instalație și consultanță. Te duc direct la categoria potrivită.';
     actionLabel = 'Vezi servicii electrice →'; actionUrl = 'mydarrin-catalog.html?cat=instalatii-electrice';
   } else if (q.includes('funcționează') || q.includes('functioneaza')) {
-    response = 'Simplu: alegi un serviciu din catalog, completezi un deviz în 60 secunde cu Darrin AI, plătești în Escrow (sigur, blocat până la finalizare), iar un partener verificat execută lucrarea cu garanție digitală.';
+    response = 'Simplu: alegi un serviciu din catalog, vezi prețul calculat pentru nivelul ales, plătești către Home Best Pal SRL, iar suma este păstrată ca garanție până la confirmarea lucrării executate de un partener aprobat.';
     actionLabel = 'Cum funcționează, detaliat →'; actionUrl = 'mydarrin-cum-functioneaza.html';
   } else if (q.includes('partener')) {
     response = 'Excelent! Înregistrarea ca partener e gratuită — alegi tipul (Servicii, Materiale sau Închirieri), completezi datele firmei și primești comenzi direct prin platformă.';

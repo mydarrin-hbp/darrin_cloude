@@ -1214,7 +1214,7 @@ function triggerHeaderSearch(){
     <div class="text-center mb-14">
       <div class="reveal inline-flex items-center gap-2 bg-[#E0F5F4] text-[#0E9E99] text-[11px] font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-4"><i data-lucide="route" class="w-3.5 h-3.5"></i> Flux operațional</div>
       <h2 class="reveal d1 text-4xl font-bold text-[#2D2D2D] mb-3" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">De la cerere la decontare</h2>
-      <p class="reveal d2 text-gray-400 text-sm max-w-md mx-auto">Alocare simultană sarcini + sume, escrow securizat, decontare automată max 5 zile.</p>
+      <p class="reveal d2 text-gray-400 text-sm max-w-md mx-auto">Alocarea sarcinilor, suma păstrată ca garanție (escrow) și plata partenerilor după confirmarea lucrării.</p>
     </div>
 
     <div class="reveal flex flex-col items-center select-none">
@@ -1239,7 +1239,7 @@ function triggerHeaderSearch(){
       <div class="flex flex-col items-center"><div class="flow-box bg-white border-gray-200 text-[#2D2D2D] shadow-sm text-center" style="max-width:280px"><div class="text-base mb-1"><i data-lucide="camera" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div><div class="font-bold">Confirmare Finalizare</div><div class="text-[11px] text-gray-400 font-normal mt-0.5">Client + Prestator + Dovezi Foto/Video</div></div><div class="flow-arrow"></div></div>
       <div class="flex flex-col items-center"><div class="flow-box bg-[#E0F5F4] border-[#0E9E99]/30 text-[#0E9E99] px-10"><span class="mr-1.5"><i data-lucide="badge-check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Validare Automată</div><div class="flow-arrow"></div></div>
       <div class="flex flex-col items-center"><div class="flow-box text-white font-bold px-10 shadow-md" style="background:#003366;border-color:#003366"><span class="mr-1.5"><i data-lucide="lock" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Eliberare Sume din Escrow</div><div class="flow-arrow"></div></div>
-      <div class="flex flex-col items-center"><div class="flow-box bg-green-50 border-green-200 text-green-700 text-center" style="max-width:280px"><div class="text-base mb-1"><i data-lucide="banknote" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div><div class="font-bold">Decontare în Conturile Actorilor</div><div class="text-[11px] text-green-500 font-normal mt-0.5">max 5 zile lucrătoare</div></div></div>
+      <div class="flex flex-col items-center"><div class="flow-box bg-green-50 border-green-200 text-green-700 text-center" style="max-width:280px"><div class="text-base mb-1"><i data-lucide="banknote" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div><div class="font-bold">Decontare în Conturile Actorilor</div><div data-regula-bloc hidden class="text-[11px] text-green-500 font-normal mt-0.5">în cel mult <span data-regula="termen-plata-partener"></span> de la eliberare</div></div></div>
     </div>
   </div>
 </section>
@@ -2449,7 +2449,8 @@ if(document.readyState==='loading'){
       <div class="reveal" style="background:#F4F7F9;border-radius:18px;padding:24px;border:1px solid #D5DFE8">
         <div style="font-size:32px;margin-bottom:12px"><i data-lucide="lock" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
         <div style="font-weight:700;color:#003366;font-size:14px;margin-bottom:8px">Escrow securizat</div>
-        <p style="font-size:12.5px;color:#6B7A8D;line-height:1.7">Suma totală blocată la plasarea comenzii. Eliberată partenerilor DOAR după ce clientul confirmă execuția. Bani în siguranță pentru toți.</p>
+        <p style="font-size:12.5px;color:#6B7A8D;line-height:1.7">Suma totală este păstrată ca garanție de la plasarea comenzii și se eliberează partenerilor doar după confirmarea execuției. Bani în siguranță pentru toți.</p>
+        <p data-regula-bloc hidden style="font-size:12.5px;color:#6B7A8D;line-height:1.7;margin-top:6px">Confirmarea tacită are loc după <strong data-regula="confirmare-tacita"></strong> de la raportarea finalizării de către partener, dacă nu există o reclamație deschisă.</p>
       </div>
       <div class="reveal d1" style="background:#F4F7F9;border-radius:18px;padding:24px;border:1px solid #D5DFE8">
         <div style="font-size:32px;margin-bottom:12px"><i data-lucide="bot" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
@@ -3180,7 +3181,7 @@ function daiRespond(query){
     response = 'Pentru instalații electrice avem 6 servicii disponibile: reparații, înlocuire becuri, montaj tablou, testare instalație și consultanță. Te duc direct la categoria potrivită.';
     actionLabel = 'Vezi servicii electrice →'; actionUrl = 'mydarrin-catalog.html?cat=instalatii-electrice';
   } else if (q.includes('funcționează') || q.includes('functioneaza')) {
-    response = 'Simplu: alegi un serviciu din catalog, completezi un deviz în 60 secunde cu Darrin AI, plătești în Escrow (sigur, blocat până la finalizare), iar un partener verificat execută lucrarea cu garanție digitală.';
+    response = 'Simplu: alegi un serviciu din catalog, vezi prețul calculat pentru nivelul ales, plătești către Home Best Pal SRL, iar suma este păstrată ca garanție până la confirmarea lucrării executate de un partener aprobat.';
     actionLabel = 'Cum funcționează, detaliat →'; actionUrl = 'mydarrin-cum-functioneaza.html';
   } else if (q.includes('partener')) {
     response = 'Excelent! Înregistrarea ca partener e gratuită — alegi tipul (Servicii, Materiale sau Închirieri), completezi datele firmei și primești comenzi direct prin platformă.';
@@ -3341,6 +3342,7 @@ function daiSendMessage(){
 </div>
 <script src="statistici-publice.js" defer></script>
 <script src="ui-comun.js" defer></script>
+<script src="reguli-platforma.js" defer></script>
 <script src="contact-public.js" defer></script>
 </body>
 </html>

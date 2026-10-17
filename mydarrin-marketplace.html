@@ -1466,7 +1466,7 @@ function triggerHeaderSearch(){
               </div>
               <div style="display:flex;gap:12px;padding:12px;background:#F4F7F9;border-radius:12px">
                 <div class="stp stp-pending">4</div>
-                <div><div style="font-weight:700;color:#003366;font-size:13px;margin-bottom:3px">Tu livrezi · Platforma plătește</div><div style="font-size:12px;color:#6B7A8D;line-height:1.6">Suma facturată cu discountul tău, eliberată din Escrow în maximum 5 zile lucrătoare de la confirmarea clientului.</div></div>
+                <div><div style="font-weight:700;color:#003366;font-size:13px;margin-bottom:3px">Tu livrezi · Platforma plătește</div><div style="font-size:12px;color:#6B7A8D;line-height:1.6">Suma facturată către Home Best Pal SRL, cu discountul tău, se eliberează din escrow după confirmarea clientului. <span data-regula-bloc hidden>Primești plata în cel mult <strong data-regula="termen-plata-partener"></strong> de la eliberarea sumei.</span></div></div>
               </div>
             </div>
           </div>
@@ -1494,8 +1494,8 @@ function triggerHeaderSearch(){
                     <td style="text-align:right;padding:14px 20px"><span style="font-weight:800;color:#003366;font-size:15px">discount 5–15%</span></td>
                   </tr>
                   <tr>
-                    <td style="color:#6B7A8D;padding:14px 20px">Plată Escrow (eliberare)</td>
-                    <td style="text-align:right;padding:14px 20px"><span style="font-weight:800;color:#003366;font-size:15px">max. 5 zile lucrătoare</span></td>
+                    <td style="color:#6B7A8D;padding:14px 20px">Plata după eliberarea sumei din escrow</td>
+                    <td style="text-align:right;padding:14px 20px"><span data-regula-bloc hidden style="font-weight:800;color:#003366;font-size:15px">max. <span data-regula="termen-plata-partener"></span></span></td>
                   </tr>
                   <tr style="background:rgba(14,158,153,.05)">
                     <td colspan="2" style="padding:12px 20px">
@@ -1571,7 +1571,7 @@ function triggerHeaderSearch(){
                   <span style="font-weight:800;font-size:15px;color:#003366">Încasare NETĂ furnizor</span>
                   <span style="font-weight:800;font-size:20px;color:#FF8C00" id="sim-net">18.600 Lei</span>
                 </div>
-                <div style="font-size:11px;color:#8C9BAD;text-align:center;margin-top:4px" id="sim-note">Plată Escrow în maximum 5 zile lucrătoare · TVA separat</div>
+                <div style="font-size:11px;color:#8C9BAD;text-align:center;margin-top:4px" id="sim-note">Plată prin escrow, după confirmare · TVA separat</div>
               </div>
             </div>
             <div style="display:flex;gap:10px;margin-top:16px">
@@ -1675,7 +1675,7 @@ function triggerHeaderSearch(){
       <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:40px 40px;pointer-events:none"></div>
       <div style="position:relative">
         <h3 style="font-size:26px;font-weight:800;color:#fff;margin-bottom:10px">Gata să intri în marketplace?</h3>
-        <p style="font-size:14px;color:rgba(255,255,255,.5);max-width:500px;margin:0 auto 28px;line-height:1.75">Înregistrare în 5 minute · 0 lei · KYC 24h · Discount comercial 5–15% · Plată Escrow în maximum 5 zile lucrătoare · Darrin AI alocă automat comenzile</p>
+        <p style="font-size:14px;color:rgba(255,255,255,.5);max-width:500px;margin:0 auto 28px;line-height:1.75">Înregistrare gratuită · Discount comercial 5–15% · Plată prin escrow, după confirmare</p>
         <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
           <button onclick="switchMpTab('cont',document.getElementById('mpt-cont'));document.getElementById('mp-tabs-section').scrollIntoView({behavior:'smooth'})" class="btn-p" style="font-size:15px;padding:16px 32px">
             Înregistrează cont furnizor
@@ -2836,7 +2836,7 @@ function calcSim(){
   setEl('sim-brut', brut.toLocaleString('ro-RO')+' Lei');
   setEl('sim-com-sum', '-'+comSum.toLocaleString('ro-RO')+' Lei');
   setEl('sim-net', net.toLocaleString('ro-RO')+' Lei');
-  const note = tip==='mat'?'Materiale · discount 5–15% · Plată Escrow în max. 5 zile lucrătoare':'Echipamente · discount 5–15% · Plată Escrow în max. 5 zile lucrătoare';
+  const note = tip==='mat'?'Materiale · discount 5–15% · Plată prin escrow, după confirmare':'Echipamente · discount 5–15% · Plată prin escrow, după confirmare';
   setEl('sim-note', note);
 }
 
@@ -3439,7 +3439,7 @@ function daiRespond(query){
     response = 'Pentru instalații electrice avem 6 servicii disponibile: reparații, înlocuire becuri, montaj tablou, testare instalație și consultanță. Te duc direct la categoria potrivită.';
     actionLabel = 'Vezi servicii electrice →'; actionUrl = 'mydarrin-catalog.html?cat=instalatii-electrice';
   } else if (q.includes('funcționează') || q.includes('functioneaza')) {
-    response = 'Simplu: alegi un serviciu din catalog, completezi un deviz în 60 secunde cu Darrin AI, plătești în Escrow (sigur, blocat până la finalizare), iar un partener verificat execută lucrarea cu garanție digitală.';
+    response = 'Simplu: alegi un serviciu din catalog, vezi prețul calculat pentru nivelul ales, plătești către Home Best Pal SRL, iar suma este păstrată ca garanție până la confirmarea lucrării executate de un partener aprobat.';
     actionLabel = 'Cum funcționează, detaliat →'; actionUrl = 'mydarrin-cum-functioneaza.html';
   } else if (q.includes('partener')) {
     response = 'Excelent! Înregistrarea ca partener e gratuită — alegi tipul (Servicii, Materiale sau Închirieri), completezi datele firmei și primești comenzi direct prin platformă.';
@@ -3599,6 +3599,7 @@ function daiSendMessage(){
 </div>
 <script src="statistici-publice.js" defer></script>
 <script src="ui-comun.js" defer></script>
+<script src="reguli-platforma.js" defer></script>
 <script src="contact-public.js" defer></script>
 </body>
 </html>

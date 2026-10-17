@@ -1897,7 +1897,7 @@ function triggerHeaderSearch(){
           <div style="padding:14px;max-height:180px;overflow-y:auto;font-size:12px;color:#6B7A8D;line-height:1.75">
             <p style="margin-bottom:8px"><strong style="color:#2D2D2D">1. Antreprenor general.</strong> Home Best Pal SRL (My Darrin) acționează ca antreprenor general. Clientul contractează cu HBP SRL.</p>
             <p style="margin-bottom:8px"><strong style="color:#2D2D2D">2. Confidențialitate parteneri.</strong> Identitățile reale ale partenerilor sunt confidențiale. Operează sub pseudonim + cod unic.</p>
-            <p style="margin-bottom:8px"><strong style="color:#2D2D2D">3. Plată Escrow.</strong> Suma totală blocată în escrow la plasare. Eliberată după confirmarea clientului, max. 5 zile lucrătoare.</p>
+            <p style="margin-bottom:8px"><strong style="color:#2D2D2D">3. Plată Escrow.</strong> Plata se face cu cardul, prin procesatorul de plăți, sau prin transfer bancar către Home Best Pal SRL. Suma totală este păstrată ca garanție și se eliberează după confirmarea clientului. <span data-regula-bloc hidden>Confirmarea tacită are loc după <strong data-regula="confirmare-tacita"></strong> de la raportarea finalizării de către partener, dacă nu există o reclamație deschisă.</span></p>
             <p style="margin-bottom:8px"><strong style="color:#2D2D2D">4. Alocare Darrin AI.</strong> Sistemul alocă automat partenerii competenți, apropiați și disponibili. Nu poți contacta direct partenerii.</p>
             <p style="margin-bottom:8px"><strong style="color:#2D2D2D">5. Garanție digitală.</strong> Cod unic descărcabil din dashboard. Transferabilă.</p>
             <p style="margin-bottom:8px"><strong style="color:#2D2D2D">6. Anulare.</strong> Fără costuri cu min. 4h înainte. Post-alocare: taxă 10% din valoare.</p>
@@ -1916,7 +1916,7 @@ function triggerHeaderSearch(){
           </label>
           <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
             <input type="checkbox" id="chk-escrow" onchange="checkAccepts()" style="width:18px;height:18px;margin-top:2px;accent-color:#FF8C00;flex-shrink:0;cursor:pointer"/>
-            <span style="font-size:13px;color:#2D2D2D">Înțeleg că suma este blocată în <strong>Escrow securizat</strong> și eliberată după confirmare</span>
+            <span style="font-size:13px;color:#2D2D2D">Înțeleg că suma este păstrată ca garanție (<strong>escrow</strong>) și eliberată după confirmare</span>
           </label>
         </div>
         <div style="display:flex;gap:12px">
@@ -1978,46 +1978,19 @@ function triggerHeaderSearch(){
       <div class="sec-hdr" onclick="toggleSec(5)">
         <div style="display:flex;align-items:center;gap:12px">
           <div class="sec-num sn-pending" id="sn-5">5</div>
-          <div><div style="font-weight:700;color:#003366;font-size:14px">Card bancar — validare & autorizare Escrow</div>
-          <div style="font-size:11.5px;color:#8C9BAD">Cardul trebuie să acopere suma totală</div></div>
+          <div><div style="font-weight:700;color:#003366;font-size:14px">Plată — cum funcționează</div>
+          <div style="font-size:11.5px;color:#8C9BAD">Metoda de plată se alege în checkout</div></div>
         </div>
         <svg id="arr-5" width="18" height="18" fill="none" stroke="#8C9BAD" stroke-width="2" viewBox="0 0 24 24" style="transition:transform .2s;flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
       <div class="sec-body" id="sb-5">
         <div style="background:#EBF4FB;border-radius:14px;border:1px solid #D6E8F5;padding:14px;margin-bottom:18px;display:flex;align-items:flex-start;gap:10px">
           <svg width="20" height="20" fill="none" stroke="#1A5FAD" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:1px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          <div style="font-size:12.5px;color:#1A5FAD;line-height:1.65"><strong>Plată Escrow securizată.</strong> Suma <strong id="esc-amount">—</strong> va fi blocată și eliberată DOAR după ce confirmi finalizarea.</div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-          <div style="grid-column:1/-1">
-            <label class="f-label">Titular card *</label>
-            <input type="text" class="f-input" id="card-name" placeholder="POPESCU ANDREI" style="text-transform:uppercase" oninput="valCard()"/>
-          </div>
-          <div style="grid-column:1/-1">
-            <label class="f-label">Număr card *</label>
-            <div class="card-wrap">
-              <input type="text" class="f-input" id="card-num" placeholder="•••• •••• •••• ••••" maxlength="19" oninput="fmtCard(this);valCard()" style="letter-spacing:.12em;font-family:monospace"/>
-              <span class="card-icon" id="card-ico"><i data-lucide="credit-card" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>
-            </div>
-          </div>
-          <div><label class="f-label">Expirare *</label><input type="text" class="f-input" id="card-exp" placeholder="MM/AA" maxlength="5" oninput="fmtExp(this);valCard()"/></div>
-          <div><label class="f-label">CVV *</label><input type="password" class="f-input" id="card-cvv" placeholder="•••" maxlength="4" oninput="valCard()"/></div>
-        </div>
-        <div id="card-st" style="display:none;padding:10px 14px;border-radius:10px;margin-bottom:14px;font-size:12.5px;font-weight:600"></div>
-        <!-- Saved cards -->
-        <div style="background:#F4F7F9;border-radius:14px;padding:13px;margin-bottom:18px">
-          <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:9px">Sau selectează card salvat</div>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <div onclick="selSavedCard('visa','4521','09/28')" style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fff;border-radius:11px;border:1.5px solid #D5DFE8;cursor:pointer;transition:all .18s" onmouseover="this.style.borderColor='#FF8C00'" onmouseout="this.style.borderColor='#D5DFE8'">
-              <span style="font-size:22px"><i data-lucide="credit-card" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>
-              <div style="flex:1"><div style="font-weight:600;font-size:13px;color:#2D2D2D">Visa •••• 4521</div><div style="font-size:11px;color:#8C9BAD">Expiră 09/28 · Fonduri suficiente</div></div>
-              <span style="font-size:9.5px;background:#D4EDDA;color:#1A7A3A;padding:2px 8px;border-radius:99px;font-weight:700">Verificat</span>
-            </div>
-            <div onclick="selSavedCard('mc','8834','03/27')" style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fff;border-radius:11px;border:1.5px solid #D5DFE8;cursor:pointer;transition:all .18s" onmouseover="this.style.borderColor='#FF8C00'" onmouseout="this.style.borderColor='#D5DFE8'">
-              <span style="font-size:22px"><i data-lucide="credit-card" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>
-              <div style="flex:1"><div style="font-weight:600;font-size:13px;color:#2D2D2D">Mastercard •••• 8834</div><div style="font-size:11px;color:#8C9BAD">Expiră 03/27</div></div>
-              <span style="font-size:9.5px;background:#EBF4FB;color:#1A5FAD;padding:2px 8px;border-radius:99px;font-weight:700">Disponibil</span>
-            </div>
+          <div style="font-size:12.5px;color:#1A5FAD;line-height:1.65">
+            <p style="margin:0 0 6px"><strong>Plată prin escrow.</strong> Suma <strong id="esc-amount">—</strong> este păstrată ca garanție și ajunge la partener după confirmarea lucrării.</p>
+            <p style="margin:0 0 6px">Plata se face cu cardul, prin procesatorul de plăți, sau prin transfer bancar către Home Best Pal SRL.</p>
+            <p data-regula-bloc hidden style="margin:0 0 6px">Metode de plată disponibile acum: <span data-regula="metode-plata"></span></p>
+            <p data-regula-bloc hidden style="margin:0">Dacă nu confirmi și nu deschizi o reclamație, lucrarea se consideră confirmată după <strong data-regula="confirmare-tacita"></strong> de la raportarea finalizării de către partener.</p>
           </div>
         </div>
         <div style="display:flex;gap:12px">
@@ -2033,7 +2006,7 @@ function triggerHeaderSearch(){
         <div style="display:flex;align-items:center;gap:12px">
           <div class="sec-num sn-pending" id="sn-6"><i data-lucide="rocket" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
           <div><div style="font-weight:700;color:#003366;font-size:14px" data-i18n="produs.section6.title">Lansare comandă & Dispatch Darrin AI</div>
-          <div style="font-size:11.5px;color:#8C9BAD" data-i18n="produs.section6.subtitle">Confirmă și lansează · Escrow blocat la lansare</div></div>
+          <div style="font-size:11.5px;color:#8C9BAD" data-i18n="produs.section6.subtitle">Confirmă și lansează · Suma păstrată ca garanție</div></div>
         </div>
         <svg id="arr-6" width="18" height="18" fill="none" stroke="#8C9BAD" stroke-width="2" viewBox="0 0 24 24" style="transition:transform .2s;flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
@@ -2060,7 +2033,7 @@ function triggerHeaderSearch(){
             <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#0E9E99;margin-bottom:6px" data-i18n="produs.after_launch.title">Ce se întâmplă după finalizare</div>
             <div style="font-size:12.5px;color:#2D2D2D;line-height:1.75" data-i18n-html="produs.after_launch.body">
               Platforma caută un partener eligibil din zona ta, pe baza competențelor și disponibilității declarate.<br>
-              <strong>Suma e blocată în Escrow</strong> până la confirmarea execuției — nu e transferată direct.<br>
+              <strong>Suma plătită este păstrată ca garanție (escrow)</strong> până la confirmarea execuției — nu e transferată direct partenerului.<br>
               Poți urmări statusul comenzii oricând din contul tău.
             </div>
           </div>
@@ -5028,32 +5001,7 @@ function selTime(oraInceput,oraSfarsit,el){
   recalc();
 }
 
-// ══ CARD ══
-function fmtCard(el){ let v=el.value.replace(/\D/g,'').substring(0,16); el.value=v.replace(/(.{4})/g,'$1 ').trim(); }
-function fmtExp(el){ let v=el.value.replace(/\D/g,'').substring(0,4); if(v.length>2)v=v.substring(0,2)+'/'+v.substring(2); el.value=v; }
-function valCard(){
-  const n=document.getElementById('card-num')?.value.replace(/\s/g,'')||'';
-  const e=document.getElementById('card-exp')?.value||'';
-  const c=document.getElementById('card-cvv')?.value||'';
-  const nm=document.getElementById('card-name')?.value||'';
-  const valid=n.length===16&&e.length===5&&c.length>=3&&nm.length>=3;
-  S.cardValid=valid;
-  const st=document.getElementById('card-st');
-  if(st){
-    if(valid){ st.style.display='block';st.style.cssText='display:block;padding:10px 14px;border-radius:10px;margin-bottom:14px;font-size:12.5px;font-weight:600;background:#D4EDDA;color:#1A7A3A;border:1px solid rgba(26,122,58,.2)';st.textContent='Card valid · Fonduri verificate · Suma '+fmtCurrency(S.total)+' disponibilă'; }
-    else if(n.length>0){ st.style.display='block';st.style.cssText='display:block;padding:10px 14px;border-radius:10px;margin-bottom:14px;font-size:12.5px;font-weight:600;background:#F4F7F9;color:#8C9BAD;border:1px solid #D5DFE8';st.textContent='Completează toate câmpurile cardului...'; }
-    else st.style.display='none';
-  }
-}
-function selSavedCard(type,last4,exp){
-  document.getElementById('card-num').value='•••• •••• •••• '+last4;
-  document.getElementById('card-exp').value=exp;
-  document.getElementById('card-cvv').value='•••';
-  document.getElementById('card-name').value='POPESCU ANDREI';
-  S.cardValid=true;
-  const st=document.getElementById('card-st');
-  if(st){ st.style.display='block';st.style.cssText='display:block;padding:10px 14px;border-radius:10px;margin-bottom:14px;font-size:12.5px;font-weight:600;background:#D4EDDA;color:#1A7A3A;border:1px solid rgba(26,122,58,.2)';st.textContent='Card '+type.toUpperCase()+' selectat · Fonduri suficiente confirmate'; }
-}
+// (Formularul de card simulat — „Fonduri verificate”, carduri salvate inventate — scos în pasul 11-A: plata se alege în checkout.)
 
 // ══ STEP MANAGEMENT ══
 function completeStep(step){
@@ -5238,7 +5186,7 @@ function daiRespond(query){
     response = 'Pentru instalații electrice avem 6 servicii disponibile: reparații, înlocuire becuri, montaj tablou, testare instalație și consultanță. Te duc direct la categoria potrivită.';
     actionLabel = 'Vezi servicii electrice →'; actionUrl = 'mydarrin-catalog.html?cat=instalatii-electrice';
   } else if (q.includes('funcționează') || q.includes('functioneaza')) {
-    response = 'Simplu: alegi un serviciu din catalog, completezi un deviz în 60 secunde cu Darrin AI, plătești în Escrow (sigur, blocat până la finalizare), iar un partener verificat execută lucrarea cu garanție digitală.';
+    response = 'Simplu: alegi un serviciu din catalog, vezi prețul calculat pentru nivelul ales, plătești către Home Best Pal SRL, iar suma este păstrată ca garanție până la confirmarea lucrării executate de un partener aprobat.';
     actionLabel = 'Cum funcționează, detaliat →'; actionUrl = 'mydarrin-cum-functioneaza.html';
   } else if (q.includes('partener')) {
     response = 'Excelent! Înregistrarea ca partener e gratuită — alegi tipul (Servicii, Materiale sau Închirieri), completezi datele firmei și primești comenzi direct prin platformă.';
@@ -5399,6 +5347,7 @@ function daiSendMessage(){
 </div>
 <script src="statistici-publice.js" defer></script>
 <script src="ui-comun.js" defer></script>
+<script src="reguli-platforma.js" defer></script>
 <script src="contact-public.js" defer></script>
 </body>
 </html>
