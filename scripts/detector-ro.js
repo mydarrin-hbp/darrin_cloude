@@ -9,6 +9,10 @@
 //     selector; numele proprii, orașele și adresele sunt excluse;
 //   - chei netraduse afișate (ex. nav.contact);
 //   - erori JS, depășiri pe orizontală, butoane / intrări de meniu ieșite din chenar;
+//   - dacă pagina s-a încărcat și s-a randat (pasul 11-H1): o pagină care nu
+//     s-a încărcat (server oprit, 404) sau a rămas albă / la „Se verifică
+//     accesul...” e raportată ca NERANDATĂ și detectorul iese cu cod 1 — nu
+//     mai trece drept „0 texte românești”;
 //   - aceleași verificări cu meniul lateral, fereastra de cont și preferințele
 //     cookie deschise.
 // LIMBA=ro rulează testul inversat (selector → română: doar chei netraduse,
@@ -23,9 +27,21 @@
 // Playwright instalat separat (nu e dependență a proiectului):
 //   npm i --no-save playwright && npx playwright install chromium
 //
+// Depășirea pe orizontală (pasul 11-H1): pe lângă scrollWidth, se măsoară
+// marginea dreaptă a fiecărui element vizibil. Paginile cu html/body
+// { overflow-x: clip } ascund depășirea de scrollWidth, dar conținutul tot e
+// tăiat; elementele din containere derulabile (overflow-x: auto / scroll) și
+// sertarele închise (complet în afara ecranului) nu se numără.
+//
+// Captura se face înaintea stărilor ascunse (meniu, cont, cookie), ca să
+// arate pagina, nu fereastra de preferințe.
+//
 // Utilizare:
 //   node scripts/detector-ro.js [--base http://localhost:3000] [--latimi 390,1366]
-//                               [--out ./detector-out] [--cu-cont] [pagina ...]
+//                               [--out ./detector-out] [--cu-cont]
+//                               [--profil extern|propriu|inchirieri] [pagina ...]
+// --profil (doar cu --cu-cont): contul simulat — furnizor extern în verificare
+// (implicit), furnizorul propriu al platformei sau furnizor de închirieri.
 const { chromium, devices } = require('playwright');
 const fs = require('fs');
 const path = require('path');
@@ -53,6 +69,7 @@ const BASE = opt('base', 'http://localhost:3000');
 const latimi = opt('latimi', '390,1366').split(',').map(Number);
 const OUT = opt('out', path.join(process.cwd(), 'detector-out'));
 const CU_CONT_MOD = flag('cu-cont');
+const PROFIL = opt('profil', 'extern');
 const pagini = arg.length ? arg : (CU_CONT_MOD ? CU_CONT : PUBLICE);
 const LIMBA = process.env.LIMBA || 'en';
 fs.mkdirSync(OUT, { recursive: true });
@@ -128,6 +145,25 @@ const PROFIL_SIMULAT = {
     poate_vinde: false, motiv_nu_poate_vinde: 'in_verificare' },
 };
 
+// Variantele de cont (pasul 11-H1): furnizorul propriu al platformei (HBP) și
+// un furnizor de închirieri, pe lângă contul implicit de mai sus.
+const PROFILURI_SIMULATE = {
+  extern: PROFIL_SIMULAT,
+  propriu: {
+    ok: true, email: 'contact@homebestpal.ro', nume: null, roles: ['client', 'partener_materiale'], roluri_dashboard: ['partener_materiale'],
+    destinatie: '/mydarrin-dashboard-furnizor.html?type=materiale', tip_destinatie: 'rol', furnizor_propriu: true,
+    partener: { nume_firma: 'Home Best Pal', partner_type: 'furnizor_materiale', rol: 'partener_materiale', status_verificare: 'approved', contract_semnat: false, cont_bancar: false, motiv_respingere: null,
+      poate_vinde: true, motiv_nu_poate_vinde: null },
+  },
+  inchirieri: {
+    ok: true, email: 'partener.test@example.com', nume: 'Partener Test', roles: ['partener_inchirieri'], roluri_dashboard: ['partener_inchirieri'],
+    destinatie: '/mydarrin-dashboard-furnizor.html?type=inchirieri', tip_destinatie: 'rol', furnizor_propriu: false,
+    partener: { nume_firma: 'Test Utilaje SRL', partner_type: 'inchirieri_utilaje', rol: 'partener_inchirieri', status_verificare: 'approved', contract_semnat: true, cont_bancar: true, motiv_respingere: null,
+      poate_vinde: true, motiv_nu_poate_vinde: null },
+  },
+};
+if (!PROFILURI_SIMULATE[PROFIL]) { console.error(`--profil necunoscut: ${PROFIL} (extern | propriu | inchirieri)`); process.exit(2); }
+
 // Pagina adminului de catalog (pasul 9): răspunsuri POST pe acțiune.
 // Antetul cu drepturi; listele încep goale (prima vizită).
 const RASPUNSURI_ADMIN = {
@@ -172,7 +208,24 @@ function detecteaza(limba) {
     if (b.scrollWidth > b.clientWidth + 2 && getComputedStyle(b).overflow !== 'visible') rupte.push(sel(b) + ' «' + b.innerText.trim().slice(0, 30) + '»');
     if (r.right > W + 1 && r.left < W - 1 && r.left >= 0) rupte.push('iese din ecran: ' + sel(b) + ' «' + b.innerText.trim().slice(0, 30) + '»');
   });
-  return { lang: document.documentElement.lang, sw: document.documentElement.scrollWidth, W, gasite, rupte: [...new Set(rupte)].slice(0, 20) };
+  // Elemente tăiate la dreapta ecranului (vezi antetul fișierului).
+  const derulabil = (el) => { for (let e = el.parentElement; e && e !== document.body; e = e.parentElement) { const ox = getComputedStyle(e).overflowX; if (ox === 'auto' || ox === 'scroll') return true; } return false; };
+  let dreaptaMax = 0;
+  const taiate = [];
+  document.querySelectorAll('body *').forEach((el) => {
+    if (!vizibil(el) || /^(SCRIPT|STYLE|svg|path|OPTION)$/i.test(el.tagName)) return;
+    const r = el.getBoundingClientRect();
+    if (r.right <= W + 1 || r.left >= W - 1 || r.right <= 0) return;
+    if (derulabil(el)) return;
+    dreaptaMax = Math.max(dreaptaMax, Math.round(r.right));
+    if (taiate.length < 10 && !taiate.some((t) => el.closest(t.s))) taiate.push({ s: sel(el), t: (el.innerText || '').trim().slice(0, 30) });
+  });
+  // Pagina s-a randat: are limbă, text vizibil și nu a rămas la bariera de acces.
+  const poarta = document.getElementById('auth-gate-overlay');
+  const text = ((document.body && document.body.innerText) || '').replace(/\s+/g, ' ').trim();
+  const randata = !!document.documentElement.lang && text.length > 40 && !(poarta && vizibil(poarta));
+  return { lang: document.documentElement.lang, sw: Math.max(document.documentElement.scrollWidth, dreaptaMax), W, gasite, rupte: [...new Set(rupte)].slice(0, 20),
+    taiate: taiate.map((t) => t.s + ' «' + t.t + '»'), randata, text: text.length };
 }
 
 (async () => {
@@ -184,7 +237,8 @@ function detecteaza(limba) {
       const ctx = await b.newContext({ ...cfg, locale: 'en-GB' });
       await ctx.addInitScript((l) => { try { if (!sessionStorage.getItem('__init')) { localStorage.clear(); if (l !== 'en') localStorage.setItem('myd_lang_v1', l); sessionStorage.setItem('__init', '1'); } } catch (e) {} }, LIMBA);
       if (CU_CONT_MOD) {
-        await ctx.addInitScript(sesiuneSimulata, UTILIZATOR_SIMULAT);
+        const profil = PROFILURI_SIMULATE[PROFIL];
+        await ctx.addInitScript(sesiuneSimulata, { ...UTILIZATOR_SIMULAT, email: profil.email });
         // Contul e simulat: nicio cerere către Supabase sau către API-urile cu cont nu pleacă.
         await ctx.route(/\.supabase\.co\//, (r) => r.abort());
         await ctx.route(/\/api\/admin\/(ruta-incadrare|catalog)$/, (r) => {
@@ -192,7 +246,7 @@ function detecteaza(limba) {
           try { corp = JSON.parse(r.request().postData() || '{}'); } catch (e) { corp = {}; }
           return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(RASPUNSURI_ADMIN[corp.action] || { ok: true }) });
         });
-        await ctx.route(/\/api\/cont\/profil/, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(PROFIL_SIMULAT) }));
+        await ctx.route(/\/api\/cont\/profil/, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(profil) }));
         await ctx.route(/\/api\/(partener|client)\//, (r) => {
           const cale = new URL(r.request().url()).pathname.replace(/\.js$/, '');
           const corp = r.request().method() === 'GET' ? (RASPUNSURI_SIMULATE[cale] || { ok: true }) : { ok: true };
@@ -202,12 +256,20 @@ function detecteaza(limba) {
       const p = await ctx.newPage();
       const erori = []; p.on('pageerror', (e) => erori.push(e.message.slice(0, 120)));
       await p.route('**/api/comenzi/**', (r) => r.fulfill({ status: 599, body: '{}' }));
-      await p.goto(BASE + '/' + pg + (pg.includes('?') ? '' : '.html'), { waitUntil: 'networkidle', timeout: 60000 }).catch(() => {});
+      // Încărcarea paginii: o eroare (server oprit, 404) nu mai trece neobservată.
+      let incarcare = null;
+      const raspunsPagina = await p.goto(BASE + '/' + pg + (pg.includes('?') ? '' : '.html'), { waitUntil: 'networkidle', timeout: 60000 })
+        .catch((e) => { incarcare = e.message.split('\n')[0].slice(0, 120); return null; });
+      if (!incarcare && raspunsPagina && raspunsPagina.status() >= 400) incarcare = 'HTTP ' + raspunsPagina.status();
+      if (!incarcare && !raspunsPagina) incarcare = 'fără răspuns';
       await p.waitForTimeout(2500);
       await p.waitForFunction(() => !document.documentElement.classList.contains('myd-i18n-pending'), null, { timeout: 5000 }).catch(() => {});
       await p.evaluate(async () => { for (let y = 0; y < document.documentElement.scrollHeight; y += 600) { scrollTo(0, y); await new Promise((r) => setTimeout(r, 30)); } scrollTo(0, 0); }).catch(() => {});
       await p.waitForTimeout(600);
       const r = await p.evaluate(detecteaza, LIMBA).catch((e) => ({ eroare: e.message }));
+      if (incarcare) { r.randata = false; r.incarcare = incarcare; }
+      // Captura paginii, înaintea stărilor ascunse.
+      await p.screenshot({ path: path.join(OUT, `${LIMBA}${CU_CONT_MOD ? '_' + PROFIL : ''}_${pg.replace(/[?=&.]/g, '_')}_${w}.png`) }).catch(() => {});
       // Stări ascunse: meniul lateral, fereastra de cont, preferințele cookie.
       for (const [nume, deschide, inchide] of [
         ['meniu', 'typeof openSidebar==="function"&&(openSidebar(),true)', 'typeof closeSidebar==="function"&&closeSidebar()'],
@@ -225,20 +287,27 @@ function detecteaza(limba) {
         if (inchide) await p.evaluate(inchide).catch(() => {});
         await p.waitForTimeout(300);
       }
-      await p.screenshot({ path: path.join(OUT, `${LIMBA}_${pg.replace(/[?=&]/g, '_')}_${w}.png`) }).catch(() => {});
       total.push({ pg, w, ...r, erori });
       await ctx.close();
     }
   }
   await b.close();
-  fs.writeFileSync(path.join(OUT, `detector-${LIMBA}${CU_CONT_MOD ? '-cu-cont' : ''}.json`), JSON.stringify(total, null, 1));
+  fs.writeFileSync(path.join(OUT, `detector-${LIMBA}${CU_CONT_MOD ? '-cu-cont-' + PROFIL : ''}.json`), JSON.stringify(total, null, 1));
   for (const r of total) {
     const unice = [...new Map((r.gasite || []).map((g) => [g.text, g])).values()];
-    console.log(`${r.pg.split('?')[0].padEnd(36)} ${String(r.w).padEnd(5)} lang=${r.lang} romana=${unice.length} depasire=${r.sw > r.W ? r.sw + '/' + r.W : 0} rupte=${(r.rupte || []).length} erori=${r.erori.length}`);
+    console.log(`${r.pg.padEnd(48)} ${String(r.w).padEnd(5)} randat=${r.randata ? 'da' : 'NU'} lang=${r.lang} romana=${unice.length} depasire=${r.sw > r.W ? r.sw + '/' + r.W : 0} rupte=${(r.rupte || []).length} erori=${r.erori.length}`);
+    if (!r.randata) console.log(`    NERANDATĂ: ${r.incarcare || r.eroare || 'pagina e goală sau a rămas la bariera de acces'} (text vizibil: ${r.text || 0} caractere)`);
+    (r.taiate || []).forEach((t) => console.log('    tăiat la dreapta: ' + t));
+    r.erori.forEach((e) => console.log('    eroare JS: ' + e));
     unice.forEach((g) => console.log('    română: «' + g.text + '» ⟨' + g.sel + '⟩'));
   }
   const totalRo = total.reduce((s, r) => s + new Set((r.gasite || []).map((g) => g.text)).size, 0);
   console.log(`
 TOTAL texte românești (${LIMBA}): ${totalRo} · pagini × lățimi: ${total.length}`);
-  process.exitCode = totalRo ? 1 : 0;
+  const nerandate = total.filter((r) => !r.randata).length;
+  const depasiri = total.filter((r) => r.sw > r.W).length;
+  const cuErori = total.filter((r) => r.erori.length).length;
+  console.log(`nerandate: ${nerandate} · cu depășire: ${depasiri} · cu erori JS: ${cuErori}`);
+  // Nerandată = rezultatul nu e valid: cod 1, ca la textele românești.
+  process.exitCode = totalRo || nerandate ? 1 : 0;
 })();

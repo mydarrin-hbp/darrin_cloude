@@ -116,7 +116,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 @media (max-width: 480px) {
   html { overflow-x: clip; max-width:100vw; }
   body { overflow-x: clip; max-width:100vw; }
-  .dp-layout, .f-layout { overflow-x: hidden; }
+  /* Pasul 11-H1: fără overflow-x:hidden pe .dp-layout — ce nu încape se
+     derulează în containerul lui, nu se taie pe ascuns. */
   /* Modal-uri — nu depășesc viewport */
   #inv-modal, #eta-overlay > div, [id$="-modal"] {
     max-width: 95vw !important;
@@ -322,7 +323,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 /* LAYOUT */
 .dp-layout{display:flex;min-height:100vh}
 .dp-sidebar{width:240px;background:#16202E;border-right:1px solid #2D3F55;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;transition:transform .3s}
-.dp-main{margin-left:240px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+.dp-main{margin-left:240px;flex:1;min-width:0;display:flex;flex-direction:column;min-height:100vh}
 .dp-topbar{background:#1E2A3B;border-bottom:1px solid #2D3F55;padding:0 22px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;gap:12px}
 .dp-content{padding:22px;flex:1;background:#F0F4F8}
 /* SIDEBAR */
@@ -396,7 +397,14 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 .dp-tab:not(.active):hover{background:#F0F4F8;color:#1A2332}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:#D5DFE8;border-radius:2px}
-@media(max-width:768px){.dp-sidebar{transform:translateX(-100%)}.dp-main{margin-left:0}}
+@media(max-width:768px){.dp-sidebar{transform:translateX(-100%)}.dp-main{margin-left:0}.dp-topbar{padding-left:62px}}
+/* Pasul 11-H1: sub 480 px bara de sus pe două rânduri — titlul sus, emailul și butoanele dedesubt. */
+@media(max-width:480px){
+  .dp-topbar{height:auto;flex-wrap:wrap;padding:10px 14px 10px 62px;row-gap:8px}
+  .dp-topbar>div{flex:1 0 100%;min-width:0;flex-wrap:wrap}
+  #dp-page-title{max-width:100%}
+  #dp-user-email{flex:1 1 120px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+}
 </style>
   <!-- DOMPurify — sanitizare XSS (audit 2026-07-10) -->
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
@@ -684,7 +692,7 @@ const TYPES = {
     sbSub:'ISCO 7127 · Instalații sanitare',
     nav:[
       {section:'Principal'},
-      {id:'overview',icon:'▦',label:'Overview'},
+      {id:'overview',icon:'▦',label:'Prezentare generală'},
       {id:'sarcini',icon:'⚡',label:'Sarcini LIVE'},
       {id:'portofoliu',icon:'🔧',label:'Portofoliu servicii'},
       {id:'echipa',icon:'👥',label:'Echipa mea'},
@@ -708,7 +716,7 @@ const TYPES = {
     sbSub:'Sector 2 & 3 · București',
     nav:[
       {section:'Principal'},
-      {id:'overview',icon:'▦',label:'Overview'},
+      {id:'overview',icon:'▦',label:'Prezentare generală'},
       {id:'curse',icon:'📍',label:'Curse disponibile'},
       {id:'activ',icon:'🚴',label:'Cursă activă'},
       {id:'zona-acoperire',icon:'🗺',label:'Zona de acoperire'},
@@ -725,7 +733,7 @@ const TYPES = {
     sbSub:'Autorizat ASF · Național',
     nav:[
       {section:'Principal'},
-      {id:'overview',icon:'▦',label:'Overview'},
+      {id:'overview',icon:'▦',label:'Prezentare generală'},
       {id:'polite',icon:'📄',label:'Polițe emise'},
       {id:'daune',icon:'⚠',label:'Dosare daune'},
       {id:'tipuri-polita',icon:'📝',label:'Tipuri de poliță'},
@@ -795,7 +803,7 @@ function showPanel(id) {
   currentPanel = id;
   const t = TYPES[currentType];
   const panelTitles = {
-    overview:'Overview', sarcini:'Sarcini LIVE', portofoliu:'Portofoliu servicii',
+    overview:'Prezentare generală', sarcini:'Sarcini LIVE', portofoliu:'Portofoliu servicii',
     echipa:'Echipa mea', utilaje:'Utilajele mele', certificari:'Certificările mele',
     'cont-bancar':'Cont bancar',
     'status-aplicare':'Status aplicare partener',
