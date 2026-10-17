@@ -681,7 +681,6 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 .card-badge{position:absolute;top:12px;left:12px;font-size:10px;font-weight:800;padding:3px 10px;border-radius:99px;text-transform:uppercase;letter-spacing:.05em}
 .card-badge.hot{background:#FF8C00;color:#fff}
 .card-badge.new{background:#003366;color:#fff}
-.card-badge.aca{background:#0E9E99;color:#fff}
 .card-body{padding:18px 16px;flex:1;display:flex;flex-direction:column}
 .card-title{font-size:15px;font-weight:700;color:#2D2D2D;margin-bottom:6px;line-height:1.35}
 .card-desc{font-size:12.5px;color:#6B7A8D;line-height:1.6;flex:1;margin-bottom:10px}
@@ -2193,10 +2192,6 @@ function triggerHeaderSearch(){
         <input type="checkbox" id="filter-ai" style="accent-color:#0E9E99;width:15px;height:15px;cursor:pointer"/>
         AI alocă automat
       </label>
-      <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#6B7A8D;cursor:pointer">
-        <input type="checkbox" id="filter-aca" style="accent-color:#1A5FAD;width:15px;height:15px;cursor:pointer"/>
-        Furnizor verificat ACA
-      </label>
     </div>
     <div style="margin-top:10px;padding-top:10px;border-top:1px solid #F4F7F9">
       <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:6px">Preț max</div>
@@ -2845,7 +2840,6 @@ function triggerHeaderSearch(){
           <div class="card-media">
             <img src="https://images.unsplash.com/photo-1615529328331-f8917597711f?w=600&q=80" alt="Sanitare & Termo" loading="lazy"/>
             <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            <span class="card-badge aca">ACA BG</span>
             <span style="position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;background:rgba(220,38,38,.85);color:#fff;padding:2px 8px;border-radius:99px;backdrop-filter:blur(4px)">Urgent</span>
             
           </div>
@@ -2880,7 +2874,6 @@ function triggerHeaderSearch(){
           <div class="card-media">
             <img src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&q=80" alt="Electrice & Cabluri" loading="lazy"/>
             <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            <span class="card-badge aca">ACA BG</span>
             <span style="position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;background:rgba(220,38,38,.85);color:#fff;padding:2px 8px;border-radius:99px;backdrop-filter:blur(4px)">Urgent</span>
             
           </div>
@@ -2985,7 +2978,6 @@ function triggerHeaderSearch(){
           <div class="card-media">
             <img src="https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=600&q=80" alt="Metalurgie & Profile" loading="lazy"/>
             <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            <span class="card-badge aca">ACA BG</span>
             
             
           </div>
@@ -3060,7 +3052,6 @@ function triggerHeaderSearch(){
           <div class="card-media">
             <img src="https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=600&q=80" alt="Utilaje & Echipamente Grele" loading="lazy"/>
             <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            <span class="card-badge aca">ACA BG</span>
             <span style="position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;background:rgba(220,38,38,.85);color:#fff;padding:2px 8px;border-radius:99px;backdrop-filter:blur(4px)">Urgent</span>
             <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>
           </div>
@@ -5893,7 +5884,6 @@ function applyFilters() {
   var sortBy = document.getElementById('sort-select')?.value || 'default';
   var filterUrgent = document.getElementById('filter-urgent')?.checked;
   var filterAI = document.getElementById('filter-ai')?.checked;
-  var filterACA = document.getElementById('filter-aca')?.checked;
   var maxPrice = parseFloat(document.getElementById('price-range')?.value || 99999);
   var cat = activeCat[activeTab] || 'all';
 
@@ -6518,7 +6508,6 @@ function updateActiveFilters(search, urgent, ai, aca, cat){
   if(search) tags.push({label:'"'+search+'"', onRemove:"document.getElementById('search-input').value='';applyFilters()"});
   if(urgent) tags.push({label:'Urgent', onRemove:"document.getElementById('filter-urgent').checked=false;applyFilters()"});
   if(ai) tags.push({label:'AI Alocă', onRemove:"document.getElementById('filter-ai').checked=false;applyFilters()"});
-  if(aca) tags.push({label:'ACA BG', onRemove:"document.getElementById('filter-aca').checked=false;applyFilters()"});
   if(cat!=='all') tags.push({label:''+cat, onRemove:"activeCat[activeTab]='all';activeSubCat[activeTab]='all';applyFilters();updatePageTitleForSubcat(activeTab,'all','all')"});
   if(subcat!=='all') tags.push({label:''+subcat, onRemove:"activeSubCat[activeTab]='all';applyFilters();updatePageTitleForSubcat(activeTab,activeCat[activeTab]||'all','all')"});
 
@@ -6535,7 +6524,6 @@ function resetFilters(){
   document.getElementById('search-input').value='';
   document.getElementById('filter-urgent').checked=false;
   document.getElementById('filter-ai').checked=false;
-  document.getElementById('filter-aca').checked=false;
   document.getElementById('price-range').value=1000;
   maxPrice=1000;
   setEl('price-label','≤ 1000 Lei');
