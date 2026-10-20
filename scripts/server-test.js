@@ -53,7 +53,9 @@ function cerere(req, res) {
     if (p === '/api/public/tari-active') {
       return json(res, 200, { ok: true, active: TARI.map((t) => t[0]), tari: TARI.map(([tara_cod, tara_nume]) => ({ tara_cod, tara_nume })), tva: { RO: 21 } });
     }
-    return json(res, 503, { error: 'API indisponibil în serverul de test' });
+    // Mesajul e în engleză: paginile îl pot afișa ca eroare de server, iar
+    // detectorul de română (modul EN) nu trebuie să-l numere ca text al paginii.
+    return json(res, 503, { error: 'API unavailable on the test server' });
   }
   let f = path.join(RADACINA, p === '/' ? 'index.html' : p);
   if (!f.startsWith(RADACINA)) { res.writeHead(403); return res.end(); }
