@@ -554,7 +554,7 @@ const FTYPES = {
       {section:'Principal'},
       {id:'overview',icon:'▦',label:'Prezentare generală'},
       {id:'comenzi',icon:'📋',label:'Comenzi primite'},
-      {id:'stocuri',icon:'📦',label:'Stocuri live'},
+      {id:'stocuri',icon:'📦',label:'Stocuri'},
       {section:'Catalog'},
       {id:'produse',icon:'🏷',label:'Produse active'},
       {id:'import',icon:'⬆',label:'Import CSV / API'},
@@ -734,7 +734,7 @@ function renderAlerte(){ return titluPanou('Alerte siguranță') + stareGoala();
 function showPanel(id){
   if (PANOURI_ASCUNSE.has(id)) id = 'overview';
   currentPanel=id;
-  const titles={overview:'Prezentare generală',comenzi:'Comenzi primite',stocuri:'Stocuri live',produse:'Produse active',import:'Import CSV / API',venituri:'Venituri & Discount',garantii:'Garanții',documente:'Documentele mele',rezervari:'Rezervări active',echipamente:'Echipamente & Stoc',calendar:'Calendar disponibilitate',alerte:'Alerte siguranță'};
+  const titles={overview:'Prezentare generală',comenzi:'Comenzi primite',stocuri:'Stocuri',produse:'Produse active',import:'Import CSV / API',venituri:'Venituri & Discount',garantii:'Garanții',documente:'Documentele mele',rezervari:'Rezervări active',echipamente:'Echipamente & Stoc',calendar:'Calendar disponibilitate',alerte:'Alerte siguranță'};
   document.getElementById('fb-page-title').textContent=titles[id]||id;
   renderNav(currentType);
   const c=document.getElementById('fb-content'); if(!c)return;
@@ -797,7 +797,7 @@ function cardAlocare(a, moneda){
 function chipEscrow(a){
   return a.escrow_eliberat
     ? '<span class="chip ch-g" style="font-size:9.5px">Eliberat din escrow</span>'
-    : '<span class="chip ch-t" style="font-size:9.5px">Blocat în escrow</span>';
+    : '<span class="chip ch-t" style="font-size:9.5px">Păstrat în escrow</span>';
 }
 
 function renderComenzi(titlu){
@@ -845,7 +845,7 @@ const STATUS_CHIP_PRODUS = { in_asteptare: ['ch-o', 'În așteptare'], live: ['c
 function renderStocuri(){
   return `
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px">
-    <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Stocuri live</h2>
+    <h2 style="font-size:18px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Stocuri</h2>
     <button class="btn-p" onclick="showPanel('produse')">Gestionează produsele →</button>
   </div>
   <div class="f-card" style="overflow-x:auto">

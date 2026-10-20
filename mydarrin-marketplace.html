@@ -710,6 +710,8 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:#B8C8D8;border-radius:3px}
 
+/* Coloanele grilelor se pot îngusta sub lățimea conținutului (altfel ieșeau din ecran la 390 px). */
+.mp-2col>*,.mp-3col>*,.mp-4col>*{min-width:0}
 @media(max-width:900px){
   .mp-2col{grid-template-columns:1fr!important}
   .mp-3col{grid-template-columns:1fr!important}
@@ -789,7 +791,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
   <!-- AI status center -->
   <div class="flex items-center gap-2 text-white/50 text-xs">
     <span class="pulse-dot"></span>
-    <span>Darrin AI activ — deviz inteligent în 60 secunde</span>
+    <span>Darrin AI — te ajută să alegi serviciul potrivit</span>
   </div>
 
   <!-- Dreapta: locatie activa + limba -->
@@ -1266,15 +1268,14 @@ function triggerHeaderSearch(){
 ══════════════════════════════════════════════════ -->
 <section style="background:linear-gradient(145deg,#001629 0%,#002855 55%,#003D7A 100%);padding:52px 24px 48px;position:relative;overflow:hidden">
   <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:50px 50px;pointer-events:none"></div>
-  <div style="position:absolute;top:-15%;right:-8%;width:550px;height:550px;border-radius:50%;background:radial-gradient(circle,rgba(14,158,153,.18) 0%,transparent 70%);pointer-events:none"></div>
+  <div style="position:absolute;top:-15%;right:0;width:550px;height:550px;max-width:60%;border-radius:50%;background:radial-gradient(circle,rgba(14,158,153,.18) 0%,transparent 70%);pointer-events:none"></div>
   <div style="position:absolute;bottom:-15%;left:-5%;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(255,140,0,.08) 0%,transparent 70%);pointer-events:none"></div>
 
   <div style="max-width:1200px;margin:0 auto;position:relative;z-index:2">
     <div style="display:grid;grid-template-columns:1fr auto;gap:40px;align-items:center" class="mp-2col">
       <div>
         <div class="reveal" style="display:inline-flex;align-items:center;gap:8px;background:rgba(14,158,153,.15);border:1px solid rgba(14,158,153,.3);color:#0E9E99;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:6px 16px;border-radius:99px;margin-bottom:20px">
-          <span class="pulse-dot" style="width:5px;height:5px"></span>
-          Marketplace My Darrin · Furnizori verificați · Live
+          Marketplace My Darrin · Furnizori aprobați
         </div>
         <h1 class="reveal d1" style="font-size:clamp(26px,3.5vw,46px);font-weight:800;color:#fff;line-height:1.12;letter-spacing:-.02em;margin-bottom:16px">
           Plasează materialele sau<br>
@@ -1282,7 +1283,7 @@ function triggerHeaderSearch(){
           <span style="font-size:.68em;font-weight:600;color:rgba(255,255,255,.6)">în catalogul My Darrin · înregistrare 0 lei</span>
         </h1>
         <p class="reveal d2" style="font-size:14px;color:rgba(255,255,255,.55);line-height:1.8;max-width:580px;margin-bottom:28px">
-          Fii furnizor activ pe platforma My Darrin. Încarcă catalogul de materiale sau echipamente de închiriere, integrează magazinul existent, sau exportă direct din ERP. <strong style="color:#fff">Discount comercial 5–15% pentru materiale și închirieri</strong> — configurat de tine la crearea contului sau din dashboard.
+          Fii furnizor activ pe platforma My Darrin. Încarcă catalogul de materiale sau echipamente de închiriere, manual sau prin import CSV. <strong style="color:#fff">Discount comercial 5–15% pentru materiale și închirieri</strong> — configurat de tine la crearea contului sau din dashboard.
         </p>
         <div class="reveal d3" style="display:flex;gap:12px;flex-wrap:wrap">
           <button onclick="document.getElementById('mp-tabs-section').scrollIntoView({behavior:'smooth'})" class="btn-p">
@@ -1290,7 +1291,7 @@ function triggerHeaderSearch(){
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </button>
           <button onclick="document.getElementById('mp-integrare').scrollIntoView({behavior:'smooth'})" class="btn-s" style="color:rgba(255,255,255,.75);border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.08)" onmouseover="this.style.background='rgba(255,255,255,.16)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">
-            Integrare magazin online
+            Cum adaugi produsele
           </button>
           <a href="mydarrin-devino-partener.html" class="btn-s" style="color:rgba(255,255,255,.6);border-color:rgba(255,255,255,.15);background:transparent;text-decoration:none" onmouseover="this.style.background='rgba(255,255,255,.1)'" onmouseout="this.style.background='transparent'">
             Furnizor de servicii →
@@ -1301,9 +1302,9 @@ function triggerHeaderSearch(){
       <!-- Stats grid -->
       <div class="reveal d2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:260px">
         <div style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:20px;text-align:center;backdrop-filter:blur(8px)">
-          <div style="font-size:11px;color:rgba(255,255,255,.35);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em">Furnizor principal</div>
-          <div style="font-size:22px;font-weight:800;color:#FF8C00;line-height:1.1">ACA BG</div>
-          <div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:4px">Bacău · CUI 32667674</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.35);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em">Vânzare</div>
+          <div style="font-size:22px;font-weight:800;color:#FF8C00;line-height:1.1">După aprobare</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:4px">Contract + cont bancar</div>
         </div>
         <div style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:20px;text-align:center;backdrop-filter:blur(8px)">
           <div style="font-size:11px;color:rgba(255,255,255,.35);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em">Înregistrare</div>
@@ -1335,34 +1336,32 @@ function triggerHeaderSearch(){
     <div class="card reveal" style="padding:24px">
       <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#003366,#1A5FAD);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:14px"><i data-lucide="package" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
       <div style="font-weight:700;color:#003366;font-size:15px;margin-bottom:8px">Furnizor Materiale</div>
-      <p style="font-size:13px;color:#6B7A8D;line-height:1.7;margin-bottom:14px">Plasează produsele tale în catalogul My Darrin. Comenzile ajung automat. Discount comercial <strong style="color:#003366">5–15%</strong> per comandă, configurat de tine.</p>
+      <p style="font-size:13px;color:#6B7A8D;line-height:1.7;margin-bottom:14px">Plasează produsele tale în catalogul My Darrin. Comenzile ajung prin platformă. Discount comercial <strong style="color:#003366">5–15%</strong> per comandă, configurat de tine.</p>
       <div style="display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:#6B7A8D">
         <div style="display:flex;gap:7px"><span style="color:#0E9E99;font-weight:700"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Catalog produse nelimitat</div>
-        <div style="display:flex;gap:7px"><span style="color:#0E9E99;font-weight:700"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Import CSV / Excel / API</div>
-        <div style="display:flex;gap:7px"><span style="color:#0E9E99;font-weight:700"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Stoc gestionat în timp real</div>
-        <div style="display:flex;gap:7px"><span style="color:#0E9E99;font-weight:700"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Plată Escrow securizată</div>
+        <div style="display:flex;gap:7px"><span style="color:#0E9E99;font-weight:700"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Adăugare manuală sau import CSV</div>
+        <div style="display:flex;gap:7px"><span style="color:#0E9E99;font-weight:700"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Stocul îl actualizezi tu, din dashboard sau prin CSV</div>
+        <div style="display:flex;gap:7px"><span style="color:#0E9E99;font-weight:700"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Plată prin escrow, după confirmare</div>
       </div>
     </div>
     <div class="card reveal d1" style="padding:24px">
       <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#D97706,#B45309);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:14px"><i data-lucide="hard-hat" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
       <div style="font-weight:700;color:#003366;font-size:15px;margin-bottom:8px">Furnizor Echipamente Închiriere</div>
-      <p style="font-size:13px;color:#6B7A8D;line-height:1.7;margin-bottom:14px">Utilaje, scule, vehicule pentru închiriere. Darrin AI alocă cererile automat. Discount comercial <strong style="color:#003366">5–15%</strong> per rezervare, configurat de tine.</p>
+      <p style="font-size:13px;color:#6B7A8D;line-height:1.7;margin-bottom:14px">Utilaje, scule, vehicule pentru închiriere. Cererile vin prin platformă. Discount comercial <strong style="color:#003366">5–15%</strong> per rezervare, configurat de tine.</p>
       <div style="display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:#6B7A8D">
-        <div style="display:flex;gap:7px"><span style="color:#0E9E99;font-weight:700"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Calendar disponibilitate live</div>
+        <div style="display:flex;gap:7px"><span style="color:#0E9E99;font-weight:700"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Calendar de disponibilitate — în curând</div>
         <div style="display:flex;gap:7px"><span style="color:#0E9E99;font-weight:700"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Tarife flexibile oră/zi/săpt.</div>
-        <div style="display:flex;gap:7px"><span style="color:#0E9E99;font-weight:700"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Alocare automată Darrin AI</div>
+        <div style="display:flex;gap:7px"><span style="color:#0E9E99;font-weight:700"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Rezervări prin platformă</div>
         <div style="display:flex;gap:7px"><span style="color:#0E9E99;font-weight:700"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Rapoarte venituri dashboard</div>
       </div>
     </div>
     <div class="card reveal d2" style="padding:24px;border:1.5px solid rgba(14,158,153,.3);background:linear-gradient(135deg,#F0FBF9,#fff)">
       <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#0E9E99,#0B7A76);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:14px"><i data-lucide="link" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-      <div style="font-weight:700;color:#003366;font-size:15px;margin-bottom:8px">Integrare Magazin Existent</div>
-      <p style="font-size:13px;color:#6B7A8D;line-height:1.7;margin-bottom:14px">Ai deja un magazin online? Conectează-l direct prin API sau platformele compatibile. Produsele se sincronizează automat.</p>
+      <div style="font-weight:700;color:#003366;font-size:15px;margin-bottom:8px">Magazinul tău online</div>
+      <p style="font-size:13px;color:#6B7A8D;line-height:1.7;margin-bottom:14px">Furnizorii își adaugă produsele manual sau prin import CSV. Conectarea magazinului propriu printr-un feed / API este în curând.</p>
       <div style="display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:#6B7A8D">
-        <div style="display:flex;gap:7px"><span style="color:#0E9E99;font-weight:700"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>WooCommerce · Shopify verificate</div>
-        <div style="display:flex;gap:7px"><span style="color:#0E9E99;font-weight:700"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Export / Import CSV standard</div>
-        <div style="display:flex;gap:7px"><span style="color:#0E9E99;font-weight:700"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>REST API custom / ERP</div>
-        <div style="display:flex;gap:7px"><span style="color:#0E9E99;font-weight:700"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Validare compatibilitate gratuită</div>
+        <div style="display:flex;gap:7px"><span style="color:#0E9E99;font-weight:700"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Import CSV, după șablonul din dashboard</div>
+        <div style="display:flex;gap:7px"><span style="color:#0E9E99;font-weight:700"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Feed / API magazin propriu — în curând</div>
       </div>
     </div>
   </div>
@@ -1377,7 +1376,7 @@ function triggerHeaderSearch(){
 
     <!-- FIX (30 sept. 2026, decizia „marketplace, punctul 5"): formularele de
          adăugare produs (materiale/echipamente) erau aici, dar afișau deja
-         date vechi/fictive (furnizor "ACA BUSINESS GROUP", 3 produse
+         date vechi/fictive (un furnizor scris de mână, 3 produse
          hardcodate, calendar de disponibilitate care doar arăta un mesaj de
          succes fals la salvare) — rămășițe de dinainte ca saveMaterial()/
          saveEchipament() să fie conectate real (audit 2 August 2026).
@@ -1458,7 +1457,7 @@ function triggerHeaderSearch(){
               </div>
               <div style="display:flex;gap:12px;padding:12px;background:#F4F7F9;border-radius:12px">
                 <div class="stp stp-active">2</div>
-                <div><div style="font-weight:700;color:#003366;font-size:13px;margin-bottom:3px">Plasezi produsele / echipamentele</div><div style="font-size:12px;color:#6B7A8D;line-height:1.6">Manual, CSV/Excel, sau prin integrare API cu magazinul existent.</div></div>
+                <div><div style="font-weight:700;color:#003366;font-size:13px;margin-bottom:3px">Plasezi produsele / echipamentele</div><div style="font-size:12px;color:#6B7A8D;line-height:1.6">Manual sau prin import CSV, din dashboard-ul de furnizor.</div></div>
               </div>
               <div style="display:flex;gap:12px;padding:12px;background:#F4F7F9;border-radius:12px">
                 <div class="stp stp-pending">3</div>
@@ -1466,7 +1465,7 @@ function triggerHeaderSearch(){
               </div>
               <div style="display:flex;gap:12px;padding:12px;background:#F4F7F9;border-radius:12px">
                 <div class="stp stp-pending">4</div>
-                <div><div style="font-weight:700;color:#003366;font-size:13px;margin-bottom:3px">Tu livrezi · Platforma plătește</div><div style="font-size:12px;color:#6B7A8D;line-height:1.6">Suma facturată cu discountul tău, eliberată din Escrow în maximum 5 zile lucrătoare de la confirmarea clientului.</div></div>
+                <div><div style="font-weight:700;color:#003366;font-size:13px;margin-bottom:3px">Tu livrezi · Platforma plătește</div><div style="font-size:12px;color:#6B7A8D;line-height:1.6">Suma facturată către Home Best Pal SRL, cu discountul tău, se eliberează din escrow după confirmarea clientului. <span data-regula-bloc hidden>Primești plata în cel mult <strong data-regula="termen-plata-partener"></strong> de la eliberarea sumei.</span></div></div>
               </div>
             </div>
           </div>
@@ -1494,8 +1493,8 @@ function triggerHeaderSearch(){
                     <td style="text-align:right;padding:14px 20px"><span style="font-weight:800;color:#003366;font-size:15px">discount 5–15%</span></td>
                   </tr>
                   <tr>
-                    <td style="color:#6B7A8D;padding:14px 20px">Plată Escrow (eliberare)</td>
-                    <td style="text-align:right;padding:14px 20px"><span style="font-weight:800;color:#003366;font-size:15px">max. 5 zile lucrătoare</span></td>
+                    <td style="color:#6B7A8D;padding:14px 20px">Plata după eliberarea sumei din escrow</td>
+                    <td style="text-align:right;padding:14px 20px"><span data-regula-bloc hidden style="font-weight:800;color:#003366;font-size:15px">max. <span data-regula="termen-plata-partener"></span></span></td>
                   </tr>
                   <tr style="background:rgba(14,158,153,.05)">
                     <td colspan="2" style="padding:12px 20px">
@@ -1516,7 +1515,7 @@ function triggerHeaderSearch(){
     <!-- ══ TAB: COMISIOANE & PLĂȚI ══ -->
     <div id="mptab-comision" style="display:none">
       <!-- FIX (30 sept. 2026): cardul „Comisioane configurabile din Backoffice"
-           era un mockup — furnizor fictiv „ACA BUSINESS GROUP", procente
+           era un mockup — furnizor scris de mână, procente
            statice (7,5%/10%) și un buton „Salvează" care doar arăta un toast,
            fără back-office real în spate. Eliminat, nu înlocuit cu alt mock
            (politica „fără UI placeholder"). Rămâne doar simulatorul de mai
@@ -1571,7 +1570,7 @@ function triggerHeaderSearch(){
                   <span style="font-weight:800;font-size:15px;color:#003366">Încasare NETĂ furnizor</span>
                   <span style="font-weight:800;font-size:20px;color:#FF8C00" id="sim-net">18.600 Lei</span>
                 </div>
-                <div style="font-size:11px;color:#8C9BAD;text-align:center;margin-top:4px" id="sim-note">Plată Escrow în maximum 5 zile lucrătoare · TVA separat</div>
+                <div style="font-size:11px;color:#8C9BAD;text-align:center;margin-top:4px" id="sim-note">Plată prin escrow, după confirmare · TVA separat</div>
               </div>
             </div>
             <div style="display:flex;gap:10px;margin-top:16px">
@@ -1588,85 +1587,43 @@ function triggerHeaderSearch(){
     </div>
   </div>
 
-  <!-- ══ INTEGRARE MAGAZIN ONLINE ══ -->
+  <!-- ══ CUM ADAUGI PRODUSELE ══
+       Pasul 11-A (17 oct. 2026, decizia LM B5): integrările cu platformele de magazin
+       online, pluginul, magazinul de aplicații și datele trimestriale
+       au fost scoase — nu există. Azi: adăugare manuală și import
+       CSV din dashboard-ul de furnizor; feed / API pentru magazinul propriu —
+       în curând (pașii 11-F). -->
   <div id="mp-integrare" style="margin-top:48px;scroll-margin-top:80px">
     <div style="text-align:center;margin-bottom:32px">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#0E9E99;margin-bottom:8px">Integrare Marketplace</div>
-      <h2 style="font-size:28px;font-weight:800;color:#003366;margin-bottom:10px">Conectează magazinul tău online</h2>
-      <p style="font-size:14px;color:#6B7A8D;max-width:560px;margin:0 auto;line-height:1.75">Ai deja un magazin online? Verificăm compatibilitatea și te conectăm la My Darrin. Produsele se sincronizează automat, comenzile ajung în dashboard-ul tău.</p>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#0E9E99;margin-bottom:8px">Produsele tale în catalog</div>
+      <h2 style="font-size:28px;font-weight:800;color:#003366;margin-bottom:10px">Cum adaugi produsele</h2>
+      <p style="font-size:14px;color:#6B7A8D;max-width:560px;margin:0 auto;line-height:1.75">Furnizorii își adaugă produsele manual sau prin import CSV, din dashboard-ul de furnizor. Conectarea magazinului propriu printr-un feed / API este în curând.</p>
     </div>
 
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:32px" class="mp-3col">
-      <div class="integ-card reveal" onclick="selInteg('woo',this)">
+      <div class="card reveal" style="padding:20px">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#9B59B6,#8E44AD);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0"><i data-lucide="shopping-cart" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-          <div><div style="font-weight:700;color:#003366;font-size:14px">WooCommerce</div><div style="font-size:11px;color:#8C9BAD">WordPress · REST API · Plugin</div></div>
+          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#003366,#1A5FAD);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;color:#fff"><i data-lucide="square-pen" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
+          <div><div style="font-weight:700;color:#003366;font-size:14px">Adăugare manuală</div><div style="font-size:11px;color:#8C9BAD">Dashboard furnizor</div></div>
         </div>
-        <p style="font-size:12.5px;color:#6B7A8D;line-height:1.65;margin-bottom:12px">Conectare prin plugin My Darrin sau API key. Sincronizare produse, stocuri și comenzi în timp real. Instalare în 10 minute.</p>
-        <span class="chip chip-g" style="font-size:10.5px">Compatibil verificat</span>
+        <p style="font-size:12.5px;color:#6B7A8D;line-height:1.65;margin-bottom:12px">Adaugi produsele unul câte unul: denumire, preț, unitate de măsură, stoc și imagini.</p>
+        <span class="chip chip-g" style="font-size:10.5px">Disponibil</span>
       </div>
-      <div class="integ-card reveal d1" onclick="selInteg('shopify',this)">
+      <div class="card reveal" style="padding:20px">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#96BF48,#5E8E3E);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0"><i data-lucide="store" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-          <div><div style="font-weight:700;color:#003366;font-size:14px">Shopify</div><div style="font-size:11px;color:#8C9BAD">Cloud · App Store · Webhooks</div></div>
+          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#0E9E99,#0B7A76);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;color:#fff"><i data-lucide="file-spreadsheet" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
+          <div><div style="font-weight:700;color:#003366;font-size:14px">Import CSV</div><div style="font-size:11px;color:#8C9BAD">Dashboard furnizor</div></div>
         </div>
-        <p style="font-size:12.5px;color:#6B7A8D;line-height:1.65;margin-bottom:12px">Integrare prin Shopify App Store. Catalog și inventar sincronizate. Comenzile My Darrin apar ca comenzi externe în admin.</p>
-        <span class="chip chip-g" style="font-size:10.5px">Compatibil verificat</span>
+        <p style="font-size:12.5px;color:#6B7A8D;line-height:1.65;margin-bottom:12px">Încarci mai multe produse deodată, după șablonul CSV din dashboard.</p>
+        <span class="chip chip-g" style="font-size:10.5px">Disponibil</span>
       </div>
-      <div class="integ-card reveal d2" onclick="selInteg('api',this)">
+      <div class="card reveal" style="padding:20px">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#0E9E99,#0B7A76);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0"><i data-lucide="link" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-          <div><div style="font-weight:700;color:#003366;font-size:14px">CSV / REST API</div><div style="font-size:11px;color:#8C9BAD">Custom · ERP · B2B</div></div>
+          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#6B7A8D,#4A5568);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;color:#fff"><i data-lucide="link" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
+          <div><div style="font-weight:700;color:#003366;font-size:14px">Feed / API magazin propriu</div><div style="font-size:11px;color:#8C9BAD">Magazinul tău online</div></div>
         </div>
-        <p style="font-size:12.5px;color:#6B7A8D;line-height:1.65;margin-bottom:12px">Export periodic CSV sau integrare REST API custom. Potrivit pentru ERP propriu, sisteme B2B sau orice platformă cu export catalog.</p>
-        <span class="chip chip-p" style="font-size:10.5px">Validare la cerere</span>
-      </div>
-      <div class="integ-card reveal" onclick="selInteg('presta',this)">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#DF0067,#B0004E);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0"><i data-lucide="shopping-bag" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-          <div><div style="font-weight:700;color:#003366;font-size:14px">PrestaShop</div><div style="font-size:11px;color:#8C9BAD">Module · REST API</div></div>
-        </div>
-        <p style="font-size:12.5px;color:#6B7A8D;line-height:1.65;margin-bottom:12px">Module My Darrin pentru PrestaShop. Catalog și stocuri sincronizate automat la fiecare modificare în shop.</p>
-        <span class="chip chip-acc" style="font-size:10.5px">⏳ Q3 2026</span>
-      </div>
-      <div class="integ-card reveal d1" onclick="selInteg('magento',this)">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#F46F25,#D4591F);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0"><i data-lucide="diamond" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-          <div><div style="font-weight:700;color:#003366;font-size:14px">Magento / Adobe</div><div style="font-size:11px;color:#8C9BAD">Enterprise · GraphQL</div></div>
-        </div>
-        <p style="font-size:12.5px;color:#6B7A8D;line-height:1.65;margin-bottom:12px">Integrare enterprise prin GraphQL API. Potrivit pentru furnizori mari cu catalog extins și fluxuri B2B complexe.</p>
-        <span class="chip chip-acc" style="font-size:10.5px">⏳ Q4 2026</span>
-      </div>
-      <div class="integ-card reveal d2" onclick="selInteg('other',this)">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#6B7A8D,#4A5568);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0"><i data-lucide="settings" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-          <div><div style="font-weight:700;color:#003366;font-size:14px">Altă platformă</div><div style="font-size:11px;color:#8C9BAD">Verificare compatibilitate</div></div>
-        </div>
-        <p style="font-size:12.5px;color:#6B7A8D;line-height:1.65;margin-bottom:12px">Folosești o altă platformă? Trimite-ne URL-ul și verificăm gratuit compatibilitatea și opțiunile de integrare.</p>
-        <span class="chip" style="background:#F4F7F9;color:#6B7A8D;font-size:10.5px">Consultanță gratuită</span>
-      </div>
-    </div>
-
-    <!-- Integrare selecție detalii -->
-    <div id="integ-details" style="display:none;background:#fff;border-radius:20px;border:1.5px solid #FF8C00;padding:28px;margin-bottom:32px;animation:slideUp .3s ease">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-        <div style="font-size:32px" id="integ-icon"><i data-lucide="shopping-cart" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-        <div>
-          <div style="font-weight:800;color:#003366;font-size:16px" id="integ-name">WooCommerce</div>
-          <div style="font-size:12px;color:#8C9BAD" id="integ-sub">Instrucțiuni de integrare</div>
-        </div>
-        <span class="chip chip-g" style="margin-left:auto" id="integ-status">Verificat</span>
-      </div>
-      <div style="font-size:13.5px;color:#6B7A8D;line-height:1.75;margin-bottom:18px" id="integ-desc">
-        Instrucțiunile complete de integrare sunt disponibile după activarea contului furnizor.
-      </div>
-      <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <button onclick="switchMpTab('cont',document.getElementById('mpt-cont'));document.getElementById('mp-tabs-section').scrollIntoView({behavior:'smooth'})" class="btn-p">
-          Activează cont și integrare →
-        </button>
-        <button onclick="showToast('Documentație API trimisă pe email. Verifică inbox.','ai')" class="btn-ai">
-          Trimite documentație API
-        </button>
+        <p style="font-size:12.5px;color:#6B7A8D;line-height:1.65;margin-bottom:12px">Conectarea magazinului propriu, ca produsele să se actualizeze din el.</p>
+        <span class="chip chip-acc" style="font-size:10.5px">În curând</span>
       </div>
     </div>
 
@@ -1675,7 +1632,7 @@ function triggerHeaderSearch(){
       <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:40px 40px;pointer-events:none"></div>
       <div style="position:relative">
         <h3 style="font-size:26px;font-weight:800;color:#fff;margin-bottom:10px">Gata să intri în marketplace?</h3>
-        <p style="font-size:14px;color:rgba(255,255,255,.5);max-width:500px;margin:0 auto 28px;line-height:1.75">Înregistrare în 5 minute · 0 lei · KYC 24h · Discount comercial 5–15% · Plată Escrow în maximum 5 zile lucrătoare · Darrin AI alocă automat comenzile</p>
+        <p style="font-size:14px;color:rgba(255,255,255,.5);max-width:500px;margin:0 auto 28px;line-height:1.75">Înregistrare gratuită · Discount comercial 5–15% · Plată prin escrow, după confirmare</p>
         <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
           <button onclick="switchMpTab('cont',document.getElementById('mpt-cont'));document.getElementById('mp-tabs-section').scrollIntoView({behavior:'smooth'})" class="btn-p" style="font-size:15px;padding:16px 32px">
             Înregistrează cont furnizor
@@ -1921,34 +1878,9 @@ function triggerHeaderSearch(){
 
 <!-- ════ ROW 4: Copyright + Tari (fundal alb) ════ -->
 <div class="ftr-r4">
-  <p class="ftr-r4-copy">
-    &copy; 2026 &nbsp;&middot;&nbsp; <strong>Home Best Pal</strong> &nbsp;&ndash;&nbsp; UK &nbsp;&middot;&nbsp; RO
-  </p>
-  <!-- Steaguri tari active -->
-  <div class="ftr-flags-row">
-    <span style="font-size:10px;font-weight:600;color:#6B7A8D;margin-right:4px;text-transform:uppercase;letter-spacing:.06em">Activ în</span>
-    <span title="Romania" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;cursor:default">
-      <svg width="24" height="17" viewBox="0 0 3 2" style="border-radius:2px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.2)"><rect width="1" height="2" fill="#002B7F"/><rect x="1" width="1" height="2" fill="#FCD116"/><rect x="2" width="1" height="2" fill="#CE1126"/></svg>
-      <span style="font-size:8px;color:#8C9BAD;font-weight:600">RO</span>
-    </span>
-    <span title="Moldova" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;cursor:default">
-      <svg width="24" height="17" viewBox="0 0 3 2" style="border-radius:2px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.2)"><rect width="1" height="2" fill="#003DA5"/><rect x="1" width="1" height="2" fill="#FFD200"/><rect x="2" width="1" height="2" fill="#CC0001"/></svg>
-      <span style="font-size:8px;color:#8C9BAD;font-weight:600">MD</span>
-    </span>
-    <span title="Deutschland" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;cursor:default">
-      <svg width="24" height="17" viewBox="0 0 5 3" style="border-radius:2px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.2)"><rect width="5" height="1" fill="#000"/><rect y="1" width="5" height="1" fill="#DD0000"/><rect y="2" width="5" height="1" fill="#FFCE00"/></svg>
-      <span style="font-size:8px;color:#8C9BAD;font-weight:600">DE</span>
-    </span>
-    <span title="France" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;cursor:default">
-      <svg width="24" height="17" viewBox="0 0 3 2" style="border-radius:2px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.2)"><rect width="1" height="2" fill="#002395"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#ED2939"/></svg>
-      <span style="font-size:8px;color:#8C9BAD;font-weight:600">FR</span>
-    </span>
-    <span title="Bulgaria" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;cursor:default">
-      <svg width="24" height="17" viewBox="0 0 3 2" style="border-radius:2px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.2)"><rect width="3" height="0.667" fill="#fff"/><rect y="0.667" width="3" height="0.667" fill="#00966E"/><rect y="1.333" width="3" height="0.667" fill="#D62612"/></svg>
-      <span style="font-size:8px;color:#8C9BAD;font-weight:600">BG</span>
-    </span>
-    <span style="font-size:9px;color:#8C9BAD;font-weight:600;padding:2px 7px;border:1px solid #D5DFE8;border-radius:99px">+more</span>
-  </div>
+  <p class="ftr-r4-copy" data-myd-copyright>© 2026 Home Best Pal SRL (România) · Home Best Pal LTD (Marea Britanie)</p>
+  <!-- Steagurile țărilor active: /api/public/reguli-platforma (reguli-platforma.js, decizia LM B6) -->
+  <div class="ftr-flags-row" data-regula="tari-steaguri"></div>
 </div>
 
 <script>
@@ -2056,13 +1988,13 @@ function submitNewsletter() {
       <div class="grid grid-cols-2 gap-3 mb-5">
         <div class="rounded-xl p-4 border border-gray-100 bg-[#F4F7F9]">
           <div class="text-xl mb-2"><i data-lucide="bar-chart-3" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-          <div class="font-bold text-xs text-[#2D2D2D] mb-1">Monitorizare KPIs</div>
-          <div class="text-[11px] text-gray-400 leading-relaxed">Acces la rapoarte detaliate de performanță în timp real.</div>
+          <div class="font-bold text-xs text-[#2D2D2D] mb-1">Dashboard de investitor</div>
+          <div class="text-[11px] text-gray-400 leading-relaxed">Contul tău de investitor și participațiile tale, într-un singur loc.</div>
         </div>
         <div class="rounded-xl p-4 border border-gray-100 bg-[#F4F7F9]">
           <div class="text-xl mb-2"><i data-lucide="globe" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
           <div class="font-bold text-xs text-[#2D2D2D] mb-1">Expansiune multi-țară</div>
-          <div class="text-[11px] text-gray-400 leading-relaxed">Platforma se extinde activ în RO, MD și alte piețe europene.</div>
+          <div class="text-[11px] text-gray-400 leading-relaxed"><span data-regula-bloc hidden>Țări active: <span data-regula="tari"></span>.</span></div>
         </div>
         <div class="rounded-xl p-4 border border-gray-100 bg-[#F4F7F9]">
           <div class="text-xl mb-2"><i data-lucide="bot" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
@@ -2790,39 +2722,6 @@ function switchMpTab(tab, btn){
   if(btn) btn.classList.add('active');
 }
 
-// ── INTEGRARE PLATFORME ──
-const integData = {
-  woo:{icon:'',name:'WooCommerce',sub:'WordPress · REST API · Plugin',status:'Verificat',statusCls:'chip-g',
-    desc:'<strong>Pași instalare WooCommerce:</strong><br>1. Descarcă plugin My Darrin din marketplace<br>2. Instalează în WordPress → Plugins → Add New<br>3. Introdu API Key din dashboard-ul tău My Darrin<br>4. Selectează categoriile de produse de sincronizat<br>5. Activează sincronizare automată (webhook în timp real)'},
-  shopify:{icon:'',name:'Shopify',sub:'Cloud · App Store · Webhooks',status:'Verificat',statusCls:'chip-g',
-    desc:'<strong>Pași instalare Shopify:</strong><br>1. Caută "My Darrin" în Shopify App Store<br>2. Instalează aplicația și autorizează accesul<br>3. Configurează categoriile de produse dorite<br>4. Comenzile My Darrin apar automat ca comenzi externe'},
-  api:{icon:'',name:'CSV / REST API Custom',sub:'Custom · ERP · B2B',status:'Validare cerere',statusCls:'chip-p',
-    desc:'<strong>Opțiuni integrare REST API:</strong><br>1. Export CSV periodic (cron job sau manual) → importat automat<br>2. REST API cu autentificare Bearer Token<br>3. Webhook push comenzi noi la endpoint-ul tău<br><br>Documentația API completă disponibilă după activarea contului.'},
-  presta:{icon:'',name:'PrestaShop',sub:'Module · Q3 2026',status:'⏳ Q3 2026',statusCls:'chip-acc',
-    desc:'Modulul My Darrin pentru PrestaShop este în dezvoltare. Estimăm lansarea în <strong>Q3 2026</strong>. Înregistrează-te pe lista de așteptare și vei fi primul notificat.'},
-  magento:{icon:'',name:'Magento / Adobe Commerce',sub:'Enterprise · Q4 2026',status:'⏳ Q4 2026',statusCls:'chip-acc',
-    desc:'Integrarea Magento Enterprise este planificată pentru <strong>Q4 2026</strong>. Pentru nevoi urgente, folosește integrarea CSV/REST API disponibilă acum.'},
-  other:{icon:'',name:'Altă platformă',sub:'Verificare compatibilitate',status:'Consultanță gratuită',statusCls:'chip',
-    desc:'Trimite-ne URL-ul magazinului tău și verificăm compatibilitatea gratuit în 48h. Completează formularul de înregistrare sau scrie-ne din pagina Contact.'},
-};
-
-function selInteg(type, el){
-  document.querySelectorAll('.integ-card').forEach(c=>c.classList.remove('selected'));
-  el.classList.add('selected');
-  const d = integData[type];
-  if(!d) return;
-  const det = document.getElementById('integ-details');
-  document.getElementById('integ-icon').textContent = d.icon;
-  document.getElementById('integ-name').textContent = d.name;
-  document.getElementById('integ-sub').textContent = d.sub;
-  document.getElementById('integ-desc').innerHTML = d.desc;
-  const st = document.getElementById('integ-status');
-  st.textContent = d.status;
-  st.className = 'chip '+d.statusCls;
-  det.style.display='block';
-  setTimeout(()=>det.scrollIntoView({behavior:'smooth',block:'nearest'}),100);
-}
-
 // ── SIMULATOR VENITURI ──
 function calcSim(){
   const tip = document.getElementById('sim-tip')?.value||'mat';
@@ -2836,7 +2735,7 @@ function calcSim(){
   setEl('sim-brut', brut.toLocaleString('ro-RO')+' Lei');
   setEl('sim-com-sum', '-'+comSum.toLocaleString('ro-RO')+' Lei');
   setEl('sim-net', net.toLocaleString('ro-RO')+' Lei');
-  const note = tip==='mat'?'Materiale · discount 5–15% · Plată Escrow în max. 5 zile lucrătoare':'Echipamente · discount 5–15% · Plată Escrow în max. 5 zile lucrătoare';
+  const note = tip==='mat'?'Materiale · discount 5–15% · Plată prin escrow, după confirmare':'Echipamente · discount 5–15% · Plată prin escrow, după confirmare';
   setEl('sim-note', note);
 }
 
@@ -3439,7 +3338,7 @@ function daiRespond(query){
     response = 'Pentru instalații electrice avem 6 servicii disponibile: reparații, înlocuire becuri, montaj tablou, testare instalație și consultanță. Te duc direct la categoria potrivită.';
     actionLabel = 'Vezi servicii electrice →'; actionUrl = 'mydarrin-catalog.html?cat=instalatii-electrice';
   } else if (q.includes('funcționează') || q.includes('functioneaza')) {
-    response = 'Simplu: alegi un serviciu din catalog, completezi un deviz în 60 secunde cu Darrin AI, plătești în Escrow (sigur, blocat până la finalizare), iar un partener verificat execută lucrarea cu garanție digitală.';
+    response = 'Simplu: alegi un serviciu din catalog, vezi prețul calculat pentru nivelul ales, plătești către Home Best Pal SRL, iar suma este păstrată ca garanție până la confirmarea lucrării executate de un partener aprobat.';
     actionLabel = 'Cum funcționează, detaliat →'; actionUrl = 'mydarrin-cum-functioneaza.html';
   } else if (q.includes('partener')) {
     response = 'Excelent! Înregistrarea ca partener e gratuită — alegi tipul (Servicii, Materiale sau Închirieri), completezi datele firmei și primești comenzi direct prin platformă.';
@@ -3542,7 +3441,7 @@ function daiSendMessage(){
     <!-- REGISTER -->
     <div id="auth-register" class="p-7 hidden">
       <h3 class="font-bold text-xl text-[#2D2D2D] mb-1" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Creează cont gratuit</h3>
-      <p class="text-gray-400 text-sm mb-5">Comandă servicii și urmărește execuția în timp real.</p>
+      <p class="text-gray-400 text-sm mb-5">Comandă servicii și urmărește execuția din contul tău.</p>
       <div class="flex gap-2 mb-4">
         <button type="button" onclick="oauthLogin('google')" title="Continuă cu Google" class="flex-1 flex items-center justify-center border border-gray-200 rounded-xl py-2.5 hover:bg-gray-50 transition">
           <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.52 12.27c0-.85-.08-1.67-.22-2.45H12v4.63h6.48c-.28 1.5-1.13 2.77-2.4 3.62v3h3.88c2.27-2.09 3.56-5.17 3.56-8.8z"/><path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.95-2.92l-3.88-3c-1.08.73-2.46 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.27v3.09C3.25 21.3 7.31 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.28A7.2 7.2 0 0 1 4.9 12c0-.79.14-1.56.37-2.28V6.63H1.27A11.99 11.99 0 0 0 0 12c0 1.93.46 3.76 1.27 5.37l4-3.09z"/><path fill="#EA4335" d="M12 4.75c1.76 0 3.35.61 4.6 1.8l3.44-3.44C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.27 6.63l4 3.09C6.22 6.86 8.87 4.75 12 4.75z"/></svg>
@@ -3599,6 +3498,7 @@ function daiSendMessage(){
 </div>
 <script src="statistici-publice.js" defer></script>
 <script src="ui-comun.js" defer></script>
+<script src="reguli-platforma.js" defer></script>
 <script src="contact-public.js" defer></script>
 </body>
 </html>

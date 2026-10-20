@@ -681,7 +681,6 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 .card-badge{position:absolute;top:12px;left:12px;font-size:10px;font-weight:800;padding:3px 10px;border-radius:99px;text-transform:uppercase;letter-spacing:.05em}
 .card-badge.hot{background:#FF8C00;color:#fff}
 .card-badge.new{background:#003366;color:#fff}
-.card-badge.aca{background:#0E9E99;color:#fff}
 .card-body{padding:18px 16px;flex:1;display:flex;flex-direction:column}
 .card-title{font-size:15px;font-weight:700;color:#2D2D2D;margin-bottom:6px;line-height:1.35}
 .card-desc{font-size:12.5px;color:#6B7A8D;line-height:1.6;flex:1;margin-bottom:10px}
@@ -986,7 +985,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
   <!-- AI status center -->
   <div class="flex items-center gap-2 text-white/50 text-xs">
     <span class="pulse-dot"></span>
-    <span>Darrin AI activ — deviz inteligent în 60 secunde</span>
+    <span>Darrin AI — te ajută să alegi serviciul potrivit</span>
   </div>
 
   <!-- Dreapta: locatie activa + limba -->
@@ -1489,7 +1488,7 @@ function triggerHeaderSearch(){
   <!-- Grilă de fundal subtilă -->
   <div style="position:absolute;inset:0;max-width:100%;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:52px 52px;pointer-events:none"></div>
   <!-- Glow accent dreapta -->
-  <div style="position:absolute;top:-20%;right:-10%;width:600px;height:600px;max-width:60%;border-radius:50%;background:radial-gradient(circle,rgba(14,158,153,.15) 0%,transparent 70%);pointer-events:none"></div>
+  <div style="position:absolute;top:-20%;right:0;width:600px;height:600px;max-width:60%;border-radius:50%;background:radial-gradient(circle,rgba(14,158,153,.15) 0%,transparent 70%);pointer-events:none"></div>
   <!-- Glow accent stânga-jos -->
   <div style="position:absolute;bottom:-10%;left:-5%;width:400px;height:400px;max-width:60%;border-radius:50%;background:radial-gradient(circle,rgba(255,140,0,.08) 0%,transparent 70%);pointer-events:none"></div>
 
@@ -1612,7 +1611,7 @@ function triggerHeaderSearch(){
     <div class="text-center mb-3">
       <span style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.65)">Explorează pe categorii</span>
     </div>
-    <div class="hcar-wrap">
+    <div class="hcar-wrap" data-carusel>
       <div class="hcar-track">
       <a href="mydarrin-catalog.html?cat=instalatii-electrice" class="hcar-card">
           <img src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&q=80" alt="Instalații electrice" loading="lazy">
@@ -2193,10 +2192,6 @@ function triggerHeaderSearch(){
         <input type="checkbox" id="filter-ai" style="accent-color:#0E9E99;width:15px;height:15px;cursor:pointer"/>
         AI alocă automat
       </label>
-      <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#6B7A8D;cursor:pointer">
-        <input type="checkbox" id="filter-aca" style="accent-color:#1A5FAD;width:15px;height:15px;cursor:pointer"/>
-        Furnizor verificat ACA
-      </label>
     </div>
     <div style="margin-top:10px;padding-top:10px;border-top:1px solid #F4F7F9">
       <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:6px">Preț max</div>
@@ -2219,14 +2214,10 @@ function triggerHeaderSearch(){
     <div style="font-size:11px;font-weight:700;color:#0E9E99">Consultanță gratuită →</div>
   </div>
 
-  <!-- VMC Box -->
-  <div style="background:linear-gradient(135deg,#FFF8EE,#FFF0D6);border-radius:12px;border:1px solid #FFD980;padding:12px;margin-top:12px">
+  <!-- Valoarea minimă de comandă — din /api/public/reguli-platforma (pasul 11-A) -->
+  <div data-regula-bloc hidden style="background:linear-gradient(135deg,#FFF8EE,#FFF0D6);border-radius:12px;border:1px solid #FFD980;padding:12px;margin-top:12px">
     <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#CC7000;margin-bottom:6px">Valoare Minimă Comandă</div>
-    <div style="font-size:11.5px;color:#6B7A8D;line-height:1.7">
-      🇷🇴 România: <strong>100 Lei</strong><br>
-      🇲🇩 Moldova: <strong>400 MDL</strong><br>
-      🇩🇪 Germania: <strong>25 EUR</strong>
-    </div>
+    <div style="font-size:11.5px;color:#6B7A8D;line-height:1.7" data-regula="prag-minim"></div>
   </div>
 
 </aside>
@@ -2301,7 +2292,6 @@ function triggerHeaderSearch(){
                 <span class="price-from">De la</span>
                 <span class="price-val"><span class="dyn-price" data-ron="85">85</span> <span class="dyn-currency">Lei</span></span>
                 <span class="price-unit">/ oră manoperă</span>
-                <div class="vmc-note">Min. 100 Lei · +5% zonă</div>
               </div>
               
             </div>
@@ -2337,7 +2327,6 @@ function triggerHeaderSearch(){
                 <span class="price-from">De la</span>
                 <span class="price-val"><span class="dyn-price" data-ron="75">75</span> <span class="dyn-currency">Lei</span></span>
                 <span class="price-unit">/ oră manoperă</span>
-                <div class="vmc-note">Min. 100 Lei · +5% zonă</div>
               </div>
               
             </div>
@@ -2373,7 +2362,6 @@ function triggerHeaderSearch(){
                 <span class="price-from">De la</span>
                 <span class="price-val"><span class="dyn-price" data-ron="120">120</span> <span class="dyn-currency">Lei</span></span>
                 <span class="price-unit">/ oră echipă</span>
-                <div class="vmc-note">Min. 100 Lei · +5% zonă</div>
               </div>
               
             </div>
@@ -2409,7 +2397,6 @@ function triggerHeaderSearch(){
                 <span class="price-from">De la</span>
                 <span class="price-val"><span class="dyn-price" data-ron="350">350</span> <span class="dyn-currency">Lei</span></span>
                 <span class="price-unit">/ instalare</span>
-                <div class="vmc-note">Min. 100 Lei · +5% zonă</div>
               </div>
               
             </div>
@@ -2445,7 +2432,6 @@ function triggerHeaderSearch(){
                 <span class="price-from">De la</span>
                 <span class="price-val"><span class="dyn-price" data-ron="18">18</span> <span class="dyn-currency">Lei</span></span>
                 <span class="price-unit">/ m² manoperă</span>
-                <div class="vmc-note">Min. 100 Lei · +5% zonă</div>
               </div>
               
             </div>
@@ -2481,7 +2467,6 @@ function triggerHeaderSearch(){
                 <span class="price-from">De la</span>
                 <span class="price-val"><span class="dyn-price" data-ron="60">60</span> <span class="dyn-currency">Lei</span></span>
                 <span class="price-unit">/ oră</span>
-                <div class="vmc-note">Min. 100 Lei · +5% zonă</div>
               </div>
               
             </div>
@@ -2517,7 +2502,6 @@ function triggerHeaderSearch(){
                 <span class="price-from">De la</span>
                 <span class="price-val"><span class="dyn-price" data-ron="200">200</span> <span class="dyn-currency">Lei</span></span>
                 <span class="price-unit">/ instalare</span>
-                <div class="vmc-note">Min. 100 Lei · +5% zonă</div>
               </div>
               
             </div>
@@ -2553,7 +2537,6 @@ function triggerHeaderSearch(){
                 <span class="price-from">De la</span>
                 <span class="price-val"><span class="dyn-price" data-ron="45">45</span> <span class="dyn-currency">Lei</span></span>
                 <span class="price-unit">/ oră echipă</span>
-                <div class="vmc-note">Min. 100 Lei · +5% zonă</div>
               </div>
               
             </div>
@@ -2653,7 +2636,6 @@ function triggerHeaderSearch(){
                 <span class="price-from">De la</span>
                 <span class="price-val"><span class="dyn-price" data-ron="280">280</span> <span class="dyn-currency">Lei</span></span>
                 <span class="price-unit">/ calorifer Bronz</span>
-                <div class="vmc-note">Min. 100 Lei · +5% zonă</div>
               </div>
               
             </div>
@@ -2689,7 +2671,6 @@ function triggerHeaderSearch(){
                 <span class="price-from">De la</span>
                 <span class="price-val"><span class="dyn-price" data-ron="45">45</span> <span class="dyn-currency">Lei</span></span>
                 <span class="price-unit">/ m² manoperă</span>
-                <div class="vmc-note">Min. 100 Lei · +5% zonă</div>
               </div>
               
             </div>
@@ -2725,7 +2706,6 @@ function triggerHeaderSearch(){
                 <span class="price-from">De la</span>
                 <span class="price-val"><span class="dyn-price" data-ron="35">35</span> <span class="dyn-currency">Lei</span></span>
                 <span class="price-unit">/ m² manoperă</span>
-                <div class="vmc-note">Min. 100 Lei · +5% zonă</div>
               </div>
               
             </div>
@@ -2761,7 +2741,6 @@ function triggerHeaderSearch(){
                 <span class="price-from">De la</span>
                 <span class="price-val"><span class="dyn-price" data-ron="55">55</span> <span class="dyn-currency">Lei</span></span>
                 <span class="price-unit">/ m² manoperă</span>
-                <div class="vmc-note">Min. 100 Lei · +5% zonă</div>
               </div>
               
             </div>
@@ -2805,7 +2784,6 @@ function triggerHeaderSearch(){
                 <span class="price-from">De la</span>
                 <span class="price-val"><span class="dyn-price" data-ron="8">8</span> <span class="dyn-currency">Lei</span></span>
                 <span class="price-unit">/ buc / kg</span>
-                <div class="vmc-note">Min. 50 Lei · +5% zonă</div>
               </div>
               
             </div>
@@ -2841,7 +2819,6 @@ function triggerHeaderSearch(){
                 <span class="price-from">De la</span>
                 <span class="price-val"><span class="dyn-price" data-ron="45">45</span> <span class="dyn-currency">Lei</span></span>
                 <span class="price-unit">/ m²</span>
-                <div class="vmc-note">Min. 50 Lei · +5% zonă</div>
               </div>
               
             </div>
@@ -2863,7 +2840,6 @@ function triggerHeaderSearch(){
           <div class="card-media">
             <img src="https://images.unsplash.com/photo-1615529328331-f8917597711f?w=600&q=80" alt="Sanitare & Termo" loading="lazy"/>
             <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            <span class="card-badge aca">ACA BG</span>
             <span style="position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;background:rgba(220,38,38,.85);color:#fff;padding:2px 8px;border-radius:99px;backdrop-filter:blur(4px)">Urgent</span>
             
           </div>
@@ -2877,7 +2853,6 @@ function triggerHeaderSearch(){
                 <span class="price-from">De la</span>
                 <span class="price-val"><span class="dyn-price" data-ron="5">5</span> <span class="dyn-currency">Lei</span></span>
                 <span class="price-unit">/ buc</span>
-                <div class="vmc-note">Min. 50 Lei · +5% zonă</div>
               </div>
               
             </div>
@@ -2899,7 +2874,6 @@ function triggerHeaderSearch(){
           <div class="card-media">
             <img src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&q=80" alt="Electrice & Cabluri" loading="lazy"/>
             <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            <span class="card-badge aca">ACA BG</span>
             <span style="position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;background:rgba(220,38,38,.85);color:#fff;padding:2px 8px;border-radius:99px;backdrop-filter:blur(4px)">Urgent</span>
             
           </div>
@@ -2913,7 +2887,6 @@ function triggerHeaderSearch(){
                 <span class="price-from">De la</span>
                 <span class="price-val"><span class="dyn-price" data-ron="3">3</span> <span class="dyn-currency">Lei</span></span>
                 <span class="price-unit">/ ml / buc</span>
-                <div class="vmc-note">Min. 50 Lei · +5% zonă</div>
               </div>
               
             </div>
@@ -2949,7 +2922,6 @@ function triggerHeaderSearch(){
                 <span class="price-from">De la</span>
                 <span class="price-val"><span class="dyn-price" data-ron="45">45</span> <span class="dyn-currency">Lei</span></span>
                 <span class="price-unit">/ găleată 15L</span>
-                <div class="vmc-note">Min. 50 Lei · +5% zonă</div>
               </div>
               
             </div>
@@ -2985,7 +2957,6 @@ function triggerHeaderSearch(){
                 <span class="price-from">De la</span>
                 <span class="price-val"><span class="dyn-price" data-ron="12">12</span> <span class="dyn-currency">Lei</span></span>
                 <span class="price-unit">/ ml / m³</span>
-                <div class="vmc-note">Min. 50 Lei · +5% zonă</div>
               </div>
               
             </div>
@@ -3007,7 +2978,6 @@ function triggerHeaderSearch(){
           <div class="card-media">
             <img src="https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=600&q=80" alt="Metalurgie & Profile" loading="lazy"/>
             <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            <span class="card-badge aca">ACA BG</span>
             
             
           </div>
@@ -3021,7 +2991,6 @@ function triggerHeaderSearch(){
                 <span class="price-from">De la</span>
                 <span class="price-val"><span class="dyn-price" data-ron="25">25</span> <span class="dyn-currency">Lei</span></span>
                 <span class="price-unit">/ kg / ml</span>
-                <div class="vmc-note">Min. 50 Lei · +5% zonă</div>
               </div>
               
             </div>
@@ -3057,7 +3026,6 @@ function triggerHeaderSearch(){
                 <span class="price-from">De la</span>
                 <span class="price-val"><span class="dyn-price" data-ron="35">35</span> <span class="dyn-currency">Lei</span></span>
                 <span class="price-unit">/ m²</span>
-                <div class="vmc-note">Min. 50 Lei · +5% zonă</div>
               </div>
               
             </div>
@@ -3084,7 +3052,6 @@ function triggerHeaderSearch(){
           <div class="card-media">
             <img src="https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=600&q=80" alt="Utilaje & Echipamente Grele" loading="lazy"/>
             <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            <span class="card-badge aca">ACA BG</span>
             <span style="position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;background:rgba(220,38,38,.85);color:#fff;padding:2px 8px;border-radius:99px;backdrop-filter:blur(4px)">Urgent</span>
             <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>
           </div>
@@ -3098,7 +3065,6 @@ function triggerHeaderSearch(){
                 <span class="price-from">De la</span>
                 <span class="price-val"><span class="dyn-price" data-ron="800">800</span> <span class="dyn-currency">Lei</span></span>
                 <span class="price-unit">/ zi</span>
-                <div class="vmc-note">Min. 100 Lei · +5% zonă</div>
               </div>
               
             </div>
@@ -3134,7 +3100,6 @@ function triggerHeaderSearch(){
                 <span class="price-from">De la</span>
                 <span class="price-val"><span class="dyn-price" data-ron="80">80</span> <span class="dyn-currency">Lei</span></span>
                 <span class="price-unit">/ zi</span>
-                <div class="vmc-note">Min. 50 Lei · +5% zonă</div>
               </div>
               
             </div>
@@ -3170,7 +3135,6 @@ function triggerHeaderSearch(){
                 <span class="price-from">De la</span>
                 <span class="price-val"><span class="dyn-price" data-ron="450">450</span> <span class="dyn-currency">Lei</span></span>
                 <span class="price-unit">/ săptămână</span>
-                <div class="vmc-note">Min. 100 Lei · +5% zonă</div>
               </div>
               
             </div>
@@ -3206,7 +3170,6 @@ function triggerHeaderSearch(){
                 <span class="price-from">De la</span>
                 <span class="price-val"><span class="dyn-price" data-ron="250">250</span> <span class="dyn-currency">Lei</span></span>
                 <span class="price-unit">/ zi</span>
-                <div class="vmc-note">Min. 100 Lei · +5% zonă</div>
               </div>
               
             </div>
@@ -3242,7 +3205,6 @@ function triggerHeaderSearch(){
                 <span class="price-from">De la</span>
                 <span class="price-val"><span class="dyn-price" data-ron="65">65</span> <span class="dyn-currency">Lei</span></span>
                 <span class="price-unit">/ oră</span>
-                <div class="vmc-note">Min. 100 Lei · +5% zonă</div>
               </div>
               
             </div>
@@ -3278,7 +3240,6 @@ function triggerHeaderSearch(){
                 <span class="price-from">De la</span>
                 <span class="price-val"><span class="dyn-price" data-ron="50">50</span> <span class="dyn-currency">Lei</span></span>
                 <span class="price-unit">/ zi</span>
-                <div class="vmc-note">Min. 50 Lei · +5% zonă</div>
               </div>
               
             </div>
@@ -3557,34 +3518,9 @@ function triggerHeaderSearch(){
 
 <!-- ════ ROW 4: Copyright + Tari (fundal alb) ════ -->
 <div class="ftr-r4">
-  <p class="ftr-r4-copy">
-    &copy; 2026 &nbsp;&middot;&nbsp; <strong>Home Best Pal</strong> &nbsp;&ndash;&nbsp; UK &nbsp;&middot;&nbsp; RO
-  </p>
-  <!-- Steaguri tari active -->
-  <div class="ftr-flags-row">
-    <span style="font-size:10px;font-weight:600;color:#6B7A8D;margin-right:4px;text-transform:uppercase;letter-spacing:.06em">Activ în</span>
-    <span title="Romania" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;cursor:default">
-      <svg width="24" height="17" viewBox="0 0 3 2" style="border-radius:2px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.2)"><rect width="1" height="2" fill="#002B7F"/><rect x="1" width="1" height="2" fill="#FCD116"/><rect x="2" width="1" height="2" fill="#CE1126"/></svg>
-      <span style="font-size:8px;color:#8C9BAD;font-weight:600">RO</span>
-    </span>
-    <span title="Moldova" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;cursor:default">
-      <svg width="24" height="17" viewBox="0 0 3 2" style="border-radius:2px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.2)"><rect width="1" height="2" fill="#003DA5"/><rect x="1" width="1" height="2" fill="#FFD200"/><rect x="2" width="1" height="2" fill="#CC0001"/></svg>
-      <span style="font-size:8px;color:#8C9BAD;font-weight:600">MD</span>
-    </span>
-    <span title="Deutschland" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;cursor:default">
-      <svg width="24" height="17" viewBox="0 0 5 3" style="border-radius:2px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.2)"><rect width="5" height="1" fill="#000"/><rect y="1" width="5" height="1" fill="#DD0000"/><rect y="2" width="5" height="1" fill="#FFCE00"/></svg>
-      <span style="font-size:8px;color:#8C9BAD;font-weight:600">DE</span>
-    </span>
-    <span title="France" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;cursor:default">
-      <svg width="24" height="17" viewBox="0 0 3 2" style="border-radius:2px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.2)"><rect width="1" height="2" fill="#002395"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#ED2939"/></svg>
-      <span style="font-size:8px;color:#8C9BAD;font-weight:600">FR</span>
-    </span>
-    <span title="Bulgaria" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;cursor:default">
-      <svg width="24" height="17" viewBox="0 0 3 2" style="border-radius:2px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.2)"><rect width="3" height="0.667" fill="#fff"/><rect y="0.667" width="3" height="0.667" fill="#00966E"/><rect y="1.333" width="3" height="0.667" fill="#D62612"/></svg>
-      <span style="font-size:8px;color:#8C9BAD;font-weight:600">BG</span>
-    </span>
-    <span style="font-size:9px;color:#8C9BAD;font-weight:600;padding:2px 7px;border:1px solid #D5DFE8;border-radius:99px">+more</span>
-  </div>
+  <p class="ftr-r4-copy" data-myd-copyright>© 2026 Home Best Pal SRL (România) · Home Best Pal LTD (Marea Britanie)</p>
+  <!-- Steagurile țărilor active: /api/public/reguli-platforma (reguli-platforma.js, decizia LM B6) -->
+  <div class="ftr-flags-row" data-regula="tari-steaguri"></div>
 </div>
 
 <script>
@@ -3701,13 +3637,13 @@ function submitNewsletter() {
       <div class="grid grid-cols-2 gap-3 mb-5">
         <div class="rounded-xl p-4 border border-gray-100 bg-[#F4F7F9]">
           <div class="text-xl mb-2"><i data-lucide="bar-chart-3" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-          <div class="font-bold text-xs text-[#2D2D2D] mb-1">Monitorizare KPIs</div>
-          <div class="text-[11px] text-gray-400 leading-relaxed">Acces la rapoarte detaliate de performanță în timp real.</div>
+          <div class="font-bold text-xs text-[#2D2D2D] mb-1">Dashboard de investitor</div>
+          <div class="text-[11px] text-gray-400 leading-relaxed">Contul tău de investitor și participațiile tale, într-un singur loc.</div>
         </div>
         <div class="rounded-xl p-4 border border-gray-100 bg-[#F4F7F9]">
           <div class="text-xl mb-2"><i data-lucide="globe" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
           <div class="font-bold text-xs text-[#2D2D2D] mb-1">Expansiune multi-țară</div>
-          <div class="text-[11px] text-gray-400 leading-relaxed">Platforma se extinde activ în RO, MD și alte piețe europene.</div>
+          <div class="text-[11px] text-gray-400 leading-relaxed"><span data-regula-bloc hidden>Țări active: <span data-regula="tari"></span>.</span></div>
         </div>
         <div class="rounded-xl p-4 border border-gray-100 bg-[#F4F7F9]">
           <div class="text-xl mb-2"><i data-lucide="bot" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
@@ -4148,24 +4084,15 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
       <div style="display:flex;justify-content:space-between;font-size:12px;color:#6B7A8D;margin-bottom:5px">
         <span>Subtotal resurse</span><span id="cart-subtotal" style="font-weight:600">0 Lei</span>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:12px;color:#6B7A8D;margin-bottom:5px">
-        <span>Costuri platformă (HBP + overhead)</span><span id="cart-platform">0 Lei</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:12px;color:#6B7A8D;margin-bottom:5px">
-        <span>TVA (<span id="cart-tva-pct" class="tva-pct">—</span>)</span><span id="cart-tva">0 Lei</span>
-      </div>
-      <div id="vmc-warning" style="display:none;background:#FFF0D6;border-radius:8px;border:1px solid #FFD980;padding:8px 10px;font-size:11px;color:#CC7000;margin-bottom:8px">
-        VMC aplicat — minim <span id="vmc-amount">100 Lei</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:800;color:#003366;border-top:2px solid #FF8C00;padding-top:10px">
-        <span>Total final</span>
-        <span id="cart-total" style="color:#FF8C00">0 Lei</span>
+      <div style="font-size:11px;color:#6B7A8D;line-height:1.5;margin-bottom:8px">Prețul final, cu costurile platformei și TVA, se calculează la checkout.</div>
+      <div id="vmc-warning" data-regula-bloc hidden style="background:#FFF0D6;border-radius:8px;border:1px solid #FFD980;padding:8px 10px;font-size:11px;color:#CC7000;margin-bottom:8px">
+        Valoarea minimă de comandă: <span data-regula="prag-minim"></span>
       </div>
     </div>
     <!-- Escrow -->
     <div style="background:#EBF4FB;border-radius:10px;border:1px solid #D6E8F5;padding:9px 12px;margin-bottom:12px;font-size:11px;color:#1A5FAD;display:flex;align-items:flex-start;gap:6px">
       <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:1px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      <span><strong>Escrow securizat.</strong> Suma blocată la plasare, eliberată după confirmarea ta.</span>
+      <span><strong>Escrow securizat.</strong> Suma păstrată ca garanție de la plasare, eliberată după confirmarea ta.</span>
     </div>
     <a href="mydarrin-checkout.html" onclick="event.preventDefault();proceedCheckout()" style="display:block;width:100%;background:#FF8C00;color:#fff;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:800;cursor:pointer;text-decoration:none;text-align:center;font-family:inherit;box-shadow:0 4px 18px rgba(255,140,0,.3);transition:all .18s;margin-bottom:8px" onmouseover="this.style.background='#CC7000'" onmouseout="this.style.background='#FF8C00'">
       Plasează comanda →
@@ -4218,10 +4145,10 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
         Bronz<br><span style="font-size:9.5px;font-weight:500;opacity:.8">Darrin AI · Gratuit</span>
       </button>
       <button class="cons-tab" id="ctab-argint" onclick="switchConsTab('argint',this)" style="flex:1;padding:8px 6px;border-radius:10px;border:1px solid rgba(255,255,255,.12);cursor:pointer;font-family:inherit;font-size:11.5px;font-weight:700;transition:all .18s;background:rgba(255,255,255,.06);color:rgba(255,255,255,.6)">
-        Argint<br><span style="font-size:9.5px;font-weight:500">Consultant online · 50 Lei</span>
+        Argint<br><span style="font-size:9.5px;font-weight:500">Consultant online</span>
       </button>
       <button class="cons-tab" id="ctab-aur" onclick="switchConsTab('aur',this)" style="flex:1;padding:8px 6px;border-radius:10px;border:1px solid rgba(255,255,255,.12);cursor:pointer;font-family:inherit;font-size:11.5px;font-weight:700;transition:all .18s;background:rgba(255,255,255,.06);color:rgba(255,255,255,.6)">
-        Aur<br><span style="font-size:9.5px;font-weight:500">La adresă · 100 Lei</span>
+        Aur<br><span style="font-size:9.5px;font-weight:500">La adresă</span>
       </button>
     </div>
   </div>
@@ -4334,7 +4261,7 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
           <div style="font-weight:700;color:#CC7000;font-size:13px;margin-bottom:6px">Darrin AI recomandă consultanță cu specialist</div>
           <div style="font-size:12.5px;color:#6B7A8D;line-height:1.6;margin-bottom:12px">Nu am putut determina cu certitudine problema din datele transmise. Un specialist tehnic online poate evalua situația mai precis în timp real.</div>
           <button onclick="switchConsTab('argint',document.getElementById('ctab-argint'))" style="width:100%;padding:12px;border-radius:12px;background:#FF8C00;color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .18s" onmouseover="this.style.background='#CC7000'" onmouseout="this.style.background='#FF8C00'">
-            Comandă consultanță online cu specialist → 50 Lei
+            Comandă consultanță online cu specialist →
           </button>
         </div>
       </div>
@@ -4360,10 +4287,10 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
         <!-- Pricing -->
         <div style="background:#fff;border-radius:12px;padding:14px;border:1px solid #D5DFE8">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <span style="font-size:13px;color:#6B7A8D">Consultanță online — 30 min</span>
-            <span style="font-weight:800;color:#003366;font-size:18px">50 Lei</span>
+            <span style="font-size:13px;color:#6B7A8D">Consultanță online</span>
+            <span style="font-weight:800;color:#003366;font-size:14px">Preț afișat la comandă</span>
           </div>
-          <div style="font-size:11px;color:#8C9BAD">Tarif minim · TVA inclus · Escrow securizat · Plătit după sesiune</div>
+          <div style="font-size:11px;color:#8C9BAD">TVA inclus · Plata păstrată ca garanție (escrow)</div>
         </div>
       </div>
 
@@ -4385,14 +4312,14 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
         <div style="font-weight:700;color:#CC7000;font-size:13px;margin-bottom:6px">Specialist recomandă evaluare la adresă</div>
         <div style="font-size:12.5px;color:#6B7A8D;line-height:1.6;margin-bottom:12px">Problema necesită inspecție fizică. Un specialist va veni la adresa ta pentru evaluare completă și deviz exact.</div>
         <button onclick="switchConsTab('aur',document.getElementById('ctab-aur'))" style="width:100%;padding:12px;border-radius:12px;background:#FF8C00;color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .18s" onmouseover="this.style.background='#CC7000'" onmouseout="this.style.background='#FF8C00'">
-          Comandă evaluare la adresă → 100 Lei
+          Comandă evaluare la adresă →
         </button>
       </div>
 
       <!-- CTA Argint -->
       <button onclick="bookArgint()" style="width:100%;padding:14px;border-radius:14px;background:#003366;color:#fff;border:none;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px rgba(0,51,102,.25);transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px" onmouseover="this.style.background='#1A5FAD'" onmouseout="this.style.background='#003366'">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.68A2 2 0 012 .99h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
-        Inițiază sesiunea cu specialistul · 50 Lei Escrow
+        Inițiază sesiunea cu specialistul
       </button>
     </div>
 
@@ -4416,10 +4343,10 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
         </div>
         <div style="background:#fff;border-radius:12px;padding:14px;border:1px solid #FFD980">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <span style="font-size:13px;color:#6B7A8D">Evaluare la adresă — 60 min</span>
-            <span style="font-weight:800;color:#003366;font-size:18px">100 Lei</span>
+            <span style="font-size:13px;color:#6B7A8D">Evaluare la adresă</span>
+            <span style="font-weight:800;color:#003366;font-size:14px">Preț afișat la comandă</span>
           </div>
-          <div style="font-size:11px;color:#8C9BAD">Tarif minim · TVA inclus · Transport inclus în tarif · Escrow securizat</div>
+          <div style="font-size:11px;color:#8C9BAD">TVA inclus · Plata păstrată ca garanție (escrow)</div>
         </div>
       </div>
 
@@ -4431,8 +4358,8 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
           <div style="display:flex;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:7px;background:#003366;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</span>Poliță asigurare (opțional)</div>
           <div style="display:flex;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:7px;background:#003366;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</span>Acceptă condițiile contractuale</div>
           <div style="display:flex;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:7px;background:#003366;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</span>Selectează data și intervalul orar</div>
-          <div style="display:flex;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:7px;background:#003366;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">5</span>Card bancar — 100 Lei Escrow</div>
-          <div style="display:flex;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:7px;background:#FF8C00;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i data-lucide="rocket" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Lansare — Darrin AI alocă specialistul cel mai aproape</div>
+          <div style="display:flex;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:7px;background:#003366;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">5</span>Plata, păstrată ca garanție (escrow)</div>
+          <div style="display:flex;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:7px;background:#FF8C00;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i data-lucide="rocket" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Lansare — platforma alocă specialistul din zona ta</div>
         </div>
       </div>
 
@@ -4450,7 +4377,7 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
 
       <!-- CTA Aur — deschide pagina produs cu slug dedicat -->
       <button onclick="bookAur()" style="width:100%;padding:14px;border-radius:14px;background:#FF8C00;color:#fff;border:none;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 18px rgba(255,140,0,.35);transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px" onmouseover="this.style.background='#CC7000'" onmouseout="this.style.background='#FF8C00'">
-        Comandă evaluare la adresă · 100 Lei Escrow
+        Comandă evaluare la adresă
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
       </button>
       <p style="text-align:center;font-size:11.5px;color:#8C9BAD;margin-top:8px">Escrow securizat · Darrin AI alocă specialistul din zona ta · Garanție evaluare</p>
@@ -5593,7 +5520,7 @@ function mkCard(item, pret, tab, asoc) {
       <span class="price-from">De la</span>
       <span class="price-val"><span class="dyn-price" data-ron="${p}">${p||'—'}</span> <span class="dyn-currency">Lei</span></span>
       <span class="price-unit">/ ${item.unitate_masura||'buc'}</span>
-      ${isA?'<div class="vmc-note">Min. 100 Lei · +5% zonă</div>':''}
+      
     </div></div>
   </div></div>`;
 }
@@ -5932,7 +5859,6 @@ function applyFilters() {
   var sortBy = document.getElementById('sort-select')?.value || 'default';
   var filterUrgent = document.getElementById('filter-urgent')?.checked;
   var filterAI = document.getElementById('filter-ai')?.checked;
-  var filterACA = document.getElementById('filter-aca')?.checked;
   var maxPrice = parseFloat(document.getElementById('price-range')?.value || 99999);
   var cat = activeCat[activeTab] || 'all';
 
@@ -6464,8 +6390,9 @@ let cartItems = [];
 let cartIdCounter = 0;
 
 const RATES = {RON:1, EUR:0.2, MDL:5};
-const VMC_MAP = {RON:100, EUR:25, MDL:400};
-const PLATFORM_PCT = 0.15 + 0.10 + 0.03 + 0.03; // HBP+indirect+marketing+maint
+// Pasul 11-A: fără prag și procente de platformă scrise aici — prețul final
+// (formula din back-office + TVA) și pragul minim se calculează pe server, la checkout;
+// pragul afișat vine din /api/public/reguli-platforma (reguli-platforma.js).
 // TVA pe țara vizitatorului, din tax_configurations (tva-config.js), nu
 // scris direct în pagină. Setat la detectarea zonei; până atunci RO.
 let TVA = null;
@@ -6522,9 +6449,6 @@ function switchMainTab(tab, btn){
   document.querySelector('#sidebar-'+tab+' .cat-sidebar-item')?.classList.add('active');
   activeCat[tab] = 'all';
   applyFilters();
-  // Update VMC
-  const vmcMap = {servicii:100,materiale:50,inchiriere:100};
-  setEl('vmc-label', (vmcMap[tab]||100)+' Lei min.');
 }
 
 // ── CATEGORY FILTER ──
@@ -6559,7 +6483,6 @@ function updateActiveFilters(search, urgent, ai, aca, cat){
   if(search) tags.push({label:'"'+search+'"', onRemove:"document.getElementById('search-input').value='';applyFilters()"});
   if(urgent) tags.push({label:'Urgent', onRemove:"document.getElementById('filter-urgent').checked=false;applyFilters()"});
   if(ai) tags.push({label:'AI Alocă', onRemove:"document.getElementById('filter-ai').checked=false;applyFilters()"});
-  if(aca) tags.push({label:'ACA BG', onRemove:"document.getElementById('filter-aca').checked=false;applyFilters()"});
   if(cat!=='all') tags.push({label:''+cat, onRemove:"activeCat[activeTab]='all';activeSubCat[activeTab]='all';applyFilters();updatePageTitleForSubcat(activeTab,'all','all')"});
   if(subcat!=='all') tags.push({label:''+subcat, onRemove:"activeSubCat[activeTab]='all';applyFilters();updatePageTitleForSubcat(activeTab,activeCat[activeTab]||'all','all')"});
 
@@ -6576,7 +6499,6 @@ function resetFilters(){
   document.getElementById('search-input').value='';
   document.getElementById('filter-urgent').checked=false;
   document.getElementById('filter-ai').checked=false;
-  document.getElementById('filter-aca').checked=false;
   document.getElementById('price-range').value=1000;
   maxPrice=1000;
   setEl('price-label','≤ 1000 Lei');
@@ -6847,21 +6769,9 @@ function updateCartDisplay(){
     itemsContainer.insertBefore(div, empty);
   });
 
-  // VMC check
-  const vmc = VMC_MAP[activeCur]||100;
   const subtotalLocal = subtotal * rate;
-  const effectiveSubtotal = Math.max(subtotalLocal, vmc);
-  const vmcWarning = document.getElementById('vmc-warning');
-  if(vmcWarning) vmcWarning.style.display = subtotalLocal < vmc ? 'block' : 'none';
-
-  const platform = effectiveSubtotal * PLATFORM_PCT;
-  const tva = TVA != null ? (effectiveSubtotal + platform) * TVA : 0;
-  const total = effectiveSubtotal + platform + tva;
-
-  setEl('cart-subtotal', effectiveSubtotal.toFixed(0)+' '+activeCur);
-  setEl('cart-platform', platform.toFixed(0)+' '+activeCur);
-  setEl('cart-tva', tva.toFixed(0)+' '+activeCur);
-  setEl('cart-total', total.toFixed(0)+' '+activeCur);
+  setEl('cart-subtotal', subtotalLocal.toFixed(0)+' '+activeCur);
+  if (window.MYD_REGULI) window.MYD_REGULI.aplica(document.getElementById('cart-summary') || document);
 }
 
 // ── OPEN SERVICE ──
@@ -7083,7 +6993,7 @@ function daiRespond(query){
     response = 'Pentru instalații electrice avem 6 servicii disponibile: reparații, înlocuire becuri, montaj tablou, testare instalație și consultanță. Te duc direct la categoria potrivită.';
     actionLabel = 'Vezi servicii electrice →'; actionUrl = 'mydarrin-catalog.html?cat=instalatii-electrice';
   } else if (q.includes('funcționează') || q.includes('functioneaza')) {
-    response = 'Simplu: alegi un serviciu din catalog, completezi un deviz în 60 secunde cu Darrin AI, plătești în Escrow (sigur, blocat până la finalizare), iar un partener verificat execută lucrarea cu garanție digitală.';
+    response = 'Simplu: alegi un serviciu din catalog, vezi prețul calculat pentru nivelul ales, plătești către Home Best Pal SRL, iar suma este păstrată ca garanție până la confirmarea lucrării executate de un partener aprobat.';
     actionLabel = 'Cum funcționează, detaliat →'; actionUrl = 'mydarrin-cum-functioneaza.html';
   } else if (q.includes('partener')) {
     response = 'Excelent! Înregistrarea ca partener e gratuită — alegi tipul (Servicii, Materiale sau Închirieri), completezi datele firmei și primești comenzi direct prin platformă.';
@@ -7187,7 +7097,7 @@ function daiSendMessage(){
     <!-- REGISTER -->
     <div id="auth-register" class="p-7 hidden">
       <h3 class="font-bold text-xl text-[#2D2D2D] mb-1" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Creează cont gratuit</h3>
-      <p class="text-gray-400 text-sm mb-5">Comandă servicii și urmărește execuția în timp real.</p>
+      <p class="text-gray-400 text-sm mb-5">Comandă servicii și urmărește execuția din contul tău.</p>
       <div class="flex gap-2 mb-4">
         <button type="button" onclick="oauthLogin('google')" title="Continuă cu Google" class="flex-1 flex items-center justify-center border border-gray-200 rounded-xl py-2.5 hover:bg-gray-50 transition">
           <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.52 12.27c0-.85-.08-1.67-.22-2.45H12v4.63h6.48c-.28 1.5-1.13 2.77-2.4 3.62v3h3.88c2.27-2.09 3.56-5.17 3.56-8.8z"/><path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.95-2.92l-3.88-3c-1.08.73-2.46 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.27v3.09C3.25 21.3 7.31 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.28A7.2 7.2 0 0 1 4.9 12c0-.79.14-1.56.37-2.28V6.63H1.27A11.99 11.99 0 0 0 0 12c0 1.93.46 3.76 1.27 5.37l4-3.09z"/><path fill="#EA4335" d="M12 4.75c1.76 0 3.35.61 4.6 1.8l3.44-3.44C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.27 6.63l4 3.09C6.22 6.86 8.87 4.75 12 4.75z"/></svg>
@@ -7248,5 +7158,6 @@ function daiSendMessage(){
 <script src="statistici-publice.js" defer></script>
 <script src="ui-comun.js" defer></script>
 <script src="contact-public.js" defer></script>
+<script src="reguli-platforma.js" defer></script>
 </body>
 </html>

@@ -18,8 +18,8 @@
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { elibereazaEscrow } = require('../../lib/elibereaza-escrow');
-
-const FEREASTRA_TACITA_ORE = 24;
+// Aceeași constantă afișează termenul pe paginile publice (api/public/reguli-platforma.js).
+const { FEREASTRA_TACITA_ORE } = require('../../lib/reguli-comenzi');
 
 module.exports = async function handler(req, res) {
   const secretAsteptat = process.env.CRON_SECRET;

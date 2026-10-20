@@ -208,8 +208,10 @@ function detecteaza(limba) {
     if (b.scrollWidth > b.clientWidth + 2 && getComputedStyle(b).overflow !== 'visible') rupte.push(sel(b) + ' «' + b.innerText.trim().slice(0, 30) + '»');
     if (r.right > W + 1 && r.left < W - 1 && r.left >= 0) rupte.push('iese din ecran: ' + sel(b) + ' «' + b.innerText.trim().slice(0, 30) + '»');
   });
-  // Elemente tăiate la dreapta ecranului (vezi antetul fișierului).
-  const derulabil = (el) => { for (let e = el.parentElement; e && e !== document.body; e = e.parentElement) { const ox = getComputedStyle(e).overflowX; if (ox === 'auto' || ox === 'scroll') return true; } return false; };
+  // Elemente tăiate la dreapta ecranului (vezi antetul fișierului). Caruselele
+  // animate (bandă care trece prin fereastră, marcate cu data-carusel) sunt
+  // tăiate intenționat și nu se numără (pasul 11-A).
+  const derulabil = (el) => { for (let e = el.parentElement; e && e !== document.body; e = e.parentElement) { if (e.hasAttribute('data-carusel')) return true; const ox = getComputedStyle(e).overflowX; if (ox === 'auto' || ox === 'scroll') return true; } return false; };
   let dreaptaMax = 0;
   const taiate = [];
   document.querySelectorAll('body *').forEach((el) => {
