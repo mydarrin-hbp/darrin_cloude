@@ -1154,6 +1154,16 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
                   <span style="color:#4A6080">%</span>
                 </div>
               </div>
+              <!-- Pasul 11-A (decizia LM B3, 17 oct. 2026): termenul afișat pe paginile
+                   publice prin /api/public/reguli-platforma. Fără valoare de rezervă. -->
+              <div style="background:#FFFFFF;border-radius:12px;padding:14px;border:1px solid #D5DFE8">
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4A6080;margin-bottom:10px">Plata către parteneri</div>
+                <div style="display:flex;align-items:center;gap:12px">
+                  <span style="font-size:13px;color:#8BA3C0;min-width:210px">Termen maxim de la eliberarea sumei</span>
+                  <input type="number" id="termen-plata-partener" placeholder="—" min="1" max="60" step="1" style="background:#0F1923;border:1px solid #2D3F55;border-radius:7px;padding:6px 10px;color:#E2E8F0;font-weight:700;width:80px;font-family:inherit">
+                  <span style="color:#4A6080">zile</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -6864,6 +6874,7 @@ async function loadComisioaneConfig() {
     'comision-inchiriere': cfg['comision_inchiriere_contractat_pct'] ?? '15',
     'comision-asigurare': cfg['comision_intermediere_pct'] ?? '15',
     'cost-asigurare-pct': cfg['cost_asigurare_pct'] ?? '',
+    'termen-plata-partener': cfg['termen_plata_partener_zile'] ?? '',
   };
   Object.entries(map).forEach(function([id, val]) {
     var el = document.getElementById(id);
@@ -6871,7 +6882,7 @@ async function loadComisioaneConfig() {
   });
 
   _commConfigLoaded = true;
-  var lipsa = ['comision_platforma_default_pct', 'cost_marketing_pct', 'cost_mentenanta_pct', 'cost_asigurare_pct'].filter(function(k) { return cfg[k] == null; });
+  var lipsa = ['comision_platforma_default_pct', 'cost_marketing_pct', 'cost_mentenanta_pct', 'cost_asigurare_pct', 'termen_plata_partener_zile'].filter(function(k) { return cfg[k] == null; });
   if (status) status.textContent = 'Încărcat (' + Object.keys(cfg).length + ' valori)' + (lipsa.length ? ' · lipsesc: ' + lipsa.join(', ') : '');
   exempluPret();
 }
@@ -6936,6 +6947,7 @@ async function saveAllComisioaneConfig(buton) {
     { cheie: 'comision_inchiriere_contractat_pct', valoare: document.getElementById('comision-inchiriere')?.value, sectiune: 'pricing', tara_cod: tara, tip: 'number', unitate: '%', eticheta: 'Comision reținut — Furnizori Închirieri' },
     { cheie: 'comision_intermediere_pct', valoare: document.getElementById('comision-asigurare')?.value, sectiune: 'asigurari', tara_cod: tara, tip: 'number', unitate: '%', eticheta: 'Comision My Darrin din prima de asigurare (%)' },
     { cheie: 'cost_asigurare_pct', valoare: document.getElementById('cost-asigurare-pct')?.value, sectiune: 'asigurari', tara_cod: tara, tip: 'number', unitate: '%', eticheta: 'Cost asigurare inclus în preț (% din costul de bază)' },
+    { cheie: 'termen_plata_partener_zile', valoare: document.getElementById('termen-plata-partener')?.value, sectiune: 'pricing', tara_cod: tara, tip: 'number', unitate: 'zile', eticheta: 'Termen de plată către partener (zile de la eliberarea sumei)' },
   ].filter(function(r) { return r.valoare !== undefined && r.valoare !== null && r.valoare !== ''; })
    .map(function(r) { return Object.assign({ updated_at: new Date().toISOString(), editabil_de: 'superadmin' }, r); });
 
@@ -6947,7 +6959,7 @@ async function saveAllComisioaneConfig(buton) {
     if (result.error) throw new Error('Nu s-a salvat: ' + result.error.message);
     var ts = new Date().toLocaleTimeString('ro-RO');
     if (log) log.textContent = '[' + ts + '] ' + rows.length + ' valori salvate pentru țara: ' + tara + '\n' +
-      rows.map(function(r) { return '  · ' + r.cheie + ' = ' + r.valoare + '%'; }).join('\n');
+      rows.map(function(r) { return '  · ' + r.cheie + ' = ' + r.valoare + (r.unitate === 'zile' ? ' zile' : '%'); }).join('\n');
     exempluPret();
     return rows.length + ' valori salvate pentru ' + (tara === 'ALL' ? 'toate țările' : tara) + '. Prețurile noi se aplică imediat (fără redeploy).';
   });
