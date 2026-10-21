@@ -16,7 +16,9 @@
 //      (api/admin/investitori-aprobare.js); după aprobarea KYC, se aprobă;
 //   E. verificarea manuală (api/admin/investitori-kyc.js): acces doar cu drept,
 //      respingerea cere motivul RO + EN, documentul prin adresă semnată, audit;
-//   F. /api/cont/profil: starea rutei de investitor și datele de precompletare.
+//   F. /api/cont/profil: starea rutei de investitor și datele de precompletare;
+//   G. exit (api/investitori/exit.js): se numără doar acțiunile din subscrierile
+//      aprobate (corecție 21 oct. 2026).
 // Rulare: node scripts/test-roluri-investitor.js
 
 const path = require('path');
@@ -44,6 +46,7 @@ const apiAdminKyc = require(path.join(RADACINA, 'api/admin/investitori-kyc.js'))
 const apiWizard = require(path.join(RADACINA, 'api/partener/wizard-companie.js'));
 const apiRegister = require(path.join(RADACINA, 'api/public/partner-register.js'));
 const apiProfil = require(path.join(RADACINA, 'api/cont/profil.js'));
+const apiExit = require(path.join(RADACINA, 'api/investitori/exit.js'));
 
 const A = '30000000-0000-4000-8000-00000000000a';
 const B = '30000000-0000-4000-8000-00000000000b';
@@ -59,7 +62,7 @@ function reset() {
       { id: ADMIN, email: 'admin@test', roles: ['admin'] },
       { id: SUPER, email: 'super@test', roles: ['superadmin'] },
     ],
-    investitori_kyc: [], investitori_portofoliu: [], partners: [], partner_conturi_bancare: [], audit_log: [], admin_permissions: [],
+    investitori_kyc: [], investitori_portofoliu: [], investitori_exit: [], partners: [], partner_conturi_bancare: [], audit_log: [], admin_permissions: [],
   };
   DB.coloane = {};
   DB.storage = {};
@@ -246,6 +249,13 @@ async function rutaCompleta(token, id) {
     const ap = await cheama(apiAprobare, { token: 'tok-super', metoda: 'POST', body: { id: DB.tabele.investitori_portofoliu[0].id, actiune: 'aproba' } });
     egal(ap.statusCode, 200); egal(DB.tabele.investitori_portofoliu[0].status, 'aprobat');
   });
+  await test('a doua subscriere a aceluiași investitor → 200 (două rânduri)', async () => {
+    reset();
+    DB.tabele.profiles.find((p) => p.id === A).roles = ['client', 'investor'];
+    egal((await cheama(apiSub, { token: 'tok-a', metoda: 'POST', body: { suma_eur: 25000, actiuni: 25, instrument: 'SAFE' } })).statusCode, 200, 'prima');
+    egal((await cheama(apiSub, { token: 'tok-a', metoda: 'POST', body: { suma_eur: 50000, actiuni: 50, instrument: 'Equity' } })).statusCode, 200, 'a doua');
+    egal(DB.tabele.investitori_portofoliu.filter((r) => r.user_id === A).map((r) => r.actiuni), [25, 50]);
+  });
   await test('o subscriere veche, fără cont, nu se poate aproba', async () => {
     reset();
     DB.tabele.investitori_portofoliu.push({ id: 'vechi', email: 'x@test', actiuni: 1, valoare_investita: 1000, status: 'in_asteptare' });
@@ -317,6 +327,30 @@ async function rutaCompleta(token, id) {
     egal(r.statusCode, 200);
     egal(r.corp.investitor.status, 'ciorna'); egal(r.corp.investitor.pas_curent, 2);
     egal([r.corp.prenume, r.corp.nume_familie, r.corp.telefon, r.corp.tara], ['Ana', 'Albu', '+40700000001', 'RO']);
+  });
+
+  console.log('G. Exit');
+  await test('se numără doar acțiunile din subscrierile aprobate', async () => {
+    reset();
+    DB.tabele.profiles.find((p) => p.id === A).roles = ['client', 'investor'];
+    DB.tabele.investitori_portofoliu.push(
+      { id: 's1', user_id: A, actiuni: 10, valoare_investita: 10000, status: 'aprobat' },
+      { id: 's2', user_id: A, actiuni: 50, valoare_investita: 50000, status: 'in_asteptare' },
+      { id: 's3', user_id: A, actiuni: 40, valoare_investita: 40000, status: 'respins' },
+    );
+    const peste = await cheama(apiExit, { token: 'tok-a', metoda: 'POST', body: { tip: 'buyback', numar_actiuni: 11 } });
+    egal(peste.statusCode, 400, 'peste acțiunile aprobate');
+    adevarat(/10 acțiuni/.test(peste.corp.error), peste.corp.error);
+    egal(DB.tabele.investitori_exit.length, 0);
+    const ok10 = await cheama(apiExit, { token: 'tok-a', metoda: 'POST', body: { tip: 'buyback', numar_actiuni: 10 } });
+    egal(ok10.statusCode, 200, 'exact acțiunile aprobate');
+    egal(DB.tabele.investitori_exit.length, 1);
+  });
+  await test('fără subscrieri aprobate → nicio acțiune deținută', async () => {
+    reset();
+    DB.tabele.profiles.find((p) => p.id === A).roles = ['client', 'investor'];
+    DB.tabele.investitori_portofoliu.push({ id: 's2', user_id: A, actiuni: 50, valoare_investita: 50000, status: 'in_asteptare' });
+    egal((await cheama(apiExit, { token: 'tok-a', metoda: 'POST', body: { tip: 'piata_secundara', numar_actiuni: 1 } })).statusCode, 400);
   });
 
   console.log(`\n${ok} trecute, ${esec} picate`);

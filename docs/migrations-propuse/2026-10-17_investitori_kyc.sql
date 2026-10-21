@@ -20,8 +20,17 @@
 --      trimitere); un rând pe utilizator (unic pe user_id). Fără CNP în clar.
 --      RLS: utilizatorul își vede doar rândul lui; scrierile doar prin server
 --      (insert / update / delete revocate pentru anon și authenticated).
+--      Politicile vechi de scriere („investitor trimite KYC”, „admin
+--      revizuieste KYC”) se șterg: fără drepturi de scriere nu mai aveau
+--      efect, dar induceau în eroare (corecție 21 oct. 2026).
 --   3. investitori_portofoliu: user_id (legătura cu contul), cu index;
---      instrument și status, dacă lipsesc.
+--      instrument și status, dacă lipsesc. Un investitor poate avea mai
+--      multe subscrieri (alte tickete, alte runde): unicitatea pe user_id
+--      (investitori_portofoliu_user_id_key, live) se scoate — altfel a doua
+--      subscriere a aceluiași investitor cădea cu 500 (corecție 21 oct. 2026).
+--      Cheia străină existentă pe user_id (live: spre profiles(id), ON DELETE
+--      CASCADE) rămâne; una nouă, spre auth.users, se adaugă doar dacă pe
+--      user_id nu există deja nicio cheie străină.
 --
 -- Siguranță
 --   O singură tranzacție; rulabilă de mai multe ori (if not exists / drop ...
@@ -117,6 +126,8 @@ $$;
 -- RLS: utilizatorul își vede doar rândul lui; scrierile doar prin server.
 alter table public.investitori_kyc enable row level security;
 drop policy if exists "investitorul vede propriul KYC" on public.investitori_kyc;
+drop policy if exists "investitor trimite KYC" on public.investitori_kyc;
+drop policy if exists "admin revizuieste KYC" on public.investitori_kyc;
 create policy "investitorul vede propriul KYC" on public.investitori_kyc
   for select to authenticated using (auth.uid() = user_id);
 revoke insert, update, delete on public.investitori_kyc from anon, authenticated;
@@ -140,6 +151,38 @@ begin
 end;
 $$;
 create index if not exists investitori_portofoliu_user_id_idx on public.investitori_portofoliu (user_id);
+
+-- Mai multe subscrieri pe investitor: fără unicitate pe user_id singur.
+alter table public.investitori_portofoliu drop constraint if exists investitori_portofoliu_user_id_key;
+do $$
+declare
+  c record;
+begin
+  -- orice altă constrângere UNIQUE / PRIMARY doar pe user_id
+  for c in
+    select con.conname
+    from pg_constraint con
+    where con.conrelid = 'public.investitori_portofoliu'::regclass
+      and con.contype = 'u'
+      and con.conkey = array[(select attnum from pg_attribute
+                              where attrelid = 'public.investitori_portofoliu'::regclass and attname = 'user_id')]::smallint[]
+  loop
+    execute format('alter table public.investitori_portofoliu drop constraint %I', c.conname);
+  end loop;
+  -- orice index unic rămas (fără constrângere) doar pe user_id
+  for c in
+    select ic.relname
+    from pg_index i
+    join pg_class ic on ic.oid = i.indexrelid
+    join pg_attribute a on a.attrelid = i.indrelid and a.attnum = i.indkey[0]
+    where i.indrelid = 'public.investitori_portofoliu'::regclass
+      and i.indisunique and i.indnatts = 1 and a.attname = 'user_id'
+      and not exists (select 1 from pg_constraint con where con.conindid = i.indexrelid)
+  loop
+    execute format('drop index public.%I', c.relname);
+  end loop;
+end;
+$$;
 
 -- ═══ VERIFICARE ═══════════════════════════════════════════════════
 do $$
@@ -176,6 +219,24 @@ begin
   end if;
   if not exists (select 1 from pg_indexes where schemaname = 'public' and indexname = 'investitori_portofoliu_user_id_idx') then
     raise exception 'Indexul investitori_portofoliu_user_id_idx lipsește';
+  end if;
+  if exists (
+    select 1 from pg_index i
+    join pg_attribute a on a.attrelid = i.indrelid and a.attnum = i.indkey[0]
+    where i.indrelid = 'public.investitori_portofoliu'::regclass
+      and i.indisunique and i.indnatts = 1 and a.attname = 'user_id'
+  ) then
+    raise exception 'investitori_portofoliu.user_id e încă unic: a doua subscriere a unui investitor ar eșua';
+  end if;
+  if not exists (select 1 from pg_constraint where conrelid = 'public.investitori_portofoliu'::regclass
+                 and contype = 'f' and pg_get_constraintdef(oid) ilike 'FOREIGN KEY (user_id)%') then
+    raise exception 'investitori_portofoliu.user_id nu are cheie străină';
+  end if;
+  select string_agg(policyname || ' (' || cmd || ')', ', ') into v_lipsa
+  from pg_policies
+  where schemaname = 'public' and tablename = 'investitori_kyc' and cmd <> 'SELECT';
+  if v_lipsa is not null then
+    raise exception 'Pe investitori_kyc au rămas politici de scriere: %', v_lipsa;
   end if;
 end;
 $$;

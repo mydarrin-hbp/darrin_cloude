@@ -6,8 +6,12 @@
 // Schema de pornire e o copie minimă a celei din schema.sql (investitori_kyc
 // și investitori_portofoliu în forma live, 26 aug. 2026), plus ce oferă
 // Supabase: schemele auth și storage (buckets, objects, storage.foldername),
-// auth.uid() și rolurile anon / authenticated. Ca în producție: un CHECK vechi
-// pe status, fără `ciorna`, și un dosar existent, care nu trebuie atins.
+// auth.uid() și rolurile anon / authenticated. Ca în producție (verificarea
+// live din 21 oct. 2026): un CHECK vechi pe status, fără `ciorna`; politicile
+// vechi „investitor trimite KYC” (INSERT) și „admin revizuieste KYC” (UPDATE);
+// investitori_portofoliu cu UNIQUE (user_id) (investitori_portofoliu_user_id_key)
+// și cheia străină user_id → profiles(id) ON DELETE CASCADE; un dosar și o
+// subscriere existente, care nu trebuie atinse.
 //
 // Verifică:
 //   1. migrarea rulează de două ori, fără erori;
@@ -16,7 +20,10 @@
 //   3. coloanele noi, starea `ciorna`, unicitatea pe user_id;
 //   4. RLS: utilizatorul își citește doar rândul lui; authenticated nu poate scrie;
 //   5. politica de storage: utilizatorul citește doar fișierele din dosarul lui;
-//   6. investitori_portofoliu.user_id + index; datele existente rămân;
+//   6. investitori_portofoliu: fără unicitate pe user_id (două subscrieri ale
+//      aceluiași investitor intră fără eroare), cheia străină spre profiles
+//      rămâne și nu se adaugă una nouă; index; datele existente rămân;
+//   6b. pe investitori_kyc rămân doar politicile de citire;
 //   7. verificarea de la final oprește tranzacția dacă bucket-ul nu e privat.
 //
 // Cerințe (nu e dependență a proiectului):
@@ -48,6 +55,8 @@ grant select on storage.objects to authenticated;
 grant execute on function auth.uid() to anon, authenticated;
 grant execute on function storage.foldername(text) to anon, authenticated;
 
+create table public.profiles (id uuid primary key references auth.users(id), email text);
+
 create table public.investitori_kyc (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) unique,
@@ -62,18 +71,29 @@ create table public.investitori_kyc (
 );
 alter table public.investitori_kyc enable row level security;
 create policy "investitorul vede propriul KYC" on public.investitori_kyc for select using (auth.uid() = user_id);
+create policy "investitor trimite KYC" on public.investitori_kyc for insert with check (auth.uid() = user_id);
+create policy "admin revizuieste KYC" on public.investitori_kyc for update using (true);
 grant select, insert, update, delete on public.investitori_kyc to anon, authenticated;
 
 create table public.investitori_portofoliu (
   id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.profiles(id) on delete cascade,
   actiuni integer not null,
   valoare_investita numeric not null,
+  roi_estimat numeric,
+  ultima_evaluare timestamptz,
+  oras text,
+  consimtamant_public boolean default false,
+  exit_estimat_luni integer,
   email text,
-  created_at timestamptz default now()
+  status text default 'in_asteptare',
+  created_at timestamptz default now(),
+  constraint investitori_portofoliu_user_id_key unique (user_id)
 );
 grant select on public.investitori_portofoliu to authenticated;
 
 insert into auth.users values ('${A}', 'a@test'), ('${B}', 'b@test');
+insert into public.profiles values ('${A}', 'a@test'), ('${B}', 'b@test');
 insert into public.investitori_kyc (user_id, status, pep_check) values ('${B}', 'aprobat', false);
 insert into public.investitori_portofoliu (actiuni, valoare_investita, email) values (5, 5000, 'vechi@test');
 -- un bucket cu același nume, public din greșeală: migrarea trebuie să-l facă privat
@@ -151,6 +171,21 @@ async function caUtilizator(db, uid, sql) {
   verifica(idx.length === 1, 'indexul pe investitori_portofoliu.user_id');
   const p = (await db.query('select count(*)::int as n from public.investitori_portofoliu')).rows[0];
   verifica(p.n === 1, 'subscrierea existentă rămâne');
+  let eDoua = null;
+  try {
+    await db.exec(`insert into public.investitori_portofoliu (user_id, actiuni, valoare_investita) values ('${A}', 25, 25000), ('${A}', 50, 50000)`);
+  } catch (e) { eDoua = e; }
+  verifica(!eDoua, 'două subscrieri pentru același user_id intră fără eroare' + (eDoua ? ' — ' + eDoua.message : ''));
+  const unic = (await db.query(`select count(*)::int as n from pg_index i join pg_attribute a on a.attrelid = i.indrelid and a.attnum = i.indkey[0]
+    where i.indrelid = 'public.investitori_portofoliu'::regclass and i.indisunique and i.indnatts = 1 and a.attname = 'user_id'`)).rows[0];
+  verifica(unic.n === 0, 'nicio unicitate pe investitori_portofoliu.user_id singur');
+  const fk = (await db.query(`select pg_get_constraintdef(oid) as d from pg_constraint
+    where conrelid = 'public.investitori_portofoliu'::regclass and contype = 'f'`)).rows.map((r) => r.d);
+  verifica(fk.length === 1 && /profiles\(id\)/.test(fk[0]) && /CASCADE/.test(fk[0]), 'cheia străină existentă spre profiles rămâne, fără una nouă spre auth.users (' + fk.join(' | ') + ')');
+
+  // 6b. Politicile pe investitori_kyc
+  const pol = (await db.query("select policyname, cmd from pg_policies where tablename = 'investitori_kyc' order by policyname")).rows;
+  verifica(pol.length === 1 && pol[0].cmd === 'SELECT', 'pe investitori_kyc rămâne doar politica de citire (' + pol.map((x) => x.policyname + ':' + x.cmd).join(', ') + ')');
 
   // 7. Verificarea oprește tranzacția
   const db2 = new PGlite();
