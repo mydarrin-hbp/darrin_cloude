@@ -945,7 +945,7 @@
       var jud = el('co-judet');
       if (jud && d.region) {
         var cauta = d.region.replace(/^(Județul|Judetul|County of)\s+/i, '').replace(/\s+County$/i, '').trim().toLowerCase();
-        var fara = function (s) { return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); };
+        var fara = function (s) { return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); };
         for (var i = 0; i < jud.options.length; i++) {
           var o = jud.options[i];
           if (o.value && (fara(o.value) === fara(cauta) || (/bucure/.test(fara(cauta)) && /bucure/.test(fara(o.value))))) { jud.value = o.value; declanseaza(jud, 'change'); break; }

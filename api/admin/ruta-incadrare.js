@@ -281,7 +281,7 @@ async function actionValideaza(req, res, user, perm) {
 }
 
 // ── copiaza_din ───────────────────────────────────────────────────────────
-const slug = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50);
+const slug = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50);
 
 async function copiazaArticolPeNivel(articolId, nivelNouId) {
   const a = date(await supabaseAdmin.from('devize_articole').select('*').eq('articol_id', articolId).maybeSingle());

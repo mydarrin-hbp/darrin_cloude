@@ -26,7 +26,7 @@ async function citeste(tabel, select) {
 }
 
 const TIP = { servicii: 'servicii', materiale: 'materiale', inchirieri: 'inchiriere', inchiriere: 'inchiriere' };
-const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
 const cuvinte = (s) => new Set(norm(s).split(' ').filter((w) => w.length > 2));
 function asemanare(a, b) {
   const A = cuvinte(a), B = cuvinte(b);
