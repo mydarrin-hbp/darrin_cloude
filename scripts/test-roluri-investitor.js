@@ -51,6 +51,7 @@ const apiWizard = require(path.join(RADACINA, 'api/partener/wizard-companie.js')
 const apiRegister = require(path.join(RADACINA, 'api/public/partner-register.js'));
 const apiProfil = require(path.join(RADACINA, 'api/cont/profil.js'));
 const apiExit = require(path.join(RADACINA, 'api/investitori/exit.js'));
+const apiIndicatori = require(path.join(RADACINA, 'api/investitori/indicatori.js'));
 
 const A = '30000000-0000-4000-8000-00000000000a';
 const B = '30000000-0000-4000-8000-00000000000b';
@@ -401,6 +402,42 @@ async function rutaCompleta(token, id) {
     );
     egal((await cheama(apiExit, { token: 'tok-a', metoda: 'POST', body: { tip: 'buyback', numar_actiuni: 11 } })).statusCode, 400, 'în lock-up');
     egal((await cheama(apiExit, { token: 'tok-a', metoda: 'POST', body: { tip: 'buyback', numar_actiuni: 10 } })).statusCode, 200, 'după lock-up');
+  });
+
+  console.log('H. Indicatorii platformei (11-J, 2.5)');
+  // Răspunsul RPC-ului, simulat (cifre de test).
+  const KPIS = (x = {}) => ({ timestamp: 'acum', kpis: Object.assign({ comenzi_total: 12, gmv_total: 3400, revenue_total: 408, parteneri_activi: 3, comenzi_luna: 2, revenue_luna: 60, take_rate_pct: 12, tari_active: 5 }, x),
+    per_tara: [{ tara_cod: 'RO', moneda: 'RON', comenzi: 12 }, { tara_cod: 'IT', moneda: 'EUR', comenzi: 0 }] });
+  await test('fără verificarea identității aprobată → 403, fără cifre; fără rolul investor → 403', async () => {
+    reset();
+    let apelat = false;
+    DB.rpc.get_live_investor_kpis = async () => { apelat = true; return KPIS(); };
+    egal((await cheama(apiIndicatori, { token: 'tok-a' })).statusCode, 403, 'client');
+    DB.tabele.profiles.find((p) => p.id === A).roles = ['client', 'investor'];
+    DB.tabele.investitori_kyc.push({ user_id: A, status: 'in_verificare' });
+    const r = await cheama(apiIndicatori, { token: 'tok-a' });
+    egal(r.statusCode, 403); egal(r.corp.cod, 'KYC_NEAPROBAT'); adevarat(r.corp.error && r.corp.error_en, 'mesaj RO + EN');
+    adevarat(!('indicatori' in r.corp) && !apelat, 'nicio cifră, RPC-ul nu e apelat');
+  });
+  await test('cu verificarea aprobată: doar câmpurile reale (fără tari_active), moneda unică', async () => {
+    reset();
+    DB.rpc.get_live_investor_kpis = async () => KPIS();
+    DB.tabele.profiles.find((p) => p.id === A).roles = ['client', 'investor'];
+    DB.tabele.investitori_kyc.push({ user_id: A, status: 'aprobat' });
+    const r = await cheama(apiIndicatori, { token: 'tok-a' });
+    egal(r.statusCode, 200);
+    egal(r.corp.indicatori, { comenzi_total: 12, comenzi_luna: 2, parteneri_activi: 3, gmv_total: 3400, revenue_total: 408, revenue_luna: 60, take_rate_pct: 12 });
+    egal(r.corp.moneda, 'RON');
+  });
+  await test('fără comenzi: fără take_rate_pct (10 din funcție); ramura de eroare → 503', async () => {
+    reset();
+    DB.tabele.profiles.find((p) => p.id === A).roles = ['client', 'investor'];
+    DB.tabele.investitori_kyc.push({ user_id: A, status: 'aprobat' });
+    DB.rpc.get_live_investor_kpis = async () => KPIS({ comenzi_total: 0, gmv_total: 0, revenue_total: 0, take_rate_pct: 10 });
+    const r = await cheama(apiIndicatori, { token: 'tok-a' });
+    egal(r.statusCode, 200); adevarat(!('take_rate_pct' in r.corp.indicatori), 'fără take rate');
+    DB.rpc.get_live_investor_kpis = async () => Object.assign(KPIS(), { error: 'Temporar indisponibil' });
+    egal((await cheama(apiIndicatori, { token: 'tok-a' })).statusCode, 503);
   });
 
   console.log(`\n${ok} trecute, ${esec} picate`);

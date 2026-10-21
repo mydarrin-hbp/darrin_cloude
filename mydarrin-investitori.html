@@ -982,8 +982,45 @@ async function incarcaPortofoliu() {
   }
 }
 
+// ── Indicatorii platformei (2.5): doar cu verificarea identității aprobată ──
+async function incarcaIndicatori() {
+  const box = document.getElementById('inv-indicatori');
+  if (!box) return;
+  let r = null, j = {};
+  try {
+    const token = await tokenInv();
+    if (!token) return;
+    r = await fetch('/api/investitori/indicatori', { headers: { Authorization: 'Bearer ' + token }, cache: 'no-store' });
+    j = await r.json().catch(() => ({}));
+  } catch (e) { r = null; }
+  const cadru = (corp) => '<div style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;overflow:hidden;margin-bottom:18px">' +
+    '<div style="padding:12px 17px;border-bottom:1px solid #EEF2F7;background:#F8FAFC"><strong style="color:#1A2332;font-size:14px">' + escInv(trInv('Indicatorii platformei')) + '</strong></div>' +
+    '<div style="padding:14px 17px">' + corp + '</div></div>';
+  if (!r || !r.ok || !j.indicatori) {
+    const mesaj = r && r.status === 403
+      ? trInv('Indicatorii financiari sunt disponibili după aprobarea verificării identității tale.')
+      : trInv('Indicatorii nu sunt disponibili acum.');
+    box.innerHTML = cadru('<p id="inv-indicatori-mesaj" style="margin:0;font-size:13px;color:#5A6B7D;line-height:1.5">' + escInv(mesaj) + '</p>');
+    return;
+  }
+  const k = j.indicatori, m = j.moneda || '';
+  const celule = [
+    ['Comenzi finalizate', sumaInv(k.comenzi_total)],
+    ['Comenzi finalizate luna aceasta', sumaInv(k.comenzi_luna)],
+    ['Parteneri cu comenzi', sumaInv(k.parteneri_activi)],
+    ['Valoarea comenzilor finalizate', sumaInv(k.gmv_total, m)],
+    ['Venitul platformei', sumaInv(k.revenue_total, m)],
+    ['Venitul platformei luna aceasta', sumaInv(k.revenue_luna, m)],
+  ];
+  if (k.take_rate_pct != null) celule.push(['Comisionul mediu', sumaInv(k.take_rate_pct) + '%']);
+  box.innerHTML = cadru('<div id="inv-indicatori-grila" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">' +
+    celule.map(([et, v]) => '<div style="background:#F8FAFC;border-radius:12px;padding:10px 12px"><div style="font-size:10.5px;color:#5A6B7D;margin-bottom:4px">' + escInv(trInv(et)) + '</div><div style="font-size:16px;font-weight:800;color:#1A2332">' + v + '</div></div>').join('') +
+    '</div>');
+}
+
 async function refreshPortofoliu() {
   await incarcaPortofoliu();
+  await incarcaIndicatori();
   showToastInv(trInv('Date actualizate'));
 }
 
@@ -1009,6 +1046,7 @@ function arataDashboardInvestitor(p) {
   const dash = document.getElementById('inv-private-dashboard');
   if (dash) dash.style.display = 'block';
   incarcaPortofoliu();
+  incarcaIndicatori();
   const c = document.getElementById('inv-kyc-banda');
   if (!c) return;
   const tr = (ro) => (typeof window.t === 'function' ? window.t(null, ro) : ro);
