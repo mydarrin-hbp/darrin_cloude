@@ -8,6 +8,8 @@
 // pot vinde încă. Piața secundară nu se configurează nicăieri azi, deci nu e
 // disponibilă. Se numără doar subscrierile aprobate (corecția 11-L).
 // Suma buy-back-ului nu se calculează aici: o stabilește echipa, la procesare.
+// Fără migrarea rundelor (fără coloana runda_id / tabela runde_finantare):
+// buy-back-ul nu e configurat → 409, nu eroare.
 //
 // Body: { tip: 'buyback', numar_actiuni }
 
@@ -34,7 +36,7 @@ async function handler(req, res, user) {
 
   const { data: portofoliu, error: portErr } = await supabaseAdmin
     .from('investitori_portofoliu')
-    .select('actiuni, runda_id, created_at')
+    .select('*')
     .eq('user_id', user.id)
     .eq('status', 'aprobat');
   if (portErr) return res.status(500).json({ error: 'Eroare la citirea portofoliului' });

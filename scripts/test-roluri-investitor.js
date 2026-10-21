@@ -52,6 +52,10 @@ const apiRegister = require(path.join(RADACINA, 'api/public/partner-register.js'
 const apiProfil = require(path.join(RADACINA, 'api/cont/profil.js'));
 const apiExit = require(path.join(RADACINA, 'api/investitori/exit.js'));
 const apiIndicatori = require(path.join(RADACINA, 'api/investitori/indicatori.js'));
+const apiPortofoliu = require(path.join(RADACINA, 'api/investitori/portofoliu.js'));
+const apiRundaCurenta = require(path.join(RADACINA, 'api/public/runda-curenta.js'));
+const apiAdminRunde = require(path.join(RADACINA, 'api/admin/runde-finantare.js'));
+const apiAdminDashboard = require(path.join(RADACINA, 'api/admin/investitori-dashboard.js'));
 
 const A = '30000000-0000-4000-8000-00000000000a';
 const B = '30000000-0000-4000-8000-00000000000b';
@@ -438,6 +442,48 @@ async function rutaCompleta(token, id) {
     egal(r.statusCode, 200); adevarat(!('take_rate_pct' in r.corp.indicatori), 'fără take rate');
     DB.rpc.get_live_investor_kpis = async () => Object.assign(KPIS(), { error: 'Temporar indisponibil' });
     egal((await cheama(apiIndicatori, { token: 'tok-a' })).statusCode, 503);
+  });
+
+  console.log('I. Fără migrarea rundelor (11-J, 2.6)');
+  // Ca în producție înainte de migrare: fără tabela runde_finantare și fără
+  // coloana investitori_portofoliu.runda_id.
+  function faraMigrare() {
+    reset();
+    delete DB.tabele.runde_finantare;
+    DB.coloane.investitori_portofoliu = ['id', 'user_id', 'email', 'valoare_investita', 'actiuni', 'instrument', 'consimtamant_public', 'status', 'created_at'];
+    DB.tabele.profiles.find((p) => p.id === A).roles = ['client', 'investor'];
+    apiRundaCurenta._golesteCache();
+  }
+  await test('runda curentă → 200, runda null (pagina păstrează textul fără rundă)', async () => {
+    faraMigrare();
+    const r = await cheama(apiRundaCurenta, {});
+    egal(r.statusCode, 200); egal(r.corp, { ok: true, runda: null });
+  });
+  await test('subscrierea → 409 RUNDA_INCHISA, nimic salvat', async () => {
+    faraMigrare();
+    const r = await cheama(apiSub, { token: 'tok-a', metoda: 'POST', body: { suma: 25000, instrument: 'safe' } });
+    egal(r.statusCode, 409); egal(r.corp.cod, 'RUNDA_INCHISA');
+    egal(DB.tabele.investitori_portofoliu.length, 0);
+  });
+  await test('portofoliul → 200, fără rundă, fără exit; subscrierile vechi se văd', async () => {
+    faraMigrare();
+    DB.tabele.investitori_portofoliu.push({ id: 'v1', user_id: A, actiuni: 10, valoare_investita: 1000, status: 'aprobat', created_at: VECHE });
+    const r = await cheama(apiPortofoliu, { token: 'tok-a' });
+    egal(r.statusCode, 200); egal(r.corp.runda, null); egal(r.corp.exit.buyback_disponibil, false);
+    egal(r.corp.actiuni, 10); egal(r.corp.subscrieri.length, 1);
+  });
+  await test('exit (buy-back) → 409 INDISPONIBIL, nu eroare de server', async () => {
+    faraMigrare();
+    DB.tabele.investitori_portofoliu.push({ id: 'v1', user_id: A, actiuni: 10, valoare_investita: 1000, status: 'aprobat', created_at: VECHE });
+    const r = await cheama(apiExit, { token: 'tok-a', metoda: 'POST', body: { tip: 'buyback', numar_actiuni: 1 } });
+    egal(r.statusCode, 409); egal(r.corp.cod, 'INDISPONIBIL');
+  });
+  await test('back-office: lista rundelor → migrare_lipsa; dashboard-ul → 200, fără rundă', async () => {
+    faraMigrare();
+    const l = await cheama(apiAdminRunde, { token: 'tok-super' });
+    egal(l.statusCode, 200); egal(l.corp.migrare_lipsa, true); egal(l.corp.runde, []);
+    const d = await cheama(apiAdminDashboard, { token: 'tok-super' });
+    egal(d.statusCode, 200); egal(d.corp.runda, null);
   });
 
   console.log(`\n${ok} trecute, ${esec} picate`);
