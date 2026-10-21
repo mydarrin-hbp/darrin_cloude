@@ -23,11 +23,14 @@ async function handler(req, res, user) {
     return res.status(400).json({ error: 'tip (buyback|piata_secundara) și numar_actiuni (>0) sunt obligatorii' });
   }
 
-  // Verifică dacă investitorul chiar deține atâtea acțiuni
+  // Verifică dacă investitorul chiar deține atâtea acțiuni. Se numără doar
+  // subscrierile aprobate (corecție 11-L, 21 oct. 2026): cele în așteptare sau
+  // respinse nu sunt acțiuni deținute.
   const { data: portofoliu, error: portErr } = await supabaseAdmin
     .from('investitori_portofoliu')
     .select('actiuni')
-    .eq('user_id', user.id);
+    .eq('user_id', user.id)
+    .eq('status', 'aprobat');
   if (portErr) return res.status(500).json({ error: 'Eroare la citirea portofoliului' });
 
   const totalActiuni = (portofoliu || []).reduce((sum, r) => sum + Number(r.actiuni), 0);

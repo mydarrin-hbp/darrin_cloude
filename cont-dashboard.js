@@ -7,7 +7,8 @@
      - rol greșit → redirect la dashboard-ul corect, cu un mesaj scurt
        („Te-am dus în contul tău de furnizor.”), nu pagină goală;
      - antetul de identitate: inițiale, numele firmei (sau numele din
-       profil), emailul, insigna rolului și „Ieși”;
+       profil), emailul, insigna rolului, „Rolurile mele” și, dacă contul are
+       mai multe roluri, comutatorul de rol (pasul 11-L), apoi „Ieși”;
      - banda de stare a contului de partener (verificare, cont bancar,
        contract, respingere), cu butonul spre pasul lipsă;
      - lângă produsele furnizorului, de ce nu apar încă public (pasul 10c,
@@ -126,6 +127,11 @@
       '.myd-id-insigna{font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px;color:#fff;white-space:nowrap}' +
       '.myd-id-iesi{border:1px solid #E2DFD6;background:transparent;color:#C0392B;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;min-height:38px}' +
       '.myd-id.intunecata .myd-id-iesi{border-color:rgba(192,57,43,.4);color:#F87171}' +
+      '.myd-id-roluri{display:inline-flex;align-items:center;border:1px solid #D5DFE8;background:#fff;color:#003366;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:700;text-decoration:none;min-height:38px;box-sizing:border-box;white-space:nowrap}' +
+      '.myd-id.intunecata .myd-id-roluri{background:transparent;border-color:#2D3F55;color:#7AB3E0}' +
+      '.myd-id-comuta{border:1px solid #D5DFE8;background:#fff;color:#1A2332;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:600;font-family:inherit;min-height:38px;max-width:100%}' +
+      '.myd-id.intunecata .myd-id-comuta{background:#0F1923;border-color:#2D3F55;color:#E2E8F0}' +
+      '.myd-sr{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}' +
       '.myd-banda{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 14px;border-radius:12px;margin:0 0 12px;font-size:13px;line-height:1.45;border:1.5px solid;box-sizing:border-box;max-width:100%}' +
       '.myd-banda span{flex:1 1 220px;min-width:0}' +
       '.myd-banda button{border:0;border-radius:10px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;color:#fff;min-height:38px}' +
@@ -165,9 +171,30 @@
       '<div class="myd-id-email" id="myd-id-email" title="' + esc(p.email || '') + '">' + esc(tr('Conectat ca {email}', { email: p.email || '' })) + '</div></div>' +
       '<span class="myd-id-insigna" id="myd-id-insigna" style="background:' + esc(d.culoare) + '">' + esc(tr(d.insigna)) + '</span>' +
       (p.furnizor_propriu ? '<span class="myd-id-insigna" id="myd-id-furnizor-propriu" style="background:#0E7C66">' + esc(tr('Furnizor propriu al platformei')) + '</span>' : '') +
+      comutatorRol(p, rol) +
+      '<a class="myd-id-roluri" id="myd-id-roluri" href="' + esc(dr().PAGINA_ROLURI) + '">' + esc(tr('Rolurile mele')) + '</a>' +
       '<button type="button" class="myd-id-iesi" id="myd-id-iesi">' + esc(tr('Ieși')) + '</button>';
     container.appendChild(div);
     div.querySelector('#myd-id-iesi').onclick = function () { window.MyDarrinAuth.performLogout(); };
+    var sel = div.querySelector('#myd-id-comuta');
+    if (sel) sel.onchange = function () {
+      var r = sel.value;
+      if (!r || r === rol) return;
+      ls(CHEIE_ROL_ACTIV, r);
+      location.href = dr().dashboardPentruRol(r);
+    };
+  }
+
+  // Comutatorul de rol (pasul 11-L): doar dacă contul are mai multe roluri cu
+  // dashboard. Un clic duce în dashboard-ul rolului ales (harta unică).
+  function comutatorRol(p, rol) {
+    var cu = p.roluri_dashboard || [];
+    if (cu.length < 2) return '';
+    return '<label class="myd-sr" for="myd-id-comuta">' + esc(tr('Schimbă rolul')) + '</label>' +
+      '<select class="myd-id-comuta" id="myd-id-comuta">' + cu.map(function (r) {
+        var d = dr().definitie(r);
+        return '<option value="' + esc(r) + '"' + (r === rol ? ' selected' : '') + '>' + esc(tr(d ? d.titlu : r)) + '</option>';
+      }).join('') + '</select>';
   }
 
   function banda(container, tip, text, buton, laClick, id) {

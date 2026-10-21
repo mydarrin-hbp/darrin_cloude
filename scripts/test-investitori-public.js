@@ -3,8 +3,10 @@
 //   - secțiunile cu cifre, rapoarte sau realizări nu mai există (KPIs Live,
 //     proiecții, structura și alocarea rundei, roadmap, exit, ROI, fereastra
 //     KPIs și butoanele ei); în locul lor, mesajul rundei curente (Seed);
-//   - rămân funcționale: fereastra „Intră în rundă” (datele investitorului,
-//     din care se creează contul) și pasul de achiziție (ticket și instrument);
+//   - rămân funcționale: crearea contului de investitor și achiziția. De la
+//     pasul 11-L, fără sesiune, „Intră în rundă” cere autentificarea / crearea
+//     contului (cu revenire la ruta de investitor); ruta, KYC-ul și subscrierea
+//     cu cont se testează în scripts/test-ruta-investitor.js;
 //   - 0 erori JS, în RO și EN, la 390 și 1366 px.
 // Serverul local e scripts/server-test.js (API-urile publice simulate sau 503);
 // nimic nu ajunge la Supabase sau la producție.
@@ -67,24 +69,15 @@ function verifica(cond, mesaj) {
         const textRunda = runda ? await runda.innerText() : '';
         verifica(/Seed/.test(textRunda), `${eticheta}: #runda spune „Seed”`);
 
-        // Fluxul de cont și achiziție: fereastra se deschide, pasul 1 → pasul 2
-        await pagina.click('#runda button');
-        verifica(await pagina.isVisible('#modal-runda'), `${eticheta}: fereastra „Intră în rundă” se deschide`);
-        verifica(await pagina.isVisible('#step-1'), `${eticheta}: pasul 1 (datele investitorului) e vizibil`);
-        await pagina.fill('#r-prenume', 'Test');
-        await pagina.fill('#r-nume', 'Investitor');
-        await pagina.fill('#r-email', 'test@example.com');
-        await pagina.fill('#r-tel', '+40700000000');
-        await pagina.fill('#r-iban', 'RO49AAAA1B31007593840000');
-        pagina.once('dialog', (d) => d.dismiss());
-        await pagina.click('#step-1 button');
-        await pagina.waitForTimeout(300);
-        const pas2 = await pagina.isVisible('#step-2');
-        const kyc = (await pagina.$('#kyc-overlay')) !== null;
-        verifica(pas2 || kyc, `${eticheta}: după pasul 1 se deschide achiziția (pasul 2) sau verificarea KYC`);
-        if (pas2) {
-          verifica((await pagina.$$('#step-2 .ticket-opt')).length >= 1, `${eticheta}: opțiunile de ticket sunt afișate`);
-        }
+        // Crearea contului de investitor: fără sesiune, „Intră în rundă” duce la
+        // autentificare / creare cont, cu revenire la ruta de investitor (11-L).
+        verifica((await pagina.$$('#step-2 .ticket-opt')).length >= 1, `${eticheta}: opțiunile de ticket ale achiziției există`);
+        await pagina.focus('#runda button');
+        await pagina.keyboard.press('Enter');
+        await pagina.waitForURL(/reason=cont/, { timeout: 8000 }).catch(() => {});
+        verifica(/reason=cont/.test(pagina.url()), `${eticheta}: „Intră în rundă” deschide autentificarea / crearea contului`);
+        const revenire = await pagina.evaluate(() => sessionStorage.getItem('myd_revenire_dupa_login'));
+        verifica(revenire === '/mydarrin-investitori.html?ruta=investitor', `${eticheta}: revenirea la ruta de investitor e reținută`);
 
         verifica(erori.length === 0, `${eticheta}: 0 erori JS (${erori.join(' | ')})`);
         console.log(`${eticheta}: ${erori.length} erori JS`);

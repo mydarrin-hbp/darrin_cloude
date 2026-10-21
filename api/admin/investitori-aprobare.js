@@ -2,10 +2,15 @@
 // Etapa LANSARE, Faza F (27 august 2026) — "Fluxul de subscrieri este
 // preluat automat, dar este supus aprobării finale din partea superadminului
 // sau a unui admin cu permisiuni dedicate." Rândurile scrise de
-// api/public/investitori-subscrie.js pornesc mereu cu status='in_asteptare'
+// api/investitori/subscrie.js (înainte api/public/investitori-subscrie.js) pornesc mereu cu status='in_asteptare'
 // — acest endpoint e singurul care le poate aproba/respinge.
 //
 // POST { id, actiune: 'aproba'|'respinge' } → { ok, portofoliu }
+//
+// Pasul 11-L (17 oct. 2026): subscrierile vin acum doar din conturi cu rolul
+// investor (api/investitori/subscrie.js, cu user_id). Aprobarea cere un cont
+// legat și verificarea identității aprobată (investitori_kyc.status =
+// 'aprobat'); altfel 409, cu motivul. Respingerea rămâne posibilă oricând.
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
@@ -22,6 +27,25 @@ async function handler(req, res, user) {
   if (!statusNou) return res.status(400).json({ error: `actiune trebuie să fie una din: ${Object.keys(STATUS_VALID).join(', ')}` });
 
   try {
+    if (statusNou === 'aprobat') {
+      const { data: sub, error: subErr } = await supabaseAdmin
+        .from('investitori_portofoliu').select('id, user_id').eq('id', id).maybeSingle();
+      if (subErr) throw subErr;
+      if (!sub) return res.status(404).json({ error: 'Subscriere inexistentă.' });
+      if (!sub.user_id) {
+        return res.status(409).json({ error: 'Subscrierea nu e legată de un cont de investitor; nu se poate aproba.', cod: 'fara_cont' });
+      }
+      const { data: kyc, error: kycErr } = await supabaseAdmin
+        .from('investitori_kyc').select('status').eq('user_id', sub.user_id).maybeSingle();
+      if (kycErr) throw kycErr;
+      if (!kyc || kyc.status !== 'aprobat') {
+        return res.status(409).json({
+          error: 'Verificarea identității investitorului nu e aprobată; subscrierea nu se poate aproba încă.',
+          cod: 'kyc_neaprobat', kyc_status: (kyc && kyc.status) || null,
+        });
+      }
+    }
+
     const { data, error } = await supabaseAdmin
       .from('investitori_portofoliu')
       .update({ status: statusNou })

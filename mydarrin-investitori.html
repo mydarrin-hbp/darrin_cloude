@@ -512,10 +512,18 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 <!-- Pasul 10b: harta unică rol → dashboard și paza după rol (cont-dashboard.js) -->
 <script src="lib/destinatie-rol.js"></script>
 <script src="cont-dashboard.js"></script>
+<!-- Pasul 11-L: ruta de investitor legată de cont (fereastra în 5 pași, KYC, subscrierea) -->
+<script src="investitori-ruta.js" defer></script>
 <script>
   window.MYD_PAZA.verifica({ container: 'myd-cont-antet', public: true }).then(function (r) {
     var c = document.getElementById('myd-cont-antet');
     if (c && c.firstChild) c.style.paddingTop = '14px';
+    // Pasul 11-L: cu rolul de investitor (profiles.roles), dashboard-ul privat și
+    // banda stării verificării identității.
+    var p = r && r.profil;
+    if (p && Array.isArray(p.roles) && p.roles.indexOf('investor') !== -1 && typeof window.arataDashboardInvestitor === 'function') {
+      window.arataDashboardInvestitor(p);
+    }
   });
 </script>
 
@@ -559,39 +567,39 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
         <span>Ghid</span>
       </div>
       <h2 class="reveal d1" style="font-size:32px;font-weight:800;color:#1A2332;margin-bottom:8px">Cum devii investitor My Darrin</h2>
-      <p class="reveal d2" style="font-size:14px;color:#5A6B7D;max-width:560px;margin:0 auto">4 pași, de la primul interes până la acces în dashboard-ul privat de investitor.</p>
+      <p class="reveal d2" style="font-size:14px;color:#5A6B7D;max-width:560px;margin:0 auto">4 pași, pe contul tău My Darrin: datele, verificarea identității, profilul de risc și subscrierea.</p>
     </div>
 
     <div class="reveal" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px">
 
       <div style="background:#F8FAFC;border:1px solid #EEF2F7;border-radius:16px;padding:22px 18px">
         <div style="width:34px;height:34px;border-radius:10px;background:#FF8C00;color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:14px">1</div>
-        <div style="font-weight:700;font-size:14px;color:#1A2332;margin-bottom:6px">Date personale</div>
-        <div style="font-size:12.5px;color:#5A6B7D;line-height:1.5">Completezi datele de contact și de cont (IBAN) necesare pentru procesul de onboarding.</div>
+        <div style="font-weight:700;font-size:14px;color:#1A2332;margin-bottom:6px">Contul și datele personale</div>
+        <div style="font-size:12.5px;color:#5A6B7D;line-height:1.5">Te autentifici sau îți creezi contul, apoi completezi datele personale și contul bancar (IBAN).</div>
       </div>
 
       <div style="background:#F8FAFC;border:1px solid #EEF2F7;border-radius:16px;padding:22px 18px">
         <div style="width:34px;height:34px;border-radius:10px;background:#EEF2F7;color:#5A6B7D;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:14px">2</div>
-        <div style="font-weight:700;font-size:14px;color:#1A2332;margin-bottom:6px">Ticket & tip</div>
-        <div style="font-size:12.5px;color:#5A6B7D;line-height:1.5">Alegi suma pe care vrei să o investești și tipul de instrument (echitate directă / SAFE).</div>
+        <div style="font-weight:700;font-size:14px;color:#1A2332;margin-bottom:6px">Verificarea identității</div>
+        <div style="font-size:12.5px;color:#5A6B7D;line-height:1.5">Încarci actul de identitate. Documentele se păstrează privat și le verifică manual echipa My Darrin.</div>
       </div>
 
       <div style="background:#F8FAFC;border:1px solid #EEF2F7;border-radius:16px;padding:22px 18px">
         <div style="width:34px;height:34px;border-radius:10px;background:#EEF2F7;color:#5A6B7D;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:14px">3</div>
-        <div style="font-weight:700;font-size:14px;color:#1A2332;margin-bottom:6px">Due diligence</div>
-        <div style="font-size:12.5px;color:#5A6B7D;line-height:1.5">Verificare identitate (KYC/AML) și chestionar MIFID II de profil de risc, direct online.</div>
+        <div style="font-weight:700;font-size:14px;color:#1A2332;margin-bottom:6px">Profil de risc și rezidență fiscală</div>
+        <div style="font-size:12.5px;color:#5A6B7D;line-height:1.5">Chestionarul MiFID II, declarațiile PEP și sancțiuni și țara rezidenței fiscale.</div>
       </div>
 
       <div style="background:#F8FAFC;border:1px solid #EEF2F7;border-radius:16px;padding:22px 18px">
         <div style="width:34px;height:34px;border-radius:10px;background:#EEF2F7;color:#5A6B7D;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:14px">4</div>
-        <div style="font-weight:700;font-size:14px;color:#1A2332;margin-bottom:6px">Confirmare</div>
-        <div style="font-size:12.5px;color:#5A6B7D;line-height:1.5">Semnezi acordul de investiție și primești acces la dashboard-ul privat de investitor.</div>
+        <div style="font-weight:700;font-size:14px;color:#1A2332;margin-bottom:6px">Subscrierea</div>
+        <div style="font-size:12.5px;color:#5A6B7D;line-height:1.5">Cu rolul de investitor pe cont, alegi suma și instrumentul. Subscrierea se aprobă după verificarea identității.</div>
       </div>
 
     </div>
 
     <div class="reveal" style="text-align:center">
-      <button class="btn-p" style="padding:14px 32px" onclick="openRunda()">Începe procesul · Intră în rundă</button>
+      <button class="btn-p" style="padding:14px 32px" onclick="MYD_INVESTITOR.start(this)">Devino investitor</button>
     </div>
 
   </div>
@@ -616,10 +624,14 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
           <div style="font-size:12px;color:#5A6B7D;margin-top:4px" id="inv-dash-subtitle">Runda Seed · Date actualizate din Supabase</div>
         </div>
         <div style="display:flex;gap:8px">
-          <button onclick="showAccountModal()" style="padding:9px 16px;border-radius:10px;border:1.5px solid #D5DFE8;background:#fff;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;color:#1A2332">Date cont</button>
+          <button onclick="showAccountModal(this)" style="padding:9px 16px;border-radius:10px;border:1.5px solid #D5DFE8;background:#fff;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;color:#1A2332">Date cont</button>
+          <button onclick="MYD_INVESTITOR.start(this)" style="padding:9px 16px;border-radius:10px;border:none;background:#FF8C00;color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">Subscriere nouă</button>
           <button onclick="refreshPortofoliu()" style="padding:9px 16px;border-radius:10px;border:1.5px solid #0E9E99;background:#E0F5F4;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;color:#0B7A76">↻ Actualizează</button>
         </div>
       </div>
+
+      <!-- Pasul 11-L: starea verificării identității (api/investitori/kyc) -->
+      <div id="inv-kyc-banda"></div>
 
       <!-- KPI Portofoliu (4 carduri) -->
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px" id="inv-kpi-grid">
@@ -740,7 +752,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
     <div class="reveal" style="display:inline-flex;align-items:center;gap:7px;background:#FFF0D6;color:#CC7000;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:5px 14px;border-radius:99px;margin-bottom:12px">Runda curentă</div>
     <h2 class="reveal d1" style="font-size:32px;font-weight:800;color:#1A2332;margin-bottom:10px">Runda Seed</h2>
     <p class="reveal d2" style="font-size:14px;color:#5A6B7D;line-height:1.7;max-width:560px;margin:0 auto 24px">Detaliile rundei apar aici după ce sunt configurate în back-office. Pe această pagină se afișează doar cifre reale, din evidența financiară a companiei.</p>
-    <button class="btn-p reveal d3" style="padding:14px 32px" onclick="openRunda()">Intră în rundă</button>
+    <button class="btn-p reveal d3" style="padding:14px 32px" onclick="MYD_INVESTITOR.start(this)">Intră în rundă</button>
   </div>
 </section>
 
@@ -970,6 +982,41 @@ async function loadPortofoliuPrivat() {
   }
 }
 
+// ── Pasul 11-L: dashboard-ul privat și starea verificării identității ──
+function arataDashboardInvestitor(p) {
+  const dash = document.getElementById('inv-private-dashboard');
+  if (dash) dash.style.display = 'block';
+  const c = document.getElementById('inv-kyc-banda');
+  if (!c) return;
+  const tr = (ro) => (typeof window.t === 'function' ? window.t(null, ro) : ro);
+  const en = window.MYD_I18N && window.MYD_I18N.lang && window.MYD_I18N.lang !== 'ro';
+  const inv = p.investitor || {};
+  const stiluri = {
+    info: 'border-color:#2B6CB0;background:#EBF4FB;color:#1A3A5C',
+    ok: 'border-color:#1A7A3A;background:#EDF7F0;color:#14532D',
+    eroare: 'border-color:#C0392B;background:#FDECEA;color:#7A1F16',
+  };
+  let tip = 'info', text = tr('Verificarea identității tale e în curs. Te anunțăm prin email.'), buton = null;
+  if (inv.status === 'aprobat') { tip = 'ok'; text = tr('Identitatea ta a fost verificată. Subscrierile tale pot fi aprobate.'); }
+  if (inv.status === 'respins') {
+    tip = 'eroare';
+    const motiv = en ? (inv.motiv_respingere_en || inv.motiv_respingere) : inv.motiv_respingere;
+    text = tr('Verificarea identității nu a fost aprobată.') + (motiv ? ' ' + tr('Motiv:') + ' ' + motiv : '');
+    buton = tr('Corectează și retrimite');
+  }
+  c.innerHTML = '<div role="' + (tip === 'eroare' ? 'alert' : 'status') + '" id="inv-kyc-stare" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 14px;border-radius:12px;margin:0 0 16px;font-size:13px;line-height:1.45;border:1.5px solid;' + stiluri[tip] + '">' +
+    '<span style="flex:1 1 220px;min-width:0" id="inv-kyc-text"></span>' +
+    (buton ? '<button type="button" id="inv-kyc-reia" style="border:0;border-radius:10px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;color:#fff;background:#C0392B;min-height:40px"></button>' : '') + '</div>';
+  document.getElementById('inv-kyc-text').textContent = text;
+  const b = document.getElementById('inv-kyc-reia');
+  if (b) { b.textContent = buton; b.onclick = function () { window.MYD_INVESTITOR && window.MYD_INVESTITOR.deschideRuta(b, 1); }; }
+  if (/[?&]bun_venit=1/.test(location.search)) {
+    try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) {}
+    if (dash) setTimeout(() => dash.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
+  }
+}
+window.arataDashboardInvestitor = arataDashboardInvestitor;
+
 // ── Refresh manual ────────────────────────────────────────────
 async function refreshPortofoliu() {
   await loadPortofoliuPrivat();
@@ -1036,9 +1083,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 </script>
 <!-- ════ MODAL INTRĂ ÎN RUNDĂ ════ -->
-<div id="modal-runda-overlay" onclick="closeRunda()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);z-index:900"></div>
+<div id="modal-runda-overlay" onclick="closeRunda()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);z-index:9690"></div>
 
-<div id="modal-runda" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:901;width:560px;max-width:95vw;max-height:92vh;overflow-y:auto;background:#fff;border-radius:24px;box-shadow:0 24px 80px rgba(0,0,0,.3)">
+<div id="modal-runda" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9691;width:560px;max-width:95vw;max-height:92vh;overflow-y:auto;background:#fff;border-radius:24px;box-shadow:0 24px 80px rgba(0,0,0,.3)">
 
   <!-- Header -->
   <div style="background:linear-gradient(135deg,#001E3C,#003366);padding:28px 28px 24px;border-radius:24px 24px 0 0;position:sticky;top:0;z-index:1">
@@ -1056,23 +1103,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   <!-- Steps indicator -->
   <div style="display:flex;padding:16px 28px;background:#F8FAFC;border-bottom:1px solid #EEF2F7;gap:0" id="runda-steps">
-    <div class="rstep active" id="rs1" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer" onclick="goStep(1)">
-      <div style="width:28px;height:28px;border-radius:50%;background:#FF8C00;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center">1</div>
-      <div style="font-size:9.5px;font-weight:700;color:#FF8C00;text-align:center">Date personale</div>
-    </div>
-    <div style="flex:1;height:2px;background:#EEF2F7;align-self:flex-start;margin-top:13px"></div>
-    <div class="rstep" id="rs2" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer" onclick="goStep(2)">
-      <div style="width:28px;height:28px;border-radius:50%;background:#EEF2F7;color:#8C9BAD;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center" id="rs2-dot">2</div>
+    <div class="rstep active" id="rs2" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer" onclick="goStep(2)">
+      <div style="width:28px;height:28px;border-radius:50%;background:#FF8C00;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center" id="rs2-dot">1</div>
       <div style="font-size:9.5px;font-weight:600;color:#8C9BAD;text-align:center" id="rs2-label">Ticket & Tip</div>
     </div>
     <div style="flex:1;height:2px;background:#EEF2F7;align-self:flex-start;margin-top:13px"></div>
     <div class="rstep" id="rs3" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer" onclick="goStep(3)">
-      <div style="width:28px;height:28px;border-radius:50%;background:#EEF2F7;color:#8C9BAD;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center" id="rs3-dot">3</div>
+      <div style="width:28px;height:28px;border-radius:50%;background:#EEF2F7;color:#8C9BAD;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center" id="rs3-dot">2</div>
       <div style="font-size:9.5px;font-weight:600;color:#8C9BAD;text-align:center" id="rs3-label">Due diligence</div>
     </div>
     <div style="flex:1;height:2px;background:#EEF2F7;align-self:flex-start;margin-top:13px"></div>
     <div class="rstep" id="rs4" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer" onclick="goStep(4)">
-      <div style="width:28px;height:28px;border-radius:50%;background:#EEF2F7;color:#8C9BAD;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center" id="rs4-dot">4</div>
+      <div style="width:28px;height:28px;border-radius:50%;background:#EEF2F7;color:#8C9BAD;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center" id="rs4-dot">3</div>
       <div style="font-size:9.5px;font-weight:600;color:#8C9BAD;text-align:center" id="rs4-label">Confirmare</div>
     </div>
   </div>
@@ -1080,57 +1122,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   <!-- Content steps -->
   <div style="padding:24px 28px">
 
-    <!-- STEP 1: Date personale -->
-    <div id="step-1">
-      <div style="font-size:16px;font-weight:800;color:#1A2332;margin-bottom:6px;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Date investitor</div>
-      <div style="font-size:13px;color:#5A6B7D;margin-bottom:20px">Informații necesare pentru procesul de onboarding investitor.</div>
-      <div style="display:flex;flex-direction:column;gap:14px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div>
-            <label style="display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:6px">Prenume *</label>
-            <input type="text" id="r-prenume" placeholder="Ion" style="width:100%;border:1.5px solid #D5DFE8;border-radius:12px;padding:11px 14px;font-size:13.5px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
-          </div>
-          <div>
-            <label style="display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:6px">Nume *</label>
-            <input type="text" id="r-nume" placeholder="Popescu" style="width:100%;border:1.5px solid #D5DFE8;border-radius:12px;padding:11px 14px;font-size:13.5px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
-          </div>
-        </div>
-        <div>
-          <label style="display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:6px">Email *</label>
-          <input type="email" id="r-email" placeholder="ion.popescu@company.ro" style="width:100%;border:1.5px solid #D5DFE8;border-radius:12px;padding:11px 14px;font-size:13.5px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
-        </div>
-        <div>
-          <label style="display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:6px">Telefon *</label>
-          <input type="tel" id="r-tel" placeholder="+40 7xx xxx xxx" style="width:100%;border:1.5px solid #D5DFE8;border-radius:12px;padding:11px 14px;font-size:13.5px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
-        </div>
-        <div>
-          <label style="display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:6px">Companie / Fond de investiții</label>
-          <input type="text" id="r-companie" placeholder="SC Exemplu SRL / Angel Investor" style="width:100%;border:1.5px solid #D5DFE8;border-radius:12px;padding:11px 14px;font-size:13.5px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
-        </div>
-        <div>
-          <label style="display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:6px">Țară</label>
-          <select id="r-tara" style="width:100%;border:1.5px solid #D5DFE8;border-radius:12px;padding:11px 14px;font-size:13.5px;font-family:inherit;outline:none;appearance:none;background:#fff url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%236B7A8D%22 stroke-width=%222%22%3E%3Cpolyline points=%226 9 12 15 18 9%22/%3E%3C/svg%3E') no-repeat right 14px center;cursor:pointer" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'">
-            <option value="">Selectează țara...</option>
-            <option value="ro">🇷🇴 România</option>
-            <option value="md">🇲🇩 Moldova</option>
-            <option value="de">🇩🇪 Germania</option>
-            <option value="fr">🇫🇷 Franța</option>
-            <option value="other">Altă țară</option>
-          </select>
-        </div>
-        <div style="background:#F0F4F8;border-radius:14px;padding:14px;border:1px solid #D5DFE8">
-          <label style="display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:6px">IBAN cont bancar (pentru distribuții & Exit) *</label>
-          <input type="text" id="r-iban" placeholder="RO49 AAAA 1B31 0075 9384 0000" style="width:100%;border:1.5px solid #D5DFE8;border-radius:12px;padding:11px 14px;font-size:13.5px;font-family:'JetBrains Mono',monospace;outline:none;transition:border-color .18s;text-transform:uppercase" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
-          <div style="font-size:10px;color:#8C9BAD;margin-top:6px;line-height:1.5">Obligatoriu pentru a primi dividende/dobânzi și pentru procesarea cererilor de Exit (Buyback). Acest IBAN trebuie să fie pe numele titularului contului, conform reglementărilor AML.</div>
-        </div>
-      </div>
-      <button onclick="validateStep1AndContinue()" style="width:100%;margin-top:20px;padding:14px;border-radius:14px;border:none;background:#FF8C00;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 5px 18px rgba(255,140,0,.3);transition:all .2s" onmouseover="this.style.background='#CC7000'" onmouseout="this.style.background='#FF8C00'">
-        Continuă → Ticket & Tip investiție
-      </button>
-    </div>
-
     <!-- STEP 2: Ticket & Tip -->
-    <div id="step-2" style="display:none">
+    <div id="step-2">
       <div style="font-size:16px;font-weight:800;color:#1A2332;margin-bottom:6px;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Ticket & Tip investiție</div>
       <div style="font-size:13px;color:#5A6B7D;margin-bottom:20px">Selectează suma și instrumentul de investiție preferat.</div>
       
@@ -1180,7 +1173,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>
 
       <div style="display:flex;gap:10px">
-        <button onclick="goStep(1)" style="flex:1;padding:13px;border-radius:13px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">← Înapoi</button>
+        <button onclick="closeRunda()" style="flex:1;padding:13px;border-radius:13px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">← Înapoi</button>
         <button onclick="goStep(3)" style="flex:2;padding:13px;border-radius:13px;border:none;background:#FF8C00;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 5px 18px rgba(255,140,0,.3);transition:all .2s" onmouseover="this.style.background='#CC7000'" onmouseout="this.style.background='#FF8C00'">
           Continuă → Due Diligence
         </button>
@@ -1245,7 +1238,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:56px;margin-bottom:12px"><i data-lucide="party-popper" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
         <div style="font-size:20px;font-weight:800;color:#1A2332;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif;margin-bottom:8px">Cererea ta a fost înregistrată!</div>
-        <div style="font-size:13.5px;color:#5A6B7D;line-height:1.7;max-width:380px;margin:0 auto">Echipa My Darrin te va contacta pentru a confirma participarea și a trimite documentele solicitate.</div>
+        <div style="font-size:13.5px;color:#5A6B7D;line-height:1.7;max-width:380px;margin:0 auto">Subscrierea e legată de contul tău și se aprobă după verificarea identității. Echipa My Darrin te contactează pentru documentele subscrierii.</div>
       </div>
       <!-- Summary -->
       <div style="background:#F0F4F8;border-radius:16px;padding:18px;margin-bottom:20px">
@@ -1271,17 +1264,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 <script>
 // ── MODAL RUNDA ──
-function openRunda(){
-  document.getElementById('modal-runda-overlay').style.display='block';
+// Pasul 11-L: subscrierea e pentru conturile cu rolul de investitor
+// (MYD_INVESTITOR.start o deschide; ceilalți trec întâi prin ruta de investitor).
+let _rundaDeschizator = null;
+function openRunda(deschizator){
+  const ov = document.getElementById('modal-runda-overlay');
   const m = document.getElementById('modal-runda');
+  if (!ov || !m || m.style.display === 'block') return;
+  _rundaDeschizator = deschizator || document.activeElement;
+  ov.style.display='block';
   m.style.display='block';
+  m.setAttribute('role','dialog'); m.setAttribute('aria-modal','true');
   document.body.style.overflow='hidden';
-  goStep(1);
+  goStep(2);
 }
 function closeRunda(){
+  const m = document.getElementById('modal-runda');
+  if (!m || m.style.display !== 'block') return;
   document.getElementById('modal-runda-overlay').style.display='none';
-  document.getElementById('modal-runda').style.display='none';
+  m.style.display='none';
   document.body.style.overflow='';
+  const d = _rundaDeschizator; _rundaDeschizator = null;
+  if (d && typeof d.focus === 'function' && document.contains(d)) d.focus();
 }
 
 // ── STEPS ──
@@ -1299,65 +1303,52 @@ function goStep(n){
     if(i<n){
       dot.style.background='#0E9E99';dot.style.color='#fff';dot.textContent='';
     } else if(i===n){
-      dot.style.background='#FF8C00';dot.style.color='#fff';dot.textContent=String(i);
+      dot.style.background='#FF8C00';dot.style.color='#fff';dot.textContent=String(i-1);
     } else {
-      dot.style.background='#EEF2F7';dot.style.color='#8C9BAD';dot.textContent=String(i);
+      dot.style.background='#EEF2F7';dot.style.color='#8C9BAD';dot.textContent=String(i-1);
     }
   });
   // On step 4 — fill summary
   if(n===4){
-    const p = document.getElementById('r-prenume')?.value||'';
-    const nm = document.getElementById('r-nume')?.value||'';
-    const em = document.getElementById('r-email')?.value||'';
-    document.getElementById('confirm-name').textContent = (p+' '+nm).trim()||'—';
-    document.getElementById('confirm-email').textContent = em||'—';
+    const pr = window.__MYD_PROFIL || {};
+    document.getElementById('confirm-name').textContent = pr.nume || [pr.prenume, pr.nume_familie].filter(Boolean).join(' ') || '—';
+    document.getElementById('confirm-email').textContent = pr.email || '—';
     document.getElementById('confirm-ticket').textContent = selectedTicket||'—';
     document.getElementById('confirm-instrument').textContent = selectedInstrument||'—';
   }
 }
 
-/* ── Trimite REAL cererea de investiție — salvează în Supabase + notificare email ── */
+/* ── Pasul 11-L: subscrierea, legată de cont ──
+   api/investitori/subscrie.js (requireAuth, rol investor, user_id). Suma vine
+   din ticketul ales; numărul de acțiuni din prețul pe acțiune scris de mână
+   în EVAL_PARAMS (de mutat în back-office la pasul 11-J). */
+const TICKET_EUR = { '25K': 25000, '50K': 50000, '100K': 100000 };
 async function submitInvestmentRequest(){
   const btn = document.getElementById('submit-invest-btn');
   const msg = document.getElementById('submit-invest-msg');
-  const email = document.getElementById('r-email')?.value?.trim() || '';
-
-  if (!email || !email.includes('@')) {
-    msg.style.color = '#C0392B';
-    msg.textContent = 'Introdu o adresă de email validă la Pasul 1.';
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = 'Se trimite...';
-  msg.style.color = '#5A6B7D';
-  msg.textContent = '';
-
-  try {
-    const res = await fetch('/api/public/investor-lead', {
+  const optiune = document.querySelector('.ticket-opt.selected');
+  const cod = optiune ? (optiune.getAttribute('onclick') || '').replace(/.*'([^']+)'\).*/, '$1') : '';
+  const suma = cod === 'custom' ? Number(document.getElementById('custom-ticket')?.value || 0) : (TICKET_EUR[cod] || 0);
+  const actiuni = Math.floor(suma / EVAL_PARAMS.pret_actiune_eur);
+  const en = window.MYD_I18N && window.MYD_I18N.lang && window.MYD_I18N.lang !== 'ro';
+  const tr = (ro) => (typeof window.t === 'function' ? window.t(null, ro) : ro);
+  if (!(suma > 0) || actiuni < 1) { MDFeedback.mesaj(msg, 'eroare', tr('Alege suma investiției (pasul 1).')); return; }
+  if (!selectedInstrument) { MDFeedback.mesaj(msg, 'eroare', tr('Alege instrumentul investiției (pasul 1).')); return; }
+  if (!document.getElementById('nda-check')?.checked) { MDFeedback.mesaj(msg, 'eroare', tr('Bifează acordul de confidențialitate (NDA).')); return; }
+  await MDFeedback.salveaza(btn, msg, async () => {
+    const { data } = await window.supabaseClient.auth.getSession();
+    const token = data && data.session && data.session.access_token;
+    if (!token) throw new Error(tr('Sesiunea a expirat. Autentifică-te din nou.'));
+    const res = await fetch('/api/investitori/subscrie', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        prenume: document.getElementById('r-prenume')?.value?.trim() || '',
-        nume: document.getElementById('r-nume')?.value?.trim() || '',
-        email,
-        ticket_size: selectedTicket || '',
-        instrument: selectedInstrument || '',
-        nda_acceptat: true,
-      }),
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+      body: JSON.stringify({ suma_eur: suma, actiuni, instrument: selectedInstrument }),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
-
-    // Doar dacă salvarea reală a reușit, arătăm pasul de confirmare
-    goStep(4);
-  } catch (err) {
-    msg.style.color = '#C0392B';
-    msg.textContent = '' + (err.message || 'Nu am putut trimite cererea. Încearcă din nou.');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Continuă → Confirmare finală';
-  }
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error((en && j.error_en) || j.error || tr('Nu am putut înregistra subscrierea.'));
+    setTimeout(() => goStep(4), 700);
+    return tr('Subscrierea a fost înregistrată.');
+  }, { textSalveaza: 'Se trimite…' });
 }
 
 function selectTicket(el, val){
@@ -1522,39 +1513,8 @@ let INV_STATE = {
   post_money_eur: 4000000,
 };
 
-// ── VALIDARE IBAN (format simplu RO/EU) ──
-function isValidIBAN(iban) {
-  const clean = (iban || '').replace(/\s/g, '').toUpperCase();
-  return /^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(clean);
-}
-
-function validateStep1AndContinue() {
-  const prenume = document.getElementById('r-prenume')?.value.trim();
-  const nume    = document.getElementById('r-nume')?.value.trim();
-  const email   = document.getElementById('r-email')?.value.trim();
-  const tel     = document.getElementById('r-tel')?.value.trim();
-  const iban    = document.getElementById('r-iban')?.value.trim();
-
-  if (!prenume || !nume) { alert('Completează prenumele și numele.'); return; }
-  if (!email || !email.includes('@')) { alert('Introdu o adresă de email validă.'); return; }
-  if (!tel) { alert('Introdu un număr de telefon.'); return; }
-  if (!iban || !isValidIBAN(iban)) {
-    alert('IBAN invalid. Acest cont este obligatoriu pentru a primi distribuții și pentru procesarea Exit-ului.\nFormat: RO49AAAA1B3100759384000 (fără spații sau cu spații).');
-    return;
-  }
-
-  // Salvăm datele validate în INV_ACCOUNT (persistă pe toată sesiunea)
-  INV_ACCOUNT = {
-    prenume, nume, email, telefon: tel,
-    iban: iban.replace(/\s/g, '').toUpperCase(),
-    companie: document.getElementById('r-companie')?.value.trim() || '',
-    tara: document.getElementById('r-tara')?.value || '',
-  };
-  try { sessionStorage.setItem('myd_investor_account', JSON.stringify(INV_ACCOUNT)); } catch(e) {}
-
-  goStep(2);
-}
-
+// Pasul 11-L: datele personale și IBAN-ul nu mai stau în sessionStorage —
+// le salvează ruta de investitor pe server (investitori-ruta.js, api/investitori/kyc.js).
 let INV_ACCOUNT = null;
 
 function calcAlocare(suma_eur, instrument) {
@@ -1566,177 +1526,9 @@ function calcAlocare(suma_eur, instrument) {
   return { actiuni, pct, val_curent_eur, roi };
 }
 
-function updateStep4Summary() {
-  const P   = document.getElementById('r-prenume')?.value || '';
-  const N   = document.getElementById('r-nume')?.value    || '';
-  const alo = calcAlocare(INV_STATE.suma_eur, INV_STATE.instrument);
-  INV_STATE.actiuni_alocate = alo.actiuni;
-  INV_STATE.pct_companie    = alo.pct;
-
-  const summaryEl = document.getElementById('step4-summary');
-  if (!summaryEl) return;
-  summaryEl.innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;margin-bottom:16px">
-      <div style="background:#F0F4F8;border-radius:10px;padding:10px 13px">
-        <div style="color:#5A6B7D;font-size:10px;margin-bottom:3px">Investitor</div>
-        <div style="font-weight:700">${P} ${N}</div>
-      </div>
-      <div style="background:#F0F4F8;border-radius:10px;padding:10px 13px">
-        <div style="color:#5A6B7D;font-size:10px;margin-bottom:3px">Instrument</div>
-        <div style="font-weight:700">${{note_convertibile:'Note Convertibile',actiuni:'Acțiuni Ordinare',obligatiuni:'Obligațiuni 8%'}[INV_STATE.instrument]||INV_STATE.instrument}</div>
-      </div>
-      <div style="background:#F0F4F8;border-radius:10px;padding:10px 13px">
-        <div style="color:#5A6B7D;font-size:10px;margin-bottom:3px">Suma subscrisă</div>
-        <div style="font-weight:800;color:#003366;font-size:16px">€${INV_STATE.suma_eur.toLocaleString()}</div>
-      </div>
-      <div style="background:#F0F4F8;border-radius:10px;padding:10px 13px">
-        <div style="color:#5A6B7D;font-size:10px;margin-bottom:3px">Acțiuni alocate</div>
-        <div style="font-weight:800;color:#FF8C00;font-size:16px">${alo.actiuni.toLocaleString()} acțiuni</div>
-      </div>
-      <div style="background:#EBF4FB;border-radius:10px;padding:10px 13px;border:1px solid #D5DFE8">
-        <div style="color:#5A6B7D;font-size:10px;margin-bottom:3px">% din companie</div>
-        <div style="font-weight:800;color:#1A5FAD">${alo.pct}%</div>
-      </div>
-      <div style="background:#D4EDDA;border-radius:10px;padding:10px 13px;border:1px solid rgba(26,122,58,.2)">
-        <div style="color:#5A6B7D;font-size:10px;margin-bottom:3px">Valoare curentă estimată</div>
-        <div style="font-weight:800;color:#1A7A3A">€${parseFloat(alo.val_curent_eur).toLocaleString()}</div>
-      </div>
-    </div>
-    <div style="background:#FFF8EE;border-radius:12px;padding:13px;border:1.5px solid rgba(255,140,0,.25);margin-bottom:14px">
-      <div style="font-size:11px;font-weight:700;color:#CC7000;margin-bottom:6px">Contract & Semnătură digitală</div>
-      <div style="font-size:11.5px;color:#5A6B7D;line-height:1.7">Prin trimiterea cererii, aceasta e înregistrată pentru procesare. Vei primi separat, pe email, <strong>Shareholders Agreement</strong>-ul (drepturi de vot, clauze anti-diluare, preferință la lichidare 1×, tag-along și drag-along) pentru semnare electronică — subscrierea nu e finalizată legal la acest pas.</div>
-    </div>
-    <div style="background:#FFF0F0;border-radius:12px;padding:11px;border:1px solid rgba(192,57,43,.2);margin-bottom:14px">
-      <div style="font-size:10.5px;color:#C0392B;font-weight:700">Avertisment obligatoriu MiFID II</div>
-      <div style="font-size:10.5px;color:#5A6B7D;margin-top:3px;line-height:1.6">Investițiile în companii la stadiu incipient (start-up) implică riscul pierderii totale a capitalului investit. Instrumentele financiare nu sunt garantate de FGDB. My Darrin nu oferă consultanță de investiții.</div>
-    </div>
-    <button onclick="finalizeazaSubscriere()" style="width:100%;padding:14px;border-radius:13px;border:none;background:linear-gradient(135deg,#003366,#1A5FAD);color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit">
-      Trimite cererea de subscriere
-    </button>`;
-}
-
-// ════════════════════════════════════════════════════════════════
-// FT1 — KYC / MIFID CHECK înainte de Pasul 2
-// ════════════════════════════════════════════════════════════════
-
-let KYC_DONE = false;
-let MIFID_SCORE = 0;
-
-function showKYCModal() {
-  if (KYC_DONE) { goStep(2); return; }
-  const ov = document.createElement('div');
-  ov.id = 'kyc-overlay';
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto';
-  ov.innerHTML = `
-    <div style="background:#fff;border-radius:22px;max-width:500px;width:100%;padding:0;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.3);margin:auto">
-      <div style="background:linear-gradient(135deg,#003366,#1A5FAD);padding:20px 24px">
-        <div style="font-weight:800;color:#fff;font-size:16px;margin-bottom:4px">Verificare identitate (KYC/AML)</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.6)">Obligatoriu pentru investiții ≥ €10.000 · Directiva UE 2015/849 (AML)</div>
-      </div>
-      <div style="padding:22px">
-        <!-- Upload CI -->
-        <div style="margin-bottom:16px">
-          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;display:block;margin-bottom:8px">CI / Pașaport (față + verso)</label>
-          <div style="border:2px dashed #D5DFE8;border-radius:12px;padding:16px;text-align:center;cursor:pointer;background:#F8FAFC" onclick="this.querySelector('input').click()">
-            <input type="file" accept="image/*,.pdf" multiple style="display:none" onchange="handleKYCDoc(this,'ci')"/>
-            <div style="font-size:28px;margin-bottom:6px"><i data-lucide="file-text" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-            <div style="font-size:12.5px;font-weight:600;color:#5A6B7D">Click sau drag & drop</div>
-            <div style="font-size:10px;color:#8C9BAD;margin-top:3px">JPEG/PDF · Max 5MB · OCR automat Gemini AI</div>
-          </div>
-          <div id="kyc-ci-status" style="font-size:11px;color:#5A6B7D;margin-top:5px"></div>
-        </div>
-
-        <!-- MIFID Questionnaire -->
-        <div style="background:#F0F4F8;border-radius:12px;padding:14px;margin-bottom:16px">
-          <div style="font-size:12px;font-weight:700;color:#1A2332;margin-bottom:10px">Chestionar MIFID II — Profil risc</div>
-          ${[
-            {q:'Experiența în investiții', opts:['0-1 ani','2-5 ani','5+ ani']},
-            {q:'Toleranță la pierderi', opts:['0-10%','10-30%','30-100%']},
-            {q:'Scop investiție', opts:['Siguranță capital','Creștere moderată','Randament maxim']},
-          ].map((item,i)=>`
-          <div style="margin-bottom:10px">
-            <div style="font-size:11px;font-weight:600;color:#5A6B7D;margin-bottom:5px">${item.q}</div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap">
-              ${item.opts.map((o,j)=>`<button class="mifid-opt" data-q="${i}" data-v="${j}" onclick="selectMifid(this,${i},${j})" style="padding:6px 12px;border-radius:8px;border:1.5px solid #D5DFE8;background:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s">${o}</button>`).join('')}
-            </div>
-          </div>`).join('')}
-        </div>
-
-        <!-- Rezidență fiscală -->
-        <div style="margin-bottom:16px">
-          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;display:block;margin-bottom:6px">Rezidență fiscală</label>
-          <select style="width:100%;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;background:#fff" onchange="EVAL_PARAMS.tari_active=this.value==='RO'?1:this.value==='EU'?2:3">
-            <option value="RO">🇷🇴 România</option>
-            <option value="EU">🇪🇺 UE (altă țară)</option>
-            <option value="EXTRA">Altă țară</option>
-          </select>
-        </div>
-
-        <!-- Checkbox PEP / Sancțiuni -->
-        <div style="background:#FFF8EE;border-radius:10px;padding:11px;margin-bottom:16px;border:1px solid rgba(255,140,0,.2)">
-          <label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;font-size:11.5px;color:#5A6B7D;line-height:1.5">
-            <input type="checkbox" id="kyc-pep" style="margin-top:2px;accent-color:#FF8C00"/>
-            <span>Declar că <strong>nu sunt</strong> o Persoană Expusă Politic (PEP), nu am sancțiuni OFAC/UE și nu acționez în numele unui terț nedeclarat. (AML Art. 20-22 Directiva UE 2015/849)</span>
-          </label>
-        </div>
-
-        <button onclick="finalizeKYC()" id="btn-kyc-confirm" disabled style="width:100%;padding:13px;border-radius:12px;border:none;background:#CBD5E0;color:#fff;font-size:14px;font-weight:700;cursor:not-allowed;font-family:inherit">
-          Continuă la selectare instrument
-        </button>
-        <div style="font-size:10px;color:#8C9BAD;text-align:center;margin-top:8px">Datele sunt procesate prin Gemini Vision AI OCR și stocate criptat AES-256.</div>
-      </div>
-    </div>`;
-  document.body.appendChild(ov);
-  document.body.style.overflow = 'hidden';
-
-  // Activăm butonul confirm după completare
-  ['kyc-pep'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('change', checkKYCComplete);
-  });
-}
-
-let MIFID_ANSWERS = {};
-function selectMifid(btn, q, v) {
-  document.querySelectorAll(`[data-q="${q}"]`).forEach(b=>{b.style.borderColor='#D5DFE8';b.style.background='#fff';b.style.color='#1A2332';});
-  btn.style.borderColor='#003366'; btn.style.background='#EBF4FB'; btn.style.color='#003366';
-  MIFID_ANSWERS[q] = v;
-  MIFID_SCORE = Object.values(MIFID_ANSWERS).reduce((s,v)=>s+v,0);
-  checkKYCComplete();
-}
-
-// FIX (27 august 2026, categoria D din inventarul "Cod/Schemă Orfană") —
-// afișa un rezultat de verificare complet fabricat ("CI verificat · Radu
-// Ionescu · RO · Valabil 2031 · Nicio sancțiune detectată") indiferent de
-// fișierul real încărcat sau de identitatea reală a utilizatorului — nici
-// OCR, nici verificare de sancțiuni nu rulează de fapt. Fluxul real de
-// KYC automatizat (OCR + hash CNP) rămâne deliberat neconstruit — decizie
-// deja confirmată, api/investitori/kyc.js se reconstruiește de la zero
-// când acel flux intră în producție. Până atunci, starea afișată e onestă:
-// fișierul a fost selectat, verificarea o face echipa, manual.
-function handleKYCDoc(input, type) {
-  if(input.files.length > 0) {
-    document.getElementById('kyc-ci-status').innerHTML='<span style="color:#5A6B7D;font-weight:600">'+input.files[0].name+' — selectat. Verificarea identității se face manual de echipa noastră, după trimiterea cererii.</span>';
-    checkKYCComplete();
-  }
-}
-
-function checkKYCComplete() {
-  const pepOK   = document.getElementById('kyc-pep')?.checked;
-  const mifidOK = Object.keys(MIFID_ANSWERS).length >= 3;
-  const btn     = document.getElementById('btn-kyc-confirm');
-  const ready   = pepOK && mifidOK;
-  if (btn) { btn.disabled = !ready; btn.style.background = ready ? '#003366':'#CBD5E0'; btn.style.cursor = ready ? 'pointer':'not-allowed'; }
-}
-
-function finalizeKYC() {
-  KYC_DONE = true;
-  const profil = MIFID_SCORE <= 2 ? 'Conservator' : MIFID_SCORE <= 5 ? 'Moderat' : 'Agresiv';
-  document.getElementById('kyc-overlay')?.remove();
-  document.body.style.overflow = '';
-  showToastInv(`Chestionar MIFID complet · Profil: ${profil} · Poți continua subscrierea`);
-  goStep(2);
-}
+// Pasul 11-L: fereastra KYC veche (fișierul doar „selectat”, OCR și criptare
+// afirmate fără să existe, prag de 10.000 EUR scris de mână) e înlocuită de
+// ruta de investitor din investitori-ruta.js.
 
 // ════════════════════════════════════════════════════════════════
 // FT3 — DASHBOARD PORTOFOLIU POST-SUBSCRIERE
@@ -1744,144 +1536,10 @@ function finalizeKYC() {
 
 let INV_PORTFOLIO = null;
 
-// FIX (27 august 2026, categoria D din inventarul "Cod/Schemă Orfană") —
-// funcția scria subscrierea DOAR în sessionStorage, genera un ID local fals
-// ("INV-" + Date.now()) și afișa direct un "Dashboard Investitor" cu badge
-// "eIDAS Semnat" — un investitor real ar fi crezut că a semnat legal o
-// subscriere, deși nimic nu ajungea vreodată în baza de date. Endpoint-ul
-// real (api/public/investitori-subscrie.js) exista deja, dar front-end-ul
-// nu fusese niciodată legat la el. Reparat acum: cerere reală, ID-ul vine
-// din rândul chiar creat în investitori_portofoliu, badge-ul fals eliminat.
-async function finalizeazaSubscriere() {
-  if (!INV_ACCOUNT || !INV_ACCOUNT.iban) {
-    alert('Datele de cont (inclusiv IBAN) nu sunt completate. Te rugăm să revii la Pasul 1.');
-    goStep(1);
-    return;
-  }
-  const alo = calcAlocare(INV_STATE.suma_eur, INV_STATE.instrument);
-
-  const btn = document.querySelector('[onclick="finalizeazaSubscriere()"]');
-  if (btn) { btn.disabled = true; btn.textContent = 'Se înregistrează...'; }
-
-  let raspuns;
-  try {
-    const res = await fetch('/api/public/investitori-subscrie', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: INV_ACCOUNT.email,
-        suma_eur: INV_STATE.suma_eur,
-        actiuni: alo.actiuni,
-        instrument: INV_STATE.instrument,
-        consimtamant_public: false,
-      }),
-    });
-    raspuns = await res.json();
-    if (!res.ok) throw new Error(raspuns.error || 'Eroare la înregistrarea subscrierii');
-  } catch (e) {
-    alert('Nu am putut înregistra subscrierea: ' + e.message + '\nTe rugăm să încerci din nou' + ((window.mydContact && mydContact('investitori_email')) ? ' sau să ne scrii la ' + mydContact('investitori_email') : '') + '.');
-    if (btn) { btn.disabled = false; btn.textContent = 'Trimite cererea de subscriere'; }
-    return;
-  }
-
-  INV_PORTFOLIO = {
-    id: raspuns.portofoliu.id,
-    data: new Date().toLocaleDateString('ro-RO'),
-    suma_eur: INV_STATE.suma_eur,
-    instrument: INV_STATE.instrument,
-    actiuni: alo.actiuni,
-    pct: alo.pct,
-    pret_achizitie: EVAL_PARAMS.pret_actiune_eur,
-    val_initiala_eur: INV_STATE.suma_eur,
-    runda: 'Runda I · 2026',
-    cont: INV_ACCOUNT,
-  };
-  try { sessionStorage.setItem('myd_investor', JSON.stringify(INV_PORTFOLIO)); } catch(e) {}
-  closeRunda && closeRunda();
-  renderDashboardInvestitor();
-}
-
-function renderDashboardInvestitor() {
-  const P = INV_PORTFOLIO;
-  if (!P) return;
-  const evalNow = calcEvaluare();
-  const val_curenta = (P.actiuni * parseFloat(evalNow.pret_actiune)).toFixed(2);
-  const roi = ((val_curenta / P.val_initiala_eur - 1)*100).toFixed(1);
-  
-  // Injectăm dashboard
-  const mainEl = document.querySelector('main, #main, body > div');
-  const dashDiv = document.createElement('div');
-  dashDiv.id = 'investor-dashboard';
-  dashDiv.style.cssText = 'position:fixed;inset:0;background:#F0F4F8;z-index:800;overflow-y:auto';
-  dashDiv.innerHTML = `
-    <div style="background:linear-gradient(135deg,#001E3C,#003366);padding:18px 22px 16px;position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:12px">
-        <div style="font-size:24px"><i data-lucide="trending-up" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-        <div>
-          <div style="font-weight:800;color:#fff;font-size:16px">Dashboard Investitor · My Darrin</div>
-          <div style="font-size:11px;color:rgba(255,255,255,.5)">${P.runda} · ID: <span style="font-family:monospace">${P.id}</span></div>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <button onclick="showAccountModal()" style="padding:7px 14px;border-radius:9px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px">Date cont</button>
-        <button onclick="document.getElementById('investor-dashboard').remove()" style="padding:7px 16px;border-radius:9px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">← Înapoi platformă</button>
-      </div>
-    </div>
-    <div style="max-width:900px;margin:0 auto;padding:22px">
-      
-      <!-- KPI Portofoliu -->
-      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:22px">
-        ${invKpi('Investiție inițială','€'+P.suma_eur.toLocaleString(),'#1A5FAD','')}
-        ${invKpi('% din companie',P.pct+'%','#0E9E99','')}
-      </div>
-
-      <!-- Portofoliu acțiuni -->
-      <div style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;margin-bottom:18px;overflow:hidden">
-        <div style="padding:14px 18px;border-bottom:1px solid #EEF2F7;background:#F8FAFC;display:flex;align-items:center;justify-content:space-between">
-          <strong style="color:#1A2332">Portofoliu acțiuni</strong>
-          <span style="font-size:10px;background:#FFF4E0;color:#8A5A00;border-radius:99px;padding:3px 10px;font-weight:700;border:1px solid rgba(255,140,0,.2)">Cerere înregistrată — în procesare</span>
-        </div>
-        <table style="width:100%;border-collapse:collapse">
-          <thead><tr style="background:#F8FAFC"><th style="padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;text-align:left">Instrument</th><th style="padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;text-align:right">Acțiuni</th><th style="padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;text-align:right">% Companie</th><th style="padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;text-align:right">Val. inițială</th><th style="padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;text-align:right">Val. curentă</th><th style="padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;text-align:right">ROI</th></tr></thead>
-          <tbody>
-            <tr><td style="padding:12px 14px;font-weight:700;color:#1A2332">${{note_convertibile:'Note Convertibile',actiuni:'Acțiuni Ord.',obligatiuni:'Obligațiuni 8%'}[P.instrument]}</td><td style="padding:12px 14px;text-align:right;font-weight:700">${P.actiuni.toLocaleString()}</td><td style="padding:12px 14px;text-align:right;font-weight:700;color:#1A5FAD">${P.pct}%</td><td style="padding:12px 14px;text-align:right">€${P.val_initiala_eur.toLocaleString()}</td><td style="padding:12px 14px;text-align:right;font-weight:800;color:#FF8C00">€${parseFloat(val_curenta).toLocaleString()}</td><td style="padding:12px 14px;text-align:right;font-weight:800;color:${roi>0?'#1A7A3A':'#C0392B'}">${roi>0?'+':''}${roi}%</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Dividende / Dobânzi -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
-        <div style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;overflow:hidden">
-          <div style="padding:13px 17px;border-bottom:1px solid #EEF2F7;background:#F8FAFC"><strong style="color:#1A2332">Distribuții financiare</strong></div>
-          <div style="padding:16px;font-size:12.5px;display:flex;flex-direction:column;gap:8px">
-            <div style="display:flex;justify-content:space-between;padding:8px 10px;background:#F0F4F8;border-radius:9px"><span style="color:#5A6B7D">Tip venit</span><strong>${P.instrument==='obligatiuni'?'Dobândă 8% fix':'Dividend (profit net)' }</strong></div>
-          </div>
-        </div>
-        <!-- EXIT MODULE -->
-        <div style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;overflow:hidden">
-          <div style="padding:13px 17px;border-bottom:1px solid #EEF2F7;background:#F8FAFC"><strong style="color:#1A2332">Exit & Lichiditate</strong></div>
-          <div style="padding:16px;display:flex;flex-direction:column;gap:8px">
-            <button onclick="showExitModal('buyback')" style="padding:11px;border-radius:11px;border:1.5px solid #D5DFE8;background:#F8FAFC;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;text-align:left;transition:all .18s" onmouseover="this.style.borderColor='#003366'" onmouseout="this.style.borderColor='#D5DFE8'">
-              Share Buyback<br><span style="font-size:10.5px;color:#5A6B7D;font-weight:400">Răscumpărare de către companie la evaluarea curentă</span>
-            </button>
-            <button onclick="showExitModal('p2p')" style="padding:11px;border-radius:11px;border:1.5px solid #D5DFE8;background:#F8FAFC;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;text-align:left;transition:all .18s" onmouseover="this.style.borderColor='#0E9E99'" onmouseout="this.style.borderColor='#D5DFE8'">
-              Piață Secundară P2P<br><span style="font-size:10.5px;color:#5A6B7D;font-weight:400">Listează acțiunile pentru alți investitori validați</span>
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Avertisment -->
-      <div style="background:#FFF0F0;border-radius:13px;border:1px solid rgba(192,57,43,.2);padding:12px 16px;text-align:center;font-size:11px;color:#C0392B">
-        Investițiile în companii early-stage implică riscul pierderii totale a capitalului · Instrumentele nu sunt garantate de FGDB · MiFID II Art. 24 · Profit/Pierdere nerealizată nu reprezintă un randament garantat.
-      </div>
-    </div>`;
-  document.body.appendChild(dashDiv);
-}
-
-function invKpi(label, val, color, icon) {
-  return `<div style="background:#fff;border-radius:14px;border:1px solid #D5DFE8;padding:16px;box-shadow:0 1px 4px rgba(0,51,102,.06);position:relative;overflow:hidden"><div style="position:absolute;top:0;left:0;right:0;height:3px;background:${color};border-radius:14px 14px 0 0"></div><div style="display:flex;justify-content:space-between;margin-bottom:8px"><div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D">${label}</div><span style="font-size:18px">${icon}</span></div><div style="font-size:22px;font-weight:800;color:${color};line-height:1">${val}</div></div>`;
-}
+// Pasul 11-L: finalizeazaSubscriere / renderDashboardInvestitor (subscrierea
+// publică, fără cont, cu portofoliul ținut în sessionStorage) au fost scoase:
+// subscrierea trece prin api/investitori/subscrie.js, iar portofoliul vine din
+// dashboard-ul privat (get_investor_portofoliu).
 
 // ════════════════════════════════════════════════════════════════
 // FT6 — EXIT MODAL
@@ -1890,68 +1548,11 @@ function invKpi(label, val, color, icon) {
 // ════════════════════════════════════════════════════════════════
 // ADMINISTRARE CONT — vizualizare + editare date personale & IBAN
 // ════════════════════════════════════════════════════════════════
-function showAccountModal() {
-  const acc = INV_PORTFOLIO?.cont || INV_ACCOUNT || {};
-  const ov = document.createElement('div');
-  ov.id = 'account-modal-overlay';
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1002;display:flex;align-items:center;justify-content:center;padding:20px';
-  ov.innerHTML = `
-    <div style="background:#fff;border-radius:20px;max-width:460px;width:100%;padding:0;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.3);max-height:90vh;overflow-y:auto">
-      <div style="background:linear-gradient(135deg,#003366,#1A5FAD);padding:18px 22px;display:flex;align-items:center;justify-content:space-between">
-        <div style="font-weight:800;color:#fff;font-size:15px">Date cont investitor</div>
-        <button onclick="document.getElementById('account-modal-overlay').remove()" style="width:28px;height:28px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;cursor:pointer;font-size:16px">×</button>
-      </div>
-      <div style="padding:22px">
-        <div style="margin-bottom:14px">
-          <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:5px">Nume complet</label>
-          <input type="text" id="acc-nume" value="${(acc.prenume||'')+' '+(acc.nume||'')}" readonly style="width:100%;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;background:#F4F7F9;color:#8C9BAD;cursor:not-allowed"/>
-          <div style="font-size:9.5px;color:#8C9BAD;margin-top:4px">Numele de pe documentul de identitate nu poate fi modificat direct — contactează suportul.</div>
-        </div>
-        <div style="margin-bottom:14px">
-          <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:5px">Email</label>
-          <input type="email" id="acc-email" value="${acc.email||''}" style="width:100%;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none"/>
-        </div>
-        <div style="margin-bottom:14px">
-          <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:5px">Telefon</label>
-          <input type="tel" id="acc-tel" value="${acc.telefon||''}" style="width:100%;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none"/>
-        </div>
-        <div style="background:#F0F4F8;border-radius:12px;padding:13px;margin-bottom:16px;border:1px solid #D5DFE8">
-          <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:5px">IBAN cont bancar (distribuții & Exit)</label>
-          <input type="text" id="acc-iban" value="${acc.iban||''}" style="width:100%;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px 12px;font-size:13px;font-family:'JetBrains Mono',monospace;outline:none;text-transform:uppercase"/>
-          <div style="font-size:9.5px;color:#C0392B;margin-top:5px">Schimbarea IBAN necesită o nouă verificare AML și poate întârzia următoarea distribuție.</div>
-        </div>
-        <button onclick="saveAccountChanges()" style="width:100%;padding:12px;border-radius:12px;border:none;background:#003366;color:#fff;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit">
-          Salvează modificările
-        </button>
-      </div>
-    </div>`;
-  document.body.appendChild(ov);
-}
-
-function saveAccountChanges() {
-  const newEmail = document.getElementById('acc-email').value.trim();
-  const newTel   = document.getElementById('acc-tel').value.trim();
-  const newIban  = document.getElementById('acc-iban').value.trim();
-
-  if (!newEmail.includes('@')) { alert('Email invalid.'); return; }
-  if (!isValidIBAN(newIban)) { alert('IBAN invalid. Verifică formatul.'); return; }
-
-  const ibanChanged = INV_PORTFOLIO?.cont?.iban !== newIban.replace(/\s/g,'').toUpperCase();
-
-  if (INV_PORTFOLIO?.cont) {
-    INV_PORTFOLIO.cont.email = newEmail;
-    INV_PORTFOLIO.cont.telefon = newTel;
-    INV_PORTFOLIO.cont.iban = newIban.replace(/\s/g,'').toUpperCase();
-    try { sessionStorage.setItem('myd_investor', JSON.stringify(INV_PORTFOLIO)); } catch(e) {}
-  }
-  if (INV_ACCOUNT) {
-    INV_ACCOUNT.email = newEmail; INV_ACCOUNT.telefon = newTel; INV_ACCOUNT.iban = newIban;
-  }
-
-  document.getElementById('account-modal-overlay').remove();
-  showToastInv(ibanChanged
-    ? 'Date actualizate · IBAN nou necesită re-verificare AML'
-    : 'Date de cont actualizate cu succes');
+// Pasul 11-L: „Date cont” deschide ruta de investitor la pasul 1 (date salvate
+// pe server); fereastra veche schimba emailul și IBAN-ul doar în sessionStorage
+// și afișa „actualizat cu succes” fără nicio salvare.
+function showAccountModal(deschizator) {
+  if (window.MYD_INVESTITOR) window.MYD_INVESTITOR.deschideDateCont(deschizator);
 }
 
 function showExitModal(type) {
@@ -2021,9 +1622,7 @@ function initiazaExit(type, net) {
 // ════════════════════════════════════════════════════════════════
 const _origGoStep = window.goStep;
 window.goStep = function(n) {
-  if (n === 2 && !KYC_DONE) { showKYCModal(); return; }
   _origGoStep && _origGoStep(n);
-  if (n === 4) setTimeout(updateStep4Summary, 100);
 };
 
 // Hook pe selectTicket/selectInstrument pentru INV_STATE
@@ -2948,70 +2547,6 @@ if(document.readyState==='loading'){
 <!-- ════ END PITCH DECK ════ -->
 
 
-<script>
-// ── KYC Modal close (Etapa 3) ─────────────────────────────────────
-var _kycIsUploading = false;
-
-function closeKYCModal() {
-  if (_kycIsUploading) return; // Nu închidem cât timp uploadul e activ
-  var modal = document.getElementById('kyc-modal-wrap');
-  if (modal) modal.style.display = 'none';
-  document.body.style.overflow = '';
-}
-
-// Overlay click → close (dacă nu uploadăm)
-document.addEventListener('click', function(e) {
-  var wrap = document.getElementById('kyc-modal-wrap');
-  if (!wrap || wrap.style.display === 'none') return;
-  if (e.target === wrap && !_kycIsUploading) closeKYCModal();
-});
-
-// ESC → close (dacă nu uploadăm)
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape' && !_kycIsUploading) closeKYCModal();
-});
-
-// Funcție apelată din handleKYCDoc pentru a seta starea de upload
-function setKYCUploading(val) {
-  _kycIsUploading = !!val;
-  var btn = document.getElementById('btn-kyc-close');
-  if (btn) btn.style.opacity = val ? '0.3' : '1';
-}
-
-// Injectăm butonul X în header-ul KYC modal (la DOMContentLoaded)
-document.addEventListener('DOMContentLoaded', function() {
-  var kycHeader = document.querySelector('[data-kyc-header], #kyc-modal-wrap .kyc-header');
-  if (!kycHeader) {
-    // Fallback: găsim după text
-    var headers = document.querySelectorAll('[style*="font-weight:800"][style*="color:#fff"]');
-    headers.forEach(function(h) {
-      if (h.textContent && h.textContent.includes('KYC')) {
-        kycHeader = h.parentElement;
-      }
-    });
-  }
-  if (kycHeader && !document.getElementById('btn-kyc-close')) {
-    kycHeader.style.position = 'relative';
-    var btnX = document.createElement('button');
-    btnX.id = 'btn-kyc-close';
-    btnX.setAttribute('aria-label', 'Închide');
-    btnX.setAttribute('title', 'Închide');
-    btnX.style.cssText = [
-      'position:absolute','top:0','right:0',
-      'width:32px','height:32px','border-radius:50%',
-      'border:none','background:rgba(255,255,255,.15)',
-      'color:#fff','font-size:16px','font-weight:700',
-      'cursor:pointer','display:flex','align-items:center',
-      'justify-content:center','transition:background .15s',
-      'line-height:1',
-    ].join(';');
-    btnX.innerHTML = '×';
-    btnX.addEventListener('mouseenter', function(){ this.style.background='rgba(255,255,255,.3)'; });
-    btnX.addEventListener('mouseleave', function(){ this.style.background='rgba(255,255,255,.15)'; });
-    btnX.addEventListener('click', closeKYCModal);
-    kycHeader.appendChild(btnX);
-  }
-});
 </script>
 
 <footer style="background:#1E2E4D;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">

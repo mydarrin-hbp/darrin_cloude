@@ -137,12 +137,30 @@ function interogare(tabel) {
   return b;
 }
 
+// rpc (pasul 11-L): DB.rpc[nume] = async (argumente) => valoare; fără handler → eroare.
+// storage: fișierele stau în DB.storage[bucket] (Set de căi); adresele semnate sunt simulate.
+DB.rpc = {};
+DB.storage = {};
+function bucket(nume) { return DB.storage[nume] || (DB.storage[nume] = new Set()); }
 const supabaseAdmin = {
   from: interogare,
+  rpc: async (nume, argumente) => {
+    if (!DB.rpc[nume]) return { data: null, error: eroare('PGRST202', `function ${nume} not found`) };
+    try { return { data: await DB.rpc[nume](argumente || {}), error: null }; } catch (e) { return { data: null, error: eroare('P0001', e.message) }; }
+  },
   auth: {
     getUser: async (t) => (DB.utilizatori[t] ? { data: { user: DB.utilizatori[t] }, error: null } : { data: null, error: eroare('401', 'invalid') }),
   },
-  storage: { from: () => ({ upload: async () => ({ error: null }) }) },
+  storage: {
+    from: (nume) => ({
+      upload: async (cale) => { bucket(nume).add(cale); return { error: null }; },
+      createSignedUploadUrl: async (cale) => ({ data: { path: cale, token: 'tok-' + cale, signedUrl: `https://sim.supabase/upload/${nume}/${cale}?token=tok` }, error: null }),
+      createSignedUrl: async (cale, sec) => (bucket(nume).has(cale)
+        ? { data: { signedUrl: `https://sim.supabase/sign/${nume}/${cale}?exp=${sec}` }, error: null }
+        : { data: null, error: eroare('404', 'Object not found') }),
+      remove: async (cai) => { cai.forEach((c) => bucket(nume).delete(c)); return { data: cai, error: null }; },
+    }),
+  },
 };
 
 function instaleaza() {
