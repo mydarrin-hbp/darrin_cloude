@@ -25,6 +25,15 @@
      - cu rolul de investitor deja pe cont: „Intră în rundă” deschide
        subscrierea (fereastra existentă, legată acum de cont:
        api/investitori/subscrie.js).
+     - pasul 11-M (21 oct. 2026): fereastra se deschide imediat la clic, cu
+       „Se încarcă…” și X activ; datele (profilul, pasul salvat, starea KYC)
+       se completează când sosesc. Clientul Supabase și profilul se pregătesc
+       la încărcarea paginii. Fără sesiune, trimiterea la autentificare e
+       imediată. Fără răspuns în 10 secunde: mesaj clar și „Reîncearcă”.
+       Butonul apăsat se blochează cât se deschide fereastra (un dublu-clic
+       nu deschide două ferestre). Un clic dat înainte ca scriptul să se
+       încarce (e `defer`) nu se pierde: pagina îl ține în
+       window.__MYD_INV_COADA și îl rulăm aici.
 
    Textele sunt în română, cu traducerile EN în i18n/en/mydarrin-investitori.json.
    ════════════════════════════════════════════════════════════════ */
@@ -131,6 +140,10 @@
       '.mi-err{color:#C0392B;font-size:12.5px;margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.mi-err button{min-height:36px;border-radius:8px;border:1.5px solid #C0392B;background:#fff;color:#C0392B;font-weight:700;padding:6px 10px;cursor:pointer;font-family:inherit}' +
       '.mi-rez{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #EEF2F7;font-size:13px}.mi-rez span:last-child{font-weight:700;text-align:right}' +
       '.mi-ok{color:#1A7A3A}.mi-lipsa{color:#C0392B}' +
+      '.mi-incarcare{display:flex;align-items:center;gap:10px;padding:28px 4px;font-size:14px;color:#5A6B7D}' +
+      '.mi-spin{width:20px;height:20px;border-radius:50%;border:3px solid #E2E8F0;border-top-color:#FF8C00;animation:mi-rot .8s linear infinite;flex:0 0 auto}' +
+      '@keyframes mi-rot{to{transform:rotate(360deg)}}@media (prefers-reduced-motion:reduce){.mi-spin{animation:none}}' +
+      '.mi-eroare-incarcare{padding:20px 4px;font-size:14px;color:#7A1F16;line-height:1.55}.mi-eroare-incarcare button{margin-top:12px;min-height:44px;border-radius:12px;border:0;background:#003366;color:#fff;font-weight:700;padding:10px 18px;cursor:pointer;font-family:inherit}' +
       '.mi-sr{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}';
     (document.head || document.documentElement).appendChild(s);
   }
@@ -146,6 +159,7 @@
     document.body.style.overflow = st.overflowVechi || '';
     document.removeEventListener('keydown', laTasta, true);
     var d = st.deschizator;
+    if (st.blocat && d) d.disabled = false;
     Object.keys(st.fisiere || {}).forEach(function (k) { var x = st.fisiere[k]; if (x && x.urlLocal) URL.revokeObjectURL(x.urlLocal); });
     st = null;
     if (d && typeof d.focus === 'function' && document.contains(d)) d.focus();
@@ -199,6 +213,8 @@
 
   function arataPas(n) {
     st.pas = n;
+    st.incarcare = false;
+    ['mi-inapoi', 'mi-mai-tarziu', 'mi-continua'].forEach(function (id) { el(id).hidden = false; });
     el('mi-subtitlu').textContent = tr('Pasul {n} din {total} · {nume}', { n: n, total: PASI.length, nume: tr(PASI[n - 1]) });
     Array.prototype.forEach.call(el('mi-progres').children, function (s, i) { s.className = i + 1 < n ? 'facut' : i + 1 === n ? 'curent' : ''; });
     el('mi-inapoi').textContent = n > 1 ? tr('Înapoi') : tr('Închide');
@@ -251,7 +267,7 @@
     var titlu = latura === 'fata' ? (pasaport ? 'Pagina cu fotografia' : 'Fața documentului') : 'Verso-ul documentului';
     var x = st.fisiere[latura];
     var previz;
-    if (x && x.incarca) previz = '<span>' + esc(tr('Se încarcă…')) + '</span>';
+    if (x && x.incarca) previz = '<span>' + esc(tr('Se încarcă fișierul…')) + '</span>';
     else if (x && x.urlLocal && x.mime !== 'application/pdf') previz = '<img src="' + esc(x.urlLocal) + '" alt="' + esc(tr(titlu)) + '"><span translate="no">' + esc(x.nume || '') + '</span>';
     else if (x && (x.mime === 'application/pdf' || x.salvat)) previz = (x.mime === 'application/pdf' ? '<span class="mi-pdf">PDF</span>' : '') + '<span>' + (x.nume ? '<span translate="no">' + esc(x.nume) + '</span>' : esc(tr('Fișier încărcat'))) + '</span>' +
       (x.cale ? ' <button type="button" class="mi-s" data-vezi="' + latura + '" style="min-height:36px;border-radius:8px;padding:6px 10px;font-weight:700;cursor:pointer;font-family:inherit">' + esc(tr('Vezi')) + '</button>' : '');
@@ -456,32 +472,117 @@
     setTimeout(function () { t.remove(); }, 4000);
   }
 
-  // ── Deschiderea ────────────────────────────────────────────────────
-  function deschideRuta(deschizator, pasCerut) {
-    return api('/api/investitori/kyc').then(function (j) {
-      var kyc = j.kyc;
-      if (kyc && kyc.status && kyc.status !== 'ciorna' && kyc.status !== 'respins') {
-        toast(tr('Dosarul tău e trimis și e în verificare sau aprobat. Pentru modificări, scrie-ne din pagina Contact.'));
-        return;
-      }
-      if (st) inchide(true);
-      st = {
-        pas: 1, kyc: kyc, cont: j.cont || {}, lipsa: j.lipsa || [], murdar: false,
-        deschizator: deschizator || document.activeElement, overflowVechi: document.body.style.overflow,
-        fisiere: {
-          fata: kyc && kyc.document_fata_path ? { salvat: true, cale: kyc.document_fata_path, mime: /\.pdf$/.test(kyc.document_fata_path) ? 'application/pdf' : null } : null,
-          verso: kyc && kyc.document_verso_path ? { salvat: true, cale: kyc.document_verso_path, mime: /\.pdf$/.test(kyc.document_verso_path) ? 'application/pdf' : null } : null,
-        },
-        tip: kyc && kyc.tip_document,
-      };
-      construiesteFereastra();
-      document.body.style.overflow = 'hidden';
-      var pas = pasCerut || (kyc && kyc.pas_curent) || 1;
-      arataPas(Math.min(Math.max(pas, 1), PASI.length));
-    }).catch(function (e) {
-      if (e && e.status === 401) { laLogin(); return; }
-      toast((e && e.message) || tr('Nu am putut deschide ruta de investitor.'));
+  // ── Deschiderea (pasul 11-M: imediată, cu stare de încărcare) ──────
+  var TERMEN_MS = 10000;
+  function cuTermen(promisiune, ms) {
+    return new Promise(function (ok, ko) {
+      var t = setTimeout(function () { var e = new Error('timeout'); e.timeout = true; ko(e); }, ms);
+      promisiune.then(function (v) { clearTimeout(t); ok(v); }, function (e) { clearTimeout(t); ko(e); });
     });
+  }
+
+  // Există o sesiune salvată? Fără clientul Supabase încă încărcat, ne uităm
+  // după cookie-ul de sesiune (lib/supabaseClient.js îl scrie în bucăți
+  // „…-auth-token.0”) sau după cheia din localStorage. Fără niciunul → nelogat.
+  function poateAreSesiune() {
+    if (window.supabaseClient) return true;
+    if (/(^|;\s*)sb-[^=;]*-auth-token/.test(document.cookie || '')) return true;
+    try { for (var i = 0; i < localStorage.length; i++) if (/^sb-.*-auth-token/.test(localStorage.key(i) || '')) return true; } catch (e) {}
+    return false;
+  }
+
+  // Profilul, pregătit la încărcarea paginii; folosit o singură dată (primul clic).
+  var profilPregatit = null;
+  function cereProfil(s) {
+    return fetch('/api/cont/profil', { headers: { Authorization: 'Bearer ' + s.access_token }, cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; });
+  }
+  function profil(s) {
+    if (profilPregatit) { var p = profilPregatit; profilPregatit = null; return p; }
+    return cereProfil(s);
+  }
+
+  function blocheaza(d) {
+    if (d && 'disabled' in d && !d.disabled) { d.disabled = true; return true; }
+    return false;
+  }
+
+  function fereastraIncarcare(d, blocat) {
+    st = { incarcare: true, pas: 0, murdar: false, deschizator: d, blocat: blocat, overflowVechi: document.body.style.overflow, fisiere: {} };
+    construiesteFereastra();
+    document.body.style.overflow = 'hidden';
+    el('mi-subtitlu').textContent = '';
+    ['mi-inapoi', 'mi-mai-tarziu', 'mi-continua'].forEach(function (id) { el(id).hidden = true; });
+    arataIncarcare();
+    el('mi-x').focus();
+  }
+  function arataIncarcare() {
+    el('mi-corp').innerHTML = '<div class="mi-incarcare" role="status" aria-live="polite"><span class="mi-spin" aria-hidden="true"></span><span>' + esc(tr('Se încarcă…')) + '</span></div>';
+  }
+  function arataEroareIncarcare(text, reincearca) {
+    el('mi-corp').innerHTML = '<div class="mi-eroare-incarcare" role="alert"><div>' + esc(text) + '</div><button type="button" id="mi-reincearca">' + esc(tr('Reîncearcă')) + '</button></div>';
+    el('mi-reincearca').onclick = function () { arataIncarcare(); reincearca(); };
+    el('mi-reincearca').focus();
+  }
+
+  // Completează fereastra deschisă cu dosarul KYC (pasul salvat).
+  function umpleRuta(j, pasCerut) {
+    var kyc = j.kyc;
+    if (kyc && kyc.status && kyc.status !== 'ciorna' && kyc.status !== 'respins') {
+      inchide(true);
+      toast(tr('Dosarul tău e trimis și e în verificare sau aprobat. Pentru modificări, scrie-ne din pagina Contact.'));
+      return;
+    }
+    st.kyc = kyc;
+    st.cont = j.cont || {};
+    st.lipsa = j.lipsa || [];
+    st.fisiere = {
+      fata: kyc && kyc.document_fata_path ? { salvat: true, cale: kyc.document_fata_path, mime: /\.pdf$/.test(kyc.document_fata_path) ? 'application/pdf' : null } : null,
+      verso: kyc && kyc.document_verso_path ? { salvat: true, cale: kyc.document_verso_path, mime: /\.pdf$/.test(kyc.document_verso_path) ? 'application/pdf' : null } : null,
+    };
+    st.tip = kyc && kyc.tip_document;
+    var pas = pasCerut || (kyc && kyc.pas_curent) || 1;
+    arataPas(Math.min(Math.max(pas, 1), PASI.length));
+  }
+
+  // Încarcă datele pentru fereastra deja deschisă. doarRuta: fără ramificarea spre subscriere.
+  function incarcaDatele(d, pasCerut, doarRuta) {
+    var stareCurenta = st;
+    var sesiunePromisa = cuTermen(sesiune(), TERMEN_MS);
+    sesiunePromisa.then(function (s) {
+      if (st !== stareCurenta) return null;
+      if (!s) { inchide(true); laLogin(); return null; }
+      var cereri = [doarRuta ? Promise.resolve(null) : profil(s), api('/api/investitori/kyc')];
+      return cuTermen(Promise.all(cereri), TERMEN_MS).then(function (r) {
+        if (st !== stareCurenta) return;
+        var p = r[0];
+        if (!doarRuta && p && Array.isArray(p.roles) && p.roles.indexOf('investor') !== -1) {
+          inchide(true);
+          if (typeof window.openRunda === 'function') window.openRunda(d);
+          return;
+        }
+        umpleRuta(r[1], pasCerut);
+      });
+    }).catch(function (e) {
+      if (st !== stareCurenta) return;
+      if (e && e.status === 401) { inchide(true); laLogin(); return; }
+      var text = e && e.timeout
+        ? tr('Serverul nu răspunde. Verifică conexiunea și încearcă din nou.')
+        : (e && e.message) || tr('Nu am putut deschide ruta de investitor.');
+      arataEroareIncarcare(text, function () { incarcaDatele(d, pasCerut, doarRuta); });
+    });
+  }
+
+  function deschide(deschizator, pasCerut, doarRuta) {
+    var d = deschizator || document.activeElement;
+    // dublu-clic / fereastră deja deschisă: nu se deschide a doua
+    if (st || el('mi-fond')) return;
+    var m = el('modal-runda');
+    if (m && m.style.display === 'block') return;
+    if (!poateAreSesiune()) { laLogin(); return; }
+    fereastraIncarcare(d, blocheaza(d));
+    incarcaDatele(d, pasCerut, doarRuta);
   }
 
   function laLogin() {
@@ -490,24 +591,16 @@
   }
 
   // „Devino investitor” / „Intră în rundă”: login, ruta sau subscrierea, după starea contului.
-  function start(deschizator) {
-    var d = deschizator || document.activeElement;
-    return sesiune().then(function (s) {
-      if (!s) { laLogin(); return; }
-      return fetch('/api/cont/profil', { headers: { Authorization: 'Bearer ' + s.access_token }, cache: 'no-store' })
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (p) {
-          if (p && Array.isArray(p.roles) && p.roles.indexOf('investor') !== -1) {
-            if (typeof window.openRunda === 'function') window.openRunda(d);
-            return;
-          }
-          return deschideRuta(d);
-        });
-    });
-  }
-
+  function start(deschizator) { deschide(deschizator, null, false); }
+  function deschideRuta(deschizator, pasCerut) { deschide(deschizator, pasCerut, true); }
   // Datele contului de investitor: ruta, la pasul 1 (doar cât dosarul se mai poate modifica).
-  function deschideDateCont(deschizator) { return deschideRuta(deschizator, 1); }
+  function deschideDateCont(deschizator) { deschide(deschizator, 1, true); }
+
+  // Pregătirea în fundal: clientul, sesiunea și profilul, ca primul clic să nu aștepte.
+  function pregateste() {
+    if (!poateAreSesiune()) return;
+    profilPregatit = sesiune().then(function (s) { return s ? cereProfil(s) : null; }).catch(function () { return null; });
+  }
 
   window.MYD_INVESTITOR = { start: start, deschideRuta: deschideRuta, deschideDateCont: deschideDateCont, inchide: inchide, ibanValid: ibanValid };
 
@@ -519,4 +612,14 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', laIncarcare);
   else laIncarcare();
+
+  pregateste();
+  // Clicurile date înainte ca scriptul să se încarce (pasul 11-M): ultimul contează.
+  var coada = window.__MYD_INV_COADA;
+  window.__MYD_INV_COADA = null;
+  if (coada && coada.length) {
+    var ultim = coada[coada.length - 1];
+    coada.forEach(function (b) { if (b && b.disabled && b.getAttribute('data-inv-asteapta')) { b.disabled = false; b.removeAttribute('data-inv-asteapta'); } });
+    start(ultim);
+  }
 })();

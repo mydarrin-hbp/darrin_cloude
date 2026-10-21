@@ -559,6 +559,18 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 <!-- Pasul 11-L: ruta de investitor legată de cont (fereastra în 5 pași, KYC, subscrierea) -->
 <script src="investitori-ruta.js" defer></script>
 <script>
+// Pasul 11-M: „Intră în rundă” / „Devino investitor”. investitori-ruta.js se
+// încarcă cu defer: un clic dat înainte de el nu se pierde — butonul se
+// blochează, clicul așteaptă în coadă și îl rulează scriptul când e gata.
+window.__MYD_INV_COADA = window.__MYD_INV_COADA || [];
+function pornesteInvestitor(b) {
+  if (window.MYD_INVESTITOR && typeof window.MYD_INVESTITOR.start === 'function') return window.MYD_INVESTITOR.start(b);
+  if (!window.__MYD_INV_COADA) return;
+  if (b && !b.disabled) { b.disabled = true; b.setAttribute('data-inv-asteapta', '1'); }
+  window.__MYD_INV_COADA.push(b);
+}
+</script>
+<script>
   window.MYD_PAZA.verifica({ container: 'myd-cont-antet', public: true }).then(function (r) {
     var c = document.getElementById('myd-cont-antet');
     if (c && c.firstChild) c.style.paddingTop = '14px';
@@ -591,7 +603,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
           Platformă hibrid clasic & AI pentru servicii integrate la cerere. Multi-țară, multi-actor, Escrow securizat. Administrat de <strong style="color:#fff">Home Best Pal SRL</strong> · Bacău, România.
         </p>
         <div class="reveal d3" style="display:flex;gap:12px;flex-wrap:wrap">
-          <button class="btn-p" onclick="scrollToSection('runda')">
+          <button class="btn-p" id="hero-intra-runda" onclick="pornesteInvestitor(this)">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             Intră în rundă
           </button>
@@ -643,7 +655,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
     </div>
 
     <div class="reveal" style="text-align:center">
-      <button class="btn-p" style="padding:14px 32px" onclick="MYD_INVESTITOR.start(this)">Devino investitor</button>
+      <button class="btn-p" style="padding:14px 32px" onclick="pornesteInvestitor(this)">Devino investitor</button>
     </div>
 
   </div>
@@ -669,7 +681,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
         </div>
         <div style="display:flex;gap:8px">
           <button onclick="showAccountModal(this)" style="padding:9px 16px;border-radius:10px;border:1.5px solid #D5DFE8;background:#fff;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;color:#1A2332">Date cont</button>
-          <button onclick="MYD_INVESTITOR.start(this)" style="padding:9px 16px;border-radius:10px;border:none;background:#FF8C00;color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">Subscriere nouă</button>
+          <button onclick="pornesteInvestitor(this)" style="padding:9px 16px;border-radius:10px;border:none;background:#FF8C00;color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">Subscriere nouă</button>
           <button onclick="refreshPortofoliu()" style="padding:9px 16px;border-radius:10px;border:1.5px solid #0E9E99;background:#E0F5F4;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;color:#0B7A76">↻ Actualizează</button>
         </div>
       </div>
@@ -796,7 +808,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
     <div class="reveal" style="display:inline-flex;align-items:center;gap:7px;background:#FFF0D6;color:#CC7000;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:5px 14px;border-radius:99px;margin-bottom:12px">Runda curentă</div>
     <h2 class="reveal d1" style="font-size:32px;font-weight:800;color:#1A2332;margin-bottom:10px">Runda Seed</h2>
     <p class="reveal d2" style="font-size:14px;color:#5A6B7D;line-height:1.7;max-width:560px;margin:0 auto 24px">Detaliile rundei apar aici după ce sunt configurate în back-office. Pe această pagină se afișează doar cifre reale, din evidența financiară a companiei.</p>
-    <button class="btn-p reveal d3" style="padding:14px 32px" onclick="MYD_INVESTITOR.start(this)">Intră în rundă</button>
+    <button class="btn-p reveal d3" style="padding:14px 32px" onclick="pornesteInvestitor(this)">Intră în rundă</button>
   </div>
 </section>
 
