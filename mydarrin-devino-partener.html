@@ -110,7 +110,10 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
   isLoggedIn:     function(){ return false; }
 };
 </script>
+<!-- Pasul 11-L: sesiunea contului (modul „cont existent”) și feedbackul comun la salvare -->
+<script type="module" src="lib/supabaseClient.js"></script>
 <script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
+<script src="/ui-feedback.js"></script>
 <script src="seo-meta.js"></script>
 <script src="cookie-consent.js" defer></script>
 <script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="analytics-loader.js" defer></script>
@@ -1985,10 +1988,11 @@ function renderStep4() {
         <div style="font-size:12.5px;color:#5A6B7D;line-height:1.5">Accept notificări prin email pentru comenzi și documente</div>
       </label>
     </div>
-    <button onclick="submitRegistration()" style="width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,${color},${color}cc);color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 6px 20px rgba(0,0,0,.2);transition:all .2s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">
+    <button id="btn-inregistrare" onclick="submitRegistration()" style="width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,${color},${color}cc);color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 6px 20px rgba(0,0,0,.2);transition:all .2s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">
       Înregistrează-mă ca ${PARTNER_META[selectedPartnerType]?.title}
     </button>
-    <div style="text-align:center;margin-top:8px;font-size:10.5px;color:#8C9BAD">Primești pe email un link pentru setarea parolei.</div>`;
+    <div id="inregistrare-msg"></div>
+    <div style="text-align:center;margin-top:8px;font-size:10.5px;color:#8C9BAD">${CONT_EXISTENT ? 'Rolul de partener se adaugă pe contul tău; nu se creează alt cont.' : 'Primești pe email un link pentru setarea parolei.'}</div>`;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -2136,6 +2140,13 @@ async function submitRegistration() {
     return;
   }
 
+  // Pasul 11-L: utilizatorul conectat își adaugă rolul pe contul lui, prin
+  // ruta autentificată; partner-register.js (cont nou) nu se folosește.
+  if (CONT_EXISTENT) {
+    if (btn) { btn.textContent = 'Înregistrează-mă ca ' + (PARTNER_META[selectedPartnerType]?.title || ''); btn.disabled = false; }
+    return adaugaRolPartenerPeCont({ nume_firma, cui, iban, banca, tip_entitate_legala, is_treasury_account, regiune_cod }, btn);
+  }
+
   // Țara detectată (GPS→IP→manual, myd-geo.js) — determină limba emailului
   // de bun venit. Dacă scriptul încă n-a terminat detecția, trimitem fără
   // țară — server-ul cade pe română implicit.
@@ -2185,6 +2196,100 @@ async function submitRegistration() {
     if (btn) { btn.textContent = 'Finalizează înregistrarea'; btn.disabled = false; }
   }
 }
+
+// ══ Pasul 11-L: modul „cont existent” ═════════════════════════════
+// Un utilizator conectat (client, investitor) își adaugă rolul de partener pe
+// același cont: datele contului sunt precompletate, nu se creează alt cont,
+// iar rolul îl adaugă serverul (api/partener/wizard-companie.js →
+// asiguraRolInProfil). Un cont are un singur tip de partener (partners.id = user.id).
+var CONT_EXISTENT = null; // { token, profil }
+
+async function detecteazaContExistent() {
+  for (let i = 0; i < 50 && !window.supabaseClient; i++) await new Promise(r => setTimeout(r, 100));
+  if (!window.supabaseClient) return;
+  try {
+    const { data } = await window.supabaseClient.auth.getSession();
+    const sesiune = data && data.session;
+    if (!sesiune) return;
+    const r = await fetch('/api/cont/profil', { headers: { Authorization: 'Bearer ' + sesiune.access_token }, cache: 'no-store' });
+    if (!r.ok) return;
+    const p = await r.json();
+    CONT_EXISTENT = { token: sesiune.access_token, profil: p };
+    const pune = (id, v, blocat) => { const el = document.getElementById(id); if (el && v) { el.value = v; if (blocat) { el.readOnly = true; el.style.background = '#F4F7F9'; } } };
+    pune('f-email', p.email, true);
+    pune('f-prenume', p.prenume);
+    pune('f-nume', p.nume_familie);
+    pune('f-tel', p.telefon);
+    arataBandaContExistent(p);
+  } catch (e) {
+    console.warn('[devino-partener] contul existent nu a putut fi citit:', e && e.message);
+  }
+}
+
+function arataBandaContExistent(p) {
+  const pas0 = document.getElementById('wiz-step-0');
+  if (!pas0 || document.getElementById('banda-cont-existent')) return;
+  const b = document.createElement('div');
+  b.id = 'banda-cont-existent';
+  b.setAttribute('role', 'status');
+  b.style.cssText = 'margin:0 0 16px;padding:11px 14px;border-radius:12px;font-size:12.5px;line-height:1.5;border:1.5px solid #2B6CB0;background:#EBF4FB;color:#1A3A5C';
+  if (p.partener) {
+    b.style.borderColor = '#C77700'; b.style.background = '#FFF6E5'; b.style.color = '#6B4200';
+    b.innerHTML = '<span>Contul tău are deja un rol de partener. Un cont poate avea un singur tip de partener; pentru alt tip, scrie-ne din pagina Contact.</span> <a href="/mydarrin-rolurile-mele" style="color:#003366;font-weight:700">Rolurile mele</a>';
+  } else {
+    const t = document.createElement('span');
+    t.textContent = 'Ești conectat. Rolul de partener se adaugă pe contul tău; nu se creează alt cont.';
+    b.appendChild(t);
+  }
+  pas0.insertBefore(b, pas0.firstChild);
+}
+
+async function adaugaRolPartenerPeCont(d, btn) {
+  const msg = document.getElementById('inregistrare-msg');
+  const tara = (window.MYD_GEO && window.MYD_GEO.data && window.MYD_GEO.data.cc) || null;
+  const corp = {
+    nume_firma: d.nume_firma, cui: d.cui, partner_type: selectedPartnerType,
+    is_treasury_account: d.is_treasury_account, regiune_cod: d.regiune_cod,
+    nr_reg_com: document.getElementById('f-nrregcom')?.value || '',
+    adresa_sediu_social: document.getElementById('f-sediu')?.value || '',
+  };
+  if (d.tip_entitate_legala) corp.tip_entitate_legala = d.tip_entitate_legala;
+  if (d.iban) {
+    if (!d.banca) { MDFeedback.mesaj(msg, 'eroare', 'Completează și banca pentru contul bancar, sau lasă IBAN-ul gol.'); return; }
+    corp.cont_bancar = { nume_titular: d.nume_firma, iban: d.iban, banca: d.banca, moneda: { RO: 'RON', MD: 'MDL', DE: 'EUR', FR: 'EUR', BG: 'EUR', AT: 'EUR', GR: 'EUR', GB: 'GBP' }[tara] || 'RON' };
+  }
+  await MDFeedback.salveaza(btn, msg, async () => {
+    const res = await fetch('/api/partener/wizard-companie', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + CONT_EXISTENT.token },
+      body: JSON.stringify(corp),
+    });
+    const j = await res.json().catch(() => ({}));
+    const en = window.MYD_I18N && window.MYD_I18N.lang && window.MYD_I18N.lang !== 'ro';
+    if (!res.ok) throw new Error((en && j.error_en) || j.error || 'Nu am putut adăuga rolul de partener.');
+    setTimeout(() => arataSuccesContExistent(), 900);
+    return 'Rolul de partener a fost adăugat pe contul tău.';
+  }, { textSalveaza: 'Se trimite…' });
+}
+
+function arataSuccesContExistent() {
+  const meta = PARTNER_META[selectedPartnerType];
+  const idEl = document.getElementById('partner-id-display');
+  const emailEl = document.getElementById('confirm-email-line');
+  const ocrEl = document.getElementById('final-ocr-score');
+  const dashLink = document.getElementById('success-dashboard-link');
+  if (idEl) idEl.textContent = meta ? meta.title : '';
+  if (emailEl) emailEl.textContent = 'Rolul de partener e pe contul tău. Cererea e în verificare; te anunțăm prin email.';
+  if (ocrEl) ocrEl.textContent = 'Rol adăugat pe contul existent';
+  const dashUrl = window.MYD_DESTINATIE_ROL && window.MYD_DESTINATIE_ROL.dashboardPentruRol('partener_' + selectedPartnerType);
+  if (dashLink && dashUrl) { dashLink.href = dashUrl; dashLink.textContent = 'Intră în dashboard →'; }
+  for (let i = 0; i <= 4; i++) { const el = document.getElementById('wiz-step-' + i); if (el) el.style.display = 'none'; }
+  const succ = document.getElementById('wiz-step-success');
+  if (succ) succ.style.display = 'block';
+}
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', detecteazaContExistent);
+else detecteazaContExistent();
 
 function loadSubCat(nace) { /* GET /backoffice/categorii?nace= */ }
 function loadServices(sub) { /* GET /backoffice/servicii?competente= */ }

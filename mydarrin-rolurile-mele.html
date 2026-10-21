@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ro" class="myd-i18n-pending">
+<head>
+<meta charset="UTF-8">
+<!-- Limba (10 oct. 2026): engleza implicită, româna din selector — i18n-loader.js, sincron, primul script -->
+<script src="/i18n-loader.js" data-pagina="mydarrin-rolurile-mele"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rolurile mele | My Darrin</title>
+<meta name="description" content="Rolurile contului tău My Darrin: rolurile active, starea lor și rolurile pe care le poți adăuga pe același cont.">
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!--
+  Pasul 11-L (17 oct. 2026) — „Rolurile mele”: un cont, mai multe roluri.
+  - rolurile active, cu starea fiecăruia (în verificare / aprobat / respins, cu
+    motivul) și „Deschide dashboard-ul”; rolul activ e marcat;
+  - rolurile care se pot adăuga: „Adaugă acest rol” deschide formularul rolului
+    (partener: „Devino partener” în modul „cont existent”; investitor: ruta de
+    investitor), cu datele contului precompletate;
+  - trecerea dintr-un rol în altul: un clic duce în dashboard-ul rolului
+    (harta unică din lib/destinatie-rol.js).
+  Datele vin din /api/cont/profil (profiles.roles). Rolurile se adaugă doar pe
+  server, după validarea cerințelor; pagina doar arată și trimite mai departe.
+-->
+<style>
+  :root { --albastru:#003366; --text:#1A2332; --gri:#5A6B7D; --linie:#E2E8F0; --fundal:#F4F7F9; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; overflow-x: clip; max-width: 100vw; }
+  body { font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; background: var(--fundal); color: var(--text); }
+  .ant { background: #fff; border-bottom: 1px solid var(--linie); }
+  .ant-in { max-width: 960px; margin: 0 auto; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .logo { font-weight: 800; font-size: 16px; color: var(--albastru); text-decoration: none; }
+  .ant a.inapoi { font-size: 13px; color: var(--gri); text-decoration: none; font-weight: 600; min-height: 44px; display: inline-flex; align-items: center; }
+  main { max-width: 960px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 26px; margin: 0 0 6px; color: var(--albastru); }
+  .sub { font-size: 14px; color: var(--gri); line-height: 1.6; margin: 0 0 20px; max-width: 640px; }
+  h2 { font-size: 16px; margin: 28px 0 12px; }
+  .grila { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .card { background: #fff; border: 1.5px solid var(--linie); border-radius: 14px; padding: 16px; position: relative; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .card.activ-curent { border-width: 2.5px; }
+  .card h3 { margin: 0; font-size: 15px; padding-right: 64px; }
+  .card p { margin: 0; font-size: 12.5px; color: var(--gri); line-height: 1.55; }
+  .marcaj { position: absolute; top: 12px; right: 12px; font-size: 10px; font-weight: 700; color: #fff; padding: 3px 9px; border-radius: 99px; }
+  .stare { align-self: flex-start; font-size: 11.5px; font-weight: 700; padding: 3px 10px; border-radius: 99px; }
+  .stare-activ, .stare-aprobat { background: #EDF7F0; color: #14532D; }
+  .stare-verificare { background: #EBF4FB; color: #1A3A5C; }
+  .stare-respins { background: #FDECEA; color: #7A1F16; }
+  .stare-ciorna { background: #FFF6E5; color: #6B4200; }
+  .motiv { font-size: 12px; color: #7A1F16; background: #FDECEA; border-radius: 8px; padding: 8px 10px; line-height: 1.5; overflow-wrap: anywhere; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 700; text-decoration: none; cursor: pointer; font-family: inherit; min-height: 44px; margin-top: auto; }
+  .btn-p { background: var(--albastru); color: #fff; }
+  .btn-s { background: #fff; color: var(--albastru); border: 1.5px solid var(--albastru); }
+  .nota { font-size: 12px; color: var(--gri); background: var(--fundal); border-radius: 8px; padding: 8px 10px; line-height: 1.5; }
+  .comuta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; background: #fff; border: 1px solid var(--linie); border-radius: 14px; padding: 14px 16px; }
+  .comuta label { font-size: 13px; font-weight: 700; }
+  .comuta select { min-height: 44px; padding: 8px 10px; border: 1.5px solid #D5DFE8; border-radius: 10px; font-size: 14px; font-family: inherit; max-width: 100%; flex: 1 1 200px; }
+  .stare-pagina { background: #fff; border: 1px solid var(--linie); border-radius: 14px; padding: 20px; font-size: 14px; color: var(--gri); }
+  .eroare { color: #7A1F16; background: #FDECEA; border-color: #C0392B; }
+  .myd-sr { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+</style>
+<script>
+  window.__ENV__ = {
+    SUPABASE_URL: 'https://aacojyvujhywanaulvuu.supabase.co',
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhY29qeXZ1amh5d2FuYXVsdnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MjAzMzIsImV4cCI6MjA5ODQ5NjMzMn0.iwZnxctvazOL5OU_wqD7AvAKrVoOqLH_uvj1krK8-vs'
+  };
+</script>
+<script type="module" src="lib/supabaseClient.js"></script>
+<script src="account-system.js"></script>
+<script src="lib/destinatie-rol.js"></script>
+<script src="cont-dashboard.js"></script>
+</head>
+<body>
+<header class="ant">
+  <div class="ant-in">
+    <a class="logo" href="/">My Darrin</a>
+    <a class="inapoi" href="/">← Înapoi la site</a>
+  </div>
+</header>
+<main>
+  <h1>Rolurile mele</h1>
+  <p class="sub">Un singur cont, mai multe roluri. Ca să adaugi un rol, completezi doar datele lui; nu se creează alt cont.</p>
+
+  <div id="myd-cont-antet"></div>
+  <div id="rm-stare" class="stare-pagina" role="status">Se încarcă rolurile contului…</div>
+
+  <section id="rm-comuta-sectiune" hidden>
+    <h2>Schimbă rolul</h2>
+    <div class="comuta">
+      <label for="rm-comuta">Rolul în care intri</label>
+      <select id="rm-comuta"></select>
+      <button type="button" class="btn btn-p" id="rm-comuta-mergi" style="margin-top:0">Mergi la dashboard</button>
+    </div>
+  </section>
+
+  <section id="rm-active-sectiune" hidden>
+    <h2>Rolurile active</h2>
+    <div class="grila" id="rm-active"></div>
+  </section>
+
+  <section id="rm-adauga-sectiune" hidden>
+    <h2>Roluri pe care le poți adăuga</h2>
+    <div class="grila" id="rm-adauga"></div>
+  </section>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var DR = window.MYD_DESTINATIE_ROL;
+  var CHEIE_ROL_ACTIV = 'myd_rol_activ_v1';
+  function tr(ro, p) { return typeof window.t === 'function' ? window.t(null, ro, p) : String(ro).replace(/\{(\w+)\}/g, function (m, k) { return p && p[k] != null ? p[k] : m; }); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function rolActiv() { try { return localStorage.getItem(CHEIE_ROL_ACTIV); } catch (e) { return null; } }
+  function salveazaRol(r) { try { localStorage.setItem(CHEIE_ROL_ACTIV, r); } catch (e) {} }
+  function en() { return !!(window.MYD_I18N && window.MYD_I18N.lang && window.MYD_I18N.lang !== 'ro'); }
+
+  // Descrierea scurtă a fiecărui rol, pentru cardurile „Roluri pe care le poți adăuga”.
+  var DESCRIERE = {
+    client: 'Comanzi servicii, materiale și închirieri.',
+    partener_servicii: 'Execuți lucrări primite prin platformă.',
+    partener_materiale: 'Vinzi materiale prin marketplace.',
+    partener_inchirieri: 'Închiriezi utilaje și echipamente.',
+    partener_curier: 'Livrezi materiale în zona ta.',
+    partener_asigurari: 'Emiți polițe pentru lucrări.',
+    investor: 'Te înscrii ca investitor: datele tale, verificarea identității și profilul de risc.',
+  };
+
+  // Starea unui rol activ: { cls, text, motiv }.
+  function stareRol(p, rol) {
+    if (rol === 'investor') {
+      var inv = p.investitor || {};
+      var motiv = en() ? (inv.motiv_respingere_en || inv.motiv_respingere) : inv.motiv_respingere;
+      if (inv.status === 'aprobat') return { cls: 'aprobat', text: 'Identitate verificată' };
+      if (inv.status === 'respins') return { cls: 'respins', text: 'Verificarea identității a fost respinsă', motiv: motiv };
+      return { cls: 'verificare', text: 'Verificarea identității e în curs' };
+    }
+    if (rol.indexOf('partener_') === 0) {
+      var pt = p.partener;
+      if (!pt || pt.rol !== rol) return { cls: 'verificare', text: 'În verificare' };
+      if (pt.status_verificare === 'approved') return { cls: 'aprobat', text: 'Aprobat' };
+      if (pt.status_verificare === 'rejected') return { cls: 'respins', text: 'Respins', motiv: pt.motiv_respingere };
+      return { cls: 'verificare', text: 'În verificare' };
+    }
+    return { cls: 'activ', text: 'Activ' };
+  }
+
+  function cardActiv(p, rol, curent) {
+    var d = DR.definitie(rol);
+    var st = stareRol(p, rol);
+    var dash = DR.dashboardPentruRol(rol);
+    var marcat = rol === curent;
+    return '<article class="card' + (marcat ? ' activ-curent' : '') + '" data-rol="' + esc(rol) + '"' + (marcat ? ' aria-current="true"' : '') + ' style="border-color:' + esc(d.culoare) + ';background:' + esc(d.fundal) + '">' +
+      (marcat ? '<span class="marcaj" style="background:' + esc(d.culoare) + '">' + esc(tr('ACTIV')) + '</span>' : '') +
+      '<h3>' + esc(tr(d.titlu)) + '</h3>' +
+      '<span class="stare stare-' + st.cls + '">' + esc(tr(st.text)) + '</span>' +
+      (st.motiv ? '<div class="motiv"><span>' + esc(tr('Motiv:')) + '</span> <span translate="no">' + esc(st.motiv) + '</span></div>' : '') +
+      (dash ? '<a class="btn btn-p rm-deschide" data-rol="' + esc(rol) + '" href="' + esc(dash) + '">' + esc(tr('Deschide dashboard-ul')) + '</a>' : '') +
+      '</article>';
+  }
+
+  function cardAdauga(p, rol) {
+    var d = DR.definitie(rol);
+    var tinta = DR.adaugaPentruRol(rol);
+    var corp = '<h3>' + esc(tr(d.titlu)) + '</h3><p>' + esc(tr(DESCRIERE[rol] || '')) + '</p>';
+    // Tabela partners are un singur rând pe cont: un al doilea tip de partener nu se poate adăuga.
+    if (rol.indexOf('partener_') === 0 && p.partener) {
+      return '<article class="card" data-rol="' + esc(rol) + '">' + corp +
+        '<div class="nota">' + esc(tr('Contul tău are deja un rol de partener. Un cont poate avea un singur tip de partener; pentru alt tip, scrie-ne din pagina Contact.')) + '</div></article>';
+    }
+    if (rol === 'investor' && p.investitor && p.investitor.status === 'ciorna') {
+      return '<article class="card" data-rol="' + esc(rol) + '">' + corp +
+        '<span class="stare stare-ciorna">' + esc(tr('Început, netrimis')) + '</span>' +
+        '<a class="btn btn-p rm-adauga" data-rol="' + esc(rol) + '" href="' + esc(tinta) + '">' + esc(tr('Continuă de unde ai rămas')) + '</a></article>';
+    }
+    return '<article class="card" data-rol="' + esc(rol) + '">' + corp +
+      '<a class="btn btn-s rm-adauga" data-rol="' + esc(rol) + '" href="' + esc(tinta) + '">' + esc(tr('Adaugă acest rol')) + '</a></article>';
+  }
+
+  function deseneaza(p) {
+    var roles = p.roles || [];
+    var cuDash = DR.roluriCuDashboard(roles);
+    var ultim = rolActiv();
+    var curent = cuDash.indexOf(ultim) !== -1 ? ultim : cuDash[0];
+    var active = DR.ROLURI.filter(function (d) { return roles.indexOf(d.rol) !== -1; }).map(function (d) { return d.rol; });
+    var deAdaugat = DR.ROLURI.filter(function (d) { return roles.indexOf(d.rol) === -1 && DR.adaugaPentruRol(d.rol); }).map(function (d) { return d.rol; });
+
+    document.getElementById('rm-stare').hidden = true;
+    var sa = document.getElementById('rm-active-sectiune');
+    sa.hidden = !active.length;
+    document.getElementById('rm-active').innerHTML = active.map(function (r) { return cardActiv(p, r, curent); }).join('');
+    var sd = document.getElementById('rm-adauga-sectiune');
+    sd.hidden = !deAdaugat.length;
+    document.getElementById('rm-adauga').innerHTML = deAdaugat.map(function (r) { return cardAdauga(p, r); }).join('');
+
+    var sc = document.getElementById('rm-comuta-sectiune');
+    sc.hidden = cuDash.length < 2;
+    if (cuDash.length > 1) {
+      var sel = document.getElementById('rm-comuta');
+      sel.innerHTML = cuDash.map(function (r) { return '<option value="' + esc(r) + '"' + (r === curent ? ' selected' : '') + '>' + esc(tr(DR.definitie(r).titlu)) + '</option>'; }).join('');
+      document.getElementById('rm-comuta-mergi').onclick = function () {
+        salveazaRol(sel.value);
+        location.href = DR.dashboardPentruRol(sel.value);
+      };
+    }
+    Array.prototype.forEach.call(document.querySelectorAll('.rm-deschide'), function (a) {
+      a.addEventListener('click', function () { salveazaRol(a.getAttribute('data-rol')); });
+    });
+  }
+
+  function arataEroare(text) {
+    var s = document.getElementById('rm-stare');
+    s.hidden = false;
+    s.classList.add('eroare');
+    s.setAttribute('role', 'alert');
+    s.textContent = tr(text);
+  }
+
+  function porneste() {
+    if (!window.MYD_PAZA) { arataEroare('Nu am putut încărca rolurile contului. Reîncarcă pagina.'); return; }
+    // public: true → fără redirect după rol; fără sesiune → autentificare, cu revenire aici.
+    window.MYD_PAZA.verifica({ public: true, container: 'myd-cont-antet' }).then(function (r) {
+      if (!r) return;
+      if (!r.profil) {
+        window.MyDarrinAuth && window.MyDarrinAuth.getCurrentUser
+          ? window.MyDarrinAuth.getCurrentUser().then(function (u) { if (!u) window.MYD_PAZA.laLogin(); else arataEroare('Nu am putut încărca rolurile contului. Reîncarcă pagina.'); })
+          : window.MYD_PAZA.laLogin();
+        return;
+      }
+      deseneaza(r.profil);
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', porneste);
+  else porneste();
+})();
+</script>
+<script src="ui-comun.js" defer></script>
+</body>
+</html>

@@ -12,11 +12,20 @@
 // flag de trezorerie, nicio regiune. IBAN-ul nu era validat deloc înainte
 // de criptare — orice string trecea. Adăugat checksum MOD-97 real
 // (lib/iban.js), fără API extern.
+//
+// Pasul 11-L (17 oct. 2026, „un cont, mai multe roluri”): e și ruta prin care
+// un cont existent (client, investitor) își adaugă un rol de partener din
+// „Devino partener”: nu se creează alt cont, iar la crearea rândului din
+// partners rolul de partener se adaugă în profiles.roles, lângă cele
+// existente (asiguraRolInProfil). Tabela partners are un singur rând pe cont
+// (id = user.id), deci un cont are un singur tip de partener: cererea pentru
+// alt tip primește 409, cu explicația.
+// POST acceptă și nr_reg_com și adresa_sediu_social (ca formularul public).
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { validateIBAN } = require('../../lib/iban');
-const { TIP_PARTENER_DUPA_FORMULAR } = require('../../lib/roluri-partener');
+const { TIP_PARTENER_DUPA_FORMULAR, ROL_DUPA_TIP_PARTENER, asiguraRolInProfil } = require('../../lib/roluri-partener');
 
 
 const TIPURI_ENTITATE = ['persoana_fizica', 'pfa', 'srl', 'srl_d', 'sa', 'institutie_publica'];
@@ -46,19 +55,29 @@ async function handler(req, res, user) {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { nume_firma, cui, partner_type, tip_entitate_legala, is_treasury_account, regiune_cod, cont_bancar } = req.body || {};
+  const { nume_firma, cui, partner_type, tip_entitate_legala, is_treasury_account, regiune_cod, cont_bancar, nr_reg_com, adresa_sediu_social } = req.body || {};
   if (!nume_firma || !cui) return res.status(400).json({ error: 'nume_firma și cui sunt obligatorii' });
   if (tip_entitate_legala !== undefined && tip_entitate_legala !== null && !TIPURI_ENTITATE.includes(tip_entitate_legala)) {
     return res.status(400).json({ error: `tip_entitate_legala invalid. Valori acceptate: ${TIPURI_ENTITATE.join(', ')}` });
   }
 
   try {
-    const { data: existent } = await supabaseAdmin.from('partners').select('id').eq('id', user.id).maybeSingle();
+    const { data: existent } = await supabaseAdmin.from('partners').select('id, partner_type').eq('id', user.id).maybeSingle();
+    const tipCerut = partner_type ? TIP_PARTENER_DUPA_FORMULAR[partner_type] : null;
+    if (existent && tipCerut && existent.partner_type && tipCerut !== existent.partner_type) {
+      return res.status(409).json({
+        error: 'Contul tău are deja un rol de partener. Un cont poate avea un singur tip de partener; pentru alt tip, scrie-ne din pagina Contact.',
+        error_en: 'Your account already has a partner role. An account can have only one partner type; for another type, write to us from the Contact page.',
+        cod: 'alt_tip_partener',
+      });
+    }
 
     const campuriEntitate = {
       ...(tip_entitate_legala !== undefined ? { tip_entitate_legala } : {}),
       ...(is_treasury_account !== undefined ? { is_treasury_account: Boolean(is_treasury_account) } : {}),
       ...(regiune_cod !== undefined ? { regiune_cod } : {}),
+      ...(typeof nr_reg_com === 'string' && nr_reg_com.trim() ? { nr_reg_com: nr_reg_com.trim().slice(0, 40) } : {}),
+      ...(typeof adresa_sediu_social === 'string' && adresa_sediu_social.trim() ? { adresa_sediu_social: adresa_sediu_social.trim().slice(0, 300) } : {}),
     };
 
     if (existent) {
@@ -71,6 +90,10 @@ async function handler(req, res, user) {
         id: user.id, partner_type: enumType, nume_firma, cui, status_verificare: 'pending_review', ...campuriEntitate,
       });
       if (error) throw error;
+      // Rolul de partener lângă rolurile existente ale contului (pasul 11-L).
+      // Comenzile și vânzarea rămân condiționate de aprobare, contract și cont
+      // bancar (lib/eligibilitate-partener.js), ca la orice partener nou.
+      await asiguraRolInProfil(user.id, ROL_DUPA_TIP_PARTENER[enumType], { email: user.email || null });
     }
 
     if (cont_bancar) {

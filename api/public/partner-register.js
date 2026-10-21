@@ -8,6 +8,7 @@
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { checkRateLimit } = require('../../lib/rate-limit');
+const { getAuthenticatedUser } = require('../../lib/auth-middleware');
 const { limbaDinTara, renderEmailBunVenitPartener } = require('../../lib/i18n');
 const { incarcaContactPlatformaSigur } = require('../../lib/contact-platforma');
 const { validateIBAN } = require('../../lib/iban');
@@ -108,6 +109,17 @@ module.exports = async function handler(req, res) {
   // trimițător de invitații Supabase (inviteUserByEmail) către adrese arbitrare.
   const allowed = await checkRateLimit(req, { key: 'partner-register', limit: 5, windowSeconds: 600 });
   if (!allowed) return res.status(429).json({ error: 'Prea multe cereri. Încearcă din nou mai târziu.' });
+
+  // Pasul 11-L: un utilizator deja autentificat nu primește alt cont. Își
+  // adaugă rolul de partener pe contul lui, prin ruta autentificată
+  // (api/partener/wizard-companie.js), din „Devino partener” sau „Rolurile mele”.
+  if (await getAuthenticatedUser(req)) {
+    return res.status(409).json({
+      error: 'Ești autentificat: adaugă rolul de partener pe contul tău, din „Rolurile mele”.',
+      error_en: 'You are signed in: add the partner role to your account from "My roles".',
+      cod: 'cont_existent_autentificat',
+    });
+  }
 
   const {
     nume, prenume, telefon, email, tip, nume_firma, cui, tara,

@@ -3,10 +3,17 @@
 // dashboard-urilor (pasul 10b, 16 oct. 2026).
 //
 // GET, cu Authorization: Bearer <access_token>
-// → { ok, email, nume, roles, roluri_dashboard, destinatie, tip_destinatie, furnizor_propriu,
+// → { ok, email, nume, prenume, nume_familie, telefon, tara, roles, roluri_dashboard,
+//     destinatie, tip_destinatie, furnizor_propriu,
 //     partener: null | { nume_firma, partner_type, rol, status_verificare,
 //                        contract_semnat, cont_bancar, motiv_respingere,
-//                        poate_vinde, motiv_nu_poate_vinde } }
+//                        poate_vinde, motiv_nu_poate_vinde },
+//     investitor: null | { status, pas_curent, trimis_la, motiv_respingere,
+//                          motiv_respingere_en } }
+//
+// Pasul 11-L: prenume / nume_familie / telefon / tara precompletează
+// formularul rolului nou („Rolurile mele”: un cont, mai multe roluri);
+// investitor e starea rutei de investitor (lib/investitori-kyc.js).
 //
 // poate_vinde / motiv_nu_poate_vinde vin din regula unică
 // lib/eligibilitate-partener.js (pasul 10c): dacă produsele furnizorului pot
@@ -26,6 +33,7 @@ const { destinatiePentru } = require('../../lib/destinatie-cont');
 const { roluriCuDashboard } = require('../../lib/destinatie-rol');
 const { rolPentruTipPartener } = require('../../lib/roluri-partener');
 const { eligibilitatePartener } = require('../../lib/eligibilitate-partener');
+const { citesteKyc, starePublica } = require('../../lib/investitori-kyc');
 
 function numeAfisat(user) {
   const m = user.user_metadata || {};
@@ -49,7 +57,8 @@ async function handler(req, res, user) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
   res.setHeader('Cache-Control', 'private, no-store');
   try {
-    const { data: profil, error } = await supabaseAdmin.from('profiles').select('roles').eq('id', user.id).maybeSingle();
+    // select('*'): coloana telefonului diferă între medii (phone / telefon).
+    const { data: profil, error } = await supabaseAdmin.from('profiles').select('*').eq('id', user.id).maybeSingle();
     if (error) throw error;
     const roles = Array.isArray(profil?.roles) ? profil.roles : [];
 
@@ -69,17 +78,27 @@ async function handler(req, res, user) {
       };
     }
 
+    // Starea rutei de investitor; o eroare de citire nu oprește profilul.
+    let investitor = null;
+    try { investitor = starePublica(await citesteKyc(user.id)); } catch (e) { console.warn('[cont/profil] KYC:', e.message || e); }
+
+    const m = user.user_metadata || {};
     const d = await destinatiePentru(user);
     return res.status(200).json({
       ok: true,
       email: user.email || null,
       nume: numeAfisat(user),
+      prenume: String(m.prenume || '').trim() || null,
+      nume_familie: String(m.nume || '').trim() || null,
+      telefon: (profil && (profil.phone || profil.telefon)) || null,
+      tara: (profil && profil.tara) || null,
       roles,
       roluri_dashboard: roluriCuDashboard(roles),
       destinatie: d && d.destinatie ? d.destinatie : null,
       tip_destinatie: d ? d.tip : null,
       furnizor_propriu: !!(p && p.furnizor_propriu),
       partener,
+      investitor,
     });
   } catch (err) {
     console.error('[cont/profil]', err);

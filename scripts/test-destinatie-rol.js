@@ -116,12 +116,12 @@ async function dupaLogin(id) {
     const res = await dupaLogin('a2');
     egal(res.corp.destinatie, '/mydarrin-superadmin');
   });
-  await test('mai multe roluri → alegerea rolului, cu lista rolurilor', async () => {
+  await test('mai multe roluri → „Rolurile mele”, cu lista rolurilor', async () => {
     reset();
     cont('m1', ['client', 'partener_curier', 'investor']);
     const res = await dupaLogin('m1');
     egal(res.corp.tip, 'alegere');
-    egal(res.corp.destinatie, '/?alege_rol=1');
+    egal(res.corp.destinatie, '/mydarrin-rolurile-mele'); // pasul 11-L: alegerea rolului e pagina „Rolurile mele”
     egal(res.corp.roluri, ['partener_curier', 'investor']);
   });
   await test('acces temporar activ, NDA acceptat → ruta alocată (ca azi)', async () => {

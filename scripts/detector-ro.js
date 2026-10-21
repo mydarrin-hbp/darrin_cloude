@@ -60,7 +60,7 @@ const PUBLICE = ['index', 'servicii-urgente', 'despre-noi', 'afla-ce-facem', 'my
 // Paginile cu cont. Wizard-ul de partener e „Completare profil partener”
 // (decizie LM, 14 oct. 2026): nu mai e pagină publică, se testează ca dashboard.
 const CU_CONT = ['mydarrin-dashboard-client', 'mydarrin-dashboard-partener', 'mydarrin-dashboard-furnizor',
-  'mydarrin-devino-partener-wizard', 'mydarrin-admin-catalog'];
+  'mydarrin-devino-partener-wizard', 'mydarrin-admin-catalog', 'mydarrin-rolurile-mele'];
 
 const arg = process.argv.slice(2);
 const opt = (n, d) => { const i = arg.indexOf('--' + n); if (i === -1) return d; const v = arg[i + 1]; arg.splice(i, 2); return v; };
@@ -140,9 +140,12 @@ const RASPUNSURI_SIMULATE = {
 const PROFIL_SIMULAT = {
   ok: true, email: 'partener.test@example.com', nume: 'Partener Test',
   roles: ['client', 'partener_servicii', 'partener_materiale'], roluri_dashboard: ['partener_servicii', 'partener_materiale'],
-  destinatie: '/?alege_rol=1', tip_destinatie: 'alegere', furnizor_propriu: false,
+  destinatie: '/mydarrin-rolurile-mele', tip_destinatie: 'alegere', furnizor_propriu: false,
+  prenume: 'Partener', nume_familie: 'Test', telefon: '+40700000000', tara: 'RO',
   partener: { nume_firma: 'Test Instalatii SRL', partner_type: 'servicii_tehnice', rol: 'partener_servicii', status_verificare: 'pending_review', contract_semnat: false, cont_bancar: false, motiv_respingere: null,
     poate_vinde: false, motiv_nu_poate_vinde: 'in_verificare' },
+  // Pasul 11-L: ruta de investitor începută, netrimisă („Rolurile mele” arată „Continuă”).
+  investitor: { status: 'ciorna', pas_curent: 2, trimis_la: null, motiv_respingere: null, motiv_respingere_en: null },
 };
 
 // Variantele de cont (pasul 11-H1): furnizorul propriu al platformei (HBP) și
