@@ -1653,7 +1653,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
         <ul>
           <li><code>deviz/calculate.js</code> — motorul de deviz; <code>comenzi/creeaza.js</code> — plasare comandă (aceeași formulă, sumele se îngheață pe comandă).</li>
           <li><code>partener/*</code> — wizard de onboarding (<code>wizard-*.js</code>), contract cu OTP, GPS, heartbeat, <code>cmr-generare.js</code>, <code>finalizeaza-comanda.js</code>.</li>
-          <li><code>investitori/kyc.js</code>, <code>public/investitori-subscrie.js</code> — dosar KYC și cerere de subscriere.</li>
+          <li><code>investitori/kyc.js</code>, <code>investitori/kyc-document.js</code>, <code>investitori/subscrie.js</code> — ruta de investitor pe cont (pasul 11-L): dosar KYC salvat pe server, documente în bucket-ul privat <code>investitori-kyc</code>, subscriere legată de cont; <code>admin/investitori-kyc.js</code> — verificarea manuală.</li>
           <li><code>public/comanda-token.js</code> — pagina publică de confirmare livrare, pe baza tokenului UUID trimis pe email; rate-limitat (20 cereri / 10 min).</li>
           <li><code>cron/*</code> — auto-confirmare comenzi, expirare acces temporar, emailuri de coș/cont abandonat, reminder profil partener.</li>
         </ul>
@@ -2671,29 +2671,57 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
         </div>
       </div>
 
-      <!-- Cereri de subscriere publice (fără cont) — aprobare/respingere, api/admin/investitori-aprobare.js -->
+      <!-- Pasul 11-L: verificarea manuală a identității (api/admin/investitori-kyc.js).
+           Documentele se deschid prin adrese semnate de 2 minute; deciziile se auditează,
+           iar investitorul primește email în limba lui. -->
+      <div class="sa-card" style="margin-bottom:18px" id="inv-kyc-card">
+        <div class="sa-card-hdr">
+          <div style="font-weight:700;color:#1A2332;font-size:13.5px">🪪 Cereri de verificare a identității (KYC)</div>
+          <div style="font-size:11px;color:#4A6080" id="inv-kyc-count">—</div>
+        </div>
+        <div class="sa-card-body" style="padding:0;max-height:360px;overflow:auto">
+          <table class="sa-table">
+            <thead><tr>
+              <th>Investitor</th>
+              <th>Document</th>
+              <th>Rezidență fiscală</th>
+              <th>PEP / sancțiuni</th>
+              <th>Trimisă</th>
+              <th>Stare</th>
+              <th style="text-align:center">Acțiuni</th>
+            </tr></thead>
+            <tbody id="inv-kyc-tbody">
+              <tr><td colspan="7" style="text-align:center;color:#4A6080;padding:20px">Se încarcă...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="padding:10px 14px;font-size:11px;color:#4A6080;border-top:1px solid #EEF2F7">Verificarea e manuală. Respingerea cere motivul în română și în engleză; investitorul îl vede în dashboard și îl primește pe email.</div>
+      </div>
+
+      <!-- Subscrieri — aprobare/respingere, api/admin/investitori-aprobare.js (aprobarea cere KYC aprobat) -->
       <div class="sa-card" style="margin-bottom:18px">
         <div class="sa-card-hdr">
-          <div style="font-weight:700;color:#1A2332;font-size:13.5px">📥 Cereri de subscriere publice</div>
+          <div style="font-weight:700;color:#1A2332;font-size:13.5px">📥 Cereri de subscriere</div>
           <div style="font-size:11px;color:#4A6080" id="inv-subscrieri-count">—</div>
         </div>
         <div class="sa-card-body" style="padding:0;max-height:300px;overflow-y:auto">
           <table class="sa-table">
             <thead><tr>
               <th>Email</th>
-              <th>Oraș</th>
+              <th>Cont</th>
               <th>Acțiuni</th>
               <th>Valoare (EUR)</th>
               <th>Primită</th>
+              <th>KYC</th>
               <th>Status</th>
               <th style="text-align:center">Decizie</th>
             </tr></thead>
             <tbody id="inv-subscrieri-tbody">
-              <tr><td colspan="7" style="text-align:center;color:#4A6080;padding:20px">Se încarcă...</td></tr>
+              <tr><td colspan="8" style="text-align:center;color:#4A6080;padding:20px">Se încarcă...</td></tr>
             </tbody>
           </table>
         </div>
-        <div style="padding:10px 14px;font-size:11px;color:#4A6080;border-top:1px solid #EEF2F7">Aprobarea schimbă doar statusul cererii; nu creează cont și nu atribuie rolul de investitor, care rămân pași manuali separați.</div>
+        <div style="padding:10px 14px;font-size:11px;color:#4A6080;border-top:1px solid #EEF2F7">Subscrierile vin din conturi cu rolul de investitor. Aprobarea cere verificarea identității aprobată (KYC); respingerea e posibilă oricând.</div>
       </div>
 
       <!-- Grid 2 col: Tabel investitori + Runda status -->
@@ -4390,7 +4418,7 @@ async function loadInvestitoriAdmin() {
     renderInvKpis(data.kpis || {});
     renderInvTable(data.investitori || []);
     renderKycPendingList(data.investitori || []);
-    renderSubscrieriPublice(data.subscrieri_publice || []);
+    loadKycInvestitori();
 
   } catch (err) {
     console.error('[InvAdmin]', err);
@@ -4521,7 +4549,133 @@ function renderKycPendingList(investitori) {
     </div>`).join('');
 }
 
-// ── Cereri de subscriere publice ──────────────────────────────
+// ── Pasul 11-L: cererile KYC și subscrierile (api/admin/investitori-kyc) ──
+const KYC_TIP_DOC = { ci: 'Carte de identitate', pasaport: 'Pașaport', permis_sedere: 'Permis de ședere' };
+let KYC_CERERI = [];
+async function kycApi(url, optiuni) {
+  const token = await accGetToken();
+  const o = optiuni || {};
+  const res = await fetch(url, {
+    method: o.metoda || 'GET',
+    headers: Object.assign({ Authorization: 'Bearer ' + token }, o.corp ? { 'Content-Type': 'application/json' } : {}),
+    body: o.corp ? JSON.stringify(o.corp) : undefined,
+  });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(j.error || ('HTTP ' + res.status));
+  return j;
+}
+
+async function loadKycInvestitori() {
+  const tbody = document.getElementById('inv-kyc-tbody');
+  try {
+    const j = await kycApi('/api/admin/investitori-kyc');
+    KYC_CERERI = j.cereri || [];
+    renderKycCereri(KYC_CERERI);
+    renderSubscrieriPublice(j.subscrieri || []);
+  } catch (e) {
+    if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#C0392B;padding:20px">${escapeHTML(e.message)}</td></tr>`;
+    const st = document.getElementById('inv-subscrieri-tbody');
+    if (st) st.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#C0392B;padding:20px">${escapeHTML(e.message)}</td></tr>`;
+  }
+}
+
+function renderKycCereri(rows) {
+  const tbody = document.getElementById('inv-kyc-tbody');
+  const counter = document.getElementById('inv-kyc-count');
+  if (!tbody) return;
+  const asteapta = rows.filter(r => r.status === 'in_verificare').length;
+  if (counter) counter.textContent = `${rows.length} cereri · ${asteapta} în verificare`;
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#4A6080;padding:20px">Nicio cerere de verificare trimisă</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map((r, i) => {
+    const data = r.trimis_la ? new Date(r.trimis_la).toLocaleDateString('ro-RO') : '—';
+    const docs = [r.document_fata_path ? `<button class="btn-s" style="font-size:10px;padding:3px 8px" onclick="veziDocumentKyc(${i},'fata',this)">Față</button>` : '',
+      r.document_verso_path ? `<button class="btn-s" style="font-size:10px;padding:3px 8px" onclick="veziDocumentKyc(${i},'verso',this)">Verso</button>` : ''].join(' ');
+    const decizie = r.status === 'in_verificare'
+      ? `<div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap">${docs}
+           <button onclick="aprobaKycInvestitor(${i},this)" style="padding:4px 10px;border-radius:6px;border:none;background:#1A7A3A;color:#fff;font-size:10px;cursor:pointer;font-family:inherit">✓ Aprobă</button>
+           <button onclick="respingeKycInvestitor(${i})" style="padding:4px 8px;border-radius:6px;border:none;background:#C0392B;color:#fff;font-size:10px;cursor:pointer;font-family:inherit">✗ Respinge</button></div>`
+      : `<div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap">${docs}</div>`;
+    const motiv = r.status === 'respins' && r.motiv_respingere_ro ? `<div style="font-size:10px;color:#C0392B;margin-top:3px">${escapeHTML(r.motiv_respingere_ro)}</div>` : '';
+    return `<tr>
+      <td><div style="font-size:12px;color:#E2E8F0;font-weight:600">${escapeHTML(r.nume || '—')}</div><div style="font-size:10px;color:#4A6080">${escapeHTML(r.email || '—')} · ${escapeHTML(r.tara || '—')} · ${escapeHTML(r.iban_mascat || 'fără IBAN')}</div></td>
+      <td style="color:#8BA3C0">${escapeHTML(KYC_TIP_DOC[r.tip_document] || '—')}</td>
+      <td style="color:#8BA3C0">${escapeHTML(r.rezidenta_fiscala_tara || '—')}</td>
+      <td style="color:${r.pep ? '#F87171' : '#8BA3C0'}">${r.pep ? 'PEP' + (r.pep_functie ? ' · ' + escapeHTML(r.pep_functie) : '') : 'Nu e PEP'} · ${r.sanctiuni_declarat ? 'fără sancțiuni (declarat)' : 'declarație lipsă'}</td>
+      <td style="color:#8BA3C0">${data}</td>
+      <td>${KYC_CHIP[r.status] || escapeHTML(r.status || '—')}${motiv}</td>
+      <td>${decizie}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function veziDocumentKyc(i, latura, btn) {
+  const r = KYC_CERERI[i];
+  const cale = r && (latura === 'fata' ? r.document_fata_path : r.document_verso_path);
+  if (!cale) return;
+  if (btn) btn.disabled = true;
+  try {
+    const j = await kycApi('/api/admin/investitori-kyc?document=' + encodeURIComponent(cale));
+    window.open(j.url, '_blank', 'noopener');
+  } catch (e) { showSAToast('⚠ ' + e.message); }
+  finally { if (btn) btn.disabled = false; }
+}
+
+async function aprobaKycInvestitor(i, btn) {
+  const r = KYC_CERERI[i];
+  if (!r || !confirm(`Aprobi verificarea identității pentru ${r.email || r.nume || 'acest investitor'}? Investitorul primește email.`)) return;
+  if (btn) { btn.disabled = true; btn.textContent = 'Se salvează…'; }
+  try {
+    const j = await kycApi('/api/admin/investitori-kyc', { metoda: 'POST', corp: { user_id: r.user_id, actiune: 'aproba' } });
+    showSAToast(j.email_trimis ? '✅ KYC aprobat · email trimis' : '✅ KYC aprobat · emailul nu a putut fi trimis');
+    loadKycInvestitori();
+  } catch (e) {
+    showSAToast('⚠ Nu s-a salvat: ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = '✓ Aprobă'; }
+  }
+}
+
+function respingeKycInvestitor(i) {
+  const r = KYC_CERERI[i];
+  if (!r) return;
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px';
+  ov.innerHTML = `
+    <div role="dialog" aria-modal="true" aria-labelledby="kyc-resp-titlu" style="background:#fff;border-radius:20px;max-width:460px;width:100%;padding:24px;box-shadow:0 24px 80px rgba(0,0,0,.4)">
+      <h3 id="kyc-resp-titlu" style="font-size:16px;font-weight:800;color:#1A2332;margin:0 0 4px">Respinge verificarea identității</h3>
+      <p style="font-size:12px;color:#5A6B7D;margin:0 0 14px">${escapeHTML(r.email || r.nume || '')} · motivul îl vede investitorul, în limba lui</p>
+      <label for="kyc-motiv-ro" style="display:block;font-size:11px;font-weight:700;color:#5A6B7D;margin-bottom:4px">Motiv (română) *</label>
+      <textarea id="kyc-motiv-ro" rows="3" style="width:100%;box-sizing:border-box;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px;font-family:inherit;font-size:13px;margin-bottom:10px"></textarea>
+      <label for="kyc-motiv-en" style="display:block;font-size:11px;font-weight:700;color:#5A6B7D;margin-bottom:4px">Motiv (engleză) *</label>
+      <textarea id="kyc-motiv-en" rows="3" style="width:100%;box-sizing:border-box;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px;font-family:inherit;font-size:13px"></textarea>
+      <div id="kyc-resp-msg"></div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button id="kyc-resp-trimite" style="flex:1;padding:11px;border-radius:11px;border:none;background:#C0392B;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Respinge</button>
+        <button id="kyc-resp-anuleaza" style="padding:11px 16px;border-radius:11px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Anulează</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  const inchide = () => ov.remove();
+  ov.addEventListener('click', (e) => { if (e.target === ov) inchide(); });
+  ov.querySelector('#kyc-resp-anuleaza').onclick = inchide;
+  ov.querySelector('#kyc-motiv-ro').focus();
+  ov.querySelector('#kyc-resp-trimite').onclick = function () {
+    const btn = this;
+    const msg = ov.querySelector('#kyc-resp-msg');
+    const motivRo = ov.querySelector('#kyc-motiv-ro').value.trim();
+    const motivEn = ov.querySelector('#kyc-motiv-en').value.trim();
+    if (!motivRo || !motivEn) { MDFeedback.mesaj(msg, 'eroare', 'Scrie motivul în română și în engleză.'); return; }
+    MDFeedback.salveaza(btn, msg, async () => {
+      const j = await kycApi('/api/admin/investitori-kyc', { metoda: 'POST', corp: { user_id: r.user_id, actiune: 'respinge', motiv_ro: motivRo, motiv_en: motivEn } });
+      setTimeout(() => { inchide(); loadKycInvestitori(); }, 900);
+      return j.email_trimis ? 'Respins. Investitorul a primit email.' : 'Respins. Emailul nu a putut fi trimis.';
+    });
+  };
+}
+
+// ── Cereri de subscriere ──────────────────────────────────────
 const SUBSCRIERE_CHIP = {
   in_asteptare: '<span class="chip chip-orange" style="font-size:10px">⏳ În așteptare</span>',
   aprobat:      '<span class="chip chip-green" style="font-size:10px">✅ Aprobat</span>',
@@ -4535,23 +4689,25 @@ function renderSubscrieriPublice(rows) {
   const asteapta = rows.filter(r => r.status === 'in_asteptare').length;
   if (counter) counter.textContent = `${rows.length} cereri · ${asteapta} în așteptare`;
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#4A6080;padding:20px">Nicio cerere de subscriere</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#4A6080;padding:20px">Nicio cerere de subscriere</td></tr>';
     return;
   }
   tbody.innerHTML = rows.map(r => {
     const data = r.creat_la ? new Date(r.creat_la).toLocaleDateString('ro-RO') : '—';
+    const poateAproba = !!r.user_id && r.kyc_status === 'aprobat';
     const decizie = r.status === 'in_asteptare'
       ? `<div style="display:flex;gap:4px;justify-content:center">
-           <button onclick="decideSubscriere('${escapeHTML(r.id)}','aproba')" style="padding:4px 10px;border-radius:6px;border:none;background:#1A7A3A;color:#fff;font-size:10px;cursor:pointer;font-family:inherit">✓ Aprobă</button>
+           <button onclick="decideSubscriere('${escapeHTML(r.id)}','aproba')" ${poateAproba ? '' : 'disabled title="Aprobarea cere verificarea identității aprobată"'} style="padding:4px 10px;border-radius:6px;border:none;background:#1A7A3A;color:#fff;font-size:10px;cursor:pointer;font-family:inherit">✓ Aprobă</button>
            <button onclick="decideSubscriere('${escapeHTML(r.id)}','respinge')" style="padding:4px 8px;border-radius:6px;border:none;background:#C0392B;color:#fff;font-size:10px;cursor:pointer;font-family:inherit">✗ Respinge</button>
          </div>`
       : '<div style="text-align:center;color:#4A6080;font-size:11px">—</div>';
     return `<tr>
       <td style="font-size:12px;color:#E2E8F0;font-weight:600">${escapeHTML(r.email || '—')}</td>
-      <td style="color:#8BA3C0">${escapeHTML(r.oras || '—')}</td>
+      <td style="color:#8BA3C0">${r.user_id ? 'cont' : 'fără cont'}</td>
       <td style="font-weight:700;color:#FF8C00">${fmtA(r.actiuni)}</td>
       <td style="color:#E2E8F0">€${fmtA(r.valoare_investita)}</td>
       <td style="color:#8BA3C0">${data}</td>
+      <td>${r.kyc_status ? (KYC_CHIP[r.kyc_status] || escapeHTML(r.kyc_status)) : '<span style="font-size:10px;color:#4A6080">fără dosar</span>'}</td>
       <td>${SUBSCRIERE_CHIP[r.status] || escapeHTML(r.status || '—')}</td>
       <td>${decizie}</td>
     </tr>`;
