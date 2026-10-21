@@ -1,41 +1,72 @@
 // /api/investitori/exit.js
-// Procesează o cerere de exit: fie Buy-Back (My Darrin răscumpără la -10% din
-// evaluarea curentă, conform README), fie listare pe Piața Secundară internă.
+// Cererea de exit a investitorului (buy-back), înregistrată pentru procesare.
 //
-// Body: { tip: 'buyback' | 'piata_secundara', numar_actiuni }
+// Pasul 11-J (21 oct. 2026): fără valori scrise în cod. Buy-back-ul există
+// doar dacă runda subscrierilor aprobate are discount_buyback_pct configurat
+// în back-office (runde_finantare); lock-up-ul vine din lock_up_luni al
+// aceleiași runde: acțiunile din subscrieri mai noi decât lock-up-ul nu se
+// pot vinde încă. Piața secundară nu se configurează nicăieri azi, deci nu e
+// disponibilă. Se numără doar subscrierile aprobate (corecția 11-L).
+// Suma buy-back-ului nu se calculează aici: o stabilește echipa, la procesare.
 //
-// FIX (Etapa INV, audit 26 august 2026): endpoint-ul citea/scria pe coloana
-// investitor_id, dar schema reală (drift, aplicat direct pe DB, corectat
-// acum în schema.sql) are user_id — orice cerere eșua. Tabela investitori_exit
-// nici nu exista în DB — creată acum (vezi schema.sql). Calculul sumei de
-// buyback și listarea pe piața secundară rămân TODO neimplementate — fac
-// parte din mecanismul de lichiditate mai amplu (drept de preemțiune,
-// termene de 30 zile), în așteptarea revizuirii juridice a mecanismului.
+// Body: { tip: 'buyback', numar_actiuni }
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const R = require('../../lib/runda-finantare');
+
+function luniDela(data, luni) {
+  const d = new Date(data);
+  d.setMonth(d.getMonth() + luni);
+  return d;
+}
 
 async function handler(req, res, user) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { tip, numar_actiuni } = req.body || {};
-  if (!['buyback', 'piata_secundara'].includes(tip) || !(numar_actiuni > 0)) {
-    return res.status(400).json({ error: 'tip (buyback|piata_secundara) și numar_actiuni (>0) sunt obligatorii' });
+  if (tip === 'piata_secundara') {
+    return res.status(409).json({ error: 'Piața secundară nu e disponibilă.', error_en: 'The secondary market is not available.', cod: 'INDISPONIBIL' });
+  }
+  if (tip !== 'buyback' || !(numar_actiuni > 0)) {
+    return res.status(400).json({ error: 'tip (buyback) și numar_actiuni (>0) sunt obligatorii' });
   }
 
-  // Verifică dacă investitorul chiar deține atâtea acțiuni. Se numără doar
-  // subscrierile aprobate (corecție 11-L, 21 oct. 2026): cele în așteptare sau
-  // respinse nu sunt acțiuni deținute.
   const { data: portofoliu, error: portErr } = await supabaseAdmin
     .from('investitori_portofoliu')
-    .select('actiuni')
+    .select('actiuni, runda_id, created_at')
     .eq('user_id', user.id)
     .eq('status', 'aprobat');
   if (portErr) return res.status(500).json({ error: 'Eroare la citirea portofoliului' });
 
-  const totalActiuni = (portofoliu || []).reduce((sum, r) => sum + Number(r.actiuni), 0);
-  if (numar_actiuni > totalActiuni) {
-    return res.status(400).json({ error: `Deții doar ${totalActiuni} acțiuni, nu poți solicita exit pentru ${numar_actiuni}` });
+  const idRunde = [...new Set((portofoliu || []).map((p) => p.runda_id).filter(Boolean))];
+  const runde = {};
+  if (idRunde.length) {
+    const { data, error } = await supabaseAdmin.from('runde_finantare').select('id, discount_buyback_pct, lock_up_luni').in('id', idRunde);
+    if (error && !R.tabelaLipsa(error)) return res.status(500).json({ error: 'Eroare la citirea rundelor' });
+    (data || []).forEach((r) => { runde[r.id] = r; });
+  }
+
+  // Acțiunile vandabile: subscrieri aprobate, în runde cu buy-back configurat, după lock-up.
+  const acum = new Date();
+  let disponibile = 0;
+  let configurat = false;
+  for (const p of portofoliu || []) {
+    const r = p.runda_id && runde[p.runda_id];
+    if (!r || R.num(r.discount_buyback_pct) == null) continue;
+    configurat = true;
+    const lock = R.num(r.lock_up_luni);
+    if (lock != null && p.created_at && luniDela(p.created_at, lock) > acum) continue;
+    disponibile += Number(p.actiuni) || 0;
+  }
+  if (!configurat) {
+    return res.status(409).json({ error: 'Buy-back-ul nu e configurat pentru runda ta.', error_en: 'Buy-back is not configured for your round.', cod: 'INDISPONIBIL' });
+  }
+  if (numar_actiuni > disponibile) {
+    return res.status(400).json({
+      error: `Poți cere buy-back pentru cel mult ${disponibile} acțiuni (acțiunile aprobate, după lock-up).`,
+      error_en: `You can request a buy-back for at most ${disponibile} shares (approved shares, after the lock-up).`,
+    });
   }
 
   const { data, error } = await supabaseAdmin
@@ -43,15 +74,10 @@ async function handler(req, res, user) {
     .insert({ user_id: user.id, tip, numar_actiuni, status: 'in_procesare' })
     .select()
     .single();
-
   if (error) {
     console.error('[investitori/exit]', error);
     return res.status(500).json({ error: 'Nu am putut înregistra cererea de exit' });
   }
-
-  // TODO: buyback -> calcul automat sumă (evaluare_curentă × 0.9 × pondere_actiuni)
-  //       piata_secundara -> listare în tabelul de piață secundară (nu implementat aici)
-
   return res.status(200).json({ ok: true, cerere: data });
 }
 

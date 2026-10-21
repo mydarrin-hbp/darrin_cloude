@@ -689,105 +689,50 @@ function pornesteInvestitor(b) {
       <!-- Pasul 11-L: starea verificării identității (api/investitori/kyc) -->
       <div id="inv-kyc-banda"></div>
 
-      <!-- KPI Portofoliu (4 carduri) -->
+      <!-- Pasul 11-J: portofoliul din api/investitori/portofoliu (subscrierile aprobate, pe runda lor) -->
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px" id="inv-kpi-grid">
         <div class="kpi-big kpi-bl">
-          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:8px">Investiție inițială</div>
-          <div style="font-size:26px;font-weight:800;color:#1A5FAD;line-height:1" id="inv-kpi-suma">—</div>
-          <div style="font-size:10.5px;color:#5A6B7D;margin-top:5px">EUR · valoare subscrisă</div>
+          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:8px">Investiție aprobată</div>
+          <div style="font-size:24px;font-weight:800;color:#1A5FAD;line-height:1" id="inv-kpi-suma">—</div>
+          <div style="font-size:10.5px;color:#5A6B7D;margin-top:5px">subscrieri aprobate</div>
         </div>
         <div class="kpi-big kpi-or">
           <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:8px">Acțiuni deținute</div>
-          <div style="font-size:26px;font-weight:800;color:#FF8C00;line-height:1" id="inv-kpi-actiuni">—</div>
+          <div style="font-size:24px;font-weight:800;color:#FF8C00;line-height:1" id="inv-kpi-actiuni">—</div>
           <div style="font-size:10.5px;color:#5A6B7D;margin-top:5px"><span id="inv-kpi-pct">—</span>% din companie</div>
         </div>
-        <div class="kpi-big kpi-gr">
-          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:8px">ROI estimat</div>
-          <div style="font-size:26px;font-weight:800;line-height:1" id="inv-kpi-roi" style="color:#1A7A3A">—</div>
-          <div style="font-size:10.5px;color:#5A6B7D;margin-top:5px">vs. preț achiziție</div>
-        </div>
         <div class="kpi-big kpi-te">
-          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:8px">Dividende an curent</div>
-          <div style="font-size:26px;font-weight:800;color:#0E9E99;line-height:1" id="inv-kpi-dividende">—</div>
-          <div style="font-size:10.5px;color:#5A6B7D;margin-top:5px">din profit net distribuit</div>
+          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:8px">În așteptare</div>
+          <div style="font-size:24px;font-weight:800;color:#0E9E99;line-height:1" id="inv-kpi-asteptare">—</div>
+          <div style="font-size:10.5px;color:#5A6B7D;margin-top:5px">subscrieri de aprobat</div>
+        </div>
+        <div class="kpi-big kpi-gr">
+          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:8px">Runda deschisă</div>
+          <div style="font-size:18px;font-weight:800;color:#1A7A3A;line-height:1.2" id="inv-kpi-runda">—</div>
+          <div style="font-size:10.5px;color:#5A6B7D;margin-top:5px" id="inv-kpi-runda-pret">—</div>
         </div>
       </div>
 
-      <!-- Tabel portofoliu + Exit/Distribuții -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px" class="inv-2col">
-
-        <!-- Tabel acțiuni -->
+      <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:18px;margin-bottom:18px" class="inv-2col">
         <div style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;overflow:hidden">
-          <div style="padding:14px 18px;border-bottom:1px solid #EEF2F7;background:#F8FAFC;display:flex;align-items:center;justify-content:space-between">
-            <strong style="color:#1A2332;font-size:14px">Portofoliu acțiuni</strong>
-            <span id="inv-kyc-badge" style="font-size:10px;background:#FFF0D6;color:#CC7000;border-radius:99px;padding:3px 10px;font-weight:700;border:1px solid rgba(255,140,0,.2)">KYC: verificare</span>
-          </div>
-          <div style="padding:16px;font-size:12.5px;display:flex;flex-direction:column;gap:8px" id="inv-portofoliu-rows">
-            <div style="display:flex;justify-content:space-between;padding:9px 12px;background:#F0F4F8;border-radius:9px">
-              <span style="color:#5A6B7D">Instrument</span>
-              <strong id="inv-instrument-label">—</strong>
-            </div>
-            <div style="display:flex;justify-content:space-between;padding:9px 12px;background:#F0F4F8;border-radius:9px">
-              <span style="color:#5A6B7D">Număr acțiuni</span>
-              <strong id="inv-actiuni-detaliu">—</strong>
-            </div>
-            <div style="display:flex;justify-content:space-between;padding:9px 12px;background:#F0F4F8;border-radius:9px">
-              <span style="color:#5A6B7D">% din companie</span>
-              <strong style="color:#1A5FAD" id="inv-pct-detaliu">—</strong>
-            </div>
-            <div style="display:flex;justify-content:space-between;padding:9px 12px;background:#F0F4F8;border-radius:9px">
-              <span style="color:#5A6B7D">Valoare investită</span>
-              <strong id="inv-suma-detaliu">—</strong>
-            </div>
-            <div style="display:flex;justify-content:space-between;padding:9px 12px;background:#D4EDDA;border-radius:9px;border:1px solid rgba(26,122,58,.2)">
-              <span style="color:#5A6B7D">Ultima evaluare</span>
-              <strong style="color:#1A7A3A" id="inv-ultima-evaluare">—</strong>
-            </div>
-          </div>
+          <div style="padding:14px 18px;border-bottom:1px solid #EEF2F7;background:#F8FAFC"><strong style="color:#1A2332;font-size:14px">Subscrierile mele</strong></div>
+          <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px">
+            <thead><tr style="background:#F8FAFC;color:#5A6B7D;font-size:10.5px;text-transform:uppercase;text-align:left"><th style="padding:9px 14px">Rundă</th><th style="padding:9px 14px">Sumă</th><th style="padding:9px 14px">Acțiuni</th><th style="padding:9px 14px">Stare</th></tr></thead>
+            <tbody id="inv-subscrieri-mele"><tr><td colspan="4" style="padding:14px;color:#5A6B7D">—</td></tr></tbody>
+          </table></div>
         </div>
-
-        <!-- Distribuții + Exit -->
-        <div style="display:flex;flex-direction:column;gap:12px">
-
-          <!-- Distribuții -->
-          <div style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;overflow:hidden;flex:1">
-            <div style="padding:13px 17px;border-bottom:1px solid #EEF2F7;background:#F8FAFC">
-              <strong style="color:#1A2332">Distribuții financiare</strong>
-            </div>
-            <div style="padding:14px;font-size:12.5px;display:flex;flex-direction:column;gap:7px">
-              <div style="display:flex;justify-content:space-between;padding:7px 10px;background:#F0F4F8;border-radius:8px">
-                <span style="color:#5A6B7D">Tip venit</span>
-                <strong id="inv-tip-venit">Dividend (profit net)</strong>
-              </div>
-              <div style="display:flex;justify-content:space-between;padding:7px 10px;background:#F0F4F8;border-radius:8px">
-                <span style="color:#5A6B7D">Dividende an curent</span>
-                <strong style="color:#1A7A3A" id="inv-dividende-suma">—</strong>
-              </div>
-            </div>
-          </div>
-
-          <!-- Exit actions -->
-          <div style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;overflow:hidden">
-            <div style="padding:12px 17px;border-bottom:1px solid #EEF2F7;background:#F8FAFC">
-              <strong style="color:#1A2332">Exit & Lichiditate</strong>
-            </div>
-            <div style="padding:13px;display:flex;flex-direction:column;gap:7px">
-              <button onclick="initiazaExitReal('buyback')"
-                style="padding:10px;border-radius:10px;border:1.5px solid #D5DFE8;background:#F8FAFC;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;text-align:left;transition:all .18s"
-                onmouseover="this.style.borderColor='#003366'" onmouseout="this.style.borderColor='#D5DFE8'">
-                Share Buyback<br>
-                <span style="font-size:10.5px;color:#5A6B7D;font-weight:400">Răscumpărare la evaluarea curentă</span>
-              </button>
-              <button onclick="initiazaExitReal('p2p')"
-                style="padding:10px;border-radius:10px;border:1.5px solid #D5DFE8;background:#F8FAFC;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;text-align:left;transition:all .18s"
-                onmouseover="this.style.borderColor='#0E9E99'" onmouseout="this.style.borderColor='#D5DFE8'">
-                Piață Secundară P2P<br>
-                <span style="font-size:10.5px;color:#5A6B7D;font-weight:400">Listează pentru investitori validați</span>
-              </button>
-            </div>
+        <!-- Exit: doar dacă runda are buy-back-ul configurat (runde_finantare) -->
+        <div id="inv-exit-card" hidden style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;overflow:hidden;align-self:start">
+          <div style="padding:12px 17px;border-bottom:1px solid #EEF2F7;background:#F8FAFC"><strong style="color:#1A2332">Exit</strong></div>
+          <div style="padding:13px;display:flex;flex-direction:column;gap:7px">
+            <button onclick="initiazaExitReal(this)" style="padding:10px;border-radius:10px;border:1.5px solid #D5DFE8;background:#F8FAFC;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;text-align:left">Cerere de buy-back</button>
+            <div style="font-size:11px;color:#5A6B7D;line-height:1.5" id="inv-exit-detalii"></div>
           </div>
         </div>
       </div>
+
+      <!-- Pasul 11-J (2.5): indicatorii platformei, doar cu verificarea identității aprobată -->
+      <div id="inv-indicatori"></div>
 
       <!-- Avertisment legal -->
       <div style="background:#FFF0F0;border-radius:13px;border:1px solid rgba(192,57,43,.2);padding:12px 16px;text-align:center;font-size:11px;color:#C0392B">
@@ -813,9 +758,9 @@ function pornesteInvestitor(b) {
 <li style="display:flex;gap:12px;align-items:flex-start;background:#F8FAFC;border:1px solid #EEF2F7;border-radius:14px;padding:14px 16px;text-align:left"><span aria-hidden="true" style="flex:0 0 auto;width:30px;height:30px;border-radius:9px;background:#0E9E99;color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center">3</span><span><strong style="display:block;font-size:14px;color:#1A2332;margin-bottom:3px">Subscrierea</strong><span style="font-size:12.5px;color:#5A6B7D;line-height:1.55">Cu rolul de investitor pe cont, alegi suma și instrumentul.</span></span></li>
 <li style="display:flex;gap:12px;align-items:flex-start;background:#F8FAFC;border:1px solid #EEF2F7;border-radius:14px;padding:14px 16px;text-align:left"><span aria-hidden="true" style="flex:0 0 auto;width:30px;height:30px;border-radius:9px;background:#1A7A3A;color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center">4</span><span><strong style="display:block;font-size:14px;color:#1A2332;margin-bottom:3px">Aprobarea</strong><span style="font-size:12.5px;color:#5A6B7D;line-height:1.55">Subscrierea se aprobă după ce verificarea identității e aprobată. Te anunțăm prin email.</span></span></li>
     </ol>
-    <p class="reveal d3" style="font-size:12.5px;color:#5A6B7D;line-height:1.6;max-width:560px;margin:0 auto 22px">Termenii rundei (suma, prețul pe acțiune, procentul din companie) apar aici după ce sunt configurați în back-office. Pe această pagină se afișează doar cifre reale.</p>
+    <p class="reveal d3" id="runda-fara-date" style="font-size:12.5px;color:#5A6B7D;line-height:1.6;max-width:560px;margin:0 auto 22px">Termenii rundei (suma, prețul pe acțiune, procentul din companie) apar aici după ce sunt configurați în back-office. Pe această pagină se afișează doar cifre reale.</p>
     <!-- Datele rundei din back-office (pasul 11-J). Ascuns cât nu există date. -->
-    <div data-runda hidden></div>
+    <div data-runda hidden style="text-align:left;background:#fff;border:1.5px solid #FFD9A8;border-radius:16px;padding:18px 20px;margin:0 auto 22px;max-width:620px"></div>
     <button class="btn-p reveal d3" style="padding:14px 32px" onclick="pornesteInvestitor(this)">Intră în rundă</button>
   </div>
 </section>
@@ -938,118 +883,132 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 <script>
 // ════════════════════════════════════════════════════════════════
-// MODULE: apeluri RPC Supabase (portofoliul investitorului)
+// Pasul 11-J (21 oct. 2026): runda curentă și portofoliul, calculate pe server.
+//   - [data-runda] din /api/public/runda-curenta (doar runda deschisă și
+//     vizibilă public; altfel rămâne textul fără rundă);
+//   - dashboard-ul investitorului din /api/investitori/portofoliu (în locul
+//     RPC-ului get_investor_portofoliu, cu 10.000.000 de acțiuni scrise în cod);
+//   - exit-ul doar dacă runda are buy-back-ul configurat.
+// Fără cifre scrise în pagină: totul vine din runde_finantare (back-office).
 // ════════════════════════════════════════════════════════════════
-
-const SUPABASE_URL  = window.__ENV__?.SUPABASE_URL  || 'https://aacojyvujhywanaulvuu.supabase.co';
-const SUPABASE_ANON = window.__ENV__?.SUPABASE_ANON_KEY || '';
-
-// ── Formatare numere ──────────────────────────────────────────
-function fmt(n, decimals = 0) {
-  if (n == null || isNaN(n)) return '—';
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
-  if (n >= 1_000)     return (n / 1_000).toFixed(1) + 'K';
-  return Number(n).toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+function trInv(ro, p) { return typeof window.t === 'function' ? window.t(null, ro, p) : String(ro).replace(/\{(\w+)\}/g, (m, k) => (p && p[k] != null ? p[k] : m)); }
+function enInv() { return !!(window.MYD_I18N && window.MYD_I18N.lang && window.MYD_I18N.lang !== 'ro'); }
+function escInv(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function sumaInv(v, moneda) {
+  if (v == null || isNaN(v)) return '—';
+  return Number(v).toLocaleString(enInv() ? 'en-GB' : 'ro-RO', { maximumFractionDigits: 2 }) + (moneda ? ' ' + moneda : '');
+}
+function dataInv(d) {
+  if (!d) return '';
+  try { return new Date(d + 'T00:00:00').toLocaleDateString(enInv() ? 'en-GB' : 'ro-RO', { day: 'numeric', month: 'long', year: 'numeric' }); } catch (e) { return d; }
+}
+async function tokenInv() {
+  if (!window.supabaseClient) return null;
+  const { data } = await window.supabaseClient.auth.getSession();
+  return (data && data.session && data.session.access_token) || null;
 }
 
-// ── Apel RPC via supabase-js sau fetch direct ─────────────────
-async function callRpc(fnName, params = {}) {
-  // Încearcă supabase-js (dacă e inițializat)
-  if (window.supabaseClient) {
-    const { data, error } = await window.supabaseClient.rpc(fnName, params);
-    if (error) throw error;
-    return data;
-  }
-  // Fallback: fetch direct la REST API
-  const url = `${SUPABASE_URL}/rest/v1/rpc/${fnName}`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type':  'application/json',
-      'apikey':        SUPABASE_ANON,
-      'Authorization': `Bearer ${SUPABASE_ANON}`,
-    },
-    body: JSON.stringify(params),
-  });
-  if (!res.ok) throw new Error(`RPC ${fnName}: HTTP ${res.status}`);
-  return res.json();
+// ── Runda curentă, pe pagina publică ─────────────────────────
+async function incarcaRundaCurenta() {
+  const box = document.querySelector('[data-runda]');
+  if (!box) return;
+  let j = null;
+  try { const r = await fetch('/api/public/runda-curenta', { headers: { Accept: 'application/json' } }); j = r.ok ? await r.json() : null; } catch (e) { j = null; }
+  const r = j && j.runda;
+  if (!r) return; // fără rundă publică: rămâne textul de azi
+  const nume = enInv() ? r.denumire_en : r.denumire_ro;
+  const desc = enInv() ? r.descriere_en : r.descriere_ro;
+  const rand = (et, v) => `<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #F1F4F8;font-size:13px"><span style="color:#5A6B7D">${escInv(trInv(et))}</span><strong style="color:#1A2332;text-align:right">${v}</strong></div>`;
+  let perioada = '';
+  if (r.data_start || r.data_sfarsit) perioada = [dataInv(r.data_start), dataInv(r.data_sfarsit)].filter(Boolean).join(' – ');
+  box.innerHTML =
+    `<div style="font-size:16px;font-weight:800;color:#1A2332;margin-bottom:4px" translate="no">${escInv(nume)}</div>` +
+    (desc ? `<p style="font-size:13px;color:#5A6B7D;line-height:1.6;margin:0 0 10px" translate="no">${escInv(desc)}</p>` : '') +
+    rand('Ținta rundei', sumaInv(r.suma_tinta, r.moneda)) +
+    (r.investitie_minima != null ? rand('Investiția minimă', sumaInv(r.investitie_minima, r.moneda)) : '') +
+    rand('Prețul pe acțiune', sumaInv(r.pret_actiune, r.moneda)) +
+    rand('Procentul oferit', sumaInv(r.equity_oferit_pct) + '%') +
+    (perioada ? rand('Perioada', escInv(perioada)) : '') +
+    (r.tickete && r.tickete.length ? rand('Tickete sugerate', r.tickete.map((t) => sumaInv(t, r.moneda)).join(' · ')) : '') +
+    (r.progres ? `<div style="margin-top:12px"><div style="display:flex;justify-content:space-between;font-size:12px;color:#5A6B7D;margin-bottom:5px"><span>${escInv(trInv('Subscrieri aprobate'))}</span><span>${sumaInv(r.progres.stranse, r.moneda)} · ${sumaInv(r.progres.pct)}%</span></div>` +
+      `<div style="height:8px;border-radius:99px;background:#EEF2F7;overflow:hidden"><div style="height:100%;width:${Math.min(100, r.progres.pct)}%;background:#FF8C00"></div></div></div>` : '');
+  box.hidden = false;
+  const fara = document.getElementById('runda-fara-date');
+  if (fara) fara.hidden = true;
 }
 
-// ── Populează KPI widgets ─────────────────────────────────────
-// ════════════════════════════════════════════════════════════════
-// MODULE: DASHBOARD PRIVAT INVESTITOR
-// ════════════════════════════════════════════════════════════════
-
-async function loadPortofoliuPrivat() {
+// ── Portofoliul investitorului ───────────────────────────────
+let PORTOFOLIU_INV = null;
+async function incarcaPortofoliu() {
   try {
-    const data = await callRpc('get_investor_portofoliu', {});
-
-    if (data.error) {
-      console.warn('[Portofoliu]', data.error);
-      return;
+    const token = await tokenInv();
+    if (!token) return null;
+    const r = await fetch('/api/investitori/portofoliu', { headers: { Authorization: 'Bearer ' + token }, cache: 'no-store' });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error((enInv() && j.error_en) || j.error || 'Portofoliul nu s-a putut încărca.');
+    PORTOFOLIU_INV = j;
+    const pune = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    const moneda = j.runda ? j.runda.moneda : '';
+    pune('inv-kpi-suma', j.valoare_investita > 0 ? sumaInv(j.valoare_investita, moneda) : '—');
+    pune('inv-kpi-actiuni', j.actiuni > 0 ? sumaInv(j.actiuni) : '0');
+    pune('inv-kpi-pct', sumaInv(j.pct_companie));
+    pune('inv-kpi-asteptare', j.in_asteptare > 0 ? sumaInv(j.in_asteptare, moneda) : '—');
+    pune('inv-kpi-runda', j.runda ? (enInv() ? j.runda.denumire_en : j.runda.denumire_ro) : trInv('Nicio rundă deschisă'));
+    pune('inv-kpi-runda-pret', j.runda ? trInv('Preț / acțiune: {pret}', { pret: sumaInv(j.runda.pret_actiune, j.runda.moneda) }) : '—');
+    const stari = { aprobat: 'Aprobată', in_asteptare: 'În așteptare', respins: 'Respinsă' };
+    const tb = document.getElementById('inv-subscrieri-mele');
+    if (tb) {
+      tb.innerHTML = (j.subscrieri || []).length ? j.subscrieri.map((x) => `<tr style="border-top:1px solid #EEF2F7">
+        <td style="padding:9px 14px" translate="no">${escInv(x.runda ? (enInv() ? x.runda.denumire_en : x.runda.denumire_ro) : '—')}</td>
+        <td style="padding:9px 14px">${sumaInv(x.valoare_investita, x.runda ? x.runda.moneda : '')}</td>
+        <td style="padding:9px 14px">${sumaInv(x.actiuni)}</td>
+        <td style="padding:9px 14px">${escInv(trInv(stari[x.status] || x.status || '—'))}</td></tr>`).join('')
+        : `<tr><td colspan="4" style="padding:14px;color:#5A6B7D">${escInv(trInv('Nicio subscriere încă.'))}</td></tr>`;
     }
-
-    // Afișează dashboard-ul privat
-    const dash = document.getElementById('inv-private-dashboard');
-    if (dash) dash.style.display = 'block';
-
-    // Populează KPI-urile
-    const roi    = parseFloat(data.roi_estimat || 0);
-    const roiClr = roi >= 0 ? '#1A7A3A' : '#C0392B';
-
-    const setText = (id, val) => {
-      const el = document.getElementById(id);
-      if (el) el.innerHTML = val;
-    };
-
-    setText('inv-kpi-suma',       data.valoare_investita > 0 ? `€${fmt(data.valoare_investita)}` : '—');
-    setText('inv-kpi-actiuni',    fmt(data.actiuni));
-    setText('inv-kpi-pct',        data.pct_companie || '0.0000');
-    setText('inv-kpi-roi',
-      `<span style="color:${roiClr}">${roi >= 0 ? '+' : ''}${roi.toFixed(1)}%</span>`);
-    setText('inv-kpi-dividende',  data.dividende_an_curent > 0 ? `€${fmt(data.dividende_an_curent, 2)}` : '—');
-
-    // Detalii tabel
-    setText('inv-actiuni-detaliu', fmt(data.actiuni));
-    setText('inv-pct-detaliu',     `${data.pct_companie || 0}%`);
-    setText('inv-suma-detaliu',    `€${fmt(data.valoare_investita)}`);
-    setText('inv-dividende-suma',  data.dividende_an_curent > 0
-      ? `€${fmt(data.dividende_an_curent, 2)}`
-      : '—');
-    setText('inv-ultima-evaluare', data.ultima_evaluare
-      ? new Date(data.ultima_evaluare).toLocaleDateString('ro-RO')
-      : '—');
-
-    // KYC badge
-    const kycBadge = document.getElementById('inv-kyc-badge');
-    if (kycBadge) {
-      const KYC_STYLES = {
-        aprobat:       { bg:'#D4EDDA', color:'#1A7A3A', border:'rgba(26,122,58,.2)', text:'KYC Aprobat' },
-        in_verificare: { bg:'#FFF8EE', color:'#CC7000', border:'rgba(255,140,0,.2)', text:'⏳ KYC în verificare' },
-        pending:       { bg:'#FFF0D6', color:'#CC7000', border:'rgba(255,140,0,.2)', text:'KYC necesar' },
-        respins:       { bg:'#FFF0F0', color:'#C0392B', border:'rgba(192,57,43,.2)', text:'KYC respins' },
-      };
-      const s = KYC_STYLES[data.kyc_status] || KYC_STYLES.pending;
-      kycBadge.style.background   = s.bg;
-      kycBadge.style.color        = s.color;
-      kycBadge.style.borderColor  = s.border;
-      kycBadge.textContent        = s.text;
+    const exitCard = document.getElementById('inv-exit-card');
+    if (exitCard) {
+      const ex = j.exit || {};
+      exitCard.hidden = !ex.buyback_disponibil;
+      const det = document.getElementById('inv-exit-detalii');
+      if (det && ex.buyback_disponibil) {
+        det.textContent = trInv('Discount la buy-back: {d}%.', { d: sumaInv(ex.discount_buyback_pct) }) +
+          (ex.lock_up_luni != null ? ' ' + trInv('Lock-up: {n} luni de la subscriere.', { n: ex.lock_up_luni }) : '');
+      }
     }
-
-    // Subtitle
-    setText('inv-dash-subtitle', `Portofoliu activ · ${
-      data.actiuni > 0 ? `${fmt(data.actiuni)} acțiuni` : 'Fără acțiuni înregistrate'
-    } · Date Supabase`);
-
-  } catch (err) {
-    console.error('[Dashboard Privat]', err);
+    return j;
+  } catch (e) {
+    console.warn('[Portofoliu]', e && e.message);
+    return null;
   }
+}
+
+async function refreshPortofoliu() {
+  await incarcaPortofoliu();
+  showToastInv(trInv('Date actualizate'));
+}
+
+// ── Exit: cererea de buy-back (api/investitori/exit) ─────────
+async function initiazaExitReal(btn) {
+  const p = PORTOFOLIU_INV;
+  if (!p || !p.exit || !p.exit.buyback_disponibil) return;
+  const n = Number(window.prompt(trInv('Câte acțiuni vrei să vinzi prin buy-back? (cel mult {n})', { n: p.actiuni }), ''));
+  if (!(n > 0)) return;
+  if (btn) btn.disabled = true;
+  try {
+    const token = await tokenInv();
+    const r = await fetch('/api/investitori/exit', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify({ tip: 'buyback', numar_actiuni: n }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error((enInv() && j.error_en) || j.error || trInv('Cererea nu s-a putut înregistra.'));
+    showToastInv(trInv('Cererea de buy-back a fost înregistrată. Echipa te contactează.'));
+  } catch (e) { showToastInv(e.message); }
+  finally { if (btn) btn.disabled = false; }
 }
 
 // ── Pasul 11-L: dashboard-ul privat și starea verificării identității ──
 function arataDashboardInvestitor(p) {
   const dash = document.getElementById('inv-private-dashboard');
   if (dash) dash.style.display = 'block';
+  incarcaPortofoliu();
   const c = document.getElementById('inv-kyc-banda');
   if (!c) return;
   const tr = (ro) => (typeof window.t === 'function' ? window.t(null, ro) : ro);
@@ -1081,70 +1040,8 @@ function arataDashboardInvestitor(p) {
 }
 window.arataDashboardInvestitor = arataDashboardInvestitor;
 
-// ── Refresh manual ────────────────────────────────────────────
-async function refreshPortofoliu() {
-  await loadPortofoliuPrivat();
-  showToastInv('Date actualizate');
-}
-
-// ── Exit real (Supabase) ──────────────────────────────────────
-async function initiazaExitReal(type) {
-  // Verifică dacă user e logat
-  if (!window.supabaseClient) {
-    showToastInv('Autentifică-te pentru a iniția un Exit');
-    return;
-  }
-  const { data: { user } } = await window.supabaseClient.auth.getUser();
-  if (!user) {
-    showToastInv('Trebuie să fii autentificat');
-    return;
-  }
-
-  // Deschide modalul de exit existent (compatibil cu restul paginii)
-  if (typeof showExitModal === 'function') {
-    showExitModal(type);
-  } else {
-    showToastInv('Funcție exit în curs de activare...');
-  }
-}
-
-// ════════════════════════════════════════════════════════════════
-// INIT
-// ════════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', async () => {
-
-  // 2. Verifică dacă userul e logat cu rol investitor
-  try {
-    if (!window.supabaseClient) return;
-
-    // Rolul se citește din profiles.roles (rândul propriu), nu din
-    // user_metadata (14 oct. 2026). E doar pentru afișare: datele
-    // portofoliului le filtrează serverul după auth.uid().
-    async function esteInvestitor(user) {
-      if (!user) return false;
-      const { data } = await window.supabaseClient
-        .from('profiles').select('roles').eq('id', user.id).maybeSingle();
-      return Array.isArray(data?.roles) && data.roles.includes('investor');
-    }
-
-    // Ascultă schimbările de auth
-    window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
-      if (!session) return;
-      if (await esteInvestitor(session.user)) {
-        loadPortofoliuPrivat();
-      }
-    });
-
-    // Verificare imediată la load
-    const { data: { session } } = await window.supabaseClient.auth.getSession();
-    if (await esteInvestitor(session?.user)) {
-      loadPortofoliuPrivat();
-    }
-
-  } catch (e) {
-    console.warn('[Init investitor]', e);
-  }
-});
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', incarcaRundaCurenta);
+else incarcaRundaCurenta();
 </script>
 <!-- ════ MODAL INTRĂ ÎN RUNDĂ ════ -->
 <div id="modal-runda-overlay" onclick="closeRunda()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);z-index:9690"></div>
@@ -1193,49 +1090,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       <!-- Ticket selector -->
       <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:10px">Valoarea investiției *</div>
-      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px">
-        <div class="ticket-opt" onclick="selectTicket(this,'25K')" style="border:1.5px solid #D5DFE8;border-radius:14px;padding:14px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all .18s" onmouseover="this.style.borderColor='#FF8C00'" onmouseout="if(!this.classList.contains('selected'))this.style.borderColor='#D5DFE8'">
-          <div><div style="font-weight:700;color:#1A2332;font-size:14px">25.000 EUR</div><div style="font-size:11.5px;color:#5A6B7D">Ticket minim</div></div>
-          <div style="font-size:11px;font-weight:700;color:#5A6B7D">Investitor individual</div>
-        </div>
-        <div class="ticket-opt" onclick="selectTicket(this,'50K')" style="border:1.5px solid #D5DFE8;border-radius:14px;padding:14px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all .18s" onmouseover="this.style.borderColor='#FF8C00'" onmouseout="if(!this.classList.contains('selected'))this.style.borderColor='#D5DFE8'">
-          <div><div style="font-weight:700;color:#1A2332;font-size:14px">50.000 EUR</div><div style="font-size:11.5px;color:#5A6B7D">Advisory access</div></div>
-          <div style="font-size:11px;font-weight:700;color:#0E9E99">Recomandat</div>
-        </div>
-        <div class="ticket-opt" onclick="selectTicket(this,'100K')" style="border:1.5px solid #FF8C00;border-radius:14px;padding:14px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;background:#FFFBF5;transition:all .18s">
-          <div><div style="font-weight:700;color:#1A2332;font-size:14px">100.000+ EUR</div><div style="font-size:11.5px;color:#5A6B7D">Lead investor · Advisory Board</div></div>
-          <div style="font-size:11px;font-weight:700;color:#FF8C00">Lead</div>
-        </div>
-        <div class="ticket-opt" onclick="selectTicket(this,'custom')" style="border:1.5px dashed #D5DFE8;border-radius:14px;padding:12px 16px;cursor:pointer;transition:all .18s">
-          <input type="number" id="custom-ticket" placeholder="Sumă personalizată (min. 25.000 EUR)" style="border:none;outline:none;font-size:13.5px;font-family:inherit;color:#1A2332;width:100%;background:transparent" onclick="event.stopPropagation()" onfocus="this.parentElement.style.borderColor='#003366'" onblur="this.parentElement.style.borderColor='#D5DFE8'"/>
-        </div>
-      </div>
-
-      <!-- Instrument -->
-      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:10px">Instrument investiție *</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px">
-        <div onclick="selectInstrument(this,'SAFE')" style="border:1.5px solid #D5DFE8;border-radius:12px;padding:14px;cursor:pointer;text-align:center;transition:all .18s" onmouseover="this.style.borderColor='#003366'" onmouseout="if(!this.classList.contains('sel-instr'))this.style.borderColor='#D5DFE8'">
-          <div style="font-size:22px;margin-bottom:6px"><i data-lucide="file-text" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-          <div style="font-weight:700;color:#1A2332;font-size:13px">SAFE</div>
-          <div style="font-size:10.5px;color:#5A6B7D;margin-top:3px">Simple Agreement Future Equity</div>
-        </div>
-        <div onclick="selectInstrument(this,'Equity')" style="border:1.5px solid #D5DFE8;border-radius:12px;padding:14px;cursor:pointer;text-align:center;transition:all .18s" onmouseover="this.style.borderColor='#003366'" onmouseout="if(!this.classList.contains('sel-instr'))this.style.borderColor='#D5DFE8'">
-          <div style="font-size:22px;margin-bottom:6px"><i data-lucide="bar-chart-3" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-          <div style="font-weight:700;color:#1A2332;font-size:13px">Equity direct</div>
-          <div style="font-size:10.5px;color:#5A6B7D;margin-top:3px">Participare directă capital</div>
-        </div>
-        <div onclick="selectInstrument(this,'Convertible')" style="border:1.5px solid #D5DFE8;border-radius:12px;padding:14px;cursor:pointer;text-align:center;transition:all .18s" onmouseover="this.style.borderColor='#003366'" onmouseout="if(!this.classList.contains('sel-instr'))this.style.borderColor='#D5DFE8'">
-          <div style="font-size:22px;margin-bottom:6px"><i data-lucide="refresh-cw" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-          <div style="font-weight:700;color:#1A2332;font-size:13px">Convertible Note</div>
-          <div style="font-size:10.5px;color:#5A6B7D;margin-top:3px">Datorie convertibilă în equity</div>
-        </div>
-        <div onclick="selectInstrument(this,'Negociabil')" style="border:1.5px solid #D5DFE8;border-radius:12px;padding:14px;cursor:pointer;text-align:center;transition:all .18s" onmouseover="this.style.borderColor='#003366'" onmouseout="if(!this.classList.contains('sel-instr'))this.style.borderColor='#D5DFE8'">
-          <div style="font-size:22px;margin-bottom:6px"><i data-lucide="heart-handshake" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-          <div style="font-weight:700;color:#1A2332;font-size:13px">Negociabil</div>
-          <div style="font-size:10.5px;color:#5A6B7D;margin-top:3px">Discutăm structura optimă</div>
-        </div>
-      </div>
-
+      <div id="runda-subscriere-info" style="font-size:12px;color:#5A6B7D;margin-bottom:10px"></div>
+      <div id="ticket-lista" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px"></div>
+      <!-- Instrument: din runda deschisă (runde_finantare.instrumente) -->
+      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:8px">Instrument investiție *</div>
+      <div id="instrument-lista" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:20px"></div>
       <div style="display:flex;gap:10px">
         <button onclick="closeRunda()" style="flex:1;padding:13px;border-radius:13px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">← Înapoi</button>
         <button onclick="goStep(3)" style="flex:2;padding:13px;border-radius:13px;border:none;background:#FF8C00;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 5px 18px rgba(255,140,0,.3);transition:all .2s" onmouseover="this.style.background='#CC7000'" onmouseout="this.style.background='#FF8C00'">
@@ -1312,6 +1171,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="display:flex;justify-content:space-between"><span style="color:#5A6B7D">Email</span><span style="font-weight:700;color:#1A2332" id="confirm-email">—</span></div>
           <div style="display:flex;justify-content:space-between"><span style="color:#5A6B7D">Ticket</span><span style="font-weight:700;color:#FF8C00" id="confirm-ticket">—</span></div>
           <div style="display:flex;justify-content:space-between"><span style="color:#5A6B7D">Instrument</span><span style="font-weight:700;color:#1A2332" id="confirm-instrument">—</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:#5A6B7D">Acțiuni</span><span style="font-weight:700;color:#1A2332" id="confirm-actiuni">—</span></div>
         </div>
       </div>
       <div style="display:flex;gap:10px">
@@ -1341,6 +1201,7 @@ function openRunda(deschizator){
   m.setAttribute('role','dialog'); m.setAttribute('aria-modal','true');
   document.body.style.overflow='hidden';
   goStep(2);
+  pregatesteSubscrierea();
 }
 function closeRunda(){
   const m = document.getElementById('modal-runda');
@@ -1378,40 +1239,76 @@ function goStep(n){
     document.getElementById('confirm-name').textContent = pr.nume || [pr.prenume, pr.nume_familie].filter(Boolean).join(' ') || '—';
     document.getElementById('confirm-email').textContent = pr.email || '—';
     document.getElementById('confirm-ticket').textContent = selectedTicket||'—';
-    document.getElementById('confirm-instrument').textContent = selectedInstrument||'—';
+    document.getElementById('confirm-instrument').textContent = selectedInstrument ? trInv(NUME_INSTRUMENT[selectedInstrument] || selectedInstrument) : '—';
   }
 }
 
-/* ── Pasul 11-L: subscrierea, legată de cont ──
-   api/investitori/subscrie.js (requireAuth, rol investor, user_id). Suma vine
-   din ticketul ales; numărul de acțiuni din prețul pe acțiune scris de mână
-   în EVAL_PARAMS (de mutat în back-office la pasul 11-J). */
-const TICKET_EUR = { '25K': 25000, '50K': 50000, '100K': 100000 };
+/* ── Subscrierea, legată de cont (11-L) și de runda deschisă (11-J) ──
+   Ticketele, investiția minimă, prețul și instrumentele vin din runda
+   deschisă (api/investitori/portofoliu → runda). Suma o alege investitorul;
+   acțiunile le calculează serverul (api/investitori/subscrie.js). */
+const NUME_INSTRUMENT = { actiuni: 'Acțiuni', safe: 'SAFE', nota_convertibila: 'Notă convertibilă' };
+let RUNDA_SUBSCRIERE = null;
+async function pregatesteSubscrierea() {
+  const info = document.getElementById('runda-subscriere-info');
+  const lista = document.getElementById('ticket-lista');
+  const instr = document.getElementById('instrument-lista');
+  const cont = document.querySelector('#step-2 button[onclick="goStep(3)"]');
+  selectedTicket = ''; selectedInstrument = '';
+  if (lista) lista.innerHTML = '<div style="font-size:12.5px;color:#5A6B7D">' + escInv(trInv('Se încarcă…')) + '</div>';
+  if (instr) instr.innerHTML = '';
+  const p = PORTOFOLIU_INV && PORTOFOLIU_INV.runda !== undefined ? PORTOFOLIU_INV : await incarcaPortofoliu();
+  const r = p && p.runda;
+  RUNDA_SUBSCRIERE = r || null;
+  if (!r) {
+    if (info) info.textContent = trInv('Nu e nicio rundă de finanțare deschisă acum. Subscrierile se pot trimite când se deschide o rundă.');
+    if (lista) lista.innerHTML = '';
+    if (cont) cont.disabled = true;
+    return;
+  }
+  if (cont) cont.disabled = false;
+  if (info) info.innerHTML = `<strong style="color:#1A2332" translate="no">${escInv(enInv() ? r.denumire_en : r.denumire_ro)}</strong> · ` +
+    escInv(trInv('Preț / acțiune: {pret}', { pret: sumaInv(r.pret_actiune, r.moneda) })) +
+    (r.investitie_minima != null ? ' · ' + escInv(trInv('Investiția minimă: {suma}', { suma: sumaInv(r.investitie_minima, r.moneda) })) : '');
+  const stilOpt = 'border:1.5px solid #D5DFE8;border-radius:14px;padding:14px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all .18s;background:#fff;text-align:left;font-family:inherit;width:100%';
+  lista.innerHTML = (r.tickete || []).map((t) => `<button type="button" class="ticket-opt" data-suma="${t}" onclick="selectTicket(this,'${t}')" style="${stilOpt}"><span style="font-weight:700;color:#1A2332;font-size:14px">${sumaInv(t, r.moneda)}</span></button>`).join('') +
+    `<div class="ticket-opt" data-suma="custom" onclick="selectTicket(this,'custom')" style="border:1.5px dashed #D5DFE8;border-radius:14px;padding:12px 16px;cursor:pointer">` +
+    `<label class="myd-sr-inv" for="custom-ticket">${escInv(trInv('Altă sumă'))}</label>` +
+    `<input type="number" id="custom-ticket" min="${r.investitie_minima != null ? r.investitie_minima : 0}" step="any" placeholder="${escInv(r.investitie_minima != null ? trInv('Altă sumă (min. {suma})', { suma: sumaInv(r.investitie_minima, r.moneda) }) : trInv('Altă sumă ({moneda})', { moneda: r.moneda }))}" onclick="event.stopPropagation();selectTicket(this.parentElement,'custom')" style="border:none;outline:none;font-size:13.5px;font-family:inherit;color:#1A2332;width:100%;background:transparent"></div>`;
+  instr.innerHTML = (r.instrumente || []).map((k) => `<button type="button" class="instrument-opt" onclick="selectInstrument(this,'${k}')" style="border:1.5px solid #D5DFE8;border-radius:12px;padding:14px;cursor:pointer;background:#fff;font-family:inherit;font-weight:700;color:#1A2332;font-size:13px">${escInv(trInv(NUME_INSTRUMENT[k] || k))}</button>`).join('');
+  if ((r.instrumente || []).length === 1) selectInstrument(instr.querySelector('.instrument-opt'), r.instrumente[0]);
+}
+
+function sumaAleasa() {
+  const optiune = document.querySelector('.ticket-opt.selected');
+  if (!optiune) return 0;
+  const v = optiune.getAttribute('data-suma');
+  return v === 'custom' ? Number(document.getElementById('custom-ticket')?.value || 0) : Number(v);
+}
+
 async function submitInvestmentRequest(){
   const btn = document.getElementById('submit-invest-btn');
   const msg = document.getElementById('submit-invest-msg');
-  const optiune = document.querySelector('.ticket-opt.selected');
-  const cod = optiune ? (optiune.getAttribute('onclick') || '').replace(/.*'([^']+)'\).*/, '$1') : '';
-  const suma = cod === 'custom' ? Number(document.getElementById('custom-ticket')?.value || 0) : (TICKET_EUR[cod] || 0);
-  const actiuni = Math.floor(suma / EVAL_PARAMS.pret_actiune_eur);
-  const en = window.MYD_I18N && window.MYD_I18N.lang && window.MYD_I18N.lang !== 'ro';
-  const tr = (ro) => (typeof window.t === 'function' ? window.t(null, ro) : ro);
-  if (!(suma > 0) || actiuni < 1) { MDFeedback.mesaj(msg, 'eroare', tr('Alege suma investiției (pasul 1).')); return; }
-  if (!selectedInstrument) { MDFeedback.mesaj(msg, 'eroare', tr('Alege instrumentul investiției (pasul 1).')); return; }
-  if (!document.getElementById('nda-check')?.checked) { MDFeedback.mesaj(msg, 'eroare', tr('Bifează acordul de confidențialitate (NDA).')); return; }
+  const suma = sumaAleasa();
+  if (!RUNDA_SUBSCRIERE) { MDFeedback.mesaj(msg, 'eroare', trInv('Nu e nicio rundă de finanțare deschisă acum. Subscrierile se pot trimite când se deschide o rundă.')); return; }
+  if (!(suma > 0)) { MDFeedback.mesaj(msg, 'eroare', trInv('Alege suma investiției (pasul 1).')); return; }
+  if (!selectedInstrument) { MDFeedback.mesaj(msg, 'eroare', trInv('Alege instrumentul investiției (pasul 1).')); return; }
+  if (!document.getElementById('nda-check')?.checked) { MDFeedback.mesaj(msg, 'eroare', trInv('Bifează acordul de confidențialitate (NDA).')); return; }
   await MDFeedback.salveaza(btn, msg, async () => {
-    const { data } = await window.supabaseClient.auth.getSession();
-    const token = data && data.session && data.session.access_token;
-    if (!token) throw new Error(tr('Sesiunea a expirat. Autentifică-te din nou.'));
+    const token = await tokenInv();
+    if (!token) throw new Error(trInv('Sesiunea a expirat. Autentifică-te din nou.'));
     const res = await fetch('/api/investitori/subscrie', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-      body: JSON.stringify({ suma_eur: suma, actiuni, instrument: selectedInstrument }),
+      body: JSON.stringify({ suma, instrument: selectedInstrument }),
     });
     const j = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error((en && j.error_en) || j.error || tr('Nu am putut înregistra subscrierea.'));
-    setTimeout(() => goStep(4), 700);
-    return tr('Subscrierea a fost înregistrată.');
+    if (!res.ok) throw new Error((enInv() && j.error_en) || j.error || trInv('Nu am putut înregistra subscrierea.'));
+    selectedTicket = sumaInv(suma, j.moneda || RUNDA_SUBSCRIERE.moneda);
+    const ca = document.getElementById('confirm-actiuni');
+    if (ca) ca.textContent = sumaInv(j.actiuni);
+    setTimeout(() => { goStep(4); incarcaPortofoliu(); }, 700);
+    return trInv('Subscrierea a fost înregistrată.');
   }, { textSalveaza: 'Se trimite…' });
 }
 
@@ -1424,20 +1321,19 @@ function selectTicket(el, val){
   el.classList.add('selected');
   el.style.borderColor='#FF8C00';
   el.style.background='#FFFBF5';
+  const m = RUNDA_SUBSCRIERE ? RUNDA_SUBSCRIERE.moneda : '';
   selectedTicket = val==='custom'
-    ? (document.getElementById('custom-ticket')?.value||'') + ' EUR'
-    : val + ' EUR';
+    ? sumaInv(Number(document.getElementById('custom-ticket')?.value || 0), m)
+    : sumaInv(Number(val), m);
 }
 
 function selectInstrument(el, val){
-  document.querySelectorAll('[onclick*="selectInstrument"]').forEach(e=>{
+  document.querySelectorAll('.instrument-opt').forEach(e=>{
     e.classList.remove('sel-instr');
     e.style.borderColor='#D5DFE8';
-    e.style.background='';
+    e.style.background='#fff';
   });
-  el.classList.add('sel-instr');
-  el.style.borderColor='#003366';
-  el.style.background='#EBF4FB';
+  if (el) { el.classList.add('sel-instr'); el.style.borderColor='#003366'; el.style.background='#EBF4FB'; }
   selectedInstrument = val;
 }
 
@@ -1450,279 +1346,18 @@ document.addEventListener('keydown',e=>{
 
 
 <script>
-// ════════════════════════════════════════════════════════════════
-// FT2 — MOTOR EVALUARE DINAMIC — GTV / ARR / Multiplicator
-// Formula: Evaluare = (GTV * Mult_Piata) + (ARR * Mult_SaaS) * Factor_Scalare
-// ════════════════════════════════════════════════════════════════
-
-// NOTĂ (26 august 2026): acest obiect are 2 blocuri distincte. Blocul
-// „ipoteze de simulare" alimentează exclusiv widget-ul interactiv de mai jos
-// — un instrument de simulare a scenariilor de creștere pe termen lung,
-// niciodată date live reale (comentariul anterior „Date live din
-// Marketplace" era fals, corectat acum). Blocul „Runda I — termeni oficiali"
-// e FIX, confirmat explicit de fondator: nu se modifică prin sliderele
-// simulatorului — sliderele proiectează o evaluare VIITOARE posibilă,
-// nu renegociază termenii Rundei I curente.
-const EVAL_PARAMS = {
-  // ── Ipoteze de simulare — Instrument de Simulare Bazat pe Scenarii de
-  // Scalare a Antreprizei Generale (proiecție, nu date live) ──
-  gtv_lunar:        384000,   // Lei în Escrow lunar — scenariu de start
-  parteneri:        1840,     // parteneri activi — scenariu de start
-  clienti:          12400,    // clienți activi — scenariu de start
-  comenzi_luna:     1834,     // devize/lună — scenariu de start
-  comision_mediu:   0.12,     // 12% comision mediu ponderat
-  cost_achizitie:   45,       // CAC Lei per client
-  ltv_client:       680,      // LTV mediu Lei per client
-  mult_piata:       4.2,      // GTV × 4.2 pentru servicii la domiciliu (Thumbtack benchmark)
-  mult_saas:        8.5,      // ARR × 8.5 (revenue multiple standard seed)
-  factor_scalare:   1.0,      // actualizat dinamic de simulator
-  tari_active:      1,        // RO
-
-  // ── Runda I — termeni oficiali, FIXAȚI 26 august 2026 (nu se ating din simulator) ──
-  pre_money:        3500000,  // 3.5M EUR pre-money
-  post_money:       4000000,  // 4M EUR post-money (sursa de adevăr pentru evaluare)
-  equity_oferit:    0.125,    // 12,5%
-  volum_runda:      500000,   // 500.000 EUR
-  pret_actiune_eur: 1000,     // 1.000 EUR per acțiune
-  actiuni_totale:   4000,     // 4.000 acțiuni totale
-};
-
-function calcEvaluare(params) {
-  const P = params || EVAL_PARAMS;
-  
-  // ARR (Annualized Run Rate) = GMV lunar × comision × 12
-  const gmv_lunar = P.gtv_lunar;
-  const revenue_lunar = gmv_lunar * P.comision_mediu;
-  const arr = revenue_lunar * 12;
-  
-  // Evaluare prin GTV (market cap ca % din GTV anual)
-  const gtv_anual = gmv_lunar * 12;
-  const eval_gtv = gtv_anual * P.mult_piata;
-  
-  // Evaluare prin ARR (revenue multiple)
-  const eval_arr = arr * P.mult_saas;
-  
-  // Factor scalare geografică
-  const scalare = 1 + (P.tari_active - 1) * 0.3;
-  
-  // Evaluare finală (media ponderată 60% ARR, 40% GTV)
-  const eval_finala = (eval_gtv * 0.40 + eval_arr * 0.60) * scalare;
-  
-  // Metrics derivate
-  const pret_actiune_curent = eval_finala / P.actiuni_totale / 5.0; // EUR (curs 5 Lei/EUR)
-  const roi_vs_preseed = (pret_actiune_curent / P.pret_actiune_eur - 1) * 100;
-  
-  return {
-    arr:              Math.round(arr),
-    gtv_anual:        Math.round(gtv_anual),
-    eval_gtv:         Math.round(eval_gtv),
-    eval_arr:         Math.round(eval_arr),
-    eval_finala:      Math.round(eval_finala),
-    revenue_lunar:    Math.round(revenue_lunar),
-    pret_actiune:     pret_actiune_curent.toFixed(4),
-    roi_vs_preseed:   roi_vs_preseed.toFixed(1),
-    ltv_cac_ratio:    (P.ltv_client / P.cost_achizitie).toFixed(1),
-    runway_luni:      Math.round(P.volum_runda / (revenue_lunar * 1.5)),
-    burn_rate:        Math.round(revenue_lunar * 0.85),
-  };
-}
-
-// Live update la modificarea parametrilor
-function updateEvalLive(field, val) {
-  EVAL_PARAMS[field] = parseFloat(val) || EVAL_PARAMS[field];
-  const r = calcEvaluare(EVAL_PARAMS);
-  renderEvalWidget(r);
-}
-
-function renderEvalWidget(r) {
-  const ew = document.getElementById('eval-widget');
-  if (!ew) return;
-  const fmtEUR = n => '€' + (n/1000).toFixed(0) + 'K';
-  const fmtRON = n => (n/1000).toFixed(0) + 'K Lei';
-  ew.innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px">
-      <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:12px;text-align:center">
-        <div style="font-size:9.5px;color:rgba(255,255,255,.5);text-transform:uppercase;margin-bottom:4px">ARR (12M)</div>
-        <div style="font-size:18px;font-weight:800;color:#4ADE80">${fmtRON(r.arr)}</div>
-      </div>
-      <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:12px;text-align:center">
-        <div style="font-size:9.5px;color:rgba(255,255,255,.5);text-transform:uppercase;margin-bottom:4px">GTV Anual</div>
-        <div style="font-size:18px;font-weight:800;color:#60A5FA">${fmtRON(r.gtv_anual)}</div>
-      </div>
-      <div style="background:rgba(255,140,0,.15);border-radius:10px;padding:12px;text-align:center;border:1px solid rgba(255,140,0,.3)">
-        <div style="font-size:9.5px;color:rgba(255,255,255,.5);text-transform:uppercase;margin-bottom:4px">Evaluare Companie</div>
-        <div style="font-size:20px;font-weight:800;color:#FF8C00">${fmtEUR(r.eval_finala)}</div>
-      </div>
-      <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:12px;text-align:center">
-        <div style="font-size:9.5px;color:rgba(255,255,255,.5);text-transform:uppercase;margin-bottom:4px">ROI vs Pre-Seed</div>
-        <div style="font-size:18px;font-weight:800;color:${r.roi_vs_preseed>0?'#4ADE80':'#F87171'}">${r.roi_vs_preseed>0?'+':''}${r.roi_vs_preseed}%</div>
-      </div>
-    </div>
-    <div style="font-size:10px;color:rgba(255,255,255,.4);text-align:center;line-height:1.6">
-      Formula: Eval = (GTV×${EVAL_PARAMS.mult_piata}×40%) + (ARR×${EVAL_PARAMS.mult_saas}×60%) × ${(1+(EVAL_PARAMS.tari_active-1)*0.3).toFixed(1)} factor geo<br>
-      LTV/CAC: ${r.ltv_cac_ratio}x · Burn Rate: ${fmtRON(r.burn_rate)}/lună · Runway: ${r.runway_luni} luni
-    </div>`;
-}
-
-// ════════════════════════════════════════════════════════════════
-// FT4 — ALOCARE ACȚIUNI în Pasul 4 Summary
-// ════════════════════════════════════════════════════════════════
-
-let INV_STATE = {
-  suma_eur: 50000,
-  instrument: 'note_convertibile',
-  actiuni_alocate: 0,
-  pct_companie: 0,
-  pre_money_eur: 3500000,
-  post_money_eur: 4000000,
-};
-
-// Pasul 11-L: datele personale și IBAN-ul nu mai stau în sessionStorage —
-// le salvează ruta de investitor pe server (investitori-ruta.js, api/investitori/kyc.js).
-let INV_ACCOUNT = null;
-
-function calcAlocare(suma_eur, instrument) {
-  const P = EVAL_PARAMS;
-  const actiuni = Math.floor(suma_eur / (P.pret_actiune_eur));
-  const pct     = (suma_eur / (P.pre_money + suma_eur) * 100).toFixed(4);
-  const val_curent_eur = (actiuni * parseFloat(calcEvaluare().pret_actiune)).toFixed(2);
-  const roi    = ((val_curent_eur / suma_eur - 1)*100).toFixed(1);
-  return { actiuni, pct, val_curent_eur, roi };
-}
-
-// Pasul 11-L: fereastra KYC veche (fișierul doar „selectat”, OCR și criptare
-// afirmate fără să existe, prag de 10.000 EUR scris de mână) e înlocuită de
-// ruta de investitor din investitori-ruta.js.
-
-// ════════════════════════════════════════════════════════════════
-// FT3 — DASHBOARD PORTOFOLIU POST-SUBSCRIERE
-// ════════════════════════════════════════════════════════════════
-
-let INV_PORTFOLIO = null;
-
-// Pasul 11-L: finalizeazaSubscriere / renderDashboardInvestitor (subscrierea
-// publică, fără cont, cu portofoliul ținut în sessionStorage) au fost scoase:
-// subscrierea trece prin api/investitori/subscrie.js, iar portofoliul vine din
-// dashboard-ul privat (get_investor_portofoliu).
-
-// ════════════════════════════════════════════════════════════════
-// FT6 — EXIT MODAL
-// ════════════════════════════════════════════════════════════════
-
-// ════════════════════════════════════════════════════════════════
-// ADMINISTRARE CONT — vizualizare + editare date personale & IBAN
-// ════════════════════════════════════════════════════════════════
-// Pasul 11-L: „Date cont” deschide ruta de investitor la pasul 1 (date salvate
-// pe server); fereastra veche schimba emailul și IBAN-ul doar în sessionStorage
-// și afișa „actualizat cu succes” fără nicio salvare.
-function showAccountModal(deschizator) {
-  if (window.MYD_INVESTITOR) window.MYD_INVESTITOR.deschideDateCont(deschizator);
-}
-
-function showExitModal(type) {
-  if (!INV_PORTFOLIO) return;
-  const P = INV_PORTFOLIO;
-  const evalNow = calcEvaluare();
-  const val_curenta = parseFloat((P.actiuni * parseFloat(evalNow.pret_actiune)).toFixed(2));
-  const val_buyback = val_curenta * 0.90; // minus 10% lichiditate
-  
-  const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1001;display:flex;align-items:center;justify-content:center;padding:20px';
-  ov.innerHTML = type === 'buyback' ? `
-    <div style="background:#fff;border-radius:20px;max-width:440px;width:100%;padding:28px;box-shadow:0 24px 80px rgba(0,0,0,.3)">
-      <h3 style="font-size:18px;font-weight:800;color:#1A2332;margin-bottom:5px">Share Buyback</h3>
-      <p style="font-size:12.5px;color:#5A6B7D;margin-bottom:18px">Compania răscumpără acțiunile tale la prețul curent de evaluare, minus o taxă de lichiditate de 10%.</p>
-      <div style="display:flex;flex-direction:column;gap:9px;font-size:12.5px;margin-bottom:18px">
-        <div style="display:flex;justify-content:space-between;padding:9px 12px;background:#F0F4F8;border-radius:9px"><span style="color:#5A6B7D">Valoare evaluare curentă</span><strong>€${val_curenta.toLocaleString()}</strong></div>
-        <div style="display:flex;justify-content:space-between;padding:9px 12px;background:#FFF8EE;border-radius:9px;border:1px solid rgba(255,140,0,.2)"><span style="color:#5A6B7D">Taxă lichiditate (−10%)</span><strong style="color:#CC7000">−€${(val_curenta*0.10).toLocaleString()}</strong></div>
-        <div style="display:flex;justify-content:space-between;padding:10px 12px;background:#D4EDDA;border-radius:9px;border:1px solid rgba(26,122,58,.2)"><span style="color:#5A6B7D;font-weight:700">Net primit la IBAN</span><strong style="color:#1A7A3A;font-size:16px">€${val_buyback.toLocaleString()}</strong></div>
-      </div>
-      <div style="background:#FFF0F0;border-radius:10px;padding:10px 12px;margin-bottom:16px;font-size:11px;color:#C0392B">Lock-up period de 12 luni se aplică. Aceasta este o cerere preliminară — procesarea durează 30 zile lucrătoare conform Shareholders Agreement.</div>
-      <div style="display:flex;gap:10px">
-        <button onclick="initiazaExit('buyback',${val_buyback})" style="flex:1;padding:12px;border-radius:12px;border:none;background:#003366;color:#fff;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit">Inițiază Buyback</button>
-        <button onclick="this.closest('[style*=fixed]').remove()" style="padding:12px 16px;border-radius:12px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Anulează</button>
-      </div>
-    </div>` : `
-    <div style="background:#fff;border-radius:20px;max-width:440px;width:100%;padding:28px;box-shadow:0 24px 80px rgba(0,0,0,.3)">
-      <h3 style="font-size:18px;font-weight:800;color:#1A2332;margin-bottom:5px">Piață Secundară P2P</h3>
-      <p style="font-size:12.5px;color:#5A6B7D;margin-bottom:16px">Listează acțiunile tale pentru alți investitori validați din platforma My Darrin.</p>
-      <div style="margin-bottom:14px">
-        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;display:block;margin-bottom:6px">Preț solicitat per acțiune (EUR)</label>
-        <input type="number" id="p2p-price" value="${parseFloat(evalNow.pret_actiune).toFixed(4)}" step="0.0001" style="width:100%;border:1.5px solid #D5DFE8;border-radius:10px;padding:10px 13px;font-size:14px;font-family:monospace;outline:none"/>
-      </div>
-      <div style="margin-bottom:16px">
-        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;display:block;margin-bottom:6px">Număr acțiuni de vândut</label>
-        <input type="number" id="p2p-qty" value="${Math.floor(P.actiuni/2)}" max="${P.actiuni}" style="width:100%;border:1.5px solid #D5DFE8;border-radius:10px;padding:10px 13px;font-size:14px;font-family:monospace;outline:none"/>
-      </div>
-      <div style="display:flex;gap:10px">
-        <button onclick="initiazaExit('p2p',0)" style="flex:1;padding:12px;border-radius:12px;border:none;background:#0E9E99;color:#fff;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit">Listează pe P2P</button>
-        <button onclick="this.closest('[style*=fixed]').remove()" style="padding:12px 16px;border-radius:12px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Anulează</button>
-      </div>
-    </div>`;
-  document.body.appendChild(ov);
-}
-
-function initiazaExit(type, net) {
-  document.querySelectorAll('[style*="fixed"][style*="z-index:1001"]').forEach(el=>el.remove());
-  const ibanMasked = INV_PORTFOLIO?.cont?.iban
-    ? INV_PORTFOLIO.cont.iban.slice(0,4) + ' •••• ' + INV_PORTFOLIO.cont.iban.slice(-4)
-    : 'IBAN necunoscut — contactează suportul';
-  const msg = type==='buyback'
-    ? `Cerere Buyback înregistrată · €${net.toLocaleString()} → ${ibanMasked} în 30 zile`
-    : `Acțiuni listate pe Piața Secundară P2P · Matching investitori activ`;
-  showToastInv(msg);
-
-  // Salvăm cererea de exit pentru istoric (vizibil în dashboard)
-  if (!INV_PORTFOLIO.exit_requests) INV_PORTFOLIO.exit_requests = [];
-  INV_PORTFOLIO.exit_requests.push({
-    type, net, data: new Date().toLocaleDateString('ro-RO'),
-    status: 'în procesare', iban: INV_PORTFOLIO?.cont?.iban || null,
-  });
-  try { sessionStorage.setItem('myd_investor', JSON.stringify(INV_PORTFOLIO)); } catch(e) {}
-}
-
-// ════════════════════════════════════════════════════════════════
-// FT7 — FIX NAVBAR: suprascrie goStep(1) să ceară KYC mai întâi
-// ════════════════════════════════════════════════════════════════
-const _origGoStep = window.goStep;
-window.goStep = function(n) {
-  _origGoStep && _origGoStep(n);
-};
-
-// Hook pe selectTicket/selectInstrument pentru INV_STATE
-const _origSelectTicket = window.selectTicket;
-window.selectTicket = function(el, val) {
-  _origSelectTicket && _origSelectTicket(el, val);
-  INV_STATE.suma_eur = parseInt(val.replace(/[^0-9]/g,''))||val;
-};
-const _origSelectInstrument = window.selectInstrument;
-window.selectInstrument = function(el, val) {
-  _origSelectInstrument && _origSelectInstrument(el, val);
-  INV_STATE.instrument = val;
-};
-
+// Pasul 11-J: parametrii de evaluare scriși de mână (evaluare, preț pe acțiune,
+// acțiuni, ipoteze de simulare, curs fix leu/euro), simulatorul, calcAlocare,
+// exit-ul cu „−10%” / 30 de zile și portofoliul din sessionStorage au fost
+// scoase: valorile vin din runda configurată în back-office și se calculează
+// pe server (lib/runda-finantare.js).
 function showToastInv(msg) {
   const t = document.createElement('div');
-  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;background:#1A2332;color:#fff;padding:12px 22px;border-radius:14px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25);white-space:nowrap;max-width:90vw;text-align:center;font-family:inherit';
+  t.setAttribute('role', 'status');
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9650;background:#1A2332;color:#fff;padding:12px 22px;border-radius:14px;font-size:13px;font-weight:600;max-width:calc(100vw - 32px);box-sizing:border-box;text-align:center';
   t.textContent = msg; document.body.appendChild(t);
   setTimeout(()=>t.remove(), 3200);
 }
-
-// Init la load
-document.addEventListener('DOMContentLoaded', () => {
-  // Render eval widget dacă există container
-  const ew = document.getElementById('eval-widget');
-  if (ew) renderEvalWidget(calcEvaluare());
-  
-  // Live counter din homepage (backup dacă există)
-  typeof startLiveCounter === 'function' && startLiveCounter();
-  
-  // Restaurăm portofoliu din sesiune
-  try {
-    const saved = sessionStorage.getItem('myd_investor');
-    if (saved) { INV_PORTFOLIO = JSON.parse(saved); }
-  } catch(e) {}
-});
 </script>
 
 
