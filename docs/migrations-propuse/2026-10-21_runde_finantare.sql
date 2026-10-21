@@ -28,6 +28,10 @@
 --          de subscriere → api/investitori/portofoliu.js;
 --        admin_update_kyc_status(...) — verifica doar profiles.role, fără
 --          audit și fără email → api/admin/investitori-kyc.js (pasul 11-L).
+--        admin_set_portofoliu(...) — alocare manuală cu 10.000.000 de acțiuni
+--          scrise în funcție, ON CONFLICT (user_id) (unicitate scoasă în 11-L)
+--          și rolul greșit „investitor” → acțiunile vin doar din subscrierile
+--          aprobate, în runda lor.
 --      Funcțiile rămân în baza de date (nu se șterg), dar nu mai pot fi
 --      apelate din browser; le poate șterge LM ulterior.
 --   4. Curățenie: politica dublă „investitor vede propriul KYC” de pe
@@ -130,7 +134,7 @@ begin
     select p.oid::regprocedure as semnatura
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public'
-      and p.proname in ('get_live_investor_kpis', 'admin_get_investitori_dashboard', 'get_investor_portofoliu', 'admin_update_kyc_status')
+      and p.proname in ('get_live_investor_kpis', 'admin_get_investitori_dashboard', 'get_investor_portofoliu', 'admin_update_kyc_status', 'admin_set_portofoliu')
   loop
     execute format('revoke execute on function %s from public, anon, authenticated', f.semnatura);
     execute format('grant execute on function %s to service_role', f.semnatura);
@@ -167,7 +171,7 @@ begin
     select p.oid::regprocedure as semnatura, p.oid
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public'
-      and p.proname in ('get_live_investor_kpis', 'admin_get_investitori_dashboard', 'get_investor_portofoliu', 'admin_update_kyc_status')
+      and p.proname in ('get_live_investor_kpis', 'admin_get_investitori_dashboard', 'get_investor_portofoliu', 'admin_update_kyc_status', 'admin_set_portofoliu')
   loop
     if has_function_privilege('anon', f.oid, 'EXECUTE') or has_function_privilege('authenticated', f.oid, 'EXECUTE') then
       raise exception 'Funcția % e încă executabilă din browser', f.semnatura;
@@ -189,5 +193,5 @@ select p.oid::regprocedure as functie,
        has_function_privilege('authenticated', p.oid, 'EXECUTE') as authenticated_executa
 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
 where n.nspname = 'public'
-  and p.proname in ('get_live_investor_kpis', 'admin_get_investitori_dashboard', 'get_investor_portofoliu', 'admin_update_kyc_status');
+  and p.proname in ('get_live_investor_kpis', 'admin_get_investitori_dashboard', 'get_investor_portofoliu', 'admin_update_kyc_status', 'admin_set_portofoliu');
 select policyname, cmd from pg_policies where schemaname = 'public' and tablename = 'investitori_kyc';

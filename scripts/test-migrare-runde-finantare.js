@@ -13,7 +13,8 @@
 //   2. valorile calculate (post-money, preț, procent, acțiuni noi) pe valori de test;
 //   3. constrângerile: sume > 0, minim ≤ țintă, date, cod, cel mult o rundă deschisă;
 //   4. investitori_portofoliu.runda_id cu cheie străină;
-//   5. anon / authenticated nu mai execută get_live_investor_kpis și celelalte;
+//   5. anon / authenticated nu mai execută get_live_investor_kpis și celelalte
+//      (inclusiv admin_set_portofoliu);
 //      service_role da;
 //   6. politica dublă a dispărut, „investitorul vede propriul KYC” rămâne;
 //   7. runde_finantare nu se citește direct ca anon.
@@ -50,6 +51,8 @@ grant execute on function public.get_live_investor_kpis(text) to anon, authentic
 grant execute on function public.admin_get_investitori_dashboard() to anon, authenticated;
 grant execute on function public.get_investor_portofoliu() to anon, authenticated;
 grant execute on function public.admin_update_kyc_status(uuid, text, integer) to anon, authenticated;
+create function public.admin_set_portofoliu(p_user_id uuid, p_actiuni integer, p_valoare_investita numeric, p_roi_estimat numeric default 0) returns jsonb language plpgsql security definer set search_path = public as $$ begin return '{}'::jsonb; end $$;
+grant execute on function public.admin_set_portofoliu(uuid, integer, numeric, numeric) to authenticated;
 grant usage on schema public to anon, authenticated, service_role;
 grant select on all tables in schema public to anon, authenticated;
 insert into auth.users values ('${U}');
@@ -100,8 +103,8 @@ async function esueaza(db, sql) { try { await db.exec(sql); return null; } catch
 
   // 5. funcțiile
   const drepturi = (await db.query(`select p.proname, has_function_privilege('anon', p.oid, 'EXECUTE') as a, has_function_privilege('authenticated', p.oid, 'EXECUTE') as u, has_function_privilege('service_role', p.oid, 'EXECUTE') as s
-    from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname in ('get_live_investor_kpis','admin_get_investitori_dashboard','get_investor_portofoliu','admin_update_kyc_status')`)).rows;
-  verifica(drepturi.length === 4 && drepturi.every((d) => !d.a && !d.u && d.s), 'anon și authenticated nu mai execută cele patru funcții; service_role da');
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname in ('get_live_investor_kpis','admin_get_investitori_dashboard','get_investor_portofoliu','admin_update_kyc_status','admin_set_portofoliu')`)).rows;
+  verifica(drepturi.length === 5 && drepturi.every((d) => !d.a && !d.u && d.s), 'anon și authenticated nu mai execută cele cinci funcții; service_role da');
   await db.exec('set role anon');
   const eKpi = await esueaza(db, 'select public.get_live_investor_kpis()');
   await db.exec('reset role');

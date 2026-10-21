@@ -2633,42 +2633,53 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
           <div>
             <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">💼 Administrare Investitori</h2>
-            <p style="font-size:12.5px;color:#4A6080">Portofolii · KYC · Distribuții · Exit requests · Rundă Pre-Seed</p>
+            <p style="font-size:12.5px;color:#4A6080">Runde de finanțare · Subscrieri · Verificarea identității (KYC)</p>
           </div>
           <div style="display:flex;gap:8px">
             <button class="btn-s" onclick="loadInvestitoriAdmin()" style="font-size:11px">↻ Actualizează</button>
-            <button class="btn-p" onclick="showModalAlocaPortofoliu()" style="font-size:11px">+ Alocă portofoliu</button>
+            
           </div>
         </div>
       </div>
 
-      <!-- KPI Grid -->
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px" id="inv-admin-kpi-grid">
+      <!-- KPI Grid — pasul 11-J: valorile vin din api/admin/investitori-dashboard (runda deschisă, subscrierile aprobate) -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px" id="inv-admin-kpi-grid">
         <div class="kpi-card kpi-blue">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;margin-bottom:8px">Investitori totali</div>
-          <div style="font-size:26px;font-weight:800;color:#7AB3E0" id="ia-total-inv">—</div>
-          <div style="font-size:10.5px;color:#4A6080;margin-top:4px">conturi cu rol investitor</div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;margin-bottom:8px">Investitori</div>
+          <div style="font-size:24px;font-weight:800;color:#E2E8F0" id="ia-total-inv">—</div>
+          <div style="font-size:10.5px;color:#4A6080;margin-top:4px">conturi cu rolul investitor</div>
         </div>
         <div class="kpi-card kpi-orange">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;margin-bottom:8px">KYC Pending</div>
-          <div style="font-size:26px;font-weight:800;color:#FF8C00" id="ia-kyc-pending">—</div>
-          <div style="font-size:10.5px;color:#4A6080;margin-top:4px">necesită verificare</div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;margin-bottom:8px">KYC în verificare</div>
+          <div style="font-size:24px;font-weight:800;color:#E2E8F0" id="ia-kyc-pending">—</div>
+          <div style="font-size:10.5px;color:#4A6080;margin-top:4px">dosare de verificat</div>
         </div>
         <div class="kpi-card kpi-teal">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;margin-bottom:8px">Capital strâns</div>
-          <div style="font-size:26px;font-weight:800;color:#0E9E99" id="ia-capital">—</div>
-          <div style="font-size:10.5px;color:#4A6080;margin-top:4px">EUR · Pre-Seed</div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;margin-bottom:8px">Capital aprobat</div>
+          <div style="font-size:24px;font-weight:800;color:#E2E8F0" id="ia-capital">—</div>
+          <div style="font-size:10.5px;color:#4A6080;margin-top:4px" id="ia-capital-sub">în runda deschisă</div>
         </div>
         <div class="kpi-card kpi-green">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;margin-bottom:8px">Acțiuni distribuite</div>
-          <div style="font-size:26px;font-weight:800;color:#4ADE80" id="ia-actiuni-dist">—</div>
-          <div style="font-size:10.5px;color:#4A6080;margin-top:4px"><span id="ia-pct-dist">0</span>% din 10M emise</div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;margin-bottom:8px">Acțiuni aprobate</div>
+          <div style="font-size:24px;font-weight:800;color:#E2E8F0" id="ia-actiuni-dist">—</div>
+          <div style="font-size:10.5px;color:#4A6080;margin-top:4px" id="ia-actiuni-sub">din acțiunile noi ale rundei</div>
         </div>
-        <div class="kpi-card" style="background:#1A2433;border:1px solid #2D3F55">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#5A6B7D;margin-bottom:8px">Pool dividende YTD</div>
-          <div style="font-size:26px;font-weight:800;color:#A78BFA" id="ia-div-pool">—</div>
-          <div style="font-size:10.5px;color:#4A6080;margin-top:4px">EUR · din profit net</div>
+      </div>
+
+      <!-- Pasul 11-J: rundele de finanțare (decizia LM C2), api/admin/runde-finantare.js -->
+      <div class="sa-card" style="margin-bottom:18px" id="inv-runde-card">
+        <div class="sa-card-hdr">
+          <div style="font-weight:700;color:#1A2332;font-size:13.5px">🚀 Runde de finanțare</div>
+          <button class="btn-p" style="font-size:11px" onclick="formularRunda(null)">+ Rundă nouă</button>
         </div>
+        <div class="sa-card-body" style="padding:0;overflow:auto">
+          <table class="sa-table">
+            <thead><tr><th>Rundă</th><th>Stare</th><th>Țintă</th><th>Preț / acțiune</th><th>Procent oferit</th><th>Aprobat</th><th>Public</th><th style="text-align:center">Acțiuni</th></tr></thead>
+            <tbody id="inv-runde-tbody"><tr><td colspan="8" style="text-align:center;color:#4A6080;padding:20px">Se încarcă...</td></tr></tbody>
+          </table>
+        </div>
+        <div id="inv-runda-form" hidden style="padding:16px;border-top:1px solid #EEF2F7"></div>
+        <div style="padding:10px 14px;font-size:11px;color:#4A6080;border-top:1px solid #EEF2F7">Cifrele rundei le introduci aici; post-money, prețul pe acțiune, procentul oferit și acțiunile noi se calculează. Cel mult o rundă deschisă. Fiecare schimbare se înregistrează în jurnalul de audit.</div>
       </div>
 
       <!-- Pasul 11-L: verificarea manuală a identității (api/admin/investitori-kyc.js).
@@ -2724,180 +2735,57 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
         <div style="padding:10px 14px;font-size:11px;color:#4A6080;border-top:1px solid #EEF2F7">Subscrierile vin din conturi cu rolul de investitor. Aprobarea cere verificarea identității aprobată (KYC); respingerea e posibilă oricând.</div>
       </div>
 
-      <!-- Grid 2 col: Tabel investitori + Runda status -->
-      <div style="display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-bottom:18px">
-
-        <!-- Tabel investitori -->
+      <!-- Grid 2 col: Tabel investitori + Runda deschisă -->
+      <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:18px;margin-bottom:18px" class="inv-admin-grid">
         <div class="sa-card">
           <div class="sa-card-hdr">
-            <div style="font-weight:700;color:#1A2332;font-size:13.5px">👥 Investitori activi</div>
-            <div style="display:flex;gap:6px">
+            <div style="font-weight:700;color:#1A2332;font-size:13.5px">👥 Investitori</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
               <input id="inv-search" placeholder="Caută email..." oninput="filterInvestitoriTable(this.value)"
-                style="padding:5px 10px;border:1px solid #D5DFE8;border-radius:8px;font-size:11.5px;font-family:inherit;outline:none;width:160px">
+                style="background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:6px 10px;color:#E2E8F0;font-size:12px;font-family:inherit">
               <select id="inv-filter-kyc" onchange="filterInvestitoriTable(document.getElementById('inv-search').value)"
-                style="padding:5px 8px;border:1px solid #D5DFE8;border-radius:8px;font-size:11.5px;font-family:inherit;outline:none">
+                style="background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:6px 10px;color:#E2E8F0;font-size:12px;font-family:inherit">
                 <option value="">Toate KYC</option>
-                <option value="pending">Pending</option>
+                <option value="ciorna">Ciornă</option>
                 <option value="in_verificare">În verificare</option>
                 <option value="aprobat">Aprobat</option>
                 <option value="respins">Respins</option>
               </select>
             </div>
           </div>
-          <div class="sa-card-body" style="padding:0;max-height:420px;overflow-y:auto">
+          <div class="sa-card-body" style="padding:0;overflow:auto">
             <table class="sa-table">
-              <thead><tr>
-                <th>Investitor</th>
-                <th>Acțiuni</th>
-                <th>% Comp.</th>
-                <th>Capital (EUR)</th>
-                <th>ROI</th>
-                <th>KYC</th>
-                <th style="text-align:center">Acțiuni</th>
-              </tr></thead>
-              <tbody id="inv-admin-tbody">
-                <tr><td colspan="7" style="text-align:center;color:#4A6080;padding:24px">
-                  <span class="kpi-skeleton">Se încarcă...</span>
-                </td></tr>
-              </tbody>
+              <thead><tr><th>Investitor</th><th>Acțiuni aprobate</th><th>% companie</th><th>Investit (aprobat)</th><th>În așteptare</th><th>KYC</th></tr></thead>
+              <tbody id="inv-admin-tbody"><tr><td colspan="6"><span class="kpi-skeleton">Se încarcă...</span></td></tr></tbody>
             </table>
           </div>
-          <div style="padding:10px 14px;font-size:11px;color:#4A6080;border-top:1px solid #EEF2F7" id="inv-admin-count">
-            — investitori
-          </div>
+          <div style="padding:10px 14px;font-size:11px;color:#4A6080;border-top:1px solid #EEF2F7" id="inv-admin-count">— investitori</div>
         </div>
-
-        <!-- Runda status + acțiuni disponibile -->
-        <div style="display:flex;flex-direction:column;gap:14px">
-
-          <!-- Runda Pre-Seed -->
+        <div style="display:flex;flex-direction:column;gap:18px">
           <div class="sa-card">
             <div class="sa-card-hdr">
-              <div style="font-weight:700;color:#1A2332;font-size:13.5px">🚀 Rundă Pre-Seed 2026</div>
-              <span class="chip chip-orange" id="ia-runda-status">Deschisă</span>
+              <div style="font-weight:700;color:#1A2332;font-size:13.5px" id="ia-runda-titlu">Runda deschisă</div>
+              <span class="chip" id="ia-runda-status">—</span>
             </div>
-            <div class="sa-card-body" style="display:flex;flex-direction:column;gap:8px;font-size:12px">
-              <div style="display:flex;justify-content:space-between;padding:7px 10px;background:#192433;border-radius:8px">
-                <span style="color:#4A6080">Target rundă</span>
-                <strong style="color:#E2E8F0">500.000 EUR</strong>
-              </div>
-              <div style="display:flex;justify-content:space-between;padding:7px 10px;background:#192433;border-radius:8px">
-                <span style="color:#4A6080">Strâns până acum</span>
-                <strong style="color:#4ADE80" id="ia-runda-strans">— EUR</strong>
-              </div>
-              <div style="display:flex;justify-content:space-between;padding:7px 10px;background:#192433;border-radius:8px">
-                <span style="color:#4A6080">Preț acțiune</span>
-                <strong style="color:#FF8C00">0.05 EUR</strong>
-              </div>
-              <div style="display:flex;justify-content:space-between;padding:7px 10px;background:#192433;border-radius:8px">
-                <span style="color:#4A6080">Acțiuni disponibile</span>
-                <strong style="color:#7AB3E0" id="ia-actiuni-disponibile">—</strong>
-              </div>
-              <!-- Progress bar -->
-              <div style="margin-top:4px">
-                <div style="display:flex;justify-content:space-between;font-size:10px;color:#4A6080;margin-bottom:5px">
-                  <span>Completare rundă</span>
-                  <span id="ia-runda-pct-label">0%</span>
-                </div>
-                <div style="height:8px;background:#2D3F55;border-radius:99px;overflow:hidden">
-                  <div id="ia-runda-progress" style="height:100%;background:linear-gradient(90deg,#FF8C00,#0E9E99);border-radius:99px;transition:width .8s;width:0%"></div>
-                </div>
-              </div>
-            </div>
+            <div class="sa-card-body" id="ia-runda-corp" style="font-size:12px;color:#8BA3C0">Se încarcă...</div>
           </div>
-
-          <!-- KYC rapid review -->
-          <div class="sa-card" style="flex:1">
+          <div class="sa-card">
             <div class="sa-card-hdr">
-              <div style="font-weight:700;color:#1A2332;font-size:13.5px">⏳ KYC Pending</div>
+              <div style="font-weight:700;color:#1A2332;font-size:13.5px">⏳ KYC în verificare</div>
               <button class="btn-s" style="font-size:10px;padding:4px 8px" onclick="loadInvestitoriAdmin()">Refresh</button>
             </div>
-            <div class="sa-card-body" style="padding:0;max-height:240px;overflow-y:auto" id="inv-kyc-pending-list">
-              <div style="padding:16px;text-align:center;color:#4A6080;font-size:12px">Se încarcă...</div>
-            </div>
+            <div class="sa-card-body" style="padding:0" id="inv-kyc-pending-list"><div style="padding:16px;color:#4A6080;font-size:12px">Se încarcă...</div></div>
           </div>
-
-        </div>
-      </div>
-
-      <!-- Distribuții + Profit net -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
-
-        <!-- Pool dividende breakdown -->
-        <div class="sa-card">
-          <div class="sa-card-hdr">
-            <div style="font-weight:700;color:#1A2332;font-size:13.5px">💰 Pool Dividende YTD</div>
-            <span class="chip chip-green">Din Accountancy</span>
-          </div>
-          <div class="sa-card-body" style="font-size:12.5px;display:flex;flex-direction:column;gap:8px">
-            <div style="display:flex;justify-content:space-between;padding:9px 12px;background:#192433;border-radius:9px">
-              <span style="color:#4A6080">Comisioane platform YTD</span>
-              <strong style="color:#E2E8F0" id="ia-comisioane-ytd">— Lei</strong>
+          <div class="sa-card">
+            <div class="sa-card-hdr"><div style="font-weight:700;color:#1A2332;font-size:13.5px">⚡ Acțiuni rapide</div></div>
+            <div class="sa-card-body" style="display:flex;flex-direction:column;gap:8px">
+              <button class="btn-s" style="justify-content:flex-start" onclick="window.open('mydarrin-investitori.html','_blank')">🌍 Pagina publică investitori</button>
+              <button class="btn-s" style="justify-content:flex-start" onclick="exportInvestitoriCSV()">📥 Export CSV investitori</button>
             </div>
-            <div style="display:flex;justify-content:space-between;padding:9px 12px;background:#192433;border-radius:9px">
-              <span style="color:#4A6080">Profit net estimat (−30% costuri)</span>
-              <strong style="color:#4ADE80" id="ia-profit-net">—</strong>
-            </div>
-            <div style="display:flex;justify-content:space-between;padding:9px 12px;background:#192433;border-radius:9px">
-              <span style="color:#4A6080">% acțiuni distribuite</span>
-              <strong style="color:#FF8C00" id="ia-pct-dist-2">—%</strong>
-            </div>
-            <div style="display:flex;justify-content:space-between;padding:10px 12px;background:rgba(167,139,250,.1);border-radius:9px;border:1px solid rgba(167,139,250,.2)">
-              <span style="color:#4A6080;font-weight:700">Pool dividende investitori</span>
-              <strong style="color:#A78BFA;font-size:14px" id="ia-div-pool-2">—</strong>
-            </div>
-            <div style="font-size:10.5px;color:#4A6080;text-align:center;padding-top:4px">
-              Distribuție planificată: Q4 2026 · Impozit reținut la sursă: 8%
-            </div>
-          </div>
-        </div>
-
-        <!-- Acțiuni rapide -->
-        <div class="sa-card">
-          <div class="sa-card-hdr">
-            <div style="font-weight:700;color:#1A2332;font-size:13.5px">⚡ Acțiuni rapide</div>
-          </div>
-          <div class="sa-card-body" style="display:flex;flex-direction:column;gap:8px">
-            <button onclick="showModalAlocaPortofoliu()"
-              style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:11px;border:1.5px solid #2D3F55;background:#1E2A3B;cursor:pointer;font-family:inherit;text-align:left;transition:all .18s;width:100%"
-              onmouseover="this.style.borderColor='#FF8C00'" onmouseout="this.style.borderColor='#2D3F55'">
-              <span style="font-size:18px">📋</span>
-              <div>
-                <div style="font-size:12.5px;font-weight:700;color:#E2E8F0">Alocă portofoliu nou</div>
-                <div style="font-size:10.5px;color:#4A6080">Atribuie acțiuni unui investitor</div>
-              </div>
-            </button>
-            <button onclick="showPanel('accountancy')"
-              style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:11px;border:1.5px solid #2D3F55;background:#1E2A3B;cursor:pointer;font-family:inherit;text-align:left;transition:all .18s;width:100%"
-              onmouseover="this.style.borderColor='#0E9E99'" onmouseout="this.style.borderColor='#2D3F55'">
-              <span style="font-size:18px">💰</span>
-              <div>
-                <div style="font-size:12.5px;font-weight:700;color:#E2E8F0">Accountancy → Profit net</div>
-                <div style="font-size:10.5px;color:#4A6080">Sursa pool dividende</div>
-              </div>
-            </button>
-            <button onclick="window.open('mydarrin-investitori.html','_blank')"
-              style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:11px;border:1.5px solid #2D3F55;background:#1E2A3B;cursor:pointer;font-family:inherit;text-align:left;transition:all .18s;width:100%"
-              onmouseover="this.style.borderColor='#7C3AED'" onmouseout="this.style.borderColor='#2D3F55'">
-              <span style="font-size:18px">🌍</span>
-              <div>
-                <div style="font-size:12.5px;font-weight:700;color:#E2E8F0">Pagina publică investitori</div>
-                <div style="font-size:10.5px;color:#4A6080">Preview KPIs live publice</div>
-              </div>
-            </button>
-            <button onclick="exportInvestitoriCSV()"
-              style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:11px;border:1.5px solid #2D3F55;background:#1E2A3B;cursor:pointer;font-family:inherit;text-align:left;transition:all .18s;width:100%"
-              onmouseover="this.style.borderColor='#4ADE80'" onmouseout="this.style.borderColor='#2D3F55'">
-              <span style="font-size:18px">📥</span>
-              <div>
-                <div style="font-size:12.5px;font-weight:700;color:#E2E8F0">Export CSV investitori</div>
-                <div style="font-size:10.5px;color:#4A6080">Portofolii + KYC status</div>
-              </div>
-            </button>
           </div>
         </div>
       </div>
-
+      <style>@media(max-width:1100px){.inv-admin-grid{grid-template-columns:1fr!important}}</style>
     </div>
     <!-- /panel-investitori -->
 
@@ -4401,65 +4289,70 @@ function fmtA(n, dec = 0) {
   return Number(n).toFixed(dec);
 }
 
-// ── Load principal ────────────────────────────────────────────
+// ── Load principal (pasul 11-J: api/admin/investitori-dashboard, calcul pe server) ──
 async function loadInvestitoriAdmin() {
   const tbody = document.getElementById('inv-admin-tbody');
-  if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#4A6080;padding:20px">Se încarcă din Supabase...</td></tr>';
-
+  if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#4A6080;padding:20px">Se încarcă...</td></tr>';
+  loadKycInvestitori();
+  loadRunde();
   try {
-    const data = await callRpcAdmin('admin_get_investitori_dashboard');
-
-    if (data?.error) {
-      if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#F87171;padding:20px">⚠ ${escapeHTML(data.error)}</td></tr>`;
-      return;
-    }
-
+    const data = await kycApi('/api/admin/investitori-dashboard');
     INV_ADMIN_DATA = data;
-    renderInvKpis(data.kpis || {});
+    renderInvKpis(data.kpis || {}, data.runda);
+    renderRundaDeschisa(data.runda);
     renderInvTable(data.investitori || []);
     renderKycPendingList(data.investitori || []);
-    loadKycInvestitori();
-
   } catch (err) {
     console.error('[InvAdmin]', err);
-    if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#F87171;padding:20px">Eroare: ${escapeHTML(err.message)}</td></tr>`;
+    if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#F87171;padding:20px">Eroare: ${escapeHTML(err.message)}</td></tr>`;
   }
 }
 
+function fmtSuma(v, moneda) {
+  if (v == null || isNaN(v)) return '—';
+  return Number(v).toLocaleString('ro-RO', { maximumFractionDigits: 2 }) + (moneda ? ' ' + moneda : '');
+}
+
 // ── Render KPIs ───────────────────────────────────────────────
-function renderInvKpis(k) {
-  const s = (id, v) => { const el = document.getElementById(id); if (el) el.innerHTML = v; };
-
-  s('ia-total-inv',    k.total_investitori || 0);
-  s('ia-kyc-pending',  k.kyc_pending || 0);
-  s('ia-capital',      `€${fmtA(k.capital_strans_eur, 0)}`);
-  s('ia-actiuni-dist', fmtA(k.actiuni_distribuite));
-  s('ia-pct-dist',     k.pct_distribuit || 0);
-  s('ia-pct-dist-2',   (k.pct_distribuit || 0) + '%');
-  s('ia-div-pool',     `€${fmtA(k.dividend_pool_ytd, 2)}`);
-  s('ia-div-pool-2',   `€${fmtA(k.dividend_pool_ytd, 2)}`);
-  s('ia-runda-strans', `${fmtA(k.capital_strans_eur)} EUR`);
-  s('ia-actiuni-disponibile', fmtA(k.actiuni_disponibile));
-  s('ia-profit-net',   `€${fmtA(k.profit_net_ytd, 2)}`);
-  s('ia-comisioane-ytd', k.profit_net_ytd > 0 ? `€${fmtA(k.profit_net_ytd / 0.70, 2)}` : '—');
-
-  // Progress bar rundă — FIX (26 august 2026): folosea greșit valoarea
-  // companiei (valoare_companie_target_eur) ca numitor pentru progresul
-  // rundei — la 100% din rundă strânsă (500.000 EUR), bara ar fi arătat
-  // doar 12,5% (500k/4M), nu 100%. Numitorul corect e volumul rundei.
-  const pct = Math.min(((k.capital_strans_eur || 0) / (k.volum_runda_eur || 500000)) * 100, 100);
-  const bar = document.getElementById('ia-runda-progress');
-  const lbl = document.getElementById('ia-runda-pct-label');
-  if (bar) bar.style.width = pct.toFixed(1) + '%';
-  if (lbl) lbl.textContent = pct.toFixed(1) + '%';
-
-  // Badge nav KYC
+function renderInvKpis(k, runda) {
+  const s = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  s('ia-total-inv', k.total_investitori || 0);
+  s('ia-kyc-pending', k.kyc_in_verificare || 0);
+  s('ia-capital', runda ? fmtSuma(k.capital_aprobat, runda.moneda) : '—');
+  s('ia-capital-sub', runda ? 'în ' + runda.denumire_ro : 'nicio rundă deschisă');
+  s('ia-actiuni-dist', runda ? fmtSuma(k.actiuni_aprobate) : '—');
+  s('ia-actiuni-sub', runda && runda.actiuni_noi != null ? 'din ' + fmtSuma(runda.actiuni_noi) + ' acțiuni noi ale rundei' : 'nicio rundă deschisă');
   const navBadge = document.getElementById('inv-kyc-badge-nav');
   if (navBadge) {
-    const pending = k.kyc_pending || 0;
+    const pending = k.kyc_in_verificare || 0;
     navBadge.textContent = pending;
     navBadge.style.display = pending > 0 ? 'inline-block' : 'none';
   }
+}
+
+// ── Runda deschisă (din runde_finantare) ──────────────────────
+function renderRundaDeschisa(r) {
+  const corp = document.getElementById('ia-runda-corp');
+  const titlu = document.getElementById('ia-runda-titlu');
+  const st = document.getElementById('ia-runda-status');
+  if (!corp) return;
+  if (!r) {
+    titlu.textContent = 'Runda deschisă';
+    st.textContent = 'Nicio rundă'; st.className = 'chip';
+    corp.innerHTML = '<div style="padding:4px 0">Nu e nicio rundă deschisă. Creează sau deschide una din „Runde de finanțare”.</div>';
+    return;
+  }
+  titlu.textContent = '🚀 ' + r.denumire_ro;
+  st.textContent = 'Deschisă'; st.className = 'chip chip-orange';
+  const rand = (et, v) => `<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid #EEF2F7"><span>${et}</span><strong style="color:#E2E8F0">${v}</strong></div>`;
+  corp.innerHTML =
+    rand('Țintă', fmtSuma(r.suma_tinta, r.moneda)) +
+    rand('Strâns (aprobat)', fmtSuma(r.stranse, r.moneda)) +
+    rand('Preț / acțiune', fmtSuma(r.pret_actiune, r.moneda)) +
+    rand('Procent oferit', fmtSuma(r.equity_oferit_pct) + '%') +
+    rand('Acțiuni disponibile', fmtSuma(r.actiuni_disponibile)) +
+    `<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span>Completare rundă</span><span>${r.pct_strans}%</span></div>` +
+    `<div style="height:6px;border-radius:99px;background:#2D3F55;overflow:hidden"><div style="height:100%;width:${Math.min(100, r.pct_strans)}%;background:#FF8C00"></div></div></div>`;
 }
 
 // ── Render tabel investitori ──────────────────────────────────
@@ -4467,52 +4360,25 @@ function renderInvTable(investitori, filter = '', kycFilter = '') {
   const tbody   = document.getElementById('inv-admin-tbody');
   const counter = document.getElementById('inv-admin-count');
   if (!tbody) return;
-
   let rows = investitori;
   if (filter) {
     const q = filter.toLowerCase();
     rows = rows.filter(r => (r.email || '').toLowerCase().includes(q));
   }
-  if (kycFilter) {
-    rows = rows.filter(r => r.kyc_status === kycFilter);
-  }
-
+  if (kycFilter) rows = rows.filter(r => r.kyc_status === kycFilter);
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#4A6080;padding:20px">Niciun investitor găsit</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#4A6080;padding:20px">Niciun investitor găsit</td></tr>';
     if (counter) counter.textContent = '0 investitori';
     return;
   }
-
-  tbody.innerHTML = rows.map(r => {
-    const roi     = parseFloat(r.roi_estimat || 0);
-    const roiClr  = roi >= 0 ? '#4ADE80' : '#F87171';
-    const kycChip = KYC_CHIP[r.kyc_status] || KYC_CHIP.pending;
-    const email   = escapeHTML(r.email || '—');
-    const emailShort = email.length > 22 ? email.slice(0,22) + '…' : email;
-
-    return `<tr>
-      <td>
-        <div style="font-size:12px;color:#E2E8F0;font-weight:600">${emailShort}</div>
-        <div style="font-size:10px;color:#4A6080">${r.are_portofoliu ? '📋 Cu portofoliu' : '⚪ Fără portofoliu'}</div>
-      </td>
-      <td style="font-weight:700;color:#FF8C00">${fmtA(r.actiuni)}</td>
-      <td style="color:#7AB3E0">${r.pct_companie || 0}%</td>
-      <td style="color:#E2E8F0">€${fmtA(r.valoare_investita)}</td>
-      <td style="font-weight:700;color:${roiClr}">${roi >= 0 ? '+' : ''}${roi.toFixed(1)}%</td>
-      <td>${kycChip}</td>
-      <td style="text-align:center">
-        <div style="display:flex;gap:4px;justify-content:center">
-          <button onclick="showModalEditPortofoliu('${r.user_id}','${email}',${r.actiuni},${r.valoare_investita})"
-            style="padding:4px 8px;border-radius:6px;border:1px solid #2D3F55;background:#1E2A3B;color:#8BA3C0;font-size:10px;cursor:pointer;font-family:inherit"
-            title="Editează portofoliu">✏️</button>
-          <button onclick="showModalKyc('${r.user_id}','${email}','${r.kyc_status}')"
-            style="padding:4px 8px;border-radius:6px;border:1px solid #2D3F55;background:#1E2A3B;color:#8BA3C0;font-size:10px;cursor:pointer;font-family:inherit"
-            title="Administrează KYC">🔍</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-
+  tbody.innerHTML = rows.map(r => `<tr>
+      <td><div style="font-size:12px;color:#E2E8F0;font-weight:600">${escapeHTML(r.email || '—')}</div><div style="font-size:10px;color:#4A6080">${r.subscrieri} subscrieri</div></td>
+      <td style="font-weight:700;color:#FF8C00">${fmtSuma(r.actiuni)}</td>
+      <td style="color:#7AB3E0">${fmtSuma(r.pct_companie)}%</td>
+      <td style="color:#E2E8F0">${fmtSuma(r.valoare_investita)}</td>
+      <td style="color:#8BA3C0">${fmtSuma(r.in_asteptare)}</td>
+      <td>${r.kyc_status ? (KYC_CHIP[r.kyc_status] || escapeHTML(r.kyc_status)) : '<span style="font-size:10px;color:#4A6080">fără dosar</span>'}</td>
+    </tr>`).join('');
   if (counter) counter.textContent = `${rows.length} investitor${rows.length !== 1 ? 'i' : ''}`;
 }
 
@@ -4522,30 +4388,19 @@ function filterInvestitoriTable(searchVal) {
   renderInvTable(INV_ADMIN_DATA.investitori || [], searchVal, kycFilter);
 }
 
-// ── Render KYC Pending list ───────────────────────────────────
+// ── KYC în verificare: decizia se ia în cardul KYC, cu documentele ──
 function renderKycPendingList(investitori) {
   const container = document.getElementById('inv-kyc-pending-list');
   if (!container) return;
-
-  const pending = investitori.filter(r => r.kyc_status === 'pending' || r.kyc_status === 'in_verificare');
-
+  const pending = investitori.filter(r => r.kyc_status === 'in_verificare');
   if (!pending.length) {
-    container.innerHTML = '<div style="padding:16px;text-align:center;color:#4A6080;font-size:12px">✅ Niciun KYC în așteptare</div>';
+    container.innerHTML = '<div style="padding:16px;text-align:center;color:#4A6080;font-size:12px">✅ Niciun dosar în verificare</div>';
     return;
   }
-
   container.innerHTML = pending.map(r => `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #EEF2F7">
-      <div>
-        <div style="font-size:11.5px;color:#1A2332;font-weight:600">${escapeHTML((r.email||'').slice(0,24))}</div>
-        <div style="font-size:10px;color:#4A6080">${KYC_CHIP[r.kyc_status] || ''}</div>
-      </div>
-      <div style="display:flex;gap:4px">
-        <button onclick="approveKyc('${r.user_id}')"
-          style="padding:4px 10px;border-radius:6px;border:none;background:#1A7A3A;color:#fff;font-size:10px;cursor:pointer;font-family:inherit">✓ Aprobă</button>
-        <button onclick="rejectKyc('${r.user_id}')"
-          style="padding:4px 8px;border-radius:6px;border:none;background:#C0392B;color:#fff;font-size:10px;cursor:pointer;font-family:inherit">✗</button>
-      </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px solid #EEF2F7">
+      <div style="font-size:11.5px;color:#E2E8F0;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis">${escapeHTML(r.email || '')}</div>
+      <button class="btn-s" style="font-size:10px;padding:4px 10px" onclick="document.getElementById('inv-kyc-card').scrollIntoView({behavior:'smooth'})">Verifică</button>
     </div>`).join('');
 }
 
@@ -4731,200 +4586,163 @@ async function decideSubscriere(id, actiune) {
   } catch (e) { showSAToast('⚠ Eroare: ' + e.message); }
 }
 
-// ── KYC actions ───────────────────────────────────────────────
-async function approveKyc(userId) {
-  if (!confirm('Aprobă KYC pentru acest investitor?')) return;
-  try {
-    const r = await callRpcAdmin('admin_update_kyc_status', {
-      p_user_id: userId, p_status: 'aprobat', p_scor_risc: 5
-    });
-    showSAToast(r.ok ? '✅ KYC aprobat' : '⚠ ' + (r.error || 'Eroare'));
-    loadInvestitoriAdmin();
-  } catch(e) { showSAToast('⚠ Eroare: ' + e.message); }
-}
+// Pasul 11-J: approveKyc / rejectKyc / showModalKyc (admin_update_kyc_status:
+// fără audit, fără email) și alocarea manuală de portofoliu (admin_set_portofoliu:
+// 10.000.000 de acțiuni scrise în funcție) au fost scoase. KYC-ul se decide în
+// cardul „Cereri de verificare a identității”; acțiunile vin din subscrierile
+// aprobate, în runda lor.
 
-async function rejectKyc(userId) {
-  if (!confirm('Respinge KYC pentru acest investitor?')) return;
-  try {
-    const r = await callRpcAdmin('admin_update_kyc_status', {
-      p_user_id: userId, p_status: 'respins'
-    });
-    showSAToast(r.ok ? '❌ KYC respins' : '⚠ ' + (r.error || 'Eroare'));
-    loadInvestitoriAdmin();
-  } catch(e) { showSAToast('⚠ Eroare: ' + e.message); }
-}
+// ── Pasul 11-J: rundele de finanțare (api/admin/runde-finantare) ──
+let RUNDE = [];
+const STARE_RUNDA = {
+  planificata: '<span class="chip" style="font-size:10px">Planificată</span>',
+  deschisa: '<span class="chip chip-orange" style="font-size:10px">Deschisă</span>',
+  inchisa: '<span class="chip" style="font-size:10px;background:#2D3F55;color:#8BA3C0">Închisă</span>',
+};
+const INSTRUMENTE_RUNDA = [['actiuni', 'Acțiuni'], ['safe', 'SAFE'], ['nota_convertibila', 'Notă convertibilă']];
 
-// ── Modal KYC detalii ─────────────────────────────────────────
-function showModalKyc(userId, email, currentStatus) {
-  const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px';
-  ov.innerHTML = `
-    <div style="background:#fff;border-radius:20px;max-width:400px;width:100%;padding:28px;box-shadow:0 24px 80px rgba(0,0,0,.4)">
-      <h3 style="font-size:16px;font-weight:800;color:#1A2332;margin-bottom:4px">🔍 Administrare KYC</h3>
-      <p style="font-size:12px;color:#5A6B7D;margin-bottom:18px">${escapeHTML(email)}</p>
-      <div style="margin-bottom:14px">
-        <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:6px">Status KYC</label>
-        <select id="kyc-new-status" style="width:100%;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none">
-          <option value="pending" ${currentStatus==='pending'?'selected':''}>⚪ Pending</option>
-          <option value="in_verificare" ${currentStatus==='in_verificare'?'selected':''}>⏳ În verificare</option>
-          <option value="aprobat" ${currentStatus==='aprobat'?'selected':''}>✅ Aprobat</option>
-          <option value="respins" ${currentStatus==='respins'?'selected':''}>❌ Respins</option>
-        </select>
-      </div>
-      <div style="margin-bottom:18px">
-        <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:6px">Scor risc (1–10)</label>
-        <input type="number" id="kyc-scor" min="1" max="10" value="5"
-          style="width:100%;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none">
-      </div>
-      <div style="display:flex;gap:8px">
-        <button onclick="saveKycAdmin('${userId}',this)"
-          style="flex:1;padding:11px;border-radius:11px;border:none;background:#003366;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
-          Salvează
-        </button>
-        <button onclick="this.closest('[style*=fixed]').remove()"
-          style="padding:11px 16px;border-radius:11px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">
-          Anulează
-        </button>
-      </div>
-    </div>`;
-  document.body.appendChild(ov);
-}
-
-async function saveKycAdmin(userId, btn) {
-  const status = document.getElementById('kyc-new-status').value;
-  const scor   = parseInt(document.getElementById('kyc-scor').value) || null;
+async function loadRunde() {
+  const tbody = document.getElementById('inv-runde-tbody');
   try {
-    btn.disabled = true; btn.textContent = 'Se salvează...';
-    const r = await callRpcAdmin('admin_update_kyc_status', {
-      p_user_id: userId, p_status: status, p_scor_risc: scor
-    });
-    btn.closest('[style*=fixed]').remove();
-    showSAToast(r.ok ? '✅ KYC actualizat' : '⚠ ' + (r.error||'Eroare'));
-    loadInvestitoriAdmin();
-  } catch(e) {
-    btn.disabled = false; btn.textContent = 'Salvează';
-    showSAToast('⚠ ' + e.message);
+    const j = await kycApi('/api/admin/runde-finantare');
+    RUNDE = j.runde || [];
+    if (j.migrare_lipsa) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#F87171;padding:20px">Tabela runde_finantare lipsește: aplică migrarea 2026-10-21_runde_finantare.sql.</td></tr>';
+      return;
+    }
+    if (!RUNDE.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#4A6080;padding:20px">Nicio rundă. Adaugă runda Seed cu „+ Rundă nouă”.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = RUNDE.map((r, i) => {
+      const c = r.calcul || {};
+      const ap = (r.stranse && r.stranse.aprobate) || { suma: 0 };
+      const actiuni = r.stare === 'deschisa'
+        ? `<button class="btn-s" style="font-size:10px;padding:3px 8px" onclick="schimbaStareRunda(${i},'inchide',this)">Închide</button>`
+        : r.stare === 'planificata' ? `<button class="btn-p" style="font-size:10px;padding:3px 8px" onclick="schimbaStareRunda(${i},'deschide',this)">Deschide</button>` : '';
+      return `<tr>
+        <td><div style="font-size:12px;color:#E2E8F0;font-weight:600">${escapeHTML(r.denumire_ro)}</div><div style="font-size:10px;color:#4A6080">${escapeHTML(r.cod)} · ${escapeHTML(r.moneda)}</div></td>
+        <td>${STARE_RUNDA[r.stare] || escapeHTML(r.stare)}</td>
+        <td style="color:#E2E8F0">${fmtSuma(r.suma_tinta, r.moneda)}</td>
+        <td style="color:#E2E8F0">${fmtSuma(c.pret_actiune, r.moneda)}</td>
+        <td style="color:#7AB3E0">${fmtSuma(c.equity_oferit_pct)}%</td>
+        <td style="color:#4ADE80">${fmtSuma(ap.suma, r.moneda)}</td>
+        <td style="color:#8BA3C0">${r.vizibila_public ? 'da' : 'nu'}</td>
+        <td style="text-align:center"><div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap"><button class="btn-s" style="font-size:10px;padding:3px 8px" onclick="formularRunda(${i})">Editează</button>${actiuni}</div></td>
+      </tr>`;
+    }).join('');
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#F87171;padding:20px">${escapeHTML(e.message)}</td></tr>`;
   }
 }
 
-// ── Modal Alocă portofoliu nou ────────────────────────────────
-function showModalAlocaPortofoliu() {
-  _showPortofoliuModal('', '', 0, 0, false);
+async function schimbaStareRunda(i, actiune, btn) {
+  const r = RUNDE[i];
+  if (!r) return;
+  if (actiune === 'deschide') {
+    const alta = RUNDE.find(x => x.stare === 'deschisa' && x.id !== r.id);
+    if (alta) { alert(`Atenție: runda „${alta.denumire_ro}” e deja deschisă. Închide-o înainte să deschizi „${r.denumire_ro}”.`); return; }
+    if (!confirm(`Deschizi runda „${r.denumire_ro}”? Dacă e vizibilă public, apare pe pagina Investitori.`)) return;
+  } else if (!confirm(`Închizi runda „${r.denumire_ro}”? Nu se mai primesc subscrieri în ea.`)) return;
+  btn.disabled = true;
+  try {
+    await kycApi('/api/admin/runde-finantare', { metoda: 'POST', corp: { actiune, id: r.id } });
+    showSAToast(actiune === 'deschide' ? '✅ Runda e deschisă' : '✅ Runda e închisă');
+    loadInvestitoriAdmin();
+  } catch (e) { showSAToast('⚠ ' + e.message); btn.disabled = false; }
 }
 
-function showModalEditPortofoliu(userId, email, actiuni, valoare) {
-  _showPortofoliuModal(userId, email, actiuni, valoare, true);
+function formularRunda(i) {
+  const r = i == null ? null : RUNDE[i];
+  const box = document.getElementById('inv-runda-form');
+  const v = (k, d) => escapeHTML(r && r[k] != null ? r[k] : (d == null ? '' : d));
+  const camp = (id, et, val, tip, extra) => `<label style="display:block;font-size:11px;font-weight:700;color:#5A6B7D">${et}<input id="rf-${id}" type="${tip || 'text'}" value="${val}" ${extra || ''} style="display:block;width:100%;box-sizing:border-box;margin-top:4px;background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:8px 10px;color:#E2E8F0;font-size:13px;font-family:inherit"></label>`;
+  const instr = (r && r.instrumente) || ['actiuni'];
+  box.hidden = false;
+  box.innerHTML = `
+    <div style="font-weight:700;color:#E2E8F0;margin-bottom:12px">${r ? 'Editează runda „' + escapeHTML(r.denumire_ro) + '”' : 'Rundă nouă'}</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+      ${camp('cod', 'Cod (ex. seed, series_a)', v('cod'), 'text', 'maxlength="40"')}
+      ${camp('denumire_ro', 'Denumire (RO)', v('denumire_ro'))}
+      ${camp('denumire_en', 'Denumire (EN)', v('denumire_en'))}
+      ${camp('moneda', 'Moneda', v('moneda', 'EUR'), 'text', 'maxlength="3"')}
+      ${camp('evaluare_pre_money', 'Evaluare pre-money', v('evaluare_pre_money'), 'number', 'min="0" step="any"')}
+      ${camp('suma_tinta', 'Suma țintă', v('suma_tinta'), 'number', 'min="0" step="any"')}
+      ${camp('actiuni_existente', 'Acțiuni existente (înainte de rundă)', v('actiuni_existente'), 'number', 'min="1" step="1"')}
+      ${camp('investitie_minima', 'Investiția minimă', v('investitie_minima'), 'number', 'min="0" step="any"')}
+      ${camp('tickete', 'Tickete sugerate (separate prin virgulă)', escapeHTML(r && r.tickete ? r.tickete.join(', ') : ''))}
+      ${camp('data_start', 'Data de început', v('data_start'), 'date')}
+      ${camp('data_sfarsit', 'Data de sfârșit', v('data_sfarsit'), 'date')}
+      ${camp('lock_up_luni', 'Lock-up (luni, opțional)', v('lock_up_luni'), 'number', 'min="0" step="1"')}
+      ${camp('discount_buyback_pct', 'Discount buy-back % (opțional)', v('discount_buyback_pct'), 'number', 'min="0" max="99.99" step="any"')}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:12px">
+      <label style="display:block;font-size:11px;font-weight:700;color:#5A6B7D">Descriere scurtă (RO)<textarea id="rf-descriere_ro" rows="2" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:8px 10px;color:#E2E8F0;font-family:inherit">${v('descriere_ro')}</textarea></label>
+      <label style="display:block;font-size:11px;font-weight:700;color:#5A6B7D">Descriere scurtă (EN)<textarea id="rf-descriere_en" rows="2" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:8px 10px;color:#E2E8F0;font-family:inherit">${v('descriere_en')}</textarea></label>
+    </div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:#8BA3C0">
+      <span>Instrumente:</span>
+      ${INSTRUMENTE_RUNDA.map(([k, et]) => `<label><input type="checkbox" class="rf-instrument" value="${k}" ${instr.includes(k) ? 'checked' : ''}> ${et}</label>`).join('')}
+      <label><input type="checkbox" id="rf-afiseaza_progres" ${r && r.afiseaza_progres ? 'checked' : ''}> Afișează progresul public</label>
+      <label><input type="checkbox" id="rf-vizibila_public" ${r && r.vizibila_public ? 'checked' : ''}> Vizibilă public</label>
+    </div>
+    <div id="rf-previzualizare" style="margin-top:14px;padding:12px;border-radius:10px;background:#0D1B2A;border:1px solid #2D3F55;font-size:12px;color:#8BA3C0">Completează evaluarea, suma țintă și acțiunile existente ca să vezi valorile calculate.</div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn-p" id="rf-salveaza" onclick="salveazaRunda(this)">Salvează</button>
+      <button class="btn-s" onclick="document.getElementById('inv-runda-form').hidden = true">Anulează</button>
+    </div>
+    <div id="rf-msg"></div>`;
+  box.dataset.id = r ? r.id : '';
+  box.querySelectorAll('input,textarea').forEach(el => el.addEventListener('input', previzualizareRundaProgramata));
+  previzualizareRunda();
+  box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-function _showPortofoliuModal(userId, email, actiuni, valoare, isEdit) {
-  const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px';
-  ov.innerHTML = `
-    <div style="background:#fff;border-radius:20px;max-width:460px;width:100%;padding:28px;box-shadow:0 24px 80px rgba(0,0,0,.4)">
-      <h3 style="font-size:16px;font-weight:800;color:#1A2332;margin-bottom:4px">
-        ${isEdit ? '✏️ Editează portofoliu' : '+ Alocă portofoliu nou'}
-      </h3>
-      <p style="font-size:12px;color:#5A6B7D;margin-bottom:18px">
-        ${isEdit ? escapeHTML(email) : 'Completează datele investitorului'}
-      </p>
-      ${!isEdit ? `
-      <div style="margin-bottom:14px">
-        <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:6px">Email investitor *</label>
-        <input type="email" id="pa-email" placeholder="email@investitor.com"
-          style="width:100%;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none">
-      </div>` : `<input type="hidden" id="pa-user-id" value="${userId}">`}
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
-        <div>
-          <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:6px">Număr acțiuni *</label>
-          <input type="number" id="pa-actiuni" value="${actiuni || ''}" placeholder="ex: 200000" min="1" max="10000000"
-            style="width:100%;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px 12px;font-size:13px;font-family:monospace;outline:none">
-          <div style="font-size:10px;color:#8C9BAD;margin-top:4px">Max 10.000.000 total</div>
-        </div>
-        <div>
-          <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:6px">Valoare investită (EUR) *</label>
-          <input type="number" id="pa-valoare" value="${valoare || ''}" placeholder="ex: 10000" min="0" step="0.01"
-            style="width:100%;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px 12px;font-size:13px;font-family:monospace;outline:none">
-        </div>
-      </div>
-      <div style="margin-bottom:18px">
-        <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:6px">ROI estimat (%) *</label>
-        <input type="number" id="pa-roi" value="0" step="0.1"
-          style="width:100%;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px 12px;font-size:13px;font-family:monospace;outline:none">
-      </div>
-      <!-- Preview calcul -->
-      <div style="background:#F0F4F8;border-radius:10px;padding:12px;font-size:12px;margin-bottom:16px;display:flex;justify-content:space-between">
-        <span style="color:#5A6B7D">% din companie:</span>
-        <strong id="pa-pct-preview" style="color:#003366">—</strong>
-      </div>
-      <div style="display:flex;gap:8px">
-        <button onclick="savePortofoliuAdmin(this,'${isEdit}','${userId}')"
-          style="flex:1;padding:11px;border-radius:11px;border:none;background:#003366;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
-          ${isEdit ? 'Actualizează' : 'Alocă'}
-        </button>
-        <button onclick="this.closest('[style*=fixed]').remove()"
-          style="padding:11px 16px;border-radius:11px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">
-          Anulează
-        </button>
-      </div>
-    </div>`;
+function dateFormularRunda() {
+  const g = id => document.getElementById('rf-' + id);
+  const n = id => { const x = g(id).value.trim(); return x === '' ? null : Number(x); };
+  return {
+    id: document.getElementById('inv-runda-form').dataset.id || undefined,
+    cod: g('cod').value, denumire_ro: g('denumire_ro').value, denumire_en: g('denumire_en').value,
+    descriere_ro: g('descriere_ro').value, descriere_en: g('descriere_en').value,
+    moneda: g('moneda').value, evaluare_pre_money: n('evaluare_pre_money'), suma_tinta: n('suma_tinta'),
+    actiuni_existente: n('actiuni_existente'), investitie_minima: n('investitie_minima'),
+    tickete: g('tickete').value.split(',').map(x => x.trim()).filter(Boolean).map(Number),
+    data_start: g('data_start').value || null, data_sfarsit: g('data_sfarsit').value || null,
+    instrumente: Array.from(document.querySelectorAll('.rf-instrument:checked')).map(x => x.value),
+    lock_up_luni: n('lock_up_luni'), discount_buyback_pct: n('discount_buyback_pct'),
+    afiseaza_progres: g('afiseaza_progres').checked, vizibila_public: g('vizibila_public').checked,
+  };
+}
 
-  document.body.appendChild(ov);
+let _rfTimer = null, _rfCerere = 0;
+function previzualizareRundaProgramata() { clearTimeout(_rfTimer); _rfTimer = setTimeout(previzualizareRunda, 250); }
+async function previzualizareRunda() {
+  const el = document.getElementById('rf-previzualizare');
+  if (!el) return;
+  const d = dateFormularRunda();
+  const nr = ++_rfCerere;
+  try {
+    const j = await kycApi('/api/admin/runde-finantare', { metoda: 'POST', corp: { actiune: 'calcul', runda: d } });
+    if (nr !== _rfCerere) return;
+    const c = j.calcul;
+    if (!c) { el.textContent = 'Completează evaluarea, suma țintă și acțiunile existente ca să vezi valorile calculate.'; return; }
+    const m = (d.moneda || '').toUpperCase();
+    el.innerHTML = `<div style="font-weight:700;color:#E2E8F0;margin-bottom:6px">Valori calculate</div>` +
+      `<div id="rf-calc-post">Post-money: <strong style="color:#E2E8F0">${fmtSuma(c.post_money, m)}</strong></div>` +
+      `<div id="rf-calc-pret">Preț / acțiune: <strong style="color:#E2E8F0">${fmtSuma(c.pret_actiune, m)}</strong></div>` +
+      `<div id="rf-calc-equity">Procent oferit: <strong style="color:#E2E8F0">${fmtSuma(c.equity_oferit_pct)}%</strong></div>` +
+      `<div id="rf-calc-actiuni">Acțiuni noi: <strong style="color:#E2E8F0">${fmtSuma(c.actiuni_noi)}</strong></div>`;
+  } catch (e) { if (nr === _rfCerere) el.textContent = e.message; }
+}
 
-  // Preview calcul % în timp real
-  ['pa-actiuni'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('input', () => {
-      const a = parseInt(document.getElementById('pa-actiuni')?.value) || 0;
-      const pct = (a / 10000000 * 100).toFixed(4);
-      const prev = document.getElementById('pa-pct-preview');
-      if (prev) prev.textContent = a > 0 ? pct + '%' : '—';
-    });
+function salveazaRunda(btn) {
+  const d = dateFormularRunda();
+  MDFeedback.salveaza(btn, document.getElementById('rf-msg'), async () => {
+    await kycApi('/api/admin/runde-finantare', { metoda: 'POST', corp: { actiune: 'salveaza', runda: d } });
+    setTimeout(() => { document.getElementById('inv-runda-form').hidden = true; loadInvestitoriAdmin(); }, 900);
+    return 'Runda a fost salvată.';
   });
-}
-
-async function savePortofoliuAdmin(btn, isEdit, existingUserId) {
-  const actiuni  = parseInt(document.getElementById('pa-actiuni')?.value) || 0;
-  const valoare  = parseFloat(document.getElementById('pa-valoare')?.value) || 0;
-  const roi      = parseFloat(document.getElementById('pa-roi')?.value) || 0;
-
-  if (actiuni <= 0 || valoare <= 0) {
-    showSAToast('⚠ Completează acțiunile și valoarea');
-    return;
-  }
-
-  let userId = existingUserId;
-
-  // Dacă e creare nouă, găsim user după email
-  if (!isEdit || isEdit === 'false') {
-    const email = document.getElementById('pa-email')?.value?.trim();
-    if (!email) { showSAToast('⚠ Email obligatoriu'); return; }
-
-    // Caută user în profiles
-    try {
-      const { data, error } = await window.supabaseClient
-        .from('profiles').select('id').eq('email', email).single();
-      if (error || !data) {
-        showSAToast('⚠ User negăsit cu acest email — trebuie să aibă cont activ');
-        return;
-      }
-      userId = data.id;
-    } catch(e) { showSAToast('⚠ ' + e.message); return; }
-  }
-
-  try {
-    btn.disabled = true; btn.textContent = 'Se salvează...';
-    const r = await callRpcAdmin('admin_set_portofoliu', {
-      p_user_id: userId, p_actiuni: actiuni,
-      p_valoare_investita: valoare, p_roi_estimat: roi
-    });
-    btn.closest('[style*=fixed]').remove();
-    showSAToast(r.ok ? `✅ Portofoliu ${isEdit === 'true' ? 'actualizat' : 'alocat'} — ${r.pct_companie}% companie` : '⚠ ' + (r.error||'Eroare'));
-    loadInvestitoriAdmin();
-  } catch(e) {
-    btn.disabled = false;
-    btn.textContent = isEdit === 'true' ? 'Actualizează' : 'Alocă';
-    showSAToast('⚠ ' + e.message);
-  }
 }
 
 // ── Export CSV ────────────────────────────────────────────────
@@ -4933,10 +4751,9 @@ function exportInvestitoriCSV() {
     showSAToast('⚠ Nu există date de exportat');
     return;
   }
-  const header = 'Email,Actiuni,Pct Companie,Capital EUR,ROI%,KYC Status,Data inregistrare';
+  const header = 'Email,Actiuni aprobate,Pct companie,Investit aprobat,In asteptare,Subscrieri,KYC';
   const rows = INV_ADMIN_DATA.investitori.map(r =>
-    [r.email, r.actiuni, r.pct_companie, r.valoare_investita,
-     r.roi_estimat, r.kyc_status, (r.creat_la||'').slice(0,10)].join(',')
+    [r.email, r.actiuni, r.pct_companie, r.valoare_investita, r.in_asteptare, r.subscrieri, r.kyc_status || ''].join(',')
   );
   const csv = [header, ...rows].join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
