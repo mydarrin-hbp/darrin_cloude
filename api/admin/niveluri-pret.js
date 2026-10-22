@@ -13,6 +13,7 @@
 // POST { action:'sterge_pret', id }
 
 const { requireAuth } = require('../../lib/auth-middleware');
+const { trimiteEroare, camp, formaComuna } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 
@@ -34,14 +35,19 @@ async function handler(req, res, admin) {
 
   if (action === 'creeaza_nivel') {
     const { cheie, nume, descriere, ordine } = req.body;
-    if (!cheie || !nume) return res.status(400).json({ error: 'cheie și nume sunt obligatorii' });
+    if (!cheie || !nume) {
+      const campuri = [];
+      if (!cheie) campuri.push(camp('cheie', 'Completați «Cheie».', 'Please fill in «Key».'));
+      if (!nume) campuri.push(camp('nume', 'Completați «Nume».', 'Please fill in «Name».'));
+      return trimiteEroare(res, 400, 'DATE_INVALIDE', 'Completează cheia și numele noului nivel.', 'Fill in the key and the name of the new level.', campuri);
+    }
     const { data, error } = await supabaseAdmin
       .from('niveluri_pret')
       .insert({ cheie: String(cheie).trim(), nume: nume.trim(), descriere: descriere || null, ordine: Number(ordine) || 0 })
       .select()
       .single();
     if (error) {
-      if (error.code === '23505') return res.status(409).json({ error: `Există deja un nivel cu cheia "${cheie}"` });
+      if (error.code === '23505') return trimiteEroare(res, 409, 'CHEIE_EXISTENTA', `Există deja un nivel cu cheia "${cheie}". Alegeți altă «Cheie».`, `A level with the key "${cheie}" already exists. Choose another «Key».`, [camp('cheie', 'Există deja un nivel cu această cheie.', 'A level with this key already exists.')]);
       return res.status(500).json({ error: error.message });
     }
     await inregistreazaAudit({ admin, req, actiune: 'creare_nivel_pret', entitate: 'niveluri_pret', entitate_id: data.id, detalii: { cheie, nume } });
@@ -75,7 +81,7 @@ async function handler(req, res, admin) {
     const { nivel_id, tara_cod, moneda, pret, activ } = req.body;
     if (!nivel_id || !tara_cod || !moneda) return res.status(400).json({ error: 'nivel_id, tara_cod și moneda sunt obligatorii' });
     if (pret !== null && pret !== undefined && (typeof pret !== 'number' || pret < 0)) {
-      return res.status(400).json({ error: 'pret trebuie să fie un număr pozitiv sau null (neconfigurat)' });
+      return trimiteEroare(res, 400, 'DATE_INVALIDE', 'Prețul trebuie să fie un număr pozitiv sau gol (neconfigurat).', 'The price must be a positive number or empty (not configured).', [camp('pret', 'Prețul trebuie să fie un număr pozitiv sau gol.', 'The price must be a positive number or empty.')]);
     }
     const { data, error } = await supabaseAdmin
       .from('preturi_niveluri')
@@ -102,4 +108,4 @@ async function handler(req, res, admin) {
   return res.status(400).json({ error: `action necunoscută: ${action}` });
 }
 
-module.exports = requireAuth(['admin', 'superadmin'], handler);
+module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));

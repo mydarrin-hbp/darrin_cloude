@@ -17,6 +17,7 @@ const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 const { arePermisiuneInvestitori } = require('../../lib/permisiuni-investitori');
 const R = require('../../lib/runda-finantare');
+const { trimiteEroare, camp, formaComuna } = require('../../lib/raspuns-eroare');
 
 // Instrumentele pe care LM le poate configura într-o rundă.
 const INSTRUMENTE = ['actiuni', 'safe', 'nota_convertibila'];
@@ -25,11 +26,13 @@ const CAMPURI_CALCULATE = ['post_money', 'pret_actiune', 'equity_oferit_pct', 'a
 function text(v, max) { return typeof v === 'string' ? v.trim().slice(0, max) : ''; }
 function data(v) { return typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null; }
 
-// Validează și curăță câmpurile introduse. Întoarce { rand } sau { eroare }.
+// Validează și curăță câmpurile introduse. Întoarce { rand } sau
+// { campuri } (toate câmpurile greșite, cu ce trebuie făcut — pasul 11-N1).
 function curata(r) {
-  const e = (m) => ({ eroare: m });
+  const campuri = [];
+  const e = (nume, ro, en) => campuri.push(camp(nume, ro, en));
   const cod = text(r.cod, 40).toLowerCase();
-  if (!/^[a-z0-9_]{2,40}$/.test(cod)) return e('Codul rundei: litere mici, cifre și „_” (ex. seed, series_a).');
+  if (!/^[a-z0-9_]{2,40}$/.test(cod)) e('cod', 'Completați «Cod»: litere mici, cifre și „_” (ex. seed, series_a).', 'Fill in «Code»: lowercase letters, digits and “_” (e.g. seed, series_a).');
   const rand = {
     cod,
     denumire_ro: text(r.denumire_ro, 80), denumire_en: text(r.denumire_en, 80),
@@ -43,18 +46,20 @@ function curata(r) {
     lock_up_luni: R.num(r.lock_up_luni), discount_buyback_pct: R.num(r.discount_buyback_pct),
     afiseaza_progres: r.afiseaza_progres === true, vizibila_public: r.vizibila_public === true,
   };
-  if (!rand.denumire_ro || !rand.denumire_en) return e('Denumirea rundei, în română și în engleză.');
-  if (!/^[A-Z]{3}$/.test(rand.moneda)) return e('Moneda: cod de 3 litere (ex. EUR).');
-  if (!(rand.evaluare_pre_money > 0)) return e('Evaluarea pre-money trebuie să fie mai mare decât 0.');
-  if (!(rand.suma_tinta > 0)) return e('Suma țintă trebuie să fie mai mare decât 0.');
-  if (!(rand.actiuni_existente > 0) || !Number.isInteger(rand.actiuni_existente)) return e('Acțiunile existente: un număr întreg mai mare decât 0.');
-  if (rand.investitie_minima != null && !(rand.investitie_minima > 0 && rand.investitie_minima <= rand.suma_tinta)) return e('Investiția minimă: mai mare decât 0 și cel mult suma țintă.');
-  if (rand.tickete.some((t) => !(t > 0) || t > rand.suma_tinta || (rand.investitie_minima != null && t < rand.investitie_minima))) return e('Ticketele: între investiția minimă și suma țintă.');
-  if (rand.data_start && rand.data_sfarsit && rand.data_sfarsit < rand.data_start) return e('Data de sfârșit nu poate fi înaintea celei de început.');
-  if (!rand.instrumente.length) return e('Alege cel puțin un instrument.');
-  if (rand.lock_up_luni != null && !(Number.isInteger(rand.lock_up_luni) && rand.lock_up_luni >= 0)) return e('Lock-up: număr întreg de luni (0 sau mai mult), sau gol.');
-  if (rand.discount_buyback_pct != null && !(rand.discount_buyback_pct >= 0 && rand.discount_buyback_pct < 100)) return e('Discountul de buy-back: între 0 și 100%, sau gol.');
-  if (!R.calculeaza(rand)) return e('Datele rundei nu permit calculul prețului pe acțiune.');
+  if (!rand.denumire_ro) e('denumire_ro', 'Completați «Denumire (RO)».', 'Please fill in «Name (RO)».');
+  if (!rand.denumire_en) e('denumire_en', 'Completați «Denumire (EN)».', 'Please fill in «Name (EN)».');
+  if (!/^[A-Z]{3}$/.test(rand.moneda)) e('moneda', 'Moneda: cod de 3 litere (ex. EUR).', 'Currency: a 3-letter code (e.g. EUR).');
+  if (!(rand.evaluare_pre_money > 0)) e('evaluare_pre_money', 'Evaluarea pre-money trebuie să fie mai mare decât 0.', 'The pre-money valuation must be greater than 0.');
+  if (!(rand.suma_tinta > 0)) e('suma_tinta', 'Suma țintă trebuie să fie mai mare decât 0.', 'The target amount must be greater than 0.');
+  if (!(rand.actiuni_existente > 0) || !Number.isInteger(rand.actiuni_existente)) e('actiuni_existente', 'Acțiunile existente: un număr întreg mai mare decât 0.', 'Existing shares: a whole number greater than 0.');
+  if (rand.investitie_minima != null && !(rand.investitie_minima > 0 && rand.investitie_minima <= rand.suma_tinta)) e('investitie_minima', 'Investiția minimă: mai mare decât 0 și cel mult suma țintă.', 'Minimum investment: greater than 0 and at most the target amount.');
+  if (rand.tickete.some((t) => !(t > 0) || t > rand.suma_tinta || (rand.investitie_minima != null && t < rand.investitie_minima))) e('tickete', 'Ticketele: între investiția minimă și suma țintă.', 'Tickets: between the minimum investment and the target amount.');
+  if (rand.data_start && rand.data_sfarsit && rand.data_sfarsit < rand.data_start) e('data_sfarsit', 'Data de sfârșit nu poate fi înaintea celei de început.', 'The end date cannot be before the start date.');
+  if (!rand.instrumente.length) e('instrumente', 'Alege cel puțin un instrument.', 'Choose at least one instrument.');
+  if (rand.lock_up_luni != null && !(Number.isInteger(rand.lock_up_luni) && rand.lock_up_luni >= 0)) e('lock_up_luni', 'Lock-up: număr întreg de luni (0 sau mai mult), sau gol.', 'Lock-up: a whole number of months (0 or more), or empty.');
+  if (rand.discount_buyback_pct != null && !(rand.discount_buyback_pct >= 0 && rand.discount_buyback_pct < 100)) e('discount_buyback_pct', 'Discountul de buy-back: între 0 și 100%, sau gol.', 'Buy-back discount: between 0 and 100%, or empty.');
+  if (campuri.length) return { campuri };
+  if (!R.calculeaza(rand)) return { general: ['Datele rundei nu permit calculul prețului pe acțiune.', 'The round data do not allow the share price to be calculated.'] };
   if (!rand.tickete.length) rand.tickete = null;
   return { rand };
 }
@@ -88,7 +93,7 @@ async function citeste(id) {
 async function handler(req, res, user) {
   res.setHeader('Cache-Control', 'private, no-store');
   try {
-    if (!(await arePermisiuneInvestitori(user))) return res.status(403).json({ error: 'Nu ai drept pe secțiunea Investitori.' });
+    if (!(await arePermisiuneInvestitori(user))) return trimiteEroare(res, 403, 'FARA_DREPT', 'Nu ai drept pe secțiunea Investitori.', 'You do not have rights on the Investors section.');
     if (req.method === 'GET') return lista(res);
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -100,13 +105,16 @@ async function handler(req, res, user) {
     }
 
     if (actiune === 'salveaza') {
-      const { rand, eroare } = curata(runda || {});
-      if (eroare) return res.status(400).json({ error: eroare });
+      const { rand, campuri, general } = curata(runda || {});
+      if (general) return trimiteEroare(res, 400, 'DATE_INVALIDE', general[0], general[1]);
+      if (campuri) {
+        return trimiteEroare(res, 400, 'DATE_INVALIDE', campuri.map((c) => c.mesaj.ro).join(' '), campuri.map((c) => c.mesaj.en).join(' '), campuri);
+      }
       const acum = new Date().toISOString();
       let salvata;
       if (runda.id) {
         const veche = await citeste(runda.id);
-        if (!veche) return res.status(404).json({ error: 'Runda nu există.' });
+        if (!veche) return trimiteEroare(res, 404, 'NU_EXISTA', 'Runda nu există.', 'The round does not exist.');
         const { data, error } = await supabaseAdmin.from('runde_finantare')
           .update({ ...rand, actualizat_de: user.id, updated_at: acum }).eq('id', runda.id).select('*').single();
         if (error) throw error;
@@ -115,7 +123,7 @@ async function handler(req, res, user) {
           detalii: { inainte: Object.fromEntries(Object.keys(rand).map((k) => [k, veche[k]])), dupa: rand }, req });
       } else {
         const { data: exista } = await supabaseAdmin.from('runde_finantare').select('id').eq('cod', rand.cod).maybeSingle();
-        if (exista) return res.status(409).json({ error: 'Există deja o rundă cu acest cod.' });
+        if (exista) return trimiteEroare(res, 409, 'COD_EXISTENT', 'Există deja o rundă cu acest cod. Alegeți alt «Cod».', 'A round with this code already exists. Choose another «Code».', [camp('cod', 'Există deja o rundă cu acest cod.', 'A round with this code already exists.')]);
         const { data, error } = await supabaseAdmin.from('runde_finantare')
           .insert({ ...rand, stare: 'planificata', creat_de: user.id, actualizat_de: user.id, created_at: acum, updated_at: acum }).select('*').single();
         if (error) throw error;
@@ -127,17 +135,17 @@ async function handler(req, res, user) {
     }
 
     if (actiune === 'deschide' || actiune === 'inchide') {
-      if (!id) return res.status(400).json({ error: 'id obligatoriu.' });
+      if (!id) return trimiteEroare(res, 400, 'DATE_INVALIDE', 'id obligatoriu.', 'id is required.');
       const r = await citeste(id);
-      if (!r) return res.status(404).json({ error: 'Runda nu există.' });
+      if (!r) return trimiteEroare(res, 404, 'NU_EXISTA', 'Runda nu există.', 'The round does not exist.');
       if (actiune === 'deschide') {
         const { data: deschise, error } = await supabaseAdmin.from('runde_finantare').select('id, denumire_ro').eq('stare', 'deschisa');
         if (error) throw error;
         const alta = (deschise || []).find((x) => x.id !== id);
         if (alta) {
-          return res.status(409).json({ error: `Runda „${alta.denumire_ro}” e deja deschisă. Închide-o înainte să deschizi alta.`, cod: 'ALTA_DESCHISA', deschisa: alta });
+          return trimiteEroare(res, 409, 'ALTA_DESCHISA', `Runda „${alta.denumire_ro}” e deja deschisă. Închide-o înainte să deschizi alta.`, `The round “${alta.denumire_en || alta.denumire_ro}” is already open. Close it before opening another one.`, [], { deschisa: alta });
         }
-        if (!R.calculeaza(r)) return res.status(400).json({ error: 'Runda nu are datele complete; completează-le înainte să o deschizi.' });
+        if (!R.calculeaza(r)) return trimiteEroare(res, 400, 'DATE_INCOMPLETE', 'Runda nu are datele complete; completează-le înainte să o deschizi.', 'The round data are incomplete; complete them before opening it.');
       }
       const stare = actiune === 'deschide' ? 'deschisa' : 'inchisa';
       const { data, error } = await supabaseAdmin.from('runde_finantare')
@@ -147,13 +155,13 @@ async function handler(req, res, user) {
       return res.status(200).json({ ok: true, runda: cuCalcul(data) });
     }
 
-    return res.status(400).json({ error: 'actiune: calcul | salveaza | deschide | inchide' });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', 'actiune: calcul | salveaza | deschide | inchide', 'actiune: calcul | salveaza | deschide | inchide');
   } catch (err) {
     console.error('[admin/runde-finantare]', err);
-    if (R.tabelaLipsa(err)) return res.status(503).json({ error: 'Tabela runde_finantare lipsește: aplică migrarea 2026-10-21_runde_finantare.sql.' });
-    return res.status(500).json({ error: err.message || 'Eroare internă.' });
+    if (R.tabelaLipsa(err)) return trimiteEroare(res, 503, 'MIGRARE_LIPSA', 'Tabela runde_finantare lipsește: aplică migrarea 2026-10-21_runde_finantare.sql.', 'The runde_finantare table is missing: apply the 2026-10-21_runde_finantare.sql migration.');
+    return trimiteEroare(res, 500, 'EROARE_SERVER', err.message || 'Eroare internă.', err.message || 'Internal error.');
   }
 }
 
-module.exports = requireAuth(['admin', 'superadmin'], handler);
+module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));
 module.exports.INSTRUMENTE = INSTRUMENTE;

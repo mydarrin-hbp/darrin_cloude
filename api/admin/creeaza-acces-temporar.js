@@ -20,6 +20,7 @@
 // îl generează.
 
 const { requireAuth } = require('../../lib/auth-middleware');
+const { formaComuna } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 
 // Marcaj special pentru "acces complet" — toate paginile PUBLICE ale
@@ -177,4 +178,4 @@ async function handler(req, res, user) {
   }
 }
 
-module.exports = requireAuth(['admin', 'superadmin'], handler);
+module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));

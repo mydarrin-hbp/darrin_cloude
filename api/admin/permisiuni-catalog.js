@@ -12,6 +12,7 @@
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { requireAuth } = require('../../lib/auth-middleware');
+const { formaComuna } = require('../../lib/raspuns-eroare');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 
 const SECTIUNE = 'catalog_servicii';
@@ -101,4 +102,4 @@ async function handler(req, res, superadmin) {
   }
 }
 
-module.exports = requireAuth(['superadmin'], handler);
+module.exports = formaComuna(requireAuth(['superadmin'], handler));

@@ -9,6 +9,7 @@
 // îl vede partenerul în banda de stare a contului (api/cont/profil.js).
 
 const { requireAuth } = require('../../lib/auth-middleware');
+const { formaComuna } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 const { rolPentruTipPartener, asiguraRolInProfil } = require('../../lib/roluri-partener');
@@ -87,4 +88,4 @@ async function handler(req, res, admin) {
 }
 
 // Doar admin/superadmin pot aproba/respinge documente sau dosare de partener.
-module.exports = requireAuth(['admin', 'superadmin'], handler);
+module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));

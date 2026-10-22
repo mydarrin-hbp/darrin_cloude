@@ -17,6 +17,7 @@
 // Body: { integrare_id, storage_path, mapare_coloane? }
 
 const { requireAuth } = require('../../../lib/auth-middleware');
+const { formaComuna } = require('../../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../../lib/supabaseAdmin');
 
 const MAX_RANDURI_STAGATE = 5000;
@@ -94,4 +95,4 @@ async function handler(req, res, user) {
   return res.status(200).json({ ok: true, import: importRow });
 }
 
-module.exports = requireAuth(['admin', 'superadmin'], handler);
+module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));

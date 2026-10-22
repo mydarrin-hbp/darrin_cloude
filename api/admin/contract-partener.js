@@ -5,6 +5,7 @@
 // GET ?partener_id=<uuid> -> { ok, semnat, versiune, numar, html, sha256?, semnat_la? }
 
 const { requireAuth } = require('../../lib/auth-middleware');
+const { formaComuna } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { genereazaContractPartener } = require('../../lib/contract-partener-date');
 
@@ -29,4 +30,4 @@ async function handler(req, res) {
   return res.status(200).json({ ok: true, semnat: false, versiune: c.versiune, numar: c.numar, html: c.html });
 }
 
-module.exports = requireAuth(['admin', 'superadmin'], handler);
+module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));

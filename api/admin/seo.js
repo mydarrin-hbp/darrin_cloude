@@ -11,6 +11,7 @@
 //                  static din fișierul HTML)
 
 const { requireAuth } = require('../../lib/auth-middleware');
+const { formaComuna } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { PAGINI } = require('../../lib/seo-pagini');
 
@@ -67,4 +68,4 @@ async function handler(req, res) {
   return res.status(405).json({ error: 'Method not allowed' });
 }
 
-module.exports = requireAuth(['admin', 'superadmin'], handler);
+module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));

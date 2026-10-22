@@ -6,6 +6,7 @@
 // Body: { id }
 
 const { requireAuth } = require('../../../lib/auth-middleware');
+const { formaComuna } = require('../../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../../lib/supabaseAdmin');
 
 async function handler(req, res) {
@@ -23,4 +24,4 @@ async function handler(req, res) {
   return res.status(200).json({ ok: true });
 }
 
-module.exports = requireAuth(['admin', 'superadmin'], handler);
+module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));

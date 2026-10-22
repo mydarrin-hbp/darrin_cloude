@@ -8,6 +8,7 @@
 // POST { limba, nume_expeditor }   → salvează numele expeditorului pentru acea limbă (backoffice_config)
 
 const { requireAuth } = require('../../lib/auth-middleware');
+const { formaComuna } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 const { LIMBI_DISPONIBILE } = require('../../lib/i18n');
@@ -55,4 +56,4 @@ async function handler(req, res, admin) {
   return res.status(405).json({ error: 'Method not allowed' });
 }
 
-module.exports = requireAuth(['admin', 'superadmin'], handler);
+module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));

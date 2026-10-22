@@ -14,6 +14,7 @@
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { requireAuth } = require('../../lib/auth-middleware');
+const { formaComuna } = require('../../lib/raspuns-eroare');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 const { notificaParteneriEligibili } = require('../../lib/notifica-servicii-noi');
 const { calculeazaCostNivel } = require('../../lib/calculeaza-cost-recipe');
@@ -654,4 +655,4 @@ async function handler(req, res, user) {
   return fn(req, res, user);
 }
 
-module.exports = requireAuth(['admin', 'superadmin'], handler);
+module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));

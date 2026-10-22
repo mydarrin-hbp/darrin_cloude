@@ -4,6 +4,7 @@
 // Body: { email, ore_suplimentare } → { ok, expira_la }
 
 const { requireAuth } = require('../../lib/auth-middleware');
+const { formaComuna } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 
 const ORE_PERMISE = [1, 2, 8, 24, 48, 168];
@@ -54,4 +55,4 @@ async function handler(req, res, user) {
   return res.status(200).json({ ok: true, expira_la });
 }
 
-module.exports = requireAuth(['admin', 'superadmin'], handler);
+module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));

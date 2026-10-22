@@ -16,6 +16,7 @@
 //   (lib/i18n.js, renderEmailKycDecizie) și vede starea nouă în dashboard.
 
 const { requireAuth } = require('../../lib/auth-middleware');
+const { trimiteEroare, camp, formaComuna } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 const { renderEmailKycDecizie, limbaProfilEmailComportamental } = require('../../lib/i18n');
@@ -127,7 +128,12 @@ async function decizie(req, res, user) {
   if (actiune !== 'aproba' && actiune !== 'respinge') return res.status(400).json({ error: 'actiune: aproba | respinge.' });
   const mRo = K.text(motiv_ro, 500);
   const mEn = K.text(motiv_en, 500);
-  if (actiune === 'respinge' && (!mRo || !mEn)) return res.status(400).json({ error: 'Scrie motivul respingerii în română și în engleză.' });
+  if (actiune === 'respinge' && (!mRo || !mEn)) {
+    const campuri = [];
+    if (!mRo) campuri.push(camp('motiv_ro', 'Completați «Motiv (română)».', 'Please fill in «Reason (Romanian)».'));
+    if (!mEn) campuri.push(camp('motiv_en', 'Completați «Motiv (engleză)».', 'Please fill in «Reason (English)».'));
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', 'Scrie motivul respingerii în română și în engleză.', 'Write the rejection reason in Romanian and in English.', campuri);
+  }
 
   const kyc = await K.citesteKyc(user_id);
   if (!kyc) return res.status(404).json({ error: 'Dosar KYC inexistent.' });
@@ -169,4 +175,4 @@ async function handler(req, res, user) {
   }
 }
 
-module.exports = requireAuth(['admin', 'superadmin'], handler);
+module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));

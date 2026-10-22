@@ -13,6 +13,7 @@
 //      propriu al platformei (partners.entitate_platforma_id; 16 oct. 2026)
 
 const { requireAuth, hasRole } = require('../../lib/auth-middleware');
+const { formaComuna } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 const { curataCUI, cautaANAF, MESAJE_ANAF } = require('../../lib/cauta-firma');
@@ -183,4 +184,4 @@ async function handler(req, res, admin) {
   return res.status(405).json({ error: 'Method not allowed' });
 }
 
-module.exports = requireAuth(['admin', 'superadmin'], handler);
+module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));

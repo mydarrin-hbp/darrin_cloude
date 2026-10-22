@@ -18,6 +18,7 @@
 // POST { action:'sterge', tip, id }
 
 const { requireAuth } = require('../../lib/auth-middleware');
+const { trimiteEroare, camp, formaComuna } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 
@@ -91,13 +92,13 @@ async function handler(req, res, admin) {
       const { id, resursa_id, tara_cod, moneda, pret_unitar, unitate_masura } = req.body;
 
       if (!resursa_id || typeof resursa_id !== 'number') {
-        return res.status(400).json({ error: 'resursa_id este obligatoriu (numeric)' });
+        return trimiteEroare(res, 400, 'DATE_INVALIDE', 'Resursa lipsește — caut-o din nou.', 'The resource is missing — search for it again.');
       }
       if (!tara_cod || typeof tara_cod !== 'string' || tara_cod.trim().length !== 2) {
-        return res.status(400).json({ error: 'tara_cod trebuie să fie un cod de 2 litere' });
+        return trimiteEroare(res, 400, 'DATE_INVALIDE', '«Țară»: cod de 2 litere (ex. RO).', '«Country»: a 2-letter code (e.g. RO).', [camp('tara_cod', '«Țară»: cod de 2 litere (ex. RO).', '«Country»: a 2-letter code (e.g. RO).')]);
       }
       if (typeof pret_unitar !== 'number' || pret_unitar <= 0) {
-        return res.status(400).json({ error: 'pret_unitar trebuie să fie un număr pozitiv' });
+        return trimiteEroare(res, 400, 'DATE_INVALIDE', '«Preț unitar» trebuie să fie un număr mai mare decât 0.', '«Unit price» must be a number greater than 0.', [camp('pret_unitar', '«Preț unitar» trebuie să fie un număr mai mare decât 0.', '«Unit price» must be a number greater than 0.')]);
       }
 
       const taraNormalizata = tara_cod.trim().toUpperCase();
@@ -140,4 +141,4 @@ async function handler(req, res, admin) {
   return res.status(405).json({ error: 'Method not allowed' });
 }
 
-module.exports = requireAuth(['admin', 'superadmin'], handler);
+module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));
