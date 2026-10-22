@@ -5,8 +5,10 @@
 // acțiuni, 1000 EUR pe acțiune, 4.000.000 și 500.000, un factor de profit de
 // 0,70 și dubla investitorii cu mai multe subscrieri.
 //
-// Acces: superadmin sau admin cu drept pe secțiunea Investitori.
-// GET → { ok, kpis, runda, investitori: [...] }
+// Acces: superadmin sau admin cu drept pe secțiunea Investitori (citire ajunge).
+// GET → { ok, kpis, runda, investitori: [...], poate_scrie }
+//   poate_scrie (pasul 11-N2): panoul ascunde butoanele de scriere când e false;
+//   serverul decide oricum, în fiecare endpoint de scriere.
 //   kpis: investitori (rol investor), KYC în verificare, capital aprobat și
 //   acțiuni aprobate (în runda deschisă), acțiuni disponibile, procentul din
 //   țintă; runda: runda deschisă, cu valorile calculate (sau null);
@@ -15,15 +17,17 @@
 //   lor) și starea KYC. Fără dividende sau profit: nu există o sursă configurată.
 
 const { requireAuth } = require('../../lib/auth-middleware');
+const { formaComuna } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
-const { arePermisiuneInvestitori } = require('../../lib/permisiuni-investitori');
+const { nivelInvestitori, refuzaFaraDrept } = require('../../lib/permisiuni-investitori');
 const R = require('../../lib/runda-finantare');
 
 async function handler(req, res, user) {
   res.setHeader('Cache-Control', 'private, no-store');
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
   try {
-    if (!(await arePermisiuneInvestitori(user))) return res.status(403).json({ error: 'Nu ai drept pe secțiunea Investitori.' });
+    const nivel = await nivelInvestitori(user);
+    if (!nivel) return refuzaFaraDrept(res);
 
     const [runda, profile, subs, kycuri, runde] = await Promise.all([
       R.rundaDeschisa(),
@@ -87,6 +91,7 @@ async function handler(req, res, user) {
       },
       runda: kpiRunda,
       investitori,
+      poate_scrie: nivel === 'scriere',
     });
   } catch (err) {
     console.error('[admin/investitori-dashboard]', err);
@@ -94,4 +99,4 @@ async function handler(req, res, user) {
   }
 }
 
-module.exports = requireAuth(['admin', 'superadmin'], handler);
+module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));

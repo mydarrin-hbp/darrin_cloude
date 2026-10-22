@@ -2642,6 +2642,10 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
         </div>
       </div>
 
+      <!-- Pasul 11-N2: adminii doar cu citire pe Investitori (admin_permissions.poate_scrie = false)
+           nu văd butoanele de scriere; serverul refuză oricum (403 FARA_DREPT_SCRIERE). -->
+      <div id="inv-doar-citire" role="status" hidden style="margin-bottom:14px;padding:10px 14px;border-radius:10px;background:#FFF8EE;border:1px solid rgba(255,140,0,.35);color:#7A4A00;font-size:12px;font-weight:600">🔒 Acces doar de citire <span lang="en" style="font-weight:400;color:#9A6A20">· Read-only access</span> — poți vedea rundele, cererile KYC și subscrierile; dreptul de scriere îl acordă superadminul.</div>
+
       <!-- KPI Grid — pasul 11-J: valorile vin din api/admin/investitori-dashboard (runda deschisă, subscrierile aprobate) -->
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px" id="inv-admin-kpi-grid">
         <div class="kpi-card kpi-blue">
@@ -2670,7 +2674,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       <div class="sa-card" style="margin-bottom:18px" id="inv-runde-card">
         <div class="sa-card-hdr">
           <div style="font-weight:700;color:#1A2332;font-size:13.5px">🚀 Runde de finanțare</div>
-          <button class="btn-p" style="font-size:11px" onclick="formularRunda(null)">+ Rundă nouă</button>
+          <button class="btn-p" style="font-size:11px" id="inv-runda-noua" onclick="formularRunda(null)">+ Rundă nouă</button>
         </div>
         <div class="sa-card-body" style="padding:0;overflow:auto">
           <table class="sa-table">
@@ -4265,6 +4269,21 @@ function fmtA(n, dec = 0) {
   return Number(n).toFixed(dec);
 }
 
+// ── Pasul 11-N2: modul „doar citire” ─────────────────────────
+// poate_scrie vine de la server în fiecare GET (dashboard, runde, KYC). Fără
+// drept de scriere: nota apare și butoanele de scriere nu se desenează.
+let INV_POATE_SCRIE = true;
+function aplicaDreptScriere(j) {
+  if (!j || typeof j.poate_scrie !== 'boolean') return;
+  INV_POATE_SCRIE = j.poate_scrie;
+  const nota = document.getElementById('inv-doar-citire');
+  if (nota) nota.hidden = INV_POATE_SCRIE;
+  const nou = document.getElementById('inv-runda-noua');
+  if (nou) nou.hidden = !INV_POATE_SCRIE;
+  const form = document.getElementById('inv-runda-form');
+  if (form && !INV_POATE_SCRIE) form.hidden = true;
+}
+
 // ── Load principal (pasul 11-J: api/admin/investitori-dashboard, calcul pe server) ──
 async function loadInvestitoriAdmin() {
   const tbody = document.getElementById('inv-admin-tbody');
@@ -4274,6 +4293,7 @@ async function loadInvestitoriAdmin() {
   try {
     const data = await kycApi('/api/admin/investitori-dashboard');
     INV_ADMIN_DATA = data;
+    aplicaDreptScriere(data);
     renderInvKpis(data.kpis || {}, data.runda);
     renderRundaDeschisa(data.runda);
     renderInvTable(data.investitori || []);
@@ -4394,6 +4414,7 @@ async function loadKycInvestitori() {
   const tbody = document.getElementById('inv-kyc-tbody');
   try {
     const j = await kycApi('/api/admin/investitori-kyc');
+    aplicaDreptScriere(j);
     KYC_CERERI = j.cereri || [];
     renderKycCereri(KYC_CERERI);
     renderSubscrieriPublice(j.subscrieri || []);
@@ -4418,7 +4439,7 @@ function renderKycCereri(rows) {
     const data = r.trimis_la ? new Date(r.trimis_la).toLocaleDateString('ro-RO') : '—';
     const docs = [r.document_fata_path ? `<button class="btn-s" style="font-size:10px;padding:3px 8px" onclick="veziDocumentKyc(${i},'fata',this)">Față</button>` : '',
       r.document_verso_path ? `<button class="btn-s" style="font-size:10px;padding:3px 8px" onclick="veziDocumentKyc(${i},'verso',this)">Verso</button>` : ''].join(' ');
-    const decizie = r.status === 'in_verificare'
+    const decizie = r.status === 'in_verificare' && INV_POATE_SCRIE
       ? `<div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap">${docs}
            <button onclick="aprobaKycInvestitor(${i},this)" style="padding:4px 10px;border-radius:6px;border:none;background:#1A7A3A;color:#fff;font-size:10px;cursor:pointer;font-family:inherit">✓ Aprobă</button>
            <button onclick="respingeKycInvestitor(${i})" style="padding:4px 8px;border-radius:6px;border:none;background:#C0392B;color:#fff;font-size:10px;cursor:pointer;font-family:inherit">✗ Respinge</button></div>`
@@ -4516,7 +4537,7 @@ function renderSubscrieriPublice(rows) {
   tbody.innerHTML = rows.map(r => {
     const data = r.creat_la ? new Date(r.creat_la).toLocaleDateString('ro-RO') : '—';
     const poateAproba = !!r.user_id && r.kyc_status === 'aprobat';
-    const decizie = r.status === 'in_asteptare'
+    const decizie = r.status === 'in_asteptare' && INV_POATE_SCRIE
       ? `<div style="display:flex;gap:4px;justify-content:center">
            <button onclick="decideSubscriere('${escapeHTML(r.id)}','aproba', this)" ${poateAproba ? '' : 'disabled title="Aprobarea cere verificarea identității aprobată"'} style="padding:4px 10px;border-radius:6px;border:none;background:#1A7A3A;color:#fff;font-size:10px;cursor:pointer;font-family:inherit">✓ Aprobă</button>
            <button onclick="decideSubscriere('${escapeHTML(r.id)}','respinge', this)" style="padding:4px 8px;border-radius:6px;border:none;background:#C0392B;color:#fff;font-size:10px;cursor:pointer;font-family:inherit">✗ Respinge</button>
@@ -4564,19 +4585,20 @@ async function loadRunde() {
   const tbody = document.getElementById('inv-runde-tbody');
   try {
     const j = await kycApi('/api/admin/runde-finantare');
+    aplicaDreptScriere(j);
     RUNDE = j.runde || [];
     if (j.migrare_lipsa) {
       tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#F87171;padding:20px">Tabela runde_finantare lipsește: aplică migrarea 2026-10-21_runde_finantare.sql.</td></tr>';
       return;
     }
     if (!RUNDE.length) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#4A6080;padding:20px">Nicio rundă. Adaugă runda Seed cu „+ Rundă nouă”.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#4A6080;padding:20px">' + (INV_POATE_SCRIE ? 'Nicio rundă. Adaugă runda Seed cu „+ Rundă nouă”.' : 'Nicio rundă.') + '</td></tr>';
       return;
     }
     tbody.innerHTML = RUNDE.map((r, i) => {
       const c = r.calcul || {};
       const ap = (r.stranse && r.stranse.aprobate) || { suma: 0 };
-      const actiuni = r.stare === 'deschisa'
+      const actiuni = !INV_POATE_SCRIE ? '' : r.stare === 'deschisa'
         ? `<button class="btn-s" style="font-size:10px;padding:3px 8px" onclick="schimbaStareRunda(${i},'inchide',this)">Închide</button>`
         : r.stare === 'planificata' ? `<button class="btn-p" style="font-size:10px;padding:3px 8px" onclick="schimbaStareRunda(${i},'deschide',this)">Deschide</button>` : '';
       return `<tr>
@@ -4587,7 +4609,7 @@ async function loadRunde() {
         <td style="color:#7AB3E0">${fmtSuma(c.equity_oferit_pct)}%</td>
         <td style="color:#4ADE80">${fmtSuma(ap.suma, r.moneda)}</td>
         <td style="color:#8BA3C0">${r.vizibila_public ? 'da' : 'nu'}</td>
-        <td style="text-align:center"><div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap"><button class="btn-s" style="font-size:10px;padding:3px 8px" onclick="formularRunda(${i})">Editează</button>${actiuni}</div></td>
+        <td style="text-align:center"><div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap">${INV_POATE_SCRIE ? `<button class="btn-s" style="font-size:10px;padding:3px 8px" onclick="formularRunda(${i})">Editează</button>` : '<span style="font-size:11px;color:#4A6080">—</span>'}${actiuni}</div></td>
       </tr>`;
     }).join('');
   } catch (e) {

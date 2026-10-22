@@ -1,12 +1,12 @@
 // /api/admin/runde-finantare.js
 // Rundele de finanțare din back-office (pasul 11-J, 21 oct. 2026; decizia LM
-// C2): superadminul și adminii cu drept pe secțiunea Investitori
-// (lib/permisiuni-investitori.js) creează, modifică, deschid și închid
-// rundele. Cifrele le introduce LM; valorile calculate vin din
+// C2): superadminul și adminii cu drept de scriere pe secțiunea Investitori
+// (lib/permisiuni-investitori.js, pasul 11-N2) creează, modifică, deschid și
+// închid rundele; cei cu drept doar de citire văd lista și previzualizarea. Cifrele le introduce LM; valorile calculate vin din
 // lib/runda-finantare.js (aceleași formule ca în coloanele generate).
 // Fiecare schimbare se auditează (audit_log).
 //
-// GET                                   → { ok, runde: [...], deschisa_id }
+// GET                                   → { ok, runde: [...], deschisa_id, poate_scrie }
 // POST { actiune: 'calcul', runda }     → { ok, calcul }   previzualizare, fără scriere
 // POST { actiune: 'salveaza', runda }   → { ok, runda }    creare (fără id) sau modificare
 // POST { actiune: 'deschide', id }      → { ok, runda }    409 dacă e deja altă rundă deschisă
@@ -15,7 +15,7 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
-const { arePermisiuneInvestitori } = require('../../lib/permisiuni-investitori');
+const { nivelInvestitori, refuzaFaraDrept, refuzaFaraScriere } = require('../../lib/permisiuni-investitori');
 const R = require('../../lib/runda-finantare');
 const { trimiteEroare, camp, formaComuna } = require('../../lib/raspuns-eroare');
 
@@ -68,10 +68,10 @@ function cuCalcul(r, totaluri) {
   return { ...r, calcul: R.calculeaza(r), stranse: totaluri || null };
 }
 
-async function lista(res) {
+async function lista(res, poateScrie) {
   const { data: runde, error } = await supabaseAdmin.from('runde_finantare').select('*').order('created_at', { ascending: false });
   if (error) {
-    if (R.tabelaLipsa(error)) return res.status(200).json({ ok: true, runde: [], deschisa_id: null, migrare_lipsa: true });
+    if (R.tabelaLipsa(error)) return res.status(200).json({ ok: true, runde: [], deschisa_id: null, migrare_lipsa: true, poate_scrie: poateScrie });
     throw error;
   }
   const rezultat = [];
@@ -81,7 +81,7 @@ async function lista(res) {
     rezultat.push(cuCalcul(r, { aprobate, in_asteptare: asteptare }));
   }
   const deschisa = rezultat.find((r) => r.stare === 'deschisa');
-  return res.status(200).json({ ok: true, runde: rezultat, deschisa_id: deschisa ? deschisa.id : null });
+  return res.status(200).json({ ok: true, runde: rezultat, deschisa_id: deschisa ? deschisa.id : null, poate_scrie: poateScrie });
 }
 
 async function citeste(id) {
@@ -93,8 +93,9 @@ async function citeste(id) {
 async function handler(req, res, user) {
   res.setHeader('Cache-Control', 'private, no-store');
   try {
-    if (!(await arePermisiuneInvestitori(user))) return trimiteEroare(res, 403, 'FARA_DREPT', 'Nu ai drept pe secțiunea Investitori.', 'You do not have rights on the Investors section.');
-    if (req.method === 'GET') return lista(res);
+    const nivel = await nivelInvestitori(user);
+    if (!nivel) return refuzaFaraDrept(res);
+    if (req.method === 'GET') return lista(res, nivel === 'scriere');
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     const { actiune, runda, id } = req.body || {};
@@ -103,6 +104,9 @@ async function handler(req, res, user) {
       const c = R.calculeaza(runda || {});
       return res.status(200).json({ ok: true, calcul: c });
     }
+
+    // Salvarea, deschiderea și închiderea cer dreptul de scriere (pasul 11-N2).
+    if (nivel !== 'scriere') return refuzaFaraScriere(res);
 
     if (actiune === 'salveaza') {
       const { rand, campuri, general } = curata(runda || {});
