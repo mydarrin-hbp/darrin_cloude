@@ -24,6 +24,7 @@ function publicRunda(r) {
   if (!c) return null;
   return {
     id: r.id, denumire_ro: r.denumire_ro, denumire_en: r.denumire_en, moneda: r.moneda,
+    stare: r.stare, data_start: r.data_start || null, data_sfarsit: r.data_sfarsit || null,
     suma_tinta: Number(r.suma_tinta), investitie_minima: R.num(r.investitie_minima),
     pret_actiune: c.pret_actiune, equity_oferit_pct: c.equity_oferit_pct,
     tickete: Array.isArray(r.tickete) && r.tickete.length ? r.tickete.map(Number) : null,

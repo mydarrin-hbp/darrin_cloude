@@ -902,6 +902,28 @@ function dataInv(d) {
   if (!d) return '';
   try { return new Date(d + 'T00:00:00').toLocaleDateString(enInv() ? 'en-GB' : 'ro-RO', { day: 'numeric', month: 'long', year: 'numeric' }); } catch (e) { return d; }
 }
+// Pasul 11-N2 (decizia LM, 22 oct. 2026): data_start e deschiderea OFICIALĂ;
+// subscrierile sunt posibile și înainte, cât timp runda e deschisă. Cât azi
+// (ora României) < data_start, sub perioadă apare mesajul de mai jos. Nicio
+// blocare înainte sau după perioadă. În altă limbă decât româna → engleza.
+function aziRomania() {
+  const p = {};
+  new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Bucharest', year: 'numeric', month: '2-digit', day: '2-digit' })
+    .formatToParts(new Date()).forEach((x) => { p[x.type] = x.value; });
+  return p.year + '-' + p.month + '-' + p.day;
+}
+function mesajDeschidereOficiala(r) {
+  if (!r || r.stare !== 'deschisa' || !/^\d{4}-\d{2}-\d{2}$/.test(r.data_start || '') || aziRomania() >= r.data_start) return '';
+  const ro = !enInv();
+  const data = new Intl.DateTimeFormat(ro ? 'ro-RO' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+    .format(new Date(r.data_start + 'T00:00:00Z'));
+  return ro ? 'Deschidere oficială: ' + data + ' · subscrierile sunt deja posibile'
+    : 'Official opening: ' + data + ' · subscriptions are already open';
+}
+function htmlDeschidereOficiala(r, id) {
+  const m = mesajDeschidereOficiala(r);
+  return m ? `<div id="${id}" data-deschidere-oficiala style="margin:8px 0 2px;padding:8px 12px;border-radius:10px;background:#FFF8EE;border:1px solid rgba(255,140,0,.3);color:#7A4A00;font-size:12.5px;font-weight:600;line-height:1.5">${escInv(m)}</div>` : '';
+}
 async function tokenInv() {
   if (!window.supabaseClient) return null;
   const { data } = await window.supabaseClient.auth.getSession();
@@ -929,6 +951,7 @@ async function incarcaRundaCurenta() {
     rand('Prețul pe acțiune', sumaInv(r.pret_actiune, r.moneda)) +
     rand('Procentul oferit', sumaInv(r.equity_oferit_pct) + '%') +
     (perioada ? rand('Perioada', escInv(perioada)) : '') +
+    htmlDeschidereOficiala(r, 'runda-deschidere-oficiala') +
     (r.tickete && r.tickete.length ? rand('Tickete sugerate', r.tickete.map((t) => sumaInv(t, r.moneda)).join(' · ')) : '') +
     (r.progres ? `<div style="margin-top:12px"><div style="display:flex;justify-content:space-between;font-size:12px;color:#5A6B7D;margin-bottom:5px"><span>${escInv(trInv('Subscrieri aprobate'))}</span><span>${sumaInv(r.progres.stranse, r.moneda)} · ${sumaInv(r.progres.pct)}%</span></div>` +
       `<div style="height:8px;border-radius:99px;background:#EEF2F7;overflow:hidden"><div style="height:100%;width:${Math.min(100, r.progres.pct)}%;background:#FF8C00"></div></div></div>` : '');
@@ -1127,6 +1150,8 @@ else incarcaRundaCurenta();
       <div style="font-size:13px;color:#5A6B7D;margin-bottom:20px">Selectează suma și instrumentul de investiție preferat.</div>
       
       <!-- Ticket selector -->
+      <!-- Pasul 11-N2: „Deschidere oficială: … · subscrierile sunt deja posibile”, cât azi < data_start -->
+      <div id="subscriere-deschidere-oficiala-zona"></div>
       <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8C9BAD;margin-bottom:10px">Valoarea investiției *</div>
       <div id="runda-subscriere-info" style="font-size:12px;color:#5A6B7D;margin-bottom:10px"></div>
       <div id="ticket-lista" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px"></div>
@@ -1292,7 +1317,9 @@ async function pregatesteSubscrierea() {
   const lista = document.getElementById('ticket-lista');
   const instr = document.getElementById('instrument-lista');
   const cont = document.querySelector('#step-2 button[onclick="goStep(3)"]');
+  const oficiala = document.getElementById('subscriere-deschidere-oficiala-zona');
   selectedTicket = ''; selectedInstrument = '';
+  if (oficiala) oficiala.innerHTML = '';
   if (lista) lista.innerHTML = '<div style="font-size:12.5px;color:#5A6B7D">' + escInv(trInv('Se încarcă…')) + '</div>';
   if (instr) instr.innerHTML = '';
   const p = PORTOFOLIU_INV && PORTOFOLIU_INV.runda !== undefined ? PORTOFOLIU_INV : await incarcaPortofoliu();
@@ -1305,6 +1332,7 @@ async function pregatesteSubscrierea() {
     return;
   }
   if (cont) cont.disabled = false;
+  if (oficiala) oficiala.innerHTML = htmlDeschidereOficiala(r, 'subscriere-deschidere-oficiala');
   if (info) info.innerHTML = `<strong style="color:#1A2332" translate="no">${escInv(enInv() ? r.denumire_en : r.denumire_ro)}</strong> · ` +
     escInv(trInv('Preț / acțiune: {pret}', { pret: sumaInv(r.pret_actiune, r.moneda) })) +
     (r.investitie_minima != null ? ' · ' + escInv(trInv('Investiția minimă: {suma}', { suma: sumaInv(r.investitie_minima, r.moneda) })) : '');
