@@ -10,6 +10,7 @@
 // Body: { id }
 
 const { requireAuth } = require('../../../lib/auth-middleware');
+const { formaComuna } = require('../../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../../lib/supabaseAdmin');
 const { ANAF_URL, MESAJE_ANAF, cautaANAF } = require('../../../lib/cauta-firma');
 
@@ -103,4 +104,4 @@ async function handler(req, res) {
   return res.status(200).json(rezultat);
 }
 
-module.exports = requireAuth(['admin', 'superadmin'], handler);
+module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));

@@ -29,6 +29,7 @@
 
 const crypto = require('crypto');
 const { requireAuth } = require('../../lib/auth-middleware');
+const { formaComuna } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 
 async function handler(req, res, user) {
@@ -86,4 +87,4 @@ async function handler(req, res, user) {
   });
 }
 
-module.exports = requireAuth(['admin', 'superadmin'], handler);
+module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));

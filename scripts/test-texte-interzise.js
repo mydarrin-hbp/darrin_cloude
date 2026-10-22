@@ -9,6 +9,9 @@
 // în paginile interne (back-office), în i18n/*.json și în fișierele .js de
 // pagină, din api/ și din lib/ (REGULI_RUNDA).
 //
+// Pasul 11-N1 (22 oct. 2026): ferestrele native alert( și confirm( în
+// mydarrin-superadmin.html — feedbackul trece prin MDFeedback (ui-feedback.js).
+//
 // Rezultat așteptat: 0 potriviri. Fiecare potrivire se afișează cu fișierul,
 // linia și fragmentul găsit.
 //
@@ -90,6 +93,13 @@ function fisiereRunda() {
   return html.concat(js, i18n, dinDosar('api'), dinDosar('lib'));
 }
 
+// Pasul 11-N1: în superadmin, fără ferestre native (inclusiv window.alert / window.confirm).
+const REGULI_FEEDBACK = [
+  ['alert(', /\balert\s*\(/],
+  ['confirm(', /\bconfirm\s*\(/],
+];
+const FISIERE_FEEDBACK = ['mydarrin-superadmin.html'];
+
 let total = 0;
 let exceptii = 0;
 const peRegula = {};
@@ -123,9 +133,25 @@ for (const rel of fisiereRunda()) {
   });
 }
 
+for (const rel of FISIERE_FEEDBACK) {
+  const linii = fs.readFileSync(path.join(RADACINA, rel), 'utf8').split(/\r?\n/);
+  linii.forEach((linie, i) => {
+    for (const [eticheta, re] of REGULI_FEEDBACK) {
+      const m = re.exec(linie);
+      if (!m) continue;
+      total++;
+      peRegula[eticheta] = (peRegula[eticheta] || 0) + 1;
+      const start = Math.max(0, m.index - 40);
+      console.log(`  ✗ ${rel}:${i + 1} [${eticheta}] …${linie.slice(start, m.index + m[0].length + 40).trim()}…`);
+    }
+  });
+}
+
 console.log('\nFișiere verificate: ' + fisiere().length + ' (HTML publice + i18n/en/*.json)');
 for (const [eticheta] of REGULI) console.log(`  ${eticheta}: ${peRegula[eticheta] || 0}`);
 console.log('Valorile rundei (11-J): ' + fisiereRunda().length + ' fișiere (toate HTML, i18n, .js de pagină, api/, lib/), inclusiv comentariile');
 for (const [eticheta] of REGULI_RUNDA) console.log(`  ${eticheta}: ${peRegula[eticheta] || 0}`);
+console.log('Ferestre native (11-N1): ' + FISIERE_FEEDBACK.join(', '));
+for (const [eticheta] of REGULI_FEEDBACK) console.log(`  ${eticheta}: ${peRegula[eticheta] || 0}`);
 console.log(`\nTOTAL potriviri: ${total}`);
 process.exit(total ? 1 : 0);

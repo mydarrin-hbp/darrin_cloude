@@ -9,6 +9,7 @@
 //         partener_id?, api_endpoint?, api_key?, api_config?, observatii? }
 
 const { requireAuth } = require('../../../lib/auth-middleware');
+const { trimiteEroare, camp: campEroare, formaComuna } = require('../../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../../lib/supabaseAdmin');
 
 const CATEGORII_VALIDE = [
@@ -29,16 +30,16 @@ async function handler(req, res, user) {
   } = req.body || {};
 
   if (!CATEGORII_VALIDE.includes(categorie)) {
-    return res.status(400).json({ error: `categorie invalidă. Valori acceptate: ${CATEGORII_VALIDE.join(', ')}` });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', `Alegeți «Categorie» (${CATEGORII_VALIDE.join(', ')}).`, `Choose a «Category» (${CATEGORII_VALIDE.join(', ')}).`, [campEroare('categorie', 'Alegeți «Categorie».', 'Choose a «Category».')]);
   }
   if (!nume_furnizor || typeof nume_furnizor !== 'string') {
-    return res.status(400).json({ error: 'nume_furnizor este obligatoriu' });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', 'Completați «Denumire furnizor».', 'Please fill in «Provider name».', [campEroare('nume_furnizor', 'Completați «Denumire furnizor».', 'Please fill in «Provider name».')]);
   }
   if (!TIPURI_CONFIGURARE.includes(tip_configurare)) {
-    return res.status(400).json({ error: `tip_configurare invalid. Valori acceptate: ${TIPURI_CONFIGURARE.join(', ')}` });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', `Alegeți «Tip configurare» (${TIPURI_CONFIGURARE.join(', ')}).`, `Choose a «Configuration type» (${TIPURI_CONFIGURARE.join(', ')}).`, [campEroare('tip_configurare', 'Alegeți «Tip configurare».', 'Choose a «Configuration type».')]);
   }
   if (!STATUSURI.includes(status)) {
-    return res.status(400).json({ error: `status invalid. Valori acceptate: ${STATUSURI.join(', ')}` });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', `Alegeți «Status» (${STATUSURI.join(', ')}).`, `Choose a «Status» (${STATUSURI.join(', ')}).`, [campEroare('status', 'Alegeți «Status».', 'Choose a «Status».')]);
   }
 
   const camp = {
@@ -70,4 +71,4 @@ async function handler(req, res, user) {
   }
 }
 
-module.exports = requireAuth(['admin', 'superadmin'], handler);
+module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));

@@ -15,6 +15,7 @@
 // fiecare produs vine cu starea furnizorului (furnizor_stare).
 
 const { requireAuth } = require('../../lib/auth-middleware');
+const { formaComuna } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 const { incarcaEligibilitate, MESAJ_FURNIZOR, MOTIV, TIPURI_FURNIZOR } = require('../../lib/eligibilitate-partener');
@@ -121,4 +122,4 @@ async function handler(req, res, admin) {
   return res.status(405).json({ error: 'Method not allowed' });
 }
 
-module.exports = requireAuth(['admin', 'superadmin'], handler);
+module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));

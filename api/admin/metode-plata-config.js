@@ -9,6 +9,7 @@
 // POST { action:'sterge', id } → șterge o configurare
 
 const { requireAuth } = require('../../lib/auth-middleware');
+const { trimiteEroare, camp, formaComuna } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 
@@ -39,7 +40,7 @@ async function handler(req, res, admin) {
     if (action === 'salveaza') {
       const { id, tara_cod, regiune, categorie_serviciu_slug, metode_acceptate, permite_avans, activ } = req.body;
       if (!Array.isArray(metode_acceptate) || !metode_acceptate.length || metode_acceptate.some((m) => !METODE_VALIDE.includes(m))) {
-        return res.status(400).json({ error: `metode_acceptate trebuie să fie un array nevid cu valori din: ${METODE_VALIDE.join(', ')}` });
+        return trimiteEroare(res, 400, 'DATE_INVALIDE', 'Selectează cel puțin o metodă de plată (card sau ordin de plată).', 'Select at least one payment method (card or payment order).', [camp('metode_acceptate', 'Selectează cel puțin o metodă de plată.', 'Select at least one payment method.')]);
       }
 
       const rand = {
@@ -68,4 +69,4 @@ async function handler(req, res, admin) {
   return res.status(405).json({ error: 'Method not allowed' });
 }
 
-module.exports = requireAuth(['admin', 'superadmin'], handler);
+module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));

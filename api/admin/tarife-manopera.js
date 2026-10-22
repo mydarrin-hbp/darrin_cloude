@@ -16,6 +16,7 @@
 // POST { action:'sterge', id }
 
 const { requireAuth } = require('../../lib/auth-middleware');
+const { trimiteEroare, camp, formaComuna } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 
@@ -61,13 +62,13 @@ async function handler(req, res, admin) {
       } = req.body;
 
       if (!cod_esco || typeof cod_esco !== 'string' || !cod_esco.trim()) {
-        return res.status(400).json({ error: 'cod_esco este obligatoriu' });
+        return trimiteEroare(res, 400, 'DATE_INVALIDE', 'Completați «Cod ESCO».', 'Please fill in «ESCO code».', [camp('cod_esco', 'Completați «Cod ESCO».', 'Please fill in «ESCO code».')]);
       }
       if (!tara_cod || typeof tara_cod !== 'string' || tara_cod.trim().length !== 2) {
-        return res.status(400).json({ error: 'tara_cod trebuie să fie un cod de 2 litere' });
+        return trimiteEroare(res, 400, 'DATE_INVALIDE', '«Țară»: cod de 2 litere (ex. RO).', '«Country»: a 2-letter code (e.g. RO).', [camp('tara_cod', '«Țară»: cod de 2 litere (ex. RO).', '«Country»: a 2-letter code (e.g. RO).')]);
       }
       if (typeof cost_ora !== 'number' || cost_ora <= 0) {
-        return res.status(400).json({ error: 'cost_ora trebuie să fie un număr pozitiv' });
+        return trimiteEroare(res, 400, 'DATE_INVALIDE', '«Cost/oră» trebuie să fie un număr mai mare decât 0.', '«Cost/hour» must be a number greater than 0.', [camp('cost_ora', '«Cost/oră» trebuie să fie un număr mai mare decât 0.', '«Cost/hour» must be a number greater than 0.')]);
       }
 
       const codNormalizat = cod_esco.trim();
@@ -114,4 +115,4 @@ async function handler(req, res, admin) {
   return res.status(405).json({ error: 'Method not allowed' });
 }
 
-module.exports = requireAuth(['admin', 'superadmin'], handler);
+module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));

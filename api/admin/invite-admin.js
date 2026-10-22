@@ -6,6 +6,7 @@
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { requireAuth } = require('../../lib/auth-middleware');
+const { formaComuna } = require('../../lib/raspuns-eroare');
 
 async function handler(req, res, superadmin) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -52,4 +53,4 @@ async function handler(req, res, superadmin) {
   }
 }
 
-module.exports = requireAuth(['superadmin'], handler);
+module.exports = formaComuna(requireAuth(['superadmin'], handler));
