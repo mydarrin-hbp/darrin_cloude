@@ -144,7 +144,10 @@ async function deschide(browser, baza, latime, cereriRunde) {
       const inainte = cereriRunde.filter((c) => c.corp && c.corp.actiune === 'deschide').length;
       await pg.click('#inv-runde-tbody button:has-text("Deschide")').catch(() => {});
       await pg.waitForTimeout(300);
-      verifica(pg.dialoguri.some((d) => /e deja deschisă/.test(d)), `${et} 4: avertisment „altă rundă e deja deschisă” (${pg.dialoguri.join(' | ')})`);
+      // Pasul 11-N1: avertismentul e un toast de eroare (MDFeedback), nu alert().
+      const avertisment = await pg.locator('.md-toast-eroare').last().innerText().catch(() => '');
+      verifica(/e deja deschisă/.test(avertisment), `${et} 4: avertisment „altă rundă e deja deschisă” („${avertisment.trim()}”)`);
+      verifica(!pg.dialoguri.length, `${et} 4: fără ferestre native alert / confirm (${pg.dialoguri.join(' | ')})`);
       verifica(cereriRunde.filter((c) => c.corp && c.corp.actiune === 'deschide').length === inainte, `${et} 4: nicio cerere de deschidere trimisă`);
       verifica(DB.tabele.runde_finantare.filter((r) => r.stare === 'deschisa').length === 1, `${et} 4: tot o singură rundă deschisă`);
 

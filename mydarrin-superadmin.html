@@ -1830,7 +1830,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
               <input id="acc-bank-banca" placeholder="Banca" style="flex:1;min-width:120px;padding:8px 10px;border:1px solid #D5DFE8;border-radius:8px;font-size:12px;font-family:inherit">
               <input id="acc-bank-iban" required data-eticheta="IBAN" placeholder="IBAN" style="flex:2;min-width:180px;padding:8px 10px;border:1px solid #D5DFE8;border-radius:8px;font-size:12px;font-family:inherit">
               <input id="acc-bank-moneda" required data-eticheta="Monedă" placeholder="Monedă (RON/EUR...)" style="width:120px;padding:8px 10px;border:1px solid #D5DFE8;border-radius:8px;font-size:12px;font-family:inherit">
-              <button class="btn-p" style="font-size:11px" onclick="accAddBankAccount()">Salvează</button>
+              <button class="btn-p" style="font-size:11px" onclick="accAddBankAccount(this)">Salvează</button>
             </div>
             <table class="sa-table">
               <thead><tr><th>Nume</th><th>Bancă</th><th>IBAN</th><th>Monedă</th></tr></thead>
@@ -1914,7 +1914,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
           <input type="text" id="integ-observatii" style="width:100%;background:#0F1826;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:13px">
         </div>
         <div style="display:flex;gap:10px;margin-top:14px">
-          <button class="btn-p" onclick="salveazaIntegrare()">Salvează</button>
+          <button class="btn-p" onclick="salveazaIntegrare(this)">Salvează</button>
           <button class="btn-s" onclick="document.getElementById('integrare-form-wrap').style.display='none'">Anulează</button>
         </div>
         <div id="integ-form-msg" style="margin-top:10px;font-size:12px"></div>
@@ -2059,7 +2059,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
         <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:12px">Nume expeditor per limbă</div>
         <p style="font-size:11px;color:#8BA3C0;margin:0 0 12px">Adresa rămâne <code>noreply@homebestpal.com</code> (singurul domeniu verificat SPF/DKIM/DMARC azi) — doar numele afișat al expeditorului e configurabil per limbă. Un alias pe alt domeniu per regiune ar necesita verificarea acelui domeniu în Resend (acțiune superadmin, Secțiunea 38).</p>
         <div id="email-gw-nume-expeditor" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px"></div>
-        <button onclick="salveazaNumeExpeditor()" class="btn-p" style="font-size:12.5px;padding:9px 16px">Salvează</button>
+        <button onclick="salveazaNumeExpeditor(this)" class="btn-p" style="font-size:12.5px;padding:9px 16px">Salvează</button>
         <span id="email-gw-salvat" style="font-size:11.5px;color:#4ADE80;margin-left:10px"></span>
       </div>
 
@@ -2163,7 +2163,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
         <div id="np-nivel-nou" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
           <input id="np-nivel-cheie" type="text" required data-eticheta="Cheie" placeholder="cheie (ex: nivel_6)" style="flex:1;background:#0F1826;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:12.5px">
           <input id="np-nivel-nume" type="text" required data-eticheta="Nume" placeholder="nume afișat (ex: Nivel 6)" style="flex:1;background:#0F1826;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:12.5px">
-          <button onclick="creeazaNivelPret()" class="btn-s" style="font-size:11.5px;padding:7px 14px;white-space:nowrap">+ Nivel nou</button>
+          <button onclick="creeazaNivelPret(this)" class="btn-s" style="font-size:11.5px;padding:7px 14px;white-space:nowrap">+ Nivel nou</button>
         </div>
       </div>
 
@@ -2892,7 +2892,8 @@ function togglePerm(key, el){
   el.innerHTML=newVal?'<svg width="10" height="10" fill="none" stroke="#fff" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>':'';
   const label=el.nextElementSibling?.querySelector('div:first-child');
   if(label) label.style.color=newVal?'#E2E8F0':'#4A6080';
-  showToast('Permisiune '+key+' '+(newVal?'acordată':'revocată')+' · '+currentRole);
+  // Pasul 11-N1: matricea de aici nu se salvează pe server — fără confirmare falsă.
+  MDFeedback.toast('info', 'Permisiunea '+key+' '+(newVal?'bifată':'debifată')+' pentru '+currentRole+' doar în această pagină; nu se salvează pe server. Permisiunile reale se schimbă din „Administratori”.');
 }
 
 function toggleAllPerms(val){
@@ -3015,14 +3016,23 @@ function toggleFlag(key,el){
   if(!flag) return;
   flag.on=!flag.on;
   el.className='sa-toggle '+(flag.on?'on':'off');
-  showToast('Feature flag '+key+': '+(flag.on?'ON':'OFF'));
+  // Pasul 11-N1: comutatorul nu e legat de server — fără confirmare falsă.
+  MDFeedback.toast('info', 'Feature flag '+key+': '+(flag.on?'ON':'OFF')+' doar în această pagină; nu se salvează pe server.');
 }
 
 // ── UTILS ──
 // Pasul 11-N1: alias spre toast-ul comun (ui-feedback.js), ca apelurile
 // vechi să nu se rupă. Rezultatul salvărilor vine din MDFeedback.salveaza.
 function showToast(msg){ MDFeedback.toast('info', msg); }
-function bustCache(){showToast('🔄 Cache bust global declanșat · content_version: v2026.06.16-'+Date.now().toString(36).slice(-4));}
+// Pasul 11-N1: cererile de salvare ale panourilor trec prin MDFeedback.cerere
+// (timeout 15 s, forma comună de eroare din lib/raspuns-eroare.js).
+async function _adminPost(url, corp, metoda) {
+  return MDFeedback.cerere(url, { method: metoda || 'POST', headers: await _adminAuthHeader(), body: corp });
+}
+function bustCache(){
+  // Pasul 11-N1: butonul nu e legat de niciun endpoint — nu mai anunță o acțiune care nu are loc.
+  MDFeedback.toast('info', 'Cache bust-ul global nu este legat de server: nu s-a declanșat nimic.');
+}
 // adaugaTaraNoua()/toggleCheckoutActiv() — definite mai jos, lângă
 // loadTariReal() (1 septembrie 2026); stub-urile de teatru de aici (doar
 // showToast, nicio acțiune reală) au fost eliminate.
@@ -3443,8 +3453,11 @@ window.addEventListener('scroll',()=>{});
 
   function deleteSlot(slotEl) {
     const slot = slotEl.dataset.slot;
-    if (!confirm('Revii la logo-ul implicit pentru acest slot? Schimbarea se propagă imediat pe toate paginile.')) return;
+    MDFeedback.confirma('Revii la logo-ul implicit pentru acest slot? Schimbarea se propagă imediat pe toate paginile.', { textOk: 'Revino la implicit', periculos: true })
+      .then(function (da) { if (da) stergeSlotConfirmat(slotEl, slot); });
+  }
 
+  function stergeSlotConfirmat(slotEl, slot) {
     _adminAuthHeader().then(function (headers) {
       return fetch('/api/branding/upload', {
         method: 'POST',
@@ -3605,7 +3618,7 @@ async function submitInvite(){
     msg.style.color = catalogEsuat ? '#F87171' : '#4ADE80';
     msg.textContent = '✓ Invitație trimisă către ' + email + '. Va primi un email pentru setarea parolei.' + notaCatalog;
     if (typeof catAdminiInit === 'function') catAdminiInit();
-    showToast('✓ Admin invitat: ' + email);
+    MDFeedback.toast('succes', 'Admin invitat: ' + email);
     setTimeout(closeInviteModal, 2200);
   } catch (err) {
     msg.style.color = '#F87171';
@@ -3685,7 +3698,7 @@ async function ramSavePermissions(){
     if (error) throw error;
     msg.style.color = '#1A7A3A';
     msg.textContent = '✓ Permisiuni salvate.';
-    if (typeof showToast === 'function') showToast('✓ Permisiuni actualizate');
+    MDFeedback.toast('succes', 'Permisiuni actualizate.');
   } catch (e) {
     msg.style.color = '#C0392B';
     msg.textContent = '✗ ' + e.message;
@@ -3699,10 +3712,7 @@ async function ramSavePermissions(){
 /* ════ Pasul 9: adminii de catalog — numire, modificare, revocare (api/admin/permisiuni-catalog.js) ════ */
 let CAT_ADMINI = null;
 async function catApi(corp) {
-  const r = await fetch('/api/admin/permisiuni-catalog', { method: 'POST', headers: await _adminAuthHeader(), body: JSON.stringify(corp) });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.error || 'Eroare necunoscută');
-  return j;
+  return MDFeedback.cerere('/api/admin/permisiuni-catalog', { method: 'POST', headers: await _adminAuthHeader(), body: corp });
 }
 function catCapitoleHtml(prefix, capitole, ales) {
   const toate = ales === '*';
@@ -3754,7 +3764,7 @@ async function catAcorda(buton) {
 }
 async function catRevoca(buton) {
   const card = buton.closest('.cat-admin');
-  if (!confirm('Revoci dreptul de catalog? Contul adminului rămâne.')) return;
+  if (!(await MDFeedback.confirma('Revoci dreptul de catalog? Contul adminului rămâne.', { textOk: 'Revocă dreptul', periculos: true }))) return;
   const r = await MDFeedback.salveaza(buton, card.querySelector('.ca-msg'), async () => {
     await catApi({ action: 'revoca', admin_id: card.dataset.admin });
     return 'Drept de catalog revocat.';
@@ -3957,7 +3967,7 @@ async function accLoadTaxConfig(){
       <td><input type="number" step="0.1" value="${t.cota_tva}" id="acc-tva-${t.tara_cod}" style="width:70px;padding:4px 8px;border:1px solid #D5DFE8;border-radius:6px;font-family:inherit"></td>
       <td><input type="number" step="0.1" value="${t.cota_impozit_venit || 0}" id="acc-imp-${t.tara_cod}" style="width:70px;padding:4px 8px;border:1px solid #D5DFE8;border-radius:6px;font-family:inherit"></td>
       <td><input type="number" step="1" min="0" placeholder="implicit 100" value="${t.prag_minim_comanda ?? ''}" id="acc-prag-${t.tara_cod}" style="width:90px;padding:4px 8px;border:1px solid #D5DFE8;border-radius:6px;font-family:inherit" title="Cost minim de intervenție, în ${t.moneda}. Gol = fallback 100."></td>
-      <td><button class="btn-s" style="font-size:11px;padding:5px 10px" onclick="accSaveTaxConfig('${t.tara_cod}')">Salvează</button></td>
+      <td><button class="btn-s" style="font-size:11px;padding:5px 10px" onclick="accSaveTaxConfig('${t.tara_cod}', this)">Salvează</button></td>
     </tr>`).join('');
 
   // Domeniul (filtrul de țară) e populat din aceleași rânduri — o singură
@@ -3969,7 +3979,7 @@ async function accLoadTaxConfig(){
   filtru.value = selectat;
 }
 
-async function accSaveTaxConfig(tara_cod){
+async function accSaveTaxConfig(tara_cod, btn){
   // Bug real găsit 1 septembrie 2026 (fondator: "Bulgaria are acum moneda
   // euro") — coloana Monedă era text simplu, needitabil, în tabelul altfel
   // real (TVA/Impozit/Prag minim funcționau deja). Adăugat input + trimis.
@@ -3981,14 +3991,11 @@ async function accSaveTaxConfig(tara_cod){
   // hardcodat (100), nu pe un prag de 0 care ar dezactiva de fapt pragul.
   const pragRaw = document.getElementById(`acc-prag-${tara_cod}`).value;
   const prag_minim_comanda = pragRaw === '' ? null : parseFloat(pragRaw);
-  const token = await accGetToken();
-  const res = await fetch('/api/accountancy', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ action: 'update_tax_config', tara_cod, moneda, cota_tva, cota_impozit_venit, prag_minim_comanda }),
+  // Pasul 11-N1: mesajul verde doar după răspunsul serverului (înainte: „✗ Eroare la salvare” fără motiv).
+  await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/accountancy', { action: 'update_tax_config', tara_cod, moneda, cota_tva, cota_impozit_venit, prag_minim_comanda });
+    return `Cote actualizate pentru ${tara_cod}.`;
   });
-  if (res.ok) showToast(`✓ Cote actualizate pentru ${tara_cod}`);
-  else showToast('✗ Eroare la salvare');
 }
 
 // Panoul VMC (1 septembrie 2026) — reconstruit pe date reale, aceeași sursă
@@ -4009,30 +4016,22 @@ async function loadVmcReal(){
         <td><input type="text" maxlength="3" value="${escapeHTML(t.moneda)}" id="vmc-moneda-${t.tara_cod}" style="width:55px;padding:4px 8px;border:1px solid #D5DFE8;border-radius:6px;font-family:inherit;text-transform:uppercase"></td>
         <td><input type="number" step="1" min="0" placeholder="implicit 100" value="${t.prag_minim_comanda ?? ''}" id="vmc-prag-${t.tara_cod}" style="width:100px;padding:4px 8px;border:1px solid #D5DFE8;border-radius:6px;font-family:inherit" title="Gol = fallback 100"></td>
         <td style="color:#8C9BAD;font-size:11.5px">${t.updated_at ? new Date(t.updated_at).toLocaleDateString('ro-RO') : '—'}</td>
-        <td><button class="btn-s" style="font-size:11px;padding:5px 10px" onclick="salveazaVmc('${t.tara_cod}')">Salvează</button></td>
+        <td><button class="btn-s" style="font-size:11px;padding:5px 10px" onclick="salveazaVmc('${t.tara_cod}', this)">Salvează</button></td>
       </tr>`).join('');
   } catch (e) {
     tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#E57373">Eroare: ${escapeHTML(e.message)}</td></tr>`;
   }
 }
 
-async function salveazaVmc(tara_cod){
+async function salveazaVmc(tara_cod, btn){
   const moneda = document.getElementById(`vmc-moneda-${tara_cod}`).value.trim().toUpperCase();
   const pragRaw = document.getElementById(`vmc-prag-${tara_cod}`).value;
   const prag_minim_comanda = pragRaw === '' ? null : parseFloat(pragRaw);
-  try {
-    const token = await accGetToken();
-    const res = await fetch('/api/accountancy', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ action: 'update_tax_config', tara_cod, moneda, prag_minim_comanda }),
-    });
-    if (!res.ok) throw new Error((await res.json()).error || 'Eroare necunoscută');
-    showToast(`✓ VMC actualizat pentru ${tara_cod}`);
-    loadVmcReal();
-  } catch (e) {
-    showToast('✗ Eroare: ' + e.message);
-  }
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/accountancy', { action: 'update_tax_config', tara_cod, moneda, prag_minim_comanda });
+    return `VMC actualizat pentru ${tara_cod}.`;
+  });
+  if (r.ok) loadVmcReal();
 }
 
 const _origShowPanelVmc = window.showPanel;
@@ -4130,21 +4129,15 @@ async function salveazaCardTara(tara_cod, btn){
   const pragRaw = card.querySelector('.tg-prag').value;
   const prag_minim_comanda = pragRaw === '' ? null : parseFloat(pragRaw);
   const msgEl = card.querySelector('.tg-msg');
-  if (Number.isNaN(cota_tva)) { msgEl.innerHTML = '<span style="color:#C0392B">TVA invalid</span>'; return; }
-  msgEl.textContent = '';
-  try {
-    const token = await accGetToken();
-    const res = await fetch('/api/accountancy', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ action: 'update_tax_config', tara_cod, moneda, cota_tva, prag_minim_comanda }),
-    });
-    if (!res.ok) throw new Error((await res.json()).error || 'Eroare necunoscută');
-    msgEl.innerHTML = '<span style="color:#16A34A">✓ Salvat</span>';
-    showToast(`✓ ${tara_cod} actualizată — Monedă/TVA/VMC`);
-  } catch (e) {
-    msgEl.innerHTML = `<span style="color:#C0392B">✗ ${escapeHTML(e.message)}</span>`;
-  }
+  await MDFeedback.salveaza(btn, msgEl, async () => {
+    if (Number.isNaN(cota_tva)) {
+      const e = new Error('Completați «TVA %» cu un număr.');
+      e.campuri = [{ camp: card.querySelector('.tg-tva'), mesaj: 'Completați «TVA %» cu un număr.' }];
+      throw e;
+    }
+    await _adminPost('/api/accountancy', { action: 'update_tax_config', tara_cod, moneda, cota_tva, prag_minim_comanda });
+    return `${tara_cod} actualizată — Monedă/TVA/VMC.`;
+  }, { form: card, toast: true });
 }
 
 // Fix real 1 septembrie 2026 (fondator: "dacă doresc să adaug o țară, nu
@@ -4156,20 +4149,22 @@ async function adaugaTaraNoua(btn){
   const moneda = document.getElementById('tg-add-moneda').value.trim().toUpperCase();
   const cota_tva = parseFloat(document.getElementById('tg-add-tva').value);
   const msgEl = document.getElementById('tg-add-msg');
-  if (!tara_cod || tara_cod.length !== 2) { msgEl.innerHTML = '<span style="color:#C0392B">Cod ISO invalid (2 litere)</span>'; return; }
-  if (!tara_nume || !moneda || Number.isNaN(cota_tva)) { msgEl.innerHTML = '<span style="color:#C0392B">Toate câmpurile sunt obligatorii</span>'; return; }
-  msgEl.textContent = '';
-  try {
-    const token = await accGetToken();
-    const res = await fetch('/api/accountancy', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ action: 'update_tax_config', tara_cod, tara_nume, moneda, cota_tva, cota_impozit_venit: 0 }),
-    });
-    if (!res.ok) throw new Error((await res.json()).error || 'Eroare necunoscută');
-    showToast(`✓ ${tara_nume} adăugată/actualizată`);
-    loadTariReal();
-  } catch (e) { msgEl.innerHTML = `<span style="color:#C0392B">✗ ${escapeHTML(e.message)}</span>`; }
+  const form = btn.parentElement;
+  const r = await MDFeedback.salveaza(btn, msgEl, async () => {
+    if (tara_cod.length !== 2) {
+      const e = new Error('«Cod ISO»: 2 litere (ex. PT).');
+      e.campuri = [{ camp: 'tg-add-cod', mesaj: '«Cod ISO»: 2 litere (ex. PT).' }];
+      throw e;
+    }
+    if (Number.isNaN(cota_tva)) {
+      const e = new Error('Completați «TVA %» cu un număr.');
+      e.campuri = [{ camp: 'tg-add-tva', mesaj: 'Completați «TVA %» cu un număr.' }];
+      throw e;
+    }
+    await _adminPost('/api/accountancy', { action: 'update_tax_config', tara_cod, tara_nume, moneda, cota_tva, cota_impozit_venit: 0 });
+    return `${tara_nume} adăugată/actualizată.`;
+  }, { form, toast: true });
+  if (r.ok) loadTariReal();
 }
 
 // Fix real 1 septembrie 2026 (fondator: "apare doar România activă") —
@@ -4179,18 +4174,12 @@ async function toggleCheckoutActiv(tara_cod, nouaValoare, btn){
   const mesaj = nouaValoare
     ? `Activezi CHECKOUT LIVE pentru ${tara_cod} — clienții vor putea plasa și PLĂTI comenzi reale în această țară. Confirmi?`
     : `Dezactivezi checkout-ul pentru ${tara_cod} — clienții nu vor mai putea plasa comenzi noi acolo. Confirmi?`;
-  if (!confirm(mesaj)) return;
-  try {
-    const token = await accGetToken();
-    const res = await fetch('/api/accountancy', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ action: 'update_tax_config', tara_cod, checkout_activ: nouaValoare }),
-    });
-    if (!res.ok) throw new Error((await res.json()).error || 'Eroare necunoscută');
-    showToast(`✓ ${tara_cod} — checkout ${nouaValoare ? 'activat' : 'dezactivat'}`);
-    loadTariReal();
-  } catch (e) { showToast('✗ Eroare: ' + e.message); }
+  if (!(await MDFeedback.confirma(mesaj, { textOk: nouaValoare ? 'Activează checkout-ul' : 'Dezactivează checkout-ul', periculos: true }))) return;
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/accountancy', { action: 'update_tax_config', tara_cod, checkout_activ: nouaValoare });
+    return `${tara_cod} — checkout ${nouaValoare ? 'activat' : 'dezactivat'}.`;
+  });
+  if (r.ok) loadTariReal();
 }
 
 async function accLoadBankAccounts(){
@@ -4201,7 +4190,7 @@ async function accLoadBankAccounts(){
     : '<tr><td colspan="4" style="text-align:center;color:#8C9BAD">Niciun cont adăugat</td></tr>';
 }
 
-async function accAddBankAccount(){
+async function accAddBankAccount(btn){
   const payload = {
     action: 'add_bank_account',
     nume_afisat: document.getElementById('acc-bank-nume').value.trim(),
@@ -4209,18 +4198,15 @@ async function accAddBankAccount(){
     iban: document.getElementById('acc-bank-iban').value.trim(),
     moneda: document.getElementById('acc-bank-moneda').value.trim().toUpperCase(),
   };
-  if (!payload.nume_afisat || !payload.iban || !payload.moneda) { showToast('✗ Completează Nume, IBAN și Monedă'); return; }
-  const token = await accGetToken();
-  const res = await fetch('/api/accountancy', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify(payload),
-  });
-  if (res.ok) {
-    showToast('✓ Cont bancar adăugat');
+  // Câmpurile obligatorii (Nume, IBAN, Monedă) au „required”: MDFeedback le verifică înainte de trimitere.
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/accountancy', payload);
+    return 'Cont bancar adăugat.';
+  }, { form: document.getElementById('acc-bank-form') });
+  if (r.ok) {
     document.getElementById('acc-bank-form').style.display = 'none';
     accLoadBankAccounts();
-  } else showToast('✗ Eroare la adăugare');
+  }
 }
 
 async function accLoadInvoices(){
@@ -4232,25 +4218,19 @@ async function accLoadInvoices(){
       <td><span class="chip ${inv.tip === 'fiscala' ? 'chip-green' : 'chip-orange'}">${inv.tip}</span></td>
       <td>${inv.numar_document || '—'}</td>
       <td>${Number(inv.suma_totala).toLocaleString('ro-RO')} ${inv.moneda}</td>
-      <td>${inv.incasare_confirmata ? '✅' : `<button class="btn-s" style="font-size:10px;padding:3px 8px" onclick="accConfirm('${inv.id}','confirm_incasare')">Confirmă</button>`}</td>
-      <td>${inv.livrare_confirmata ? '✅' : `<button class="btn-s" style="font-size:10px;padding:3px 8px" onclick="accConfirm('${inv.id}','confirm_livrare')">Confirmă</button>`}</td>
+      <td>${inv.incasare_confirmata ? '✅' : `<button class="btn-s" style="font-size:10px;padding:3px 8px" onclick="accConfirm('${inv.id}','confirm_incasare', this)">Confirmă</button>`}</td>
+      <td>${inv.livrare_confirmata ? '✅' : `<button class="btn-s" style="font-size:10px;padding:3px 8px" onclick="accConfirm('${inv.id}','confirm_livrare', this)">Confirmă</button>`}</td>
       <td>${inv.status}</td>
       <td>—</td>
     </tr>`).join('');
 }
 
-async function accConfirm(invoice_id, action){
-  const token = await accGetToken();
-  const res = await fetch('/api/accountancy', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ action, invoice_id }),
+async function accConfirm(invoice_id, action, btn){
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    const data = await _adminPost('/api/accountancy', { action, invoice_id });
+    return data.converted ? 'Convertită în factură fiscală: ' + data.invoice.numar_document : 'Confirmare înregistrată.';
   });
-  const data = await res.json();
-  if (!res.ok) { showToast('✗ ' + (data.error || 'Eroare')); return; }
-  showToast(data.converted ? '🎉 Convertită în factură fiscală: ' + data.invoice.numar_document : '✓ Confirmare înregistrată');
-  accLoadInvoices();
-  accLoadSummary();
+  if (r.ok) { accLoadInvoices(); accLoadSummary(); }
 }
 
 
@@ -4470,16 +4450,13 @@ async function veziDocumentKyc(i, latura, btn) {
 
 async function aprobaKycInvestitor(i, btn) {
   const r = KYC_CERERI[i];
-  if (!r || !confirm(`Aprobi verificarea identității pentru ${r.email || r.nume || 'acest investitor'}? Investitorul primește email.`)) return;
-  if (btn) { btn.disabled = true; btn.textContent = 'Se salvează…'; }
-  try {
+  if (!r) return;
+  if (!(await MDFeedback.confirma(`Aprobi verificarea identității pentru ${r.email || r.nume || 'acest investitor'}? Investitorul primește email.`, { textOk: 'Aprobă' }))) return;
+  const rez = await MDFeedback.salveaza(btn, null, async () => {
     const j = await kycApi('/api/admin/investitori-kyc', { metoda: 'POST', corp: { user_id: r.user_id, actiune: 'aproba' } });
-    showSAToast(j.email_trimis ? '✅ KYC aprobat · email trimis' : '✅ KYC aprobat · emailul nu a putut fi trimis');
-    loadKycInvestitori();
-  } catch (e) {
-    showSAToast('⚠ Nu s-a salvat: ' + e.message);
-    if (btn) { btn.disabled = false; btn.textContent = '✓ Aprobă'; }
-  }
+    return j.email_trimis ? 'KYC aprobat · email trimis.' : 'KYC aprobat · emailul nu a putut fi trimis.';
+  });
+  if (rez.ok) loadKycInvestitori();
 }
 
 function respingeKycInvestitor(i) {
@@ -4541,8 +4518,8 @@ function renderSubscrieriPublice(rows) {
     const poateAproba = !!r.user_id && r.kyc_status === 'aprobat';
     const decizie = r.status === 'in_asteptare'
       ? `<div style="display:flex;gap:4px;justify-content:center">
-           <button onclick="decideSubscriere('${escapeHTML(r.id)}','aproba')" ${poateAproba ? '' : 'disabled title="Aprobarea cere verificarea identității aprobată"'} style="padding:4px 10px;border-radius:6px;border:none;background:#1A7A3A;color:#fff;font-size:10px;cursor:pointer;font-family:inherit">✓ Aprobă</button>
-           <button onclick="decideSubscriere('${escapeHTML(r.id)}','respinge')" style="padding:4px 8px;border-radius:6px;border:none;background:#C0392B;color:#fff;font-size:10px;cursor:pointer;font-family:inherit">✗ Respinge</button>
+           <button onclick="decideSubscriere('${escapeHTML(r.id)}','aproba', this)" ${poateAproba ? '' : 'disabled title="Aprobarea cere verificarea identității aprobată"'} style="padding:4px 10px;border-radius:6px;border:none;background:#1A7A3A;color:#fff;font-size:10px;cursor:pointer;font-family:inherit">✓ Aprobă</button>
+           <button onclick="decideSubscriere('${escapeHTML(r.id)}','respinge', this)" style="padding:4px 8px;border-radius:6px;border:none;background:#C0392B;color:#fff;font-size:10px;cursor:pointer;font-family:inherit">✗ Respinge</button>
          </div>`
       : '<div style="text-align:center;color:#4A6080;font-size:11px">—</div>';
     return `<tr>
@@ -4558,21 +4535,14 @@ function renderSubscrieriPublice(rows) {
   }).join('');
 }
 
-async function decideSubscriere(id, actiune) {
+async function decideSubscriere(id, actiune, btn) {
   const eticheta = actiune === 'aproba' ? 'Aprobă' : 'Respinge';
-  if (!confirm(`${eticheta} această cerere de subscriere?`)) return;
-  try {
-    const token = await accGetToken();
-    const res = await fetch('/api/admin/investitori-aprobare', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ id, actiune }),
-    });
-    const j = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(j.error || `HTTP ${res.status}`);
-    showSAToast(actiune === 'aproba' ? '✅ Cerere aprobată' : '❌ Cerere respinsă');
-    loadInvestitoriAdmin();
-  } catch (e) { showSAToast('⚠ Eroare: ' + e.message); }
+  if (!(await MDFeedback.confirma(`${eticheta} această cerere de subscriere?`, { textOk: eticheta, periculos: actiune !== 'aproba' }))) return;
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await kycApi('/api/admin/investitori-aprobare', { metoda: 'POST', corp: { id, actiune } });
+    return actiune === 'aproba' ? 'Cerere aprobată.' : 'Cerere respinsă.';
+  });
+  if (r.ok) loadInvestitoriAdmin();
 }
 
 // Pasul 11-J: approveKyc / rejectKyc / showModalKyc (admin_update_kyc_status:
@@ -4630,15 +4600,14 @@ async function schimbaStareRunda(i, actiune, btn) {
   if (!r) return;
   if (actiune === 'deschide') {
     const alta = RUNDE.find(x => x.stare === 'deschisa' && x.id !== r.id);
-    if (alta) { alert(`Atenție: runda „${alta.denumire_ro}” e deja deschisă. Închide-o înainte să deschizi „${r.denumire_ro}”.`); return; }
-    if (!confirm(`Deschizi runda „${r.denumire_ro}”? Dacă e vizibilă public, apare pe pagina Investitori.`)) return;
-  } else if (!confirm(`Închizi runda „${r.denumire_ro}”? Nu se mai primesc subscrieri în ea.`)) return;
-  btn.disabled = true;
-  try {
+    if (alta) { MDFeedback.toast('eroare', `Atenție: runda „${alta.denumire_ro}” e deja deschisă. Închide-o înainte să deschizi „${r.denumire_ro}”.`); return; }
+    if (!(await MDFeedback.confirma(`Deschizi runda „${r.denumire_ro}”? Dacă e vizibilă public, apare pe pagina Investitori.`, { textOk: 'Deschide runda' }))) return;
+  } else if (!(await MDFeedback.confirma(`Închizi runda „${r.denumire_ro}”? Nu se mai primesc subscrieri în ea.`, { textOk: 'Închide runda', periculos: true }))) return;
+  const rez = await MDFeedback.salveaza(btn, null, async () => {
     await kycApi('/api/admin/runde-finantare', { metoda: 'POST', corp: { actiune, id: r.id } });
-    showSAToast(actiune === 'deschide' ? '✅ Runda e deschisă' : '✅ Runda e închisă');
-    loadInvestitoriAdmin();
-  } catch (e) { showSAToast('⚠ ' + e.message); btn.disabled = false; }
+    return actiune === 'deschide' ? 'Runda e deschisă.' : 'Runda e închisă.';
+  }, { textSalveaza: actiune === 'deschide' ? 'Se deschide…' : 'Se închide…' });
+  if (rez.ok) loadInvestitoriAdmin();
 }
 
 function formularRunda(i) {
@@ -4757,11 +4726,9 @@ function exportInvestitoriCSV() {
 
 // ── Toast helper (dacă nu există deja) ───────────────────────
 function showSAToast(msg) {
-  const t = document.createElement('div');
-  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;background:#1A2332;color:#fff;padding:12px 22px;border-radius:14px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.3);white-space:nowrap;max-width:90vw;text-align:center;font-family:inherit';
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3200);
+  // Pasul 11-N1: alias spre toast-ul comun (ui-feedback.js).
+  const tip = /^(⚠|✗|❌)/.test(msg) ? 'eroare' : /^(✅|✓)/.test(msg) ? 'succes' : 'info';
+  MDFeedback.toast(tip, String(msg).replace(/^(✅|⚠|✓|✗|❌)\s*/, ''));
 }
 
 // ── Auto-load când panelul devine activ ───────────────────────
@@ -4942,8 +4909,8 @@ async function loadMesajeContact() {
         <div style="color:#C5D2E0;font-size:12.5px;line-height:1.5;margin-bottom:10px;white-space:pre-wrap">${escapeHTML(m.mesaj)}</div>
         <div style="display:flex;align-items:center;gap:8px">
           <span style="font-size:11px;color:#8BA3C0">${STATUS_LABEL_MESAJ[m.status] || m.status}</span>
-          ${m.status !== 'citit' ? `<button onclick="setStatusMesaj('${m.id}','citit')" style="font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">Marchează citit</button>` : ''}
-          ${m.status !== 'raspuns' ? `<button onclick="setStatusMesaj('${m.id}','raspuns')" style="font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">Marchează răspuns trimis</button>` : ''}
+          ${m.status !== 'citit' ? `<button onclick="setStatusMesaj('${m.id}','citit', this)" style="font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">Marchează citit</button>` : ''}
+          ${m.status !== 'raspuns' ? `<button onclick="setStatusMesaj('${m.id}','raspuns', this)" style="font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">Marchează răspuns trimis</button>` : ''}
           <a href="mailto:${escapeHTML(m.email)}" style="font-size:11px;color:#0E9E99;margin-left:auto">↩ Răspunde</a>
         </div>
       </div>
@@ -4953,13 +4920,12 @@ async function loadMesajeContact() {
   }
 }
 
-async function setStatusMesaj(id, status) {
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/mesaje-contact', { method: 'POST', headers, body: JSON.stringify({ id, status }) });
-    if (!res.ok) throw new Error((await res.json()).error);
-    loadMesajeContact();
-  } catch (e) { alert('Eroare: ' + e.message); }
+async function setStatusMesaj(id, status, btn) {
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/admin/mesaje-contact', { id, status });
+    return 'Statusul mesajului a fost actualizat.';
+  });
+  if (r.ok) loadMesajeContact();
 }
 
 const STATUS_LABEL_PROSPECT = { nou: '🆕 Nou', contactat: '📨 Contactat', inscris: '✅ Înscris', refuzat: '✗ Refuzat' };
@@ -5030,11 +4996,11 @@ async function adaugaProspect() {
 }
 
 async function setStatusProspect(id, status) {
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/prospecti', { method: 'POST', headers, body: JSON.stringify({ action: 'status', id, status }) });
-    if (!res.ok) throw new Error((await res.json()).error);
-  } catch (e) { alert('Eroare: ' + e.message); loadProspecti(); }
+  const r = await MDFeedback.salveaza(null, null, async () => {
+    await _adminPost('/api/admin/prospecti', { action: 'status', id, status });
+    return 'Statusul prospectului a fost actualizat.';
+  });
+  if (!r.ok) loadProspecti();
 }
 
 const STATUS_LABEL_NEWSLETTER = { activ: '🟢 Activ', dezabonat: '⚪ Dezabonat' };
@@ -5066,8 +5032,8 @@ async function loadNewsletter() {
           <td style="padding:8px 10px;color:#8BA3C0">${STATUS_LABEL_NEWSLETTER[a.status] || a.status}</td>
           <td style="padding:8px 10px">
             ${a.status === 'activ'
-              ? `<button onclick="setStatusAbonat('${a.id}','dezabonat')" style="font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">Dezabonează</button>`
-              : `<button onclick="setStatusAbonat('${a.id}','activ')" style="font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">Reactivează</button>`}
+              ? `<button onclick="setStatusAbonat('${a.id}','dezabonat', this)" style="font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">Dezabonează</button>`
+              : `<button onclick="setStatusAbonat('${a.id}','activ', this)" style="font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">Reactivează</button>`}
           </td>
         </tr>
       `).join('')}</tbody>
@@ -5077,13 +5043,12 @@ async function loadNewsletter() {
   }
 }
 
-async function setStatusAbonat(id, status) {
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/newsletter', { method: 'POST', headers, body: JSON.stringify({ id, status }) });
-    if (!res.ok) throw new Error((await res.json()).error);
-    loadNewsletter();
-  } catch (e) { alert('Eroare: ' + e.message); }
+async function setStatusAbonat(id, status, btn) {
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/admin/newsletter', { id, status });
+    return status === 'activ' ? 'Abonatul a fost reactivat.' : 'Abonatul a fost dezabonat.';
+  });
+  if (r.ok) loadNewsletter();
 }
 
 // ── NOREPLY & TRANSACTIONAL GATEWAY MANAGER (audit Secțiunea 39, 30 Iulie 2026) ──
@@ -5147,20 +5112,16 @@ async function loadEmailGateway() {
   }
 }
 
-async function salveazaNumeExpeditor() {
-  const rezultatEl = document.getElementById('email-gw-salvat');
-  rezultatEl.textContent = '';
-  try {
+async function salveazaNumeExpeditor(btn) {
+  await MDFeedback.salveaza(btn, document.getElementById('email-gw-salvat'), async () => {
     const headers = await _adminAuthHeader();
     for (const l of ['ro','en','it','fr','de','es','tr']) {
       const input = document.getElementById(`email-gw-nume-${l}`);
       if (!input) continue;
-      const res = await fetch('/api/admin/email-gateway', { method: 'POST', headers, body: JSON.stringify({ limba: l, nume_expeditor: input.value }) });
-      if (!res.ok) throw new Error((await res.json()).error);
+      await MDFeedback.cerere('/api/admin/email-gateway', { method: 'POST', headers, body: { limba: l, nume_expeditor: input.value } });
     }
-    rezultatEl.textContent = '✓ Salvat';
-    setTimeout(() => { rezultatEl.textContent = ''; }, 3000);
-  } catch (e) { alert('Eroare: ' + e.message); }
+    return 'Numele expeditorului a fost salvat.';
+  });
 }
 
 // ── FACTURARE PARTENERI (audit Secțiunea 41/42, 31 Iulie 2026) ──
@@ -5306,7 +5267,7 @@ async function loadFacturiParteneri() {
           <td style="padding:8px 10px;color:#8BA3C0">${new Date(f.creat_la).toLocaleDateString('ro-RO')}</td>
           <td style="padding:8px 10px">
             ${f.status === 'emisa'
-              ? `<button onclick="confirmaPlataFacturaPartener('${f.id}')" class="btn-p" style="font-size:11px;padding:5px 10px">Confirmă plată (transfer bancar)</button>`
+              ? `<button onclick="confirmaPlataFacturaPartener('${f.id}', this)" class="btn-p" style="font-size:11px;padding:5px 10px">Confirmă plată (transfer bancar)</button>`
               : `<span style="font-size:11px;color:#4ADE80">✓ ${f.metoda_plata || ''}</span>`}
           </td>
         </tr>
@@ -5317,14 +5278,13 @@ async function loadFacturiParteneri() {
   }
 }
 
-async function confirmaPlataFacturaPartener(id) {
-  if (!confirm('Confirmi că ai efectuat real transferul bancar către acest partener?')) return;
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/facturi-parteneri', { method: 'POST', headers, body: JSON.stringify({ id, action: 'confirma_plata' }) });
-    if (!res.ok) throw new Error((await res.json()).error);
-    loadFacturiParteneri();
-  } catch (e) { alert('Eroare: ' + e.message); }
+async function confirmaPlataFacturaPartener(id, btn) {
+  if (!(await MDFeedback.confirma('Confirmi că ai efectuat real transferul bancar către acest partener?', { textOk: 'Confirm transferul' }))) return;
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/admin/facturi-parteneri', { id, action: 'confirma_plata' });
+    return 'Plata către partener a fost înregistrată.';
+  });
+  if (r.ok) loadFacturiParteneri();
 }
 
 // ── B2G & METODE DE PLATĂ (audit Secțiunea 43/44, 31 Iulie 2026) ──
@@ -5398,8 +5358,8 @@ async function loadComenziB2G() {
           <td style="padding:8px 10px;color:#8BA3C0">${escapeHTML(c.cui_client_b2g || '—')}</td>
           <td style="padding:8px 10px;color:#FF8C00;font-weight:700">${c.suma_totala_platita} ${escapeHTML(c.moneda || '')}</td>
           <td style="padding:8px 10px;color:#8BA3C0">${c.metoda_plata === 'ordin_plata' ? 'Ordin de plată' : 'Card'}</td>
-          <td style="padding:8px 10px;color:#8BA3C0">${c.procent_avans ? c.procent_avans + '%' : `<button onclick="setareAvansB2G('${c.id}')" class="btn-s" style="font-size:10.5px;padding:4px 8px">Setează</button>`}</td>
-          <td style="padding:8px 10px"><button onclick="certificaPlataB2G('${c.id}')" class="btn-p" style="font-size:11px;padding:5px 10px">Certifică plata</button></td>
+          <td style="padding:8px 10px;color:#8BA3C0">${c.procent_avans ? c.procent_avans + '%' : `<button onclick="setareAvansB2G('${c.id}', this)" class="btn-s" style="font-size:10.5px;padding:4px 8px">Setează</button>`}</td>
+          <td style="padding:8px 10px"><button onclick="certificaPlataB2G('${c.id}', this)" class="btn-p" style="font-size:11px;padding:5px 10px">Certifică plata</button></td>
         </tr>
       `).join('')}</tbody>
     </table>`;
@@ -5408,27 +5368,25 @@ async function loadComenziB2G() {
   }
 }
 
-async function setareAvansB2G(comanda_id) {
+async function setareAvansB2G(comanda_id, btn) {
   const procent = prompt('Procent avans (0-100), stabilit de la caz la caz pentru această comandă:');
   if (!procent) return;
   const numeric = Number(procent);
-  if (!Number.isFinite(numeric) || numeric <= 0 || numeric > 100) { alert('Procent invalid.'); return; }
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/comenzi-b2g', { method: 'POST', headers, body: JSON.stringify({ comanda_id, action: 'seteaza_avans', procent_avans: numeric }) });
-    if (!res.ok) throw new Error((await res.json()).error);
-    loadComenziB2G();
-  } catch (e) { alert('Eroare: ' + e.message); }
+  if (!Number.isFinite(numeric) || numeric <= 0 || numeric > 100) { MDFeedback.toast('eroare', '«Procent avans» trebuie să fie un număr între 1 și 100.'); return; }
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/admin/comenzi-b2g', { comanda_id, action: 'seteaza_avans', procent_avans: numeric });
+    return `Avans de ${numeric}% salvat.`;
+  });
+  if (r.ok) loadComenziB2G();
 }
 
-async function certificaPlataB2G(comanda_id) {
-  if (!confirm('Confirmi că plata (transfer bancar / ordin de plată) a fost verificată real, pe extrasul de cont al platformei? Sistemul va relua automat alocarea către un partener.')) return;
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/comenzi-b2g', { method: 'POST', headers, body: JSON.stringify({ comanda_id, action: 'certifica_plata' }) });
-    if (!res.ok) throw new Error((await res.json()).error);
-    loadComenziB2G();
-  } catch (e) { alert('Eroare: ' + e.message); }
+async function certificaPlataB2G(comanda_id, btn) {
+  if (!(await MDFeedback.confirma('Confirmi că plata (transfer bancar / ordin de plată) a fost verificată real, pe extrasul de cont al platformei? Sistemul va relua automat alocarea către un partener.', { textOk: 'Plata e verificată' }))) return;
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/admin/comenzi-b2g', { comanda_id, action: 'certifica_plata' });
+    return 'Plata a fost certificată.';
+  });
+  if (r.ok) loadComenziB2G();
 }
 
 async function loadMetodePlataConfig() {
@@ -5458,7 +5416,7 @@ function randMetodaPlataHTML(c) {
       <label style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:#8BA3C0"><input type="checkbox" class="mpc-avans" ${c.permite_avans ? 'checked' : ''}> Avans</label>
       <div style="display:flex;gap:4px">
         <button onclick="salveazaMetodaPlata(this)" class="btn-p" style="font-size:10.5px;padding:5px 8px">Salvează</button>
-        ${c.id ? `<button onclick="stergeMetodaPlata('${c.id}')" class="btn-s" style="font-size:10.5px;padding:5px 8px">✕</button>` : ''}
+        ${c.id ? `<button onclick="stergeMetodaPlata('${c.id}', this)" class="btn-s" style="font-size:10.5px;padding:5px 8px">✕</button>` : ''}
       </div>
     </div>
   `;
@@ -5477,36 +5435,30 @@ async function salveazaMetodaPlata(btn) {
   const metode_acceptate = [];
   if (rand.querySelector('.mpc-card').checked) metode_acceptate.push('card');
   if (rand.querySelector('.mpc-op').checked) metode_acceptate.push('ordin_plata');
-  if (!metode_acceptate.length) { alert('Selectează cel puțin o metodă de plată.'); return; }
-
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/metode-plata-config', {
-      method: 'POST', headers,
-      body: JSON.stringify({
-        action: 'salveaza',
-        id: rand.dataset.id || undefined,
-        tara_cod: rand.querySelector('.mpc-tara').value.trim() || null,
-        regiune: rand.querySelector('.mpc-regiune').value.trim() || null,
-        categorie_serviciu_slug: rand.querySelector('.mpc-categorie').value.trim() || null,
-        metode_acceptate,
-        permite_avans: rand.querySelector('.mpc-avans').checked,
-        activ: true,
-      }),
+  // „Metode de plată” are data-obligatoriu: fără nicio bifă, câmpul se marchează înainte de trimitere.
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/admin/metode-plata-config', {
+      action: 'salveaza',
+      id: rand.dataset.id || undefined,
+      tara_cod: rand.querySelector('.mpc-tara').value.trim() || null,
+      regiune: rand.querySelector('.mpc-regiune').value.trim() || null,
+      categorie_serviciu_slug: rand.querySelector('.mpc-categorie').value.trim() || null,
+      metode_acceptate,
+      permite_avans: rand.querySelector('.mpc-avans').checked,
+      activ: true,
     });
-    if (!res.ok) throw new Error((await res.json()).error);
-    loadMetodePlataConfig();
-  } catch (e) { alert('Eroare: ' + e.message); }
+    return 'Configurarea metodelor de plată a fost salvată.';
+  }, { form: rand });
+  if (r.ok) setTimeout(loadMetodePlataConfig, 1200);
 }
 
-async function stergeMetodaPlata(id) {
-  if (!confirm('Ștergi această configurare de metode de plată?')) return;
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/metode-plata-config', { method: 'POST', headers, body: JSON.stringify({ action: 'sterge', id }) });
-    if (!res.ok) throw new Error((await res.json()).error);
-    loadMetodePlataConfig();
-  } catch (e) { alert('Eroare: ' + e.message); }
+async function stergeMetodaPlata(id, btn) {
+  if (!(await MDFeedback.confirma('Ștergi această configurare de metode de plată?', { textOk: 'Șterge', periculos: true }))) return;
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/admin/metode-plata-config', { action: 'sterge', id });
+    return 'Configurarea a fost ștearsă.';
+  }, { textSalveaza: 'Se șterge…' });
+  if (r.ok) loadMetodePlataConfig();
 }
 
 // ── NIVELURI DE PREȚ (cerință explicită 31 Iulie 2026) ──
@@ -5538,55 +5490,48 @@ function renderNiveluriLista() {
       <input class="np-nivel-ordine" type="number" value="${n.ordine ?? 0}" title="Ordine afișare" style="background:#0F1826;border:1px solid #2D3F55;border-radius:8px;padding:7px 9px;color:#fff;font-size:12px">
       <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#8BA3C0"><input type="checkbox" class="np-nivel-activ" ${n.activ !== false ? 'checked' : ''}> Activ</label>
       <button onclick="salveazaNivelPret(this)" class="btn-p" style="font-size:10.5px;padding:5px 8px">Salvează</button>
-      <button onclick="stergeNivelPret('${n.id}')" class="btn-s" style="font-size:10.5px;padding:5px 8px">✕</button>
+      <button onclick="stergeNivelPret('${n.id}', this)" class="btn-s" style="font-size:10.5px;padding:5px 8px">✕</button>
     </div>
   `).join('');
 }
 
-async function creeazaNivelPret() {
+async function creeazaNivelPret(btn) {
   const cheie = document.getElementById('np-nivel-cheie').value.trim();
   const nume = document.getElementById('np-nivel-nume').value.trim();
-  if (!cheie || !nume) { alert('Completează cheia și numele noului nivel.'); return; }
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/niveluri-pret', {
-      method: 'POST', headers,
-      body: JSON.stringify({ action: 'creeaza_nivel', cheie, nume, ordine: _npState.niveluri.length }),
-    });
-    if (!res.ok) throw new Error((await res.json()).error);
+  // Cheia și numele au „required”: MDFeedback le verifică înainte de trimitere.
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/admin/niveluri-pret', { action: 'creeaza_nivel', cheie, nume, ordine: _npState.niveluri.length });
+    return `Nivelul „${nume}” a fost creat.`;
+  }, { form: document.getElementById('np-nivel-nou') });
+  if (r.ok) {
     document.getElementById('np-nivel-cheie').value = '';
     document.getElementById('np-nivel-nume').value = '';
     loadNiveluriPret();
-  } catch (e) { alert('Eroare: ' + e.message); }
+  }
 }
 
 async function salveazaNivelPret(btn) {
   const rand = btn.closest('.np-nivel-rand');
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/niveluri-pret', {
-      method: 'POST', headers,
-      body: JSON.stringify({
-        action: 'editeaza_nivel',
-        id: rand.dataset.id,
-        nume: rand.querySelector('.np-nivel-nume').value.trim(),
-        ordine: Number(rand.querySelector('.np-nivel-ordine').value) || 0,
-        activ: rand.querySelector('.np-nivel-activ').checked,
-      }),
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/admin/niveluri-pret', {
+      action: 'editeaza_nivel',
+      id: rand.dataset.id,
+      nume: rand.querySelector('.np-nivel-nume').value.trim(),
+      ordine: Number(rand.querySelector('.np-nivel-ordine').value) || 0,
+      activ: rand.querySelector('.np-nivel-activ').checked,
     });
-    if (!res.ok) throw new Error((await res.json()).error);
-    loadNiveluriPret();
-  } catch (e) { alert('Eroare: ' + e.message); }
+    return 'Nivelul a fost salvat.';
+  }, { form: rand });
+  if (r.ok) setTimeout(loadNiveluriPret, 1200);
 }
 
-async function stergeNivelPret(id) {
-  if (!confirm('Ștergi acest nivel de preț? Se șterg și toate prețurile lui din matrice (pe toate țările).')) return;
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/niveluri-pret', { method: 'POST', headers, body: JSON.stringify({ action: 'sterge_nivel', id }) });
-    if (!res.ok) throw new Error((await res.json()).error);
-    loadNiveluriPret();
-  } catch (e) { alert('Eroare: ' + e.message); }
+async function stergeNivelPret(id, btn) {
+  if (!(await MDFeedback.confirma('Ștergi acest nivel de preț? Se șterg și toate prețurile lui din matrice (pe toate țările).', { textOk: 'Șterge nivelul', periculos: true }))) return;
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/admin/niveluri-pret', { action: 'sterge_nivel', id });
+    return 'Nivelul a fost șters.';
+  }, { textSalveaza: 'Se șterge…' });
+  if (r.ok) loadNiveluriPret();
 }
 
 function renderMatricePreturi() {
@@ -5620,15 +5565,17 @@ async function salveazaPretMatrice(input) {
   const moneda = input.dataset.moneda;
   const val = input.value.trim();
   const pret = val === '' ? null : Number(val);
-  if (pret !== null && (!Number.isFinite(pret) || pret < 0)) { alert('Preț invalid.'); return; }
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/niveluri-pret', {
-      method: 'POST', headers,
-      body: JSON.stringify({ action: 'salveaza_pret', nivel_id, tara_cod, moneda, pret }),
-    });
-    if (!res.ok) throw new Error((await res.json()).error);
-  } catch (e) { alert('Eroare: ' + e.message); }
+  if (val === (input.__pretSalvat != null ? input.__pretSalvat : input.defaultValue)) return; // nimic schimbat
+  await MDFeedback.salveaza(null, null, async () => {
+    if (pret !== null && (!Number.isFinite(pret) || pret < 0)) {
+      const e = new Error('Prețul trebuie să fie un număr pozitiv sau gol.');
+      e.campuri = [{ camp: input, mesaj: 'Prețul trebuie să fie un număr pozitiv sau gol.' }];
+      throw e;
+    }
+    await _adminPost('/api/admin/niveluri-pret', { action: 'salveaza_pret', nivel_id, tara_cod, moneda, pret });
+    input.__pretSalvat = val;
+    return `Preț salvat pentru ${tara_cod}.`;
+  }, { form: input.parentElement });
 }
 
 // ── TARIFE TRANSPORT — G2, partea 2 ──
@@ -5661,7 +5608,7 @@ function randTarifTransportHTML(t) {
       <label style="display:flex;align-items:center;gap:3px;font-size:10px;color:#8BA3C0"><input type="checkbox" class="tt-activ" ${t.activ !== false ? 'checked' : ''}> Activ</label>
       <div style="display:flex;gap:4px">
         <button onclick="salveazaTarifTransport(this)" class="btn-p" style="font-size:10px;padding:5px 6px">Salv.</button>
-        ${t.id ? `<button onclick="stergeTarifTransport('${t.id}')" class="btn-s" style="font-size:10px;padding:5px 6px">✕</button>` : ''}
+        ${t.id ? `<button onclick="stergeTarifTransport('${t.id}', this)" class="btn-s" style="font-size:10px;padding:5px 6px">✕</button>` : ''}
       </div>
     </div>
   `;
@@ -5685,7 +5632,6 @@ async function salveazaTarifTransport(btn) {
   const pragMaxRaw = rand.querySelector('.tt-prag-max').value.trim();
   const tarifKgRaw = rand.querySelector('.tt-tarif-kg').value.trim();
   const tarifFixRaw = rand.querySelector('.tt-tarif-fix').value.trim();
-
   const body = {
     action: 'salveaza',
     id: rand.dataset.id || undefined,
@@ -5699,23 +5645,20 @@ async function salveazaTarifTransport(btn) {
     moneda: rand.querySelector('.tt-moneda').value.trim().toUpperCase() || 'RON',
     activ: rand.querySelector('.tt-activ').checked,
   };
-
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/tarife-transport', { method: 'POST', headers, body: JSON.stringify(body) });
-    if (!res.ok) throw new Error((await res.json()).error);
-    loadTarifeTransport();
-  } catch (e) { alert('Eroare: ' + e.message); }
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/admin/tarife-transport', body);
+    return 'Tariful de transport a fost salvat.';
+  }, { form: rand });
+  if (r.ok) setTimeout(loadTarifeTransport, 1200);
 }
 
-async function stergeTarifTransport(id) {
-  if (!confirm('Ștergi acest tarif de transport?')) return;
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/tarife-transport', { method: 'POST', headers, body: JSON.stringify({ action: 'sterge', id }) });
-    if (!res.ok) throw new Error((await res.json()).error);
-    loadTarifeTransport();
-  } catch (e) { alert('Eroare: ' + e.message); }
+async function stergeTarifTransport(id, btn) {
+  if (!(await MDFeedback.confirma('Ștergi acest tarif de transport?', { textOk: 'Șterge', periculos: true }))) return;
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/admin/tarife-transport', { action: 'sterge', id });
+    return 'Tariful de transport a fost șters.';
+  }, { textSalveaza: 'Se șterge…' });
+  if (r.ok) loadTarifeTransport();
 }
 
 // ── TARIFE MANOPERĂ (ESCO) — CAT-3a, 29 august 2026 ──
@@ -5764,7 +5707,7 @@ function randTarifManoperaHTML(t) {
       <span style="font-size:9.5px;color:#8BA3C0">${t.updated_at ? new Date(t.updated_at).toLocaleDateString('ro-RO') : ''}</span>
       <div style="display:flex;gap:4px">
         <button onclick="salveazaTarifManopera(this)" class="btn-p" style="font-size:10px;padding:5px 6px">Salv.</button>
-        ${t.id ? `<button onclick="stergeTarifManopera('${t.id}')" class="btn-s" style="font-size:10px;padding:5px 6px">✕</button>` : ''}
+        ${t.id ? `<button onclick="stergeTarifManopera('${t.id}', this)" class="btn-s" style="font-size:10px;padding:5px 6px">✕</button>` : ''}
       </div>
     </div>
   `;
@@ -5791,38 +5734,32 @@ async function salveazaTarifManopera(btn) {
   const codEsco = rand.querySelector('.tm-esco').value.trim();
   const taraCod = rand.querySelector('.tm-tara-r').value.trim().toUpperCase();
   const costOraRaw = rand.querySelector('.tm-cost-ora').value.trim();
-  if (!codEsco) return alert('Codul ESCO este obligatoriu');
-  if (costOraRaw === '' || Number(costOraRaw) <= 0) return alert('Cost/oră trebuie să fie un număr pozitiv');
-
   const numOrNull = (v) => (v.trim() === '' ? null : Number(v));
-  const body = {
-    action: 'salveaza',
-    id: rand.dataset.id || undefined,
-    cod_esco: codEsco,
-    tara_cod: taraCod,
-    cost_ora: Number(costOraRaw),
-    cost_deplasare: numOrNull(rand.querySelector('.tm-deplasare').value),
-    cost_uzura_scule: numOrNull(rand.querySelector('.tm-uzura').value),
-    cost_consumabile_mici: numOrNull(rand.querySelector('.tm-consumabile').value),
-    moneda: rand.querySelector('.tm-moneda').value.trim().toUpperCase() || 'RON',
-  };
-
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/tarife-manopera', { method: 'POST', headers, body: JSON.stringify(body) });
-    if (!res.ok) throw new Error((await res.json()).error);
-    loadTarifeManopera();
-  } catch (e) { alert('Eroare: ' + e.message); }
+  // „Cod ESCO” și „Cost/oră” au „required”; un cost ≤ 0 îl respinge serverul, cu câmpul marcat.
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/admin/tarife-manopera', {
+      action: 'salveaza',
+      id: rand.dataset.id || undefined,
+      cod_esco: codEsco,
+      tara_cod: taraCod,
+      cost_ora: Number(costOraRaw),
+      cost_deplasare: numOrNull(rand.querySelector('.tm-deplasare').value),
+      cost_uzura_scule: numOrNull(rand.querySelector('.tm-uzura').value),
+      cost_consumabile_mici: numOrNull(rand.querySelector('.tm-consumabile').value),
+      moneda: rand.querySelector('.tm-moneda').value.trim().toUpperCase() || 'RON',
+    });
+    return 'Tariful de manoperă a fost salvat.';
+  }, { form: rand });
+  if (r.ok) setTimeout(loadTarifeManopera, 1200);
 }
 
-async function stergeTarifManopera(id) {
-  if (!confirm('Ștergi acest tarif de manoperă?')) return;
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/tarife-manopera', { method: 'POST', headers, body: JSON.stringify({ action: 'sterge', id }) });
-    if (!res.ok) throw new Error((await res.json()).error);
-    loadTarifeManopera();
-  } catch (e) { alert('Eroare: ' + e.message); }
+async function stergeTarifManopera(id, btn) {
+  if (!(await MDFeedback.confirma('Ștergi acest tarif de manoperă?', { textOk: 'Șterge', periculos: true }))) return;
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/admin/tarife-manopera', { action: 'sterge', id });
+    return 'Tariful de manoperă a fost șters.';
+  }, { textSalveaza: 'Se șterge…' });
+  if (r.ok) loadTarifeManopera();
 }
 
 // ── TARIFE MATERIALE & UTILAJE — CAT-3a, 29 august 2026 ──
@@ -5885,7 +5822,7 @@ function randTarifResursaHTML(t) {
       <input class="tr-moneda" value="${escapeHTML(t.moneda || monedaImplicita)}" maxlength="3" style="${inputStyle};text-transform:uppercase">
       <div style="display:flex;gap:4px">
         <button onclick="salveazaTarifResursa(this)" class="btn-p" style="font-size:10px;padding:5px 6px">Salv.</button>
-        ${t.id ? `<button onclick="stergeTarifResursa('${t.id}')" class="btn-s" style="font-size:10px;padding:5px 6px">✕</button>` : ''}
+        ${t.id ? `<button onclick="stergeTarifResursa('${t.id}', this)" class="btn-s" style="font-size:10px;padding:5px 6px">✕</button>` : ''}
       </div>
     </div>
   `;
@@ -5914,36 +5851,31 @@ async function salveazaTarifResursa(btn) {
   const resursaId = Number(rand.dataset.resursaId);
   const taraCod = rand.querySelector('.tr-tara-r').value.trim().toUpperCase();
   const pretRaw = rand.querySelector('.tr-pret').value.trim();
-  if (!resursaId) return alert('Resursa lipsește — caută-o din nou');
-  if (pretRaw === '' || Number(pretRaw) <= 0) return alert('Preț unitar trebuie să fie un număr pozitiv');
-
-  const body = {
-    action: 'salveaza',
-    tip: document.getElementById('tr-tip').value,
-    id: rand.dataset.id || undefined,
-    resursa_id: resursaId,
-    tara_cod: taraCod,
-    pret_unitar: Number(pretRaw),
-    unitate_masura: rand.querySelector('.tr-um').value.trim() || null,
-    moneda: rand.querySelector('.tr-moneda').value.trim().toUpperCase() || 'RON',
-  };
-
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/tarife-resurse-fizice', { method: 'POST', headers, body: JSON.stringify(body) });
-    if (!res.ok) throw new Error((await res.json()).error);
-    loadTarifeResurse();
-  } catch (e) { alert('Eroare: ' + e.message); }
+  if (!resursaId) { MDFeedback.toast('eroare', 'Resursa lipsește — caut-o din nou.'); return; }
+  // „Preț unitar” are „required”; un preț ≤ 0 îl respinge serverul, cu câmpul marcat.
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/admin/tarife-resurse-fizice', {
+      action: 'salveaza',
+      tip: document.getElementById('tr-tip').value,
+      id: rand.dataset.id || undefined,
+      resursa_id: resursaId,
+      tara_cod: taraCod,
+      pret_unitar: Number(pretRaw),
+      unitate_masura: rand.querySelector('.tr-um').value.trim() || null,
+      moneda: rand.querySelector('.tr-moneda').value.trim().toUpperCase() || 'RON',
+    });
+    return 'Tariful a fost salvat.';
+  }, { form: rand });
+  if (r.ok) setTimeout(loadTarifeResurse, 1200);
 }
 
-async function stergeTarifResursa(id) {
-  if (!confirm('Ștergi acest tarif?')) return;
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/tarife-resurse-fizice', { method: 'POST', headers, body: JSON.stringify({ action: 'sterge', tip: document.getElementById('tr-tip').value, id }) });
-    if (!res.ok) throw new Error((await res.json()).error);
-    loadTarifeResurse();
-  } catch (e) { alert('Eroare: ' + e.message); }
+async function stergeTarifResursa(id, btn) {
+  if (!(await MDFeedback.confirma('Ștergi acest tarif?', { textOk: 'Șterge', periculos: true }))) return;
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/admin/tarife-resurse-fizice', { action: 'sterge', tip: document.getElementById('tr-tip').value, id });
+    return 'Tariful a fost șters.';
+  }, { textSalveaza: 'Se șterge…' });
+  if (r.ok) loadTarifeResurse();
 }
 
 // ── MARKETPLACE — APROBĂRI (2 August 2026) ──
@@ -5975,8 +5907,8 @@ async function loadMarketplaceAprobari() {
         <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #2D3F55">
           <div style="flex:1"><div style="color:#fff;font-weight:600;font-size:12.5px">${escapeHTML(d.tip_document)}</div>
             <div style="color:#8BA3C0;font-size:11px">Partener: ${escapeHTML(d.nume_firma || d.partener_id)} · <button onclick="deschideDocumentPartener('${d.id}')" style="background:none;border:none;padding:0;color:#7AB3E0;cursor:pointer;font:inherit;text-decoration:underline">Deschide documentul</button> · <button onclick="deschideContractAdmin('${d.partener_id}')" style="background:none;border:none;padding:0;color:#7AB3E0;cursor:pointer;font:inherit;text-decoration:underline">Contract</button></div></div>
-          <button onclick="decideDocument('${d.id}','aprobat')" class="btn-p" style="font-size:11px;padding:6px 12px;background:#0E9E99">Aprobă</button>
-          <button onclick="decideDocument('${d.id}','respins')" class="btn-s" style="font-size:11px;padding:6px 12px">Respinge</button>
+          <button onclick="decideDocument('${d.id}','aprobat', this)" class="btn-p" style="font-size:11px;padding:6px 12px;background:#0E9E99">Aprobă</button>
+          <button onclick="decideDocument('${d.id}','respins', this)" class="btn-s" style="font-size:11px;padding:6px 12px">Respinge</button>
         </div>`).join('');
 
     // Pasul 10c: starea furnizorului lângă fiecare produs; „Aprobă” e blocat
@@ -6040,12 +5972,9 @@ async function decideFurnizor(id, decizie, buton) {
 
 async function deschideDocumentPartener(id) {
   try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/document-url?id=' + encodeURIComponent(id), { headers });
-    const j = await res.json();
-    if (!res.ok) throw new Error(j.error || 'Eroare necunoscută');
+    const j = await MDFeedback.cerere('/api/admin/document-url?id=' + encodeURIComponent(id), { headers: await _adminAuthHeader() });
     window.open(j.url, '_blank', 'noopener');
-  } catch (e) { alert('Nu am putut deschide documentul: ' + e.message); }
+  } catch (e) { MDFeedback.toast('eroare', 'Nu am putut deschide documentul: ' + e.message); }
 }
 
 // Contractul-cadru al unui partener: instantaneul acceptat (cu amprentă SHA-256) sau varianta generată din datele curente.
@@ -6060,16 +5989,15 @@ async function deschideContractAdmin(partenerId) {
     const stare = j.semnat ? 'Acceptat ' + new Date(j.semnat_la).toLocaleString('ro-RO') + ' · IP ' + (j.ip || '—') + ' · SHA-256 ' + (j.sha256 || '').slice(0, 16) + '…' : 'Neacceptat încă — variantă generată din datele curente';
     m.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:820px;width:100%;max-height:90vh;display:flex;flex-direction:column;overflow:hidden"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid #E2E8F0"><div><strong style="color:#1A2332">' + escapeHTML(j.numar) + '</strong><div style="color:#5A6B7D;font-size:11.5px">' + escapeHTML(stare) + '</div></div><button class="btn-s" style="font-size:12px;padding:6px 12px" onclick="this.parentNode.parentNode.parentNode.remove()">Închide</button></div><div style="padding:18px 22px;overflow:auto">' + j.html + '</div></div>';
     document.body.appendChild(m);
-  } catch (e) { alert('Nu am putut deschide contractul: ' + e.message); }
+  } catch (e) { MDFeedback.toast('eroare', 'Nu am putut deschide contractul: ' + e.message); }
 }
 
-async function decideDocument(id, decizie) {
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/verifica-document', { method: 'POST', headers, body: JSON.stringify({ tip: 'document', id, decizie }) });
-    if (!res.ok) throw new Error((await res.json()).error);
-    loadMarketplaceAprobari();
-  } catch (e) { alert('Eroare: ' + e.message); }
+async function decideDocument(id, decizie, btn) {
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/admin/verifica-document', { tip: 'document', id, decizie });
+    return decizie === 'aprobat' ? 'Documentul a fost aprobat.' : 'Documentul a fost respins.';
+  });
+  if (r.ok) loadMarketplaceAprobari();
 }
 
 async function decideProdus(produsTip, id, decizie, buton) {
@@ -6179,8 +6107,8 @@ async function loadAccese() {
           <td style="padding:8px 10px;color:${st.color}">${st.label}</td>
           <td style="padding:8px 10px;white-space:nowrap">
             ${a.activ ? `
-              <button onclick="reinnoieAcces('${escapeHTML(a.email)}')" style="font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer;margin-right:6px">Reînnoiește</button>
-              <button onclick="revocaAcces('${escapeHTML(a.email)}')" style="font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid rgba(192,57,43,.4);background:transparent;color:#E57373;cursor:pointer">Revocă</button>
+              <button onclick="reinnoieAcces('${escapeHTML(a.email)}', this)" style="font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer;margin-right:6px">Reînnoiește</button>
+              <button onclick="revocaAcces('${escapeHTML(a.email)}', this)" style="font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid rgba(192,57,43,.4);background:transparent;color:#E57373;cursor:pointer">Revocă</button>
             ` : ''}
           </td>
         </tr>
@@ -6191,26 +6119,24 @@ async function loadAccese() {
   }
 }
 
-async function revocaAcces(email) {
+async function revocaAcces(email, btn) {
   const motiv = prompt(`Revoci accesul pentru ${email}. Motiv (opțional):`);
   if (motiv === null) return; // anulat
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/revoca-acces-temporar', { method: 'POST', headers, body: JSON.stringify({ email, motiv: motiv || undefined }) });
-    if (!res.ok) throw new Error((await res.json()).error);
-    loadAccese();
-  } catch (e) { alert('Eroare: ' + e.message); }
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/admin/revoca-acces-temporar', { email, motiv: motiv || undefined });
+    return `Accesul pentru ${email} a fost revocat.`;
+  }, { textSalveaza: 'Se revocă…' });
+  if (r.ok) loadAccese();
 }
 
-async function reinnoieAcces(email) {
+async function reinnoieAcces(email, btn) {
   const ore = prompt('Prelungește cu câte ore? (1, 2, 8, 24, 48 sau 168 pentru 7 zile)', '24');
   if (!ore) return;
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/reinnoieste-acces-temporar', { method: 'POST', headers, body: JSON.stringify({ email, ore_suplimentare: Number(ore) }) });
-    if (!res.ok) throw new Error((await res.json()).error);
-    loadAccese();
-  } catch (e) { alert('Eroare: ' + e.message); }
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/admin/reinnoieste-acces-temporar', { email, ore_suplimentare: Number(ore) });
+    return `Accesul pentru ${email} a fost prelungit.`;
+  });
+  if (r.ok) loadAccese();
 }
 </script>
 
@@ -6315,37 +6241,26 @@ async function loadCatalogList() {
 function incarcaImagineCatalog(idServiciu, inputEl) {
   const file = inputEl.files?.[0];
   if (!file) return;
-  if (file.size > 5 * 1024 * 1024) { alert('Imaginea depășește 5MB.'); inputEl.value = ''; return; }
+  if (file.size > 5 * 1024 * 1024) { MDFeedback.toast('eroare', 'Imaginea depășește 5 MB. Alegeți o imagine mai mică.'); inputEl.value = ''; return; }
   const reader = new FileReader();
   reader.onload = async () => {
-    try {
-      const base64 = reader.result.split(',')[1];
-      const headers = await _adminAuthHeader();
-      const res = await fetch('/api/admin/catalog-imagini', {
-        method: 'POST', headers,
-        body: JSON.stringify({ id_serviciu: idServiciu, imagine_base64: base64, mime_type: file.type }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
-      await loadCatalogList();
-    } catch (e) {
-      alert('Eroare la încărcare: ' + e.message);
-    }
+    const base64 = reader.result.split(',')[1];
+    const r = await MDFeedback.salveaza(null, null, async () => {
+      await _adminPost('/api/admin/catalog-imagini', { id_serviciu: idServiciu, imagine_base64: base64, mime_type: file.type });
+      return 'Imaginea a fost încărcată.';
+    }, { textSalveaza: 'Se încarcă…' });
+    if (r.ok) await loadCatalogList();
   };
   reader.readAsDataURL(file);
 }
 
-async function stergeImagineCatalog(idServiciu, url) {
-  if (!confirm('Elimini această imagine?')) return;
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/catalog-imagini', { method: 'DELETE', headers, body: JSON.stringify({ id_serviciu: idServiciu, url }) });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
-    await loadCatalogList();
-  } catch (e) {
-    alert('Eroare la eliminare: ' + e.message);
-  }
+async function stergeImagineCatalog(idServiciu, url, btn) {
+  if (!(await MDFeedback.confirma('Elimini această imagine?', { textOk: 'Elimină', periculos: true }))) return;
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/admin/catalog-imagini', { id_serviciu: idServiciu, url }, 'DELETE');
+    return 'Imaginea a fost eliminată.';
+  }, { textSalveaza: '…' });
+  if (r.ok) await loadCatalogList();
 }
 
 // 31 august 2026, cerere fondator: "cum găsesc lista cu materialele deja
@@ -6390,7 +6305,7 @@ function renderCatalogList(servicii) {
                intrări cele mai multe fără descriere. Badge vizibil per rând +
                toggle de filtrare (mai jos) rezolvă căutarea reală. -->
           <span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:99px;background:${s.descriere ? 'rgba(14,158,153,.15)' : 'rgba(139,163,192,.12)'};color:${s.descriere ? '#0E9E99' : '#8BA3C0'}">${s.descriere ? '✓ Are descriere' : '— Fără descriere'}</span>
-          <button onclick="toggleStatusCatalog('${s.id}', ${!s.status_public})" style="font-size:11px;padding:5px 11px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">${s.status_public ? 'Ascunde' : 'Publică'}</button>
+          <button onclick="toggleStatusCatalog('${s.id}', ${!s.status_public}, this)" style="font-size:11px;padding:5px 11px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">${s.status_public ? 'Ascunde' : 'Publică'}</button>
           <button onclick="toggleNiveluriCatalog('${s.id}')" style="font-size:11px;padding:5px 11px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">Niveluri (${s.niveluri.length})</button>
           <!-- 31 august 2026, cerere fondator: "pot să încarc imagini, dar nu
                am funcționalitatea salvează, șterge și vezi public" — Șterge
@@ -6399,7 +6314,7 @@ function renderCatalogList(servicii) {
                spre pagina publică reală. -->
           ${_catLinkPublic(s) ? `<a href="${_catLinkPublic(s)}" target="_blank" rel="noopener" style="font-size:11px;padding:5px 11px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;text-decoration:none;display:inline-block">👁 Vezi public</a>` : ''}
           <button onclick="toggleEditareCatalog('${s.id}')" style="font-size:11px;padding:5px 11px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">✎ Editează</button>
-          <button onclick="stergeServiciuCatalog('${s.id}', '${escapeHTML(s.titlu).replace(/'/g, "\\'")}')" style="font-size:11px;padding:5px 11px;border-radius:7px;border:1px solid rgba(192,57,43,.4);background:transparent;color:#E57373;cursor:pointer">Șterge</button>
+          <button onclick="stergeServiciuCatalog('${s.id}', '${escapeHTML(s.titlu).replace(/'/g, "\\'")}', this)" style="font-size:11px;padding:5px 11px;border-radius:7px;border:1px solid rgba(192,57,43,.4);background:transparent;color:#E57373;cursor:pointer">Șterge</button>
         </div>
         <div id="cat-editare-${s.id}" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed #2D3F55">
           <label style="font-size:10.5px;color:#8BA3C0;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:6px">Descriere (afișată public, pe marketplace/configurator)</label>
@@ -6417,7 +6332,7 @@ function renderCatalogList(servicii) {
           ${(s.imagini || []).map((url) => `
             <span style="position:relative;display:inline-block">
               <img src="${escapeHTML(url)}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid #2D3F55"/>
-              <button onclick="stergeImagineCatalog('${s.id}','${escapeHTML(url).replace(/'/g, "\\'")}')" title="Elimină" style="position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;border:none;background:#C0392B;color:#fff;font-size:10px;line-height:1;cursor:pointer;padding:0">×</button>
+              <button onclick="stergeImagineCatalog('${s.id}','${escapeHTML(url).replace(/'/g, "\\'")}', this)" title="Elimină" style="position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;border:none;background:#C0392B;color:#fff;font-size:10px;line-height:1;cursor:pointer;padding:0">×</button>
             </span>
           `).join('')}
           ${(s.imagini || []).length < 5 ? `
@@ -6484,23 +6399,21 @@ async function salveazaDescriereCatalog(id) {
   }
 }
 
-async function toggleStatusCatalog(id, nouStatus) {
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/catalog', { method: 'POST', headers, body: JSON.stringify({ action: 'actualizeaza_serviciu', id, status_public: nouStatus }) });
-    if (!res.ok) throw new Error((await res.json()).error);
-    loadCatalogList();
-  } catch (e) { alert('Eroare: ' + e.message); }
+async function toggleStatusCatalog(id, nouStatus, btn) {
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/admin/catalog', { action: 'actualizeaza_serviciu', id, status_public: nouStatus });
+    return 'Statusul serviciului a fost actualizat.';
+  });
+  if (r.ok) loadCatalogList();
 }
 
-async function stergeServiciuCatalog(id, titlu) {
-  if (!confirm(`Ștergi definitiv „${titlu}" din catalog, împreună cu toate nivelurile și prețurile lui?`)) return;
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/catalog', { method: 'POST', headers, body: JSON.stringify({ action: 'sterge_serviciu', id }) });
-    if (!res.ok) throw new Error((await res.json()).error);
-    loadCatalogList();
-  } catch (e) { alert('Eroare: ' + e.message); }
+async function stergeServiciuCatalog(id, titlu, btn) {
+  if (!(await MDFeedback.confirma(`Ștergi definitiv „${titlu}" din catalog, împreună cu toate nivelurile și prețurile lui?`, { textOk: 'Șterge definitiv', periculos: true }))) return;
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/admin/catalog', { action: 'sterge_serviciu', id });
+    return `„${titlu}" a fost șters din catalog.`;
+  }, { textSalveaza: 'Se șterge…' });
+  if (r.ok) loadCatalogList();
 }
 
 // Pasul 9: funcțiile editorului de niveluri (creeazaNivelCatalog, salveazaNivelCatalog,
@@ -6548,9 +6461,9 @@ async function loadIntegrari() {
           <div style="text-align:right;flex-shrink:0">
             <div style="font-size:11px;margin-bottom:8px">${STATUS_LABEL_INTEGRARE[i.status] || i.status}</div>
             <div style="display:flex;gap:6px">
-              <button onclick="testeazaIntegrare('${i.id}')" style="font-size:11px;padding:5px 10px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">Testează</button>
+              <button onclick="testeazaIntegrare('${i.id}', this)" style="font-size:11px;padding:5px 10px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">Testează</button>
               <button onclick="deschideFormularIntegrare('${i.id}')" style="font-size:11px;padding:5px 10px;border-radius:7px;border:1px solid #2D3F55;background:transparent;color:#8BA3C0;cursor:pointer">Editează</button>
-              <button onclick="stergeIntegrare('${i.id}')" style="font-size:11px;padding:5px 10px;border-radius:7px;border:1px solid rgba(229,115,115,.3);background:transparent;color:#E57373;cursor:pointer">Șterge</button>
+              <button onclick="stergeIntegrare('${i.id}', this)" style="font-size:11px;padding:5px 10px;border-radius:7px;border:1px solid rgba(229,115,115,.3);background:transparent;color:#E57373;cursor:pointer">Șterge</button>
             </div>
           </div>
         </div>
@@ -6603,9 +6516,8 @@ function deschideFormularIntegrare(id) {
   wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-async function salveazaIntegrare() {
+async function salveazaIntegrare(btn) {
   const msg = document.getElementById('integ-form-msg');
-  msg.style.color = '#8BA3C0'; msg.textContent = 'Se salvează...';
   const body = {
     id: document.getElementById('integ-id').value || undefined,
     categorie: document.getElementById('integ-categorie').value,
@@ -6615,38 +6527,33 @@ async function salveazaIntegrare() {
     api_key: document.getElementById('integ-cheie').value || undefined,
     observatii: document.getElementById('integ-observatii').value.trim() || null,
   };
-  if (!body.nume_furnizor) { msg.style.color = '#E57373'; msg.textContent = 'Denumirea furnizorului este obligatorie.'; return; }
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/integrari/salveaza', { method: 'POST', headers, body: JSON.stringify(body) });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
-    msg.style.color = '#0E9E99'; msg.textContent = 'Salvat.';
-    document.getElementById('integrare-form-wrap').style.display = 'none';
+  // „Denumire furnizor” are „required”: MDFeedback o verifică înainte de trimitere.
+  const r = await MDFeedback.salveaza(btn, msg, async () => {
+    await _adminPost('/api/admin/integrari/salveaza', body);
+    return 'Integrarea a fost salvată.';
+  }, { form: document.getElementById('integrare-form-wrap'), toast: true });
+  if (r.ok) {
+    setTimeout(() => { document.getElementById('integrare-form-wrap').style.display = 'none'; }, 1200);
     loadIntegrari();
-  } catch (e) {
-    msg.style.color = '#E57373'; msg.textContent = 'Eroare: ' + e.message;
   }
 }
 
-async function stergeIntegrare(id) {
-  if (!confirm('Ștergi această integrare? Import-urile CSV asociate se șterg și ele.')) return;
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/integrari/sterge', { method: 'POST', headers, body: JSON.stringify({ id }) });
-    if (!res.ok) throw new Error((await res.json()).error);
-    loadIntegrari();
-  } catch (e) { alert('Eroare: ' + e.message); }
+async function stergeIntegrare(id, btn) {
+  if (!(await MDFeedback.confirma('Ștergi această integrare? Import-urile CSV asociate se șterg și ele.', { textOk: 'Șterge integrarea', periculos: true }))) return;
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/admin/integrari/sterge', { id });
+    return 'Integrarea a fost ștearsă.';
+  }, { textSalveaza: 'Se șterge…' });
+  if (r.ok) loadIntegrari();
 }
 
-async function testeazaIntegrare(id) {
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/integrari/testeaza', { method: 'POST', headers, body: JSON.stringify({ id }) });
-    const data = await res.json();
-    alert(data.ok ? ('✅ ' + data.mesaj) : ('❌ ' + data.motiv));
-    loadIntegrari();
-  } catch (e) { alert('Eroare: ' + e.message); }
+async function testeazaIntegrare(id, btn) {
+  // Răspunsul { ok:false, motiv } (conexiune eșuată) apare ca eroare, cu motivul.
+  await MDFeedback.salveaza(btn, null, async () => {
+    const data = await _adminPost('/api/admin/integrari/testeaza', { id });
+    return data.mesaj || 'Conexiune reușită.';
+  }, { textSalveaza: 'Se testează…', textOk: '✓ Conexiune OK' });
+  loadIntegrari();
 }
 
 async function incarcaCsvIntegrare(id) {
@@ -7064,8 +6971,8 @@ async function loadParteneriGlobali() {
           <td>${escapeHTML(p.regiune_cod || '—')}</td>
           <td>${dataFmt}</td>
           <td style="display:flex;gap:5px">
-            <button onclick="decizieParteners('${p.id}','aprobat')" style="font-size:10.5px;padding:4px 8px;border-radius:6px;border:none;background:#0E9E99;color:#fff;cursor:pointer">Aprobă</button>
-            <button onclick="decizieParteners('${p.id}','respins')" style="font-size:10.5px;padding:4px 8px;border-radius:6px;border:1px solid rgba(192,57,43,.4);background:transparent;color:#E57373;cursor:pointer">Respinge</button>
+            <button onclick="decizieParteners('${p.id}','aprobat', this)" style="font-size:10.5px;padding:4px 8px;border-radius:6px;border:none;background:#0E9E99;color:#fff;cursor:pointer">Aprobă</button>
+            <button onclick="decizieParteners('${p.id}','respins', this)" style="font-size:10.5px;padding:4px 8px;border-radius:6px;border:1px solid rgba(192,57,43,.4);background:transparent;color:#E57373;cursor:pointer">Respinge</button>
           </td>
         </tr>`;
     }).join('');
@@ -7074,15 +6981,13 @@ async function loadParteneriGlobali() {
   }
 }
 
-async function decizieParteners(id, decizie) {
-  if (!confirm(`Confirmi decizia „${decizie}" pentru acest partener?`)) return;
-  try {
-    const headers = await _adminAuthHeader();
-    const res = await fetch('/api/admin/verifica-document', { method: 'POST', headers, body: JSON.stringify({ tip: 'partener', id, decizie }) });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
-    loadParteneriGlobali();
-  } catch (e) { alert('Eroare: ' + e.message); }
+async function decizieParteners(id, decizie, btn) {
+  if (!(await MDFeedback.confirma(`Confirmi decizia „${decizie}" pentru acest partener?`, { textOk: decizie === 'aprobat' ? 'Aprobă' : 'Respinge', periculos: decizie !== 'aprobat' }))) return;
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    await _adminPost('/api/admin/verifica-document', { tip: 'partener', id, decizie });
+    return decizie === 'aprobat' ? 'Partenerul a fost aprobat.' : 'Partenerul a fost respins.';
+  });
+  if (r.ok) loadParteneriGlobali();
 }
 
 const _origShowPanelParteneri = window.showPanel;
