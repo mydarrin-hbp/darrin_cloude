@@ -142,8 +142,20 @@ async function context(browser, baza, { lang, latime, cuSesiune, server }) {
     await ctx.route(/\/api\/investitori\/subscrie/, (r) => {
       const c = JSON.parse(r.request().postData() || '{}');
       server.stare.subscrieri.push(c);
-      return raspunde(r, [200, { ok: true, portofoliu: { id: 'sub-1', status: 'in_asteptare' }, kyc_status: 'in_verificare' }]);
+      return raspunde(r, [200, { ok: true, portofoliu: { id: 'sub-1', status: 'in_asteptare' }, actiuni: 1000, moneda: 'EUR', procent_estimat: 1, kyc_status: 'in_verificare' }]);
     });
+    // 11-J: runda deschisă vine din api/investitori/portofoliu (valori de test, nu reale)
+    await ctx.route(/\/api\/investitori\/portofoliu/, (r) => raspunde(r, [200, {
+      ok: true, kyc_status: 'in_verificare', actiuni: 0, valoare_investita: 0, in_asteptare: 0, pct_companie: 0, subscrieri: [],
+      runda: { id: 'r1', denumire_ro: 'Runda de test', denumire_en: 'Test round', moneda: 'EUR', suma_tinta: 100000, investitie_minima: 5000,
+        pret_actiune: 10, equity_oferit_pct: 10, tickete: [5000, 10000], instrumente: ['actiuni', 'safe'] },
+      exit: { buyback_disponibil: false, discount_buyback_pct: null, lock_up_luni: null },
+    }]));
+    await ctx.route(/\/api\/public\/runda-curenta/, (r) => raspunde(r, [200, { ok: true, runda: null }]));
+    // 2.5: fără verificarea identității aprobată, indicatorii nu se trimit
+    await ctx.route(/\/api\/investitori\/indicatori/, (r) => raspunde(r, [403, { cod: 'KYC_NEAPROBAT',
+      error: 'Indicatorii financiari sunt disponibili după aprobarea verificării identității tale.',
+      error_en: 'The financial indicators are available after your identity verification is approved.' }]));
     await ctx.route(/\/api\/investitori\/kyc-document/, (r) => {
       const req = r.request();
       if (req.method() === 'POST') {
@@ -290,18 +302,24 @@ async function depaseste(p) {
         verifica(server.stare.roles.includes('client') && server.stare.roles.includes('investor'), `${et} C: rolul investor e adăugat lângă client`);
         verifica(await p.isVisible('#inv-kyc-stare'), `${et} C: dashboard-ul arată banda verificării identității`);
         { const r = await romanaInEn(p, lang, '#inv-kyc-stare'); verifica(!r, `${et} C: banda fără text românesc în EN (${r})`); }
+        await p.waitForSelector('#inv-indicatori-mesaj', { timeout: 5000 }).catch(() => {});
+        verifica(/verific|verification/i.test(await p.textContent('#inv-indicatori-mesaj').catch(() => '')), `${et} C: fără KYC aprobat, indicatorii arată mesajul de verificare`);
+        verifica(!(await p.$('#inv-indicatori-grila')), `${et} C: fără KYC aprobat, nicio cifră a platformei`);
+        { const r = await romanaInEn(p, lang, '#inv-private-dashboard'); verifica(!r, `${et} C: dashboard-ul fără text românesc în EN (${r})`); }
         // C2. subscrierea, pe cont
         await deschide(p, '#runda button');
         await p.waitForSelector('#modal-runda', { state: 'visible', timeout: 5000 }).catch(() => {});
         verifica(await p.isVisible('#step-2'), `${et} C2: cu rolul de investitor, „Intră în rundă” deschide achiziția`);
+        await p.waitForSelector('#step-2 .ticket-opt', { timeout: 5000 }).catch(() => {});
         await p.click('#step-2 .ticket-opt >> nth=1');
-        await p.click('[onclick*="selectInstrument(this,\'SAFE\')"]');
+        await p.click('[onclick*="selectInstrument(this,\'safe\')"]');
         await p.click('#step-2 button[onclick="goStep(3)"]');
         await p.check('#nda-check');
         await p.click('#submit-invest-btn');
         await p.waitForSelector('#step-4', { state: 'visible', timeout: 6000 }).catch(() => {});
         const sub = server.stare.subscrieri[0] || {};
-        verifica(sub.suma_eur === 50000 && sub.actiuni === 50 && sub.instrument === 'SAFE', `${et} C2: subscrierea trimisă pe cont (${JSON.stringify(sub)})`);
+        verifica(sub.suma === 10000 && sub.actiuni === undefined && sub.instrument === 'safe', `${et} C2: subscrierea trimite suma și instrumentul din rundă, fără acțiuni calculate în browser (${JSON.stringify(sub)})`);
+        verifica((await p.textContent('#confirm-actiuni')).replace(/\D/g, '') === '1000', `${et} C2: acțiunile din confirmare vin de la server`);
         verifica(await p.isVisible('#step-4'), `${et} C2: confirmarea subscrierii`);
         await p.keyboard.press('Escape');
         verifica(await p.evaluate(() => document.body.style.overflow === ''), `${et} C2: după închidere, pagina se derulează`);

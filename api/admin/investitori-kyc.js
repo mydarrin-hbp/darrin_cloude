@@ -21,21 +21,13 @@ const { inregistreazaAudit } = require('../../lib/audit-log');
 const { renderEmailKycDecizie, limbaProfilEmailComportamental } = require('../../lib/i18n');
 const { incarcaContactPlatformaSigur } = require('../../lib/contact-platforma');
 const K = require('../../lib/investitori-kyc');
+const { arePermisiuneInvestitori } = require('../../lib/permisiuni-investitori');
 
-const SECTIUNE = 'investitori';
 const STARI_TRIMISE = ['in_verificare', 'aprobat', 'respins'];
 const DURATA_URL_SECUNDE = 120;
 
-async function arePermisiune(user) {
-  const { data: profil, error } = await supabaseAdmin.from('profiles').select('roles').eq('id', user.id).maybeSingle();
-  if (error) return false;
-  const roles = Array.isArray(profil && profil.roles) ? profil.roles : [];
-  if (roles.includes('superadmin')) return true;
-  if (!roles.includes('admin')) return false;
-  const { data: perm, error: permErr } = await supabaseAdmin
-    .from('admin_permissions').select('admin_id').eq('admin_id', user.id).eq('sectiune', SECTIUNE).limit(1);
-  return !permErr && Array.isArray(perm) && perm.length > 0;
-}
+// Dreptul pe secțiunea Investitori: lib/permisiuni-investitori.js (comun cu rundele).
+const arePermisiune = arePermisiuneInvestitori;
 
 async function emailuriProfile(ids) {
   if (!ids.length) return {};

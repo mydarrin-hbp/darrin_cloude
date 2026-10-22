@@ -5,7 +5,8 @@
 //  - [data-stat="parteneri-verificati"] (meniul „Devino partener”):
 //    /api/public/statistici-homepage, același endpoint ca pe index;
 //  - [data-kpi-bloc] cu [data-kpi="<cheie>"] (modalul pentru investitori):
-//    RPC-ul public get_live_investor_kpis, același ca pe mydarrin-investitori.html.
+//    /api/public/statistici-homepage (clienti_activi, parteneri_verificati,
+//    devize_ai_luna) — pasul 11-J, în locul RPC-ului get_live_investor_kpis;
 //  - [data-stat="servicii-active"] (meniul „Servicii”, 9 oct. 2026): numărul
 //    serviciilor publice (catalog_servicii, status_public, categorie servicii);
 //  - [data-stat="catalog-public"] / [data-stat="tari-active"] (hero-ul din
@@ -82,55 +83,54 @@
     }
   }
 
+  // [data-kpi-bloc] / [data-kpi-text]: aceleași cifre publice ca pe index
+  // (/api/public/statistici-homepage). Pasul 11-J (21 oct. 2026): RPC-ul
+  // get_live_investor_kpis nu mai e apelat din browser (nu mai e executabil
+  // de anon); indicatorii lui se văd doar în dashboard-ul investitorului cu
+  // verificarea identității aprobată (api/investitori/indicatori.js).
+  var statisticiHomepage = null;
+  function statistici() {
+    if (!statisticiHomepage) {
+      statisticiHomepage = fetch('/api/public/statistici-homepage')
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; });
+    }
+    return statisticiHomepage;
+  }
+
   function investitoriText() {
     var els = document.querySelectorAll('[data-kpi-text]');
-    if (!els.length || !SUPA_ANON) return;
-    fetch(SUPA_URL + '/rest/v1/rpc/get_live_investor_kpis', {
-      method: 'POST',
-      headers: { apikey: SUPA_ANON, Authorization: 'Bearer ' + SUPA_ANON, 'Content-Type': 'application/json' },
-      body: '{}',
-    })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (d) {
-        var k = d && d.kpis;
-        if (!k) return;
-        els.forEach(function (el) {
-          var v = Number(k[el.getAttribute('data-kpi-text')]) || 0;
-          if (v <= 0) return;
-          el.textContent = (v === 1 ? '1 ' + el.getAttribute('data-singular') : numar(v) + ' ' + el.getAttribute('data-plural')) + '. ';
-          el.style.display = '';
-        });
-      })
-      .catch(function () {});
+    if (!els.length) return;
+    statistici().then(function (k) {
+      if (!k) return;
+      els.forEach(function (el) {
+        var v = Number(k[el.getAttribute('data-kpi-text')]) || 0;
+        if (v <= 0) return;
+        el.textContent = (v === 1 ? '1 ' + el.getAttribute('data-singular') : numar(v) + ' ' + el.getAttribute('data-plural')) + '. ';
+        el.style.display = '';
+      });
+    });
   }
 
   function investitori() {
     var blocuri = document.querySelectorAll('[data-kpi-bloc]');
-    if (!blocuri.length || !SUPA_ANON) return;
-    fetch(SUPA_URL + '/rest/v1/rpc/get_live_investor_kpis', {
-      method: 'POST',
-      headers: { apikey: SUPA_ANON, Authorization: 'Bearer ' + SUPA_ANON, 'Content-Type': 'application/json' },
-      body: '{}',
-    })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (d) {
-        var k = d && d.kpis;
-        if (!k) return;
-        blocuri.forEach(function (bloc) {
-          var vizibile = 0;
-          bloc.querySelectorAll('[data-kpi]').forEach(function (cel) {
-            var v = Number(k[cel.getAttribute('data-kpi')]) || 0;
-            var val = cel.querySelector('[data-kpi-valoare]');
-            if (v > 0 && val) { val.textContent = numar(v); cel.style.display = ''; vizibile++; }
-            else cel.style.display = 'none';
-          });
-          if (vizibile) {
-            bloc.style.gridTemplateColumns = 'repeat(' + vizibile + ',minmax(0,1fr))';
-            bloc.style.display = '';
-          }
+    if (!blocuri.length) return;
+    statistici().then(function (k) {
+      if (!k) return;
+      blocuri.forEach(function (bloc) {
+        var vizibile = 0;
+        bloc.querySelectorAll('[data-kpi]').forEach(function (cel) {
+          var v = Number(k[cel.getAttribute('data-kpi')]) || 0;
+          var val = cel.querySelector('[data-kpi-valoare]');
+          if (v > 0 && val) { val.textContent = numar(v); cel.style.display = ''; vizibile++; }
+          else cel.style.display = 'none';
         });
-      })
-      .catch(function () {});
+        if (vizibile) {
+          bloc.style.gridTemplateColumns = 'repeat(' + vizibile + ',minmax(0,1fr))';
+          bloc.style.display = '';
+        }
+      });
+    });
   }
 
   function porneste() { parteneri(); investitori(); servicii(); investitoriText(); }

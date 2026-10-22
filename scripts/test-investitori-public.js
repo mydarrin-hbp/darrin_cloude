@@ -71,7 +71,7 @@ function verifica(cond, mesaj) {
 
         // Crearea contului de investitor: fără sesiune, „Intră în rundă” duce la
         // autentificare / creare cont, cu revenire la ruta de investitor (11-L).
-        verifica((await pagina.$$('#step-2 .ticket-opt')).length >= 1, `${eticheta}: opțiunile de ticket ale achiziției există`);
+        verifica(await pagina.$('#step-2 #ticket-lista') !== null, `${eticheta}: lista de tickete a achiziției există (se umple din rundă)`);
         await pagina.focus('#runda button');
         await pagina.keyboard.press('Enter');
         await pagina.waitForURL(/reason=cont/, { timeout: 8000 }).catch(() => {});
