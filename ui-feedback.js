@@ -240,7 +240,7 @@
     if (lab) {
       var copie = lab.cloneNode(true);
       Array.prototype.forEach.call(copie.querySelectorAll('input,select,textarea,.md-camp-eroare'), function (x) { x.remove(); });
-      var s = copie.textContent.replace(/\s+/g, ' ').trim();
+      var s = copie.textContent.replace(/\s+/g, ' ').replace(/\s*\*\s*$/, '').trim();
       if (s) return s;
     }
     return el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.name || el.id || '';
@@ -281,7 +281,14 @@
     el.style.borderColor = ROSU;
     el.style.boxShadow = '0 0 0 1px ' + ROSU;
     el.setAttribute('aria-describedby', ((el.getAttribute('aria-describedby') || '') + ' ' + m.id).trim());
-    el.insertAdjacentElement('afterend', m);
+    // Într-un rând de grilă / flex orizontal (tabelele de tarife), mesajul
+    // merge sub rând, ca să nu strice așezarea coloanelor.
+    var tinta = el, p = el.parentElement;
+    if (p && window.getComputedStyle) {
+      var st = window.getComputedStyle(p);
+      if (/grid/.test(st.display) || (/flex/.test(st.display) && !/column/.test(st.flexDirection))) tinta = p;
+    }
+    tinta.insertAdjacentElement('afterend', m);
     el.__mdEroare = m;
     // eroarea dispare când câmpul e corectat (prima modificare)
     el.__mdAscultator = function () { curataCamp(el); };

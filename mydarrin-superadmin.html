@@ -1826,10 +1826,10 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
           </div>
           <div class="sa-card-body">
             <div id="acc-bank-form" style="display:none;gap:8px;margin-bottom:14px;flex-wrap:wrap;padding:12px;background:#F8FAFC;border-radius:10px">
-              <input id="acc-bank-nume" placeholder="Nume afișat" style="flex:1;min-width:140px;padding:8px 10px;border:1px solid #D5DFE8;border-radius:8px;font-size:12px;font-family:inherit">
+              <input id="acc-bank-nume" required data-eticheta="Nume afișat" placeholder="Nume afișat" style="flex:1;min-width:140px;padding:8px 10px;border:1px solid #D5DFE8;border-radius:8px;font-size:12px;font-family:inherit">
               <input id="acc-bank-banca" placeholder="Banca" style="flex:1;min-width:120px;padding:8px 10px;border:1px solid #D5DFE8;border-radius:8px;font-size:12px;font-family:inherit">
-              <input id="acc-bank-iban" placeholder="IBAN" style="flex:2;min-width:180px;padding:8px 10px;border:1px solid #D5DFE8;border-radius:8px;font-size:12px;font-family:inherit">
-              <input id="acc-bank-moneda" placeholder="Monedă (RON/EUR...)" style="width:120px;padding:8px 10px;border:1px solid #D5DFE8;border-radius:8px;font-size:12px;font-family:inherit">
+              <input id="acc-bank-iban" required data-eticheta="IBAN" placeholder="IBAN" style="flex:2;min-width:180px;padding:8px 10px;border:1px solid #D5DFE8;border-radius:8px;font-size:12px;font-family:inherit">
+              <input id="acc-bank-moneda" required data-eticheta="Monedă" placeholder="Monedă (RON/EUR...)" style="width:120px;padding:8px 10px;border:1px solid #D5DFE8;border-radius:8px;font-size:12px;font-family:inherit">
               <button class="btn-p" style="font-size:11px" onclick="accAddBankAccount()">Salvează</button>
             </div>
             <table class="sa-table">
@@ -1888,7 +1888,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
           </div>
           <div>
             <label style="display:block;font-size:10.5px;color:#8BA3C0;margin-bottom:4px">Denumire furnizor *</label>
-            <input type="text" id="integ-nume" placeholder="ex: Cargus, Netopia, Asig Pro" style="width:100%;background:#0F1826;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:13px">
+            <input type="text" id="integ-nume" required data-camp="nume_furnizor" data-eticheta="Denumire furnizor" placeholder="ex: Cargus, Netopia, Asig Pro" style="width:100%;background:#0F1826;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:13px">
           </div>
         </div>
         <div style="margin-bottom:10px">
@@ -2160,9 +2160,9 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
         </div>
         <p style="font-size:11px;color:#8BA3C0;margin:0 0 14px">Minimum 5 niveluri, extensibile dinamic. Fiecare nivel primește prețuri separat, pe fiecare țară/monedă din matricea de mai jos.</p>
         <div id="np-niveluri-lista"></div>
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <input id="np-nivel-cheie" type="text" placeholder="cheie (ex: nivel_6)" style="flex:1;background:#0F1826;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:12.5px">
-          <input id="np-nivel-nume" type="text" placeholder="nume afișat (ex: Nivel 6)" style="flex:1;background:#0F1826;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:12.5px">
+        <div id="np-nivel-nou" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <input id="np-nivel-cheie" type="text" required data-eticheta="Cheie" placeholder="cheie (ex: nivel_6)" style="flex:1;background:#0F1826;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:12.5px">
+          <input id="np-nivel-nume" type="text" required data-eticheta="Nume" placeholder="nume afișat (ex: Nivel 6)" style="flex:1;background:#0F1826;border:1px solid #2D3F55;border-radius:9px;padding:9px 11px;color:#fff;font-size:12.5px">
           <button onclick="creeazaNivelPret()" class="btn-s" style="font-size:11.5px;padding:7px 14px;white-space:nowrap">+ Nivel nou</button>
         </div>
       </div>
@@ -4086,7 +4086,7 @@ async function loadTariReal(){
             </div>
             <div>
               <div style="color:#4A6080;margin-bottom:3px">TVA %</div>
-              <input type="number" step="0.1" value="${t.cota_tva}" class="tg-tva" style="width:100%;padding:5px 7px;border:1px solid #D5DFE8;border-radius:6px;font-family:inherit;box-sizing:border-box">
+              <input type="number" step="0.1" value="${t.cota_tva}" class="tg-tva" data-eticheta="TVA %" aria-label="TVA %" style="width:100%;padding:5px 7px;border:1px solid #D5DFE8;border-radius:6px;font-family:inherit;box-sizing:border-box">
             </div>
             <div>
               <div style="color:#4A6080;margin-bottom:3px">VMC</div>
@@ -4108,11 +4108,11 @@ async function loadTariReal(){
     grid.innerHTML = carduri + `
       <div style="border:1.5px dashed #2D3F55;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px">
         <div style="font-size:13px;font-weight:700;color:#1A2332">+ Adaugă țară nouă</div>
-        <input id="tg-add-cod" placeholder="Cod ISO (ex: PT)" maxlength="2" style="padding:6px 9px;border:1px solid #D5DFE8;border-radius:7px;font-family:inherit;text-transform:uppercase;font-size:12px">
-        <input id="tg-add-nume" placeholder="Denumire (ex: Portugalia)" style="padding:6px 9px;border:1px solid #D5DFE8;border-radius:7px;font-family:inherit;font-size:12px">
+        <input id="tg-add-cod" required data-eticheta="Cod ISO" placeholder="Cod ISO (ex: PT)" maxlength="2" style="padding:6px 9px;border:1px solid #D5DFE8;border-radius:7px;font-family:inherit;text-transform:uppercase;font-size:12px">
+        <input id="tg-add-nume" required data-eticheta="Denumire" placeholder="Denumire (ex: Portugalia)" style="padding:6px 9px;border:1px solid #D5DFE8;border-radius:7px;font-family:inherit;font-size:12px">
         <div style="display:flex;gap:6px">
-          <input id="tg-add-moneda" placeholder="Monedă" maxlength="3" style="flex:1;padding:6px 9px;border:1px solid #D5DFE8;border-radius:7px;font-family:inherit;text-transform:uppercase;font-size:12px">
-          <input id="tg-add-tva" type="number" step="0.1" placeholder="TVA %" style="flex:1;padding:6px 9px;border:1px solid #D5DFE8;border-radius:7px;font-family:inherit;font-size:12px">
+          <input id="tg-add-moneda" required data-eticheta="Monedă" placeholder="Monedă" maxlength="3" style="flex:1;padding:6px 9px;border:1px solid #D5DFE8;border-radius:7px;font-family:inherit;text-transform:uppercase;font-size:12px">
+          <input id="tg-add-tva" required data-eticheta="TVA %" type="number" step="0.1" placeholder="TVA %" style="flex:1;padding:6px 9px;border:1px solid #D5DFE8;border-radius:7px;font-family:inherit;font-size:12px">
         </div>
         <button class="btn-p" style="font-size:11.5px;padding:8px" onclick="adaugaTaraNoua(this)">+ Adaugă</button>
         <span id="tg-add-msg" style="font-size:10.5px"></span>
@@ -4406,14 +4406,8 @@ let KYC_CERERI = [];
 async function kycApi(url, optiuni) {
   const token = await accGetToken();
   const o = optiuni || {};
-  const res = await fetch(url, {
-    method: o.metoda || 'GET',
-    headers: Object.assign({ Authorization: 'Bearer ' + token }, o.corp ? { 'Content-Type': 'application/json' } : {}),
-    body: o.corp ? JSON.stringify(o.corp) : undefined,
-  });
-  const j = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(j.error || ('HTTP ' + res.status));
-  return j;
+  // Pasul 11-N1: timeout 15 s și forma comună de eroare (lib/raspuns-eroare.js).
+  return MDFeedback.cerere(url, { method: o.metoda || 'GET', headers: { Authorization: 'Bearer ' + token }, body: o.corp || undefined });
 }
 
 async function loadKycInvestitori() {
@@ -4498,9 +4492,9 @@ function respingeKycInvestitor(i) {
       <h3 id="kyc-resp-titlu" style="font-size:16px;font-weight:800;color:#1A2332;margin:0 0 4px">Respinge verificarea identității</h3>
       <p style="font-size:12px;color:#5A6B7D;margin:0 0 14px">${escapeHTML(r.email || r.nume || '')} · motivul îl vede investitorul, în limba lui</p>
       <label for="kyc-motiv-ro" style="display:block;font-size:11px;font-weight:700;color:#5A6B7D;margin-bottom:4px">Motiv (română) *</label>
-      <textarea id="kyc-motiv-ro" rows="3" style="width:100%;box-sizing:border-box;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px;font-family:inherit;font-size:13px;margin-bottom:10px"></textarea>
+      <textarea id="kyc-motiv-ro" data-camp="motiv_ro" required rows="3" style="width:100%;box-sizing:border-box;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px;font-family:inherit;font-size:13px;margin-bottom:10px"></textarea>
       <label for="kyc-motiv-en" style="display:block;font-size:11px;font-weight:700;color:#5A6B7D;margin-bottom:4px">Motiv (engleză) *</label>
-      <textarea id="kyc-motiv-en" rows="3" style="width:100%;box-sizing:border-box;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px;font-family:inherit;font-size:13px"></textarea>
+      <textarea id="kyc-motiv-en" data-camp="motiv_en" required rows="3" style="width:100%;box-sizing:border-box;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px;font-family:inherit;font-size:13px"></textarea>
       <div id="kyc-resp-msg"></div>
       <div style="display:flex;gap:8px;margin-top:14px">
         <button id="kyc-resp-trimite" style="flex:1;padding:11px;border-radius:11px;border:none;background:#C0392B;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Respinge</button>
@@ -4517,12 +4511,11 @@ function respingeKycInvestitor(i) {
     const msg = ov.querySelector('#kyc-resp-msg');
     const motivRo = ov.querySelector('#kyc-motiv-ro').value.trim();
     const motivEn = ov.querySelector('#kyc-motiv-en').value.trim();
-    if (!motivRo || !motivEn) { MDFeedback.mesaj(msg, 'eroare', 'Scrie motivul în română și în engleză.'); return; }
     MDFeedback.salveaza(btn, msg, async () => {
       const j = await kycApi('/api/admin/investitori-kyc', { metoda: 'POST', corp: { user_id: r.user_id, actiune: 'respinge', motiv_ro: motivRo, motiv_en: motivEn } });
       setTimeout(() => { inchide(); loadKycInvestitori(); }, 900);
       return j.email_trimis ? 'Respins. Investitorul a primit email.' : 'Respins. Emailul nu a putut fi trimis.';
-    });
+    }, { form: ov.querySelector('[role="dialog"]') });
   };
 }
 
@@ -4658,13 +4651,13 @@ function formularRunda(i) {
   box.innerHTML = `
     <div style="font-weight:700;color:#E2E8F0;margin-bottom:12px">${r ? 'Editează runda „' + escapeHTML(r.denumire_ro) + '”' : 'Rundă nouă'}</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
-      ${camp('cod', 'Cod (ex. seed, series_a)', v('cod'), 'text', 'maxlength="40"')}
-      ${camp('denumire_ro', 'Denumire (RO)', v('denumire_ro'))}
-      ${camp('denumire_en', 'Denumire (EN)', v('denumire_en'))}
-      ${camp('moneda', 'Moneda', v('moneda', 'EUR'), 'text', 'maxlength="3"')}
-      ${camp('evaluare_pre_money', 'Evaluare pre-money', v('evaluare_pre_money'), 'number', 'min="0" step="any"')}
-      ${camp('suma_tinta', 'Suma țintă', v('suma_tinta'), 'number', 'min="0" step="any"')}
-      ${camp('actiuni_existente', 'Acțiuni existente (înainte de rundă)', v('actiuni_existente'), 'number', 'min="1" step="1"')}
+      ${camp('cod', 'Cod (ex. seed, series_a)', v('cod'), 'text', 'maxlength="40" required data-eticheta="Cod"')}
+      ${camp('denumire_ro', 'Denumire (RO)', v('denumire_ro'), 'text', 'required')}
+      ${camp('denumire_en', 'Denumire (EN)', v('denumire_en'), 'text', 'required')}
+      ${camp('moneda', 'Moneda', v('moneda', 'EUR'), 'text', 'maxlength="3" required')}
+      ${camp('evaluare_pre_money', 'Evaluare pre-money', v('evaluare_pre_money'), 'number', 'min="0" step="any" required')}
+      ${camp('suma_tinta', 'Suma țintă', v('suma_tinta'), 'number', 'min="0" step="any" required')}
+      ${camp('actiuni_existente', 'Acțiuni existente (înainte de rundă)', v('actiuni_existente'), 'number', 'min="1" step="1" required')}
       ${camp('investitie_minima', 'Investiția minimă', v('investitie_minima'), 'number', 'min="0" step="any"')}
       ${camp('tickete', 'Tickete sugerate (separate prin virgulă)', escapeHTML(r && r.tickete ? r.tickete.join(', ') : ''))}
       ${camp('data_start', 'Data de început', v('data_start'), 'date')}
@@ -4678,7 +4671,7 @@ function formularRunda(i) {
     </div>
     <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:#8BA3C0">
       <span>Instrumente:</span>
-      ${INSTRUMENTE_RUNDA.map(([k, et]) => `<label><input type="checkbox" class="rf-instrument" value="${k}" ${instr.includes(k) ? 'checked' : ''}> ${et}</label>`).join('')}
+      <span data-camp="instrumente" data-obligatoriu data-eticheta="Instrumente" style="display:inline-flex;gap:16px;flex-wrap:wrap">${INSTRUMENTE_RUNDA.map(([k, et]) => `<label><input type="checkbox" class="rf-instrument" value="${k}" ${instr.includes(k) ? 'checked' : ''}> ${et}</label>`).join('')}</span>
       <label><input type="checkbox" id="rf-afiseaza_progres" ${r && r.afiseaza_progres ? 'checked' : ''}> Afișează progresul public</label>
       <label><input type="checkbox" id="rf-vizibila_public" ${r && r.vizibila_public ? 'checked' : ''}> Vizibilă public</label>
     </div>
@@ -4734,11 +4727,13 @@ async function previzualizareRunda() {
 
 function salveazaRunda(btn) {
   const d = dateFormularRunda();
+  // Pasul 11-N1: câmpurile obligatorii se verifică întâi în browser; erorile
+  // serverului marchează câmpul lor; toast cu rezumatul.
   MDFeedback.salveaza(btn, document.getElementById('rf-msg'), async () => {
     await kycApi('/api/admin/runde-finantare', { metoda: 'POST', corp: { actiune: 'salveaza', runda: d } });
     setTimeout(() => { document.getElementById('inv-runda-form').hidden = true; loadInvestitoriAdmin(); }, 900);
     return 'Runda a fost salvată.';
-  });
+  }, { form: document.getElementById('inv-runda-form'), toast: true });
 }
 
 // ── Export CSV ────────────────────────────────────────────────
@@ -5456,7 +5451,7 @@ function randMetodaPlataHTML(c) {
       <input class="mpc-tara" value="${escapeHTML(c.tara_cod || '')}" placeholder="Toate" maxlength="2" style="background:#0F1826;border:1px solid #2D3F55;border-radius:8px;padding:7px 9px;color:#fff;font-size:12px;text-transform:uppercase">
       <input class="mpc-regiune" value="${escapeHTML(c.regiune || '')}" placeholder="Toate" style="background:#0F1826;border:1px solid #2D3F55;border-radius:8px;padding:7px 9px;color:#fff;font-size:12px">
       <input class="mpc-categorie" value="${escapeHTML(c.categorie_serviciu_slug || '')}" placeholder="Toate categoriile" style="background:#0F1826;border:1px solid #2D3F55;border-radius:8px;padding:7px 9px;color:#fff;font-size:12px">
-      <div style="display:flex;gap:12px;font-size:11.5px;color:#8BA3C0">
+      <div data-camp="metode_acceptate" data-obligatoriu data-eticheta="Metode de plată" style="display:flex;gap:12px;font-size:11.5px;color:#8BA3C0">
         <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" class="mpc-card" ${(c.metode_acceptate || []).includes('card') ? 'checked' : ''}> Card</label>
         <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" class="mpc-op" ${(c.metode_acceptate || []).includes('ordin_plata') ? 'checked' : ''}> Ordin de plată</label>
       </div>
@@ -5539,7 +5534,7 @@ function renderNiveluriLista() {
   document.getElementById('np-niveluri-lista').innerHTML = _npState.niveluri.map((n) => `
     <div class="np-nivel-rand" data-id="${n.id}" style="display:grid;grid-template-columns:110px 1fr 70px 90px 70px 40px;gap:8px;margin-bottom:8px;align-items:center">
       <span style="color:#8BA3C0;font-size:11px;font-family:monospace">${escapeHTML(n.cheie)}</span>
-      <input class="np-nivel-nume" value="${escapeHTML(n.nume)}" style="background:#0F1826;border:1px solid #2D3F55;border-radius:8px;padding:7px 9px;color:#fff;font-size:12px">
+      <input class="np-nivel-nume" data-camp="nume" aria-label="Nume nivel" data-eticheta="Nume" value="${escapeHTML(n.nume)}" style="background:#0F1826;border:1px solid #2D3F55;border-radius:8px;padding:7px 9px;color:#fff;font-size:12px">
       <input class="np-nivel-ordine" type="number" value="${n.ordine ?? 0}" title="Ordine afișare" style="background:#0F1826;border:1px solid #2D3F55;border-radius:8px;padding:7px 9px;color:#fff;font-size:12px">
       <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#8BA3C0"><input type="checkbox" class="np-nivel-activ" ${n.activ !== false ? 'checked' : ''}> Activ</label>
       <button onclick="salveazaNivelPret(this)" class="btn-p" style="font-size:10.5px;padding:5px 8px">Salvează</button>
@@ -5607,7 +5602,7 @@ function renderMatricePreturi() {
     const cells = _npState.tari.map((t) => {
       const p = lookup[`${n.id}|${t.tara_cod}`];
       return `<td style="padding:6px;text-align:center">
-        <input class="np-cell" data-nivel="${n.id}" data-tara="${escapeHTML(t.tara_cod)}" data-moneda="${escapeHTML(t.moneda || 'RON')}"
+        <input class="np-cell" data-camp="pret" aria-label="Preț ${escapeHTML(n.nume)} · ${escapeHTML(t.tara_cod)}" data-eticheta="Preț" data-nivel="${n.id}" data-tara="${escapeHTML(t.tara_cod)}" data-moneda="${escapeHTML(t.moneda || 'RON')}"
           type="number" step="0.01" min="0" value="${p && p.pret != null ? p.pret : ''}" placeholder="—"
           onblur="salveazaPretMatrice(this)"
           style="width:90px;background:#0F1826;border:1px solid #2D3F55;border-radius:7px;padding:6px 7px;color:#fff;font-size:12px;text-align:center">
@@ -5657,10 +5652,10 @@ function randTarifTransportHTML(t) {
     <div class="tt-rand" data-id="${t.id || ''}" style="display:grid;grid-template-columns:55px 100px 75px 75px 85px 75px 80px 55px 55px 65px;gap:5px;margin-bottom:8px;align-items:center">
       <input class="tt-tara" value="${escapeHTML(t.tara_cod || '')}" placeholder="Toate" maxlength="2" style="${inputStyle};text-transform:uppercase">
       <input class="tt-nivel" value="${escapeHTML(t.nivel_transport_marfa || '')}" placeholder="Toate" style="${inputStyle}">
-      <input class="tt-prag-min" type="number" step="0.01" min="0" value="${t.prag_kg_min ?? 0}" placeholder="min kg" style="${inputStyle}">
-      <input class="tt-prag-max" type="number" step="0.01" value="${t.prag_kg_max ?? ''}" placeholder="max kg" style="${inputStyle}">
-      <input class="tt-tarif-kg" type="number" step="0.01" value="${t.tarif_ron_per_kg ?? ''}" placeholder="RON/kg" style="${inputStyle}">
-      <input class="tt-tarif-fix" type="number" step="0.01" value="${t.tarif_fix ?? ''}" placeholder="tarif fix" style="${inputStyle}">
+      <input class="tt-prag-min" data-camp="prag_kg_min" data-eticheta="Prag min kg" aria-label="Prag min kg" type="number" step="0.01" min="0" value="${t.prag_kg_min ?? 0}" placeholder="min kg" style="${inputStyle}">
+      <input class="tt-prag-max" data-camp="prag_kg_max" data-eticheta="Prag max kg" aria-label="Prag max kg" type="number" step="0.01" value="${t.prag_kg_max ?? ''}" placeholder="max kg" style="${inputStyle}">
+      <input class="tt-tarif-kg" data-camp="tarif_ron_per_kg" data-eticheta="RON/kg" aria-label="RON/kg" type="number" step="0.01" value="${t.tarif_ron_per_kg ?? ''}" placeholder="RON/kg" style="${inputStyle}">
+      <input class="tt-tarif-fix" data-camp="tarif_fix" data-eticheta="Tarif fix" aria-label="Tarif fix" type="number" step="0.01" value="${t.tarif_fix ?? ''}" placeholder="tarif fix" style="${inputStyle}">
       <input class="tt-cost-ajutor" type="number" step="0.01" value="${t.cost_ajutor ?? 0}" placeholder="cost ajutor" style="${inputStyle}">
       <input class="tt-moneda" value="${escapeHTML(t.moneda || 'RON')}" maxlength="3" style="${inputStyle};text-transform:uppercase">
       <label style="display:flex;align-items:center;gap:3px;font-size:10px;color:#8BA3C0"><input type="checkbox" class="tt-activ" ${t.activ !== false ? 'checked' : ''}> Activ</label>
@@ -5758,10 +5753,10 @@ function randTarifManoperaHTML(t) {
   const monedaImplicita = (TM_TARI.find(x => x[0] === taraCurenta) || ['','RON'])[1];
   return `
     <div class="tm-rand" data-id="${t.id || ''}" style="display:grid;grid-template-columns:110px 1fr 75px 75px 75px 75px 75px 55px 55px 65px;gap:5px;margin-bottom:8px;align-items:center">
-      <input class="tm-esco" list="tm-esco-sugestii" value="${escapeHTML(t.cod_esco || '')}" placeholder="cod ESCO" style="${inputStyle}">
+      <input class="tm-esco" data-camp="cod_esco" data-eticheta="Cod ESCO" aria-label="Cod ESCO" required list="tm-esco-sugestii" value="${escapeHTML(t.cod_esco || '')}" placeholder="cod ESCO" style="${inputStyle}">
       <span style="font-size:10.5px;color:#8BA3C0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHTML(t.denumire_esco || '')}</span>
-      <input class="tm-tara-r" value="${escapeHTML(t.tara_cod || taraCurenta)}" maxlength="2" style="${inputStyle};text-transform:uppercase">
-      <input class="tm-cost-ora" type="number" step="0.01" min="0" value="${t.cost_ora ?? ''}" placeholder="RON/oră *" style="${inputStyle}">
+      <input class="tm-tara-r" data-camp="tara_cod" data-eticheta="Țară" aria-label="Țară" value="${escapeHTML(t.tara_cod || taraCurenta)}" maxlength="2" style="${inputStyle};text-transform:uppercase">
+      <input class="tm-cost-ora" data-camp="cost_ora" data-eticheta="Cost/oră" aria-label="Cost/oră" required type="number" step="0.01" min="0" value="${t.cost_ora ?? ''}" placeholder="RON/oră *" style="${inputStyle}">
       <input class="tm-deplasare" type="number" step="0.01" value="${t.cost_deplasare ?? ''}" placeholder="deplasare" style="${inputStyle}">
       <input class="tm-uzura" type="number" step="0.01" value="${t.cost_uzura_scule ?? ''}" placeholder="uzură scule" style="${inputStyle}">
       <input class="tm-consumabile" type="number" step="0.01" value="${t.cost_consumabile_mici ?? ''}" placeholder="consumabile" style="${inputStyle}">
@@ -5884,8 +5879,8 @@ function randTarifResursaHTML(t) {
     <div class="tr-rand" data-id="${t.id || ''}" data-resursa-id="${t.resursa_id || ''}" style="display:grid;grid-template-columns:90px 1fr 55px 90px 70px 60px 65px;gap:5px;margin-bottom:8px;align-items:center">
       <span style="font-size:10.5px;color:#8BA3C0">${escapeHTML(t.cod_resursa || '')}</span>
       <span style="font-size:11px;color:#E2E8F0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHTML(t.denumire_resursa || '(resursă nouă)')}</span>
-      <input class="tr-tara-r" value="${escapeHTML(t.tara_cod || taraCurenta)}" maxlength="2" style="${inputStyle};text-transform:uppercase">
-      <input class="tr-pret" type="number" step="0.01" min="0" value="${t.pret_unitar ?? ''}" placeholder="preț unitar *" style="${inputStyle}">
+      <input class="tr-tara-r" data-camp="tara_cod" data-eticheta="Țară" aria-label="Țară" value="${escapeHTML(t.tara_cod || taraCurenta)}" maxlength="2" style="${inputStyle};text-transform:uppercase">
+      <input class="tr-pret" data-camp="pret_unitar" data-eticheta="Preț unitar" aria-label="Preț unitar" required type="number" step="0.01" min="0" value="${t.pret_unitar ?? ''}" placeholder="preț unitar *" style="${inputStyle}">
       <input class="tr-um" value="${escapeHTML(t.unitate_masura || '')}" placeholder="u.m." style="${inputStyle}">
       <input class="tr-moneda" value="${escapeHTML(t.moneda || monedaImplicita)}" maxlength="3" style="${inputStyle};text-transform:uppercase">
       <div style="display:flex;gap:4px">
