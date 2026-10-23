@@ -2740,6 +2740,33 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
         <div style="padding:10px 14px;font-size:11px;color:#4A6080;border-top:1px solid #EEF2F7">Subscrierile vin din conturi cu rolul de investitor. Aprobarea cere verificarea identității aprobată (KYC); respingerea e posibilă oricând.</div>
       </div>
 
+      <!-- Pasul 11-K: pitch deck-ul pe limbi (api/admin/pitch-deck.js; decizia LM C3).
+           RO pentru limba română, EN pentru toate celelalte limbi. Importul creează ciorne;
+           nimic nu devine public până la aprobare. -->
+      <div class="sa-card" style="margin-bottom:18px" id="pd-card">
+        <div class="sa-card-hdr" style="flex-wrap:wrap;gap:8px">
+          <div style="font-weight:700;color:#1A2332;font-size:13.5px">📽️ Pitch deck</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            <button class="btn-p" id="pd-importa" style="font-size:11px;display:none" onclick="document.getElementById('pd-fisier').click()">⬆ Importă din fișier</button>
+            <input type="file" id="pd-fisier" accept=".json,application/json" multiple hidden aria-label="Fișierul pitch deck-ului (JSON)" onchange="importaPitchDeck(this)">
+          </div>
+        </div>
+        <div id="pd-viz" style="padding:10px 14px;font-size:12px;color:#5A6B7D;border-bottom:1px solid #EEF2F7"></div>
+        <div id="pd-import-msg" style="padding:0 14px"></div>
+        <div class="sa-card-body" style="padding:0;overflow:auto">
+          <div style="display:flex;gap:6px;padding:10px 14px 0" role="tablist" aria-label="Limba pitch deck-ului">
+            <button class="btn-s pd-tab" data-limba="ro" role="tab" onclick="alegeLimbaPitchDeck('ro')" style="font-size:11px">🇷🇴 RO · pentru limba română</button>
+            <button class="btn-s pd-tab" data-limba="en" role="tab" onclick="alegeLimbaPitchDeck('en')" style="font-size:11px">🇬🇧 EN · pentru en, bg, de, el, fr, tr</button>
+          </div>
+          <table class="sa-table" style="min-width:640px">
+            <thead><tr><th>Versiune</th><th>Stare</th><th>Note de verificare</th><th>Actualizată</th><th>Autor</th><th style="text-align:center">Acțiuni</th></tr></thead>
+            <tbody id="pd-tbody"><tr><td colspan="6" style="text-align:center;color:#4A6080;padding:20px">Se încarcă...</td></tr></tbody>
+          </table>
+        </div>
+        <div id="pd-editor" hidden style="padding:16px;border-top:1px solid #EEF2F7"></div>
+        <div style="padding:10px 14px;font-size:11px;color:#4A6080;border-top:1px solid #EEF2F7">„Importă din fișier” încarcă <code>docs/pitch-deck/pitch-deck-v1-ro.json</code> / <code>-en.json</code> și creează câte o ciornă pe limbă, cu notele de verificare din fișier. Aprobarea cere notele rezolvate și sursa cifrelor pe slide-urile de prognoză; aprobarea unei versiuni o retrage doar pe cea anterioară din aceeași limbă. Fiecare acțiune se înregistrează în jurnalul de audit.</div>
+      </div>
+
       <!-- Grid 2 col: Tabel investitori + Runda deschisă -->
       <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:18px;margin-bottom:18px" class="inv-admin-grid">
         <div class="sa-card">
@@ -4291,6 +4318,7 @@ async function loadInvestitoriAdmin() {
   if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#4A6080;padding:20px">Se încarcă...</td></tr>';
   loadKycInvestitori();
   loadRunde();
+  loadPitchDeck();
   try {
     const data = await kycApi('/api/admin/investitori-dashboard');
     INV_ADMIN_DATA = data;
@@ -4726,6 +4754,109 @@ function salveazaRunda(btn) {
     setTimeout(() => { document.getElementById('inv-runda-form').hidden = true; loadInvestitoriAdmin(); }, 900);
     return 'Runda a fost salvată.';
   }, { form: document.getElementById('inv-runda-form'), toast: true });
+}
+
+// ── Pasul 11-K: pitch deck-ul pe limbi (api/admin/pitch-deck) ──
+let PD = { versiuni: [], limba: 'ro', poate_scrie: false, este_superadmin: false, vizibilitate: null };
+const PD_VIZ = {
+  public: 'Public — oricine vede deck-ul complet',
+  investitori_aprobati: 'Doar investitorii cu identitatea verificată — ceilalți văd rezumatul (slide-urile 1–3)',
+};
+const fmtDataOra = (d) => d ? new Date(d).toLocaleString('ro-RO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+
+async function loadPitchDeck() {
+  const tbody = document.getElementById('pd-tbody');
+  if (!tbody) return;
+  try {
+    const j = await kycApi('/api/admin/pitch-deck');
+    PD = { ...PD, versiuni: j.versiuni || [], poate_scrie: j.poate_scrie === true, este_superadmin: j.este_superadmin === true, vizibilitate: j.vizibilitate, migrare_lipsa: j.migrare_lipsa === true };
+    document.getElementById('pd-importa').style.display = PD.poate_scrie && !PD.migrare_lipsa ? '' : 'none';
+    renderVizibilitatePitchDeck();
+    renderPitchDeck();
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#F87171;padding:20px">${escapeHTML(e.message)}</td></tr>`;
+  }
+}
+
+function renderVizibilitatePitchDeck() {
+  const el = document.getElementById('pd-viz');
+  if (!el) return;
+  if (PD.migrare_lipsa) { el.innerHTML = '<span style="color:#F87171">Tabela pitch_deck_versiuni nu are încă limbile: aplică migrarea 2026-10-22_pitch_deck_limbi.sql.</span>'; return; }
+  const v = PD.vizibilitate;
+  if (PD.este_superadmin) {
+    el.innerHTML = `<label style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><strong style="color:#1A2332">Vizibilitate:</strong>
+      <select id="pd-viz-select" style="background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:6px 10px;color:#E2E8F0;font-size:12px;font-family:inherit;max-width:100%">
+        ${Object.keys(PD_VIZ).map((k) => `<option value="${k}" ${k === v ? 'selected' : ''}>${escapeHTML(PD_VIZ[k])}</option>`).join('')}
+      </select>
+      <button class="btn-s" style="font-size:11px" onclick="salveazaVizibilitatePitchDeck(this)">Salvează</button></label>
+      <div id="pd-viz-msg"></div>`;
+  } else {
+    el.innerHTML = `<strong style="color:#1A2332">Vizibilitate:</strong> ${escapeHTML(PD_VIZ[v] || v || '—')} <span style="color:#4A6080">(o schimbă superadminul)</span>`;
+  }
+}
+
+async function salveazaVizibilitatePitchDeck(btn) {
+  const valoare = document.getElementById('pd-viz-select').value;
+  const r = await MDFeedback.salveaza(btn, document.getElementById('pd-viz-msg'), async () => {
+    await kycApi('/api/admin/pitch-deck', { metoda: 'POST', corp: { actiune: 'vizibilitate', valoare } });
+    return 'Vizibilitatea a fost salvată.';
+  });
+  if (r.ok) PD.vizibilitate = valoare;
+}
+
+function alegeLimbaPitchDeck(l) { PD.limba = l; renderPitchDeck(); }
+
+function renderPitchDeck() {
+  const tbody = document.getElementById('pd-tbody');
+  document.querySelectorAll('.pd-tab').forEach((b) => {
+    const activ = b.dataset.limba === PD.limba;
+    b.setAttribute('aria-selected', activ ? 'true' : 'false');
+    b.style.background = activ ? '#FF8C00' : '';
+    b.style.color = activ ? '#fff' : '';
+  });
+  const rows = PD.versiuni.filter((v) => v.limba === PD.limba);
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#4A6080;padding:20px">${PD.migrare_lipsa ? 'Migrarea nu e aplicată.' : 'Nicio versiune ' + PD.limba.toUpperCase() + '. ' + (PD.poate_scrie ? 'Importă <code>pitch-deck-v1-' + PD.limba + '.json</code> cu „Importă din fișier”.' : '')}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map((v) => {
+    const stare = v.aprobat
+      ? `<span class="chip chip-green" style="font-size:10px">✓ Aprobată</span><div style="font-size:10px;color:#4A6080;margin-top:3px">${fmtDataOra(v.aprobat_la)}${v.aprobat_de ? ' · ' + escapeHTML(v.aprobat_de) : ''}</div>`
+      : '<span class="chip" style="font-size:10px">Ciornă</span>';
+    const note = v.note_total
+      ? (v.note_nerezolvate ? `<span style="color:#B45309;font-weight:700">${v.note_nerezolvate} nerezolvate</span> din ${v.note_total}` : `<span style="color:#15803D">toate ${v.note_total} rezolvate</span>`)
+      : '<span style="color:#4A6080">—</span>';
+    const blocaje = !v.aprobat && v.blocaje ? `<div style="font-size:10px;color:#B45309">${v.blocaje} ${v.blocaje === 1 ? 'motiv' : 'motive'} care opresc aprobarea</div>` : '';
+    return `<tr data-pd-id="${escapeHTML(v.id)}">
+      <td><div style="font-size:12px;color:#E2E8F0;font-weight:600">${escapeHTML(v.titlu || 'Pitch deck')}</div><div style="font-size:10px;color:#4A6080">${v.slideuri} slide-uri${v.sursa ? ' · ' + escapeHTML(v.sursa) : ''}</div></td>
+      <td>${stare}</td>
+      <td style="font-size:11.5px">${note}${blocaje}</td>
+      <td style="font-size:11px;color:#8BA3C0">${fmtDataOra(v.actualizat_la || v.creat_la)}</td>
+      <td style="font-size:11px;color:#8BA3C0">${escapeHTML(v.actualizat_de || v.creat_de || '—')}</td>
+      <td style="text-align:center"><div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap" class="pd-actiuni">${typeof actiuniPitchDeck === 'function' ? actiuniPitchDeck(v) : ''}</div></td>
+    </tr>`;
+  }).join('');
+}
+
+// Importul: fiecare fișier ales devine o ciornă în limba lui (meta.limba).
+async function importaPitchDeck(input) {
+  const fisiere = Array.from(input.files || []);
+  input.value = '';
+  if (!fisiere.length) return;
+  const zona = document.getElementById('pd-import-msg');
+  const btn = document.getElementById('pd-importa');
+  const r = await MDFeedback.salveaza(btn, zona, async () => {
+    const create = [];
+    for (const f of fisiere) {
+      if (f.size > 2 * 1024 * 1024) throw new Error(`„${f.name}” are peste 2 MB: nu e un fișier de pitch deck.`);
+      let fisier;
+      try { fisier = JSON.parse(await f.text()); } catch (e) { throw new Error(`„${f.name}” nu e un fișier JSON valid.`); }
+      const j = await kycApi('/api/admin/pitch-deck', { metoda: 'POST', corp: { actiune: 'importa', fisier } });
+      create.push(`${j.versiune.limba.toUpperCase()} (${(j.versiune.note_verificare || []).length} note de verificat)`);
+    }
+    return `Ciornă creată: ${create.join(', ')}. Nimic nu e public până la aprobare.`;
+  }, { textSalveaza: 'Se importă…' });
+  if (r.ok) loadPitchDeck();
 }
 
 // ── Export CSV ────────────────────────────────────────────────
