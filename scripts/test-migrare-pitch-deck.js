@@ -84,8 +84,8 @@ const unu = async (db, sql) => (await db.query(sql)).rows[0];
 
   // 2
   await db.exec(`insert into public.pitch_deck_versiuni (slide_uri) values ('[]'::jsonb)`);
-  const v = await unu(db, 'select limba, note_verificare, actualizat_la is not null as la, titlu, sursa from public.pitch_deck_versiuni');
-  verifica(v.limba === 'ro' && Array.isArray(v.note_verificare) && v.note_verificare.length === 0 && v.la && v.titlu === null && v.sursa === null,
+  const v = await unu(db, 'select limba, note_verificare, actualizat_la is not null as la, titlu, sursa, disclaimer from public.pitch_deck_versiuni');
+  verifica(v.limba === 'ro' && Array.isArray(v.note_verificare) && v.note_verificare.length === 0 && v.la && v.titlu === null && v.sursa === null && v.disclaimer === null,
     `valorile implicite: limba ro, note_verificare [], actualizat_la (${JSON.stringify(v)})`);
   await db.exec('delete from public.pitch_deck_versiuni');
 

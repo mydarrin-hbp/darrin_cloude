@@ -9,6 +9,9 @@
 --        limba română; deck-ul EN pentru toate celelalte limbi din selector
 --        (en, bg, de, el, fr, tr) — cerința LM din 22 oct. 2026;
 --      - titlu, sursa (ex. „Canva V1 22 oct. 2026”);
+--      - disclaimer: eticheta de prognoză a versiunii, în limba ei
+--        („Prognoză: cifrele sunt estimări și ținte, nu rezultate realizate.”),
+--        afișată pe fiecare slide cu `prognoza: true`;
 --      - note_verificare (jsonb, listă): notele `de_verificat` din fișierul
 --        importat, fiecare cu `rezolvat`; aprobarea e refuzată de server cât
 --        timp rămâne una nerezolvată (lib/pitch-deck.js);
@@ -52,6 +55,7 @@ alter table public.pitch_deck_versiuni
   add column if not exists limba text not null default 'ro',
   add column if not exists titlu text,
   add column if not exists sursa text,
+  add column if not exists disclaimer text,
   add column if not exists note_verificare jsonb not null default '[]'::jsonb,
   add column if not exists actualizat_de uuid references public.profiles(id),
   add column if not exists actualizat_la timestamptz not null default now();
@@ -110,7 +114,7 @@ declare
   v_lipsa text;
 begin
   select string_agg(c, ', ') into v_lipsa
-  from unnest(array['limba', 'titlu', 'sursa', 'note_verificare', 'actualizat_de', 'actualizat_la']) as c
+  from unnest(array['limba', 'titlu', 'sursa', 'disclaimer', 'note_verificare', 'actualizat_de', 'actualizat_la']) as c
   where not exists (select 1 from information_schema.columns
                     where table_schema = 'public' and table_name = 'pitch_deck_versiuni' and column_name = c);
   if v_lipsa is not null then
