@@ -111,6 +111,16 @@ async function panouAdmin(browser, baza, latime, user) {
   return { ctx, pg };
 }
 
+// Fereastra de confirmare MDFeedback.confirma: butonul de confirmare e ultimul din dialog.
+async function confirmaDialog(pg) {
+  await pg.waitForSelector('[role="alertdialog"], [role="dialog"]', { timeout: 4000 }).catch(() => {});
+  await pg.evaluate(() => {
+    const d = [...document.querySelectorAll('[role="alertdialog"], [role="dialog"]')].pop();
+    const b = d && [...d.querySelectorAll('button')].find((x) => !/Anulează/.test(x.textContent));
+    if (b) b.click();
+  });
+}
+
 async function testAdmin(browser, baza) {
   for (const latime of [390, 1366]) {
     const et = `A ${latime}px`;
@@ -131,6 +141,70 @@ async function testAdmin(browser, baza) {
       const en = await pg.innerText('#pd-tbody');
       verifica(/Pitch deck v1 · EN/.test(en) && !/· RO/.test(en), `${et}: fila EN arată doar versiunea EN`);
       verifica(await pg.isVisible('#pd-viz-select'), `${et}: superadminul vede selectorul de vizibilitate`);
+
+      // ── Editorul (2.4) ──
+      await pg.click('.pd-tab[data-limba="ro"]');
+      const idRo = DB.tabele.pitch_deck_versiuni.find((v) => v.limba === 'ro').id;
+      const idEn = DB.tabele.pitch_deck_versiuni.find((v) => v.limba === 'en').id;
+      const rand = `[data-pd-id="${idRo}"]`;
+      const butoaneRo = await pg.$$eval(`${rand} .pd-actiuni button`, (b) => b.map((x) => x.textContent));
+      verifica(JSON.stringify(butoaneRo) === JSON.stringify(['Editează', 'Previzualizează', 'Aprobă', 'Duplică ca ciornă nouă']), `${et}: acțiunile ciornei (${butoaneRo.join(', ')})`);
+      // Aprobarea cu note nerezolvate → refuzată, cu mesajul cerut
+      await pg.click(`${rand} [data-pd-act="aproba"]`);
+      await confirmaDialog(pg);
+      await pg.waitForFunction(() => /Rezolvați notele de verificare înainte de aprobare/.test(document.getElementById('pd-import-msg').textContent), null, { timeout: 6000 }).catch(() => {});
+      verifica(/Rezolvați notele de verificare înainte de aprobare/.test(await pg.innerText('#pd-import-msg')), `${et}: aprobarea cu note nerezolvate e refuzată („${(await pg.innerText('#pd-import-msg')).slice(0, 120)}”)`);
+      verifica(DB.tabele.pitch_deck_versiuni.every((v) => !v.aprobat), `${et}: nimic aprobat`);
+      // Editorul: câmpurile tipurilor, notele
+      await pg.click(`${rand} [data-pd-act="editeaza"]`);
+      await pg.waitForSelector('#pd-ed-slideuri details', { timeout: 6000 }).catch(() => {});
+      verifica(await pg.evaluate(() => document.querySelectorAll('#pd-ed-slideuri details').length) === 20, `${et}: editorul arată cele 20 de slide-uri`);
+      verifica(await pg.evaluate(() => document.querySelectorAll('[data-pd-nota]').length) === notePe(RO), `${et}: editorul arată notele de verificare`);
+      // Un câmp greșit → marcat de server, slide-ul lui deschis
+      await pg.evaluate(() => { const el = document.querySelector('[data-cale="slide_uri.8.nivele.0.eticheta"]'); el.removeAttribute('required'); el.value = ''; el.dispatchEvent(new Event('input', { bubbles: true })); });
+      await pg.click('#pd-ed-salveaza');
+      await pg.waitForFunction(() => document.querySelector('[data-cale="slide_uri.8.nivele.0.eticheta"]').getAttribute('aria-invalid') === 'true', null, { timeout: 6000 }).catch(() => {});
+      verifica(await pg.evaluate(() => { const el = document.querySelector('[data-cale="slide_uri.8.nivele.0.eticheta"]'); return el.getAttribute('aria-invalid') === 'true' && el.closest('details').open; }), `${et}: câmpul greșit e marcat de server, slide-ul lui se deschide`);
+      await pg.evaluate(() => document.querySelectorAll('#pd-ed-slideuri details').forEach((d) => { d.open = true; }));
+      await pg.fill('[data-cale="slide_uri.8.nivele.0.eticheta"]', 'TAM GLOBAL');
+      // Modificări: o cifră, sursele slide-urilor de prognoză, toate notele rezolvate
+      { const d = await inAfaraEcranului(pg, '#pd-editor, #pd-editor *'); verifica(!d, `${et}: editorul (toate slide-urile deschise) în ecran (${d})`); }
+      await pg.fill('[data-cale="slide_uri.3.cifre.0.valoare"]', '12');
+      for (const n of [4, 9, 10, 12, 15, 17, 19]) await pg.fill(`[data-cale="slide_uri.${n - 1}.sursa"]`, 'Sursă DE TEST ' + n);
+      for (const c of await pg.$$('[data-pd-nota]')) await c.check();
+      await pg.waitForTimeout(2700); // butonul revine după eroare
+      await pg.click('#pd-ed-salveaza');
+      await pg.waitForFunction(() => /Ciorna a fost salvată/.test(document.getElementById('pd-ed-msg').textContent), null, { timeout: 6000 }).catch(() => {});
+      verifica(/Ciorna a fost salvată\. Se poate aproba/.test(await pg.innerText('#pd-ed-msg')), `${et}: salvarea („${await pg.innerText('#pd-ed-msg')}”)`);
+      const vRo = DB.tabele.pitch_deck_versiuni.find((v) => v.id === idRo);
+      verifica(vRo.slide_uri[3].cifre[0].valoare === 12 && vRo.slide_uri[8].sursa === 'Sursă DE TEST 9' && vRo.slide_uri[8].nivele[0].eticheta === 'TAM GLOBAL' && vRo.note_verificare.every((n) => n.rezolvat), `${et}: serverul a primit cifra, sursele și notele`);
+      // Previzualizarea folosește renderul public
+      await pg.click('#pd-ed-previzualizeaza');
+      await pg.waitForSelector('#pd-prev .mdpd-slide.mdpd-activ', { timeout: 6000 }).catch(() => {});
+      verifica(await pg.evaluate(() => document.querySelectorAll('#pd-prev .mdpd-slide').length) === 20 && (await pg.innerText('#pd-prev-contor')) === '1 / 20', `${et}: previzualizarea — 20 de slide-uri, „1 / 20”`);
+      await pg.keyboard.press('ArrowRight');
+      verifica((await pg.innerText('#pd-prev-contor')) === '2 / 20', `${et}: previzualizarea — săgeata → 2 / 20`);
+      { const d = await inAfaraEcranului(pg, '#pd-prev, #pd-prev *'); verifica(!d, `${et}: previzualizarea în ecran (${d})`); }
+      await pg.keyboard.press('Escape');
+      verifica(!(await pg.$('#pd-prev')), `${et}: Escape închide previzualizarea`);
+      // Aprobarea RO; EN rămâne ciornă
+      await pg.click(`${rand} [data-pd-act="aproba"]`);
+      await confirmaDialog(pg);
+      await pg.waitForFunction(() => /e aprobată și publică/.test(document.getElementById('pd-import-msg').textContent), null, { timeout: 6000 }).catch(() => {});
+      verifica(DB.tabele.pitch_deck_versiuni.find((v) => v.id === idRo).aprobat === true && DB.tabele.pitch_deck_versiuni.find((v) => v.id === idEn).aprobat === false, `${et}: RO aprobată, EN neatinsă`);
+      await pg.waitForFunction((r) => /Aprobată/.test((document.querySelector(r) || {}).textContent || ''), rand, { timeout: 5000 }).catch(() => {});
+      const butoaneAprobata = await pg.$$eval(`${rand} .pd-actiuni button`, (b) => b.map((x) => x.textContent));
+      verifica(JSON.stringify(butoaneAprobata) === JSON.stringify(['Previzualizează', 'Retrage aprobarea', 'Duplică ca ciornă nouă']), `${et}: acțiunile versiunii aprobate (${butoaneAprobata.join(', ')})`);
+      // Duplicare → ciornă nouă deschisă în editor; apoi retragerea aprobării
+      await pg.click(`${rand} [data-pd-act="duplica"]`);
+      await pg.waitForFunction(() => /\(copie\)/.test((document.getElementById('pd-editor') || {}).textContent || ''), null, { timeout: 6000 }).catch(() => {});
+      verifica(DB.tabele.pitch_deck_versiuni.filter((v) => v.limba === 'ro').length === 2 && /\(copie\)/.test(await pg.innerText('#pd-editor')), `${et}: duplicarea creează o ciornă și o deschide în editor`);
+      await pg.click(`${rand} [data-pd-act="retrage"]`);
+      await confirmaDialog(pg);
+      await pg.waitForFunction(() => /a fost retrasă/.test(document.getElementById('pd-import-msg').textContent), null, { timeout: 6000 }).catch(() => {});
+      verifica(DB.tabele.pitch_deck_versiuni.every((v) => !v.aprobat), `${et}: aprobarea retrasă`);
+      const audit = DB.tabele.audit_log.map((x) => x.actiune);
+      verifica(['pitch_deck_importat', 'pitch_deck_ciorna_salvata', 'pitch_deck_aprobat', 'pitch_deck_duplicat', 'pitch_deck_aprobare_retrasa'].every((x) => audit.includes(x)), `${et}: fiecare acțiune e auditată (${[...new Set(audit)].join(', ')})`);
       const d = await inAfaraEcranului(pg, '#pd-card, #pd-card *'); verifica(!d, `${et}: cardul în ecran (${d})`);
       verifica(!pg.erori.length, `${et}: 0 erori JS (${pg.erori.join(' | ')})`);
       await ctx.close();
@@ -140,6 +214,8 @@ async function testAdmin(browser, baza) {
       verifica(!(await pg.isVisible('#pd-importa')), `${et} doar citire: fără „Importă din fișier”`);
       verifica(!(await pg.isVisible('#pd-viz-select')) && /o schimbă superadminul/.test(await pg.innerText('#pd-viz')), `${et} doar citire: vizibilitatea doar afișată`);
       verifica(/Pitch deck v1 · RO/.test(await pg.innerText('#pd-tbody')), `${et} doar citire: versiunile se văd`);
+      const butoane = await pg.$$eval('#pd-tbody .pd-actiuni button', (b) => [...new Set(b.map((x) => x.textContent))]);
+      verifica(JSON.stringify(butoane) === JSON.stringify(['Previzualizează']), `${et} doar citire: doar „Previzualizează” (${butoane.join(', ')})`);
       verifica(!pg.erori.length, `${et} doar citire: 0 erori JS (${pg.erori.join(' | ')})`);
       await ctx.close();
     }
