@@ -7,7 +7,7 @@
    lățimea slide-ului (cqw). Telefon (≤ 720 px): pe verticală, fără text tăiat.
    prefers-reduced-motion: reduce → fără animații, totul afișat direct.
    ════════════════════════════════════════════════════════════════ */
-.mdpd{--pd-bg:#2A3B5C;--pd-bg2:#22314E;--pd-teal:#0BA39A;--pd-orange:#F08120;--pd-green:#22C55E;--pd-red:#F87171;--pd-text:#fff;--pd-muted:rgba(255,255,255,.74);--pd-line:rgba(255,255,255,.16);
+.mdpd{--pd-bg:#2A3B5C;--pd-bg2:#22314E;--pd-teal:#0BA39A;--pd-orange:#F08120;--pd-green:#22C55E;--pd-cyan:#2BB3D9;--pd-red:#F87171;--pd-text:#fff;--pd-muted:rgba(255,255,255,.74);--pd-line:rgba(255,255,255,.16);
   --u:1cqw;--h1:calc(3.3*var(--u));--h2:calc(2.6*var(--u));--fs:calc(1.32*var(--u));--fs-s:calc(1.08*var(--u));--fs-xs:calc(.9*var(--u));--num:calc(3.6*var(--u));--num-xl:calc(6*var(--u));--num-s:calc(2.2*var(--u));--pad:calc(3.6*var(--u));--gap:calc(1.6*var(--u));--r:calc(1*var(--u));
   font-family:'Helvetica World','Helvetica Neue',Arial,system-ui,sans-serif;color:var(--pd-text);-webkit-font-smoothing:antialiased;position:relative}
 .mdpd *,.mdpd *::before,.mdpd *::after{box-sizing:border-box}
@@ -58,6 +58,25 @@
 .mdpd-pas .mdpd-num{font-size:var(--num-s)}
 .mdpd-pas.mdpd-evid{background:rgba(240,129,32,.16);border-color:rgba(240,129,32,.55)}
 .mdpd-leg{flex:0 0 calc(2.4*var(--u));align-self:center;height:3px;background:linear-gradient(90deg,var(--pd-teal),var(--pd-orange));transform-origin:left center;border-radius:3px}
+/* Model de afaceri v1.1: carduri A + B = C, banda escrow (11-K2) */
+.mdpd-carduri{display:flex;align-items:stretch;gap:calc(.8*var(--u))}
+.mdpd-mcard{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:calc(.5*var(--u));padding:calc(1.4*var(--u));border-radius:var(--r);background:rgba(14,22,40,.55);border:1px solid var(--pd-line);overflow-wrap:anywhere}
+.mdpd-mcard .mdpd-eyebrow{margin:0;color:var(--pd-muted);letter-spacing:.12em}
+.mdpd-mcard h3{font-size:var(--fs);font-weight:800;line-height:1.25}
+.mdpd-mval{display:block;font-size:calc(2.8*var(--u));font-weight:800;line-height:1.05;color:#fff;font-variant-numeric:tabular-nums;margin:calc(.2*var(--u)) 0}
+.mdpd-mcard .mdpd-mic{margin-top:auto}
+.mdpd-st-accent{border-color:var(--pd-cyan);box-shadow:inset 0 0 0 1px rgba(43,179,217,.25);background:linear-gradient(160deg,rgba(43,179,217,.12),rgba(14,22,40,.55) 60%)}
+.mdpd-st-accent .mdpd-mval,.mdpd-st-accent .mdpd-eyebrow{color:var(--pd-cyan)}
+.mdpd-st-final{border-color:var(--pd-green);box-shadow:inset 0 0 0 1px rgba(34,197,94,.25);background:linear-gradient(160deg,rgba(34,197,94,.14),rgba(11,163,154,.08) 60%)}
+.mdpd-st-final .mdpd-mval{background:linear-gradient(90deg,var(--pd-green),var(--pd-teal));-webkit-background-clip:text;background-clip:text;color:transparent}
+.mdpd-st-final .mdpd-eyebrow{color:var(--pd-green)}
+.mdpd-op{flex:0 0 auto;align-self:center;font-size:calc(2.6*var(--u));font-weight:800;line-height:1;color:var(--pd-teal)}
+.mdpd-escrow{display:flex;align-items:center;gap:calc(1*var(--u));padding:calc(.9*var(--u)) calc(1.2*var(--u));border:1.5px dashed rgba(11,163,154,.7);border-radius:var(--r);background:rgba(11,163,154,.07)}
+.mdpd-escrow .mdpd-mic{color:var(--pd-muted)}
+.mdpd-escrow strong{color:#fff;font-weight:800}
+.mdpd-scut{flex:0 0 auto;width:calc(2.4*var(--u));height:calc(2.4*var(--u));color:var(--pd-teal)}
+.mdpd-t-model_afaceri .mdpd-carduri .mdpd-a{transition-delay:calc((var(--i,0) - 3) * 160ms + 300ms)}
+.mdpd-carduri~.mdpd-escrow.mdpd-a,.mdpd-carduri~[data-venituri].mdpd-a{transition-delay:calc((var(--i,0) - 3) * 160ms + 360ms)}
 .mdpd-blocuri{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
 .mdpd-blocuri .mdpd-card h3{font-size:var(--fs-xs);letter-spacing:.14em;color:var(--pd-teal);margin-bottom:calc(.5*var(--u))}
 
@@ -219,6 +238,12 @@
   .mdpd-leg{flex:0 0 14px;width:3px;height:14px;align-self:center;transform-origin:center top;background:linear-gradient(180deg,var(--pd-teal),var(--pd-orange))}
   @keyframes mdpd-leaga{from{transform:scaleY(0)}to{transform:scaleY(1)}}
   .mdpd-blocuri{grid-template-columns:1fr}
+  .mdpd-carduri{flex-direction:column;gap:6px}
+  .mdpd-mcard{flex:0 0 auto;padding:14px;gap:6px}
+  .mdpd-mval{font-size:30px}
+  .mdpd-op{font-size:26px;text-align:center}
+  .mdpd-escrow{padding:12px;gap:10px}
+  .mdpd-scut{width:26px;height:26px}
   .mdpd-cifre4,.mdpd-rgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .mdpd-banda{flex-direction:column;align-items:stretch}
   .mdpd-banda>img{position:relative;height:120px}

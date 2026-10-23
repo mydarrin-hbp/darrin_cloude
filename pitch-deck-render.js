@@ -191,11 +191,17 @@
         (s.faze || []).map(function (f, k) { return '<div' + a(1 + k) + '><div class="mdpd-eyebrow">' + esc(f.eticheta) + '</div><h3>' + esc(f.text) + '</h3></div>'; }).join('') +
         '</div></div><div' + aCls(1, 'mdpd-img') + '>' + img(s.imagine, l, s, 'mdpd-kb') + '</div></div>';
     },
-    model_afaceri: function (s) {
+    model_afaceri: function (s, l) {
+      var flux = s.flux || [];
+      // v1.1: carduri A + B = C (dacă măcar un pas are titlu sau text); altfel fluxul v1.
+      var carduri = flux.some(function (p) { return p && (p.titlu || p.text); });
+      var i = carduri ? 3 + 2 * flux.length : 12;
+      var escrow = carduri && s.escrow && (s.escrow.titlu || s.escrow.text) ?
+        '<div' + aCls(i - 1, 'mdpd-escrow') + ' data-escrow>' + SCUT + '<p class="mdpd-mic"><strong>' + esc(s.escrow.titlu) + '</strong>' + (s.escrow.titlu && s.escrow.text ? ' ' : '') + esc(s.escrow.text) + '</p></div>' : '';
       return '<h2' + a(0) + '>' + esc(s.titlu) + '</h2>' + (s.subtitlu_accent ? '<p' + aCls(1, 'mdpd-acc mdpd-txt') + '>' + esc(s.subtitlu_accent) + '</p>' : '') +
         (s.subtitlu ? '<p' + aCls(2, 'mdpd-sub') + '>' + esc(s.subtitlu) + '</p>' : '') +
-        '<div class="mdpd-col" style="flex:1;justify-content:center;margin-top:calc(1.2*var(--u))">' + fluxPasi(s.flux || [], 3) +
-        (s.venituri && s.venituri.length ? '<div' + a(12) + '><div class="mdpd-eyebrow">' + esc(s.venituri_titlu) + '</div><div class="mdpd-chips">' + s.venituri.map(function (v) { return '<span class="mdpd-chip">' + esc(v) + '</span>'; }).join('') + '</div></div>' : '') + '</div>';
+        '<div class="mdpd-col" style="flex:1;justify-content:center;margin-top:calc(1.2*var(--u))">' + (carduri ? carduriModel(flux, 3, l) : fluxPasi(flux, 3)) + escrow +
+        (s.venituri && s.venituri.length ? '<div' + a(i) + ' data-venituri><div class="mdpd-eyebrow">' + esc(s.venituri_titlu) + '</div><div class="mdpd-chips">' + s.venituri.map(function (v) { return '<span class="mdpd-chip">' + esc(v) + '</span>'; }).join('') + '</div></div>' : '') + '</div>';
     },
     cronologie: function (s) {
       return '<h2' + a(0) + '>' + esc(s.titlu) + '</h2><div class="mdpd-col" style="flex:1;justify-content:center"><div class="mdpd-linie">' +
@@ -296,6 +302,26 @@
       var pas = '<div' + aCls(i0 + 2 * k, 'mdpd-pas' + (k === pasi.length - 1 ? ' mdpd-evid' : '')) + '>' + esc(p.eticheta) +
         (p.valoare ? '<span class="mdpd-num">' + esc(p.valoare) + '</span>' : '') + '</div>';
       return (k ? '<div class="mdpd-leg" style="--i:' + (i0 + 2 * k - 1) + '" aria-hidden="true"></div>' : '') + pas;
+    }).join('') + '</div>';
+  }
+
+  // Cardurile modelului de afaceri (v1.1): card, semn (+ / =), card… Valoarea
+  // crește de la 0 doar când e un singur număr („100%”); „+20–25%” sau
+  // „Taxe incluse” apar ca atare.
+  var SCUT = '<svg class="mdpd-scut" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 4.5 5.3v6.1c0 4.6 3.1 8.7 7.5 10.1 4.4-1.4 7.5-5.5 7.5-10.1V5.3L12 2.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m8.6 12 2.4 2.4 4.6-4.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var STILURI = ['neutru', 'accent', 'final'];
+  function valoareCard(v, l) {
+    var m = /^([^\d-]*)(\d+(?:[.,]\d+)?)([^\d]*)$/.exec(String(v));
+    if (!m) return '<span class="mdpd-mval">' + esc(v) + '</span>';
+    return numar(Number(m[2].replace(',', '.')), 'numar', { prefix: m[1], sufix: m[3], text: v }, 'mdpd-mval');
+  }
+  function carduriModel(flux, i0, l) {
+    return '<div class="mdpd-carduri">' + flux.map(function (p, k) {
+      var stil = STILURI.indexOf(p.stil) !== -1 ? p.stil : 'neutru';
+      var op = k && p.operator ? '<div' + aCls(i0 + 2 * k - 1, 'mdpd-op') + ' data-operator>' + esc(p.operator) + '</div>' : '';
+      return op + '<div' + aCls(i0 + 2 * k, 'mdpd-mcard mdpd-st-' + stil) + ' data-card data-stil="' + stil + '">' +
+        '<div class="mdpd-eyebrow">' + esc(p.eticheta) + '</div>' + (p.titlu ? '<h3>' + esc(p.titlu) + '</h3>' : '') +
+        (p.valoare ? valoareCard(p.valoare, l) : '') + (p.text ? '<p class="mdpd-mic">' + esc(p.text) + '</p>' : '') + '</div>';
     }).join('') + '</div>';
   }
 
