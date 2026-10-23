@@ -275,6 +275,118 @@ async function apel(api, { metoda = 'GET', token = null, query = {}, body = null
     verifica(r.statusCode === 409 && r.corp.cod === 'MIGRARE_LIPSA', 'fără tabelă → 409 MIGRARE_LIPSA');
   }
 
+  // ── U. Încărcarea materialelor ────────────────────────────────────────
+  if (ruleaza('U')) {
+    const apiC = require(path.join(RADACINA, 'api/admin/seo-campanii.js'));
+    const VF = require(path.join(RADACINA, 'lib/verifica-fisier.js'));
+    reset();
+    // Conținutul „încărcat” (cale → { octeti, marime }); fetch-ul semnat întoarce primii octeți, cu Range.
+    const FISIERE = new Map();
+    const pune = (bucket, cale, octeti, marime) => { FISIERE.set(bucket + '/' + cale, { octeti, marime: marime || octeti.length }); (DB.storage[bucket] = DB.storage[bucket] || new Set()).add(cale); };
+    globalThis.fetch = async (url, opt) => {
+      const m = /^https:\/\/sim\.supabase\/sign\/(.+?)\?/.exec(String(url));
+      const f = m && FISIERE.get(decodeURIComponent(m[1]));
+      if (!f) return new Response('nu', { status: 404 });
+      const range = opt && opt.headers && opt.headers.Range;
+      return new Response(f.octeti.slice(0, 64), { status: range ? 206 : 200, headers: range ? { 'content-range': `bytes 0-63/${f.marime}` } : { 'content-length': String(f.marime) } });
+    };
+    const MP4 = Buffer.concat([Buffer.from([0, 0, 0, 0x20]), Buffer.from('ftypisom'), Buffer.alloc(80)]);
+    const MOV = Buffer.concat([Buffer.from([0, 0, 0, 0x14]), Buffer.from('ftypqt  '), Buffer.alloc(80)]);
+    const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]), Buffer.alloc(80)]);
+    const JPG = Buffer.concat([Buffer.from([0xFF, 0xD8, 0xFF, 0xE0]), Buffer.alloc(80)]);
+    const WEBM = Buffer.concat([Buffer.from([0x1A, 0x45, 0xDF, 0xA3]), Buffer.alloc(80)]);
+    verifica(VF.detecteazaTip(MP4) === 'video/mp4' && VF.detecteazaTip(MOV) === 'video/quicktime' && VF.detecteazaTip(PNG) === 'image/png' && VF.detecteazaTip(JPG) === 'image/jpeg' && VF.detecteazaTip(WEBM) === 'video/webm'
+      && VF.detecteazaTip(Buffer.from('RIFF\0\0\0\0WEBPVP8 ')) === 'image/webp' && VF.detecteazaTip(Buffer.from('<html><body>')) === null, 'detecteazaTip după primii octeți');
+    verifica(VF.tipPotrivit('video/mp4', 'video/quicktime') && !VF.tipPotrivit('image/jpeg', 'image/png'), 'MP4 / MOV același container; JPG ≠ PNG');
+
+    const post = (token, body) => apel(apiC, { metoda: 'POST', token, body });
+    let r = await post('tok-sup', { actiune: 'creeaza', page_path: '/despre-noi', limba: 'ro', nume_campanie: 'Materiale DE TEST', platforme: ['tiktok'] });
+    const c = r.corp.campanie;
+    r = await post('tok-sup', { actiune: 'creeaza', page_path: '/despre-noi', limba: 'ro', nume_campanie: 'Alta DE TEST' });
+    const alta = r.corp.campanie;
+    const pref = `despre-noi/ro/${c.id}/`;
+    const cere = (b) => post('tok-sup', { actiune: 'url_incarcare', id: c.id, ...b });
+
+    r = await cere({ tip: 'video_vertical', mime: 'video/mp4', marime: 1000, latime: 1080, inaltime: 1080 });
+    verifica(r.statusCode === 400 && r.corp.cod === 'DIMENSIUNI' && r.corp.campuri[0].camp === 'media.video_vertical', 'video 1:1 pentru 9:16 → refuzat (raport)');
+    r = await cere({ tip: 'video_vertical', mime: 'video/mp4', marime: 1000, latime: 540, inaltime: 960 });
+    verifica(r.statusCode === 400 && r.corp.cod === 'DIMENSIUNI' && /720 × 1280/.test(r.corp.mesaj.ro), '9:16 la 540 × 960 → refuzat (minimum 720 × 1280)');
+    r = await cere({ tip: 'video_vertical', mime: 'video/mp4', marime: 60 * 1048576, latime: 1080, inaltime: 1920 });
+    verifica(r.statusCode === 400 && r.corp.cod === 'FISIER_PREA_MARE' && /Exportați din nou/.test(r.corp.mesaj.ro), 'video de 60 MB → refuzat, „Exportați din nou”');
+    r = await cere({ tip: 'video_vertical', mime: 'video/x-msvideo', marime: 1000, latime: 1080, inaltime: 1920 });
+    verifica(r.statusCode === 400 && r.corp.cod === 'TIP_FISIER', 'video AVI → refuzat (MP4 / MOV / WebM)');
+    r = await cere({ tip: 'imagine_patrat', mime: 'image/png', marime: 6 * 1048576, latime: 1080, inaltime: 1080 });
+    verifica(r.statusCode === 400 && r.corp.cod === 'FISIER_PREA_MARE', 'imagine de 6 MB → refuzată (5 MB)');
+    r = await cere({ tip: 'imagine_feed_4x5', mime: 'image/png', marime: 1000, latime: 1080, inaltime: 1080 });
+    verifica(r.statusCode === 400 && r.corp.cod === 'DIMENSIUNI', 'imagine 1:1 ca 4:5 → refuzată');
+    r = await cere({ tip: 'imagine_link_1_91', mime: 'image/png', marime: 1000, latime: 1210, inaltime: 640 });
+    verifica(r.statusCode === 200, '1,91:1 la 1210 × 640 (în toleranța de 2 %) → acceptat');
+    r = await cere({ tip: 'video_vertical', mime: 'video/mp4', marime: 1000, latime: 720, inaltime: 1280, durata_s: 15.2 });
+    verifica(r.statusCode === 200 && r.corp.cale === pref + 'video_vertical.mp4' && r.corp.bucket === 'campanii-media' && /^https:\/\/sim\.supabase\/upload\/campanii-media\//.test(r.corp.url_semnat),
+      'adresă semnată: <pagina>/<limba>/<id>/<tip>.<ext> în campanii-media ' + r.corp.cale);
+    r = await post('tok-cit', { actiune: 'url_incarcare', id: c.id, tip: 'video_vertical', mime: 'video/mp4', marime: 1000, latime: 1080, inaltime: 1920 });
+    verifica(r.statusCode === 403, 'adresa de încărcare fără poate_scrie → 403');
+
+    const confirma = (b) => post('tok-sup', { actiune: 'confirma_media', id: c.id, tip: 'video_vertical', latime: 1080, inaltime: 1920, durata_s: 15.25, ...b });
+    r = await confirma({ cale: `despre-noi/ro/${alta.id}/video_vertical.mp4` });
+    verifica(r.statusCode === 400 && r.corp.cod === 'CALE_INVALIDA', 'confirmare cu calea altei campanii → refuzată');
+    r = await confirma({ cale: '../' + pref + 'video_vertical.mp4' });
+    verifica(r.statusCode === 400 && r.corp.cod === 'CALE_INVALIDA', 'confirmare cu ../ → refuzată');
+    r = await confirma({ cale: pref + 'video_vertical.mp4' });
+    verifica(r.statusCode === 400 && r.corp.cod === 'FISIER_LIPSA', 'confirmare fără fișier în stocare → refuzată');
+    pune('campanii-media', pref + 'video_vertical.mp4', PNG);
+    r = await confirma({ cale: pref + 'video_vertical.mp4' });
+    verifica(r.statusCode === 400 && r.corp.cod === 'CONTINUT_INVALID' && !DB.storage['campanii-media'].has(pref + 'video_vertical.mp4'), 'un PNG numit .mp4 → refuzat după conținut și șters din stocare');
+    pune('campanii-media', pref + 'video_vertical.mp4', MP4, 55 * 1048576);
+    r = await confirma({ cale: pref + 'video_vertical.mp4' });
+    verifica(r.statusCode === 400 && r.corp.cod === 'FISIER_PREA_MARE' && !DB.storage['campanii-media'].has(pref + 'video_vertical.mp4'), 'fișier de 55 MB în stocare (deși declarat mic) → refuzat și șters');
+    pune('campanii-media', pref + 'video_vertical.mp4', MP4, 12345678);
+    r = await confirma({ cale: pref + 'video_vertical.mp4', latime: 1000, inaltime: 1000 });
+    verifica(r.statusCode === 400 && r.corp.cod === 'DIMENSIUNI', 'dimensiunile 1:1 la confirmare → refuzate');
+    pune('campanii-media', pref + 'video_vertical.mp4', MP4, 12345678);
+    r = await confirma({ cale: pref + 'video_vertical.mp4' });
+    const mv = r.corp.campanie && r.corp.campanie.media.video_vertical;
+    verifica(r.statusCode === 200 && mv && mv.cale === pref + 'video_vertical.mp4' && mv.marime_bytes === 12345678 && mv.latime === 1080 && mv.inaltime === 1920 && mv.durata_s === 15.3 && mv.mime === 'video/mp4',
+      'video MP4 verificat: media.video_vertical { cale, lățime, înălțime, durată, mărime din stocare, mime } ' + JSON.stringify(mv));
+    verifica(r.corp.media_urls.video_vertical && /exp=600/.test(r.corp.media_urls.video_vertical.url), 'răspunsul aduce adresa de previzualizare (10 min)');
+    // Înlocuire cu altă extensie: fișierul vechi se șterge
+    pune('campanii-media', pref + 'video_vertical.mov', MOV, 2000);
+    r = await confirma({ cale: pref + 'video_vertical.mov' });
+    verifica(r.statusCode === 200 && r.corp.campanie.media.video_vertical.cale === pref + 'video_vertical.mov' && !DB.storage['campanii-media'].has(pref + 'video_vertical.mp4'), 'înlocuirea MP4 → MOV șterge fișierul vechi');
+    // Imagine: JPG cu conținut PNG → refuzat
+    pune('campanii-media', pref + 'imagine_patrat.jpg', PNG);
+    r = await post('tok-sup', { actiune: 'confirma_media', id: c.id, tip: 'imagine_patrat', cale: pref + 'imagine_patrat.jpg', latime: 1080, inaltime: 1080 });
+    verifica(r.statusCode === 400 && r.corp.cod === 'CONTINUT_INVALID', 'imagine .jpg cu conținut PNG → refuzată');
+    // Activare, apoi ștergerea materialului necesar → 409
+    await post('tok-sup', { actiune: 'salveaza', id: c.id, text_principal: 'Text DE TEST', cta: 'afla_mai_multe', url_destinatie: 'https://mydarrin.homebestpal.com/despre-noi' });
+    r = await post('tok-sup', { actiune: 'stare', id: c.id, stare: 'activa' });
+    verifica(r.statusCode === 200, 'cu video 9:16 verificat, campania TikTok se activează');
+    r = await post('tok-sup', { actiune: 'sterge_media', id: c.id, tip: 'video_vertical' });
+    verifica(r.statusCode === 409 && r.corp.cod === 'MATERIAL_NECESAR', 'ștergerea materialului cerut de o campanie activă → 409');
+    await post('tok-sup', { actiune: 'stare', id: c.id, stare: 'ciorna' });
+    r = await post('tok-sup', { actiune: 'sterge_media', id: c.id, tip: 'video_vertical' });
+    verifica(r.statusCode === 200 && !r.corp.campanie.media.video_vertical && !DB.storage['campanii-media'].has(pref + 'video_vertical.mov'), 'ciornă: materialul se șterge, și din stocare');
+    verifica(['campanie_material_incarcare', 'campanie_material_salvat', 'campanie_material_sters'].every((a) => DB.tabele.audit_log.some((x) => x.actiune === a)), 'încărcările se auditează');
+
+    // Imaginea OG (api/admin/seo.js, bucket-ul public seo-og)
+    process.env.SUPABASE_URL = 'https://abcdefgh.supabase.co';
+    const og = (b) => apel(apiSeo, { metoda: 'POST', token: 'tok-sup', body: { page_path: '/despre-noi', limba: 'en', ...b } });
+    r = await og({ actiune: 'url_incarcare_og', mime: 'image/png', marime: 1000, latime: 1080, inaltime: 1080 });
+    verifica(r.statusCode === 400 && r.corp.cod === 'DIMENSIUNI' && r.corp.campuri[0].camp === 'og_imagine_url', 'OG 1:1 → refuzat (1,91:1)');
+    r = await og({ actiune: 'url_incarcare_og', mime: 'image/png', marime: 1000, latime: 1000, inaltime: 523 });
+    verifica(r.statusCode === 400 && /1200 × 630/.test(r.corp.mesaj.ro), 'OG 1000 × 523 → refuzat (minimum 1200 × 630)');
+    r = await og({ actiune: 'url_incarcare_og', mime: 'image/png', marime: 1000, latime: 1200, inaltime: 630 });
+    const caleOg = r.corp.cale;
+    verifica(r.statusCode === 200 && r.corp.bucket === 'seo-og' && /^despre-noi\/en\/og-[a-f0-9]{12}\.png$/.test(caleOg), 'OG: adresă semnată în seo-og, cale nouă la fiecare încărcare ' + caleOg);
+    r = await og({ actiune: 'confirma_og', cale: caleOg.replace('despre-noi', 'mydarrin-contact'), latime: 1200, inaltime: 630 });
+    verifica(r.statusCode === 400 && r.corp.cod === 'CALE_INVALIDA', 'OG: calea altei pagini → refuzată');
+    pune('seo-og', caleOg, PNG, 400000);
+    r = await og({ actiune: 'confirma_og', cale: caleOg, latime: 1200, inaltime: 630 });
+    verifica(r.statusCode === 200 && r.corp.url_public === 'https://abcdefgh.supabase.co/storage/v1/object/public/seo-og/' + caleOg && r.corp.latime === 1200, 'OG verificat → adresa publică ' + r.corp.url_public);
+    r = await apel(apiSeo, { metoda: 'POST', token: 'tok-cit', body: { actiune: 'url_incarcare_og', page_path: '/despre-noi', limba: 'en', mime: 'image/png', marime: 1000, latime: 1200, inaltime: 630 } });
+    verifica(r.statusCode === 403, 'OG fără poate_scrie → 403');
+  }
+
   if (typeof module.exports.maiDeparte === 'function') await module.exports.maiDeparte({ verifica, apel, reset, ruleaza });
 
   console.log(`\n${ok} trecute, ${esec} picate`);

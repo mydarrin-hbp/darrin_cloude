@@ -57,19 +57,38 @@ function sesiuneAdmin(user) {
 
 // Fișierele „încărcate” pe adresa semnată: conținutul real, ca serverul să-l poată verifica.
 const INCARCATE = new Map();
+process.env.SUPABASE_URL = 'https://abcdefgh.supabase.co';
+// fetch-ul serverului (lib/verifica-fisier.js) citește primii octeți de pe adresa semnată simulată.
+globalThis.fetch = async (url, opt) => {
+  const m = /^https:\/\/sim\.supabase\/sign\/(.+?)\?/.exec(String(url));
+  const b = m && INCARCATE.get(decodeURIComponent(m[1]));
+  if (!b) return new Response('nu', { status: 404 });
+  return new Response(b.subarray(0, 64), { status: 206, headers: { 'content-range': `bytes 0-63/${b.length}` } });
+};
 
 async function deschide(browser, baza, w, h, user = { id: 'sup', email: 'super@example.com', roles: ['superadmin'] }) {
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: w < 1024 });
   await ctx.addInitScript(sesiuneAdmin, user);
-  await ctx.route(/\.supabase\.co\//, (r) => r.abort());
+  // Imaginile publice din seo-og: servite din fișierele încărcate.
+  await ctx.route(/\.supabase\.co\//, (r) => {
+    const m = /\/storage\/v1\/object\/public\/(.+)$/.exec(new URL(r.request().url()).pathname);
+    const b = m && INCARCATE.get(decodeURIComponent(m[1]));
+    return b ? r.fulfill({ status: 200, contentType: 'image/png', body: b }) : r.abort();
+  });
   await ctx.route(/^https:\/\/sim\.supabase\//, async (r) => {
     const req = r.request();
     if (req.method() === 'PUT' || req.method() === 'POST') {
       const u = new URL(req.url());
-      INCARCATE.set(decodeURIComponent(u.pathname.replace(/^\/upload\//, '')), req.postDataBuffer());
+      const cheie = decodeURIComponent(u.pathname.replace(/^\/upload\//, ''));
+      INCARCATE.set(cheie, req.postDataBuffer());
+      const [bucket, ...rest] = cheie.split('/');
+      (DB.storage[bucket] = DB.storage[bucket] || new Set()).add(rest.join('/'));
       return r.fulfill({ status: 200, contentType: 'application/json', body: '{"Key":"ok"}' });
     }
-    return r.fulfill({ status: 200, contentType: 'application/octet-stream', body: Buffer.from('x') });
+    const m = /^\/sign\/(.+)$/.exec(new URL(req.url()).pathname);
+    const b = m && INCARCATE.get(decodeURIComponent(m[1]));
+    if (!b) return r.fulfill({ status: 404, body: '' });
+    return r.fulfill({ status: 200, contentType: /\.webm$/.test(m[1]) ? 'video/webm' : (/\.mp4$/.test(m[1]) ? 'video/mp4' : 'image/png'), body: b });
   });
   await ctx.route(/\/api\//, async (r) => {
     const req = r.request(), url = new URL(req.url()), api = API[url.pathname];
@@ -179,13 +198,13 @@ async function testTaburi(browser, baza) {
         await pg.waitForFunction(() => /1,91:1/.test((document.querySelector('#seo-og-media .seo-media-msg') || {}).textContent || ''), null, { timeout: 5000 }).catch(() => {});
         const msg = await pg.$eval('#seo-og-media .seo-media-msg', (e) => e.textContent).catch(() => '');
         verifica(/1,91:1/.test(msg) && !INCARCATE.size, `${et}: imaginea 1:1 refuzată în browser, fără încărcare (${msg})`);
-        await pg.setInputFiles('#seo-og-media input[type=file]', { name: 'og.png', mimeType: 'image/png', buffer: await imagine(pg, 1200, 628) });
+        await pg.setInputFiles('#seo-og-media input[type=file]', { name: 'og.png', mimeType: 'image/png', buffer: await imagine(pg, 1200, 630) });
         await pg.waitForFunction(() => !!document.querySelector('.seo-card-facebook .seo-card-img img'), null, { timeout: 8000 }).catch(() => {});
-        verifica(!!(await pg.$('.seo-card-facebook .seo-card-img img')) && INCARCATE.size === 1, `${et}: imaginea 1200 × 628 se încarcă și apare în card`);
+        verifica(!!(await pg.$('.seo-card-facebook .seo-card-img img')) && INCARCATE.size === 1, `${et}: imaginea 1200 × 630 se încarcă și apare în card`);
         await pg.click('#seo-panou-tab [data-act="salveaza"]');
         await pg.waitForFunction(() => /salvat/i.test((document.getElementById('seo-og-msg') || {}).textContent || ''), null, { timeout: 5000 }).catch(() => {});
         const ro = DB.tabele.seo_config.find((x) => x.limba === 'ro');
-        verifica(ro && ro.og_titlu === 'Titlu partajare DE TEST' && /\/seo-og\/despre-noi\/ro\//.test(ro.og_imagine_url || '') && ro.og_imagine_latime === 1200 && ro.og_imagine_inaltime === 628
+        verifica(ro && ro.og_titlu === 'Titlu partajare DE TEST' && /\/seo-og\/despre-noi\/ro\//.test(ro.og_imagine_url || '') && ro.og_imagine_latime === 1200 && ro.og_imagine_inaltime === 630
           && ro.meta_title === 'Despre My Darrin — titlu RO DE TEST', `${et}: OG salvat pe rândul RO, fără să șteargă titlul SEO (${ro && ro.og_imagine_url})`);
       }
       if (w === 1440 || w === 390) await captura(pg, `seo-tab-og-${w}`);

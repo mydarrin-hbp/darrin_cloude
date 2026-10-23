@@ -21,7 +21,9 @@
 // POST { actiune:'stare', id, stare }                                → ciorna ↔ activa, → arhivata, arhivata → ciorna
 // POST { actiune:'duplica', id, limba? }                             → ciornă nouă; în altă limbă (RO → EN), textele goale
 // POST { actiune:'sterge', id }                                      → doar ciornele (și materialele lor)
-// POST { actiune:'url_incarcare' | 'confirma_media' | 'sterge_media' } → materialele (pasul 2.5)
+// POST { actiune:'url_incarcare', id, tip, mime, marime, latime, inaltime, durata_s } → adresă semnată (campanii-media)
+// POST { actiune:'confirma_media', id, tip, cale, latime, inaltime, durata_s }       → verificarea conținutului, media[tip]
+// POST { actiune:'sterge_media', id, tip }                                           → scoate materialul
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
@@ -30,6 +32,7 @@ const { trimiteEroare, camp, formaComuna } = require('../../lib/raspuns-eroare')
 const { nivelSeo, refuzaFaraDrept, refuzaFaraScriere } = require('../../lib/permisiuni-seo');
 const { esteCunoscuta } = require('../../lib/seo-pagini');
 const R = require('../../lib/seo-campanii');
+const VF = require('../../lib/verifica-fisier');
 
 const TABEL = 'seo_campanii_social';
 const BUCKET = 'campanii-media';
@@ -267,7 +270,114 @@ async function sterge(req, res, admin) {
   return res.status(200).json({ ok: true });
 }
 
-const ACTIUNI = { creeaza, salveaza, stare: schimbaStare, duplica, sterge };
+// ── Materialele (pasul 2.5): încărcare directă din browser, pe adresă semnată ──
+// Fișierul nu trece prin funcțiile Vercel. Serverul verifică înainte tipul,
+// mărimea și dimensiunile declarate, iar după încărcare conținutul real
+// (primii octeți), mărimea și calea: <pagina>/<limba>/<id>/<tip>.<ext>.
+function refuzMaterial(res, tip, ro, en, cod) {
+  return trimiteEroare(res, 400, cod || 'MATERIAL_INVALID', ro, en, [camp('media.' + tip, ro, en)]);
+}
+function dimensiuni(b) {
+  const latime = Number(b.latime), inaltime = Number(b.inaltime);
+  const durata = b.durata_s == null || b.durata_s === '' ? null : Number(b.durata_s);
+  return { latime, inaltime, durata, ok: Number.isInteger(latime) && Number.isInteger(inaltime) && latime > 0 && inaltime > 0 && latime <= 20000 && inaltime <= 20000
+    && (durata == null || (Number.isFinite(durata) && durata >= 0 && durata <= 36000)) };
+}
+// Verificările comune (înainte și după încărcare): tipul, mărimea, raportul, rezoluția.
+function verificaMaterial(res, tip, mime, marime, d) {
+  if (!R.MEDIA[tip]) return trimiteEroare(res, 400, 'TIP_MATERIAL', 'Tip de material necunoscut.', 'Unknown asset type.');
+  const video = R.MEDIA[tip].tip === 'video';
+  if (!R.mimePermis(tip, mime)) {
+    return refuzMaterial(res, tip, video ? 'Videoclipul trebuie să fie MP4, MOV sau WebM.' : 'Imaginea trebuie să fie JPG, PNG sau WebP.',
+      video ? 'The video must be MP4, MOV or WebM.' : 'The image must be JPG, PNG or WebP.', 'TIP_FISIER');
+  }
+  const max = R.marimeMaxima(tip);
+  if (!(marime > 0) || marime > max) {
+    const mb = Math.round(max / 1048576);
+    return refuzMaterial(res, tip, `Fișierul are mai mult de ${mb} MB. Exportați din nou, sub ${mb} MB.`, `The file is larger than ${mb} MB. Export it again, under ${mb} MB.`, 'FISIER_PREA_MARE');
+  }
+  if (!d.ok) return refuzMaterial(res, tip, 'Dimensiunile materialului lipsesc sau nu sunt valide.', 'The asset dimensions are missing or not valid.');
+  const v = R.verificaDimensiuni(tip, d.latime, d.inaltime);
+  if (!v.ok) return refuzMaterial(res, tip, v.ro, v.en, 'DIMENSIUNI');
+  return null;
+}
+
+async function urlIncarcare(req, res, admin) {
+  const b = req.body || {};
+  const c = await citeste(b.id);
+  if (!c) return refuzLipsa(res);
+  if (c.stare === 'arhivata') return trimiteEroare(res, 409, 'CAMPANIE_ARHIVATA', 'Campania e arhivată.', 'The campaign is archived.');
+  const marime = Number(b.marime);
+  const refuz = verificaMaterial(res, b.tip, b.mime, marime, dimensiuni(b));
+  if (refuz) return refuz;
+  const cale = prefixMedia(c) + b.tip + '.' + R.mimePermis(b.tip, b.mime);
+  const { data, error } = await supabaseAdmin.storage.from(BUCKET).createSignedUploadUrl(cale, { upsert: true });
+  if (error || !data) {
+    console.error('[admin/seo-campanii url_incarcare]', error);
+    return trimiteEroare(res, 503, 'BUCKET_INDISPONIBIL', 'Nu am putut pregăti încărcarea. Verificați că bucket-ul campanii-media există (migrarea 2026-10-23).',
+      'We could not prepare the upload. Check that the campanii-media bucket exists (the 2026-10-23 migration).');
+  }
+  await inregistreazaAudit({ admin, req, actiune: 'campanie_material_incarcare', entitate: 'storage', entitate_id: `${BUCKET}/${cale}`, detalii: { campanie: c.id, tip: b.tip, mime: b.mime, marime } });
+  return res.status(200).json({ ok: true, bucket: BUCKET, cale: data.path || cale, token: data.token, url_semnat: data.signedUrl });
+}
+
+async function confirmaMedia(req, res, admin) {
+  const b = req.body || {};
+  const c = await citeste(b.id);
+  if (!c) return refuzLipsa(res);
+  const tip = b.tip;
+  if (!R.MEDIA[tip]) return trimiteEroare(res, 400, 'TIP_MATERIAL', 'Tip de material necunoscut.', 'Unknown asset type.');
+  const ext = String(b.cale || '').split('.').pop();
+  const asteptata = prefixMedia(c) + tip + '.' + ext;
+  const mimeDinExt = Object.keys(R.MEDIA[tip].tip === 'video' ? R.MIME_VIDEO : R.MIME_IMAGINE).find((m) => R.mimePermis(tip, m) === ext);
+  if (b.cale !== asteptata || !mimeDinExt) {
+    return refuzMaterial(res, tip, 'Calea fișierului nu aparține acestei campanii.', 'The file path does not belong to this campaign.', 'CALE_INVALIDA');
+  }
+  const info = await VF.inspecteaza(supabaseAdmin, BUCKET, b.cale);
+  if (!info.exista) return refuzMaterial(res, tip, 'Fișierul nu s-a găsit în stocare. Încărcați-l din nou.', 'The file was not found in storage. Upload it again.', 'FISIER_LIPSA');
+  const d = dimensiuni(b);
+  const refuz = !VF.tipPotrivit(mimeDinExt, info.tip)
+    ? refuzMaterial(res, tip, 'Conținutul fișierului nu e ' + ext.toUpperCase() + ' (verificat pe server). Exportați din nou materialul.', 'The file content is not ' + ext.toUpperCase() + ' (checked on the server). Export the asset again.', 'CONTINUT_INVALID')
+    : verificaMaterial(res, tip, mimeDinExt, info.marime, d);
+  if (refuz) {
+    await supabaseAdmin.storage.from(BUCKET).remove([b.cale]);
+    return refuz;
+  }
+  const media = Object.assign({}, c.media || {});
+  const vechi = media[tip] && media[tip].cale;
+  media[tip] = { cale: b.cale, latime: d.latime, inaltime: d.inaltime, marime_bytes: info.marime, mime: mimeDinExt };
+  if (R.MEDIA[tip].tip === 'video' && d.durata != null) media[tip].durata_s = Math.round(d.durata * 10) / 10;
+  const { data, error } = await supabaseAdmin.from(TABEL).update({ media, actualizat_de: admin.id, updated_at: new Date().toISOString() }).eq('id', c.id).select().single();
+  if (error) throw new EroareDb(error);
+  if (vechi && vechi !== b.cale) await supabaseAdmin.storage.from(BUCKET).remove([vechi]);
+  await inregistreazaAudit({ admin, req, actiune: 'campanie_material_salvat', entitate: TABEL, entitate_id: c.id, detalii: { tip, cale: b.cale, marime: info.marime, latime: d.latime, inaltime: d.inaltime } });
+  return res.status(200).json({ ok: true, campanie: data, media_urls: await adreseMedia(data, false) });
+}
+
+async function stergeMedia(req, res, admin) {
+  const b = req.body || {};
+  const c = await citeste(b.id);
+  if (!c) return refuzLipsa(res);
+  if (!R.MEDIA[b.tip]) return trimiteEroare(res, 400, 'TIP_MATERIAL', 'Tip de material necunoscut.', 'Unknown asset type.');
+  const media = Object.assign({}, c.media || {});
+  const vechi = media[b.tip] && media[b.tip].cale;
+  if (!vechi) return res.status(200).json({ ok: true, campanie: c });
+  delete media[b.tip];
+  if (c.stare === 'activa') {
+    const erori = R.valideaza(Object.assign({}, c, { media }), await limite(), { activare: true });
+    if (erori.length) {
+      return trimiteEroare(res, 409, 'MATERIAL_NECESAR', 'Campania activă are nevoie de acest material: ' + erori[0].ro + ' Readuceți-o la ciornă sau încărcați întâi înlocuitorul.',
+        'The active campaign needs this asset: ' + erori[0].en + ' Bring it back to draft or upload the replacement first.', [camp('media.' + b.tip, erori[0].ro, erori[0].en)]);
+    }
+  }
+  const { data, error } = await supabaseAdmin.from(TABEL).update({ media, actualizat_de: admin.id, updated_at: new Date().toISOString() }).eq('id', c.id).select().single();
+  if (error) throw new EroareDb(error);
+  if (String(vechi).startsWith(prefixMedia(c))) await supabaseAdmin.storage.from(BUCKET).remove([vechi]);
+  await inregistreazaAudit({ admin, req, actiune: 'campanie_material_sters', entitate: TABEL, entitate_id: c.id, detalii: { tip: b.tip, cale: vechi } });
+  return res.status(200).json({ ok: true, campanie: data, media_urls: await adreseMedia(data, false) });
+}
+
+const ACTIUNI = { creeaza, salveaza, stare: schimbaStare, duplica, sterge, url_incarcare: urlIncarcare, confirma_media: confirmaMedia, sterge_media: stergeMedia };
 
 async function handler(req, res, admin) {
   res.setHeader('Cache-Control', 'private, no-store');
@@ -292,7 +402,7 @@ async function handler(req, res, admin) {
     }
     if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA', 'Metodă nepermisă.', 'Method not allowed.');
     const actiune = req.body && req.body.actiune;
-    const fn = ACTIUNI[actiune] || (module.exports.actiuniMedia && module.exports.actiuniMedia[actiune]);
+    const fn = ACTIUNI[actiune];
     if (!fn) return trimiteEroare(res, 400, 'ACTIUNE_INVALIDA', 'Acțiune necunoscută.', 'Unknown action.');
     if (!poateScrie) return refuzaFaraScriere(res);
     return await fn(req, res, admin);
