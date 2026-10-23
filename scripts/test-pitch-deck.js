@@ -15,9 +15,12 @@
 //      needitabilă, vizibilitatea doar de superadmin, audit;
 //   G. formatarea numerelor RO / EN (pitch-deck-render.js);
 //   H. evoluția lunară: 403 fără KYC aprobat; doar comenzi finalizate reale.
+// Pasul 11-K2 (23 oct. 2026): v1.1 (slide 12 cu carduri A + B = C și banda
+// escrow, slide 20 fără slogan) — schema, erorile pe câmp și importul.
 // Cifrele rundei sunt DE TEST (900.000 / 100.000), nu ale rundei Seed reale.
 // Rulare: node scripts/test-pitch-deck.js
 
+const fs = require('fs');
 const path = require('path');
 const sim = require('./supabase-simulat');
 sim.instaleaza();
@@ -35,6 +38,8 @@ const apiAdmin = require(path.join(RADACINA, 'api/admin/pitch-deck.js'));
 const apiPublic = require(path.join(RADACINA, 'api/public/pitch-deck.js'));
 const RO = require(path.join(RADACINA, 'docs/pitch-deck/pitch-deck-v1-ro.json'));
 const EN = require(path.join(RADACINA, 'docs/pitch-deck/pitch-deck-v1-en.json'));
+const RO11 = require(path.join(RADACINA, 'docs/pitch-deck/pitch-deck-v1.1-ro.json'));
+const EN11 = require(path.join(RADACINA, 'docs/pitch-deck/pitch-deck-v1.1-en.json'));
 const copie = (o) => JSON.parse(JSON.stringify(o));
 
 const SUPER = 'u-super', SCRIE = 'u-scrie', CITESTE = 'u-citeste', INV_OK = 'u-inv-ok', INV_NU = 'u-inv-nu', CLIENT = 'u-client';
@@ -142,6 +147,48 @@ async function importaSiPregateste(limbi = ['ro', 'en']) {
     egal(S.valideaza([{ nr: 1, tip: 'coperta', animatie: 'imagine', titlu: 'x', imagine: 'https://abc.supabase.co/storage/v1/object/public/pitch-deck-media/v/2026-10-22-ab.webp' }]), [], 'imagine din pitch-deck-media → validă');
   });
 
+  // Pasul 11-K2 (23 oct. 2026): slide-ul 12 cu carduri A + B = C și banda escrow.
+  for (const [l, j] of [['RO', RO11], ['EN', EN11]]) {
+    await test(`JSON-ul v1.1 ${l}: valid, slide 12 cu carduri (+ / =) și escrow, slide 20 fără slogan`, async () => {
+      egal(j.meta.versiune, 'v1.1');
+      egal(S.valideaza(j.slide_uri), []);
+      const m = j.slide_uri[11];
+      egal([m.tip, m.flux.map((p) => p.operator || ''), m.flux.map((p) => p.stil)], ['model_afaceri', ['', '+', '='], ['neutru', 'accent', 'final']]);
+      adevarat(m.flux.every((p) => p.titlu && p.text) && m.escrow && m.escrow.titlu && m.escrow.text, 'titlu, text, escrow');
+      egal(j.slide_uri[19].imagine, '20-echipa-robot-fara-slogan.webp');
+      adevarat(fs.existsSync(path.join(RADACINA, 'assets/pitch-deck/v1/20-echipa-robot-fara-slogan.webp')), 'imaginea slide-ului 20 există');
+    });
+  }
+  await test('model_afaceri: v1 (pași simpli) rămâne valid; câmpurile noi sunt opționale', async () => {
+    const v1 = copie(RO.slide_uri[11]);
+    adevarat(!v1.flux.some((p) => 'titlu' in p || 'operator' in p) && !('escrow' in v1), 'slide-ul v1 nu are câmpurile noi');
+    egal(S.valideaza([{ ...v1, nr: 1 }]), []);
+    const gol = copie(RO11.slide_uri[11]);
+    gol.flux.forEach((p) => { p.operator = null; delete p.stil; });
+    gol.escrow = null;
+    egal(S.valideaza([{ ...gol, nr: 1 }]), [], 'operator null, fără stil, escrow null');
+    gol.flux[1].operator = '';
+    gol.escrow = { titlu: '', text: '' };
+    egal(S.valideaza([{ ...gol, nr: 1 }]), [], 'operator gol, escrow gol');
+  });
+  await test('model_afaceri: operator / stil / lungimi nevalide → eroare pe câmp, RO + EN', async () => {
+    const j = copie(RO11.slide_uri);
+    j[11].flux[1].operator = 'x';
+    j[11].flux[2].stil = 'verde';
+    j[11].flux[0].titlu = 'a'.repeat(61);
+    j[11].flux[0].text = 'a'.repeat(301);
+    j[11].escrow = { titlu: 'a'.repeat(81), text: 'a'.repeat(301) };
+    const e = S.valideaza(j);
+    egal(e.map((x) => x.camp).sort(), ['slide_uri.11.escrow.text', 'slide_uri.11.escrow.titlu', 'slide_uri.11.flux.0.text', 'slide_uri.11.flux.0.titlu', 'slide_uri.11.flux.1.operator', 'slide_uri.11.flux.2.stil']);
+    const op = e.find((x) => x.camp === 'slide_uri.11.flux.1.operator');
+    adevarat(/^Slide 12 · «Fluxul banilor» 2 · «Semnul dinaintea cardului \(\+ \/ =\)»: valoare necunoscută \(\+ \/ =\)\.$/.test(op.ro), op.ro);
+    adevarat(/unknown value \(\+ \/ =\)\.$/.test(op.en), op.en);
+    const st = e.find((x) => x.camp === 'slide_uri.11.flux.2.stil');
+    adevarat(/valoare necunoscută \(neutru \/ accent \/ final\)/.test(st.ro) && /unknown value \(neutru \/ accent \/ final\)/.test(st.en), st.ro + ' | ' + st.en);
+    adevarat(e.every((x) => x.ro && x.en), 'mesaj RO + EN');
+    egal(S.valideaza([{ ...copie(RO11.slide_uri[11]), nr: 1, escrow: 'text' }]).map((x) => x.camp), ['slide_uri.0.escrow'], 'escrow trebuie să fie obiect');
+  });
+
   console.log('B. Limbile');
   await test('ro → RO; en, bg, de, el, fr, tr → EN; necunoscut → EN', async () => {
     egal(P.limbaDeck('ro'), 'ro'); egal(P.limbaDeck('RO-ro'), 'ro');
@@ -165,6 +212,23 @@ async function importaSiPregateste(limbi = ['ro', 'en']) {
     egal(DB.tabele.pitch_deck_versiuni.length, 2);
     egal((await public_({ limba: 'ro' })).corp.stare, 'in_pregatire', 'importul nu publică nimic');
     adevarat(DB.tabele.audit_log.filter((a) => a.actiune === 'pitch_deck_importat').length === 2, 'audit');
+  });
+  await test('importul v1.1 RO + EN: ciorne noi „Pitch deck v1.1 · RO / EN”, v1 neatinse', async () => {
+    reset();
+    const v1 = (await admin(SCRIE, { actiune: 'importa', fisier: copie(RO) })).corp.versiune;
+    for (const [l, j] of [['ro', RO11], ['en', EN11]]) {
+      const r = await admin(SCRIE, { actiune: 'importa', fisier: copie(j) });
+      egal(r.statusCode, 200, JSON.stringify(r.corp));
+      const v = r.corp.versiune;
+      egal([v.titlu, v.limba, v.aprobat], ['Pitch deck v1.1 · ' + l.toUpperCase(), l, false]);
+      egal(v.slide_uri[11].flux.map((p) => p.operator || ''), ['', '+', '=']);
+      egal(v.slide_uri[11].escrow, j.slide_uri[11].escrow);
+      egal(v.slide_uri[19].imagine, '20-echipa-robot-fara-slogan.webp');
+      egal(v.note_verificare.length, j.slide_uri.reduce((n, s) => n + (s.de_verificat || []).length, 0));
+    }
+    egal(DB.tabele.pitch_deck_versiuni.length, 3);
+    const vechi = DB.tabele.pitch_deck_versiuni.find((x) => x.id === v1.id);
+    egal([vechi.titlu, JSON.stringify(vechi.slide_uri[11])], ['Pitch deck v1 · RO', JSON.stringify(v1.slide_uri[11])], 'ciorna v1 neatinsă');
   });
   await test('aprobarea cu note nerezolvate → 409 NOTE_NEREZOLVATE (RO + EN), pe câmp', async () => {
     reset();

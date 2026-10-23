@@ -66,9 +66,18 @@
     },
     cifre_banda: { imagine: IMAGINE(false), cifre: LISTA('Cifre', CIFRA, true) },
     faze_imagine: { imagine: IMAGINE(true), faze: LISTA('Faze', { eticheta: TEXT('Etichetă', true, 40), text: TEXT('Text', true, 80) }, true) },
+    // v1: pași simpli (etichetă + valoare). v1.1 (11-K2, 23 oct. 2026): carduri
+    // A + B = C, cu titlu, text, operator și stil pe pas, plus banda escrow;
+    // toate opționale, deci un slide v1 rămâne valid și arată la fel.
     model_afaceri: {
       subtitlu_accent: TEXT('Subtitlu (accent)'), subtitlu: TEXT('Subtitlu'),
-      flux: LISTA('Fluxul banilor', { eticheta: TEXT('Etichetă', true, 40), valoare: { t: 'text', et: 'Valoare', max: 20, nul: true } }, true),
+      flux: LISTA('Fluxul banilor', {
+        eticheta: TEXT('Etichetă', true, 40), valoare: { t: 'text', et: 'Valoare', max: 20, nul: true },
+        titlu: TEXT('Titlul cardului', false, 60), text: { t: 'lung', et: 'Descrierea cardului', max: 300 },
+        operator: { t: 'enum', et: 'Semnul dinaintea cardului (+ / =)', valori: ['+', '='], nul: true },
+        stil: { t: 'enum', et: 'Stilul cardului', valori: ['neutru', 'accent', 'final'] },
+      }, true),
+      escrow: { t: 'obiect', et: 'Banda Escrow (sub carduri)', nul: true, campuri: { titlu: TEXT('Titlu', false, 80), text: { t: 'lung', et: 'Text', max: 300 } } },
       venituri_titlu: TEXT('Titlul veniturilor', false, 60), venituri: LISTA_TEXT('Venituri suplimentare (unul pe rând)', false, 60),
     },
     cronologie: { etape: LISTA('Etape', { perioada: TEXT('Perioada', true, 40), titlu: TEXT('Titlu', true, 80), text: LUNG('Text', true) }, true) },
