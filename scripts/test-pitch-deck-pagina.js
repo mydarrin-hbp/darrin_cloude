@@ -27,6 +27,8 @@ const RO = require(FISIER_RO);
 const EN = require(FISIER_EN);
 const notePe = (j) => j.slide_uri.reduce((n, s) => n + (s.de_verificat || []).length, 0);
 
+// Intl pune spații neseparabile (22 mil. €): comparăm cu spații obișnuite.
+const sp = (t) => String(t || '').replace(/\s/g, ' ');
 let ok = 0, esec = 0;
 function verifica(c, m) { if (c) ok++; else { esec++; console.log('  ✗ ' + m); } }
 
@@ -357,8 +359,6 @@ async function testPublic(browser, baza) {
 }
 
 // ═══ C. Animații, navigare, limbă, stări ═══════════════════════════
-// Intl pune spații neseparabile (22 mil. €): comparăm cu spații obișnuite.
-const sp = (t) => String(t || '').replace(/\s/g, ' ');
 const slideActiv = (pg) => pg.evaluate(() => Number((document.querySelector('.mdpd-slide.mdpd-activ') || {}).dataset?.nr || 0));
 async function swipe(pg, dx) {
   await pg.evaluate((dx) => {
@@ -491,6 +491,133 @@ async function testStari(browser, baza) {
   console.log('C: gata');
 }
 
+// ═══ D. Varianta live (2.6) ═══════════════════════════════════════
+const apiIndicatori = require(path.join(RADACINA, 'api/investitori/indicatori.js'));
+const apiEvolutie = require(path.join(RADACINA, 'api/investitori/evolutie-lunara.js'));
+const STAT = { ok: true, clienti_activi: 17, parteneri_verificati: 0, devize_ai_luna: 0 };
+const TARI = { ok: true, active: ['RO', 'MD'], tari: [{ tara_cod: 'RO', tara_nume: 'România' }, { tara_cod: 'MD', tara_nume: 'Moldova' }] };
+const RUNDA_PUBLICA = { ok: true, runda: { cod: 'test', denumire_ro: 'Seed (test)', denumire_en: 'Seed (test)', stare: 'deschisa', data_start: '2099-11-01', data_sfarsit: '2100-06-30', moneda: 'EUR', suma_tinta: 100000, investitie_minima: 1000, pret_actiune: 1000, equity_oferit_pct: 10, post_money: 1000000, tickete: [5000], instrumente: ['actiuni'] } };
+
+function sesiuneInvestitor(user) {
+  const ses = { access_token: 'tok-' + user.id, user };
+  const client = { auth: { getSession: async () => ({ data: { session: ses }, error: null }), getUser: async () => ({ data: { user }, error: null }), onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }) } };
+  Object.defineProperty(window, 'supabaseClient', { configurable: true, get: () => client, set: () => {} });
+}
+
+async function paginaLive(browser, baza, { lang, latime, user, stat = STAT }) {
+  const ctx = await browser.newContext({ viewport: { width: latime, height: 860 } });
+  await ctx.addInitScript((l) => { try { localStorage.setItem('myd_lang_v1', l); localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), versiune: 1 })); } catch (e) {} }, lang);
+  if (user) await ctx.addInitScript(sesiuneInvestitor, user);
+  await ctx.route(/\.supabase\.co\//, (r) => r.abort());
+  const real = async (r, api) => {
+    const url = new URL(r.request().url());
+    const res = raspuns();
+    await api(cerere({ metoda: 'GET', token: (r.request().headers().authorization || '').replace('Bearer ', '') || null, query: Object.fromEntries(url.searchParams) }), res);
+    return r.fulfill({ status: res.statusCode, contentType: 'application/json', body: JSON.stringify(res.corp || {}) });
+  };
+  const fix = (corp) => (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(corp) });
+  await ctx.route(/\/api\/public\/pitch-deck/, (r) => real(r, apiPublic));
+  await ctx.route(/\/api\/public\/statistici-homepage/, fix(stat));
+  await ctx.route(/\/api\/public\/tari-active/, fix(TARI));
+  await ctx.route(/\/api\/public\/runda-curenta/, fix(RUNDA_PUBLICA));
+  await ctx.route(/\/api\/investitori\/indicatori/, (r) => real(r, apiIndicatori));
+  await ctx.route(/\/api\/investitori\/evolutie-lunara/, (r) => real(r, apiEvolutie));
+  const pg = await ctx.newPage();
+  pg.erori = [];
+  pg.on('pageerror', (e) => pg.erori.push(e.message.slice(0, 200)));
+  await pg.goto(baza + '/mydarrin-pitch-deck', { waitUntil: 'domcontentloaded' });
+  await pg.waitForSelector('.mdpd-slide.mdpd-activ', { timeout: 10000 }).catch(() => {});
+  return { ctx, pg };
+}
+async function deschideLive(pg) {
+  await pg.click('#pd-mod-live');
+  await pg.waitForSelector('#pd-live [data-actualizat]', { timeout: 8000 }).catch(() => {});
+  await pg.waitForTimeout(200);
+}
+
+const LIVE = {
+  ro: { real: 'Date reale din platformă', actualizat: 'Actualizat la', insuficient: 'Încă nu sunt date suficiente', tari: 'România · Republica Moldova', doar: 'disponibile investitorilor cu identitatea verificată', gmv: '1.800 RON', take: '9,44%' },
+  en: { real: 'Real platform data', actualizat: 'Updated on', insuficient: 'Not enough data yet', tari: 'Romania · Moldova', doar: 'available to investors with a verified identity', gmv: 'RON 1,800', take: '9.44%' },
+};
+
+async function testLive(browser, baza) {
+  for (const [lang, latime] of [['ro', 1366], ['en', 390], ['de', 1366]]) {
+    const l = lang === 'ro' ? 'ro' : 'en';
+    const X = LIVE[l];
+    const et = `D ${lang} ${latime}px`;
+    // Vizitator fără cont: cifrele publice, fără indicatorii investitorilor
+    resetPublic();
+    let { ctx, pg } = await paginaLive(browser, baza, { lang, latime });
+    verifica(await pg.isVisible('#pd-comutator') && (await pg.getAttribute('#pd-mod-prognoza', 'aria-pressed')) === 'true', `${et}: comutatorul „Prognoză | Live”, pornit pe prognoză`);
+    await deschideLive(pg);
+    let txt = (await pg.innerText('#pd-live')).replace(/\s+/g, ' ');
+    verifica(!(await pg.isVisible('#pd-deck')) && (await pg.getAttribute('#pd-mod-live', 'aria-pressed')) === 'true', `${et}: Live ascunde deck-ul`);
+    verifica(txt.includes(X.real) && txt.includes(X.actualizat), `${et}: eticheta „${X.real}” și „${X.actualizat} …”`);
+    verifica(!(await pg.$('#pd-live [data-prognoza]')) && !txt.includes(l === 'ro' ? RO.meta.disclaimer : EN.meta.disclaimer), `${et}: cifrele live nu poartă eticheta de prognoză`);
+    verifica((await pg.innerText('[data-live="clienti"] .v')) === '17', `${et}: clienții activi din statistici (17)`);
+    verifica((await pg.innerText('[data-live="parteneri"] .v')) === X.insuficient, `${et}: 0 parteneri → „${X.insuficient}”, nu 0`);
+    verifica(sp(await pg.innerText('[data-live="tari"] .s')) === X.tari, `${et}: țările active („${await pg.innerText('[data-live="tari"] .s')}”)`);
+    verifica(/Seed \(test\)/.test(await pg.innerText('[data-live="runda"]')) && !(await pg.$('[data-live="progres"]')), `${et}: runda deschisă, fără progres (afiseaza_progres = false)`);
+    verifica((await pg.innerText('[data-live="doar-investitori"]')).includes(X.doar), `${et}: fără cont → indicatorii doar pentru investitorii verificați`);
+    verifica(!/(^|\s)0(\s|$)/.test(txt.replace(/\d{4}/g, '')), `${et}: niciun „0” afișat ca cifră`);
+    { const d = await inAfaraEcranului(pg, '#pd-live, #pd-live *'); verifica(!d, `${et}: varianta live în ecran (${d})`); }
+    await pg.click('#pd-live-inapoi');
+    verifica(await pg.isVisible('#pd-deck') && !(await pg.isVisible('#pd-live')), `${et}: „Înapoi la prognoză” revine la deck`);
+    // „Vezi cifrele reale →” de pe slide-ul 10 deschide varianta live
+    await pg.evaluate(() => { location.hash = '#slide-10'; });
+    await pg.waitForTimeout(400);
+    const link = await pg.$('.mdpd-slide.mdpd-activ [data-live="10"]');
+    verifica(link && (await link.innerText()) === (l === 'ro' ? 'Vezi cifrele reale →' : 'See the real figures →'), `${et}: linkul „Vezi cifrele reale →” pe slide-ul 10`);
+    const nrLinkuri = await pg.evaluate(() => [...document.querySelectorAll('.mdpd-slide [data-live]')].map((b) => Number(b.dataset.live)));
+    verifica(JSON.stringify(nrLinkuri) === '[10,12,17,18]', `${et}: linkul apare pe slide-urile 10, 12, 17, 18 (${nrLinkuri})`);
+    if (link) { await link.click(); await pg.waitForTimeout(300); }
+    verifica(await pg.isVisible('#pd-live') && !(await pg.isVisible('#pd-deck')), `${et}: linkul deschide varianta live`);
+    verifica(!pg.erori.length, `${et}: 0 erori JS (${pg.erori.join(' | ')})`);
+    await ctx.close();
+
+    // Investitor cu KYC aprobat: indicatorii și evoluția lunară, din date
+    resetPublic();
+    DB.rpc = { get_live_investor_kpis: async () => ({ timestamp: '2026-10-22T09:00:00Z', kpis: { comenzi_total: 2, comenzi_luna: 2, parteneri_activi: 3, gmv_total: 1800, revenue_total: 170, revenue_luna: 170, take_rate_pct: 9.44, tari_active: 5 }, per_tara: [{ tara_cod: 'RO', moneda: 'RON', comenzi: 2 }] }) };
+    const azi = new Date().toISOString();
+    DB.tabele.comenzi = [
+      { id: 'c1', status: 'finalizata', creat_la: azi, moneda: 'RON', suma_totala_platita: 1000, suma_comision_platforma: 120, suma_manopera: 800 },
+      { id: 'c2', status: 'confirmata_client', creat_la: azi, moneda: 'RON', suma_totala_platita: 800, comision_pct: 6.25 },
+    ];
+    ({ ctx, pg } = await paginaLive(browser, baza, { lang, latime, user: { id: 'inv', email: 'inv@example.com' } }));
+    await deschideLive(pg);
+    await pg.waitForSelector('[data-live="evolutie"]', { timeout: 8000 }).catch(() => {});
+    const ind = sp((await pg.innerText('[data-live="investitori"]').catch(() => '')).replace(/\s+/g, ' '));
+    verifica(ind.includes(X.gmv) && ind.includes(X.take) && /\b3\b/.test(ind), `${et} investitor: GMV, take rate, parteneri din indicatori („${ind.slice(0, 200)}”)`);
+    const bare = await pg.evaluate(() => [...document.querySelectorAll('[data-live="evolutie"] rect')].map((r) => Number(r.getAttribute('height')) > 0));
+    verifica(bare.length === 12 && bare.filter(Boolean).length === 1 && bare[11], `${et} investitor: graficul pe 12 luni, o lună cu comenzi (${bare})`);
+    { const d = await inAfaraEcranului(pg, '#pd-live, #pd-live *'); verifica(!d, `${et} investitor: varianta live în ecran (${d})`); }
+    verifica(!pg.erori.length, `${et} investitor: 0 erori JS (${pg.erori.join(' | ')})`);
+    await ctx.close();
+
+    // Investitor cu KYC aprobat, fără comenzi: „Încă nu sunt date suficiente”, nu 0 animat
+    DB.rpc = { get_live_investor_kpis: async () => ({ timestamp: '2026-10-22T09:00:00Z', kpis: { comenzi_total: 0, comenzi_luna: 0, parteneri_activi: 0, gmv_total: 0, revenue_total: 0, revenue_luna: 0, take_rate_pct: 10, tari_active: 5 }, per_tara: [] }) };
+    DB.tabele.comenzi = [];
+    ({ ctx, pg } = await paginaLive(browser, baza, { lang, latime, user: { id: 'inv', email: 'inv@example.com' }, stat: { ok: true, clienti_activi: 0, parteneri_verificati: 0 } }));
+    await deschideLive(pg);
+    await pg.waitForSelector('[data-live="evolutie"]', { timeout: 8000 }).catch(() => {});
+    const goale = await pg.evaluate(() => [...document.querySelectorAll('#pd-live [data-insuficient]')].length);
+    const valori = await pg.$$eval('#pd-live .pd-card .v', (v) => v.map((x) => x.textContent));
+    verifica(goale >= 8 && !valori.includes('0') && !valori.some((v) => /10%|10\.0/.test(v)), `${et} fără date: „${X.insuficient}” peste tot, fără 0 și fără take rate-ul implicit (${valori.join(' | ')})`);
+    await ctx.close();
+
+    // Investitor fără KYC aprobat: 403 → doar nota
+    resetPublic();
+    DB.tabele.profiles.push({ id: 'nou', email: 'nou@example.com', roles: ['client', 'investor'] });
+    DB.tabele.investitori_kyc.push({ user_id: 'nou', status: 'in_verificare' });
+    DB.utilizatori['tok-nou'] = { id: 'nou', email: 'nou@example.com' };
+    ({ ctx, pg } = await paginaLive(browser, baza, { lang, latime, user: { id: 'nou', email: 'nou@example.com' } }));
+    await deschideLive(pg);
+    verifica((await pg.innerText('[data-live="doar-investitori"]').catch(() => '')).includes(X.doar) && !(await pg.$('[data-live="investitori"]')), `${et} KYC neaprobat: fără indicatori, doar nota`);
+    await ctx.close();
+    console.log(`${et}: gata`);
+  }
+}
+
 (async () => {
   const srv = await porneste(0);
   const baza = 'http://localhost:' + srv.address().port;
@@ -499,6 +626,7 @@ async function testStari(browser, baza) {
     if (!process.env.DOAR || process.env.DOAR === 'A') await testAdmin(browser, baza);
     if (!process.env.DOAR || process.env.DOAR === 'B') await testPublic(browser, baza);
     if (!process.env.DOAR || process.env.DOAR === 'C') await testStari(browser, baza);
+    if (!process.env.DOAR || process.env.DOAR === 'D') await testLive(browser, baza);
   } finally {
     await browser.close();
     srv.close();

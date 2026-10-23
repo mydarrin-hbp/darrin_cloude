@@ -54,6 +54,26 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 .pd-mesaj h1{font-size:clamp(22px,4vw,32px);margin:0 0 10px}
 .pd-mesaj p{color:rgba(255,255,255,.72);line-height:1.6;margin:0 0 18px;font-size:15px}
 .pd-cta{display:inline-flex;align-items:center;gap:6px;background:#F08120;color:#fff;border:0;border-radius:11px;padding:12px 22px;font:800 14px inherit;font-family:inherit;text-decoration:none;cursor:pointer}
+/* Varianta live (2.6): doar date din baza de date, cu eticheta „Date reale din platformă” */
+#pd-live{width:min(100%,1100px)}
+.pd-live-cap{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px}
+.pd-live-cap h1{font-size:clamp(20px,3vw,28px);margin:0}
+.pd-live-cap p{margin:4px 0 0;color:rgba(255,255,255,.7);font-size:14px;line-height:1.5}
+.pd-real{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:800;letter-spacing:.04em;color:#0B2A17;background:#22C55E;border-radius:99px;padding:4px 10px}
+.pd-grila{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-bottom:16px}
+.pd-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:16px;min-width:0}
+.pd-card .k{font-size:12px;font-weight:700;color:rgba(255,255,255,.65);margin-bottom:6px}
+.pd-card .v{font-size:26px;font-weight:800;color:#F08120;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.pd-card .v.pd-gol{font-size:14px;font-weight:600;color:rgba(255,255,255,.6)}
+.pd-card .s{font-size:12.5px;color:rgba(255,255,255,.6);margin-top:6px;line-height:1.45}
+.pd-sectiune{font-size:15px;font-weight:800;margin:18px 0 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pd-bara-p{height:6px;border-radius:6px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:8px}
+.pd-bara-p div{height:100%;background:linear-gradient(90deg,#0BA39A,#22C55E)}
+.pd-nota{font-size:13.5px;color:rgba(255,255,255,.75);line-height:1.55;padding:14px 16px;border-radius:12px;border:1px dashed rgba(255,255,255,.25)}
+.pd-nota a{color:#7FE3DA}
+.pd-grafic-l svg{width:100%;height:auto;display:block}
+.pd-grafic-l text{fill:rgba(255,255,255,.7);font-size:12px;font-family:inherit}
+.pd-link{background:none;border:0;color:#7FE3DA;font:700 13px inherit;font-family:inherit;cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:0}
 #pd-deck:fullscreen{width:min(100vw,calc(100vh * 16 / 9));background:#16213A;display:flex;align-items:center}
 @media (max-width:720px){
   main{padding:0;justify-content:flex-start}
@@ -108,6 +128,14 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
       pregatire_t: 'Pitch deck în pregătire', pregatire_p: 'Pitch deck-ul My Darrin e în curs de verificare și va fi publicat după aprobare.',
       pregatire_live: 'Vezi cifrele reale din platformă', eroare_t: 'Pitch deck-ul nu se poate încărca acum', eroare_p: 'A apărut o problemă la încărcare. Încearcă din nou.', reincearca: 'Reîncearcă',
       se_incarca: 'Se încarcă pitch deck-ul…', investitori: 'Pagina Investitori',
+      live_titlu: 'Date reale din platformă', live_sub: 'Cifrele de aici vin din baza de date a platformei, în momentul afișării. Nu sunt prognoze.',
+      actualizat: 'Actualizat la', insuficient: 'Încă nu sunt date suficiente', clienti: 'Clienți activi', parteneri: 'Parteneri verificați',
+      tari: 'Țări active', runda: 'Runda deschisă', tinta: 'Ținta rundei', progres: 'Strâns din țintă', fara_runda: 'Nicio rundă publică deschisă acum.',
+      inv_titlu: 'Indicatori pentru investitori', comenzi_total: 'Comenzi finalizate', comenzi_luna: 'Comenzi finalizate luna aceasta',
+      parteneri_activi: 'Parteneri activi', gmv: 'Valoarea comenzilor (GMV)', venit: 'Venitul platformei', take: 'Comision mediu (take rate)',
+      evolutie: 'Comenzi finalizate pe lună · ultimele 12 luni', inv_doar: 'Indicatorii financiari și evoluția lunară sunt disponibile investitorilor cu identitatea verificată.',
+      inapoi_prognoza: '← Înapoi la prognoză', venit_partial: 'Venitul include doar comenzile cu comision cunoscut.', live_eroare: 'Aceste date nu se pot încărca acum.',
+      se_incarca_live: 'Se încarcă datele reale…', comenzi: 'comenzi',
     },
     en: {
       titlu: 'Pitch deck · My Darrin', inapoi: '← Investors', prognoza: 'Forecast', live: 'Live', limba: 'Language', ecran: 'Full screen',
@@ -115,12 +143,20 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
       pregatire_t: 'Pitch deck in preparation', pregatire_p: 'The My Darrin pitch deck is being reviewed and will be published once approved.',
       pregatire_live: 'See the real platform figures', eroare_t: 'The pitch deck cannot be loaded right now', eroare_p: 'Something went wrong while loading. Please try again.', reincearca: 'Try again',
       se_incarca: 'Loading the pitch deck…', investitori: 'Investors page',
+      live_titlu: 'Real platform data', live_sub: 'These figures come from the platform database at the moment of display. They are not forecasts.',
+      actualizat: 'Updated on', insuficient: 'Not enough data yet', clienti: 'Active customers', parteneri: 'Verified partners',
+      tari: 'Active countries', runda: 'Open round', tinta: 'Round target', progres: 'Raised from target', fara_runda: 'No public round is open right now.',
+      inv_titlu: 'Indicators for investors', comenzi_total: 'Completed orders', comenzi_luna: 'Completed orders this month',
+      parteneri_activi: 'Active partners', gmv: 'Order value (GMV)', venit: 'Platform revenue', take: 'Average commission (take rate)',
+      evolutie: 'Completed orders per month · last 12 months', inv_doar: 'The financial indicators and the monthly trend are available to investors with a verified identity.',
+      inapoi_prognoza: '← Back to the forecast', venit_partial: 'Revenue includes only the orders with a known commission.', live_eroare: 'This data cannot be loaded right now.',
+      se_incarca_live: 'Loading the real data…', comenzi: 'orders',
     },
   };
   var LANG_KEY = 'myd_lang_v1';
   var LIMBI = ['ro', 'en', 'bg', 'de', 'el', 'fr', 'tr'];
   var $ = function (id) { return document.getElementById(id); };
-  var stare = { limba: 'en', deck: null, payload: null, cerere: 0, mod: 'prognoza' };
+  var stare = { limba: 'en', deck: null, payload: null, cerere: 0, mod: 'prognoza', vedere: 'mesaj', live: null };
 
   function limbaPagina() {
     var l = (window.MYD_I18N && window.MYD_I18N.lang) || (function () { try { return localStorage.getItem(LANG_KEY); } catch (e) { return null; } })() || 'en';
@@ -149,12 +185,27 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
     } catch (e) { return null; }
   }
 
+  // Ce se vede: modul live, sau (în prognoză) mesajul ori deck-ul.
+  function aplicaMod() {
+    var live = stare.mod === 'live';
+    $('pd-live').hidden = !live;
+    $('pd-mesaj').hidden = live || stare.vedere !== 'mesaj';
+    $('pd-deck').hidden = live || stare.vedere !== 'deck';
+    $('pd-nav').hidden = live || stare.vedere !== 'deck';
+    $('pd-ecran').hidden = live || stare.vedere !== 'deck' || !document.fullscreenEnabled;
+    $('pd-mod-prognoza').setAttribute('aria-pressed', live ? 'false' : 'true');
+    $('pd-mod-live').setAttribute('aria-pressed', live ? 'true' : 'false');
+  }
   function arataMesaj(html) {
     $('pd-mesaj').innerHTML = html;
-    $('pd-mesaj').hidden = false;
-    $('pd-deck').hidden = true;
-    $('pd-nav').hidden = true;
-    $('pd-ecran').hidden = true;
+    stare.vedere = 'mesaj';
+    aplicaMod();
+  }
+  function seteazaMod(mod) {
+    stare.mod = mod;
+    aplicaMod();
+    if (mod === 'live') incarcaLive();
+    window.scrollTo(0, 0);
   }
 
   async function incarca() {
@@ -171,7 +222,9 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
       if (j.stare === 'in_pregatire' || !j.deck) {
         if (stare.deck) { stare.deck.distruge(); stare.deck = null; }
         arataMesaj('<h1 data-in-pregatire>' + esc(T().pregatire_t) + '</h1><p>' + esc(T().pregatire_p) + '</p>' +
+          '<p><button type="button" class="pd-link" id="pd-spre-live">' + esc(T().pregatire_live) + ' →</button></p>' +
           '<a class="pd-cta" href="/mydarrin-investitori">' + esc(T().investitori) + '</a>');
+        $('pd-spre-live').onclick = function () { seteazaMod('live'); };
         document.dispatchEvent(new CustomEvent('mdpd:gata', { detail: { stare: 'in_pregatire', limba: l } }));
         return;
       }
@@ -186,12 +239,12 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 
   function deseneaza(l) {
     if (stare.deck) stare.deck.distruge();
-    $('pd-mesaj').hidden = true;
-    $('pd-deck').hidden = false;
-    $('pd-nav').hidden = false;
-    $('pd-ecran').hidden = !document.fullscreenEnabled;
+    stare.vedere = 'deck';
+    aplicaMod();
     stare.deck = window.MDPitchDeck.creeaza($('pd-deck'), {
       payload: stare.payload, limba: l, hash: true, urlRunda: '/mydarrin-investitori#runda',
+      // „Vezi cifrele reale →” de pe slide-urile 10, 12, 17, 18
+      onLive: function () { seteazaMod('live'); },
       onSchimbare: function (i, total) {
         $('pd-contor').textContent = (i + 1) + ' / ' + total;
         $('pd-progres').style.width = ((i + 1) / total * 100) + '%';
@@ -200,6 +253,91 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
       },
     });
     document.dispatchEvent(new CustomEvent('mdpd:gata', { detail: { stare: stare.payload.stare, limba: l } }));
+  }
+
+  // ── Varianta live: doar din baza de date (2.6) ─────────────────────
+  // Pentru toți: /api/public/statistici-homepage, /api/public/tari-active,
+  // /api/public/runda-curenta (progresul doar dacă runda îl afișează). Pentru
+  // investitorii cu KYC aprobat: /api/investitori/indicatori și
+  // /api/investitori/evolutie-lunara. Fără date → „Încă nu sunt date suficiente”.
+  async function json(url, tok) {
+    try {
+      var r = await fetch(url, { headers: tok ? { Authorization: 'Bearer ' + tok } : {} });
+      var j = await r.json().catch(function () { return null; });
+      return { status: r.status, ok: r.ok && !!j && j.ok !== false, j: j };
+    } catch (e) { return { status: 0, ok: false, j: null }; }
+  }
+  async function incarcaLive() {
+    if (stare.live && stare.live.gata) return randeazaLive();
+    $('pd-live').innerHTML = '<p>' + esc(T().se_incarca_live) + '</p>';
+    var tok = await token();
+    var r = await Promise.all([
+      json('/api/public/statistici-homepage'), json('/api/public/tari-active'), json('/api/public/runda-curenta'),
+      tok ? json('/api/investitori/indicatori', tok) : null, tok ? json('/api/investitori/evolutie-lunara', tok) : null,
+    ]);
+    stare.live = { gata: true, la: new Date(), stat: r[0], tari: r[1], runda: r[2], ind: r[3], evo: r[4] };
+    randeazaLive();
+  }
+  function locale() { return limbaDeck(stare.limba) === 'ro' ? 'ro-RO-u-nu-latn' : 'en-GB'; }
+  function fmtData(d) { try { return new Intl.DateTimeFormat(locale(), { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Bucharest' }).format(new Date(d)); } catch (e) { return ''; } }
+  function card(k, v, s, attr) {
+    var gol = v == null;
+    return '<div class="pd-card"' + (attr || '') + '><div class="k">' + esc(k) + '</div><div class="v' + (gol ? ' pd-gol' : '') + '"' + (gol ? ' data-insuficient' : '') + '>' + esc(gol ? T().insuficient : v) + '</div>' + (s ? '<div class="s">' + s + '</div>' : '') + '</div>';
+  }
+  function randeazaLive() {
+    var t = T(), L = stare.live, l = limbaDeck(stare.limba), F = window.MDPitchDeck;
+    var nr = function (v) { return v > 0 ? F.formatNumar(v, l, 0) : null; };
+    var st = L.stat.ok ? L.stat.j : null;
+    var tari = L.tari.ok && Array.isArray(L.tari.j.tari) ? L.tari.j.tari : [];
+    var nume = function (c) { try { return new Intl.DisplayNames([l === 'ro' ? 'ro' : 'en'], { type: 'region' }).of(c.tara_cod) || c.tara_nume; } catch (e) { return c.tara_nume || c.tara_cod; } };
+    var r = L.runda.ok ? L.runda.j.runda : null;
+    var html = '<div class="pd-live-cap"><div><h1>' + esc(t.live_titlu) + '</h1><p>' + esc(t.live_sub) + '</p></div>' +
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><span class="pd-real" data-real>● ' + esc(t.live_titlu) + '</span>' +
+      '<span style="font-size:12.5px;color:rgba(255,255,255,.65)" data-actualizat>' + esc(t.actualizat) + ' ' + esc(fmtData(L.la)) + '</span></div></div>';
+    html += '<div class="pd-grila">' +
+      card(t.clienti, st ? nr(st.clienti_activi) : null, null, ' data-live="clienti"') +
+      card(t.parteneri, st ? nr(st.parteneri_verificati) : null, null, ' data-live="parteneri"') +
+      card(t.tari, tari.length ? String(tari.length) : null, tari.length ? esc(tari.map(nume).join(' · ')) : null, ' data-live="tari"') + '</div>';
+    html += '<div class="pd-sectiune">' + esc(t.runda) + '</div>';
+    if (r) {
+      var den = l === 'ro' ? r.denumire_ro : r.denumire_en;
+      var per = [F.formatData(r.data_start, l), F.formatData(r.data_sfarsit, l)].filter(Boolean).join(' – ');
+      html += '<div class="pd-grila">' + card(den, F.formatBani(r.suma_tinta, r.moneda, l), esc(t.tinta) + (per ? ' · ' + esc(per) : ''), ' data-live="runda"') +
+        (r.progres ? card(t.progres, F.formatBani(r.progres.stranse, r.moneda, l), esc(F.formatProcent(r.progres.pct, l)) + '<div class="pd-bara-p"><div style="width:' + Math.min(100, Number(r.progres.pct) || 0) + '%"></div></div>', ' data-live="progres"') : '') + '</div>';
+    } else html += '<p class="pd-nota" data-live="fara-runda">' + esc(t.fara_runda) + '</p>';
+    html += '<div class="pd-sectiune">' + esc(t.inv_titlu) + ' <span class="pd-real">● ' + esc(t.live_titlu) + '</span></div>';
+    if (L.ind && L.ind.ok) {
+      var k = L.ind.j.indicatori || {}, m = L.ind.j.moneda;
+      var bani = function (v) { return v > 0 && m ? F.formatBani(v, m, l) : null; };
+      html += '<div class="pd-grila" data-live="investitori">' + card(t.comenzi_total, nr(k.comenzi_total)) + card(t.comenzi_luna, nr(k.comenzi_luna)) +
+        card(t.parteneri_activi, nr(k.parteneri_activi)) + card(t.gmv, bani(k.gmv_total)) + card(t.venit, bani(k.revenue_total)) +
+        card(t.take, k.take_rate_pct != null ? F.formatProcent(k.take_rate_pct, l) : null) + '</div>';
+      if (L.ind.j.actualizat_la) html += '<p style="font-size:12px;color:rgba(255,255,255,.6);margin:-6px 0 12px">' + esc(t.actualizat) + ' ' + esc(fmtData(L.ind.j.actualizat_la)) + '</p>';
+      html += '<div class="pd-sectiune">' + esc(t.evolutie) + '</div>' + graficLunar(L.evo, l, t);
+    } else if (L.ind && L.ind.status >= 500) {
+      html += '<p class="pd-nota">' + esc(t.live_eroare) + '</p>';
+    } else {
+      html += '<p class="pd-nota" data-live="doar-investitori">' + esc(t.inv_doar) + ' <a href="/mydarrin-investitori">' + esc(t.investitori) + ' →</a></p>';
+    }
+    html += '<p style="margin-top:18px"><button type="button" class="pd-link" id="pd-live-inapoi">' + esc(t.inapoi_prognoza) + '</button></p>';
+    $('pd-live').innerHTML = html;
+    $('pd-live-inapoi').onclick = function () { seteazaMod('prognoza'); };
+  }
+  function graficLunar(evo, l, t) {
+    if (!evo || !evo.ok) return '<p class="pd-nota">' + esc(evo && evo.status === 403 ? t.inv_doar : t.live_eroare) + '</p>';
+    var luni = evo.j.luni || [];
+    if (!evo.j.total_comenzi) return '<p class="pd-nota" data-insuficient data-live="evolutie">' + esc(t.insuficient) + '</p>';
+    var W = 720, H = 220, jos = 30, sus = 20, max = Math.max.apply(null, luni.map(function (x) { return x.comenzi; }).concat([1]));
+    var pas = W / luni.length, lat = pas * 0.6;
+    var lunaScurt = function (iso) { try { return new Intl.DateTimeFormat(locale(), { month: 'short', timeZone: 'UTC' }).format(new Date(iso + '-01T00:00:00Z')); } catch (e) { return iso; } };
+    var bare = luni.map(function (x, i) {
+      var h = (x.comenzi / max) * (H - jos - sus), cx = pas * i + pas / 2;
+      return '<rect x="' + (cx - lat / 2).toFixed(1) + '" y="' + (H - jos - h).toFixed(1) + '" width="' + lat.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="3" fill="#0BA39A"><title>' + esc(x.luna + ': ' + x.comenzi + ' ' + t.comenzi) + '</title></rect>' +
+        (x.comenzi ? '<text x="' + cx.toFixed(1) + '" y="' + (H - jos - h - 5).toFixed(1) + '" text-anchor="middle">' + x.comenzi + '</text>' : '') +
+        '<text x="' + cx.toFixed(1) + '" y="' + (H - 10) + '" text-anchor="middle">' + esc(lunaScurt(x.luna)) + '</text>';
+    }).join('');
+    return '<div class="pd-card pd-grafic-l" data-live="evolutie"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(t.evolutie) + '">' + bare + '</svg>' +
+      (evo.j.venit_complet === false ? '<div class="s">' + esc(t.venit_partial) + '</div>' : '') + '</div>';
   }
 
   // Schimbarea limbii din antet: deck-ul se schimbă fără reîncărcarea paginii.
@@ -211,16 +349,19 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
     document.documentElement.lang = l;
     aplicaTexte();
     if (limbaDeck(l) !== inainte || !stare.payload) incarca();
+    if (stare.live && stare.live.gata && limbaDeck(l) !== inainte) randeazaLive();
   }
 
   $('pd-limba').addEventListener('change', function (e) { schimbaLimba(e.target.value); });
+  $('pd-mod-prognoza').addEventListener('click', function () { seteazaMod('prognoza'); });
+  $('pd-mod-live').addEventListener('click', function () { seteazaMod('live'); });
   $('pd-inapoi-slide').addEventListener('click', function () { stare.deck && stare.deck.anterior(); });
   $('pd-inainte-slide').addEventListener('click', function () { stare.deck && stare.deck.urmator(); });
   $('pd-ecran').addEventListener('click', function () {
     if (document.fullscreenElement) document.exitFullscreen(); else if ($('pd-deck').requestFullscreen) $('pd-deck').requestFullscreen().catch(function () {});
   });
   document.addEventListener('keydown', function (e) {
-    if (!stare.deck || $('pd-deck').hidden || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (!stare.deck || stare.mod !== 'prognoza' || $('pd-deck').hidden || e.altKey || e.ctrlKey || e.metaKey) return;
     var tag = (e.target && e.target.tagName) || '';
     if (/^(INPUT|SELECT|TEXTAREA)$/.test(tag)) return;
     if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); stare.deck.urmator(); }
@@ -235,6 +376,7 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 
   stare.limba = limbaPagina();
   aplicaTexte();
+  $('pd-comutator').hidden = false;
   incarca();
 })();
 </script>

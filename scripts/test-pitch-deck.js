@@ -345,6 +345,69 @@ async function importaSiPregateste(limbi = ['ro', 'en']) {
     for (const x of ['pitch_deck_importat', 'pitch_deck_ciorna_salvata', 'pitch_deck_aprobat', 'pitch_deck_aprobare_retrasa', 'pitch_deck_duplicat']) adevarat(a.includes(x), x);
   });
 
+  console.log('G. Formatarea numerelor (pitch-deck-render.js)');
+  const F = require(path.join(RADACINA, 'pitch-deck-render.js'));
+  const sp = (t) => String(t).replace(/\s/g, ' ');
+  await test('RO: 3,5 mil. € · 12,5% · 1.000 € · 500 mld. € · 200.000', async () => {
+    egal([sp(F.formatBani(3500000, 'EUR', 'ro')), F.formatProcent(12.5, 'ro'), sp(F.formatBani(1000, 'EUR', 'ro')), sp(F.formatBani(500e9, 'EUR', 'ro')), sp(F.formatNumar(200000, 'ro'))],
+      ['3,5 mil. €', '12,5%', '1.000 €', '500 mld. €', '200.000']);
+  });
+  await test('EN: €3.5M · 12.5% · €1,000 · €500bn · €12bn · 200,000', async () => {
+    egal([F.formatBani(3500000, 'EUR', 'en'), F.formatProcent(12.5, 'en'), F.formatBani(1000, 'EUR', 'en'), F.formatBani(500e9, 'EUR', 'en'), F.formatBani(12e9, 'EUR', 'en'), F.formatNumar(200000, 'en')],
+      ['€3.5M', '12.5%', '€1,000', '€500bn', '€12bn', '200,000']);
+  });
+  await test('cifrele slide-urilor: prefix / sufix, negative, date', async () => {
+    egal([F.formatCifra({ prefix: '< ', valoare: 15, sufix: ' minute' }, 'ro'), F.formatCifra({ valoare: 10, sufix: 'h+' }, 'en'), F.formatBani(-400000, 'EUR', 'en'), sp(F.formatBani(-400000, 'EUR', 'ro'))],
+      ['< 15 minute', '10h+', '-€400,000', '-400.000 €']);
+    egal([F.formatData('2026-11-01', 'ro'), F.formatData('2026-11-01', 'en')], ['1 noiembrie 2026', '1 November 2026']);
+  });
+
+  console.log('H. Evoluția lunară (api/investitori/evolutie-lunara.js)');
+  const apiEvo = require(path.join(RADACINA, 'api/investitori/evolutie-lunara.js'));
+  const evo = async (id) => { const res = raspuns(); await apiEvo(cerere({ metoda: 'GET', token: id ? TOKEN[id] : null }), res); return res; };
+  const lunaAcum = new Date().toISOString().slice(0, 7);
+  await test('fără sesiune → 401; client → 403; investitor fără KYC aprobat → 403 KYC_NEAPROBAT, fără cifre', async () => {
+    reset();
+    DB.tabele.comenzi = [{ id: 'c1', status: 'finalizata', creat_la: new Date().toISOString(), moneda: 'RON', suma_totala_platita: 100, suma_comision_platforma: 12, suma_manopera: 88 }];
+    egal((await evo(null)).statusCode, 401);
+    egal((await evo(CLIENT)).statusCode, 403);
+    const r = await evo(INV_NU);
+    egal([r.statusCode, r.corp.cod, r.corp.luni], [403, 'KYC_NEAPROBAT', undefined]);
+    adevarat(r.corp.error && r.corp.error_en, 'mesaj RO + EN');
+  });
+  await test('investitor cu KYC aprobat: 12 luni, doar comenzile finalizate reale, fără procent implicit', async () => {
+    reset();
+    const azi = new Date().toISOString();
+    DB.tabele.comenzi = [
+      { id: 'c1', status: 'finalizata', creat_la: azi, moneda: 'RON', suma_totala_platita: 1000, suma_comision_platforma: 120, suma_manopera: 800 },
+      { id: 'c2', status: 'confirmata_client', creat_la: azi, moneda: 'RON', suma_totala_platita: 500, suma_asigurare: 0, comision_pct: 10 },
+      { id: 'c3', status: 'finalizata', creat_la: azi, moneda: 'RON', suma_totala_platita: 300 }, // fără comision cunoscut
+      { id: 'c4', status: 'in_lucru', creat_la: azi, moneda: 'RON', suma_totala_platita: 9999, suma_comision_platforma: 999, suma_manopera: 1 },
+      { id: 'c5', status: 'anulata', creat_la: azi, moneda: 'RON', suma_totala_platita: 9999 },
+      { id: 'c6', status: 'finalizata', creat_la: '2020-01-15T10:00:00Z', moneda: 'RON', suma_totala_platita: 9999, suma_comision_platforma: 1, suma_manopera: 1 },
+    ];
+    const r = await evo(INV_OK);
+    egal(r.statusCode, 200, JSON.stringify(r.corp));
+    egal(r.corp.luni.length, 12);
+    egal(r.corp.luni[11].luna, lunaAcum);
+    egal([r.corp.total_comenzi, r.corp.luni[11].comenzi, r.corp.luni[11].gmv, r.corp.luni[11].venit, r.corp.moneda, r.corp.venit_complet], [3, 3, 1800, 170, 'RON', false]);
+    egal(r.corp.luni.slice(0, 11).every((x) => x.comenzi === 0), true, 'lunile fără comenzi: 0, nu valori de rezervă');
+    egal(r.headere['Cache-Control'], 'private, no-store');
+  });
+  await test('monede diferite → GMV și venit null (nu se adună monede); fără comenzi → total 0', async () => {
+    reset();
+    const azi = new Date().toISOString();
+    DB.tabele.comenzi = [
+      { id: 'c1', status: 'finalizata', creat_la: azi, moneda: 'RON', suma_totala_platita: 1000, suma_comision_platforma: 120, suma_manopera: 800 },
+      { id: 'c2', status: 'finalizata', creat_la: azi, moneda: 'EUR', suma_totala_platita: 100, suma_comision_platforma: 12, suma_manopera: 80 },
+    ];
+    let r = await evo(INV_OK);
+    egal([r.corp.luni[11].comenzi, r.corp.luni[11].gmv, r.corp.moneda], [2, null, null]);
+    DB.tabele.comenzi = [];
+    r = await evo(INV_OK);
+    egal([r.statusCode, r.corp.total_comenzi, r.corp.moneda], [200, 0, null]);
+  });
+
   console.log(`\n${ok} trecute, ${esec} picate`);
   process.exit(esec ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });
