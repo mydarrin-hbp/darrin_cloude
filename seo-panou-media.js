@@ -58,7 +58,7 @@
   function laBlob(canvas, mime, calitate) {
     return new Promise(function (ok) { canvas.toBlob(function (b) { ok(b); }, mime, calitate); });
   }
-  function mb(n) { return (n / 1048576).toFixed(1).replace('.', ',') + ' MB'; }
+  function mb(n) { return n < 1048576 ? Math.max(1, Math.round(n / 1024)) + ' KB' : (n / 1048576).toFixed(1).replace('.', ',') + ' MB'; }
 
   // → { blob, mime, latime, inaltime, convertit }
   async function pregatesteImagine(fisier, tip) {

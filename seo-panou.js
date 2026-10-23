@@ -242,7 +242,7 @@
   }
 
   document.addEventListener('click', function (e) {
-    if (e.target && e.target.closest && e.target.closest('#seo-editor-inchide')) inchide();
+    if (e.target && e.target.closest && e.target.closest('#seo-editor-inchide')) window.SeoPanou.inchide();
   });
 
   window.SeoPanou = {

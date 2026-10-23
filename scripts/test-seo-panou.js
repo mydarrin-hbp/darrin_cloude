@@ -117,12 +117,11 @@ async function geometrie(pg) {
     if (document.documentElement.scrollWidth > W + 1) rau.push('pagina se derulează lateral: ' + document.documentElement.scrollWidth + ' > ' + W);
     const ed = document.getElementById('seo-editor');
     if (ed && !ed.hidden) {
-      ed.querySelectorAll('input:not([type=hidden]),textarea,select,button,.seo-card,.seo-media-cutie,.seo-sim').forEach((e) => {
+      ed.querySelectorAll('input:not([type=hidden]),textarea,select,button,[role=tab],.seo-card,.seo-media-cutie,.seo-sim').forEach((e) => {
         const r = e.getBoundingClientRect();
         if (!r.width || !r.height) return;
         const st = getComputedStyle(e);
         if (st.visibility === 'hidden' || st.display === 'none') return;
-        if (e.closest('.seo-taburi')) return;  // bara de taburi se derulează singură
         if (r.left < -1 || r.right > W + 1) rau.push('în afara ecranului: ' + (e.id || e.className || e.tagName) + ' [' + Math.round(r.left) + ',' + Math.round(r.right) + ']');
       });
     }
@@ -150,6 +149,8 @@ async function testTaburi(browser, baza) {
     INCARCATE.clear();
     const { ctx, pg } = await deschide(browser, baza, w, h);
     const randuri = await pg.$$eval('#seo-tabel-body tr', (t) => t.length);
+    const ies = await pg.$$eval('#seo-tabel-body [data-editeaza]', (l) => l.filter((b) => { const r = b.getBoundingClientRect(); return r.right > document.documentElement.clientWidth + 1; }).length);
+    verifica(ies === 0, `${w}×${h}: butoanele „Editează” încap în ecran (${ies} ies)`);
     verifica(randuri >= 25, `${et}: tabelul paginilor (${randuri})`);
     await pg.click('#seo-tabel-body [data-editeaza="/despre-noi"]');
     const taburi = await pg.$$eval('#seo-taburi [role="tab"]', (t) => t.map((x) => x.textContent));
@@ -212,11 +213,138 @@ async function testTaburi(browser, baza) {
       verifica(!g2, `${et}: OG — nimic în afara ecranului (${g2})`);
     }
 
-    if (ruleaza('C') && module.exports.testCampanii) await module.exports.testCampanii({ pg, ctx, et, w, h, verifica, geometrie, imagine, captura, INCARCATE });
+    if (ruleaza('C')) await testCampanii(pg, et, w);
 
     verifica(!pg.erori.length, `${et}: 0 erori JS (${pg.erori.join(' | ')})`);
     await ctx.close();
   }
+}
+
+// Un videoclip WebM real, 9:16 (720 × 1280), înregistrat în pagină din canvas (MediaRecorder).
+let VIDEO_9_16 = null;
+async function video916(pg) {
+  if (VIDEO_9_16) return VIDEO_9_16;
+  const b64 = await pg.evaluate(async () => {
+    const c = document.createElement('canvas'); c.width = 720; c.height = 1280;
+    const x = c.getContext('2d');
+    const rec = new MediaRecorder(c.captureStream(25), { mimeType: 'video/webm' });
+    const bucati = [];
+    rec.ondataavailable = (e) => { if (e.data.size) bucati.push(e.data); };
+    const gata = new Promise((ok) => { rec.onstop = ok; });
+    rec.start(100);
+    const t0 = performance.now();
+    await new Promise((ok) => { (function f() { const t = performance.now() - t0; x.fillStyle = `hsl(${t / 3 % 360},80%,50%)`; x.fillRect(0, 0, 720, 1280); x.fillStyle = '#fff'; x.fillRect(100 + t / 4, 600, 120, 120); if (t < 900) requestAnimationFrame(f); else ok(); })(); });
+    rec.stop();
+    await gata;
+    const buf = new Uint8Array(await new Blob(bucati, { type: 'video/webm' }).arrayBuffer());
+    let s = ''; for (let i = 0; i < buf.length; i++) s += String.fromCharCode(buf[i]);
+    return btoa(s);
+  });
+  VIDEO_9_16 = Buffer.from(b64, 'base64');
+  return VIDEO_9_16;
+}
+async function asteaptaMesaj(pg, sel, re, ms = 8000) {
+  await pg.waitForFunction(([s, r]) => new RegExp(r).test((document.querySelector(s) || {}).textContent || ''), [sel, re.source], { timeout: ms }).catch(() => {});
+  return pg.$eval(sel, (e) => e.textContent).catch(() => '');
+}
+
+async function testCampanii(pg, et, w) {
+  await pg.click('#seo-tab-campanii');
+  await pg.waitForSelector('[data-act="noua"]', { timeout: 8000 }).catch(() => {});
+  verifica(/Nicio campanie/.test(await pg.textContent('#seo-panou-tab')), `${et}: C — lista goală la început`);
+  await pg.click('[data-act="noua"]');
+  // Formularul pornește gol (nimic completat în locul lui LM)
+  const goale = await pg.$$eval('#cc-form input[type=text], #cc-form textarea, #cc-form input[type=url]', (l) => l.every((x) => x.value === ''));
+  verifica(goale, `${et}: C — câmpurile campaniei noi pornesc goale`);
+  verifica((await pg.$$eval('.seo-platforme input', (l) => l.map((x) => x.value))).join(',') === 'facebook,instagram,tiktok,youtube,general_patrat,vertical_mobil', `${et}: C — cele 6 platforme`);
+  const cta = await pg.$$eval('#cc-cta option', (o) => o.slice(1).map((x) => x.textContent));
+  verifica(JSON.stringify(cta) === JSON.stringify(['Află mai multe / Learn more', 'Înscrie-te / Sign up', 'Contactează-ne / Contact us', 'Programează / Book now', 'Cere ofertă / Get quote', 'Cumpără / Shop now', 'Descarcă / Download']), `${et}: C — CTA cu etichetele RO / EN`);
+  await pg.click('[data-act="salveaza"]');
+  const lipsa = await asteaptaMesaj(pg, '#cc-msg', /Completați/);
+  verifica(/Numele campaniei/.test(lipsa) && DB.tabele.seo_campanii_social.length === 0, `${et}: C — fără nume: câmpul marcat, nimic salvat (${lipsa})`);
+
+  await pg.fill('#cc-nume_campanie', 'Lansare DE TEST');
+  await pg.check('.seo-platforme input[value="facebook"]');
+  await pg.check('.seo-platforme input[value="tiktok"]');
+  await pg.fill('#cc-titlu_reclama', 'T'.repeat(41));
+  let ct = await pg.$eval('[data-cc-contor="titlu_reclama"]', (e) => [e.textContent, e.className]);
+  verifica(ct[0] === 'Meta 41 / 40' && /rosu/.test(ct[1]), `${et}: C — contorul titlului roșu peste Meta 40 (${ct})`);
+  await pg.fill('#cc-titlu_reclama', 'Servicii la tine acasă DE TEST');
+  ct = await pg.$eval('[data-cc-contor="titlu_reclama"]', (e) => [e.textContent, e.className]);
+  verifica(/verde/.test(ct[1]), `${et}: C — contorul titlului verde (${ct})`);
+  await pg.fill('#cc-text_principal', 'x'.repeat(95));
+  ct = await pg.$eval('[data-cc-contor="text_principal"]', (e) => [e.textContent, e.className]);
+  verifica(ct[0] === 'Meta 95 / 125 · TikTok 95 / 100' && /galben/.test(ct[1]), `${et}: C — textul principal: Meta + TikTok, galben aproape de TikTok 100 (${ct})`);
+  await pg.fill('#cc-text_principal', 'Text principal DE TEST pentru reclamă.');
+  await pg.selectOption('#cc-cta', 'cere_oferta');
+  await pg.fill('#cc-url_destinatie', 'https://mydarrin.homebestpal.com/despre-noi');
+  await pg.fill('#cc-utm_source', 'facebook');
+  await pg.fill('#cc-utm_campaign', 'lansare-oct');
+  verifica((await pg.textContent('#cc-link-final')) === 'https://mydarrin.homebestpal.com/despre-noi?utm_source=facebook&utm_campaign=lansare-oct', `${et}: C — linkul final cu UTM`);
+  const sim = await pg.evaluate(() => ({ meta: document.querySelector('.sim-meta .sim-bara-text strong').textContent, cta: document.querySelector('.sim-meta .sim-cta').textContent, v: !!document.querySelector('.sim-vertical .seo-zona-sigura'), p: !!document.querySelector('.sim-player') }));
+  verifica(sim.meta === 'Servicii la tine acasă DE TEST' && sim.cta === 'Cere ofertă' && sim.v && sim.p, `${et}: C — previzualizările Meta / vertical / player, cu textele introduse (${JSON.stringify(sim)})`);
+  await pg.click('[data-act="salveaza"]');
+  await asteaptaMesaj(pg, '#cc-msg', /creată/);
+  const c = DB.tabele.seo_campanii_social[0];
+  verifica(c && c.nume_campanie === 'Lansare DE TEST' && c.limba === 'ro' && c.stare === 'ciorna' && c.cta === 'cere_oferta' && c.utm_campaign === 'lansare-oct', `${et}: C — campania creată ca ciornă RO`);
+  await pg.waitForSelector('[data-zona-media="imagine_patrat"] input[type=file]', { timeout: 5000 }).catch(() => {});
+  verifica((await pg.$$('[data-zona-media]')).length === 6, `${et}: C — cele 6 containere de materiale`);
+  const rap = await pg.$$eval('[data-zona-media] .seo-media-cutie', (l) => l.map((e) => { const r = e.getBoundingClientRect(); return Math.round(r.width / r.height * 100) / 100; }));
+  verifica(Math.abs(rap[0] - 1) < 0.03 && Math.abs(rap[1] - 0.8) < 0.03 && Math.abs(rap[2] - 1.91) < 0.04 && Math.abs(rap[3] - 0.5625) < 0.03 && Math.abs(rap[4] - 1.778) < 0.04, `${et}: C — containerele păstrează raportul (${rap})`);
+
+  // Imagine cu raport greșit → refuzată în browser, fără încărcare
+  const nInainte = INCARCATE.size;
+  await pg.setInputFiles('[data-input-media="imagine_feed_4x5"]', { name: 'patrat.png', mimeType: 'image/png', buffer: await imagine(pg, 1080, 1080) });
+  const m45 = await asteaptaMesaj(pg, '[data-zona-media="imagine_feed_4x5"] .seo-media-msg', /4:5/);
+  verifica(/nu e 4:5/.test(m45) && INCARCATE.size === nInainte, `${et}: C — 1080 × 1080 la Feed 4:5: refuzat în browser, cu mesaj (${m45})`);
+  // Pătrat corect
+  await pg.setInputFiles('[data-input-media="imagine_patrat"]', { name: 'patrat.png', mimeType: 'image/png', buffer: await imagine(pg, 1080, 1080) });
+  const mp = await asteaptaMesaj(pg, '[data-zona-media="imagine_patrat"] .seo-media-msg', /Încărcat/);
+  verifica(/Încărcat \(1080 × 1080/.test(mp) && !!(await pg.$('[data-zona-media="imagine_patrat"] .seo-media-cutie img')), `${et}: C — pătratul 1080 × 1080 încărcat, cu previzualizare (${mp})`);
+  // Video 9:16 corect → previzualizare cu zona sigură
+  await pg.setInputFiles('[data-input-media="video_vertical"]', { name: 'vertical.webm', mimeType: 'video/webm', buffer: await video916(pg) });
+  const mv = await asteaptaMesaj(pg, '[data-zona-media="video_vertical"] .seo-media-msg', /Încărcat|nu|Nu/, 15000);
+  const zv = await pg.evaluate(() => {
+    const z = document.querySelector('[data-zona-media="video_vertical"]');
+    const v = z && z.querySelector('video');
+    const s = z && z.querySelector('.seo-zona-sigura');
+    const cut = z && z.querySelector('.seo-media-cutie').getBoundingClientRect();
+    const sus = s && s.querySelector('.sus').getBoundingClientRect(), jos = s && s.querySelector('.jos').getBoundingClientRect();
+    return { v: !!v, muted: v && v.muted, s: !!s, sus: sus && Math.round(sus.height / cut.height * 100), jos: jos && Math.round(jos.height / cut.height * 100) };
+  });
+  verifica(/Încărcat \(720 × 1280/.test(mv) && zv.v && zv.muted && zv.s && zv.sus === 14 && zv.jos === 20, `${et}: C — video 9:16: încărcat, redare fără sunet, zona sigură 14 % / 20 % (${mv} ${JSON.stringify(zv)})`);
+  const media = DB.tabele.seo_campanii_social[0].media;
+  verifica(media.video_vertical && media.video_vertical.mime === 'video/webm' && media.video_vertical.latime === 720 && media.imagine_patrat && media.imagine_patrat.cale === `despre-noi/ro/${c.id}/imagine_patrat.png`, `${et}: C — metadatele în media (${JSON.stringify(media)})`);
+  verifica(!!(await pg.$('.sim-vertical video')) && !!(await pg.$('.sim-meta .sim-cutie img')), `${et}: C — materialele apar în previzualizările platformelor`);
+
+  // Activare (materialele Facebook + TikTok există)
+  await pg.selectOption('#cc-stare', 'activa');
+  await pg.click('[data-act="salveaza"]');
+  const ma = await asteaptaMesaj(pg, '#cc-msg', /salvată/);
+  verifica(DB.tabele.seo_campanii_social[0].stare === 'activa' && /activă/.test(ma), `${et}: C — ciornă → activă (${ma})`);
+
+  // Export: .zip cu texte.txt + materialele
+  const [dl] = await Promise.all([pg.waitForEvent('download', { timeout: 15000 }), pg.click('[data-act="export"]')]);
+  const zip = require('fs').readFileSync(await dl.path());
+  const nume = zip.toString('latin1');
+  verifica(dl.suggestedFilename() === 'campanie-despre-noi-ro-lansare-de-test.zip' && zip.readUInt32LE(0) === 0x04034B50 && nume.includes('texte.txt') && nume.includes('imagine_patrat.png') && nume.includes('video_vertical.webm')
+    && zip.includes(INCARCATE.get(`campanii-media/despre-noi/ro/${c.id}/video_vertical.webm`)), `${et}: C — exportul .zip: texte.txt + materialele (${dl.suggestedFilename()}, ${zip.length} B)`);
+  if (w === 1440 || w === 390) await captura(pg, `seo-tab-campanii-${w}`);
+  const g = await geometrie(pg);
+  verifica(!g, `${et}: C — nimic în afara ecranului (${g})`);
+
+  // Duplică pentru EN → ciornă EN, texte goale
+  await pg.click('[data-act="duplica-en"]');
+  await asteaptaMesaj(pg, '#cc-msg', /creată/);
+  const en = DB.tabele.seo_campanii_social.find((x) => x.limba === 'en');
+  const f = await pg.evaluate(() => ({ t: document.getElementById('cc-titlu_reclama').value, n: document.getElementById('cc-nume_campanie').value, en: document.querySelector('[data-cc-limba="en"]').getAttribute('aria-pressed'), cta: document.querySelector('.sim-meta .sim-cta').textContent }));
+  verifica(en && en.nume_campanie === 'Lansare DE TEST (EN)' && en.titlu_reclama === null && f.t === '' && f.n === 'Lansare DE TEST (EN)' && f.en === 'true' && f.cta === 'Get quote',
+    `${et}: C — „Duplică pentru EN”: ciornă EN, textele goale, CTA în engleză în previzualizare (${JSON.stringify(f)})`);
+  await pg.click('[data-act="inapoi"]');
+  const lista = await pg.$$eval('.seo-tabel-campanii tbody tr', (t) => t.map((r) => r.children[1].textContent + ':' + r.children[3].textContent));
+  verifica(lista.length === 2 && lista.includes('RO:Activă') && lista.includes('EN:Ciornă'), `${et}: C — lista: RO activă, EN ciornă (${lista})`);
+  const g2 = await geometrie(pg);
+  verifica(!g2, `${et}: C — lista: nimic în afara ecranului (${g2})`);
 }
 
 async function testCitire(browser, baza) {
