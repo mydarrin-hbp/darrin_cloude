@@ -44,6 +44,8 @@
       deconectat: 'Fereastra publicului s-a închis. Închide această fereastră și pornește din nou vederea prezentatorului.',
       fara_canal: 'Deschide vederea prezentatorului din pitch deck: „▶ Prezintă” → „Vedere prezentator”.',
       eroare_note: 'Notele nu se pot încărca acum. Încearcă din nou.', pe_ecran: 'Vederea prezentatorului e deschisă în altă fereastră.',
+      viteza: 'Viteza (pe slide)', viteza_aria: 'secunde pe slide', bucla: 'Reia de la început la final', porneste: 'Pornește',
+      pauza: 'Pauză', continua: 'Continuă', opreste: 'Oprește redarea automată',
     },
     en: {
       prezinta: 'Present', meniu: 'Presentation modes',
@@ -65,11 +67,15 @@
       deconectat: 'The audience window was closed. Close this window and start the presenter view again.',
       fara_canal: 'Open the presenter view from the pitch deck: “▶ Present” → “Presenter view”.',
       eroare_note: 'The notes cannot be loaded right now. Please try again.', pe_ecran: 'The presenter view is open in another window.',
+      viteza: 'Speed (per slide)', viteza_aria: 'seconds per slide', bucla: 'Start over at the end', porneste: 'Start',
+      pauza: 'Pause', continua: 'Resume', opreste: 'Stop autoplay',
     },
   };
   var MODURI = ['ecran', 'prezentator', 'auto'];
+  // Redarea automată (2.5): secunde pe slide; implicit 10 s.
+  var VITEZE = [5, 10, 15, 30, 60], VITEZA_IMPLICITA = 10, CHEIE_VITEZA = 'mdpd_autoplay_viteza_v1';
 
-  var exporturi = { TEXTE: TEXTE, MODURI: MODURI };
+  var exporturi = { TEXTE: TEXTE, MODURI: MODURI, VITEZE: VITEZE, VITEZA_IMPLICITA: VITEZA_IMPLICITA };
   if (!win) return exporturi;
 
   var doc = win.document;
@@ -129,7 +135,7 @@
           (mod === 'auto' && o.panouAuto ? '<div class="pdp-panou" role="group" aria-label="' + esc(t.auto_t) + '" hidden></div>' : '');
       }).join('');
     }
-    function optiuni() { return Array.prototype.slice.call(m.querySelectorAll('[role="menuitem"]')); }
+    function optiuni() { return Array.prototype.slice.call(m.querySelectorAll('[role="menuitem"]')).filter(function (x) { return x.offsetParent !== null; }); }
     function deschis() { return !m.hidden; }
 
     // Poziția: foaie de jos, sau dropdown sub buton, aliniat la dreapta lui, în ecran.
@@ -148,6 +154,7 @@
     function deschide(focus) {
       if (o.laDeschidere) o.laDeschidere();
       deseneaza();
+      m.classList.remove('pdp-scurt');
       m.hidden = false; fundal.hidden = false;
       b.setAttribute('aria-expanded', 'true');
       aseaza();
@@ -169,7 +176,9 @@
         var arata = p.hidden;
         p.hidden = !arata;
         opt.setAttribute('aria-expanded', arata ? 'true' : 'false');
-        if (arata) { o.panouAuto(p, function () { inchide(false); }); var f = p.querySelector('[aria-checked="true"], button, input'); if (f) f.focus(); }
+        // Ecran jos (telefon pe orizontală): cât e deschis panoul, celelalte opțiuni se strâng.
+        m.classList.toggle('pdp-scurt', arata && win.innerHeight < 500);
+        if (arata) { o.panouAuto(p, function () { inchide(); }); var f = p.querySelector('[aria-checked="true"], button, input'); if (f) f.focus(); }
         if (!m.classList.contains('pdp-foaie')) aseaza();
         return;
       }
@@ -189,7 +198,18 @@
       var lista = optiuni(), i = lista.indexOf(doc.activeElement);
       if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); inchide(); return; }
       if (e.key === 'Tab' && !m.contains(e.target.closest('.pdp-panou'))) { inchide(false); return; }
-      if (i === -1) return; // în panoul redării automate: tastele lui
+      if (i === -1) {
+        // În panoul redării automate: săgețile aleg viteza; nimic nu ajunge la slide-ul din spate.
+        var r = e.target.closest && e.target.closest('[role="radio"]');
+        if (r && /^Arrow(Left|Right|Up|Down)$/.test(e.key)) {
+          e.preventDefault();
+          var toate = Array.prototype.slice.call(r.parentNode.querySelectorAll('[role="radio"]'));
+          var nou = toate[(toate.indexOf(r) + (/Right|Down/.test(e.key) ? 1 : -1) + toate.length) % toate.length];
+          nou.click(); nou.focus();
+        }
+        if (/^(Arrow|Home$|End$|Page)/.test(e.key)) e.stopPropagation();
+        return;
+      }
       if (e.key === 'ArrowDown') { e.preventDefault(); lista[(i + 1) % lista.length].focus(); }
       else if (e.key === 'ArrowUp') { e.preventDefault(); lista[(i - 1 + lista.length) % lista.length].focus(); }
       else if (e.key === 'Home') { e.preventDefault(); lista[0].focus(); }
@@ -671,29 +691,177 @@
     function anuntaInchis() { if (conex) conex.tr.trimite({ tip: 'inchis' }); }
     leaga(asc, win, 'pagehide', anuntaInchis);
 
-    // Redarea automată (2.5) se leagă aici; până atunci, nimic activ.
-    function stareAuto() { return null; }
-    function comutaAutoDinPrezentator() {}
+    // ── Redarea automată (2.5) ─────────────────────────────────────
+    // Timpul pe slide începe DUPĂ animațiile slide-ului. Pauză automată la
+    // orice navigare manuală, la deschiderea meniului, când fila nu e vizibilă
+    // și la Space (din nou Space → continuă). La ultimul slide: oprire, sau
+    // reluare de la început dacă e bifat. Viteza se ține minte pe dispozitiv.
+    var viteza = Number(citeste(CHEIE_VITEZA));
+    if (VITEZE.indexOf(viteza) === -1) viteza = VITEZA_IMPLICITA;
+    var auto = { activ: false, ruleaza: false, bucla: false, timer: null, t0: 0, ramas: 0, slide: -1 }, navAuto = false;
+    var progres = el('div', 'pdp-progres', { hidden: '', 'aria-hidden': 'true' });
+    progres.innerHTML = '<div></div>';
+    (o.scena.querySelector('.pdp-cadru') || o.scena).appendChild(progres);
+    var bara = progres.firstChild;
+    function controaleAuto(cls, clsBtn) {
+      var g = el('div', cls, { role: 'group', hidden: '', 'data-i18n-skip': '' });
+      g.innerHTML = '<button type="button" class="' + clsBtn + '" data-auto="comuta"></button><span class="pdp-auto-viteza"></span>' +
+        '<button type="button" class="' + clsBtn + '" data-auto="opreste">' + X + '</button>';
+      g.addEventListener('click', function (e) {
+        var b = e.target.closest && e.target.closest('[data-auto]');
+        if (!b) return;
+        if (b.getAttribute('data-auto') === 'opreste') opresteAuto(); else comutaAuto();
+      });
+      return g;
+    }
+    var grupuri = [controaleAuto('pdp-auto pdp-auto-fs', 'pdp-fs-btn')];
+    ecran.extra.appendChild(grupuri[0]);
+    if (o.bara) { grupuri.push(controaleAuto('pdp-auto pdp-auto-bara', 'pdp-auto-btn')); o.bara.appendChild(grupuri[1]); }
+
+    // Cât durează animațiile slide-ului curent (tranziții, animații finite, cifrele care cresc).
+    var miscareRedusa = function () { return !!(win.matchMedia && win.matchMedia('(prefers-reduced-motion: reduce)').matches); };
+    function secunde(v) { return String(v || '0s').split(',').map(function (x) { x = x.trim(); return /ms$/.test(x) ? parseFloat(x) : parseFloat(x) * 1000; }); }
+    function durataAnimatii() {
+      var d = o.deck(), s = d && d.element && d.element.querySelector('.mdpd-slide.mdpd-activ');
+      if (!s || miscareRedusa()) return 0;
+      var max = s.querySelector('[data-tinta]') ? 1100 : 0;
+      [s].concat(Array.prototype.slice.call(s.querySelectorAll('*'))).forEach(function (e) {
+        var cs = win.getComputedStyle(e);
+        var td = secunde(cs.transitionDelay), tt = secunde(cs.transitionDuration);
+        tt.forEach(function (t, k) { if (t > 0) max = Math.max(max, t + (td[k % td.length] || 0)); });
+        var nume = String(cs.animationName || 'none').split(','), ad = secunde(cs.animationDelay), at = secunde(cs.animationDuration), it = String(cs.animationIterationCount || '1').split(',');
+        nume.forEach(function (n, k) {
+          n = n.trim();
+          // Zoom-ul lent al imaginilor (mdpd-kb, 9 s) e decor, nu animația slide-ului.
+          if (n === 'none' || /kb$/.test(n) || /infinite/.test(it[k % it.length] || '')) return;
+          max = Math.max(max, (at[k % at.length] || 0) * (parseFloat(it[k % it.length]) || 1) + (ad[k % ad.length] || 0));
+        });
+      });
+      return Math.min(6000, Math.round(max));
+    }
+    function deseneazaAuto() {
+      var t = T();
+      grupuri.forEach(function (g) {
+        g.hidden = !auto.activ;
+        g.setAttribute('aria-label', t.auto_t);
+        var b = g.querySelector('[data-auto="comuta"]');
+        b.innerHTML = '<span aria-hidden="true">' + (auto.ruleaza ? '⏸' : '▶') + '</span>';
+        b.setAttribute('aria-label', auto.ruleaza ? t.pauza : t.continua); b.title = b.getAttribute('aria-label');
+        b.setAttribute('aria-pressed', auto.ruleaza ? 'false' : 'true');
+        var s = g.querySelector('[data-auto="opreste"]');
+        s.setAttribute('aria-label', t.opreste); s.title = t.opreste;
+        var v = g.querySelector('.pdp-auto-viteza');
+        v.textContent = viteza + ' s'; v.setAttribute('aria-label', viteza + ' ' + t.viteza_aria);
+      });
+      progres.hidden = !auto.activ;
+      bara.style.animationPlayState = auto.ruleaza ? 'running' : 'paused';
+      trimiteStare();
+    }
+    function curataTimer() { if (auto.timer) win.clearTimeout(auto.timer); auto.timer = null; }
+    function programeaza() {
+      curataTimer();
+      var d = o.deck();
+      if (!d) return;
+      var anim = durataAnimatii();
+      auto.slide = d.index; auto.ramas = anim + viteza * 1000;
+      bara.style.animation = 'none';
+      void bara.offsetWidth;
+      bara.style.animation = 'pdp-umple ' + viteza + 's linear ' + anim + 'ms forwards';
+      if (auto.ruleaza) { auto.t0 = Date.now(); auto.timer = win.setTimeout(pas, auto.ramas); }
+    }
+    function pas() {
+      auto.timer = null;
+      var d = o.deck();
+      if (!d || !auto.activ) return;
+      navAuto = true;
+      try {
+        if (d.index < d.total - 1) d.urmator();
+        else if (auto.bucla) d.mergiLa(0);
+        else { opresteAuto(); return; }
+      } finally { navAuto = false; }
+      programeaza(); deseneazaAuto();
+    }
+    function pornesteAuto(sec, bucla) {
+      if (VITEZE.indexOf(sec) !== -1) { viteza = sec; scrie(CHEIE_VITEZA, String(sec)); }
+      auto.activ = true; auto.ruleaza = true; auto.bucla = !!bucla;
+      programeaza(); deseneazaAuto();
+    }
+    function pauzaAuto() {
+      if (!auto.activ || !auto.ruleaza) return;
+      curataTimer();
+      auto.ramas = Math.max(0, auto.ramas - (Date.now() - auto.t0));
+      auto.ruleaza = false; deseneazaAuto();
+    }
+    function continuaAuto() {
+      if (!auto.activ || auto.ruleaza) return;
+      auto.ruleaza = true;
+      var d = o.deck();
+      // Navigat între timp (manual): timpul pornește de la zero pe noul slide.
+      if (!d || d.index !== auto.slide) programeaza();
+      else { auto.t0 = Date.now(); auto.timer = win.setTimeout(pas, auto.ramas); }
+      deseneazaAuto();
+    }
+    function comutaAuto() { if (auto.ruleaza) pauzaAuto(); else continuaAuto(); }
+    function opresteAuto() { curataTimer(); auto.activ = false; auto.ruleaza = false; bara.style.animation = 'none'; deseneazaAuto(); }
+    function stareAuto() { return auto.activ ? { activ: true, ruleaza: auto.ruleaza, viteza: viteza, eticheta: viteza + ' s' } : null; }
+    function comutaAutoDinPrezentator() { comutaAuto(); }
+    leaga(asc, doc, 'visibilitychange', function () { if (doc.hidden) pauzaAuto(); });
+    leaga(asc, doc, 'keydown', function (e) {
+      if (!auto.activ || pvLocal || e.key !== ' ' || e.altKey || e.ctrlKey || e.metaKey) return;
+      var tag = (e.target && e.target.tagName) || '';
+      if (/^(INPUT|SELECT|TEXTAREA)$/.test(tag) || (e.target.closest && e.target.closest('.pdp-meniu, .pdp-dialog-fundal'))) return;
+      e.preventDefault(); e.stopPropagation();
+      comutaAuto();
+    }, true);
+
+    // Panoul din meniu: viteza, „Reia de la început la final”, „Pornește”.
+    function panouAuto(p, inchideMeniu) {
+      var t = T();
+      p.innerHTML = '<div class="pdp-panou-et" id="pdp-viteza-et">' + esc(t.viteza) + '</div>' +
+        '<div class="pdp-viteze" role="radiogroup" aria-labelledby="pdp-viteza-et">' + VITEZE.map(function (v) {
+          return '<button type="button" role="radio" class="pdp-viteza" data-viteza="' + v + '" aria-checked="' + (v === viteza) + '" tabindex="' + (v === viteza ? 0 : -1) + '" aria-label="' + v + ' ' + esc(t.viteza_aria) + '">' + v + ' s</button>';
+        }).join('') + '</div>' +
+        '<label class="pdp-bifa"><input type="checkbox" data-bucla' + (auto.bucla ? ' checked' : '') + '><span>' + esc(t.bucla) + '</span></label>' +
+        '<button type="button" class="pdp-porneste" data-porneste><span aria-hidden="true">▶</span> ' + esc(t.porneste) + '</button>';
+      var ales = viteza;
+      p.onclick = function (e) {
+        var r = e.target.closest && e.target.closest('[data-viteza]');
+        if (r) {
+          ales = Number(r.getAttribute('data-viteza'));
+          Array.prototype.forEach.call(p.querySelectorAll('[data-viteza]'), function (x) { var da = x === r; x.setAttribute('aria-checked', da ? 'true' : 'false'); x.tabIndex = da ? 0 : -1; });
+          return;
+        }
+        if (e.target.closest && e.target.closest('[data-porneste]')) {
+          var bucla = p.querySelector('[data-bucla]').checked;
+          inchideMeniu();
+          pornesteAuto(ales, bucla);
+        }
+      };
+    }
 
     var m = meniu({
-      buton: o.buton, limba: o.limba, stareMod: stareMod,
+      buton: o.buton, limba: o.limba, stareMod: stareMod, panouAuto: panouAuto,
+      laDeschidere: pauzaAuto,
       moduri: { ecran: function () { ecran.intra(); }, prezentator: deschidePrezentator },
     });
     return {
       meniu: m, ecran: ecran,
       laSchimbare: function (i, total) {
         ecran.laSchimbare(i, total);
+        if (!navAuto) pauzaAuto(); // navigare manuală → pauză
         if (pvLocal) pvLocal.seteaza(i);
         trimiteStare();
       },
-      texte: function () { ecran.texte(); m.actualizeaza(); },
+      texte: function () { ecran.texte(); m.actualizeaza(); deseneazaAuto(); },
+      get auto() { return stareAuto(); },
       actualizeaza: function () { m.actualizeaza(); },
       get conexiune() { return conex ? conex.tr.tip : null; },
       // Back-office: previzualizarea se închide → totul se desface.
       distruge: function () {
         anuntaInchis(); inchideConex();
         if (pvLocal) { pvLocal.distruge(); pvLocal = null; var g = doc.querySelector('.pdp-pv-ecran'); if (g) g.remove(); doc.documentElement.classList.remove('pdp-pv-deschis'); }
-        dezleaga(asc); m.distruge(); ecran.distruge(); negru.remove();
+        opresteAuto(); dezleaga(asc); m.distruge(); ecran.distruge(); negru.remove(); progres.remove();
+        grupuri.forEach(function (g) { g.remove(); });
       },
     };
   }

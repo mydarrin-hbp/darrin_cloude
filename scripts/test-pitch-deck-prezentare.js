@@ -90,22 +90,26 @@ async function ruteaza(ctx) {
   });
 }
 
-async function pagina(browser, baza, { lang, w, h, tok = null, reducere = false, hash = '', init = null, atingere = w < 1024 || h > w }) {
-  const ctx = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: atingere, reducedMotion: reducere ? 'reduce' : 'no-preference' });
-  await ctx.addInitScript((l) => {
-    try {
-      localStorage.setItem('myd_lang_v1', l);
-      localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), versiune: 1 }));
-    } catch (e) {}
-  }, lang);
-  await ctx.addInitScript(sesiune, tok);
-  if (init) await ctx.addInitScript(init);
-  await ruteaza(ctx);
+async function pagina(browser, baza, { lang, w, h, tok = null, reducere = false, hash = '', init = null, atingere = w < 1024 || h > w, ceas = false, ctxExistent = null }) {
+  let ctx = ctxExistent;
+  if (!ctx) {
+    ctx = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: atingere, reducedMotion: reducere ? 'reduce' : 'no-preference' });
+    await ctx.addInitScript((l) => {
+      try {
+        if (!localStorage.getItem('myd_lang_v1')) localStorage.setItem('myd_lang_v1', l);
+        localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), versiune: 1 }));
+      } catch (e) {}
+    }, lang);
+    await ctx.addInitScript(sesiune, tok);
+    if (init) await ctx.addInitScript(init);
+    await ruteaza(ctx);
+  }
   const pg = await ctx.newPage();
   pg.erori = [];
   pg.on('pageerror', (e) => pg.erori.push(e.message.slice(0, 200)));
+  if (ceas) await pg.clock.install({ time: new Date('2026-10-23T10:00:00Z') });
   await pg.goto(baza + '/mydarrin-pitch-deck' + hash, { waitUntil: 'domcontentloaded' });
-  await pg.waitForFunction(() => document.querySelector('#pd-deck .mdpd-slide.mdpd-activ'), null, { timeout: 10000 }).catch(() => {});
+  await pg.waitForFunction(() => document.querySelector('#pd-deck .mdpd-slide.mdpd-activ'), null, { timeout: 10000, polling: 100 }).catch(() => {});
   return { ctx, pg };
 }
 
@@ -491,6 +495,154 @@ async function testPrezentator(browser, baza) {
 }
 function ecranMareTest(w, h) { return w >= 768 && w >= h && h >= 500; }
 
+// ═══ R. Redarea automată (ceasul simulat) ══════════════════════════
+const PANOU = { ro: { viteza: 'Viteza (pe slide)', bucla: 'Reia de la început la final', porneste: 'Pornește', pauza: 'Pauză', continua: 'Continuă' }, en: { viteza: 'Speed (per slide)', bucla: 'Start over at the end', porneste: 'Start', pauza: 'Pause', continua: 'Resume' } };
+async function stareAuto(pg) {
+  return pg.evaluate(() => {
+    const g = document.querySelector('#pd-nav .pdp-auto'), p = document.querySelector('#pd-deck .pdp-progres');
+    const b = g && g.querySelector('[data-auto="comuta"]');
+    return { slide: Number(document.querySelector('#pd-deck .mdpd-activ').dataset.nr), vizibil: !!g && !g.hidden && !!g.getBoundingClientRect().width,
+      buton: b ? b.getAttribute('aria-label') : '', viteza: g ? g.querySelector('.pdp-auto-viteza').textContent : '', progres: !!p && !p.hidden && !!p.getBoundingClientRect().width };
+  });
+}
+async function deschidePanou(pg) {
+  await pg.click('#pd-prezinta');
+  await pg.click('.pdp-meniu [data-mod="auto"]');
+  return pg.evaluate(() => {
+    const p = document.querySelector('.pdp-meniu .pdp-panou');
+    return { vizibil: !!p && !p.hidden, text: p ? p.textContent : '', viteze: [...p.querySelectorAll('[data-viteza]')].map((b) => [b.textContent, b.getAttribute('aria-checked')]),
+      bucla: p.querySelector('[data-bucla]').checked, exp: document.querySelector('.pdp-meniu [data-mod="auto"]').getAttribute('aria-expanded') };
+  });
+}
+// Avansează ceasul simulat în pași de 100 ms până la slide-ul `nr`; întoarce timpul (ms) sau -1.
+async function panaLa(pg, nr, max) {
+  for (let t = 0; t <= max; t += 100) {
+    if ((await stareAuto(pg)).slide === nr) return t;
+    await pg.clock.runFor(100);
+  }
+  return -1;
+}
+async function pornesteAuto(pg, sec, bucla) {
+  await deschidePanou(pg);
+  await pg.click(`.pdp-panou [data-viteza="${sec}"]`);
+  if (bucla) await pg.check('.pdp-panou [data-bucla]');
+  await pg.click('.pdp-panou [data-porneste]');
+}
+
+async function testAuto(browser, baza) {
+  for (const lang of ['ro', 'en']) {
+    const A = PANOU[lang];
+    for (const [w, h] of LATIMI) {
+      const et = `R ${lang} ${w}×${h}`;
+      reset();
+      const { ctx, pg } = await pagina(browser, baza, { lang, w, h, hash: '#slide-1', ceas: true });
+      await pg.clock.runFor(1500);
+      // Panoul: vitezele 5 / 10 / 15 / 30 / 60 s (implicit 10 s), bifa oprită, „Pornește”.
+      const p = await deschidePanou(pg);
+      verifica(p.vizibil && p.exp === 'true' && JSON.stringify(p.viteze) === JSON.stringify([['5 s', 'false'], ['10 s', 'true'], ['15 s', 'false'], ['30 s', 'false'], ['60 s', 'false']]) && !p.bucla && p.text.includes(A.viteza) && p.text.includes(A.bucla) && p.text.includes(A.porneste),
+        `${et}: panoul (${JSON.stringify(p.viteze)}, bifa ${p.bucla})`);
+      const g = await geometrie(pg, '.pdp-meniu, .pdp-opt, .pdp-panou [data-viteza], .pdp-bifa, .pdp-porneste');
+      verifica(!g, `${et}: panoul complet în ecran, fără suprapuneri (${g})`);
+      if (lang === 'ro' && [1440, 390].includes(w)) await captura(pg, `auto-panou-${w}x${h}`);
+      if (TELEFON(w, h) || w < 1024 || h > w) {
+        const mici = await pg.evaluate(() => [...document.querySelectorAll('.pdp-panou [data-viteza], .pdp-panou .pdp-bifa, .pdp-panou [data-porneste]')].filter((b) => b.getBoundingClientRect().height < 40).length);
+        verifica(!mici, `${et}: ținte de atingere în panou (${mici} prea mici)`);
+      }
+      await pg.click('.pdp-panou [data-viteza="5"]');
+      await pg.click('.pdp-panou [data-porneste]');
+      let s = await stareAuto(pg);
+      verifica(s.vizibil && s.progres && s.viteza === '5 s' && s.buton === A.pauza && (await pg.isHidden('.pdp-meniu')), `${et}: pornește — bara de progres, „5 s”, butonul „${A.pauza}” (${JSON.stringify(s)})`);
+      const ga = await geometrie(pg, '#pd-nav > *:not([hidden]), #pd-nav .pdp-auto > *');
+      verifica(!ga, `${et}: controalele redării în bară, fără suprapuneri (${ga})`);
+      if (TELEFON(w, h) || w < 1024) {
+        const mici = await pg.evaluate(() => [...document.querySelectorAll('#pd-nav .pdp-auto button')].filter((b) => { const r = b.getBoundingClientRect(); return r.width < 44 || r.height < 44; }).length);
+        verifica(!mici, `${et}: butoanele redării ≥ 44 × 44 px`);
+      }
+      // Timpul pe slide pornește după animații: la 5,1 s încă pe 1; apoi avansează.
+      let t = await panaLa(pg, 2, 12000);
+      verifica(t > 5100 && t <= 11100, `${et}: avansează la slide-ul 2 după 5 s + animațiile (${t} ms)`);
+      t = await panaLa(pg, 3, 12000);
+      verifica(t >= 5000 && t <= 11100, `${et}: avansează la slide-ul 3 (${t} ms)`);
+      // Navigarea manuală → pauză.
+      await pg.keyboard.press('ArrowRight');
+      s = await stareAuto(pg);
+      verifica(s.slide === 4 && s.buton === A.continua && s.vizibil, `${et}: navigarea manuală pune pe pauză (${s.buton})`);
+      await pg.clock.runFor(30000);
+      verifica((await stareAuto(pg)).slide === 4, `${et}: pe pauză nu mai avansează`);
+      // Space: continuă / pauză.
+      await pg.keyboard.press(' ');
+      verifica((await stareAuto(pg)).buton === A.pauza, `${et}: Space → continuă`);
+      t = await panaLa(pg, 5, 12000);
+      verifica(t >= 5000, `${et}: după continuare avansează la 5 (${t} ms)`);
+      await pg.keyboard.press(' ');
+      verifica((await stareAuto(pg)).buton === A.continua, `${et}: Space → pauză`);
+      // Deschiderea meniului → pauză; fila ascunsă → pauză.
+      await pg.click('#pd-nav [data-auto="comuta"]');
+      verifica((await stareAuto(pg)).buton === A.pauza, `${et}: butonul „${A.continua}” → rulează`);
+      await pg.click('#pd-prezinta'); await pg.keyboard.press('Escape');
+      verifica((await stareAuto(pg)).buton === A.continua, `${et}: deschiderea meniului pune pe pauză`);
+      await pg.click('#pd-nav [data-auto="comuta"]');
+      await pg.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => true }); document.dispatchEvent(new Event('visibilitychange')); });
+      verifica((await stareAuto(pg)).buton === A.continua, `${et}: fila ascunsă (visibilitychange) pune pe pauză`);
+      await pg.evaluate(() => { delete document.hidden; });
+      // Ultimul slide: se oprește (fără bifă).
+      await pg.keyboard.press('End');
+      await pg.click('#pd-nav [data-auto="comuta"]');
+      await pg.clock.runFor(12000);
+      s = await stareAuto(pg);
+      verifica(s.slide === 20 && !s.vizibil && !s.progres, `${et}: la ultimul slide se oprește (${JSON.stringify(s)})`);
+      // Cu „Reia de la început la final”: de la 20 la 1.
+      await pornesteAuto(pg, 5, true);
+      t = await panaLa(pg, 1, 12000);
+      s = await stareAuto(pg);
+      verifica(t >= 5000 && s.vizibil && s.buton === A.pauza, `${et}: cu bifa, de la 20 reia de la 1 (${t} ms)`);
+      // Oprirea (X).
+      await pg.click('#pd-nav [data-auto="opreste"]');
+      verifica(!(await stareAuto(pg)).vizibil, `${et}: X oprește redarea`);
+      verifica(!pg.erori.length, `${et}: 0 erori JS (${pg.erori.join(' | ')})`);
+      // Viteza aleasă se ține minte pe dispozitiv.
+      const { pg: pg2 } = await pagina(browser, baza, { lang, w, h, ctxExistent: ctx });
+      const p2 = await deschidePanou(pg2);
+      verifica(JSON.stringify(p2.viteze.find((x) => x[1] === 'true')) === JSON.stringify(['5 s', 'true']), `${et}: viteza 5 s ținută minte (${JSON.stringify(p2.viteze)})`);
+      await ctx.close();
+    }
+    console.log(`R ${lang}: gata`);
+  }
+
+  // În ecran complet: controalele redării apar lângă „3 / 20”.
+  for (const lang of ['ro', 'en']) {
+    const et = `R ${lang} 1440×900 ecran complet`;
+    reset();
+    const { ctx, pg } = await pagina(browser, baza, { lang, w: 1440, h: 900, hash: '#slide-1', ceas: true });
+    await pornesteAuto(pg, 10);
+    await alegeMod(pg, 'ecran');
+    // Deschiderea meniului (pentru ecranul complet) a pus redarea pe pauză: „▶ 10 s”, apoi continuă de aici.
+    const r = await pg.evaluate(() => { const g = document.querySelector('.pdp-fs .pdp-auto'); return !!g && !g.hidden && g.textContent; });
+    verifica(r === '▶10 s', `${et}: pauza / viteza „10 s” în controalele ecranului complet (${r})`);
+    await pg.click('.pdp-fs [data-auto="comuta"]');
+    const t = await panaLa(pg, 2, 17000);
+    verifica(t >= 10000, `${et}: avansează în ecran complet (${t} ms)`);
+    verifica(!pg.erori.length, `${et}: 0 erori JS (${pg.erori.join(' | ')})`);
+    await ctx.close();
+  }
+
+  // prefers-reduced-motion: fără animații de tranziție, redarea merge (timpul pornește imediat).
+  for (const lang of ['ro', 'en']) {
+    const et = `R ${lang} 1280×800 mișcare redusă`;
+    reset();
+    const { ctx, pg } = await pagina(browser, baza, { lang, w: 1280, h: 800, hash: '#slide-1', ceas: true, reducere: true });
+    await pornesteAuto(pg, 5);
+    await pg.clock.runFor(4900);
+    verifica((await stareAuto(pg)).slide === 1, `${et}: la 4,9 s încă pe 1`);
+    await pg.clock.runFor(200);
+    const r = await pg.evaluate(() => ({ slide: Number(document.querySelector('#pd-deck .mdpd-activ').dataset.nr), tranzitii: [...document.querySelectorAll('#pd-deck .mdpd-activ .mdpd-a')].every((e) => getComputedStyle(e).transitionDuration === '0s' && getComputedStyle(e).opacity === '1') }));
+    verifica(r.slide === 2 && r.tranzitii, `${et}: la 5,1 s pe slide-ul 2, fără tranziții (${JSON.stringify(r)})`);
+    verifica(!pg.erori.length, `${et}: 0 erori JS (${pg.erori.join(' | ')})`);
+    await ctx.close();
+  }
+  console.log('R: gata');
+}
+
 (async () => {
   const srv = await porneste(0);
   const baza = 'http://localhost:' + srv.address().port;
@@ -499,6 +651,7 @@ function ecranMareTest(w, h) { return w >= 768 && w >= h && h >= 500; }
     if (!process.env.DOAR || process.env.DOAR === 'M') await testMeniu(browser, baza);
     if (!process.env.DOAR || process.env.DOAR === 'E') await testEcran(browser, baza);
     if (!process.env.DOAR || process.env.DOAR === 'P') await testPrezentator(browser, baza);
+    if (!process.env.DOAR || process.env.DOAR === 'R') await testAuto(browser, baza);
   } finally {
     await browser.close();
     srv.close();
