@@ -5,6 +5,10 @@
 //      JSON-uri reale → câte o ciornă pe limbă, cu notele de verificare;
 //      adminul doar cu citire nu vede butoanele de scriere;
 //   (secțiunile următoare se adaugă la punctele 2.4–2.7)
+//   F. pasul 11-K2 (23 oct. 2026): v1.1 — editorul arată câmpurile noi ale
+//      slide-ului 12; pagina publică (RO, EN, de → EN; 390 și 1366 px) arată
+//      cardurile A + B = C, banda escrow și cele 4 etichete; slide-ul 12 din v1
+//      rămâne fluxul vechi; slide-ul 20 cu imaginea fără slogan.
 //   0 erori JS, nimic în afara ecranului.
 // Rulare: node scripts/test-pitch-deck-pagina.js
 
@@ -25,6 +29,10 @@ const FISIER_RO = path.join(RADACINA, 'docs/pitch-deck/pitch-deck-v1-ro.json');
 const FISIER_EN = path.join(RADACINA, 'docs/pitch-deck/pitch-deck-v1-en.json');
 const RO = require(FISIER_RO);
 const EN = require(FISIER_EN);
+const FISIER_RO11 = path.join(RADACINA, 'docs/pitch-deck/pitch-deck-v1.1-ro.json');
+const FISIER_EN11 = path.join(RADACINA, 'docs/pitch-deck/pitch-deck-v1.1-en.json');
+const RO11 = require(FISIER_RO11);
+const EN11 = require(FISIER_EN11);
 const notePe = (j) => j.slide_uri.reduce((n, s) => n + (s.de_verificat || []).length, 0);
 
 // Intl pune spații neseparabile (22 mil. €): comparăm cu spații obișnuite.
@@ -235,11 +243,11 @@ const RUNDA_TEST = { id: 'r-test', cod: 'test', denumire_ro: 'Seed (test)', denu
 
 function versiuneAprobata(j, id) {
   const { slide_uri, note } = P.extrageNote(JSON.parse(JSON.stringify(j.slide_uri)));
-  return { id, limba: j.meta.limba, titlu: 'Pitch deck v1 · ' + j.meta.limba.toUpperCase(), sursa: j.meta.sursa, disclaimer: j.meta.disclaimer,
+  return { id, limba: j.meta.limba, titlu: 'Pitch deck ' + j.meta.versiune + ' · ' + j.meta.limba.toUpperCase(), sursa: j.meta.sursa, disclaimer: j.meta.disclaimer,
     slide_uri: slide_uri.map((s) => (s.prognoza ? { ...s, sursa: 'Sursă DE TEST' } : s)), note_verificare: note.map((n) => ({ ...n, rezolvat: true })),
     aprobat: true, aprobat_la: '2026-10-22T10:00:00Z', creat_la: '2026-10-22T09:00:00Z' };
 }
-function resetPublic({ versiuni = true, vizibilitate = 'public', runda = true } = {}) {
+function resetPublic({ versiuni = true, vizibilitate = 'public', runda = true, fisiere = [RO, EN] } = {}) {
   DB.tabele = {
     profiles: [{ id: 'inv', email: 'inv@example.com', roles: ['client', 'investor'] }],
     investitori_kyc: [{ user_id: 'inv', status: 'aprobat' }],
@@ -248,7 +256,7 @@ function resetPublic({ versiuni = true, vizibilitate = 'public', runda = true } 
       { cheie: 'pitch_deck_vizibilitate', valoare: vizibilitate, sectiune: 'investitori', tara_cod: 'ALL' },
     ],
     runde_finantare: runda ? [{ ...RUNDA_TEST }] : [], investitori_portofoliu: [],
-    pitch_deck_versiuni: versiuni ? [versiuneAprobata(RO, 'v-ro'), versiuneAprobata(EN, 'v-en')] : [],
+    pitch_deck_versiuni: versiuni ? [versiuneAprobata(fisiere[0], 'v-ro'), versiuneAprobata(fisiere[1], 'v-en')] : [],
   };
   DB.coloane = {};
   DB.utilizatori = { 'tok-inv': { id: 'inv', email: 'inv@example.com' } };
@@ -668,6 +676,151 @@ async function testInvestitori(browser, baza) {
   console.log('E: gata');
 }
 
+// ═══ F. Slide-ul 12 v1.1 (11-K2) ═══════════════════════════════════
+async function testModelAfaceri(browser, baza) {
+  // Editorul: importul v1.1 și câmpurile noi ale slide-ului 12, în ciorna RO și în cea EN.
+  for (const latime of [390, 1366]) {
+    const et = `F editor ${latime}px`;
+    resetAdmin();
+    const { ctx, pg } = await panouAdmin(browser, baza, latime, { id: 'sup', email: 'super@example.com', roles: ['superadmin'] });
+    await pg.setInputFiles('#pd-fisier', [FISIER_RO11, FISIER_EN11]);
+    await pg.waitForFunction(() => /Ciornă creată/.test(document.getElementById('pd-import-msg').textContent), null, { timeout: 8000 }).catch(() => {});
+    const titluri = DB.tabele.pitch_deck_versiuni.map((v) => v.titlu).sort();
+    verifica(JSON.stringify(titluri) === JSON.stringify(['Pitch deck v1.1 · EN', 'Pitch deck v1.1 · RO']), `${et}: ciornele v1.1 (${titluri.join(', ')})`);
+    for (const [l, J] of [['ro', RO11], ['en', EN11]]) {
+      const v = DB.tabele.pitch_deck_versiuni.find((x) => x.limba === l);
+      await pg.click(`.pd-tab[data-limba="${l}"]`);
+      await pg.waitForSelector(`[data-pd-id="${v.id}"] [data-pd-act="editeaza"]`, { timeout: 5000 }).catch(() => {});
+      await pg.click(`[data-pd-id="${v.id}"] [data-pd-act="editeaza"]`);
+      await pg.waitForSelector('#pd-ed-slideuri details', { timeout: 6000 }).catch(() => {});
+      await pg.evaluate(() => { document.querySelector('[data-pd-slide="11"]').open = true; });
+      const m = J.slide_uri[11];
+      const c = await pg.evaluate(() => {
+        const r = {};
+        ['flux.0.titlu', 'flux.0.text', 'flux.1.operator', 'flux.1.stil', 'flux.2.operator', 'flux.2.stil', 'escrow.titlu', 'escrow.text'].forEach((k) => {
+          const e = document.querySelector(`[data-cale="slide_uri.11.${k}"]`);
+          r[k] = e ? [e.value, e.closest('label').firstChild.textContent.trim()] : [null, null];
+        });
+        r.legenda = [...document.querySelectorAll('[data-pd-slide="11"] legend')].some((x) => /Banda Escrow/.test(x.textContent));
+        return r;
+      });
+      verifica(c['flux.0.titlu'][0] === m.flux[0].titlu && c['flux.0.text'][0] === m.flux[0].text && c['flux.0.titlu'][1] === 'Titlul cardului' && c['flux.0.text'][1] === 'Descrierea cardului', `${et} ${l}: titlul și descrierea cardului (${JSON.stringify([c['flux.0.titlu'], c['flux.0.text'][1]])})`);
+      verifica(c['flux.1.operator'][0] === '+' && c['flux.2.operator'][0] === '=' && /Semnul dinaintea cardului/.test(c['flux.1.operator'][1]), `${et} ${l}: semnele + / = (${JSON.stringify([c['flux.1.operator'], c['flux.2.operator'][0]])})`);
+      verifica(c['flux.1.stil'][0] === 'accent' && c['flux.2.stil'][0] === 'final' && c['flux.1.stil'][1] === 'Stilul cardului', `${et} ${l}: stilurile (${JSON.stringify([c['flux.1.stil'], c['flux.2.stil'][0]])})`);
+      verifica(c['escrow.titlu'][0] === m.escrow.titlu && c['escrow.text'][0] === m.escrow.text && c.legenda, `${et} ${l}: banda escrow`);
+      // Semnul „=” scos și salvat → null pe server; restul neschimbat
+      await pg.selectOption('[data-cale="slide_uri.11.flux.2.operator"]', '');
+      await pg.click('#pd-ed-salveaza');
+      await pg.waitForFunction(() => /Ciorna a fost salvată/.test(document.getElementById('pd-ed-msg').textContent), null, { timeout: 6000 }).catch(() => {});
+      const dupa = DB.tabele.pitch_deck_versiuni.find((x) => x.id === v.id).slide_uri[11];
+      verifica(dupa.flux[2].operator === null && dupa.flux[1].operator === '+' && dupa.flux[2].stil === 'final' && JSON.stringify(dupa.escrow) === JSON.stringify(m.escrow), `${et} ${l}: salvarea (${JSON.stringify(dupa.flux.map((p) => [p.operator, p.stil]))})`);
+      const d = await inAfaraEcranului(pg, '#pd-editor, #pd-editor *'); verifica(!d, `${et} ${l}: editorul în ecran (${d})`);
+      await pg.evaluate(() => window.inchideEditorPitchDeck());
+    }
+    verifica(!pg.erori.length, `${et}: 0 erori JS (${pg.erori.join(' | ')})`);
+    await ctx.close();
+    console.log(`${et}: gata`);
+  }
+
+  // Pagina publică, cu versiunea v1.1 aprobată (simulat).
+  const VAL = { ro: ['100%', '+20–25%', 'Taxe incluse'], en: ['100%', '+20–25%', 'Taxes included'] };
+  for (const lang of ['ro', 'en', 'de']) {
+    const l = lang === 'ro' ? 'ro' : 'en';
+    const J = l === 'ro' ? RO11 : EN11;
+    const m = J.slide_uri[11];
+    for (const latime of [390, 1366]) {
+      const et = `F ${lang} ${latime}px`;
+      resetPublic({ fisiere: [RO11, EN11] });
+      const { ctx, pg } = await paginaPublica(browser, baza, { lang, latime, hash: '#slide-12' });
+      verifica((await slideActiv(pg)) === 12, `${et}: slide-ul 12 activ`);
+      await pg.waitForTimeout(250);
+      const inTimp = await pg.evaluate(() => [...document.querySelectorAll('.mdpd-slide.mdpd-activ [data-card]')].map((c) => getComputedStyle(c).opacity));
+      verifica(inTimp.length === 3 && Number(inTimp[2]) < 1, `${et}: cardurile apar treptat (opacitate la 250 ms: ${inTimp.join(', ')})`);
+      await pg.waitForTimeout(2600);
+      const r = await pg.evaluate(() => {
+        const s = document.querySelector('.mdpd-slide.mdpd-activ');
+        const txt = (e) => (e ? e.textContent.trim() : null);
+        const cards = [...s.querySelectorAll('[data-card]')];
+        const rc = cards.map((x) => x.getBoundingClientRect());
+        return {
+          carduri: cards.map((c) => ({ stil: c.dataset.stil, eticheta: txt(c.querySelector('.mdpd-eyebrow')), titlu: txt(c.querySelector('h3')), valoare: txt(c.querySelector('.mdpd-mval')), text: txt(c.querySelector('p')), op: getComputedStyle(c).opacity })),
+          ordine: [...s.querySelector('.mdpd-carduri').children].map((e) => (e.hasAttribute('data-operator') ? e.textContent.trim() : 'card')),
+          escrow: txt(s.querySelector('[data-escrow]')), scut: !!s.querySelector('[data-escrow] svg'), escrowBorder: getComputedStyle(s.querySelector('[data-escrow]')).borderTopStyle,
+          chips: [...s.querySelectorAll('[data-venituri] .mdpd-chip')].map(txt), venituriTitlu: txt(s.querySelector('[data-venituri] .mdpd-eyebrow')),
+          intarzieri: [...s.querySelectorAll('.mdpd-carduri > *, [data-escrow], [data-venituri]')].map((e) => parseFloat(getComputedStyle(e).transitionDelay) || 0),
+          stiluri: cards.map((c) => [getComputedStyle(c).borderTopColor, getComputedStyle(c.querySelector('.mdpd-mval')).color]),
+          flux: !!s.querySelector('.mdpd-flux'), insigna: /VERSIUNEA RO|EN VERSION/i.test(s.textContent),
+          vertical: rc.length === 3 && rc[1].top >= rc[0].bottom && rc[2].top >= rc[1].bottom,
+          orizontal: rc.length === 3 && rc[1].left >= rc[0].right && rc[2].left >= rc[1].right,
+          opCentrat: [...s.querySelectorAll('[data-operator]')].every((o) => { const a = o.getBoundingClientRect(), p = o.parentElement.getBoundingClientRect(); return Math.abs((a.left + a.right) / 2 - (p.left + p.right) / 2) < 3; }),
+        };
+      });
+      verifica(r.carduri.length === 3 && JSON.stringify(r.ordine) === JSON.stringify(['card', '+', 'card', '=', 'card']), `${et}: trei carduri cu + și = între ele (${r.ordine.join(' ')})`);
+      verifica(JSON.stringify(r.carduri.map((x) => x.valoare)) === JSON.stringify(VAL[l]), `${et}: valorile după animație (${r.carduri.map((x) => x.valoare).join(' | ')})`);
+      verifica(r.carduri.every((x, k) => x.eticheta === m.flux[k].eticheta && x.titlu === m.flux[k].titlu && x.text === m.flux[k].text && x.stil === m.flux[k].stil && x.op === '1'), `${et}: textele cardurilor ${l.toUpperCase()} din JSON`);
+      verifica(r.escrow === m.escrow.titlu + ' ' + m.escrow.text && r.scut && r.escrowBorder === 'dashed', `${et}: banda escrow (${r.escrow})`);
+      verifica(JSON.stringify(r.chips) === JSON.stringify(m.venituri) && r.chips.length === 4 && r.venituriTitlu === m.venituri_titlu, `${et}: cele 4 etichete (${r.chips.join(', ')})`);
+      verifica(r.intarzieri.length === 7 && r.intarzieri.every((x, k) => !k || x > r.intarzieri[k - 1]), `${et}: ordinea animației A, +, B, =, C, escrow, etichete (${r.intarzieri.join(', ')})`);
+      verifica(r.stiluri[1][0] !== r.stiluri[0][0] && r.stiluri[2][0] === 'rgb(34, 197, 94)' && r.stiluri[1][1] === 'rgb(43, 179, 217)', `${et}: culorile neutru / accent / final (${JSON.stringify(r.stiluri)})`);
+      verifica(!r.flux && !r.insigna, `${et}: fără fluxul vechi și fără insigna de limbă`);
+      if (l === 'en') {
+        const ro = await pg.evaluate(() => (document.querySelector('.mdpd-slide.mdpd-activ').innerText.match(/[ăâîșțşţĂÂÎȘȚ]|\b(și|pentru|către|lucrării|Taxe|Marjă|Preț)\b/g) || []).join(' '));
+        verifica(!ro, `${et}: fără română pe slide-ul 12 EN („${ro}”)`);
+      }
+      if (latime === 390) verifica(r.vertical && r.opCentrat, `${et}: cardurile unul sub altul, semnele centrate`);
+      else verifica(r.orizontal, `${et}: cardurile pe un rând`);
+      const t = await textTaiat(pg); verifica(!t, `${et}: fără text tăiat (${t})`);
+      const d = await inAfaraEcranului(pg, '.mdpd-slide.mdpd-activ, .mdpd-slide.mdpd-activ *'); verifica(!d, `${et}: nimic în afara ecranului (${d})`);
+      if (latime === 390) await pg.evaluate(() => document.querySelector('.mdpd-slide.mdpd-activ').scrollIntoView());
+      await captura(pg, `v11-${lang}-${latime}-slide-12`);
+      // Slide-ul 20: imaginea fără slogan se încarcă
+      await pg.focus('.mdpd-stage');
+      await pg.keyboard.press('End');
+      await pg.waitForFunction(() => { const i = document.querySelector('.mdpd-slide.mdpd-activ .mdpd-img img'); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 6000 }).catch(() => {});
+      const img = await pg.evaluate(() => { const i = document.querySelector('.mdpd-slide.mdpd-activ .mdpd-img img'); return i ? [i.getAttribute('src'), i.naturalWidth, i.alt] : null; });
+      verifica((await slideActiv(pg)) === 20 && img && img[0] === '/assets/pitch-deck/v1/20-echipa-robot-fara-slogan.webp' && img[1] > 0 && img[2], `${et}: slide-ul 20 cu imaginea fără slogan (${JSON.stringify(img)})`);
+      verifica(!pg.erori.length, `${et}: 0 erori JS (${pg.erori.join(' | ')})`);
+      await ctx.close();
+    }
+    console.log(`F ${lang}: gata`);
+  }
+
+  // prefers-reduced-motion: totul afișat direct, valorile finale.
+  for (const [lang, latime] of [['ro', 1366], ['en', 390]]) {
+    const et = `F ${lang} ${latime}px redus`;
+    resetPublic({ fisiere: [RO11, EN11] });
+    const { ctx, pg } = await paginaPublica(browser, baza, { lang, latime, reducere: true, hash: '#slide-12' });
+    await pg.waitForTimeout(60);
+    const r = await pg.evaluate(() => [...document.querySelectorAll('.mdpd-slide.mdpd-activ .mdpd-a')].every((e) => getComputedStyle(e).opacity === '1') && document.querySelector('.mdpd-slide.mdpd-activ .mdpd-mval').textContent);
+    verifica(r === '100%', `${et}: totul vizibil direct, „100%” fără numărătoare (${r})`);
+    verifica(!pg.erori.length, `${et}: 0 erori JS (${pg.erori.join(' | ')})`);
+    await ctx.close();
+  }
+
+  // Slide-ul 12 din v1 (fără câmpurile noi): fluxul vechi, ca înainte.
+  for (const [lang, latime] of [['ro', 1366], ['en', 390]]) {
+    const et = `F v1 ${lang} ${latime}px`;
+    const J = lang === 'ro' ? RO : EN;
+    resetPublic();
+    const { ctx, pg } = await paginaPublica(browser, baza, { lang, latime, hash: '#slide-12' });
+    await pg.waitForTimeout(1600);
+    const r = await pg.evaluate(() => {
+      const s = document.querySelector('.mdpd-slide.mdpd-activ');
+      return { pasi: [...s.querySelectorAll('.mdpd-flux .mdpd-pas')].map((p) => p.textContent.trim()), legaturi: s.querySelectorAll('.mdpd-flux .mdpd-leg').length,
+        noi: s.querySelectorAll('[data-card], [data-escrow], [data-operator]').length, chips: s.querySelectorAll('[data-venituri] .mdpd-chip').length,
+        intarziere: getComputedStyle(s.querySelector('[data-venituri]')).transitionDelay };
+    });
+    const asteptat = J.slide_uri[11].flux.map((p) => p.eticheta + (p.valoare || ''));
+    verifica(JSON.stringify(r.pasi) === JSON.stringify(asteptat) && r.legaturi === 3 && r.noi === 0 && r.chips === 4, `${et}: fluxul vechi (${r.pasi.join(' → ')})`);
+    verifica(r.intarziere === '1.08s', `${et}: animația veniturilor neschimbată (${r.intarziere})`);
+    const t = await textTaiat(pg); verifica(!t, `${et}: fără text tăiat (${t})`);
+    await captura(pg, `v1-${lang}-${latime}-slide-12`);
+    verifica(!pg.erori.length, `${et}: 0 erori JS (${pg.erori.join(' | ')})`);
+    await ctx.close();
+  }
+  console.log('F: gata');
+}
+
 (async () => {
   const srv = await porneste(0);
   const baza = 'http://localhost:' + srv.address().port;
@@ -678,6 +831,7 @@ async function testInvestitori(browser, baza) {
     if (!process.env.DOAR || process.env.DOAR === 'C') await testStari(browser, baza);
     if (!process.env.DOAR || process.env.DOAR === 'D') await testLive(browser, baza);
     if (!process.env.DOAR || process.env.DOAR === 'E') await testInvestitori(browser, baza);
+    if (!process.env.DOAR || process.env.DOAR === 'F') await testModelAfaceri(browser, baza);
   } finally {
     await browser.close();
     srv.close();
