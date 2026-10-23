@@ -111,7 +111,9 @@ const REGULI_PITCH = [
   ['40 Mld', /40\s*Mld|€\s*40\s*bn/i],
   ['Runda I · 2026', /Runda\s+I\s*·\s*2026|Round\s+I\s*·\s*2026/i],
 ];
-const FISIERE_PITCH = ['mydarrin-pitch-deck.html', 'pitch-deck-render.js', path.join('i18n', 'en', 'mydarrin-pitch-deck.json')];
+const FISIERE_PITCH = ['mydarrin-pitch-deck.html', 'pitch-deck-render.js', path.join('i18n', 'en', 'mydarrin-pitch-deck.json'),
+  // Pasul 11-K3: modurile de prezentare și fereastra prezentatorului.
+  'pitch-deck-prezentare.js', 'pitch-deck-prezentator.html'];
 
 let total = 0;
 let exceptii = 0;

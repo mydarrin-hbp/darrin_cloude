@@ -5,9 +5,23 @@
 //   M. meniul „▶ Prezintă”: exact 3 opțiuni (fără „Prezintă și înregistrează”),
 //      textele RO / EN, dropdown (desktop, tabletă landscape) sau foaie de jos
 //      (tabletă portrait, telefon), tastatura și Escape, în ecran, fără suprapuneri;
-//   (secțiunile următoare se adaugă la punctele 2.2–2.6)
+//   E. ecranul complet: intră / iese (X, Escape), păstrează slide-ul, 16:9
+//      centrat cu bare egale, controalele ascunse după 2,5 s; fără Fullscreen
+//      API → modul simulat; pe telefon pe verticală, „Rotește telefonul”;
+//   P. vederea prezentatorului: superadmin / admin cu drept → fereastra
+//      separată, sincronizată cu publicul în ambele sensuri (și fără
+//      BroadcastChannel, pe postMessage); slide-ul următor corect; „Fără note”;
+//      B = ecran negru; fereastra blocată → un singur ecran; tabletă → același
+//      ecran, pe trei zone; vizitator / admin fără drept / client → dezactivată;
+//      pe telefon / portrait → dezactivată;
+//   R. redarea automată (ceasul simulat): 5 s, pornește după animații, pauză la
+//      navigare / meniu / filă ascunsă / Space, oprire sau reluare la final,
+//      viteza ținută minte, mișcare redusă;
+//   V. responsive: ținte ≥ 44 px, text ≥ 14 px pe telefon, aliniere, zone sigure;
+//   B. back-office: casetele de note din editor, „▶ Prezintă” în previzualizare.
+//   0 erori JS, nimic în afara ecranului, nicio suprapunere (dreptunghiurile elementelor).
 // Lățimi: 1440×900, 1280×800, 1024×768, 768×1024, 390×844, 360×740, 844×390.
-// Rulare: node scripts/test-pitch-deck-prezentare.js   (DOAR=M, CAPTURI=<folder>)
+// Rulare: node scripts/test-pitch-deck-prezentare.js   (DOAR=M|E|P|R|V|B, CAPTURI=<folder>)
 
 const path = require('path');
 const sim = require('./supabase-simulat');
@@ -135,6 +149,20 @@ async function geometrie(pg, selector) {
   }, selector);
 }
 
+// Româna în modul EN (ca scripts/detector-ro.js): diacritice sau cuvinte frecvente, în text, aria-label și title.
+async function romana(pg, sel) {
+  return pg.evaluate((s) => {
+    const RE = /[ăâîșşțţĂÂÎȘŞȚŢ]|(și|sau|pentru|slide-ul|următor|anterior|închide|pornește|viteza|ecran|notele|redare|vedere|prezintă)/i;
+    const rau = [];
+    // Numele limbilor din selector („Română”) sunt excepția obișnuită a detectorului.
+    document.querySelectorAll(s).forEach((r) => [r, ...r.querySelectorAll('*')].filter((e) => e.tagName !== 'OPTION').forEach((e) => {
+      const t = [...e.childNodes].filter((n) => n.nodeType === 3).map((n) => n.data).join(' ');
+      [t, e.getAttribute('aria-label'), e.getAttribute('title')].forEach((x) => { if (x && RE.test(x)) rau.push(x.trim().slice(0, 50)); });
+    }));
+    return [...new Set(rau)].slice(0, 5).join(' | ');
+  }, sel);
+}
+
 const ASTEPTAT = {
   ro: { buton: '▶Prezintă', opt: [['Ecran complet', 'Prezintă pe tot ecranul'], ['Vedere prezentator', 'Vezi notele și slide-urile următoare'], ['Redare automată', 'Setează viteza de derulare automată']] },
   en: { buton: '▶Present', opt: [['Full screen', 'Present in full screen'], ['Presenter view', 'View notes and upcoming slides'], ['Autoplay', 'Set speed to automatically play']] },
@@ -189,6 +217,7 @@ async function testMeniu(browser, baza) {
       const g = await geometrie(pg, '.pdp-meniu, .pdp-opt');
       verifica(!g, `${et}: meniul complet în ecran, fără suprapuneri (${g})`);
       await captura(pg, `meniu-${lang}-${w}x${h}`);
+      if (lang === 'en') { const ro = await romana(pg, '.pdp-meniu, #pd-prezinta, .pdp-fs'); verifica(!ro, `${et}: 0 texte românești în EN (${ro})`); }
 
       // Tastatura: ↓ / ↑ între opțiuni, Escape închide și întoarce focusul pe buton.
       await pg.keyboard.press('ArrowDown');
@@ -362,6 +391,10 @@ async function testPrezentator(browser, baza) {
       verifica(v.latDeck / v.W > 0.5, `${et}: slide-ul curent ~60 % din lățime (${Math.round(v.latDeck / v.W * 100)} %)`);
       const s = zoneSuprapuse(z); verifica(!s && v.scrollW <= v.W, `${et}: zonele nu se suprapun, fără derulare laterală (${s})`);
       if (lang === 'ro' && w === 1440 && !faraBC) await captura(pop, 'prezentator-1440x900');
+      if (lang === 'en') {
+        const ro = await romana(pop, '.pdp-pv'); verifica(!ro, `${et}: 0 texte românești în vederea prezentatorului EN (${ro})`);
+        verifica((await pop.title()) === 'Presenter view · My Darrin' && (await pop.getAttribute('html', 'lang')) === 'en', `${et}: titlul și lang-ul ferestrei EN`);
+      }
       // Prezentatorul → publicul.
       await pop.keyboard.press('ArrowRight');
       await pop.waitForTimeout(300);
@@ -544,6 +577,7 @@ async function testAuto(browser, baza) {
       const g = await geometrie(pg, '.pdp-meniu, .pdp-opt, .pdp-panou [data-viteza], .pdp-bifa, .pdp-porneste');
       verifica(!g, `${et}: panoul complet în ecran, fără suprapuneri (${g})`);
       if (lang === 'ro' && [1440, 390].includes(w)) await captura(pg, `auto-panou-${w}x${h}`);
+      if (lang === 'en') { const ro = await romana(pg, '.pdp-meniu'); verifica(!ro, `${et}: 0 texte românești în panoul EN (${ro})`); }
       if (TELEFON(w, h) || w < 1024 || h > w) {
         const mici = await pg.evaluate(() => [...document.querySelectorAll('.pdp-panou [data-viteza], .pdp-panou .pdp-bifa, .pdp-panou [data-porneste]')].filter((b) => b.getBoundingClientRect().height < 40).length);
         verifica(!mici, `${et}: ținte de atingere în panou (${mici} prea mici)`);
@@ -680,11 +714,109 @@ async function testResponsive(browser, baza) {
       const g2 = await geometrie(pg, '#pd-nav > :not([hidden]), #pd-nav .pdp-auto > *');
       verifica(!g1 && !g2, `${et}: nimic suprapus sau în afara ecranului (${g1} ${g2})`);
       if (lang === 'ro' && [390, 360, 768].includes(w)) await captura(pg, `bara-${w}x${h}`);
+      if (lang === 'en') { const ro = await romana(pg, '.pd-top, #pd-nav, .pdp-fs'); verifica(!ro, `${et}: 0 texte românești în bare (EN) (${ro})`); }
       verifica(!pg.erori.length, `${et}: 0 erori JS (${pg.erori.join(' | ')})`);
       await ctx.close();
     }
     console.log(`V ${lang}: gata`);
   }
+}
+
+// ═══ B. Back-office: notele în editor, „▶ Prezintă” în previzualizare ═══
+const API_ADMIN = {
+  '/api/admin/runde-finantare': require(path.join(RADACINA, 'api/admin/runde-finantare.js')),
+  '/api/admin/investitori-dashboard': require(path.join(RADACINA, 'api/admin/investitori-dashboard.js')),
+  '/api/admin/investitori-kyc': require(path.join(RADACINA, 'api/admin/investitori-kyc.js')),
+  '/api/admin/investitori-aprobare': require(path.join(RADACINA, 'api/admin/investitori-aprobare.js')),
+  '/api/admin/pitch-deck': apiAdmin,
+};
+function sesiuneAdmin(user) {
+  const lant = (rez) => { const p = new Proxy(function () {}, { get: (t, k) => (k === 'then' ? (ok) => ok(rez) : () => p), apply: () => p }); return p; };
+  const ses = { access_token: 'tok-' + user.id, user };
+  const client = {
+    auth: { getUser: async () => ({ data: { user }, error: null }), getSession: async () => ({ data: { session: ses }, error: null }), onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }), signOut: async () => ({ error: null }) },
+    from: () => lant({ data: [], error: null, count: 0 }), rpc: () => lant({ data: null, error: null }), storage: { from: () => lant({ data: null, error: null }) }, channel: () => lant({}), removeChannel: () => {},
+  };
+  const auth = new Proxy({ getCurrentUser: async () => user, getUserRoles: async () => user.roles, hasRole: async () => true, enforceSuperadminBarrier: async () => true, performLogout: () => {} }, { get: (t, k) => (k in t ? t[k] : async () => null) });
+  const fix = (n, v) => Object.defineProperty(window, n, { configurable: true, get: () => v, set: () => {} });
+  fix('supabaseClient', client); fix('MyDarrinAuth', auth);
+}
+async function testBackoffice(browser, baza) {
+  for (const [w, h] of [[1440, 900], [1024, 768]]) {
+    const et = `B ${w}×${h}`;
+    reset();
+    DB.tabele.pitch_deck_versiuni.push({ ...versiuneAprobata(RO, 'v-ciorna', NOTE_TEST.ro), titlu: 'Ciornă DE TEST', aprobat: false, aprobat_la: null });
+    // 1024×768 = tabletă (ecran tactil) → vederea pe același ecran.
+    const ctx = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: w < 1440 });
+    await ctx.addInitScript(sesiuneAdmin, { id: 'sup', email: 'super@example.com', roles: ['superadmin'] });
+    await ctx.route(/\.supabase\.co\//, (r) => r.abort());
+    await ctx.route(/\/api\//, async (r) => {
+      const req = r.request(), url = new URL(req.url()), api = API_ADMIN[url.pathname];
+      if (!api) return r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
+      let corp = null; try { corp = JSON.parse(req.postData() || 'null'); } catch (e) { corp = null; }
+      const res = raspuns();
+      await api(cerere({ metoda: req.method(), token: (req.headers().authorization || '').replace('Bearer ', ''), body: corp, query: Object.fromEntries(url.searchParams) }), res);
+      return r.fulfill({ status: res.statusCode, contentType: 'application/json', body: JSON.stringify(res.corp || {}) });
+    });
+    const pg = await ctx.newPage();
+    pg.erori = [];
+    pg.on('pageerror', (e) => pg.erori.push(e.message.slice(0, 200)));
+    await pg.goto(baza + '/mydarrin-superadmin.html', { waitUntil: 'networkidle' });
+    await pg.waitForTimeout(400);
+    await pg.evaluate(() => window.showPanel('investitori'));
+    await pg.evaluate(() => window.deschideEditorPitchDeck('v-ciorna'));
+    await pg.waitForSelector('#pd-ed-slideuri details', { timeout: 8000 }).catch(() => {});
+    // O casetă de note sub fiecare slide, cu valoarea salvată.
+    const ed = await pg.evaluate(() => {
+      const t = [...document.querySelectorAll('textarea[data-cale$=".note_prezentator"]')];
+      return { n: t.length, n2: t[1] && t[1].value, max: t[0] && t[0].maxLength, sub: t.every((x) => x.closest('details') && !x.closest('[style*="grid-template-columns"]')) };
+    });
+    verifica(ed.n === 20 && ed.n2 === NOTE_TEST.ro[2] && ed.max === 2000 && ed.sub, `${et}: editorul — câte o casetă de note sub fiecare slide (${JSON.stringify(ed)})`);
+    await pg.evaluate(() => { document.querySelector('[data-pd-slide="2"]').open = true; });
+    await pg.fill('textarea[data-cale="slide_uri.2.note_prezentator"]', 'Notă nouă DE TEST pentru slide-ul 3');
+    await pg.click('#pd-ed-salveaza');
+    await pg.waitForTimeout(500);
+    const salvat = DB.tabele.pitch_deck_versiuni.find((v) => v.id === 'v-ciorna').slide_uri[2].note_prezentator;
+    verifica(salvat === 'Notă nouă DE TEST pentru slide-ul 3', `${et}: nota se salvează în ciornă („${salvat}”)`);
+    // Previzualizarea: „▶ Prezintă” cu cele trei moduri; prezentatorul primește notele.
+    await pg.click('#pd-ed-previzualizeaza');
+    await pg.waitForSelector('#pd-prev .mdpd-slide.mdpd-activ', { timeout: 8000 }).catch(() => {});
+    await pg.click('#pd-prev-prezinta');
+    const m = await pg.evaluate(() => [...document.querySelectorAll('.pdp-meniu [role="menuitem"]')].map((o) => [o.querySelector('.pdp-titlu').textContent, o.getAttribute('aria-disabled')]));
+    verifica(JSON.stringify(m) === JSON.stringify([['Ecran complet', null], ['Vedere prezentator', null], ['Redare automată', null]]), `${et}: meniul din previzualizare (${JSON.stringify(m)})`);
+    await pg.keyboard.press('ArrowRight');
+    await pg.keyboard.press('ArrowRight');
+    await pg.keyboard.press('Escape');
+    verifica(await pg.$('#pd-prev') && (await pg.evaluate(() => document.querySelector('#pd-prev .mdpd-activ').dataset.nr)) === '1', `${et}: Escape închide meniul, nu previzualizarea; săgețile nu mută slide-ul din spate`);
+    await pg.click('#pd-prev-inainte'); await pg.click('#pd-prev-inainte');
+    await pg.click('#pd-prev-prezinta');
+    let note;
+    if (w >= 1440) {
+      const [pop] = await Promise.all([ctx.waitForEvent('page', { timeout: 8000 }), pg.click('.pdp-meniu [data-mod="prezentator"]')]);
+      await pop.waitForSelector('.pdp-pv', { timeout: 8000 }).catch(() => {});
+      note = await stareVedere(pop);
+      verifica(note && note.curent === 3 && note.note === 'Notă nouă DE TEST pentru slide-ul 3', `${et}: fereastra prezentatorului — slide 3, cu nota din editor (${note && note.note})`);
+      await pop.keyboard.press('ArrowRight'); await pop.waitForTimeout(250);
+      verifica((await pg.textContent('#pd-prev-contor')) === '4 / 20', `${et}: prezentatorul mută previzualizarea (${await pg.textContent('#pd-prev-contor')})`);
+      await pop.keyboard.press('Escape').catch(() => {});
+      await pg.waitForTimeout(200);
+      const iesi = await pg.$('[data-fs="iesire"]');
+      if (iesi && await iesi.isVisible()) await iesi.click();
+    } else {
+      await pg.click('.pdp-meniu [data-mod="prezentator"]');
+      await pg.waitForTimeout(300);
+      note = await stareVedere(pg);
+      verifica(note && note.curent === 3 && note.note === 'Notă nouă DE TEST pentru slide-ul 3', `${et}: vederea pe un singur ecran — slide 3, cu nota (${note && note.note})`);
+      await pg.keyboard.press('Escape');
+    }
+    await pg.click('#pd-prev-inchide');
+    await pg.waitForTimeout(150);
+    const ramase = await pg.evaluate(() => document.querySelectorAll('.pdp-meniu, .pdp-fundal, .pdp-pv-ecran').length);
+    verifica(!(await pg.$('#pd-prev')) && ramase === 0, `${et}: închiderea previzualizării scoate meniul (${ramase} rămase)`);
+    verifica(!pg.erori.length, `${et}: 0 erori JS (${pg.erori.join(' | ')})`);
+    await ctx.close();
+  }
+  console.log('B: gata');
 }
 
 (async () => {
@@ -697,6 +829,7 @@ async function testResponsive(browser, baza) {
     if (!process.env.DOAR || process.env.DOAR === 'P') await testPrezentator(browser, baza);
     if (!process.env.DOAR || process.env.DOAR === 'R') await testAuto(browser, baza);
     if (!process.env.DOAR || process.env.DOAR === 'V') await testResponsive(browser, baza);
+    if (!process.env.DOAR || process.env.DOAR === 'B') await testBackoffice(browser, baza);
   } finally {
     await browser.close();
     srv.close();
