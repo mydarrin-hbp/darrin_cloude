@@ -4,8 +4,10 @@
 //
 // Acces: superadmin, sau admin cu rând în admin_permissions pe secțiunea
 // `investitori` (documentele de identitate sunt date sensibile). Fail-closed.
+// Decizia (POST) cere și poate_scrie = true (pasul 11-N2); lista și
+// documentele rămân la citire.
 //
-// GET                 → { ok, cereri: [...], subscrieri: [...] }
+// GET                 → { ok, cereri: [...], subscrieri: [...], poate_scrie }
 //                       cererile trimise (în verificare / aprobate / respinse) și
 //                       subscrierile, fiecare cu starea KYC a contului;
 // GET ?document=<cale> → { ok, url }  adresă semnată de 2 minute (auditată);
@@ -22,13 +24,10 @@ const { inregistreazaAudit } = require('../../lib/audit-log');
 const { renderEmailKycDecizie, limbaProfilEmailComportamental } = require('../../lib/i18n');
 const { incarcaContactPlatformaSigur } = require('../../lib/contact-platforma');
 const K = require('../../lib/investitori-kyc');
-const { arePermisiuneInvestitori } = require('../../lib/permisiuni-investitori');
+const { nivelInvestitori, refuzaFaraDrept, refuzaFaraScriere } = require('../../lib/permisiuni-investitori');
 
 const STARI_TRIMISE = ['in_verificare', 'aprobat', 'respins'];
 const DURATA_URL_SECUNDE = 120;
-
-// Dreptul pe secțiunea Investitori: lib/permisiuni-investitori.js (comun cu rundele).
-const arePermisiune = arePermisiuneInvestitori;
 
 async function emailuriProfile(ids) {
   if (!ids.length) return {};
@@ -63,7 +62,7 @@ function cerere(kyc, profil) {
   };
 }
 
-async function lista(res) {
+async function lista(res, poateScrie) {
   const { data: kycuri, error } = await supabaseAdmin.from('investitori_kyc').select('*').in('status', STARI_TRIMISE);
   if (error) throw error;
   const { data: subs, error: subErr } = await supabaseAdmin
@@ -85,7 +84,7 @@ async function lista(res) {
     status: s.status || null, creat_la: s.created_at || null,
     kyc_status: s.user_id ? (stareKyc[s.user_id] || null) : null,
   }));
-  return res.status(200).json({ ok: true, cereri, subscrieri });
+  return res.status(200).json({ ok: true, cereri, subscrieri, poate_scrie: poateScrie });
 }
 
 async function document(req, res, user, cale) {
@@ -162,12 +161,17 @@ async function decizie(req, res, user) {
 async function handler(req, res, user) {
   res.setHeader('Cache-Control', 'private, no-store');
   try {
-    if (!(await arePermisiune(user))) return res.status(403).json({ error: 'Nu ai drept pe secțiunea Investitori.' });
+    // Dreptul pe secțiunea Investitori: lib/permisiuni-investitori.js (comun cu rundele).
+    const nivel = await nivelInvestitori(user);
+    if (!nivel) return refuzaFaraDrept(res);
     if (req.method === 'GET') {
       const cale = req.query && req.query.document;
-      return cale ? document(req, res, user, String(cale)) : lista(res);
+      return cale ? document(req, res, user, String(cale)) : lista(res, nivel === 'scriere');
     }
-    if (req.method === 'POST') return decizie(req, res, user);
+    if (req.method === 'POST') {
+      if (nivel !== 'scriere') return refuzaFaraScriere(res);
+      return decizie(req, res, user);
+    }
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (err) {
     console.error('[admin/investitori-kyc]', err);

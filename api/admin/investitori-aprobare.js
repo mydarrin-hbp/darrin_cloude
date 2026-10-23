@@ -11,16 +11,24 @@
 // investor (api/investitori/subscrie.js, cu user_id). Aprobarea cere un cont
 // legat și verificarea identității aprobată (investitori_kyc.status =
 // 'aprobat'); altfel 409, cu motivul. Respingerea rămâne posibilă oricând.
+//
+// Pasul 11-N2 (22 oct. 2026): acces doar cu drept de scriere pe secțiunea
+// Investitori (lib/permisiuni-investitori.js): superadmin, sau admin cu rând
+// pe `investitori` și poate_scrie = true. Înainte, orice admin putea aproba.
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { formaComuna } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
+const { nivelInvestitori, refuzaFaraDrept, refuzaFaraScriere } = require('../../lib/permisiuni-investitori');
 
 const STATUS_VALID = { aproba: 'aprobat', respinge: 'respins' };
 
 async function handler(req, res, user) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const nivel = await nivelInvestitori(user);
+  if (!nivel) return refuzaFaraDrept(res);
+  if (nivel !== 'scriere') return refuzaFaraScriere(res);
 
   const { id, actiune } = req.body || {};
   if (!id) return res.status(400).json({ error: 'id obligatoriu.' });
