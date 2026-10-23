@@ -265,3 +265,177 @@
   .mdpd-t-rezumat .mdpd-col{max-width:none}
   .mdpd-grafic text{font-size:16px}
 }
+
+/* ════════════════════════════════════════════════════════════════
+   Modurile de prezentare (pasul 11-K3, 23 oct. 2026) — pitch-deck-prezentare.js
+   ════════════════════════════════════════════════════════════════ */
+/* Meniul „▶ Prezintă”: dropdown (≥ 768 px, orizontal) sau foaie de jos */
+.pdp-fundal{position:fixed;inset:0;z-index:2990;background:transparent}
+.pdp-fundal.pdp-foaie{background:rgba(6,10,20,.55);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.pdp-meniu{position:fixed;z-index:3000;box-sizing:border-box;background:#1E2B47;color:#fff;border:1px solid rgba(255,255,255,.14);border-radius:14px;box-shadow:0 14px 36px rgba(0,0,0,.38),0 2px 6px rgba(0,0,0,.2);padding:6px;overflow-y:auto;overscroll-behavior:contain;font-family:'Helvetica World','Helvetica Neue',Arial,system-ui,sans-serif;outline:none}
+.pdp-meniu *{box-sizing:border-box}
+.pdp-maner{display:none}
+.pdp-meniu.pdp-foaie{left:0;right:0;bottom:0;top:auto;width:auto;max-height:85vh;max-height:85dvh;border-radius:18px 18px 0 0;border-bottom:0;padding:8px max(12px,env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+.pdp-meniu.pdp-foaie .pdp-maner{display:block;width:40px;height:5px;border-radius:5px;background:rgba(255,255,255,.3);margin:2px auto 10px}
+.pdp-opt{display:flex;align-items:flex-start;gap:12px;width:100%;min-height:48px;padding:10px 12px;border:0;border-radius:10px;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.pdp-opt:hover,.pdp-opt:focus-visible{background:rgba(255,255,255,.08);outline:none}
+.pdp-opt:focus-visible{box-shadow:inset 0 0 0 2px #F08120}
+.pdp-opt[aria-disabled="true"]{cursor:default}
+.pdp-opt[aria-disabled="true"] .pdp-ico,.pdp-opt[aria-disabled="true"] .pdp-titlu,.pdp-opt[aria-disabled="true"] .pdp-desc{opacity:.45}
+.pdp-opt[aria-expanded="true"]{background:rgba(11,163,154,.14)}
+.pdp-ico{flex:0 0 24px;width:24px;height:24px;margin-top:1px;color:#3FC1B8}
+.pdp-ico svg{display:block;width:24px;height:24px}
+.pdp-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.pdp-titlu{font-size:15px;font-weight:700;line-height:1.3}
+.pdp-desc{font-size:13.5px;line-height:1.4;color:rgba(255,255,255,.7)}
+.pdp-motiv{font-size:12.5px;line-height:1.35;color:#FDBA74;font-weight:600}
+.pdp-meniu.pdp-foaie .pdp-opt{min-height:56px;padding:12px}
+.pdp-meniu.pdp-foaie .pdp-desc{font-size:15px}
+.pdp-meniu.pdp-foaie .pdp-titlu{font-size:16px}
+.pdp-meniu.pdp-foaie .pdp-motiv{font-size:14px}
+
+/* Ecran complet (real sau simulat): slide-ul 16:9 centrat, bare negre egale */
+.pdp-cadru{position:relative;width:100%}
+.pdp-fs{display:none}
+.pdp-ecran{width:100vw!important;max-width:none!important;height:100vh;height:100dvh;margin:0!important;background:#000;display:flex!important;align-items:center;justify-content:center;overflow:hidden;box-sizing:border-box}
+.pdp-ecran .pdp-cadru{width:min(100vw,calc(100vh * 16 / 9));width:min(100vw,calc(100dvh * 16 / 9))}
+.pdp-ecran .mdpd-stage{border-radius:0}
+.pdp-simulat{position:fixed!important;inset:0;z-index:2500}
+html.pdp-simulat-activ,html.pdp-simulat-activ body{overflow:hidden!important}
+.pdp-fara-cursor,.pdp-fara-cursor *{cursor:none!important}
+.pdp-ecran .pdp-fs{display:block}
+.pdp-fs-sus,.pdp-fs-jos,.pdp-roteste{position:fixed;z-index:2600;display:flex;align-items:center;gap:8px;transition:opacity .3s ease}
+.pdp-fs-sus{top:max(12px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right))}
+.pdp-fs-jos{left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom));padding:6px;border-radius:14px;background:rgba(10,16,30,.72);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12)}
+.pdp-fs-sus .pdp-fs-btn{background:rgba(10,16,30,.72);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.pdp-fs.pdp-ascuns .pdp-fs-sus,.pdp-fs.pdp-ascuns .pdp-fs-jos{opacity:0;pointer-events:none}
+.pdp-fs-btn{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:11px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;font:700 18px/1 'Helvetica Neue',Arial,system-ui,sans-serif;cursor:pointer;padding:0}
+.pdp-fs-btn svg{width:22px;height:22px;display:block}
+.pdp-fs-btn:hover{background:rgba(255,255,255,.16)}
+.pdp-fs-btn:disabled{opacity:.35;cursor:default}
+.pdp-fs-btn:focus-visible{outline:2px solid #F08120;outline-offset:2px}
+.pdp-fs-contor{min-width:64px;text-align:center;color:#fff;font:700 14px/1 'Helvetica Neue',Arial,system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.pdp-fs-extra:empty{display:none}
+.pdp-fs-extra{display:inline-flex;align-items:center;gap:8px}
+.pdp-roteste{top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));right:calc(max(12px,env(safe-area-inset-right)) + 54px);padding:6px 6px 6px 14px;border-radius:12px;background:rgba(10,16,30,.86);border:1px solid rgba(255,255,255,.14);color:#fff;font:600 14px/1.35 'Helvetica Neue',Arial,system-ui,sans-serif}
+.pdp-roteste[hidden]{display:none}
+.pdp-roteste-t{flex:1;min-width:0}
+/* Telefon pe verticală: aspectul vertical al deck-ului, derulat în ecran complet */
+@media (max-width:720px){
+  .pdp-ecran{align-items:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .pdp-ecran .pdp-cadru{width:100%}
+  .pdp-ecran .mdpd-slide{min-height:100vh;min-height:100dvh;padding-top:calc(66px + env(safe-area-inset-top));padding-bottom:calc(86px + env(safe-area-inset-bottom))}
+}
+
+/* Ecranul negru (tasta B din vederea prezentatorului), peste slide-ul publicului */
+.pdp-negru{position:absolute;inset:0;z-index:5;background:#000}
+.pdp-ecran .pdp-negru{position:fixed}
+
+/* Un slide static (următorul, miniaturile): fără animații, cifrele finale */
+.mdpd-static .mdpd-a,.mdpd-static .mdpd-palnie div{opacity:1!important;transform:none!important}
+.mdpd-static *,.mdpd-static *::before,.mdpd-static *::after{animation:none!important;transition:none!important}
+.mdpd-static .mdpd-linie{--progres:1}
+.mdpd-static .mdpd-stage{border-radius:8px}
+
+/* Vederea prezentatorului: desktop pe două coloane (curent | următor + note) */
+.pdp-pv-ecran{position:fixed;inset:0;z-index:2800;background:#0B1222;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+html.pdp-pv-deschis,html.pdp-pv-deschis body{overflow:hidden}
+.pdp-pv{box-sizing:border-box;height:100%;display:grid;gap:12px;padding:12px 16px 14px;color:#fff;font-family:'Helvetica World','Helvetica Neue',Arial,system-ui,sans-serif;
+  grid-template-columns:minmax(0,3fr) minmax(0,2fr);grid-template-rows:auto minmax(0,1fr) auto;grid-template-areas:"cap cap" "cur dr" "nav dr"}
+.pdp-pv.pdp-pv-cu-mini{grid-template-rows:auto minmax(0,1fr) auto auto;grid-template-areas:"cap cap" "cur dr" "nav dr" "mini mini"}
+.pdp-pv *{box-sizing:border-box}
+.pdp-pv-cap{grid-area:cap;display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;min-width:0}
+.pdp-pv-titlu{font-size:15px;font-weight:800;white-space:nowrap}
+.pdp-pv-spatiu{flex:1}
+.pdp-pv-grup{display:inline-flex;align-items:center;gap:6px}
+.pdp-pv-timp{font:800 22px/1 'Helvetica Neue',Arial,system-ui,sans-serif;font-variant-numeric:tabular-nums;color:#F08120;min-width:72px}
+.pdp-pv-ora,.pdp-pv-contor{font-size:15px;font-weight:700;color:rgba(255,255,255,.82);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pdp-pv-contor{padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.08)}
+.pdp-pv-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 14px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:#fff;font:700 14px/1.2 'Helvetica Neue',Arial,system-ui,sans-serif;cursor:pointer;white-space:nowrap}
+.pdp-pv-btn:hover{background:rgba(255,255,255,.14)}
+.pdp-pv-btn:disabled{opacity:.35;cursor:default}
+.pdp-pv-btn:focus-visible{outline:2px solid #F08120;outline-offset:2px}
+.pdp-pv-btn[hidden]{display:none}
+.pdp-pv-ico{min-width:40px;padding:0 10px}
+.pdp-pv-primar,.pdp-pv-inchide{background:#0BA39A;border-color:#0BA39A}
+.pdp-pv-primar:hover,.pdp-pv-inchide:hover{background:#0A8F87}
+.pdp-pv-negru-btn[aria-pressed="true"]{background:#F08120;border-color:#F08120}
+.pdp-pv-patrat{display:inline-block;width:12px;height:12px;border-radius:2px;background:#000;border:1px solid rgba(255,255,255,.6)}
+.pdp-pv-btn kbd{font:700 11px/1 'Helvetica Neue',Arial,sans-serif;padding:3px 5px;border-radius:4px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.25)}
+.pdp-pv-curent{grid-area:cur;position:relative;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;container-type:size}
+.pdp-pv-deck{width:min(100%,calc(100cqh * 16 / 9))}
+.pdp-pv-negru{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.84);border-radius:12px;font-size:15px;font-weight:700;color:rgba(255,255,255,.85);text-align:center;padding:16px}
+.pdp-pv-dr{grid-area:dr;display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0}
+.pdp-pv-urm{flex:0 0 auto;min-width:0}
+.pdp-pv-urm-deck{width:100%}
+.pdp-pv-final{display:flex;align-items:center;justify-content:center;aspect-ratio:16/9;border-radius:8px;border:1px dashed rgba(255,255,255,.25);color:rgba(255,255,255,.7);font-size:14px;font-weight:700}
+.pdp-pv-et{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#3FC1B8;margin-bottom:8px;min-height:40px}
+.pdp-pv-note{flex:1 1 auto;min-height:140px;display:flex;flex-direction:column;min-width:0;padding:8px 12px 12px;border-radius:12px;background:#131D33;border:1px solid rgba(255,255,255,.1)}
+.pdp-pv-note .pdp-pv-et{margin-bottom:4px}
+.pdp-pv-note-text{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5;color:#fff;padding-right:4px}
+.pdp-pv-note-text:focus-visible{outline:2px solid #F08120;outline-offset:2px;border-radius:4px}
+.pdp-pv-note-text.pdp-pv-gol{color:rgba(255,255,255,.55);font-style:italic}
+.pdp-pv-nav{grid-area:nav;display:flex;justify-content:center;gap:12px}
+.pdp-pv-nav .pdp-pv-btn{min-width:160px;min-height:44px}
+.pdp-pv-mini{grid-area:mini;display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:thin}
+.pdp-pv-mini>div{flex:0 0 auto}
+.pdp-pv-mini-btn{position:relative;display:block;width:128px;padding:0;border:2px solid transparent;border-radius:10px;background:none;cursor:pointer}
+.pdp-pv-mini-btn[aria-current="true"]{border-color:#F08120}
+.pdp-pv-mini-btn:focus-visible{outline:2px solid #F08120;outline-offset:2px}
+.pdp-pv-mini-slide{display:block;pointer-events:none}
+.pdp-pv-mini-nr{position:absolute;left:4px;bottom:4px;min-width:20px;padding:2px 5px;border-radius:5px;background:rgba(0,0,0,.65);color:#fff;font:700 11px/1.2 'Helvetica Neue',Arial,sans-serif}
+.pdp-pv-mesaj{margin:0;padding:40px 24px;text-align:center;font-size:16px;line-height:1.6;color:rgba(255,255,255,.8)}
+/* Tabletă landscape (ecran tactil sau fereastră sub 1024 px; clasa o pune
+   pitch-deck-prezentare.js): curent sus-stânga, următor sus-dreapta, note jos */
+.pdp-pv.pdp-pv-tableta{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1.3fr) minmax(0,1fr) auto;grid-template-areas:"cap cap" "cur urm" "note note" "nav nav";gap:10px;padding:10px 12px 12px}
+.pdp-pv-tableta .pdp-pv-dr{display:contents}
+.pdp-pv-tableta .pdp-pv-urm{grid-area:urm;align-self:center}
+.pdp-pv-tableta .pdp-pv-note{grid-area:note;min-height:0}
+.pdp-pv-tableta .pdp-pv-mini{display:none}
+.pdp-pv-tableta .pdp-pv-btn{min-height:44px}
+.pdp-pv-tableta .pdp-pv-ico{min-width:44px}
+.pdp-pv-tableta .pdp-pv-titlu{display:none}
+
+/* Fereastra de mesaj (ex. fereastra prezentatorului blocată) */
+.pdp-dialog-fundal{position:fixed;inset:0;z-index:3100;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(6,10,20,.6)}
+.pdp-dialog{width:min(100%,460px);background:#1E2B47;color:#fff;border:1px solid rgba(255,255,255,.14);border-radius:14px;box-shadow:0 14px 36px rgba(0,0,0,.4);padding:20px;font-family:'Helvetica World','Helvetica Neue',Arial,system-ui,sans-serif}
+.pdp-dialog h2{margin:0 0 8px;font-size:17px;line-height:1.3}
+.pdp-dialog p{margin:0 0 16px;font-size:14.5px;line-height:1.55;color:rgba(255,255,255,.78)}
+.pdp-dialog-btn{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+
+/* Redarea automată: panoul din meniu, controalele, bara de progres pe slide */
+.pdp-panou{padding:4px 12px 12px 48px}
+.pdp-meniu.pdp-foaie .pdp-panou{padding:4px 12px 12px}
+.pdp-panou-et{font-size:13px;font-weight:700;color:rgba(255,255,255,.75);margin:2px 0 8px}
+.pdp-viteze{display:flex;flex-wrap:nowrap;gap:6px;margin-bottom:12px}
+.pdp-viteza{flex:1 1 0;min-width:0;min-height:40px;padding:0 6px;border-radius:9px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.05);color:#fff;font:700 14px/1 'Helvetica Neue',Arial,system-ui,sans-serif;cursor:pointer;font-variant-numeric:tabular-nums}
+.pdp-viteza[aria-checked="true"]{background:#0BA39A;border-color:#0BA39A}
+.pdp-viteza:focus-visible,.pdp-porneste:focus-visible,.pdp-bifa input:focus-visible{outline:2px solid #F08120;outline-offset:2px}
+.pdp-bifa{display:flex;align-items:center;gap:10px;min-height:44px;font-size:14px;line-height:1.35;color:#fff;cursor:pointer;margin-bottom:10px}
+.pdp-bifa input{width:20px;height:20px;margin:0;flex:0 0 auto;accent-color:#0BA39A}
+.pdp-porneste{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:44px;border:0;border-radius:10px;background:#F08120;color:#fff;font:800 15px/1 'Helvetica Neue',Arial,system-ui,sans-serif;cursor:pointer}
+.pdp-porneste span{font-size:11px}
+.pdp-porneste:hover{background:#E0730F}
+.pdp-meniu.pdp-foaie .pdp-viteza{min-height:48px;font-size:15px}
+.pdp-meniu.pdp-foaie .pdp-bifa{font-size:15px;min-height:48px}
+.pdp-meniu.pdp-foaie .pdp-porneste{min-height:48px;font-size:16px}
+.pdp-auto{display:inline-flex;align-items:center;gap:6px}
+.pdp-auto[hidden]{display:none}
+.pdp-auto-bara{padding-left:12px;margin-left:2px;border-left:1px solid rgba(255,255,255,.14)}
+.pdp-auto-btn{display:inline-flex;align-items:center;justify-content:center;height:34px;min-width:34px;padding:0 8px;border-radius:9px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;font:700 13px/1 'Helvetica Neue',Arial,system-ui,sans-serif;cursor:pointer}
+.pdp-auto-btn svg{width:16px;height:16px}
+.pdp-auto-btn:hover{background:rgba(255,255,255,.16)}
+.pdp-auto-btn:focus-visible{outline:2px solid #F08120;outline-offset:2px}
+.pdp-auto-viteza{font:700 13px/1 'Helvetica Neue',Arial,system-ui,sans-serif;color:rgba(255,255,255,.85);font-variant-numeric:tabular-nums;min-width:32px;text-align:center}
+.pdp-auto-fs{padding-left:8px;border-left:1px solid rgba(255,255,255,.14)}
+.pdp-auto-fs .pdp-fs-btn svg{width:18px;height:18px}
+@media (max-width:1023px),(max-height:500px){
+  .pdp-auto-btn{height:44px;min-width:44px}
+  .pdp-auto-viteza,.pdp-auto-btn{font-size:14px}
+}
+@media (max-width:560px){ .pdp-auto-bara{padding-left:8px} }
+.pdp-progres{position:absolute;left:0;right:0;top:0;height:4px;z-index:4;background:rgba(255,255,255,.14);overflow:hidden;pointer-events:none}
+.pdp-progres[hidden]{display:none}
+.pdp-progres>div{height:100%;transform-origin:left center;transform:scaleX(0);background:linear-gradient(90deg,#0BA39A,#F08120)}
+@keyframes pdp-umple{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.pdp-meniu.pdp-scurt .pdp-opt:not([data-mod="auto"]){display:none}

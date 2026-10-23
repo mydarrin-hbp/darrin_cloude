@@ -466,6 +466,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 <link rel="stylesheet" href="/pitch-deck.css">
 <script src="/pitch-deck-schema.js"></script>
 <script src="/pitch-deck-render.js"></script>
+<script src="/pitch-deck-prezentare.js"></script>
 <div id="auth-gate-overlay" style="position:fixed;inset:0;background:#0F1923;z-index:99999;display:flex;align-items:center;justify-content:center;color:#8BA3C0;font-family:sans-serif;font-size:14px">
   Se verifică accesul...
 </div>
@@ -5000,8 +5001,20 @@ function pdSlideHtml(s, i) {
       ${note ? `<span class="chip" style="font-size:9.5px;margin-left:4px;background:#7A4A00;color:#FFE1C2">${note} ${note === 1 ? 'notă' : 'note'}</span>` : ''}
       ${faraSursa ? '<span class="chip" style="font-size:9.5px;margin-left:4px;background:#7A2020;color:#FECACA">fără sursă</span>' : ''}</summary>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;padding:4px 12px 12px">
-      ${Object.keys(campuri).filter((k) => k !== 'sursa' || s.prognoza === true).map((k) => pdCampHtml(campuri[k], s[k], `slide_uri.${i}.${k}`, s)).join('')}
-    </div></details>`;
+      ${Object.keys(campuri).filter((k) => !campuri[k].intern && (k !== 'sursa' || s.prognoza === true)).map((k) => pdCampHtml(campuri[k], s[k], `slide_uri.${i}.${k}`, s)).join('')}
+    </div>${pdNoteHtml(s, i)}</details>`;
+}
+
+// Pasul 11-K3: notele prezentatorului — o casetă sub fiecare slide, interne
+// (apar doar în vederea prezentatorului; pagina publică nu le primește).
+function pdNoteHtml(s, i) {
+  const v = typeof s.note_prezentator === 'string' ? s.note_prezentator : '';
+  const max = window.MDPitchDeckSchema.COMUNE.note_prezentator.max;
+  return `<div style="padding:0 12px 12px">
+    <label style="display:block;font-size:11px;font-weight:700;color:#5A6B7D" data-pd-note-slide="${i}">🗒 Note de prezentator <span style="font-weight:600;color:#4A6080">— interne: apar doar în vederea prezentatorului, nu pe pagina publică (opțional, cel mult ${max.toLocaleString('ro-RO')} de caractere)</span>
+      <textarea data-cale="slide_uri.${i}.note_prezentator" data-t="text" data-nul data-camp="slide_uri.${i}.note_prezentator" data-eticheta="Note de prezentator" rows="4" maxlength="${max}"
+        oninput="this.nextElementSibling.textContent = this.value.length.toLocaleString('ro-RO') + ' / ${max.toLocaleString('ro-RO')}'" style="${PD_STIL_IN};resize:vertical">${escapeHTML(v)}</textarea><span style="display:block;text-align:right;font-size:10.5px;color:#4A6080;font-weight:600;margin-top:2px">${v.length.toLocaleString('ro-RO')} / ${max.toLocaleString('ro-RO')}</span></label>
+  </div>`;
 }
 
 function renderEditorPitchDeck() {
@@ -5158,20 +5171,29 @@ async function previzualizarePitchDeck(id, local, btn) {
       <button type="button" class="btn-s" id="pd-prev-inapoi" style="font-size:12px" aria-label="Slide-ul anterior">←</button>
       <span id="pd-prev-contor" style="font-size:12px;min-width:56px;text-align:center"></span>
       <button type="button" class="btn-s" id="pd-prev-inainte" style="font-size:12px" aria-label="Slide-ul următor">→</button>
+      <button type="button" class="btn-p" id="pd-prev-prezinta" style="font-size:12px;min-height:34px;white-space:nowrap"><span aria-hidden="true" style="font-size:10px">▶</span> Prezintă</button>
       <button type="button" class="btn-p" id="pd-prev-inchide" style="font-size:12px">Închide</button></div>
-    <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:0 12px 16px"><div id="pd-prev-deck" style="width:min(100%,calc((100vh - 90px) * 16 / 9))"></div></div>`;
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:0 12px 16px"><div id="pd-prev-deck" style="width:min(100%,calc((100vh - 90px) * 16 / 9))"><div class="pdp-cadru"><div id="pd-prev-slideuri"></div></div></div></div>`;
   document.body.appendChild(m);
   const focusInainte = btn || document.activeElement;
-  const deck = window.MDPitchDeck.creeaza(document.getElementById('pd-prev-deck'), {
+  let deck = null;
+  // Pasul 11-K3: „▶ Prezintă” — ecran complet, vedere prezentator (cu notele
+  // primite de la previzualizare; dreptul l-a verificat deja serverul), redare automată.
+  const prez = window.MDPrezentare.ataseaza({
+    buton: document.getElementById('pd-prev-prezinta'), scena: document.getElementById('pd-prev-deck'), bara: m.firstElementChild,
+    deck: () => deck, limba: () => 'ro', limbaDeck: () => payload.limba,
+    acces: () => 'da', prezentator: () => Promise.resolve(payload),
+  });
+  deck = window.MDPitchDeck.creeaza(document.getElementById('pd-prev-slideuri'), {
     payload, limba: payload.limba, prefix: 'prev-',
-    onSchimbare: (i, total) => { document.getElementById('pd-prev-contor').textContent = (i + 1) + ' / ' + total; },
+    onSchimbare: (i, total) => { document.getElementById('pd-prev-contor').textContent = (i + 1) + ' / ' + total; prez.laSchimbare(i, total); },
   });
   const taste = (e) => {
     if (e.key === 'ArrowRight') { e.preventDefault(); deck.urmator(); }
     else if (e.key === 'ArrowLeft') { e.preventDefault(); deck.anterior(); }
     else if (e.key === 'Escape') inchide();
   };
-  function inchide() { document.removeEventListener('keydown', taste); deck.distruge(); m.remove(); if (focusInainte && focusInainte.focus) focusInainte.focus(); }
+  function inchide() { document.removeEventListener('keydown', taste); prez.distruge(); deck.distruge(); m.remove(); if (focusInainte && focusInainte.focus) focusInainte.focus(); }
   document.addEventListener('keydown', taste);
   document.getElementById('pd-prev-inapoi').onclick = () => deck.anterior();
   document.getElementById('pd-prev-inainte').onclick = () => deck.urmator();

@@ -7,7 +7,7 @@
 <link rel="alternate" hreflang="en" href="https://mydarrin.homebestpal.com/mydarrin-pitch-deck?lang=en"/>
 <link rel="alternate" hreflang="ro" href="https://mydarrin.homebestpal.com/mydarrin-pitch-deck?lang=ro"/>
 <link rel="alternate" hreflang="x-default" href="https://mydarrin.homebestpal.com/mydarrin-pitch-deck"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Pitch deck · My Darrin</title>
 <meta name="description" content="Pitch deck-ul My Darrin: prognoza și proiecția platformei, plus cifrele reale, live, din platformă.">
 <meta property="og:type" content="website"/>
@@ -33,7 +33,7 @@
 [hidden]{display:none!important}
 html,body{margin:0;background:#16213A;color:#fff;font-family:'Helvetica World','Helvetica Neue',Arial,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 #pd-app{min-height:100vh;min-height:100svh;display:flex;flex-direction:column}
-.pd-top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:10px 16px;background:rgba(22,33,58,.94);backdrop-filter:blur(8px);border-bottom:1px solid rgba(255,255,255,.08);flex-wrap:wrap}
+.pd-top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:10px max(16px,env(safe-area-inset-right)) 10px max(16px,env(safe-area-inset-left));background:rgba(22,33,58,.94);backdrop-filter:blur(8px);border-bottom:1px solid rgba(255,255,255,.08);flex-wrap:wrap}
 .pd-top a.pd-inapoi{color:rgba(255,255,255,.75);font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap}
 .pd-top a.pd-inapoi:hover{color:#fff}
 .pd-spatiu{flex:1}
@@ -44,9 +44,15 @@ html,body{margin:0;background:#16213A;color:#fff;font-family:'Helvetica World','
 .pd-btn-ico{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:9px;height:34px;min-width:34px;padding:0 10px;cursor:pointer;font:700 12.5px inherit;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;gap:6px}
 .pd-btn-ico:disabled{opacity:.35;cursor:default}
 .pd-btn-ico:focus-visible,.pd-comutator button:focus-visible,.pd-select:focus-visible{outline:2px solid #F08120;outline-offset:2px}
+/* 11-K3: aceeași înălțime pentru toate controalele din bară (34 px; 44 px pe tabletă / telefon) */
+.pd-comutator{height:34px}
+.pd-comutator button{height:100%;padding-top:0;padding-bottom:0}
+.pd-select{height:34px}
+/* Ecranul complet simulat (iPhone, 11-K3): fără barele paginii */
+html.pdp-simulat-activ .pd-top,html.pdp-simulat-activ .pd-nav{display:none}
 main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px 16px}
 #pd-deck{width:min(100%,calc((100svh - 150px) * 16 / 9));max-width:1600px}
-.pd-nav{position:sticky;bottom:0;z-index:20;display:flex;align-items:center;justify-content:center;gap:14px;padding:10px 16px;background:rgba(22,33,58,.94);backdrop-filter:blur(8px);border-top:1px solid rgba(255,255,255,.08)}
+.pd-nav{position:sticky;bottom:0;z-index:20;display:flex;align-items:center;justify-content:center;gap:14px;padding:10px max(16px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));background:rgba(22,33,58,.94);backdrop-filter:blur(8px);border-top:1px solid rgba(255,255,255,.08)}
 .pd-contor{font-size:13px;font-weight:700;color:rgba(255,255,255,.8);font-variant-numeric:tabular-nums;min-width:64px;text-align:center}
 .pd-bara{flex:0 1 320px;height:4px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden}
 .pd-bara div{height:100%;background:linear-gradient(90deg,#0BA39A,#F08120);transition:width .3s ease}
@@ -74,15 +80,39 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 .pd-grafic-l svg{width:100%;height:auto;display:block}
 .pd-grafic-l text{fill:rgba(255,255,255,.7);font-size:12px;font-family:inherit}
 .pd-link{background:none;border:0;color:#7FE3DA;font:700 13px inherit;font-family:inherit;cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:0}
-#pd-deck:fullscreen{width:min(100vw,calc(100vh * 16 / 9));background:#16213A;display:flex;align-items:center}
+/* Butonul „▶ Prezintă” (11-K3): aceeași înălțime ca restul controalelor din bară */
+.pd-prezinta{background:#0BA39A;border-color:#0BA39A;padding:0 14px;white-space:nowrap}
+.pd-prezinta:hover{background:#0A8F87}
+.pd-prezinta[aria-expanded="true"]{background:#0A8F87;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
+.pd-prezinta .pd-play{font-size:10px;line-height:1}
+/* Tabletă și telefon: ținte de atingere de cel puțin 44 × 44 px */
+@media (max-width:1023px),(max-height:500px){
+  .pd-btn-ico,.pd-select{height:44px;min-width:44px;font-size:14px}
+  .pd-comutator{height:44px;border:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
+  .pd-comutator button{font-size:14px;min-height:44px}
+  .pd-top a.pd-inapoi{display:inline-flex;align-items:center;min-height:44px;font-size:14px}
+  .pd-contor{font-size:14px}
+}
 @media (max-width:720px){
   main{padding:0;justify-content:flex-start}
   #pd-deck{width:100%}
-  .pd-top{gap:8px;padding:8px 12px}
+  .pd-top{gap:8px;padding:8px max(12px,env(safe-area-inset-right)) 8px max(12px,env(safe-area-inset-left))}
   .pd-titlu{display:none}
-  #pd-ecran{display:none!important}
   .pd-bara{display:none}
   .pd-mesaj{margin:20px 16px}
+}
+/* Telefon: două rânduri aliniate — [← Investitori … limba] / [Prognoză | Live … ▶ Prezintă] */
+@media (max-width:560px){
+  .pd-top{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"inapoi limba" "comutator prezinta";align-items:center}
+  .pd-top .pd-inapoi{grid-area:inapoi}
+  .pd-top .pd-spatiu{display:none}
+  .pd-top #pd-limba{grid-area:limba}
+  .pd-top .pd-comutator{grid-area:comutator;display:flex}
+  .pd-top .pd-comutator[hidden]{display:none}
+  .pd-top .pd-comutator button{flex:1 1 0;font-size:14px}
+  .pd-top .pd-prezinta{grid-area:prezinta;font-size:14px}
+  .pd-top .pd-prezinta[hidden]{display:none}
+  .pd-select{font-size:14px}
 }
 </style>
 </head>
@@ -100,11 +130,11 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
       <option value="ro">Română</option><option value="en">English</option><option value="bg">Български</option>
       <option value="de">Deutsch</option><option value="el">Ελληνικά</option><option value="fr">Français</option><option value="tr">Türkçe</option>
     </select>
-    <button type="button" class="pd-btn-ico" id="pd-ecran" data-t-aria="ecran" hidden>⛶</button>
+    <button type="button" class="pd-btn-ico pd-prezinta" id="pd-prezinta" hidden><span class="pd-play" aria-hidden="true">▶</span><span data-t="prezinta"></span></button>
   </header>
   <main id="pd-main" aria-live="polite">
     <div id="pd-mesaj" class="pd-mesaj" hidden></div>
-    <div id="pd-deck" hidden></div>
+    <div id="pd-deck" hidden><div class="pdp-cadru"><div id="pd-deck-slideuri"></div></div></div>
     <div id="pd-live" hidden></div>
   </main>
   <nav class="pd-nav" id="pd-nav" hidden>
@@ -117,13 +147,14 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 
 <script type="module" src="lib/supabaseClient.js"></script>
 <script src="/pitch-deck-render.js"></script>
+<script src="/pitch-deck-prezentare.js"></script>
 <script>
 (function () {
   'use strict';
   // Textele paginii: RO pentru română, EN pentru celelalte limbi (ca deck-ul).
   var CHROME = {
     ro: {
-      titlu: 'Pitch deck · My Darrin', inapoi: '← Investitori', prognoza: 'Prognoză', live: 'Live', limba: 'Limba', ecran: 'Ecran complet',
+      titlu: 'Pitch deck · My Darrin', inapoi: '← Investitori', prognoza: 'Prognoză', live: 'Live', limba: 'Limba', prezinta: 'Prezintă',
       anterior: 'Slide-ul anterior', urmator: 'Slide-ul următor', comutator: 'Prognoză sau cifre reale',
       pregatire_t: 'Pitch deck în pregătire', pregatire_p: 'Pitch deck-ul My Darrin e în curs de verificare și va fi publicat după aprobare.',
       pregatire_live: 'Vezi cifrele reale din platformă', eroare_t: 'Pitch deck-ul nu se poate încărca acum', eroare_p: 'A apărut o problemă la încărcare. Încearcă din nou.', reincearca: 'Reîncearcă',
@@ -138,7 +169,7 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
       se_incarca_live: 'Se încarcă datele reale…', comenzi: 'comenzi',
     },
     en: {
-      titlu: 'Pitch deck · My Darrin', inapoi: '← Investors', prognoza: 'Forecast', live: 'Live', limba: 'Language', ecran: 'Full screen',
+      titlu: 'Pitch deck · My Darrin', inapoi: '← Investors', prognoza: 'Forecast', live: 'Live', limba: 'Language', prezinta: 'Present',
       anterior: 'Previous slide', urmator: 'Next slide', comutator: 'Forecast or real figures',
       pregatire_t: 'Pitch deck in preparation', pregatire_p: 'The My Darrin pitch deck is being reviewed and will be published once approved.',
       pregatire_live: 'See the real platform figures', eroare_t: 'The pitch deck cannot be loaded right now', eroare_p: 'Something went wrong while loading. Please try again.', reincearca: 'Try again',
@@ -192,7 +223,7 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
     $('pd-mesaj').hidden = live || stare.vedere !== 'mesaj';
     $('pd-deck').hidden = live || stare.vedere !== 'deck';
     $('pd-nav').hidden = live || stare.vedere !== 'deck';
-    $('pd-ecran').hidden = live || stare.vedere !== 'deck' || !document.fullscreenEnabled;
+    $('pd-prezinta').hidden = live || stare.vedere !== 'deck';
     $('pd-mod-prognoza').setAttribute('aria-pressed', live ? 'false' : 'true');
     $('pd-mod-live').setAttribute('aria-pressed', live ? 'true' : 'false');
   }
@@ -241,11 +272,12 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
     if (stare.deck) stare.deck.distruge();
     stare.vedere = 'deck';
     aplicaMod();
-    stare.deck = window.MDPitchDeck.creeaza($('pd-deck'), {
+    stare.deck = window.MDPitchDeck.creeaza($('pd-deck-slideuri'), {
       payload: stare.payload, limba: l, hash: true, urlRunda: '/mydarrin-investitori#runda',
       // „Vezi cifrele reale →” de pe slide-urile 10, 12, 17, 18
       onLive: function () { seteazaMod('live'); },
       onSchimbare: function (i, total) {
+        prez.laSchimbare(i, total);
         $('pd-contor').textContent = (i + 1) + ' / ' + total;
         $('pd-progres').style.width = ((i + 1) / total * 100) + '%';
         $('pd-inapoi-slide').disabled = i === 0;
@@ -253,6 +285,7 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
       },
     });
     document.dispatchEvent(new CustomEvent('mdpd:gata', { detail: { stare: stare.payload.stare, limba: l } }));
+    verificaAcces();
   }
 
   // ── Varianta live: doar din baza de date (2.6) ─────────────────────
@@ -348,6 +381,7 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
     try { localStorage.setItem(LANG_KEY, l); } catch (e) {}
     document.documentElement.lang = l;
     aplicaTexte();
+    prez.texte();
     if (limbaDeck(l) !== inainte || !stare.payload) incarca();
     if (stare.live && stare.live.gata && limbaDeck(l) !== inainte) randeazaLive();
   }
@@ -357,8 +391,42 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
   $('pd-mod-live').addEventListener('click', function () { seteazaMod('live'); });
   $('pd-inapoi-slide').addEventListener('click', function () { stare.deck && stare.deck.anterior(); });
   $('pd-inainte-slide').addEventListener('click', function () { stare.deck && stare.deck.urmator(); });
-  $('pd-ecran').addEventListener('click', function () {
-    if (document.fullscreenElement) document.exitFullscreen(); else if ($('pd-deck').requestFullscreen) $('pd-deck').requestFullscreen().catch(function () {});
+  // ── Modurile de prezentare (11-K3): meniul „▶ Prezintă” ─────────
+  // Vederea prezentatorului: doar dacă serverul o permite (acțiunea `prezentare`
+  // din api/admin/pitch-deck.js — profiles.roles + admin_permissions pe
+  // Investitori). Răspunsul are deck-ul complet al limbii, cu notele.
+  var acces = { stare: 'verifica', limba: null, payload: null, cerere: 0 };
+  async function verificaAcces() {
+    var l = limbaDeck(stare.limba);
+    if (acces.limba === l && acces.stare !== 'verifica') return;
+    var nr = ++acces.cerere;
+    acces.limba = l; acces.stare = 'verifica'; acces.payload = null;
+    prez.actualizeaza();
+    var tok = await token();
+    var r = null;
+    if (tok) {
+      try {
+        r = await fetch('/api/admin/pitch-deck', { method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: JSON.stringify({ actiune: 'prezentare', limba: l }) });
+        r = r.ok ? await r.json().catch(function () { return null; }) : null;
+      } catch (e) { r = null; }
+    }
+    if (nr !== acces.cerere) return;
+    acces.stare = r && r.ok && r.deck ? 'da' : 'nu';
+    acces.payload = acces.stare === 'da' ? r : null;
+    prez.actualizeaza();
+  }
+  var prez = window.MDPrezentare.ataseaza({
+    buton: $('pd-prezinta'), scena: $('pd-deck'), bara: $('pd-nav'),
+    deck: function () { return stare.deck; },
+    limba: function () { return limbaDeck(stare.limba); },
+    limbaDeck: function () { return limbaDeck(stare.limba); },
+    acces: function () { return acces.limba === limbaDeck(stare.limba) ? acces.stare : 'verifica'; },
+    prezentator: function () {
+      if (acces.stare !== 'da' || !acces.payload) return Promise.reject(new Error('fără drept'));
+      // Publicul vede același deck ca prezentatorul (ex. rezumatul → deck-ul complet).
+      if (stare.payload && stare.payload.stare !== 'complet') { stare.payload = acces.payload; deseneaza(limbaDeck(stare.limba)); }
+      return Promise.resolve(acces.payload);
+    },
   });
   document.addEventListener('keydown', function (e) {
     if (!stare.deck || stare.mod !== 'prognoza' || $('pd-deck').hidden || e.altKey || e.ctrlKey || e.metaKey) return;

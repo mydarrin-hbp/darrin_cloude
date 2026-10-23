@@ -17,7 +17,12 @@
 // POST { actiune: 'aproba', id }             → 409 NOTE_NEREZOLVATE dacă mai sunt note / surse lipsă;
 //                                              retrage aprobarea versiunii anterioare DIN ACEEAȘI LIMBĂ
 // POST { actiune: 'retrage', id }            → retrage aprobarea
-// POST { actiune: 'previzualizare', id }     → același conținut ca pagina publică (deck complet)
+// POST { actiune: 'previzualizare', id }     → același conținut ca pagina publică (deck complet),
+//                                              plus notele prezentatorului (pasul 11-K3)
+// POST { actiune: 'prezentare', limba }      → versiunea APROBATĂ a limbii (ro → RO, altfel EN),
+//                                              cu notele prezentatorului: vederea prezentatorului
+//                                              de pe pagina publică (pasul 11-K3). 404 fără versiune aprobată.
+// Previzualizarea și prezentarea cer doar dreptul de citire pe Investitori.
 // POST { actiune: 'url_incarcare', tip, marime } → adresă semnată în bucket-ul pitch-deck-media
 // POST { actiune: 'vizibilitate', valoare }  → doar superadmin: public / investitori_aprobati
 
@@ -242,7 +247,12 @@ async function handler(req, res, admin) {
       const { v, error } = await citeste(req.body.id);
       if (error) { if (P.migrareLipsa(error)) return refuzMigrare(res); throw error; }
       if (!v) return refuzLipsa(res);
-      return res.status(200).json({ ok: true, ...(await P.construiestePayload(v)) });
+      return res.status(200).json({ ok: true, ...(await P.construiestePayload(v, { note: true })) });
+    }
+    if (actiune === 'prezentare') {
+      const v = await P.versiuneAprobata(P.limbaDeck(req.body.limba));
+      if (!v) return refuzLipsa(res);
+      return res.status(200).json({ ok: true, ...(await P.construiestePayload(v, { note: true })) });
     }
 
     const scrieri = { importa, salveaza, duplica, aproba, retrage, url_incarcare: urlIncarcare, vizibilitate };
