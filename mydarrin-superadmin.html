@@ -5000,8 +5000,20 @@ function pdSlideHtml(s, i) {
       ${note ? `<span class="chip" style="font-size:9.5px;margin-left:4px;background:#7A4A00;color:#FFE1C2">${note} ${note === 1 ? 'notă' : 'note'}</span>` : ''}
       ${faraSursa ? '<span class="chip" style="font-size:9.5px;margin-left:4px;background:#7A2020;color:#FECACA">fără sursă</span>' : ''}</summary>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;padding:4px 12px 12px">
-      ${Object.keys(campuri).filter((k) => k !== 'sursa' || s.prognoza === true).map((k) => pdCampHtml(campuri[k], s[k], `slide_uri.${i}.${k}`, s)).join('')}
-    </div></details>`;
+      ${Object.keys(campuri).filter((k) => !campuri[k].intern && (k !== 'sursa' || s.prognoza === true)).map((k) => pdCampHtml(campuri[k], s[k], `slide_uri.${i}.${k}`, s)).join('')}
+    </div>${pdNoteHtml(s, i)}</details>`;
+}
+
+// Pasul 11-K3: notele prezentatorului — o casetă sub fiecare slide, interne
+// (apar doar în vederea prezentatorului; pagina publică nu le primește).
+function pdNoteHtml(s, i) {
+  const v = typeof s.note_prezentator === 'string' ? s.note_prezentator : '';
+  const max = window.MDPitchDeckSchema.COMUNE.note_prezentator.max;
+  return `<div style="padding:0 12px 12px">
+    <label style="display:block;font-size:11px;font-weight:700;color:#5A6B7D" data-pd-note-slide="${i}">🗒 Note de prezentator <span style="font-weight:600;color:#4A6080">— interne: apar doar în vederea prezentatorului, nu pe pagina publică (opțional, cel mult ${max.toLocaleString('ro-RO')} de caractere)</span>
+      <textarea data-cale="slide_uri.${i}.note_prezentator" data-t="text" data-nul data-camp="slide_uri.${i}.note_prezentator" data-eticheta="Note de prezentator" rows="4" maxlength="${max}"
+        oninput="this.nextElementSibling.textContent = this.value.length.toLocaleString('ro-RO') + ' / ${max.toLocaleString('ro-RO')}'" style="${PD_STIL_IN};resize:vertical">${escapeHTML(v)}</textarea><span style="display:block;text-align:right;font-size:10.5px;color:#4A6080;font-weight:600;margin-top:2px">${v.length.toLocaleString('ro-RO')} / ${max.toLocaleString('ro-RO')}</span></label>
+  </div>`;
 }
 
 function renderEditorPitchDeck() {

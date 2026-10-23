@@ -14,6 +14,7 @@
 //                                      limba, vizibilitate, deck?, runda?, contact?, qr_svg? }
 // GET ?limba=…&doar_stare=1        → { ok, stare: 'in_pregatire' | 'disponibil', limba, vizibilitate }
 //                                      (butonul de pe pagina Investitori)
+// Câmpul note_prezentator al slide-urilor (pasul 11-K3) nu pleacă niciodată de aici.
 
 const { getAuthenticatedUser } = require('../../lib/auth-middleware');
 const { trimiteEroare } = require('../../lib/raspuns-eroare');
@@ -43,7 +44,10 @@ module.exports = async function handler(req, res) {
       const user = await getAuthenticatedUser(req).catch(() => null);
       complet = await P.esteInvestitorAprobat(user).catch(() => false);
     }
-    const corp = await P.construiestePayload(v, { rezumat: !complet });
+    // Notele prezentatorului (pasul 11-K3) sunt interne: niciodată aici,
+    // indiferent de vizibilitate sau de sesiune (le dă doar api/admin/pitch-deck).
+    const corp = await P.construiestePayload(v, { rezumat: !complet, note: false });
+    corp.deck.slide_uri = P.faraNote(corp.deck.slide_uri);
     return res.status(200).json({ ok: true, vizibilitate, ...corp });
   } catch (err) {
     console.error('[public/pitch-deck]', err);

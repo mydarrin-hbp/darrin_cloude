@@ -36,6 +36,11 @@
     titlu: TEXT('Titlu', true),
     prognoza: { t: 'bool', et: 'Slide de prognoză (cifre estimate)' },
     sursa: { t: 'text', et: 'Sursa cifrelor', max: 400, nul: true },
+    // Pasul 11-K3 (23 oct. 2026): notele prezentatorului, opționale, interne.
+    // api/public/pitch-deck.js nu le trimite niciodată (lib/pitch-deck.js le
+    // scoate din payload); le primesc doar previzualizarea și prezentarea din
+    // api/admin/pitch-deck.js, cu drept pe secțiunea Investitori.
+    note_prezentator: { t: 'lung', et: 'Note de prezentator', max: 2000, nul: true, intern: true },
   };
 
   var TIPURI = {
