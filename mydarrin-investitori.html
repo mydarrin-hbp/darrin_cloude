@@ -2298,17 +2298,50 @@ if(document.readyState==='loading'){
     <h2 style="color:#fff;font-size:clamp(22px,3vw,32px);font-weight:800;margin-bottom:12px">
       Investește în My Darrin
     </h2>
-    <p style="color:rgba(255,255,255,.5);font-size:14px;margin-bottom:24px">
-      Pitch deck-ul complet My Darrin
+    <!-- Pasul 11-K: textul și butonul urmează starea reală a pitch deck-ului
+         (/api/public/pitch-deck?doar_stare=1): fără versiune aprobată în limba
+         curentă → „Pitch deck în pregătire” (buton dezactivat, cu explicație);
+         cu vizibilitate restrânsă, textul nu mai spune „complet”. -->
+    <p id="pd-cta-sub" style="color:rgba(255,255,255,.6);font-size:14px;margin-bottom:24px;line-height:1.6">
+      Pitch deck-ul My Darrin
     </p>
-    <a href="mydarrin-pitch-deck.html"
+    <a id="pd-cta-link" href="/mydarrin-pitch-deck"
       style="display:inline-block;background:#EF7F1A;color:#fff;text-decoration:none;border-radius:14px;padding:14px 36px;font-size:15px;font-weight:800;font-family:inherit;box-shadow:0 8px 24px rgba(239,127,26,.4);transition:all .2s"
       onmouseover="this.style.transform='translateY(-3px)'"
       onmouseout="this.style.transform=''">
       PITCH DECK →
     </a>
+    <button id="pd-cta-pregatire" type="button" disabled aria-describedby="pd-cta-sub" hidden
+      style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:14px 30px;font-size:15px;font-weight:800;font-family:inherit;cursor:not-allowed">
+      Pitch deck în pregătire
+    </button>
   </div>
 </section>
+<script>
+(function () {
+  var TEXTE = {
+    complet: 'Pitch deck-ul complet My Darrin',
+    rezumat: 'Rezumatul e public; pitch deck-ul complet e disponibil investitorilor cu identitatea verificată.',
+    pregatire: 'Pitch deck-ul e în curs de verificare și va fi publicat după aprobare.',
+  };
+  var limba = (window.MYD_I18N && window.MYD_I18N.lang) || 'en';
+  fetch('/api/public/pitch-deck?doar_stare=1&limba=' + encodeURIComponent(limba))
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (j) {
+      if (!j || !j.ok) return; // eroare: butonul rămâne; pagina pitch deck-ului își arată singură starea
+      var sub = document.getElementById('pd-cta-sub');
+      if (j.stare === 'in_pregatire') {
+        document.getElementById('pd-cta-link').style.display = 'none';
+        document.getElementById('pd-cta-pregatire').hidden = false;
+        sub.textContent = TEXTE.pregatire;
+      } else {
+        sub.textContent = j.vizibilitate === 'public' ? TEXTE.complet : TEXTE.rezumat;
+      }
+      sub.setAttribute('data-stare-pitch', j.stare + '|' + j.vizibilitate);
+    })
+    .catch(function () {});
+})();
+</script>
 <!-- ════ END PITCH DECK ════ -->
 
 

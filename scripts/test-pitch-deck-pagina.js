@@ -618,6 +618,56 @@ async function testLive(browser, baza) {
   }
 }
 
+// ═══ E. Pagina Investitori: butonul „PITCH DECK →” (2.7) ════════════
+const E_TEXTE = {
+  ro: { pregatire: 'Pitch deck în pregătire', explicatie: 'Pitch deck-ul e în curs de verificare și va fi publicat după aprobare.', complet: 'Pitch deck-ul complet My Darrin', rezumat: 'Rezumatul e public; pitch deck-ul complet e disponibil investitorilor cu identitatea verificată.' },
+  en: { pregatire: 'Pitch deck in preparation', explicatie: 'The pitch deck is being reviewed and will be published once approved.', complet: 'The full My Darrin pitch deck', rezumat: 'The summary is public; the full pitch deck is available to investors with a verified identity.' },
+};
+async function testInvestitori(browser, baza) {
+  for (const lang of ['ro', 'en']) {
+    for (const latime of [390, 1366]) {
+      for (const [caz, opt] of [['în pregătire', { versiuni: false }], ['public', { vizibilitate: 'public' }], ['restrâns', { vizibilitate: 'investitori_aprobati' }]]) {
+        const et = `E ${lang} ${latime}px ${caz}`;
+        const X = E_TEXTE[lang];
+        resetPublic(opt);
+        const ctx = await browser.newContext({ viewport: { width: latime, height: 860 } });
+        await ctx.addInitScript((l) => { try { localStorage.setItem('myd_lang_v1', l); localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), versiune: 1 })); } catch (e) {} }, lang);
+        await ctx.route(/\.supabase\.co\//, (r) => r.abort());
+        const cereri = [];
+        await ctx.route(/\/api\/public\/pitch-deck/, async (r) => {
+          const url = new URL(r.request().url());
+          cereri.push(url.search);
+          const res = raspuns();
+          await apiPublic(cerere({ metoda: 'GET', query: Object.fromEntries(url.searchParams) }), res);
+          return r.fulfill({ status: res.statusCode, contentType: 'application/json', body: JSON.stringify(res.corp || {}) });
+        });
+        const pg = await ctx.newPage();
+        const erori = [];
+        pg.on('pageerror', (e) => erori.push(e.message.slice(0, 200)));
+        await pg.goto(baza + '/mydarrin-investitori', { waitUntil: 'domcontentloaded' });
+        await pg.waitForFunction(() => (document.getElementById('pd-cta-sub') || {}).hasAttribute && document.getElementById('pd-cta-sub').hasAttribute('data-stare-pitch'), null, { timeout: 8000 }).catch(() => {});
+        await pg.waitForTimeout(300);
+        verifica(cereri.some((q) => q.includes('doar_stare=1') && q.includes('limba=' + lang)), `${et}: cererea de stare, în limba paginii (${cereri.join(' ')})`);
+        const sub = sp((await pg.innerText('#pd-cta-sub')).trim());
+        const link = await pg.isVisible('#pd-cta-link');
+        const pregatire = await pg.isVisible('#pd-cta-pregatire');
+        if (caz === 'în pregătire') {
+          verifica(!link && pregatire && (await pg.isDisabled('#pd-cta-pregatire')) && sp((await pg.innerText('#pd-cta-pregatire')).trim()) === X.pregatire, `${et}: „${X.pregatire}”, dezactivat`);
+          verifica(sub === X.explicatie, `${et}: explicația („${sub}”)`);
+        } else {
+          verifica(link && !pregatire && (await pg.getAttribute('#pd-cta-link', 'href')) === '/mydarrin-pitch-deck', `${et}: butonul „PITCH DECK →” deschide deck-ul`);
+          verifica(sub === (caz === 'public' ? X.complet : X.rezumat), `${et}: textul de sub buton („${sub}”)`);
+          if (caz === 'restrâns') verifica(!/complet My Darrin|full My Darrin pitch deck$/.test(sub), `${et}: nu mai spune „complet” ca promisiune`);
+        }
+        const d = await inAfaraEcranului(pg, '#pitch-deck-section, #pitch-deck-section *'); verifica(!d, `${et}: secțiunea în ecran (${d})`);
+        verifica(!erori.length, `${et}: 0 erori JS (${erori.join(' | ')})`);
+        await ctx.close();
+      }
+    }
+  }
+  console.log('E: gata');
+}
+
 (async () => {
   const srv = await porneste(0);
   const baza = 'http://localhost:' + srv.address().port;
@@ -627,6 +677,7 @@ async function testLive(browser, baza) {
     if (!process.env.DOAR || process.env.DOAR === 'B') await testPublic(browser, baza);
     if (!process.env.DOAR || process.env.DOAR === 'C') await testStari(browser, baza);
     if (!process.env.DOAR || process.env.DOAR === 'D') await testLive(browser, baza);
+    if (!process.env.DOAR || process.env.DOAR === 'E') await testInvestitori(browser, baza);
   } finally {
     await browser.close();
     srv.close();
