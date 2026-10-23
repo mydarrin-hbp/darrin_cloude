@@ -54,6 +54,7 @@
     '10-harta-romania.webp': ['Harta României cu puncte de lucru conectate', 'Map of Romania with connected service points'],
     '11-harta-europa.webp': ['Harta Europei cu legături pornind din România', 'Map of Europe with links starting from Romania'],
     '20-echipa-robot.webp': ['Robotul Darrin în fața unei echipe, într-un birou cu ferestre mari', 'The Darrin robot in front of a team, in an office with large windows'],
+    '20-echipa-robot-fara-slogan.webp': ['Robotul Darrin în fața unei echipe, într-un birou cu ferestre mari', 'The Darrin robot in front of a team, in an office with large windows'],
   };
   var LOGO = '/assets/pitch-deck/v1/logo-mydarrin-homebestpal.webp';
   var NR_LIVE = [10, 12, 17, 18]; // slide-urile de prognoză care au un echivalent live
