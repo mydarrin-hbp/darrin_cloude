@@ -12,6 +12,11 @@
 // Pasul 11-N1 (22 oct. 2026): ferestrele native alert( și confirm( în
 // mydarrin-superadmin.html — feedbackul trece prin MDFeedback (ui-feedback.js).
 //
+// Pasul 11-K (22 oct. 2026): conținutul de rezervă al pitch deck-ului, scris
+// în cod („Runda Pre-Seed”, „40 Mld”, „Runda I · 2026”), nu mai apare în
+// pagina pitch deck-ului, în renderul ei și în dicționarul ei EN (decizia
+// LM C3: doar versiunea aprobată din back-office).
+//
 // Rezultat așteptat: 0 potriviri. Fiecare potrivire se afișează cu fișierul,
 // linia și fragmentul găsit.
 //
@@ -100,6 +105,14 @@ const REGULI_FEEDBACK = [
 ];
 const FISIERE_FEEDBACK = ['mydarrin-superadmin.html'];
 
+// Pasul 11-K: conținutul de rezervă al pitch deck-ului.
+const REGULI_PITCH = [
+  ['Runda Pre-Seed', /Runda\s+Pre-?Seed|Pre-?Seed\s+Round/i],
+  ['40 Mld', /40\s*Mld|€\s*40\s*bn/i],
+  ['Runda I · 2026', /Runda\s+I\s*·\s*2026|Round\s+I\s*·\s*2026/i],
+];
+const FISIERE_PITCH = ['mydarrin-pitch-deck.html', 'pitch-deck-render.js', path.join('i18n', 'en', 'mydarrin-pitch-deck.json')];
+
 let total = 0;
 let exceptii = 0;
 const peRegula = {};
@@ -147,11 +160,27 @@ for (const rel of FISIERE_FEEDBACK) {
   });
 }
 
+for (const rel of FISIERE_PITCH) {
+  const linii = fs.readFileSync(path.join(RADACINA, rel), 'utf8').split(/\r?\n/);
+  linii.forEach((linie, i) => {
+    for (const [eticheta, re] of REGULI_PITCH) {
+      const m = re.exec(linie);
+      if (!m) continue;
+      total++;
+      peRegula[eticheta] = (peRegula[eticheta] || 0) + 1;
+      const start = Math.max(0, m.index - 40);
+      console.log(`  ✗ ${rel}:${i + 1} [${eticheta}] …${linie.slice(start, m.index + m[0].length + 40).trim()}…`);
+    }
+  });
+}
+
 console.log('\nFișiere verificate: ' + fisiere().length + ' (HTML publice + i18n/en/*.json)');
 for (const [eticheta] of REGULI) console.log(`  ${eticheta}: ${peRegula[eticheta] || 0}`);
 console.log('Valorile rundei (11-J): ' + fisiereRunda().length + ' fișiere (toate HTML, i18n, .js de pagină, api/, lib/), inclusiv comentariile');
 for (const [eticheta] of REGULI_RUNDA) console.log(`  ${eticheta}: ${peRegula[eticheta] || 0}`);
 console.log('Ferestre native (11-N1): ' + FISIERE_FEEDBACK.join(', '));
 for (const [eticheta] of REGULI_FEEDBACK) console.log(`  ${eticheta}: ${peRegula[eticheta] || 0}`);
+console.log('Pitch deck de rezervă (11-K): ' + FISIERE_PITCH.join(', '));
+for (const [eticheta] of REGULI_PITCH) console.log(`  ${eticheta}: ${peRegula[eticheta] || 0}`);
 console.log(`\nTOTAL potriviri: ${total}`);
 process.exit(total ? 1 : 0);
