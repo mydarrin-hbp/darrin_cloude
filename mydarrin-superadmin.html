@@ -317,9 +317,10 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 /* ── LAYOUT ── */
 .sa-layout{display:flex;min-height:100vh}
 .sa-sidebar{width:240px;background:#16202E;border-right:1px solid #2D3F55;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;transition:transform .3s}
-.sa-main{margin-left:240px;flex:1;display:flex;flex-direction:column;min-height:100vh;background:#F0F4F8}
+.sa-main{margin-left:240px;flex:1;display:flex;flex-direction:column;min-height:100vh;background:#F0F4F8;min-width:0}
 .sa-topbar{background:#1E2A3B;border-bottom:1px solid #2D3F55;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
-.sa-content{padding:24px;flex:1;background:#F0F4F8}
+/* Pasul 11-N2: min-width:0 — tabelele (min. 600 px) nu mai lățesc panoul peste ecran la 390 px; se derulează în cardul lor */
+.sa-content{padding:24px;flex:1;background:#F0F4F8;min-width:0}
 
 /* ── SIDEBAR ── */
 .sa-logo{padding:18px 20px 14px;border-bottom:1px solid #2D3F55;display:flex;align-items:center;gap:10px}
@@ -4279,7 +4280,7 @@ function aplicaDreptScriere(j) {
   const nota = document.getElementById('inv-doar-citire');
   if (nota) nota.hidden = INV_POATE_SCRIE;
   const nou = document.getElementById('inv-runda-noua');
-  if (nou) nou.hidden = !INV_POATE_SCRIE;
+  if (nou) nou.style.display = INV_POATE_SCRIE ? '' : 'none';
   const form = document.getElementById('inv-runda-form');
   if (form && !INV_POATE_SCRIE) form.hidden = true;
 }
