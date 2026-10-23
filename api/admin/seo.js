@@ -136,11 +136,11 @@ async function handler(req, res, admin) {
   if (!nivel) return refuzaFaraDrept(res);
   const poateScrie = nivel === 'scriere';
   try {
-    if (req.method === 'GET') return lista(res, poateScrie);
+    if (req.method === 'GET') return await lista(res, poateScrie);
     if (!['POST', 'PUT', 'DELETE'].includes(req.method)) return trimiteEroare(res, 405, 'METODA', 'Metodă nepermisă.', 'Method not allowed.');
     if (!poateScrie) return refuzaFaraScriere(res);
-    if (req.method === 'DELETE') return sterge(req, res, admin);
-    return salveaza(req, res, admin);
+    if (req.method === 'DELETE') return await sterge(req, res, admin);
+    return await salveaza(req, res, admin);
   } catch (err) {
     console.error('[admin/seo]', err);
     return trimiteEroare(res, 500, 'EROARE_SERVER', 'Eroare internă.', 'Internal error.');

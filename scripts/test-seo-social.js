@@ -145,6 +145,136 @@ async function apel(api, { metoda = 'GET', token = null, query = {}, body = null
     verifica(r.statusCode === 403, 'eroare la citirea admin_permissions → 403 (fail-closed)');
   }
 
+  // ── C. Campaniile ─────────────────────────────────────────────────────
+  if (ruleaza('C')) {
+    const apiC = require(path.join(RADACINA, 'api/admin/seo-campanii.js'));
+    const R = require(path.join(RADACINA, 'lib/seo-campanii.js'));
+    reset();
+    const post = (token, body) => apel(apiC, { metoda: 'POST', token, body });
+    const baza = { actiune: 'creeaza', page_path: '/despre-noi', limba: 'ro', nume_campanie: 'Lansare DE TEST', platforme: ['facebook', 'tiktok'] };
+
+    let r = await post('tok-sup', baza);
+    verifica(r.statusCode === 200 && r.corp.campanie.stare === 'ciorna' && r.corp.campanie.limba === 'ro', 'creare: ciornă RO');
+    const id = r.corp.campanie.id;
+    r = await post('tok-sup', baza);
+    verifica(r.statusCode === 409 && r.corp.cod === 'NUME_EXISTENT', 'același nume, aceeași pagină și limbă → 409');
+    r = await post('tok-sup', { ...baza, nume_campanie: '  ' });
+    verifica(r.statusCode === 400 && r.corp.campuri.some((c) => c.camp === 'nume_campanie'), 'nume gol → 400 pe nume_campanie');
+    r = await post('tok-sup', { ...baza, page_path: '/mydarrin-superadmin', nume_campanie: 'x' });
+    verifica(r.statusCode === 400 && r.corp.cod === 'PAGINA_INVALIDA', 'pagină nepublică → 400');
+
+    // Lungimile, pe platformele bifate (Meta 40 / 125 / 30, TikTok 100)
+    const s = (n) => 'a'.repeat(n);
+    r = await post('tok-sup', { actiune: 'salveaza', id, titlu_reclama: s(41) });
+    verifica(r.statusCode === 400 && r.corp.campuri[0].camp === 'titlu_reclama' && /Meta 40/.test(r.corp.mesaj.ro), 'titlu de 41 cu Facebook bifat → refuzat (Meta 40)');
+    r = await post('tok-sup', { actiune: 'salveaza', id, titlu_reclama: s(40), text_principal: s(101) });
+    verifica(r.statusCode === 400 && r.corp.campuri.some((c) => c.camp === 'text_principal') && /TikTok 100/.test(r.corp.mesaj.ro), 'text de 101 cu TikTok bifat → refuzat (TikTok 100)');
+    r = await post('tok-sup', { actiune: 'salveaza', id, platforme: ['youtube'], titlu_reclama: s(200), text_principal: s(300) });
+    verifica(r.statusCode === 200, 'doar YouTube bifat: fără limită implicită (200 / 300 de caractere acceptate)');
+    r = await post('tok-sup', { actiune: 'salveaza', id, platforme: ['facebook'], titlu_reclama: s(40), text_principal: s(125), descriere_link: s(31) });
+    verifica(r.statusCode === 400 && r.corp.campuri.some((c) => c.camp === 'descriere_link'), 'descrierea de 31 cu Facebook → refuzată (Meta 30)');
+    DB.tabele.backoffice_config.push({ cheie: 'campanii_limite_meta_descriere', valoare: '60', tara_cod: 'ALL' });
+    r = await post('tok-sup', { actiune: 'salveaza', id, platforme: ['facebook'], titlu_reclama: s(40), text_principal: s(125), descriere_link: s(31) });
+    verifica(r.statusCode === 200, 'limita din backoffice_config (60) are prioritate față de cea implicită');
+    r = await apel(apiC, { token: 'tok-sup', query: { page_path: '/despre-noi' } });
+    verifica(r.corp.limite.meta_descriere === 60 && r.corp.limite.meta_titlu === 40 && r.corp.campanii.length === 1, 'GET: lista paginii și limitele în vigoare');
+    // Platformele, CTA, URL, UTM
+    r = await post('tok-sup', { actiune: 'salveaza', id, platforme: ['facebook', 'snapchat'] });
+    verifica(r.statusCode === 400 && r.corp.campuri.some((c) => c.camp === 'platforme'), 'platformă din afara listei → refuzată');
+    r = await post('tok-sup', { actiune: 'salveaza', id, cta: 'click_aici' });
+    verifica(r.statusCode === 400 && r.corp.campuri.some((c) => c.camp === 'cta'), 'CTA din afara listei → refuzat');
+    for (const u of ['http://mydarrin.homebestpal.com/x', 'https://evil.example.com/', 'https://mydarrin.homebestpal.com.evil.com/', 'https://admin.mydarrin.homebestpal.com/', 'javascript:alert(1)', 'https://user:p@mydarrin.homebestpal.com/']) {
+      r = await post('tok-sup', { actiune: 'salveaza', id, url_destinatie: u });
+      verifica(r.statusCode === 400 && r.corp.campuri.some((c) => c.camp === 'url_destinatie'), 'URL în afara domeniului / fără https → refuzat: ' + u);
+    }
+    r = await post('tok-sup', { actiune: 'salveaza', id, utm_campaign: 'lansare octombrie' });
+    verifica(r.statusCode === 400 && r.corp.campuri.some((c) => c.camp === 'utm_campaign'), 'UTM cu spațiu → refuzat');
+    r = await post('tok-sup', { actiune: 'salveaza', id, cta: 'cere_oferta', url_destinatie: 'https://mydarrin.homebestpal.com/despre-noi?x=1', utm_source: 'facebook', utm_medium: 'paid_social', utm_campaign: 'lansare-oct', utm_content: 'patrat_1' });
+    verifica(r.statusCode === 200, 'CTA, URL și UTM valide → salvate');
+    verifica(R.linkFinal(r.corp.campanie) === 'https://mydarrin.homebestpal.com/despre-noi?x=1&utm_source=facebook&utm_medium=paid_social&utm_campaign=lansare-oct&utm_content=patrat_1', 'linkul final cu UTM: ' + R.linkFinal(r.corp.campanie));
+
+    // Activarea cere materialele platformelor bifate
+    r = await post('tok-sup', { actiune: 'salveaza', id, platforme: ['facebook', 'tiktok', 'youtube'], text_principal: 'Text DE TEST' });
+    r = await post('tok-sup', { actiune: 'stare', id, stare: 'activa' });
+    const campuri = (r.corp.campuri || []).map((c) => c.camp);
+    verifica(r.statusCode === 400 && campuri.includes('media.video_vertical') && campuri.includes('media.video_orizontal') && campuri.includes('media.imagine_patrat'),
+      'activarea fără materiale → refuzată (TikTok: 9:16; YouTube: 16:9 sau 9:16; Facebook: pătrat / 4:5 / video) ' + JSON.stringify(campuri));
+    const c0 = DB.tabele.seo_campanii_social.find((x) => x.id === id);
+    const pref = `despre-noi/ro/${id}/`;
+    c0.media = { video_vertical: { cale: pref + 'video_vertical.mp4', latime: 1080, inaltime: 1920, durata_s: 15, marime_bytes: 1000, mime: 'video/mp4' } };
+    r = await post('tok-sup', { actiune: 'stare', id, stare: 'activa' });
+    verifica(r.statusCode === 200 && r.corp.campanie.stare === 'activa', 'cu video 9:16: TikTok, YouTube și Facebook sunt acoperite → activă');
+    r = await post('tok-sup', { actiune: 'salveaza', id, platforme: ['facebook', 'general_patrat'] });
+    verifica(r.statusCode === 400 && r.corp.campuri.some((c) => c.camp === 'media.imagine_patrat'), 'campanie activă: bifarea unei platforme fără material → refuzată');
+    r = await post('tok-cit', { actiune: 'stare', id, stare: 'ciorna' });
+    verifica(r.statusCode === 403 && r.corp.cod === 'FARA_DREPT_SCRIERE', 'schimbarea stării fără poate_scrie → 403');
+    r = await post('tok-sup', { actiune: 'sterge', id });
+    verifica(r.statusCode === 409 && r.corp.cod === 'DOAR_CIORNE', 'ștergerea unei campanii active → 409 (doar ciornele)');
+
+    // Duplicare RO → EN: textele goale, restul copiat, materialele nu
+    r = await post('tok-sup', { actiune: 'duplica', id, limba: 'en' });
+    const en = r.corp.campanie;
+    verifica(r.statusCode === 200 && en.limba === 'en' && en.stare === 'ciorna' && en.nume_campanie === 'Lansare DE TEST (EN)' && en.titlu_reclama === null && en.text_principal === null && en.descriere_link === null
+      && en.cta === 'cere_oferta' && en.utm_source === 'facebook' && JSON.stringify(en.platforme) === JSON.stringify(['facebook', 'tiktok', 'youtube']) && JSON.stringify(en.media) === '{}',
+      'duplicare RO → EN: ciornă, textele goale de tradus, CTA / UTM / platforme copiate, fără materiale ' + JSON.stringify(en));
+    r = await post('tok-sup', { actiune: 'duplica', id: en.id, limba: 'en' });
+    verifica(r.statusCode === 200 && r.corp.campanie.nume_campanie === 'Lansare DE TEST (copie)', 'duplicare în aceeași limbă: „(copie)” ' + r.corp.campanie.nume_campanie);
+    r = await post('tok-sup', { actiune: 'duplica', id: en.id, limba: 'en' });
+    verifica(r.statusCode === 200 && r.corp.campanie.nume_campanie === 'Lansare DE TEST (copie 2)', 'a doua copie: „(copie 2)” ' + r.corp.campanie.nume_campanie);
+    r = await post('tok-sup', { actiune: 'duplica', id, limba: 'de' });
+    verifica(r.statusCode === 400, 'duplicare în limba de → 400');
+
+    // Arhivare, readucere, ștergerea ciornei
+    r = await post('tok-sup', { actiune: 'stare', id, stare: 'arhivata' });
+    verifica(r.statusCode === 200 && r.corp.campanie.stare === 'arhivata', 'arhivare');
+    r = await post('tok-sup', { actiune: 'salveaza', id, nume_campanie: 'Alt nume' });
+    verifica(r.statusCode === 409 && r.corp.cod === 'CAMPANIE_ARHIVATA', 'campania arhivată nu se editează');
+    r = await post('tok-sup', { actiune: 'stare', id, stare: 'activa' });
+    verifica(r.statusCode === 409 && r.corp.cod === 'TRANZITIE_INVALIDA', 'arhivată → activă direct: refuzat');
+    r = await post('tok-sup', { actiune: 'stare', id, stare: 'ciorna' });
+    verifica(r.statusCode === 200 && r.corp.campanie.stare === 'ciorna', 'arhivată → ciornă');
+    DB.storage['campanii-media'] = new Set([pref + 'video_vertical.mp4']);
+    r = await post('tok-sup', { actiune: 'sterge', id });
+    verifica(r.statusCode === 200 && !DB.tabele.seo_campanii_social.some((x) => x.id === id) && !DB.storage['campanii-media'].has(pref + 'video_vertical.mp4'), 'ștergerea ciornei, cu materialele ei din stocare');
+
+    // Exportul: doar materialele acestei campanii (calea cu pagina, limba și id-ul ei)
+    reset();
+    r = await post('tok-sup', { ...baza, platforme: ['tiktok'], titlu_reclama: 'Titlu', text_principal: 'Text', cta: 'afla_mai_multe', url_destinatie: 'https://mydarrin.homebestpal.com/despre-noi', utm_source: 'tiktok' });
+    const ex = r.corp.campanie;
+    r = await post('tok-sup', { actiune: 'creeaza', page_path: '/mydarrin-contact', limba: 'ro', nume_campanie: 'Altă pagină' });
+    const alta = r.corp.campanie;
+    const pe = `despre-noi/ro/${ex.id}/`, pa = `mydarrin-contact/ro/${alta.id}/`;
+    DB.storage['campanii-media'] = new Set([pe + 'video_vertical.mp4', pa + 'imagine_patrat.jpg']);
+    DB.tabele.seo_campanii_social.find((x) => x.id === ex.id).media = {
+      video_vertical: { cale: pe + 'video_vertical.mp4', latime: 1080, inaltime: 1920, mime: 'video/mp4', marime_bytes: 10 },
+      imagine_patrat: { cale: pa + 'imagine_patrat.jpg', latime: 1080, inaltime: 1080, mime: 'image/jpeg', marime_bytes: 10 },   // calea altei pagini
+    };
+    r = await apel(apiC, { token: 'tok-sup', query: { export: '1', id: ex.id } });
+    const f = r.corp.export && r.corp.export.fisiere;
+    verifica(r.statusCode === 200 && f.length === 1 && f[0].nume === 'video_vertical.mp4' && f[0].url.includes(pe) && !JSON.stringify(r.corp).includes(pa),
+      'exportul nu conține materialul altei pagini ' + JSON.stringify(f));
+    verifica(/exp=600/.test(f[0].url) && r.corp.export.expira_in_s === 600, 'adresele semnate expiră în 10 minute');
+    const txt = r.corp.export.txt.continut;
+    verifica(/Află mai multe \/ Learn more \(afla_mai_multe\)/.test(txt) && txt.includes('https://mydarrin.homebestpal.com/despre-noi?utm_source=tiktok') && /Titlu/.test(txt),
+      'texte.txt: textele, CTA RO / EN și linkul cu UTM');
+    verifica(r.corp.export.nume_arhiva === 'campanie-despre-noi-ro-lansare-de-test.zip', 'numele arhivei: ' + r.corp.export.nume_arhiva);
+    verifica(DB.tabele.audit_log.some((a) => a.actiune === 'campanie_export'), 'exportul se auditează');
+    r = await apel(apiC, { token: 'tok-cit', query: { export: '1', id: ex.id } });
+    verifica(r.statusCode === 200, 'exportul cere doar dreptul de citire');
+    for (const [tok, cod] of [['tok-adm', 403], ['tok-cli', 403], ['tok-fara', 403], [null, 401]]) {
+      r = await apel(apiC, { token: tok, query: { page_path: '/despre-noi' } });
+      verifica(r.statusCode === cod, `campanii, ${tok || 'fără sesiune'} → ${cod}`);
+    }
+    r = await post('tok-cit', { ...baza, nume_campanie: 'Citire' });
+    verifica(r.statusCode === 403, 'admin seo fără poate_scrie: crearea → 403');
+    verifica(['campanie_creata', 'campanie_export'].every((a) => DB.tabele.audit_log.some((x) => x.actiune === a)), 'acțiunile se auditează');
+
+    // Fără migrare
+    DB.tabele.seo_campanii_social = null;
+    r = await apel(apiC, { token: 'tok-sup', query: { page_path: '/despre-noi' } });
+    verifica(r.statusCode === 409 && r.corp.cod === 'MIGRARE_LIPSA', 'fără tabelă → 409 MIGRARE_LIPSA');
+  }
+
   if (typeof module.exports.maiDeparte === 'function') await module.exports.maiDeparte({ verifica, apel, reset, ruleaza });
 
   console.log(`\n${ok} trecute, ${esec} picate`);
