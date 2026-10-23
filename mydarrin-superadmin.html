@@ -462,6 +462,10 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 <script src="ui-feedback.js"></script>
 <script src="catalog-niveluri.js"></script>
 <script src="/myd-csv.js"></script>
+<!-- Pasul 11-K: editorul și previzualizarea pitch deck-ului (aceeași schemă ca serverul, același render ca pagina publică) -->
+<link rel="stylesheet" href="/pitch-deck.css">
+<script src="/pitch-deck-schema.js"></script>
+<script src="/pitch-deck-render.js"></script>
 <div id="auth-gate-overlay" style="position:fixed;inset:0;background:#0F1923;z-index:99999;display:flex;align-items:center;justify-content:center;color:#8BA3C0;font-family:sans-serif;font-size:14px">
   Se verifică accesul...
 </div>
@@ -2740,6 +2744,33 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
         <div style="padding:10px 14px;font-size:11px;color:#4A6080;border-top:1px solid #EEF2F7">Subscrierile vin din conturi cu rolul de investitor. Aprobarea cere verificarea identității aprobată (KYC); respingerea e posibilă oricând.</div>
       </div>
 
+      <!-- Pasul 11-K: pitch deck-ul pe limbi (api/admin/pitch-deck.js; decizia LM C3).
+           RO pentru limba română, EN pentru toate celelalte limbi. Importul creează ciorne;
+           nimic nu devine public până la aprobare. -->
+      <div class="sa-card" style="margin-bottom:18px" id="pd-card">
+        <div class="sa-card-hdr" style="flex-wrap:wrap;gap:8px">
+          <div style="font-weight:700;color:#1A2332;font-size:13.5px">📽️ Pitch deck</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            <button class="btn-p" id="pd-importa" style="font-size:11px;display:none" onclick="document.getElementById('pd-fisier').click()">⬆ Importă din fișier</button>
+            <input type="file" id="pd-fisier" accept=".json,application/json" multiple hidden aria-label="Fișierul pitch deck-ului (JSON)" onchange="importaPitchDeck(this)">
+          </div>
+        </div>
+        <div id="pd-viz" style="padding:10px 14px;font-size:12px;color:#5A6B7D;border-bottom:1px solid #EEF2F7"></div>
+        <div id="pd-import-msg" style="padding:0 14px"></div>
+        <div class="sa-card-body" style="padding:0;overflow:auto">
+          <div style="display:flex;gap:6px;padding:10px 14px 0" role="tablist" aria-label="Limba pitch deck-ului">
+            <button class="btn-s pd-tab" data-limba="ro" role="tab" onclick="alegeLimbaPitchDeck('ro')" style="font-size:11px">🇷🇴 RO · pentru limba română</button>
+            <button class="btn-s pd-tab" data-limba="en" role="tab" onclick="alegeLimbaPitchDeck('en')" style="font-size:11px">🇬🇧 EN · pentru en, bg, de, el, fr, tr</button>
+          </div>
+          <table class="sa-table" style="min-width:640px">
+            <thead><tr><th>Versiune</th><th>Stare</th><th>Note de verificare</th><th>Actualizată</th><th>Autor</th><th style="text-align:center">Acțiuni</th></tr></thead>
+            <tbody id="pd-tbody"><tr><td colspan="6" style="text-align:center;color:#4A6080;padding:20px">Se încarcă...</td></tr></tbody>
+          </table>
+        </div>
+        <div id="pd-editor" hidden style="padding:16px;border-top:1px solid #EEF2F7"></div>
+        <div style="padding:10px 14px;font-size:11px;color:#4A6080;border-top:1px solid #EEF2F7">„Importă din fișier” încarcă <code>docs/pitch-deck/pitch-deck-v1-ro.json</code> / <code>-en.json</code> și creează câte o ciornă pe limbă, cu notele de verificare din fișier. Aprobarea cere notele rezolvate și sursa cifrelor pe slide-urile de prognoză; aprobarea unei versiuni o retrage doar pe cea anterioară din aceeași limbă. Fiecare acțiune se înregistrează în jurnalul de audit.</div>
+      </div>
+
       <!-- Grid 2 col: Tabel investitori + Runda deschisă -->
       <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:18px;margin-bottom:18px" class="inv-admin-grid">
         <div class="sa-card">
@@ -4291,6 +4322,7 @@ async function loadInvestitoriAdmin() {
   if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#4A6080;padding:20px">Se încarcă...</td></tr>';
   loadKycInvestitori();
   loadRunde();
+  loadPitchDeck();
   try {
     const data = await kycApi('/api/admin/investitori-dashboard');
     INV_ADMIN_DATA = data;
@@ -4726,6 +4758,425 @@ function salveazaRunda(btn) {
     setTimeout(() => { document.getElementById('inv-runda-form').hidden = true; loadInvestitoriAdmin(); }, 900);
     return 'Runda a fost salvată.';
   }, { form: document.getElementById('inv-runda-form'), toast: true });
+}
+
+// ── Pasul 11-K: pitch deck-ul pe limbi (api/admin/pitch-deck) ──
+let PD = { versiuni: [], limba: 'ro', poate_scrie: false, este_superadmin: false, vizibilitate: null };
+const PD_VIZ = {
+  public: 'Public — oricine vede deck-ul complet',
+  investitori_aprobati: 'Doar investitorii cu identitatea verificată — ceilalți văd rezumatul (slide-urile 1–3)',
+};
+const fmtDataOra = (d) => d ? new Date(d).toLocaleString('ro-RO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+
+async function loadPitchDeck() {
+  const tbody = document.getElementById('pd-tbody');
+  if (!tbody) return;
+  try {
+    const j = await kycApi('/api/admin/pitch-deck');
+    PD = { ...PD, versiuni: j.versiuni || [], poate_scrie: j.poate_scrie === true, este_superadmin: j.este_superadmin === true, vizibilitate: j.vizibilitate, migrare_lipsa: j.migrare_lipsa === true };
+    document.getElementById('pd-importa').style.display = PD.poate_scrie && !PD.migrare_lipsa ? '' : 'none';
+    renderVizibilitatePitchDeck();
+    renderPitchDeck();
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#F87171;padding:20px">${escapeHTML(e.message)}</td></tr>`;
+  }
+}
+
+function renderVizibilitatePitchDeck() {
+  const el = document.getElementById('pd-viz');
+  if (!el) return;
+  if (PD.migrare_lipsa) { el.innerHTML = '<span style="color:#F87171">Tabela pitch_deck_versiuni nu are încă limbile: aplică migrarea 2026-10-22_pitch_deck_limbi.sql.</span>'; return; }
+  const v = PD.vizibilitate;
+  if (PD.este_superadmin) {
+    el.innerHTML = `<label style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><strong style="color:#1A2332">Vizibilitate:</strong>
+      <select id="pd-viz-select" style="background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:6px 10px;color:#E2E8F0;font-size:12px;font-family:inherit;max-width:100%">
+        ${Object.keys(PD_VIZ).map((k) => `<option value="${k}" ${k === v ? 'selected' : ''}>${escapeHTML(PD_VIZ[k])}</option>`).join('')}
+      </select>
+      <button class="btn-s" style="font-size:11px" onclick="salveazaVizibilitatePitchDeck(this)">Salvează</button></label>
+      <div id="pd-viz-msg"></div>`;
+  } else {
+    el.innerHTML = `<strong style="color:#1A2332">Vizibilitate:</strong> ${escapeHTML(PD_VIZ[v] || v || '—')} <span style="color:#4A6080">(o schimbă superadminul)</span>`;
+  }
+}
+
+async function salveazaVizibilitatePitchDeck(btn) {
+  const valoare = document.getElementById('pd-viz-select').value;
+  const r = await MDFeedback.salveaza(btn, document.getElementById('pd-viz-msg'), async () => {
+    await kycApi('/api/admin/pitch-deck', { metoda: 'POST', corp: { actiune: 'vizibilitate', valoare } });
+    return 'Vizibilitatea a fost salvată.';
+  });
+  if (r.ok) PD.vizibilitate = valoare;
+}
+
+function alegeLimbaPitchDeck(l) { PD.limba = l; renderPitchDeck(); }
+
+function renderPitchDeck() {
+  const tbody = document.getElementById('pd-tbody');
+  document.querySelectorAll('.pd-tab').forEach((b) => {
+    const activ = b.dataset.limba === PD.limba;
+    b.setAttribute('aria-selected', activ ? 'true' : 'false');
+    b.style.background = activ ? '#FF8C00' : '';
+    b.style.color = activ ? '#fff' : '';
+  });
+  const rows = PD.versiuni.filter((v) => v.limba === PD.limba);
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#4A6080;padding:20px">${PD.migrare_lipsa ? 'Migrarea nu e aplicată.' : 'Nicio versiune ' + PD.limba.toUpperCase() + '. ' + (PD.poate_scrie ? 'Importă <code>pitch-deck-v1-' + PD.limba + '.json</code> cu „Importă din fișier”.' : '')}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map((v) => {
+    const stare = v.aprobat
+      ? `<span class="chip chip-green" style="font-size:10px">✓ Aprobată</span><div style="font-size:10px;color:#4A6080;margin-top:3px">${fmtDataOra(v.aprobat_la)}${v.aprobat_de ? ' · ' + escapeHTML(v.aprobat_de) : ''}</div>`
+      : '<span class="chip" style="font-size:10px">Ciornă</span>';
+    const note = v.note_total
+      ? (v.note_nerezolvate ? `<span style="color:#B45309;font-weight:700">${v.note_nerezolvate} nerezolvate</span> din ${v.note_total}` : `<span style="color:#15803D">toate ${v.note_total} rezolvate</span>`)
+      : '<span style="color:#4A6080">—</span>';
+    const blocaje = !v.aprobat && v.blocaje ? `<div style="font-size:10px;color:#B45309">${v.blocaje} ${v.blocaje === 1 ? 'motiv' : 'motive'} care opresc aprobarea</div>` : '';
+    return `<tr data-pd-id="${escapeHTML(v.id)}">
+      <td><div style="font-size:12px;color:#E2E8F0;font-weight:600">${escapeHTML(v.titlu || 'Pitch deck')}</div><div style="font-size:10px;color:#4A6080">${v.slideuri} slide-uri${v.sursa ? ' · ' + escapeHTML(v.sursa) : ''}</div></td>
+      <td>${stare}</td>
+      <td style="font-size:11.5px">${note}${blocaje}</td>
+      <td style="font-size:11px;color:#8BA3C0">${fmtDataOra(v.actualizat_la || v.creat_la)}</td>
+      <td style="font-size:11px;color:#8BA3C0">${escapeHTML(v.actualizat_de || v.creat_de || '—')}</td>
+      <td style="text-align:center"><div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap" class="pd-actiuni">${typeof actiuniPitchDeck === 'function' ? actiuniPitchDeck(v) : ''}</div></td>
+    </tr>`;
+  }).join('');
+}
+
+// Importul: fiecare fișier ales devine o ciornă în limba lui (meta.limba).
+async function importaPitchDeck(input) {
+  const fisiere = Array.from(input.files || []);
+  input.value = '';
+  if (!fisiere.length) return;
+  const zona = document.getElementById('pd-import-msg');
+  const btn = document.getElementById('pd-importa');
+  const r = await MDFeedback.salveaza(btn, zona, async () => {
+    const create = [];
+    for (const f of fisiere) {
+      if (f.size > 2 * 1024 * 1024) throw new Error(`„${f.name}” are peste 2 MB: nu e un fișier de pitch deck.`);
+      let fisier;
+      try { fisier = JSON.parse(await f.text()); } catch (e) { throw new Error(`„${f.name}” nu e un fișier JSON valid.`); }
+      const j = await kycApi('/api/admin/pitch-deck', { metoda: 'POST', corp: { actiune: 'importa', fisier } });
+      create.push(`${j.versiune.limba.toUpperCase()} (${(j.versiune.note_verificare || []).length} note de verificat)`);
+    }
+    return `Ciornă creată: ${create.join(', ')}. Nimic nu e public până la aprobare.`;
+  }, { textSalveaza: 'Se importă…' });
+  if (r.ok) loadPitchDeck();
+}
+
+// ── Pasul 11-K: acțiunile unei versiuni ───────────────────────
+// Ciorna: Editează, Previzualizează, Aprobă, Duplică. Aprobată: Previzualizează,
+// Retrage aprobarea, Duplică. Doar citire: Previzualizează. Serverul decide oricum.
+function actiuniPitchDeck(v) {
+  const b = (act, txt, cls) => `<button class="${cls || 'btn-s'}" style="font-size:10px;padding:3px 8px" data-pd-act="${act}" onclick="pdActiune('${act}', this)">${txt}</button>`;
+  const lista = [b('previzualizeaza', 'Previzualizează')];
+  if (PD.poate_scrie) {
+    if (!v.aprobat) lista.unshift(b('editeaza', 'Editează'));
+    lista.push(v.aprobat ? b('retrage', 'Retrage aprobarea') : b('aproba', 'Aprobă', 'btn-p'));
+    lista.push(b('duplica', 'Duplică ca ciornă nouă'));
+  }
+  return lista.join('');
+}
+
+async function pdActiune(act, btn) {
+  const id = btn.closest('[data-pd-id]').dataset.pdId;
+  const v = PD.versiuni.find((x) => x.id === id) || {};
+  const zona = document.getElementById('pd-import-msg');
+  const limba = (v.limba || '').toUpperCase();
+  if (act === 'previzualizeaza') return previzualizarePitchDeck(id, null, btn);
+  if (act === 'editeaza') return deschideEditorPitchDeck(id);
+  if (act === 'aproba') {
+    if (!(await MDFeedback.confirma(`Aprobi „${v.titlu}”? Devine pitch deck-ul public ${limba}${limba === 'EN' ? ' (en, bg, de, el, fr, tr)' : ' (limba română)'}; versiunea aprobată anterior din aceeași limbă își pierde aprobarea. Cealaltă limbă nu se schimbă.`, { textOk: 'Aprobă' }))) return;
+    const r = await MDFeedback.salveaza(btn, zona, async () => {
+      try {
+        const j = await kycApi('/api/admin/pitch-deck', { metoda: 'POST', corp: { actiune: 'aproba', id } });
+        return `Versiunea ${limba} e aprobată și publică.` + (j.retrase && j.retrase.length ? ' Versiunea aprobată anterior în ' + limba + ' a fost retrasă.' : '');
+      } catch (e) {
+        if (e.cod === 'NOTE_NEREZOLVATE' && e.campuri && e.campuri.length) {
+          const n = e.campuri.length;
+          const detalii = e.campuri.slice(0, 8).map((c) => (c.mesaj && (c.mesaj.ro || c.mesaj)) || c.camp).join(' · ');
+          const x = new Error(`${e.message} ${n} ${n === 1 ? 'motiv' : 'motive'}: ${detalii}${n > 8 ? ' …' : ''} — deschide „Editează”, bifează notele rezolvate și completează sursele.`);
+          throw x;
+        }
+        throw e;
+      }
+    }, { textSalveaza: 'Se aprobă…' });
+    if (r.ok) loadPitchDeck();
+    return;
+  }
+  if (act === 'retrage') {
+    if (!(await MDFeedback.confirma(`Retragi aprobarea pentru „${v.titlu}”? Pagina publică ${limba} va arăta „Pitch deck în pregătire” până la aprobarea altei versiuni.`, { textOk: 'Retrage aprobarea', periculos: true }))) return;
+    const r = await MDFeedback.salveaza(btn, zona, async () => {
+      await kycApi('/api/admin/pitch-deck', { metoda: 'POST', corp: { actiune: 'retrage', id } });
+      return `Aprobarea versiunii ${limba} a fost retrasă.`;
+    }, { textSalveaza: 'Se retrage…' });
+    if (r.ok) loadPitchDeck();
+    return;
+  }
+  if (act === 'duplica') {
+    let nou = null;
+    const r = await MDFeedback.salveaza(btn, zona, async () => {
+      nou = (await kycApi('/api/admin/pitch-deck', { metoda: 'POST', corp: { actiune: 'duplica', id } })).versiune;
+      return `Ciornă nouă ${limba} creată din „${v.titlu}”.`;
+    }, { textSalveaza: 'Se duplică…' });
+    if (r.ok) { await loadPitchDeck(); if (nou) deschideEditorPitchDeck(nou.id); }
+  }
+}
+
+// ── Pasul 11-K: editorul unei ciorne (câmpurile vin din pitch-deck-schema.js) ──
+let PD_ED = null; // { v, slide_uri, note }
+const PD_STIL_IN = 'display:block;width:100%;box-sizing:border-box;margin-top:4px;background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:7px 9px;color:#E2E8F0;font-size:12.5px;font-family:inherit';
+const pdSrcImagine = (v) => /^https:\/\//.test(v) ? v : '/assets/pitch-deck/v1/' + v;
+
+async function deschideEditorPitchDeck(id) {
+  const box = document.getElementById('pd-editor');
+  box.hidden = false;
+  box.innerHTML = '<div style="color:#8BA3C0;font-size:12px">Se încarcă versiunea…</div>';
+  try {
+    const j = await kycApi('/api/admin/pitch-deck?id=' + encodeURIComponent(id));
+    PD_ED = { v: j.versiune, slide_uri: JSON.parse(JSON.stringify(j.versiune.slide_uri || [])), note: (j.versiune.note_verificare || []).map((n) => ({ ...n })) };
+    renderEditorPitchDeck();
+    box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) {
+    box.innerHTML = `<div style="color:#F87171;font-size:12px">${escapeHTML(e.message)}</div>`;
+  }
+}
+
+function pdCampHtml(d, val, cale, slide) {
+  const et = escapeHTML(d.et);
+  const lab = (inner, extra) => `<label style="display:block;font-size:11px;font-weight:700;color:#5A6B7D;min-width:0" ${extra || ''}>${et}${d.obl ? ' *' : ''}${inner}</label>`;
+  const atr = (t) => `data-cale="${cale}" data-t="${t}" data-camp="${cale}" data-eticheta="${et}"${d.nul ? ' data-nul' : ''}`;
+  const v = val == null ? '' : val;
+  switch (d.t) {
+    case 'nota':
+      return `<div style="font-size:11px;color:#4A6080;grid-column:1/-1">ℹ ${et}${typeof val === 'string' ? ': ' + escapeHTML(val) : ''}</div>`;
+    case 'text': case 'url':
+      return lab(`<input type="${d.t === 'url' ? 'url' : 'text'}" ${atr('text')} value="${escapeHTML(v)}" maxlength="${d.max || 300}" ${d.obl ? 'required' : ''} style="${PD_STIL_IN}">`);
+    case 'lung':
+      return lab(`<textarea ${atr('text')} rows="3" maxlength="${d.max || 600}" ${d.obl ? 'required' : ''} style="${PD_STIL_IN}">${escapeHTML(v)}</textarea>`, 'style="grid-column:1/-1;display:block;font-size:11px;font-weight:700;color:#5A6B7D"');
+    case 'numar': case 'intreg':
+      return lab(`<input type="number" step="${d.t === 'intreg' ? '1' : 'any'}" ${atr('numar')} value="${escapeHTML(v)}" ${d.obl ? 'required' : ''} style="${PD_STIL_IN}">`);
+    case 'bool':
+      return `<label style="display:flex;gap:6px;align-items:center;font-size:11.5px;color:#8BA3C0"><input type="checkbox" ${atr('bool')} ${val === true ? 'checked' : ''}> ${et}</label>`;
+    case 'enum':
+      return lab(`<select ${atr('text')} style="${PD_STIL_IN}">${d.nul ? '<option value="">—</option>' : ''}${d.valori.map((o) => `<option value="${o}" ${o === val ? 'selected' : ''}>${o}</option>`).join('')}</select>`);
+    case 'imagine':
+      return lab(`<div style="display:flex;gap:6px;align-items:center;margin-top:4px">
+          ${val ? `<img src="${escapeHTML(pdSrcImagine(val))}" alt="" style="width:48px;height:32px;object-fit:cover;border-radius:4px;flex:0 0 auto" data-pd-thumb="${cale}">` : ''}
+          <input type="text" ${atr('text')} value="${escapeHTML(v)}" ${d.obl ? 'required' : ''} style="${PD_STIL_IN};margin-top:0">
+          <button type="button" class="btn-s" style="font-size:10px;padding:5px 8px;flex:0 0 auto" onclick="this.nextElementSibling.click()">⬆ Încarcă</button>
+          <input type="file" accept="image/webp,image/png,image/jpeg" hidden data-pd-incarca="${cale}" aria-label="Încarcă ${et}">
+        </div>`);
+    case 'lista_text': case 'lista_numar':
+      return lab(`<textarea ${atr(d.t)} rows="${Math.min(8, (Array.isArray(val) ? val.length : 0) + 1)}" ${d.obl ? 'data-obligatoriu' : ''} style="${PD_STIL_IN}">${escapeHTML((Array.isArray(val) ? val : []).join('\n'))}</textarea>`);
+    case 'lista_bool': {
+      const col = (slide && slide.coloane) || [];
+      const arr = Array.isArray(val) ? val : [];
+      return `<div style="font-size:11px;font-weight:700;color:#5A6B7D" data-camp="${cale}">${et}<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">${col.map((c, j) =>
+        `<label style="display:flex;gap:4px;align-items:center;font-weight:600;color:#8BA3C0"><input type="checkbox" data-cale="${cale}.${j}" data-t="bool" ${arr[j] === true ? 'checked' : ''}> ${escapeHTML(c)}</label>`).join('')}</div></div>`;
+    }
+    case 'obiect':
+      return `<fieldset style="grid-column:1/-1;border:1px solid #2D3F55;border-radius:8px;padding:8px 10px"><legend style="font-size:11px;font-weight:700;color:#8BA3C0;padding:0 4px">${et}</legend>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">${Object.keys(d.campuri).map((k) => pdCampHtml(d.campuri[k], (val || {})[k], cale + '.' + k, slide)).join('')}</div></fieldset>`;
+    case 'lista': {
+      const arr = Array.isArray(val) ? val : [];
+      return `<div style="grid-column:1/-1" data-camp="${cale}"><div style="font-size:11px;font-weight:700;color:#5A6B7D;margin-bottom:4px">${et}</div>${arr.map((x, i) =>
+        `<fieldset style="border:1px solid #2D3F55;border-radius:8px;padding:8px 10px;margin-bottom:6px"><legend style="font-size:11px;font-weight:700;color:#8BA3C0;padding:0 4px">${et} ${i + 1}
+            <button type="button" class="btn-s" style="font-size:10px;padding:1px 6px;margin-left:6px" data-pd-sterge="${cale}" data-idx="${i}">Șterge</button></legend>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">${Object.keys(d.campuri).map((k) => pdCampHtml(d.campuri[k], (x || {})[k], cale + '.' + i + '.' + k, slide)).join('')}</div></fieldset>`).join('')}
+        <button type="button" class="btn-s" style="font-size:10.5px" data-pd-adauga="${cale}">+ Adaugă</button></div>`;
+    }
+  }
+  return '';
+}
+
+function pdSlideHtml(s, i) {
+  const S = window.MDPitchDeckSchema;
+  const campuri = S.campuriTip(s.tip) || {};
+  const note = PD_ED.note.filter((n) => n.slide === s.nr && !n.rezolvat).length;
+  const faraSursa = s.prognoza === true && !(typeof s.sursa === 'string' && s.sursa.trim());
+  return `<details data-pd-slide="${i}" style="border:1px solid #2D3F55;border-radius:10px;margin-bottom:8px;background:#111C2E">
+    <summary style="cursor:pointer;padding:10px 12px;font-size:12.5px;color:#E2E8F0;font-weight:700">Slide ${i + 1} · ${escapeHTML(S.ETICHETE_TIP[s.tip] || s.tip)} — ${escapeHTML(String(s.titlu || '').slice(0, 70))}
+      ${s.prognoza ? '<span class="chip chip-orange" style="font-size:9.5px;margin-left:6px">prognoză</span>' : ''}
+      ${note ? `<span class="chip" style="font-size:9.5px;margin-left:4px;background:#7A4A00;color:#FFE1C2">${note} ${note === 1 ? 'notă' : 'note'}</span>` : ''}
+      ${faraSursa ? '<span class="chip" style="font-size:9.5px;margin-left:4px;background:#7A2020;color:#FECACA">fără sursă</span>' : ''}</summary>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;padding:4px 12px 12px">
+      ${Object.keys(campuri).filter((k) => k !== 'sursa' || s.prognoza === true).map((k) => pdCampHtml(campuri[k], s[k], `slide_uri.${i}.${k}`, s)).join('')}
+    </div></details>`;
+}
+
+function renderEditorPitchDeck() {
+  const box = document.getElementById('pd-editor');
+  const v = PD_ED.v;
+  const nerez = PD_ED.note.filter((n) => !n.rezolvat).length;
+  box.innerHTML = `
+    <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+      <div style="font-weight:700;color:#E2E8F0">Editează ciorna ${escapeHTML((v.limba || '').toUpperCase())} — „${escapeHTML(v.titlu || '')}”</div>
+      <button type="button" class="btn-s" style="font-size:11px" onclick="inchideEditorPitchDeck()">Închide</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:14px">
+      <label style="display:block;font-size:11px;font-weight:700;color:#5A6B7D">Titlul versiunii *<input id="pd-ed-titlu" data-camp="titlu" data-eticheta="Titlul versiunii" required maxlength="120" value="${escapeHTML(v.titlu || '')}" style="${PD_STIL_IN}"></label>
+      <label style="display:block;font-size:11px;font-weight:700;color:#5A6B7D">Sursa versiunii<input id="pd-ed-sursa" data-camp="sursa" maxlength="300" value="${escapeHTML(v.sursa || '')}" style="${PD_STIL_IN}"></label>
+      <label style="display:block;font-size:11px;font-weight:700;color:#5A6B7D;grid-column:1/-1">Eticheta de prognoză (pe slide-urile cu cifre estimate)<input id="pd-ed-disclaimer" data-camp="disclaimer" data-eticheta="Eticheta de prognoză" maxlength="300" value="${escapeHTML(v.disclaimer || '')}" style="${PD_STIL_IN}"></label>
+    </div>
+    <div style="margin-bottom:14px;padding:10px 12px;border-radius:10px;background:#1A1408;border:1px solid rgba(255,140,0,.35)" id="pd-ed-note">
+      <div style="font-weight:700;color:#FFD9A8;font-size:12.5px;margin-bottom:6px">Note de verificare — ${nerez ? nerez + ' nerezolvate' : 'toate rezolvate'} din ${PD_ED.note.length}</div>
+      ${PD_ED.note.length ? PD_ED.note.map((n) => `<label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;color:#E2E8F0;margin-bottom:5px" data-camp="note_verificare.${escapeHTML(n.id)}">
+          <input type="checkbox" data-pd-nota="${escapeHTML(n.id)}" ${n.rezolvat ? 'checked' : ''} style="margin-top:2px"> <span><strong>Slide ${n.slide}:</strong> ${escapeHTML(n.text)} <em style="color:#8BA3C0">— rezolvat</em></span></label>`).join('') : '<div style="font-size:12px;color:#8BA3C0">Nicio notă.</div>'}
+      <div style="font-size:11px;color:#C9A36A;margin-top:6px">Aprobarea cere toate notele bifate „rezolvat” și sursa cifrelor pe fiecare slide de prognoză.</div>
+    </div>
+    <div id="pd-ed-slideuri">${PD_ED.slide_uri.map(pdSlideHtml).join('')}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+      <button type="button" class="btn-p" id="pd-ed-salveaza" onclick="salveazaEditorPitchDeck(this)">Salvează ciorna</button>
+      <button type="button" class="btn-s" id="pd-ed-previzualizeaza" onclick="previzualizarePitchDeck(PD_ED.v.id, PD_ED, this)">Previzualizează (cu modificările)</button>
+    </div>
+    <div id="pd-ed-msg"></div>`;
+  box.oninput = box.onchange = pdEditorSchimbare;
+  box.onclick = pdEditorClic;
+}
+
+function inchideEditorPitchDeck() { PD_ED = null; const b = document.getElementById('pd-editor'); b.hidden = true; b.innerHTML = ''; }
+
+// Valoarea la o cale „slide_uri.3.cifre.1.valoare”.
+function pdLa(cale) { return cale.split('.').reduce((o, k) => (o == null ? o : o[k]), PD_ED); }
+function pdSeteaza(cale, val) {
+  const parti = cale.split('.');
+  const ultim = parti.pop();
+  const parinte = parti.reduce((o, k, i) => { if (o[k] == null) o[k] = /^\d+$/.test(parti[i + 1] || ultim) ? [] : {}; return o[k]; }, PD_ED);
+  if (val === undefined) delete parinte[ultim]; else parinte[ultim] = val;
+}
+
+function pdEditorSchimbare(e) {
+  const el = e.target;
+  if (el.dataset.pdNota) {
+    const n = PD_ED.note.find((x) => x.id === el.dataset.pdNota);
+    if (n) n.rezolvat = el.checked;
+    return;
+  }
+  if (el.dataset.pdIncarca && e.type === 'change') return incarcaImaginePitchDeck(el);
+  const cale = el.dataset.cale;
+  if (!cale) return;
+  const t = el.dataset.t;
+  let v;
+  if (t === 'bool') v = el.checked;
+  else if (t === 'numar') v = el.value === '' ? null : Number(el.value);
+  else if (t === 'lista_text') v = el.value.split('\n').map((x) => x.trim()).filter(Boolean);
+  else if (t === 'lista_numar') v = el.value.split('\n').map((x) => x.trim()).filter(Boolean).map(Number);
+  else v = el.value === '' ? (el.hasAttribute('data-nul') ? null : undefined) : el.value;
+  pdSeteaza(cale, v);
+  // Bifa „prognoză” arată / ascunde câmpul sursei: redesenăm slide-ul.
+  if (/\.prognoza$/.test(cale) && e.type === 'change') pdRedeseneazaSlide(Number(cale.split('.')[1]));
+}
+
+function pdRedeseneazaSlide(i) {
+  const vechi = document.querySelector(`[data-pd-slide="${i}"]`);
+  if (!vechi) return;
+  const deschis = vechi.open;
+  vechi.outerHTML = pdSlideHtml(PD_ED.slide_uri[i], i);
+  const nou = document.querySelector(`[data-pd-slide="${i}"]`);
+  if (nou) nou.open = deschis;
+}
+
+function pdEditorClic(e) {
+  const add = e.target.closest('[data-pd-adauga]');
+  const del = e.target.closest('[data-pd-sterge]');
+  if (!add && !del) return;
+  e.preventDefault();
+  const cale = (add || del).dataset[add ? 'pdAdauga' : 'pdSterge'];
+  const i = Number(cale.split('.')[1]);
+  const lista = pdLa(cale) || [];
+  if (del) lista.splice(Number(del.dataset.idx), 1);
+  else {
+    const S = window.MDPitchDeckSchema;
+    const desc = cale.split('.').slice(2).reduce((d, k) => (d && /^\d+$/.test(k) ? d : d && (d.campuri ? d.campuri[k] : d[k])), S.campuriTip(PD_ED.slide_uri[i].tip));
+    const nou = {};
+    Object.keys((desc && desc.campuri) || {}).forEach((k) => { const c = desc.campuri[k]; if (c.t === 'bool') nou[k] = false; else if (c.t === 'lista_bool') nou[k] = (PD_ED.slide_uri[i].coloane || []).map(() => false); else if (c.nul) nou[k] = null; });
+    lista.push(nou);
+  }
+  pdSeteaza(cale, lista);
+  pdRedeseneazaSlide(i);
+}
+
+// Imaginea se încarcă direct în bucket-ul pitch-deck-media, prin adresa semnată emisă de server.
+async function incarcaImaginePitchDeck(input) {
+  const f = input.files && input.files[0];
+  input.value = '';
+  if (!f) return;
+  const cale = input.dataset.pdIncarca;
+  const btn = input.previousElementSibling;
+  const r = await MDFeedback.salveaza(btn, null, async () => {
+    if (!/^image\/(webp|png|jpeg)$/.test(f.type)) throw new Error('Imaginea trebuie să fie WebP, PNG sau JPG.');
+    if (f.size > 5 * 1024 * 1024) throw new Error('Imaginea are peste 5 MB.');
+    const j = await kycApi('/api/admin/pitch-deck', { metoda: 'POST', corp: { actiune: 'url_incarcare', tip: f.type, marime: f.size } });
+    const { error } = await window.supabaseClient.storage.from(j.bucket).uploadToSignedUrl(j.cale, j.token, f, { contentType: f.type });
+    if (error) throw new Error('Încărcarea a eșuat: ' + (error.message || 'eroare de stocare'));
+    pdSeteaza(cale, j.url_public);
+    return 'Imaginea a fost încărcată. Salvează ciorna ca să o păstrezi.';
+  }, { textSalveaza: 'Se încarcă…', toast: true });
+  if (r.ok) pdRedeseneazaSlide(Number(cale.split('.')[1]));
+}
+
+async function salveazaEditorPitchDeck(btn) {
+  const box = document.getElementById('pd-editor');
+  const corp = {
+    actiune: 'salveaza', id: PD_ED.v.id,
+    titlu: document.getElementById('pd-ed-titlu').value, sursa: document.getElementById('pd-ed-sursa').value,
+    disclaimer: document.getElementById('pd-ed-disclaimer').value,
+    slide_uri: PD_ED.slide_uri, note_verificare: PD_ED.note.map((n) => ({ id: n.id, rezolvat: n.rezolvat === true })),
+  };
+  const r = await MDFeedback.salveaza(btn, document.getElementById('pd-ed-msg'), async () => {
+    const j = await kycApi('/api/admin/pitch-deck', { metoda: 'POST', corp });
+    PD_ED.v = j.versiune;
+    const nerez = (j.versiune.note_verificare || []).filter((n) => !n.rezolvat).length;
+    const faraSursa = window.MDPitchDeckSchema.faraSursa(j.versiune.slide_uri).length;
+    return 'Ciorna a fost salvată.' + (nerez || faraSursa ? ` Înainte de aprobare: ${nerez} note nerezolvate, ${faraSursa} slide-uri de prognoză fără sursă.` : ' Se poate aproba.');
+  }, { form: box, toast: true });
+  if (r.ok) { loadPitchDeck(); return; }
+  // Câmpurile greșite pot sta în slide-uri închise: le deschidem și ducem focusul la primul.
+  const gresite = box.querySelectorAll('[aria-invalid="true"]');
+  gresite.forEach((el) => { const d = el.closest('details'); if (d) d.open = true; });
+  if (gresite[0]) gresite[0].focus();
+}
+
+// ── Pasul 11-K: previzualizarea = renderul public (pitch-deck-render.js) ──
+async function previzualizarePitchDeck(id, local, btn) {
+  let payload;
+  try {
+    payload = await kycApi('/api/admin/pitch-deck', { metoda: 'POST', corp: { actiune: 'previzualizare', id } });
+  } catch (e) { MDFeedback.toast('eroare', e.message); return; }
+  // Din editor: modificările nesalvate (runda, emailul și QR-ul vin de la server).
+  if (local) payload.deck = { ...payload.deck, slide_uri: local.slide_uri, total_slideuri: local.slide_uri.length, disclaimer: document.getElementById('pd-ed-disclaimer').value };
+  const vechi = document.getElementById('pd-prev');
+  if (vechi) vechi.remove();
+  const m = document.createElement('div');
+  m.id = 'pd-prev';
+  m.setAttribute('role', 'dialog');
+  m.setAttribute('aria-modal', 'true');
+  m.setAttribute('aria-label', 'Previzualizarea pitch deck-ului');
+  m.style.cssText = 'position:fixed;inset:0;z-index:2000;background:rgba(9,14,26,.97);display:flex;flex-direction:column;overflow:auto';
+  m.innerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;flex-wrap:wrap;color:#E2E8F0">
+      <strong style="font-size:13px">Previzualizare · ${escapeHTML((payload.limba || '').toUpperCase())}${local ? ' · cu modificările nesalvate' : ''}</strong><span style="flex:1"></span>
+      <button type="button" class="btn-s" id="pd-prev-inapoi" style="font-size:12px" aria-label="Slide-ul anterior">←</button>
+      <span id="pd-prev-contor" style="font-size:12px;min-width:56px;text-align:center"></span>
+      <button type="button" class="btn-s" id="pd-prev-inainte" style="font-size:12px" aria-label="Slide-ul următor">→</button>
+      <button type="button" class="btn-p" id="pd-prev-inchide" style="font-size:12px">Închide</button></div>
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:0 12px 16px"><div id="pd-prev-deck" style="width:min(100%,calc((100vh - 90px) * 16 / 9))"></div></div>`;
+  document.body.appendChild(m);
+  const focusInainte = btn || document.activeElement;
+  const deck = window.MDPitchDeck.creeaza(document.getElementById('pd-prev-deck'), {
+    payload, limba: payload.limba, prefix: 'prev-',
+    onSchimbare: (i, total) => { document.getElementById('pd-prev-contor').textContent = (i + 1) + ' / ' + total; },
+  });
+  const taste = (e) => {
+    if (e.key === 'ArrowRight') { e.preventDefault(); deck.urmator(); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); deck.anterior(); }
+    else if (e.key === 'Escape') inchide();
+  };
+  function inchide() { document.removeEventListener('keydown', taste); deck.distruge(); m.remove(); if (focusInainte && focusInainte.focus) focusInainte.focus(); }
+  document.addEventListener('keydown', taste);
+  document.getElementById('pd-prev-inapoi').onclick = () => deck.anterior();
+  document.getElementById('pd-prev-inainte').onclick = () => deck.urmator();
+  document.getElementById('pd-prev-inchide').onclick = inchide;
+  document.getElementById('pd-prev-inchide').focus();
 }
 
 // ── Export CSV ────────────────────────────────────────────────
