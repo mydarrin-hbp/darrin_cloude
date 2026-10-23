@@ -44,6 +44,8 @@ html,body{margin:0;background:#16213A;color:#fff;font-family:'Helvetica World','
 .pd-btn-ico{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:9px;height:34px;min-width:34px;padding:0 10px;cursor:pointer;font:700 12.5px inherit;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;gap:6px}
 .pd-btn-ico:disabled{opacity:.35;cursor:default}
 .pd-btn-ico:focus-visible,.pd-comutator button:focus-visible,.pd-select:focus-visible{outline:2px solid #F08120;outline-offset:2px}
+/* Ecranul complet simulat (iPhone, 11-K3): fără barele paginii */
+html.pdp-simulat-activ .pd-top,html.pdp-simulat-activ .pd-nav{display:none}
 main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px 16px}
 #pd-deck{width:min(100%,calc((100svh - 150px) * 16 / 9));max-width:1600px}
 .pd-nav{position:sticky;bottom:0;z-index:20;display:flex;align-items:center;justify-content:center;gap:14px;padding:10px max(16px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));background:rgba(22,33,58,.94);backdrop-filter:blur(8px);border-top:1px solid rgba(255,255,255,.08)}
@@ -270,6 +272,7 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
       // „Vezi cifrele reale →” de pe slide-urile 10, 12, 17, 18
       onLive: function () { seteazaMod('live'); },
       onSchimbare: function (i, total) {
+        prez.laSchimbare(i, total);
         $('pd-contor').textContent = (i + 1) + ' / ' + total;
         $('pd-progres').style.width = ((i + 1) / total * 100) + '%';
         $('pd-inapoi-slide').disabled = i === 0;
@@ -372,6 +375,7 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
     try { localStorage.setItem(LANG_KEY, l); } catch (e) {}
     document.documentElement.lang = l;
     aplicaTexte();
+    prez.texte();
     if (limbaDeck(l) !== inainte || !stare.payload) incarca();
     if (stare.live && stare.live.gata && limbaDeck(l) !== inainte) randeazaLive();
   }
@@ -382,16 +386,14 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
   $('pd-inapoi-slide').addEventListener('click', function () { stare.deck && stare.deck.anterior(); });
   $('pd-inainte-slide').addEventListener('click', function () { stare.deck && stare.deck.urmator(); });
   // ── Modurile de prezentare (11-K3): meniul „▶ Prezintă” ─────────
-  var meniu = window.MDPrezentare.meniu({
-    buton: $('pd-prezinta'),
+  var prez = window.MDPrezentare.ataseaza({
+    buton: $('pd-prezinta'), scena: $('pd-deck'),
+    deck: function () { return stare.deck; },
     limba: function () { return limbaDeck(stare.limba); },
     stareMod: function (mod) {
       var t = window.MDPrezentare.TEXTE[limbaDeck(stare.limba)];
       if (mod === 'prezentator') return t.motiv_admin;
       return null;
-    },
-    moduri: {
-      ecran: function () { if ($('pd-deck').requestFullscreen) $('pd-deck').requestFullscreen().catch(function () {}); },
     },
   });
   document.addEventListener('keydown', function (e) {

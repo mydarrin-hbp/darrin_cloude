@@ -293,3 +293,36 @@
 .pdp-meniu.pdp-foaie .pdp-desc{font-size:15px}
 .pdp-meniu.pdp-foaie .pdp-titlu{font-size:16px}
 .pdp-meniu.pdp-foaie .pdp-motiv{font-size:14px}
+
+/* Ecran complet (real sau simulat): slide-ul 16:9 centrat, bare negre egale */
+.pdp-cadru{position:relative;width:100%}
+.pdp-fs{display:none}
+.pdp-ecran{width:100vw!important;max-width:none!important;height:100vh;height:100dvh;margin:0!important;background:#000;display:flex!important;align-items:center;justify-content:center;overflow:hidden;box-sizing:border-box}
+.pdp-ecran .pdp-cadru{width:min(100vw,calc(100vh * 16 / 9));width:min(100vw,calc(100dvh * 16 / 9))}
+.pdp-ecran .mdpd-stage{border-radius:0}
+.pdp-simulat{position:fixed!important;inset:0;z-index:2500}
+html.pdp-simulat-activ,html.pdp-simulat-activ body{overflow:hidden!important}
+.pdp-fara-cursor,.pdp-fara-cursor *{cursor:none!important}
+.pdp-ecran .pdp-fs{display:block}
+.pdp-fs-sus,.pdp-fs-jos,.pdp-roteste{position:fixed;z-index:2600;display:flex;align-items:center;gap:8px;transition:opacity .3s ease}
+.pdp-fs-sus{top:max(12px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right))}
+.pdp-fs-jos{left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom));padding:6px;border-radius:14px;background:rgba(10,16,30,.72);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12)}
+.pdp-fs-sus .pdp-fs-btn{background:rgba(10,16,30,.72);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.pdp-fs.pdp-ascuns .pdp-fs-sus,.pdp-fs.pdp-ascuns .pdp-fs-jos{opacity:0;pointer-events:none}
+.pdp-fs-btn{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:11px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;font:700 18px/1 'Helvetica Neue',Arial,system-ui,sans-serif;cursor:pointer;padding:0}
+.pdp-fs-btn svg{width:22px;height:22px;display:block}
+.pdp-fs-btn:hover{background:rgba(255,255,255,.16)}
+.pdp-fs-btn:disabled{opacity:.35;cursor:default}
+.pdp-fs-btn:focus-visible{outline:2px solid #F08120;outline-offset:2px}
+.pdp-fs-contor{min-width:64px;text-align:center;color:#fff;font:700 14px/1 'Helvetica Neue',Arial,system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.pdp-fs-extra:empty{display:none}
+.pdp-fs-extra{display:inline-flex;align-items:center;gap:8px}
+.pdp-roteste{top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));right:calc(max(12px,env(safe-area-inset-right)) + 54px);padding:6px 6px 6px 14px;border-radius:12px;background:rgba(10,16,30,.86);border:1px solid rgba(255,255,255,.14);color:#fff;font:600 14px/1.35 'Helvetica Neue',Arial,system-ui,sans-serif}
+.pdp-roteste[hidden]{display:none}
+.pdp-roteste-t{flex:1;min-width:0}
+/* Telefon pe verticală: aspectul vertical al deck-ului, derulat în ecran complet */
+@media (max-width:720px){
+  .pdp-ecran{align-items:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .pdp-ecran .pdp-cadru{width:100%}
+  .pdp-ecran .mdpd-slide{min-height:100vh;min-height:100dvh;padding-top:calc(66px + env(safe-area-inset-top));padding-bottom:calc(86px + env(safe-area-inset-bottom))}
+}

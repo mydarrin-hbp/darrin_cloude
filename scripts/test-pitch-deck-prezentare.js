@@ -208,12 +208,88 @@ async function testMeniu(browser, baza) {
   }
 }
 
+// ═══ E. Ecran complet ══════════════════════════════════════════════
+// Browser fără Fullscreen API (ca pe iPhone).
+function faraFullscreen() {
+  delete Element.prototype.requestFullscreen; delete Element.prototype.webkitRequestFullscreen;
+  Object.defineProperty(Document.prototype, 'fullscreenEnabled', { configurable: true, get: () => false });
+}
+async function stareEcran(pg) {
+  return pg.evaluate(() => {
+    const sc = document.getElementById('pd-deck'), c = sc.querySelector('.pdp-cadru').getBoundingClientRect();
+    const W = window.innerWidth, H = window.innerHeight;
+    const jos = sc.querySelector('.pdp-fs-jos'), x = sc.querySelector('[data-fs="iesire"]');
+    return {
+      activ: sc.classList.contains('pdp-ecran'), simulat: sc.classList.contains('pdp-simulat'), real: document.fullscreenElement === sc,
+      bare: [Math.round(c.left), Math.round(W - c.right), Math.round(c.top), Math.round(H - c.bottom)], raport: c.width / c.height,
+      controale: getComputedStyle(jos).opacity === '1' && !!jos.getBoundingClientRect().width, iesire: !!x.getBoundingClientRect().width && getComputedStyle(x.parentElement).opacity === '1',
+      contor: sc.querySelector('.pdp-fs-contor').textContent, slide: document.querySelector('#pd-deck .mdpd-activ').dataset.nr,
+      bara: getComputedStyle(document.querySelector('.pd-top')).display, roteste: !sc.querySelector('.pdp-roteste').hidden,
+    };
+  });
+}
+async function alegeMod(pg, mod) {
+  await pg.click('#pd-prezinta');
+  await pg.click(`.pdp-meniu [data-mod="${mod}"]`);
+  await pg.waitForTimeout(250);
+}
+
+async function testEcran(browser, baza) {
+  for (const lang of ['ro', 'en']) {
+    for (const [w, h] of LATIMI) {
+      for (const fara of [false, true]) {
+        const et = `E ${lang} ${w}×${h}${fara ? ' fără Fullscreen API' : ''}`;
+        reset();
+        const { ctx, pg } = await pagina(browser, baza, { lang, w, h, hash: '#slide-3', init: fara ? faraFullscreen : null });
+        await alegeMod(pg, 'ecran');
+        let s = await stareEcran(pg);
+        verifica(s.activ && (fara ? s.simulat && !s.real : s.real), `${et}: intră în ecran complet ${fara ? 'simulat' : 'real'} (${JSON.stringify(s)})`);
+        verifica(s.contor === '3 / 20' && s.slide === '3' && s.controale && s.iesire, `${et}: controalele vizibile, „3 / 20” (${s.contor})`);
+        if (w > 720) verifica(Math.abs(s.bare[0] - s.bare[1]) <= 1 && Math.abs(s.bare[2] - s.bare[3]) <= 1 && Math.abs(s.raport - 16 / 9) < 0.01, `${et}: slide-ul 16:9 centrat, bare egale (${s.bare}, ${s.raport.toFixed(3)})`);
+        if (fara) verifica(s.bara === 'none', `${et}: bara de sus ascunsă în modul simulat`);
+        verifica(s.roteste === (w < 768 && h > w), `${et}: mesajul „Rotește telefonul” ${w < 768 && h > w ? 'afișat' : 'absent'}`);
+        const g = await geometrie(pg, '.pdp-fs-btn:not([hidden]), .pdp-fs-contor, .pdp-roteste:not([hidden])');
+        verifica(!g, `${et}: controalele în ecran, fără suprapuneri (${g})`);
+        if (lang === 'ro' && [1440, 390, 844].includes(w)) await captura(pg, `ecran-${w}x${h}${fara ? '-simulat' : ''}`);
+        if (s.roteste) {
+          await pg.click('[data-fs="roteste"]');
+          verifica(!(await stareEcran(pg)).roteste, `${et}: mesajul de rotire se închide`);
+        }
+        // Navigarea în ecran complet, apoi controalele dispar după 2,5 s și revin la mișcare.
+        await pg.keyboard.press('ArrowRight');
+        await pg.waitForTimeout(2800);
+        s = await stareEcran(pg);
+        verifica(s.slide === '4' && s.contor === '4 / 20' && !s.controale, `${et}: → slide 4; controalele ascunse după 2,5 s (${s.contor}, ${s.controale})`);
+        await pg.mouse.move(w / 2, h / 2); await pg.mouse.move(w / 2 + 20, h / 2 + 10);
+        await pg.waitForTimeout(350);
+        verifica((await stareEcran(pg)).controale, `${et}: controalele revin la mișcare`);
+        // Ieșirea: X (și Escape în modul simulat), slide-ul rămâne.
+        if (fara) await pg.keyboard.press('Escape'); else await pg.click('[data-fs="iesire"]');
+        await pg.waitForTimeout(300);
+        s = await stareEcran(pg);
+        verifica(!s.activ && !s.real && s.slide === '4' && s.bara !== 'none', `${et}: ieșire cu ${fara ? 'Escape' : 'X'}, slide-ul 4 păstrat (${JSON.stringify({ a: s.activ, s: s.slide })})`);
+        if (fara) {
+          await alegeMod(pg, 'ecran');
+          await pg.click('[data-fs="iesire"]');
+          await pg.waitForTimeout(200);
+          s = await stareEcran(pg);
+          verifica(!s.activ && s.slide === '4', `${et}: ieșire cu X din modul simulat`);
+        }
+        verifica(!pg.erori.length, `${et}: 0 erori JS (${pg.erori.join(' | ')})`);
+        await ctx.close();
+      }
+    }
+    console.log(`E ${lang}: gata`);
+  }
+}
+
 (async () => {
   const srv = await porneste(0);
   const baza = 'http://localhost:' + srv.address().port;
   const browser = await chromium.launch();
   try {
     if (!process.env.DOAR || process.env.DOAR === 'M') await testMeniu(browser, baza);
+    if (!process.env.DOAR || process.env.DOAR === 'E') await testEcran(browser, baza);
   } finally {
     await browser.close();
     srv.close();

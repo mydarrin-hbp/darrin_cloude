@@ -31,6 +31,8 @@
       auto_t: 'Redare automată', auto_d: 'Setează viteza de derulare automată',
       motiv_admin: 'Disponibilă pentru administratori', motiv_ecran: 'Necesită un ecran mai mare sau orientare orizontală',
       motiv_verifica: 'Se verifică accesul…',
+      iesire: 'Ieși din ecran complet', ecran_real: 'Treci în ecran complet', anterior: 'Slide-ul anterior', urmator: 'Slide-ul următor',
+      roteste: 'Rotește telefonul pentru o vizualizare mai bună', inchide_mesaj: 'Închide mesajul',
     },
     en: {
       prezinta: 'Present', meniu: 'Presentation modes',
@@ -39,6 +41,8 @@
       auto_t: 'Autoplay', auto_d: 'Set speed to automatically play',
       motiv_admin: 'Available to administrators', motiv_ecran: 'Requires a larger screen or landscape orientation',
       motiv_verifica: 'Checking access…',
+      iesire: 'Exit full screen', ecran_real: 'Switch to full screen', anterior: 'Previous slide', urmator: 'Next slide',
+      roteste: 'Rotate your phone for a better view', inchide_mesaj: 'Dismiss the message',
     },
   };
   var MODURI = ['ecran', 'prezentator', 'auto'];
@@ -176,7 +180,143 @@
     return { deschide: deschide, inchide: inchide, get deschis() { return deschis(); }, element: m, actualizeaza: function () { if (deschis()) { deseneaza(); aseaza(); } } };
   }
 
+  // ── Ecran complet (2.2) ──────────────────────────────────────────
+  // Fullscreen API pe scenă (#pd-deck); fără API (iPhone) sau refuzat → mod
+  // simulat: scena pe tot viewport-ul (position: fixed, 100dvh), bara paginii
+  // ascunsă. Controalele (anterior / următor / „3 / 20” / ieșire) dispar după
+  // 2,5 s fără mișcare și revin la mișcare, atingere sau tastă. Ieșirea
+  // (Escape, X, gestul sistemului) nu redesenează deck-ul: slide-ul rămâne.
+  var PAUZA_CONTROALE = 2500;
+  var X = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
+  function apiFs(e) { return e.requestFullscreen || e.webkitRequestFullscreen || null; }
+  function elementFs() { return doc.fullscreenElement || doc.webkitFullscreenElement || null; }
+  function fsPermis() { return !!(doc.fullscreenEnabled || doc.webkitFullscreenEnabled); }
+
+  /**
+   * o: { scena, deck() → obiectul MDPitchDeck, limba(), laSchimbareMod(activ) }
+   */
+  function ecranComplet(o) {
+    var scena = o.scena;
+    var T = function () { return TEXTE[o.limba() === 'ro' ? 'ro' : 'en']; };
+    var fs = el('div', 'pdp-fs', { 'data-i18n-skip': '' });
+    fs.innerHTML = '<div class="pdp-fs-sus"><button type="button" class="pdp-fs-btn" data-fs="real" hidden>' + ICO.ecran + '</button>' +
+      '<button type="button" class="pdp-fs-btn" data-fs="iesire">' + X + '</button></div>' +
+      '<div class="pdp-fs-jos"><button type="button" class="pdp-fs-btn" data-fs="anterior"><span aria-hidden="true">←</span></button>' +
+      '<span class="pdp-fs-contor" aria-live="polite"></span><button type="button" class="pdp-fs-btn" data-fs="urmator"><span aria-hidden="true">→</span></button>' +
+      '<span class="pdp-fs-extra"></span></div>' +
+      '<div class="pdp-roteste" role="status" hidden><span class="pdp-roteste-t"></span><button type="button" class="pdp-fs-btn pdp-fs-mic" data-fs="roteste">' + X + '</button></div>';
+    scena.appendChild(fs);
+    var $f = function (k) { return fs.querySelector('[data-fs="' + k + '"]'); };
+    var activ = false, simulat = false, ceas = null, rotireInchisa = false;
+
+    function texte() {
+      var t = T();
+      [['real', t.ecran_real], ['iesire', t.iesire], ['anterior', t.anterior], ['urmator', t.urmator], ['roteste', t.inchide_mesaj]].forEach(function (x) {
+        $f(x[0]).setAttribute('aria-label', x[1]); $f(x[0]).title = x[1];
+      });
+      fs.querySelector('.pdp-roteste-t').textContent = t.roteste;
+    }
+    function verificaRotire() {
+      var w = win.innerWidth, h = win.innerHeight;
+      fs.querySelector('.pdp-roteste').hidden = !(activ && !rotireInchisa && w < 768 && h > w);
+    }
+    function arata() {
+      fs.classList.remove('pdp-ascuns');
+      scena.classList.remove('pdp-fara-cursor');
+      win.clearTimeout(ceas);
+      if (activ) ceas = win.setTimeout(function () { fs.classList.add('pdp-ascuns'); scena.classList.add('pdp-fara-cursor'); }, PAUZA_CONTROALE);
+    }
+    function marcheaza(on, sim) {
+      var era = activ;
+      activ = on; simulat = !!(on && sim);
+      scena.classList.toggle('pdp-ecran', on);
+      scena.classList.toggle('pdp-simulat', simulat);
+      doc.documentElement.classList.toggle('pdp-simulat-activ', simulat);
+      // Modul simulat într-un browser care are totuși API-ul: „Treci în ecran complet”.
+      $f('real').hidden = !(simulat && apiFs(scena) && fsPermis());
+      texte(); verificaRotire(); arata();
+      if (on) { var st = scena.querySelector('.mdpd-stage'); if (st && !fs.contains(doc.activeElement)) { try { st.focus({ preventScroll: true }); } catch (e) {} } }
+      if (era !== on && o.laSchimbareMod) o.laSchimbareMod(on);
+    }
+    function intra() {
+      var f = apiFs(scena);
+      if (f && fsPermis() && (!activ || simulat)) {
+        try {
+          var p = f.call(scena);
+          if (p && typeof p.then === 'function') return p.catch(function () { if (!activ) marcheaza(true, true); });
+          return Promise.resolve();
+        } catch (e) { /* refuzat → simulat */ }
+      }
+      if (!activ) marcheaza(true, true);
+      return Promise.resolve();
+    }
+    function iesi() {
+      if (!activ) return;
+      if (elementFs() === scena) {
+        var x = doc.exitFullscreen || doc.webkitExitFullscreen;
+        var p = x && x.call(doc);
+        if (p && p.catch) p.catch(function () {});
+      } else marcheaza(false, false);
+    }
+    function schimbare() {
+      if (elementFs() === scena) marcheaza(true, false);
+      else if (activ && !simulat) marcheaza(false, false);
+    }
+    doc.addEventListener('fullscreenchange', schimbare);
+    doc.addEventListener('webkitfullscreenchange', schimbare);
+    ['mousemove', 'pointerdown', 'touchstart', 'wheel'].forEach(function (ev) { scena.addEventListener(ev, function () { if (activ) arata(); }, { passive: true }); });
+    // Escape iese din modul simulat (în cel real îl tratează browserul).
+    doc.addEventListener('keydown', function (e) {
+      if (!activ) return;
+      arata();
+      if (e.key === 'Escape' && simulat && !e.defaultPrevented) { e.preventDefault(); e.stopPropagation(); iesi(); }
+    }, true);
+    win.addEventListener('resize', verificaRotire);
+    fs.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('[data-fs]');
+      if (!b) return;
+      var k = b.getAttribute('data-fs'), d = o.deck();
+      if (k === 'iesire') iesi();
+      else if (k === 'real') intra();
+      else if (k === 'anterior' && d) d.anterior();
+      else if (k === 'urmator' && d) d.urmator();
+      else if (k === 'roteste') { rotireInchisa = true; verificaRotire(); }
+    });
+    texte();
+
+    return {
+      intra: intra, iesi: iesi, element: fs, extra: fs.querySelector('.pdp-fs-extra'), texte: texte,
+      get activ() { return activ; }, get simulat() { return simulat; },
+      laSchimbare: function (i, total) {
+        fs.querySelector('.pdp-fs-contor').textContent = (i + 1) + ' / ' + total;
+        $f('anterior').disabled = i === 0;
+        $f('urmator').disabled = i === total - 1;
+      },
+    };
+  }
+
+  /**
+   * Totul legat de o scenă: meniul și ecranul complet (redarea automată și
+   * vederea prezentatorului se adaugă mai jos).
+   * o: { buton, scena, deck(), limba(), stareMod(mod) }
+   */
+  function ataseaza(o) {
+    var ecran = ecranComplet({ scena: o.scena, deck: o.deck, limba: o.limba });
+    var m = meniu({
+      buton: o.buton, limba: o.limba,
+      stareMod: function (mod) { return o.stareMod ? o.stareMod(mod) : null; },
+      moduri: { ecran: function () { ecran.intra(); } },
+    });
+    return {
+      meniu: m, ecran: ecran,
+      laSchimbare: function (i, total) { ecran.laSchimbare(i, total); },
+      texte: function () { ecran.texte(); m.actualizeaza(); },
+    };
+  }
+
   exporturi.meniu = meniu;
+  exporturi.ecranComplet = ecranComplet;
+  exporturi.ataseaza = ataseaza;
   exporturi.esteFoaie = esteFoaie;
   return exporturi;
 });
