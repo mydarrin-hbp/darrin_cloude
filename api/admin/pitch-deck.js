@@ -84,12 +84,13 @@ async function lista(res, poateScrie, esteSuper) {
   return res.status(200).json({ ok: true, versiuni: (data || []).map((v) => rezumatVersiune(v, mail)), poate_scrie: poateScrie, este_superadmin: esteSuper, vizibilitate });
 }
 
-// Importul unui fișier pitch-deck-v1-<limba>.json (meta + slide_uri).
+// Importul unui fișier pitch-deck-<versiune>-<limba>.json (meta + slide_uri);
+// titlul ciornei vine din meta.versiune („Pitch deck v1.1 · RO”).
 async function importa(req, res, admin) {
   const f = req.body && req.body.fisier;
   const meta = f && typeof f === 'object' && f.meta && typeof f.meta === 'object' ? f.meta : null;
   if (!meta || !Array.isArray(f.slide_uri)) {
-    return trimiteEroare(res, 400, 'FISIER_INVALID', 'Fișierul nu are structura pitch deck-ului (meta și slide_uri).', 'The file does not have the pitch deck structure (meta and slide_uri).', [camp('fisier', 'Alegeți pitch-deck-v1-ro.json sau pitch-deck-v1-en.json.', 'Choose pitch-deck-v1-ro.json or pitch-deck-v1-en.json.')]);
+    return trimiteEroare(res, 400, 'FISIER_INVALID', 'Fișierul nu are structura pitch deck-ului (meta și slide_uri).', 'The file does not have the pitch deck structure (meta and slide_uri).', [camp('fisier', 'Alegeți un fișier pitch-deck-<versiune>-ro.json sau -en.json (ex. pitch-deck-v1.1-ro.json).', 'Choose a pitch-deck-<version>-ro.json or -en.json file (e.g. pitch-deck-v1.1-en.json).')]);
   }
   if (!P.LIMBI_DECK.includes(meta.limba)) {
     return trimiteEroare(res, 400, 'LIMBA_INVALIDA', 'Fișierul nu spune limba (meta.limba trebuie să fie „ro” sau „en”).', 'The file does not state its language (meta.limba must be “ro” or “en”).', [camp('fisier', 'meta.limba: „ro” sau „en”.', 'meta.limba: “ro” or “en”.')]);
