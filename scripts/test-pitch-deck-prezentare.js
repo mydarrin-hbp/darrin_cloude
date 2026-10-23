@@ -643,6 +643,50 @@ async function testAuto(browser, baza) {
   console.log('R: gata');
 }
 
+// ═══ V. Responsive și aliniere (2.6) ═══════════════════════════════
+async function testResponsive(browser, baza) {
+  const fs = require('fs');
+  const css = fs.readFileSync(path.join(RADACINA, 'pitch-deck.css'), 'utf8'), html = fs.readFileSync(path.join(RADACINA, 'mydarrin-pitch-deck.html'), 'utf8');
+  verifica(/viewport-fit=cover/.test(html) && ['top', 'right', 'bottom', 'left'].every((k) => css.includes('safe-area-inset-' + k) || html.includes('safe-area-inset-' + k)), 'V: zonele sigure (viewport-fit=cover, env(safe-area-inset-*))');
+  for (const lang of ['ro', 'en']) {
+    for (const [w, h] of LATIMI) {
+      const et = `V ${lang} ${w}×${h}`;
+      reset();
+      const { ctx, pg } = await pagina(browser, baza, { lang, w, h, ceas: true });
+      await pornesteAuto(pg, 10);
+      await pg.keyboard.press(' '); // pe pauză: controalele rămân, nimic nu se mișcă
+      const r = await pg.evaluate(() => {
+        const W = document.documentElement.clientWidth;
+        const tinte = [...document.querySelectorAll('.pd-top a, .pd-top button:not([hidden]), .pd-top select, #pd-nav button')].filter((e) => e.getBoundingClientRect().width && !e.closest('[hidden]'));
+        const texte = [...document.querySelectorAll('.pd-top a, .pd-top button, .pd-top select, #pd-nav button, #pd-contor, .pdp-auto-viteza')].filter((e) => e.getBoundingClientRect().width && !e.closest('[hidden]'));
+        const top = document.querySelector('.pd-top').getBoundingClientRect(), nav = document.getElementById('pd-nav').getBoundingClientRect();
+        return {
+          scroll: document.documentElement.scrollWidth - W,
+          mici: tinte.filter((e) => { const b = e.getBoundingClientRect(); return b.width < 44 || b.height < 44; }).map((e) => (e.id || e.className || e.tagName) + ' ' + Math.round(e.getBoundingClientRect().width) + '×' + Math.round(e.getBoundingClientRect().height)),
+          font: texte.map((e) => [(e.id || e.className || e.tagName), parseFloat(getComputedStyle(e).fontSize)]).filter((x) => x[1] < 14),
+          inaltimi: [...document.querySelectorAll('.pd-top > :not([hidden]):not(.pd-spatiu):not(.pd-titlu)')].filter((e) => e.tagName !== 'A' || window.innerWidth < 1024 || window.innerHeight < 500).map((e) => Math.round(e.getBoundingClientRect().height)),
+          navCentru: [...document.querySelectorAll('#pd-nav > :not([hidden]):not(.pd-bara)')].map((e) => { const b = e.getBoundingClientRect(); return Math.round(b.top + b.height / 2); }),
+          top: [top.left, top.right], nav: [nav.left, nav.right],
+          prez: (() => { const b = document.getElementById('pd-prezinta').getBoundingClientRect(); return b.width && b.right <= W + 0.5 && b.left >= 0; })(),
+        };
+      });
+      verifica(r.scroll <= 0, `${et}: fără bară orizontală (${r.scroll} px în plus)`);
+      verifica(r.prez, `${et}: butonul „Prezintă” vizibil, în ecran`);
+      if (w < 1024 || h > w || h < 500) verifica(!r.mici.length, `${et}: ținte de atingere ≥ 44 × 44 px (${r.mici.join(', ')})`);
+      if (TELEFON(w, h)) verifica(!r.font.length, `${et}: text ≥ 14 px pe telefon (${JSON.stringify(r.font)})`);
+      verifica(new Set(r.inaltimi).size === 1, `${et}: controalele din bara de sus au aceeași înălțime (${r.inaltimi})`);
+      verifica(Math.max(...r.navCentru) - Math.min(...r.navCentru) <= 1, `${et}: bara de jos aliniată pe mijloc (${r.navCentru})`);
+      const g1 = await geometrie(pg, '.pd-top > :not([hidden]):not(.pd-spatiu)');
+      const g2 = await geometrie(pg, '#pd-nav > :not([hidden]), #pd-nav .pdp-auto > *');
+      verifica(!g1 && !g2, `${et}: nimic suprapus sau în afara ecranului (${g1} ${g2})`);
+      if (lang === 'ro' && [390, 360, 768].includes(w)) await captura(pg, `bara-${w}x${h}`);
+      verifica(!pg.erori.length, `${et}: 0 erori JS (${pg.erori.join(' | ')})`);
+      await ctx.close();
+    }
+    console.log(`V ${lang}: gata`);
+  }
+}
+
 (async () => {
   const srv = await porneste(0);
   const baza = 'http://localhost:' + srv.address().port;
@@ -652,6 +696,7 @@ async function testAuto(browser, baza) {
     if (!process.env.DOAR || process.env.DOAR === 'E') await testEcran(browser, baza);
     if (!process.env.DOAR || process.env.DOAR === 'P') await testPrezentator(browser, baza);
     if (!process.env.DOAR || process.env.DOAR === 'R') await testAuto(browser, baza);
+    if (!process.env.DOAR || process.env.DOAR === 'V') await testResponsive(browser, baza);
   } finally {
     await browser.close();
     srv.close();
