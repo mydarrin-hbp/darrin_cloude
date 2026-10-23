@@ -466,6 +466,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 <link rel="stylesheet" href="/pitch-deck.css">
 <script src="/pitch-deck-schema.js"></script>
 <script src="/pitch-deck-render.js"></script>
+<script src="/pitch-deck-prezentare.js"></script>
 <div id="auth-gate-overlay" style="position:fixed;inset:0;background:#0F1923;z-index:99999;display:flex;align-items:center;justify-content:center;color:#8BA3C0;font-family:sans-serif;font-size:14px">
   Se verifică accesul...
 </div>
@@ -5170,20 +5171,29 @@ async function previzualizarePitchDeck(id, local, btn) {
       <button type="button" class="btn-s" id="pd-prev-inapoi" style="font-size:12px" aria-label="Slide-ul anterior">←</button>
       <span id="pd-prev-contor" style="font-size:12px;min-width:56px;text-align:center"></span>
       <button type="button" class="btn-s" id="pd-prev-inainte" style="font-size:12px" aria-label="Slide-ul următor">→</button>
+      <button type="button" class="btn-p" id="pd-prev-prezinta" style="font-size:12px;min-height:34px;white-space:nowrap"><span aria-hidden="true" style="font-size:10px">▶</span> Prezintă</button>
       <button type="button" class="btn-p" id="pd-prev-inchide" style="font-size:12px">Închide</button></div>
-    <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:0 12px 16px"><div id="pd-prev-deck" style="width:min(100%,calc((100vh - 90px) * 16 / 9))"></div></div>`;
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:0 12px 16px"><div id="pd-prev-deck" style="width:min(100%,calc((100vh - 90px) * 16 / 9))"><div class="pdp-cadru"><div id="pd-prev-slideuri"></div></div></div></div>`;
   document.body.appendChild(m);
   const focusInainte = btn || document.activeElement;
-  const deck = window.MDPitchDeck.creeaza(document.getElementById('pd-prev-deck'), {
+  let deck = null;
+  // Pasul 11-K3: „▶ Prezintă” — ecran complet, vedere prezentator (cu notele
+  // primite de la previzualizare; dreptul l-a verificat deja serverul), redare automată.
+  const prez = window.MDPrezentare.ataseaza({
+    buton: document.getElementById('pd-prev-prezinta'), scena: document.getElementById('pd-prev-deck'),
+    deck: () => deck, limba: () => 'ro', limbaDeck: () => payload.limba,
+    acces: () => 'da', prezentator: () => Promise.resolve(payload),
+  });
+  deck = window.MDPitchDeck.creeaza(document.getElementById('pd-prev-slideuri'), {
     payload, limba: payload.limba, prefix: 'prev-',
-    onSchimbare: (i, total) => { document.getElementById('pd-prev-contor').textContent = (i + 1) + ' / ' + total; },
+    onSchimbare: (i, total) => { document.getElementById('pd-prev-contor').textContent = (i + 1) + ' / ' + total; prez.laSchimbare(i, total); },
   });
   const taste = (e) => {
     if (e.key === 'ArrowRight') { e.preventDefault(); deck.urmator(); }
     else if (e.key === 'ArrowLeft') { e.preventDefault(); deck.anterior(); }
     else if (e.key === 'Escape') inchide();
   };
-  function inchide() { document.removeEventListener('keydown', taste); deck.distruge(); m.remove(); if (focusInainte && focusInainte.focus) focusInainte.focus(); }
+  function inchide() { document.removeEventListener('keydown', taste); prez.distruge(); deck.distruge(); m.remove(); if (focusInainte && focusInainte.focus) focusInainte.focus(); }
   document.addEventListener('keydown', taste);
   document.getElementById('pd-prev-inapoi').onclick = () => deck.anterior();
   document.getElementById('pd-prev-inainte').onclick = () => deck.urmator();

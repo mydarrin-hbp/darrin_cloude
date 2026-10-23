@@ -33,6 +33,17 @@
       motiv_verifica: 'Se verifică accesul…',
       iesire: 'Ieși din ecran complet', ecran_real: 'Treci în ecran complet', anterior: 'Slide-ul anterior', urmator: 'Slide-ul următor',
       roteste: 'Rotește telefonul pentru o vizualizare mai bună', inchide_mesaj: 'Închide mesajul',
+      pv_titlu: 'Vedere prezentator', urmeaza: 'Urmează', final: 'Sfârșitul prezentării', note: 'Note',
+      fara_note: 'Fără note pentru acest slide', text_mic: 'Text mai mic', text_mare: 'Text mai mare',
+      cronometru: 'Cronometru', cron_pauza: 'Pune cronometrul pe pauză', cron_porneste: 'Pornește cronometrul', cron_reset: 'Resetează cronometrul',
+      ora: 'Ora curentă', negru: 'Ecran negru', negru_activ: 'Ecranul publicului e negru (B)', incheie: 'Încheie prezentarea',
+      miniaturi: 'Toate slide-urile', mergi_la: 'Mergi la slide-ul', slide: 'Slide', din: 'din',
+      blocat_t: 'Fereastra prezentatorului a fost blocată',
+      blocat_p: 'Browserul a blocat deschiderea unei ferestre noi. Permite ferestrele pop-up pentru acest site sau continuă pe un singur ecran.',
+      un_ecran: 'Continuă pe un singur ecran', inchide: 'Închide', conectare: 'Se conectează la fereastra publicului…',
+      deconectat: 'Fereastra publicului s-a închis. Închide această fereastră și pornește din nou vederea prezentatorului.',
+      fara_canal: 'Deschide vederea prezentatorului din pitch deck: „▶ Prezintă” → „Vedere prezentator”.',
+      eroare_note: 'Notele nu se pot încărca acum. Încearcă din nou.', pe_ecran: 'Vederea prezentatorului e deschisă în altă fereastră.',
     },
     en: {
       prezinta: 'Present', meniu: 'Presentation modes',
@@ -43,6 +54,17 @@
       motiv_verifica: 'Checking access…',
       iesire: 'Exit full screen', ecran_real: 'Switch to full screen', anterior: 'Previous slide', urmator: 'Next slide',
       roteste: 'Rotate your phone for a better view', inchide_mesaj: 'Dismiss the message',
+      pv_titlu: 'Presenter view', urmeaza: 'Up next', final: 'End of the presentation', note: 'Notes',
+      fara_note: 'No notes for this slide', text_mic: 'Smaller text', text_mare: 'Larger text',
+      cronometru: 'Timer', cron_pauza: 'Pause the timer', cron_porneste: 'Start the timer', cron_reset: 'Reset the timer',
+      ora: 'Current time', negru: 'Black screen', negru_activ: 'The audience screen is black (B)', incheie: 'End the presentation',
+      miniaturi: 'All slides', mergi_la: 'Go to slide', slide: 'Slide', din: 'of',
+      blocat_t: 'The presenter window was blocked',
+      blocat_p: 'The browser blocked a new window. Allow pop-ups for this site or continue on a single screen.',
+      un_ecran: 'Continue on a single screen', inchide: 'Close', conectare: 'Connecting to the audience window…',
+      deconectat: 'The audience window was closed. Close this window and start the presenter view again.',
+      fara_canal: 'Open the presenter view from the pitch deck: “▶ Present” → “Presenter view”.',
+      eroare_note: 'The notes cannot be loaded right now. Please try again.', pe_ecran: 'The presenter view is open in another window.',
     },
   };
   var MODURI = ['ecran', 'prezentator', 'auto'];
@@ -53,6 +75,9 @@
   var doc = win.document;
   var nr = 0;
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  // Ascultătorii pe document / fereastră, ca să poată fi scoși la distrugere.
+  function leaga(lista, tinta, ev, fn, opt) { tinta.addEventListener(ev, fn, opt); lista.push([tinta, ev, fn, opt]); }
+  function dezleaga(lista) { lista.splice(0).forEach(function (x) { x[0].removeEventListener(x[1], x[2], x[3]); }); }
   function el(tag, cls, atr) {
     var e = doc.createElement(tag);
     if (cls) e.className = cls;
@@ -172,12 +197,17 @@
       e.stopPropagation(); // săgețile nu mută și slide-ul din spate
     });
     fundal.addEventListener('click', function () { inchide(false); });
-    doc.addEventListener('pointerdown', function (e) {
+    var asc = [];
+    leaga(asc, doc, 'pointerdown', function (e) {
       if (deschis() && !m.contains(e.target) && !b.contains(e.target)) inchide(false);
     }, true);
-    win.addEventListener('resize', function () { if (deschis()) aseaza(); });
+    leaga(asc, win, 'resize', function () { if (deschis()) aseaza(); });
 
-    return { deschide: deschide, inchide: inchide, get deschis() { return deschis(); }, element: m, actualizeaza: function () { if (deschis()) { deseneaza(); aseaza(); } } };
+    return {
+      deschide: deschide, inchide: inchide, get deschis() { return deschis(); }, element: m,
+      actualizeaza: function () { if (deschis()) { deseneaza(); aseaza(); } },
+      distruge: function () { dezleaga(asc); m.remove(); fundal.remove(); },
+    };
   }
 
   // ── Ecran complet (2.2) ──────────────────────────────────────────
@@ -262,16 +292,17 @@
       if (elementFs() === scena) marcheaza(true, false);
       else if (activ && !simulat) marcheaza(false, false);
     }
-    doc.addEventListener('fullscreenchange', schimbare);
-    doc.addEventListener('webkitfullscreenchange', schimbare);
+    var asc = [];
+    leaga(asc, doc, 'fullscreenchange', schimbare);
+    leaga(asc, doc, 'webkitfullscreenchange', schimbare);
     ['mousemove', 'pointerdown', 'touchstart', 'wheel'].forEach(function (ev) { scena.addEventListener(ev, function () { if (activ) arata(); }, { passive: true }); });
     // Escape iese din modul simulat (în cel real îl tratează browserul).
-    doc.addEventListener('keydown', function (e) {
+    leaga(asc, doc, 'keydown', function (e) {
       if (!activ) return;
       arata();
       if (e.key === 'Escape' && simulat && !e.defaultPrevented) { e.preventDefault(); e.stopPropagation(); iesi(); }
     }, true);
-    win.addEventListener('resize', verificaRotire);
+    leaga(asc, win, 'resize', verificaRotire);
     fs.addEventListener('click', function (e) {
       var b = e.target.closest && e.target.closest('[data-fs]');
       if (!b) return;
@@ -286,6 +317,7 @@
 
     return {
       intra: intra, iesi: iesi, element: fs, extra: fs.querySelector('.pdp-fs-extra'), texte: texte,
+      distruge: function () { iesi(); win.clearTimeout(ceas); dezleaga(asc); fs.remove(); },
       get activ() { return activ; }, get simulat() { return simulat; },
       laSchimbare: function (i, total) {
         fs.querySelector('.pdp-fs-contor').textContent = (i + 1) + ' / ' + total;
@@ -295,28 +327,383 @@
     };
   }
 
+  // ── Vederea prezentatorului (2.4) ───────────────────────────────
+  // Desktop / laptop: fereastră separată (window.open) + fereastra publicului
+  // în ecran complet, sincronizate prin BroadcastChannel (rezervă: postMessage,
+  // doar între ferestrele aceleiași origini). Tabletă landscape (sau fereastra
+  // blocată): pe același ecran. Tabletă portrait / telefon: dezactivată.
+  var NOTE_MARIMI = [14, 16, 18, 20, 24, 28, 32], NOTE_IMPLICIT = 2, CHEIE_NOTE = 'mdpd_note_marime_v1';
+  function citeste(k) { try { return win.localStorage.getItem(k); } catch (e) { return null; } }
+  function scrie(k, v) { try { win.localStorage.setItem(k, v); } catch (e) { /* stocare indisponibilă */ } }
+  function totalDeck(p) { var d = (p && p.deck) || {}; return (Array.isArray(d.slide_uri) ? d.slide_uri.length : 0) + (p && p.stare === 'rezumat' ? 1 : 0); }
+  // Ecran suficient de mare pentru vederea prezentatorului (nu telefon, nu vertical).
+  function ecranMare() { var w = win.innerWidth, h = win.innerHeight; return w >= 768 && w >= h && h >= 500; }
+  // Desktop / laptop (fereastră separată) — altfel tabletă (același ecran).
+  function esteDesktop() {
+    var atingere = !!(win.matchMedia && win.matchMedia('(hover: none) and (pointer: coarse)').matches);
+    return win.innerWidth >= 1024 && win.innerHeight >= 600 && !atingere;
+  }
+  function idCanal() {
+    var a = new Uint8Array(12);
+    try { win.crypto.getRandomValues(a); } catch (e) { for (var i = 0; i < a.length; i++) a[i] = Math.floor(Math.random() * 256); }
+    return Array.prototype.map.call(a, function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
+  }
+
+  // Canalul dintre cele două ferestre. tinta() = fereastra cealaltă (pentru postMessage).
+  function transport(canal, tinta) {
+    var bc = null, asc = [];
+    try { if (win.BroadcastChannel) bc = new win.BroadcastChannel('mdpd-prezentare-' + canal); } catch (e) { bc = null; }
+    function primeste(m) { if (m && m.canal === canal) asc.forEach(function (f) { f(m); }); }
+    function laMesaj(e) {
+      if (e.origin !== win.location.origin) return;
+      var t = tinta();
+      if (!t || e.source !== t) return;
+      primeste(e.data);
+    }
+    if (bc) bc.onmessage = function (e) { primeste(e.data); };
+    else win.addEventListener('message', laMesaj);
+    return {
+      tip: bc ? 'BroadcastChannel' : 'postMessage',
+      trimite: function (m) {
+        m.canal = canal;
+        if (bc) { bc.postMessage(m); return; }
+        var t = tinta();
+        if (t && !t.closed) t.postMessage(m, win.location.origin);
+      },
+      asculta: function (f) { asc.push(f); },
+      inchide: function () { if (bc) bc.close(); else win.removeEventListener('message', laMesaj); asc = []; },
+    };
+  }
+
+  function format2(n) { return (n < 10 ? '0' : '') + n; }
+  function formatDurata(ms) {
+    var s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+    return (h ? h + ':' + format2(m) : format2(m)) + ':' + format2(s % 60);
+  }
+
   /**
-   * Totul legat de o scenă: meniul și ecranul complet (redarea automată și
-   * vederea prezentatorului se adaugă mai jos).
-   * o: { buton, scena, deck(), limba(), stareMod(mod) }
+   * Vederea prezentatorului în `root`.
+   * o: { payload, limbaDeck, limbaUi, index, miniaturi (bool), onMergi(i), onNegru(activ), onInchide(), onAuto() }
+   */
+  function vedere(root, o) {
+    var t = TEXTE[o.limbaUi === 'ro' ? 'ro' : 'en'];
+    var p = o.payload, total = totalDeck(p), slideuri = (p.deck && p.deck.slide_uri) || [];
+    var idx = -1, negru = false, marime = Number(citeste(CHEIE_NOTE));
+    if (!(marime >= 0 && marime < NOTE_MARIMI.length)) marime = NOTE_IMPLICIT;
+    var cron = { start: Date.now(), oprit: 0, pauza: false };
+    var btn = function (k, cls, html, eticheta) { return '<button type="button" class="pdp-pv-btn ' + (cls || '') + '" data-pv="' + k + '"' + (eticheta ? ' aria-label="' + esc(eticheta) + '" title="' + esc(eticheta) + '"' : '') + '>' + html + '</button>'; };
+    root.innerHTML = '<div class="pdp-pv' + (o.miniaturi ? ' pdp-pv-cu-mini' : '') + '" data-i18n-skip>' +
+      '<header class="pdp-pv-cap"><strong class="pdp-pv-titlu">' + esc(t.pv_titlu) + '</strong>' +
+        '<div class="pdp-pv-grup" role="group" aria-label="' + esc(t.cronometru) + '"><span class="pdp-pv-timp" role="timer" aria-label="' + esc(t.cronometru) + '">00:00</span>' +
+          btn('cron', 'pdp-pv-ico', '<span aria-hidden="true">⏸</span>', t.cron_pauza) + btn('reset', 'pdp-pv-ico', '<span aria-hidden="true">↺</span>', t.cron_reset) + '</div>' +
+        '<span class="pdp-pv-ora" aria-label="' + esc(t.ora) + '"></span>' +
+        '<span class="pdp-pv-contor" aria-live="polite"></span>' +
+        '<span class="pdp-pv-spatiu"></span>' +
+        btn('auto', 'pdp-pv-auto', '', '') +
+        btn('negru', 'pdp-pv-negru-btn', '<span class="pdp-pv-patrat" aria-hidden="true"></span>' + esc(t.negru) + ' <kbd>B</kbd>', '') +
+        btn('inchide', 'pdp-pv-inchide', esc(t.incheie), '') +
+      '</header>' +
+      '<section class="pdp-pv-curent"><div class="pdp-pv-deck"></div><div class="pdp-pv-negru" hidden><span>' + esc(t.negru_activ) + '</span></div></section>' +
+      '<div class="pdp-pv-dr">' +
+        '<section class="pdp-pv-urm" aria-label="' + esc(t.urmeaza) + '"><div class="pdp-pv-et">' + esc(t.urmeaza) + '</div><div class="pdp-pv-urm-deck"></div><div class="pdp-pv-final" hidden>' + esc(t.final) + '</div></section>' +
+        '<section class="pdp-pv-note" aria-label="' + esc(t.note) + '"><div class="pdp-pv-et"><span>' + esc(t.note) + '</span><span class="pdp-pv-grup">' +
+          btn('mic', 'pdp-pv-ico', 'A−', t.text_mic) + btn('mare', 'pdp-pv-ico', 'A+', t.text_mare) + '</span></div>' +
+          '<div class="pdp-pv-note-text" tabindex="0"></div></section>' +
+      '</div>' +
+      '<nav class="pdp-pv-nav">' + btn('anterior', '', '<span aria-hidden="true">←</span> ' + esc(t.anterior), '') + btn('urmator', '', esc(t.urmator) + ' <span aria-hidden="true">→</span>', '') + '</nav>' +
+      (o.miniaturi ? '<div class="pdp-pv-mini" role="list" aria-label="' + esc(t.miniaturi) + '"></div>' : '') +
+    '</div>';
+    var $ = function (s) { return root.querySelector(s); };
+    var curent = win.MDPitchDeck.creeaza($('.pdp-pv-deck'), { payload: p, limba: o.limbaDeck, prefix: 'pv-c-' });
+
+    if (o.miniaturi) {
+      $('.pdp-pv-mini').innerHTML = Array.apply(null, Array(total)).map(function (_, i) {
+        return '<div role="listitem"><button type="button" class="pdp-pv-mini-btn" data-mergi="' + i + '" aria-label="' + esc(t.mergi_la + ' ' + (i + 1)) + '"><span class="pdp-pv-mini-slide"></span><span class="pdp-pv-mini-nr">' + (i + 1) + '</span></button></div>';
+      }).join('');
+      Array.prototype.forEach.call(root.querySelectorAll('.pdp-pv-mini-slide'), function (e, i) { win.MDPitchDeck.creeazaStatic(e, { payload: p, limba: o.limbaDeck, index: i, prefix: 'pv-m' + i + '-' }); });
+    }
+    function note(i) {
+      var s = slideuri[i], n = s && typeof s.note_prezentator === 'string' ? s.note_prezentator.trim() : '';
+      var e = $('.pdp-pv-note-text');
+      e.classList.toggle('pdp-pv-gol', !n);
+      e.textContent = n || t.fara_note;
+      e.scrollTop = 0;
+    }
+    function aplicaMarime() { $('.pdp-pv-note-text').style.fontSize = NOTE_MARIMI[marime] + 'px'; $('[data-pv="mic"]').disabled = marime === 0; $('[data-pv="mare"]').disabled = marime === NOTE_MARIMI.length - 1; }
+    function seteaza(i) {
+      i = Math.max(0, Math.min(total - 1, i | 0));
+      if (i === idx) return;
+      idx = i;
+      curent.mergiLa(i);
+      win.MDPitchDeck.creeazaStatic($('.pdp-pv-urm-deck'), { payload: p, limba: o.limbaDeck, index: i + 1, prefix: 'pv-u-' });
+      $('.pdp-pv-final').hidden = i + 1 < total;
+      note(i);
+      $('.pdp-pv-contor').textContent = (i + 1) + ' / ' + total;
+      $('[data-pv="anterior"]').disabled = i === 0;
+      $('[data-pv="urmator"]').disabled = i === total - 1;
+      Array.prototype.forEach.call(root.querySelectorAll('.pdp-pv-mini-btn'), function (b, k) {
+        if (k === i) { b.setAttribute('aria-current', 'true'); var r = b.getBoundingClientRect(), pr = b.closest('.pdp-pv-mini').getBoundingClientRect(); if (r.left < pr.left || r.right > pr.right) b.closest('.pdp-pv-mini').scrollLeft += r.left - pr.left - pr.width / 2 + r.width / 2; }
+        else b.removeAttribute('aria-current');
+      });
+    }
+    function mergi(i) { i = Math.max(0, Math.min(total - 1, i)); if (i === idx) return; seteaza(i); if (o.onMergi) o.onMergi(i); }
+    function seteazaNegru(v) {
+      negru = !!v;
+      $('.pdp-pv-negru').hidden = !negru;
+      $('[data-pv="negru"]').setAttribute('aria-pressed', negru ? 'true' : 'false');
+    }
+    function comutaNegru() { seteazaNegru(!negru); if (o.onNegru) o.onNegru(negru); }
+    function ceas() {
+      var acum = Date.now();
+      $('.pdp-pv-timp').textContent = formatDurata(cron.pauza ? cron.oprit : cron.oprit + acum - cron.start);
+      try { $('.pdp-pv-ora').textContent = new Intl.DateTimeFormat(o.limbaUi === 'ro' ? 'ro-RO-u-nu-latn' : 'en-GB', { hour: '2-digit', minute: '2-digit' }).format(new Date(acum)); } catch (e) { $('.pdp-pv-ora').textContent = ''; }
+    }
+    function comutaCron() {
+      var acum = Date.now();
+      if (cron.pauza) { cron.start = acum; cron.pauza = false; } else { cron.oprit += acum - cron.start; cron.pauza = true; }
+      var b = $('[data-pv="cron"]');
+      b.innerHTML = '<span aria-hidden="true">' + (cron.pauza ? '▶' : '⏸') + '</span>';
+      b.setAttribute('aria-label', cron.pauza ? t.cron_porneste : t.cron_pauza); b.title = b.getAttribute('aria-label');
+      ceas();
+    }
+    var interval = win.setInterval(ceas, 1000);
+    // Tabletă (ecran tactil) sau fereastră îngustă → aspectul pe trei zone, fără miniaturi.
+    function aspect() { root.querySelector('.pdp-pv').classList.toggle('pdp-pv-tableta', !esteDesktop() || win.innerWidth < 1024); }
+    win.addEventListener('resize', aspect);
+    root.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('[data-pv], [data-mergi]');
+      if (!b || b.disabled) return;
+      if (b.hasAttribute('data-mergi')) return mergi(Number(b.getAttribute('data-mergi')));
+      var k = b.getAttribute('data-pv');
+      if (k === 'anterior') mergi(idx - 1);
+      else if (k === 'urmator') mergi(idx + 1);
+      else if (k === 'negru') comutaNegru();
+      else if (k === 'inchide') { if (o.onInchide) o.onInchide(); }
+      else if (k === 'cron') comutaCron();
+      else if (k === 'reset') { cron.start = Date.now(); cron.oprit = 0; ceas(); }
+      else if (k === 'mic' || k === 'mare') { marime = Math.max(0, Math.min(NOTE_MARIMI.length - 1, marime + (k === 'mare' ? 1 : -1))); scrie(CHEIE_NOTE, String(marime)); aplicaMarime(); }
+      else if (k === 'auto' && o.onAuto) o.onAuto();
+    });
+    function taste(e) {
+      if (e.altKey || e.ctrlKey || e.metaKey || e.defaultPrevented) return;
+      var tag = (e.target && e.target.tagName) || '';
+      if (/^(INPUT|SELECT|TEXTAREA)$/.test(tag)) return;
+      var k = e.key, gestionat = true;
+      // Space avansează mereu (nu apasă butonul care are focusul).
+      if (k === 'ArrowRight' || k === 'PageDown' || k === ' ') mergi(idx + 1);
+      else if (k === 'ArrowLeft' || k === 'PageUp') mergi(idx - 1);
+      else if (k === 'Home') mergi(0);
+      else if (k === 'End') mergi(total - 1);
+      else if (k === 'b' || k === 'B') comutaNegru();
+      else if (k === 'Escape') { if (o.onInchide) o.onInchide(); }
+      else gestionat = false;
+      if (gestionat) { e.preventDefault(); e.stopPropagation(); }
+    }
+    doc.addEventListener('keydown', taste, true);
+    aspect(); aplicaMarime(); seteaza(o.index || 0); seteazaAuto(null); ceas();
+    function seteazaAuto(a) {
+      var b = $('[data-pv="auto"]');
+      b.hidden = !(a && a.activ);
+      if (!b.hidden) b.innerHTML = '<span aria-hidden="true">' + (a.ruleaza ? '⏸' : '▶') + '</span> ' + esc(a.eticheta || '');
+    }
+    return {
+      seteaza: seteaza, seteazaNegru: seteazaNegru, seteazaAuto: seteazaAuto,
+      get index() { return idx; }, element: root,
+      focus: function () { var b = $('[data-pv="urmator"]'); if (b) b.focus(); },
+      distruge: function () { win.clearInterval(interval); win.removeEventListener('resize', aspect); doc.removeEventListener('keydown', taste, true); curent.distruge(); root.innerHTML = ''; },
+    };
+  }
+
+  // Fereastra prezentatorului (pitch-deck-prezentator.html): primește deck-ul
+  // cu note de la fereastra publicului, prin canalul din adresă.
+  function fereastraPrezentator(root) {
+    var canal = (String(win.location.search).match(/[?&]canal=([0-9a-f]{8,64})/) || [])[1];
+    var limbaUi = String(citeste('myd_lang_v1') || '').slice(0, 2) === 'ro' ? 'ro' : 'en';
+    var mesaj = function (txt) { root.innerHTML = '<p class="pdp-pv-mesaj" role="status">' + esc(txt) + '</p>'; };
+    doc.documentElement.lang = limbaUi;
+    doc.title = TEXTE[limbaUi].pv_titlu + ' · My Darrin';
+    if (!canal || !win.opener) { mesaj(TEXTE[limbaUi].fara_canal); return null; }
+    var opener = win.opener;
+    var tr = transport(canal, function () { return opener; });
+    var pv = null;
+    mesaj(TEXTE[limbaUi].conectare);
+    tr.asculta(function (m) {
+      if (m.tip === 'date' && !pv && m.payload) {
+        limbaUi = m.limbaUi === 'ro' ? 'ro' : 'en';
+        doc.documentElement.lang = limbaUi;
+        doc.title = TEXTE[limbaUi].pv_titlu + ' · My Darrin';
+        pv = vedere(root, {
+          payload: m.payload, limbaDeck: m.limbaDeck, limbaUi: limbaUi, index: m.index, miniaturi: true,
+          onMergi: function (i) { tr.trimite({ tip: 'mergi', index: i }); },
+          onNegru: function (v) { tr.trimite({ tip: 'negru', activ: v }); },
+          onAuto: function () { tr.trimite({ tip: 'auto' }); },
+          onInchide: function () { tr.trimite({ tip: 'gata' }); win.close(); },
+        });
+        if (m.auto) pv.seteazaAuto(m.auto);
+        pv.focus();
+      } else if (m.tip === 'stare' && pv) {
+        pv.seteaza(m.index);
+        pv.seteazaAuto(m.auto);
+        if (typeof m.negru === 'boolean') pv.seteazaNegru(m.negru);
+      } else if (m.tip === 'eroare' && !pv) mesaj(TEXTE[limbaUi].eroare_note);
+      else if (m.tip === 'inchis') {
+        if (pv) { pv.distruge(); pv = null; }
+        mesaj(TEXTE[limbaUi].deconectat);
+      }
+    });
+    tr.trimite({ tip: 'salut' });
+    win.addEventListener('pagehide', function () { tr.trimite({ tip: 'gata' }); });
+    return tr;
+  }
+
+  // Fereastră de mesaj (ex. „fereastra prezentatorului a fost blocată”).
+  // butoane: [[text, fn, principal]]; Escape = primul buton.
+  function dialog(titlu, text, butoane) {
+    var d = el('div', 'pdp-dialog-fundal', { 'data-i18n-skip': '' });
+    d.innerHTML = '<div class="pdp-dialog" role="alertdialog" aria-modal="true" aria-labelledby="pdp-dialog-t" aria-describedby="pdp-dialog-p">' +
+      '<h2 id="pdp-dialog-t">' + esc(titlu) + '</h2><p id="pdp-dialog-p">' + esc(text) + '</p><div class="pdp-dialog-btn">' +
+      butoane.map(function (b, i) { return '<button type="button" class="pdp-pv-btn' + (b[2] ? ' pdp-pv-primar' : '') + '" data-d="' + i + '">' + esc(b[0]) + '</button>'; }).join('') + '</div></div>';
+    doc.body.appendChild(d);
+    function gata(i) { doc.removeEventListener('keydown', taste, true); d.remove(); butoane[i][1](); }
+    function taste(e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); gata(0); } }
+    doc.addEventListener('keydown', taste, true);
+    d.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('[data-d]');
+      if (b) gata(Number(b.getAttribute('data-d')));
+    });
+    var principal = d.querySelector('.pdp-pv-primar') || d.querySelector('[data-d]');
+    principal.focus();
+    return d;
+  }
+
+  /**
+   * Totul legat de o scenă: meniul, ecranul complet, vederea prezentatorului
+   * (și redarea automată, mai jos).
+   * o: { buton, scena, deck(), limba() (interfața), limbaDeck(),
+   *      acces() → 'da' | 'nu' | 'verifica' (răspunsul serverului),
+   *      prezentator() → Promise<payload cu note>, urlPrezentator }
    */
   function ataseaza(o) {
+    var T = function () { return TEXTE[o.limba() === 'ro' ? 'ro' : 'en']; };
     var ecran = ecranComplet({ scena: o.scena, deck: o.deck, limba: o.limba });
+    var negru = el('div', 'pdp-negru', { hidden: '', 'aria-hidden': 'true' });
+    (o.scena.querySelector('.pdp-cadru') || o.scena).appendChild(negru);
+    var conex = null, pvLocal = null, stareNegru = false;
+
+    function stareMod(mod) {
+      var t = T();
+      if (mod !== 'prezentator') return null;
+      var a = o.acces ? o.acces() : 'nu';
+      if (a === 'verifica') return t.motiv_verifica;
+      if (a !== 'da') return t.motiv_admin;
+      if (!ecranMare()) return t.motiv_ecran;
+      return null;
+    }
+    function seteazaNegru(v) { stareNegru = !!v; negru.hidden = !stareNegru; }
+    function stareSync() {
+      var d = o.deck();
+      return { tip: 'stare', index: d ? d.index : 0, total: d ? d.total : 0, auto: stareAuto(), negru: stareNegru };
+    }
+    function trimiteStare() { if (conex) conex.tr.trimite(stareSync()); if (pvLocal) pvLocal.seteazaAuto(stareAuto()); }
+    function mergiDinPrezentator(i) { var d = o.deck(); if (d && d.index !== i) d.mergiLa(i); }
+
+    function inchideConex() {
+      if (!conex) return;
+      try { conex.tr.inchide(); } catch (e) { /* închis deja */ }
+      conex = null; seteazaNegru(false);
+    }
+    function peUnEcran(payloadP) {
+      if (pvLocal) return;
+      var gazda = el('div', 'pdp-pv-ecran', { role: 'dialog', 'aria-modal': 'true', 'aria-label': T().pv_titlu, 'data-i18n-skip': '' });
+      doc.body.appendChild(gazda);
+      doc.documentElement.classList.add('pdp-pv-deschis');
+      payloadP.then(function (payload) {
+        var d = o.deck();
+        pvLocal = vedere(gazda, {
+          payload: payload, limbaDeck: o.limbaDeck ? o.limbaDeck() : payload.limba, limbaUi: o.limba(), index: d ? d.index : 0,
+          miniaturi: esteDesktop(),
+          onMergi: mergiDinPrezentator, onNegru: seteazaNegru, onAuto: comutaAutoDinPrezentator,
+          onInchide: function () { pvLocal.distruge(); pvLocal = null; gazda.remove(); doc.documentElement.classList.remove('pdp-pv-deschis'); seteazaNegru(false); o.buton.focus(); },
+        });
+        pvLocal.seteazaAuto(stareAuto());
+        pvLocal.focus();
+      }, function () { gazda.remove(); doc.documentElement.classList.remove('pdp-pv-deschis'); arataEroare(); });
+    }
+    function arataEroare() {
+      dialog(T().pv_titlu, T().eroare_note, [[T().inchide, function () { o.buton.focus(); }, true]]);
+    }
+    function inFereastra(payloadP) {
+      inchideConex();
+      var canal = idCanal();
+      // window.open trebuie apelat direct din clic (altfel browserul îl blochează).
+      var pop = null;
+      try { pop = win.open((o.urlPrezentator || '/pitch-deck-prezentator') + '?canal=' + canal, 'mdpd-prezentator', 'popup=yes,width=1280,height=800'); } catch (e) { pop = null; }
+      if (!pop) {
+        dialog(T().blocat_t, T().blocat_p, [[T().inchide, function () { o.buton.focus(); }], [T().un_ecran, function () { peUnEcran(payloadP); }, true]]);
+        return;
+      }
+      var c = conex = { tr: transport(canal, function () { return pop; }), pop: pop, payload: null, asteapta: false };
+      function trimiteDate() {
+        var d = o.deck();
+        c.tr.trimite({ tip: 'date', payload: c.payload, limbaDeck: o.limbaDeck ? o.limbaDeck() : c.payload.limba, limbaUi: o.limba(), index: d ? d.index : 0, auto: stareAuto() });
+      }
+      c.tr.asculta(function (m) {
+        if (conex !== c) return;
+        if (m.tip === 'salut') { if (c.payload) trimiteDate(); else c.asteapta = true; }
+        else if (m.tip === 'mergi') mergiDinPrezentator(m.index);
+        else if (m.tip === 'negru') seteazaNegru(m.activ);
+        else if (m.tip === 'auto') comutaAutoDinPrezentator();
+        else if (m.tip === 'gata') inchideConex();
+      });
+      payloadP.then(function (payload) {
+        if (conex !== c) return;
+        c.payload = payload;
+        if (c.asteapta) trimiteDate();
+      }, function () { if (conex === c) { c.tr.trimite({ tip: 'eroare' }); inchideConex(); arataEroare(); } });
+      ecran.intra();
+    }
+    function deschidePrezentator() {
+      if (stareMod('prezentator')) return;
+      var payloadP = Promise.resolve().then(o.prezentator);
+      if (esteDesktop()) inFereastra(payloadP); else peUnEcran(payloadP);
+    }
+    var asc = [];
+    function anuntaInchis() { if (conex) conex.tr.trimite({ tip: 'inchis' }); }
+    leaga(asc, win, 'pagehide', anuntaInchis);
+
+    // Redarea automată (2.5) se leagă aici; până atunci, nimic activ.
+    function stareAuto() { return null; }
+    function comutaAutoDinPrezentator() {}
+
     var m = meniu({
-      buton: o.buton, limba: o.limba,
-      stareMod: function (mod) { return o.stareMod ? o.stareMod(mod) : null; },
-      moduri: { ecran: function () { ecran.intra(); } },
+      buton: o.buton, limba: o.limba, stareMod: stareMod,
+      moduri: { ecran: function () { ecran.intra(); }, prezentator: deschidePrezentator },
     });
     return {
       meniu: m, ecran: ecran,
-      laSchimbare: function (i, total) { ecran.laSchimbare(i, total); },
+      laSchimbare: function (i, total) {
+        ecran.laSchimbare(i, total);
+        if (pvLocal) pvLocal.seteaza(i);
+        trimiteStare();
+      },
       texte: function () { ecran.texte(); m.actualizeaza(); },
+      actualizeaza: function () { m.actualizeaza(); },
+      get conexiune() { return conex ? conex.tr.tip : null; },
+      // Back-office: previzualizarea se închide → totul se desface.
+      distruge: function () {
+        anuntaInchis(); inchideConex();
+        if (pvLocal) { pvLocal.distruge(); pvLocal = null; var g = doc.querySelector('.pdp-pv-ecran'); if (g) g.remove(); doc.documentElement.classList.remove('pdp-pv-deschis'); }
+        dezleaga(asc); m.distruge(); ecran.distruge(); negru.remove();
+      },
     };
   }
 
   exporturi.meniu = meniu;
   exporturi.ecranComplet = ecranComplet;
   exporturi.ataseaza = ataseaza;
+  exporturi.vedere = vedere;
+  exporturi.fereastraPrezentator = fereastraPrezentator;
+  exporturi.transport = transport;
   exporturi.esteFoaie = esteFoaie;
   return exporturi;
 });

@@ -326,3 +326,79 @@ html.pdp-simulat-activ,html.pdp-simulat-activ body{overflow:hidden!important}
   .pdp-ecran .pdp-cadru{width:100%}
   .pdp-ecran .mdpd-slide{min-height:100vh;min-height:100dvh;padding-top:calc(66px + env(safe-area-inset-top));padding-bottom:calc(86px + env(safe-area-inset-bottom))}
 }
+
+/* Ecranul negru (tasta B din vederea prezentatorului), peste slide-ul publicului */
+.pdp-negru{position:absolute;inset:0;z-index:5;background:#000}
+.pdp-ecran .pdp-negru{position:fixed}
+
+/* Un slide static (următorul, miniaturile): fără animații, cifrele finale */
+.mdpd-static .mdpd-a,.mdpd-static .mdpd-palnie div{opacity:1!important;transform:none!important}
+.mdpd-static *,.mdpd-static *::before,.mdpd-static *::after{animation:none!important;transition:none!important}
+.mdpd-static .mdpd-linie{--progres:1}
+.mdpd-static .mdpd-stage{border-radius:8px}
+
+/* Vederea prezentatorului: desktop pe două coloane (curent | următor + note) */
+.pdp-pv-ecran{position:fixed;inset:0;z-index:2800;background:#0B1222;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+html.pdp-pv-deschis,html.pdp-pv-deschis body{overflow:hidden}
+.pdp-pv{box-sizing:border-box;height:100%;display:grid;gap:12px;padding:12px 16px 14px;color:#fff;font-family:'Helvetica World','Helvetica Neue',Arial,system-ui,sans-serif;
+  grid-template-columns:minmax(0,3fr) minmax(0,2fr);grid-template-rows:auto minmax(0,1fr) auto;grid-template-areas:"cap cap" "cur dr" "nav dr"}
+.pdp-pv.pdp-pv-cu-mini{grid-template-rows:auto minmax(0,1fr) auto auto;grid-template-areas:"cap cap" "cur dr" "nav dr" "mini mini"}
+.pdp-pv *{box-sizing:border-box}
+.pdp-pv-cap{grid-area:cap;display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;min-width:0}
+.pdp-pv-titlu{font-size:15px;font-weight:800;white-space:nowrap}
+.pdp-pv-spatiu{flex:1}
+.pdp-pv-grup{display:inline-flex;align-items:center;gap:6px}
+.pdp-pv-timp{font:800 22px/1 'Helvetica Neue',Arial,system-ui,sans-serif;font-variant-numeric:tabular-nums;color:#F08120;min-width:72px}
+.pdp-pv-ora,.pdp-pv-contor{font-size:15px;font-weight:700;color:rgba(255,255,255,.82);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pdp-pv-contor{padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.08)}
+.pdp-pv-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 14px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:#fff;font:700 14px/1.2 'Helvetica Neue',Arial,system-ui,sans-serif;cursor:pointer;white-space:nowrap}
+.pdp-pv-btn:hover{background:rgba(255,255,255,.14)}
+.pdp-pv-btn:disabled{opacity:.35;cursor:default}
+.pdp-pv-btn:focus-visible{outline:2px solid #F08120;outline-offset:2px}
+.pdp-pv-btn[hidden]{display:none}
+.pdp-pv-ico{min-width:40px;padding:0 10px}
+.pdp-pv-primar,.pdp-pv-inchide{background:#0BA39A;border-color:#0BA39A}
+.pdp-pv-primar:hover,.pdp-pv-inchide:hover{background:#0A8F87}
+.pdp-pv-negru-btn[aria-pressed="true"]{background:#F08120;border-color:#F08120}
+.pdp-pv-patrat{display:inline-block;width:12px;height:12px;border-radius:2px;background:#000;border:1px solid rgba(255,255,255,.6)}
+.pdp-pv-btn kbd{font:700 11px/1 'Helvetica Neue',Arial,sans-serif;padding:3px 5px;border-radius:4px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.25)}
+.pdp-pv-curent{grid-area:cur;position:relative;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;container-type:size}
+.pdp-pv-deck{width:min(100%,calc(100cqh * 16 / 9))}
+.pdp-pv-negru{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.84);border-radius:12px;font-size:15px;font-weight:700;color:rgba(255,255,255,.85);text-align:center;padding:16px}
+.pdp-pv-dr{grid-area:dr;display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0}
+.pdp-pv-urm{flex:0 0 auto;min-width:0}
+.pdp-pv-urm-deck{width:100%}
+.pdp-pv-final{display:flex;align-items:center;justify-content:center;aspect-ratio:16/9;border-radius:8px;border:1px dashed rgba(255,255,255,.25);color:rgba(255,255,255,.7);font-size:14px;font-weight:700}
+.pdp-pv-et{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#3FC1B8;margin-bottom:8px;min-height:40px}
+.pdp-pv-note{flex:1 1 auto;min-height:140px;display:flex;flex-direction:column;min-width:0;padding:8px 12px 12px;border-radius:12px;background:#131D33;border:1px solid rgba(255,255,255,.1)}
+.pdp-pv-note .pdp-pv-et{margin-bottom:4px}
+.pdp-pv-note-text{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5;color:#fff;padding-right:4px}
+.pdp-pv-note-text:focus-visible{outline:2px solid #F08120;outline-offset:2px;border-radius:4px}
+.pdp-pv-note-text.pdp-pv-gol{color:rgba(255,255,255,.55);font-style:italic}
+.pdp-pv-nav{grid-area:nav;display:flex;justify-content:center;gap:12px}
+.pdp-pv-nav .pdp-pv-btn{min-width:160px;min-height:44px}
+.pdp-pv-mini{grid-area:mini;display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:thin}
+.pdp-pv-mini>div{flex:0 0 auto}
+.pdp-pv-mini-btn{position:relative;display:block;width:128px;padding:0;border:2px solid transparent;border-radius:10px;background:none;cursor:pointer}
+.pdp-pv-mini-btn[aria-current="true"]{border-color:#F08120}
+.pdp-pv-mini-btn:focus-visible{outline:2px solid #F08120;outline-offset:2px}
+.pdp-pv-mini-slide{display:block;pointer-events:none}
+.pdp-pv-mini-nr{position:absolute;left:4px;bottom:4px;min-width:20px;padding:2px 5px;border-radius:5px;background:rgba(0,0,0,.65);color:#fff;font:700 11px/1.2 'Helvetica Neue',Arial,sans-serif}
+.pdp-pv-mesaj{margin:0;padding:40px 24px;text-align:center;font-size:16px;line-height:1.6;color:rgba(255,255,255,.8)}
+/* Tabletă landscape (ecran tactil sau fereastră sub 1024 px; clasa o pune
+   pitch-deck-prezentare.js): curent sus-stânga, următor sus-dreapta, note jos */
+.pdp-pv.pdp-pv-tableta{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1.3fr) minmax(0,1fr) auto;grid-template-areas:"cap cap" "cur urm" "note note" "nav nav";gap:10px;padding:10px 12px 12px}
+.pdp-pv-tableta .pdp-pv-dr{display:contents}
+.pdp-pv-tableta .pdp-pv-urm{grid-area:urm;align-self:center}
+.pdp-pv-tableta .pdp-pv-note{grid-area:note;min-height:0}
+.pdp-pv-tableta .pdp-pv-mini{display:none}
+.pdp-pv-tableta .pdp-pv-btn{min-height:44px}
+.pdp-pv-tableta .pdp-pv-ico{min-width:44px}
+.pdp-pv-tableta .pdp-pv-titlu{display:none}
+
+/* Fereastra de mesaj (ex. fereastra prezentatorului blocată) */
+.pdp-dialog-fundal{position:fixed;inset:0;z-index:3100;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(6,10,20,.6)}
+.pdp-dialog{width:min(100%,460px);background:#1E2B47;color:#fff;border:1px solid rgba(255,255,255,.14);border-radius:14px;box-shadow:0 14px 36px rgba(0,0,0,.4);padding:20px;font-family:'Helvetica World','Helvetica Neue',Arial,system-ui,sans-serif}
+.pdp-dialog h2{margin:0 0 8px;font-size:17px;line-height:1.3}
+.pdp-dialog p{margin:0 0 16px;font-size:14.5px;line-height:1.55;color:rgba(255,255,255,.78)}
+.pdp-dialog-btn{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}

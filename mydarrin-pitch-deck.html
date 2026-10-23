@@ -280,6 +280,7 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
       },
     });
     document.dispatchEvent(new CustomEvent('mdpd:gata', { detail: { stare: stare.payload.stare, limba: l } }));
+    verificaAcces();
   }
 
   // ── Varianta live: doar din baza de date (2.6) ─────────────────────
@@ -386,14 +387,40 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
   $('pd-inapoi-slide').addEventListener('click', function () { stare.deck && stare.deck.anterior(); });
   $('pd-inainte-slide').addEventListener('click', function () { stare.deck && stare.deck.urmator(); });
   // ── Modurile de prezentare (11-K3): meniul „▶ Prezintă” ─────────
+  // Vederea prezentatorului: doar dacă serverul o permite (acțiunea `prezentare`
+  // din api/admin/pitch-deck.js — profiles.roles + admin_permissions pe
+  // Investitori). Răspunsul are deck-ul complet al limbii, cu notele.
+  var acces = { stare: 'verifica', limba: null, payload: null, cerere: 0 };
+  async function verificaAcces() {
+    var l = limbaDeck(stare.limba);
+    if (acces.limba === l && acces.stare !== 'verifica') return;
+    var nr = ++acces.cerere;
+    acces.limba = l; acces.stare = 'verifica'; acces.payload = null;
+    prez.actualizeaza();
+    var tok = await token();
+    var r = null;
+    if (tok) {
+      try {
+        r = await fetch('/api/admin/pitch-deck', { method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: JSON.stringify({ actiune: 'prezentare', limba: l }) });
+        r = r.ok ? await r.json().catch(function () { return null; }) : null;
+      } catch (e) { r = null; }
+    }
+    if (nr !== acces.cerere) return;
+    acces.stare = r && r.ok && r.deck ? 'da' : 'nu';
+    acces.payload = acces.stare === 'da' ? r : null;
+    prez.actualizeaza();
+  }
   var prez = window.MDPrezentare.ataseaza({
     buton: $('pd-prezinta'), scena: $('pd-deck'),
     deck: function () { return stare.deck; },
     limba: function () { return limbaDeck(stare.limba); },
-    stareMod: function (mod) {
-      var t = window.MDPrezentare.TEXTE[limbaDeck(stare.limba)];
-      if (mod === 'prezentator') return t.motiv_admin;
-      return null;
+    limbaDeck: function () { return limbaDeck(stare.limba); },
+    acces: function () { return acces.limba === limbaDeck(stare.limba) ? acces.stare : 'verifica'; },
+    prezentator: function () {
+      if (acces.stare !== 'da' || !acces.payload) return Promise.reject(new Error('fără drept'));
+      // Publicul vede același deck ca prezentatorul (ex. rezumatul → deck-ul complet).
+      if (stare.payload && stare.payload.stare !== 'complet') { stare.payload = acces.payload; deseneaza(limbaDeck(stare.limba)); }
+      return Promise.resolve(acces.payload);
     },
   });
   document.addEventListener('keydown', function (e) {

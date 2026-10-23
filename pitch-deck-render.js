@@ -445,6 +445,28 @@
     };
   }
 
+  /**
+   * Un singur slide, static (fără animații, cifrele finale), pentru „slide-ul
+   * următor” și miniaturile din vederea prezentatorului (pasul 11-K3).
+   * o: { payload, limba, index, prefix }. Index în afara deck-ului → gol.
+   */
+  function creeazaStatic(container, o) {
+    var p = o.payload || {};
+    var deck = p.deck || {};
+    var slideuri = Array.isArray(deck.slide_uri) ? deck.slide_uri : [];
+    var rezumat = p.stare === 'rezumat';
+    var total = slideuri.length + (rezumat ? 1 : 0);
+    var i = o.index | 0;
+    if (i < 0 || i >= total) { container.innerHTML = ''; return; }
+    var ctx = { limba: o.limba === 'ro' ? 'ro' : 'en', runda: p.runda || null, contact: p.contact || null, qr_svg: p.qr_svg || null, disclaimer: deck.disclaimer || '', onLive: null, prefix: o.prefix || 'static-', urlRunda: '/mydarrin-investitori#runda' };
+    container.innerHTML = '<div class="mdpd mdpd-static" lang="' + ctx.limba + '"><div class="mdpd-stage" aria-hidden="true" inert>' +
+      (i < slideuri.length ? slideHtml(slideuri[i], i, total, ctx) : rezumatHtml(i, total, ctx)) + '</div></div>';
+    var s = container.querySelector('.mdpd-slide');
+    s.classList.add('mdpd-activ', 'mdpd-on');
+    s.removeAttribute('id');
+  }
+
   exporturi.creeaza = creeaza;
+  exporturi.creeazaStatic = creeazaStatic;
   return exporturi;
 });

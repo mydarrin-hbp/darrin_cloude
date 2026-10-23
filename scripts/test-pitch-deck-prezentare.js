@@ -90,8 +90,7 @@ async function ruteaza(ctx) {
   });
 }
 
-async function pagina(browser, baza, { lang, w, h, tok = null, reducere = false, hash = '', init = null }) {
-  const atingere = w < 1024 || h > w;
+async function pagina(browser, baza, { lang, w, h, tok = null, reducere = false, hash = '', init = null, atingere = w < 1024 || h > w }) {
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: atingere, reducedMotion: reducere ? 'reduce' : 'no-preference' });
   await ctx.addInitScript((l) => {
     try {
@@ -283,6 +282,215 @@ async function testEcran(browser, baza) {
   }
 }
 
+// ═══ P. Vederea prezentatorului ════════════════════════════════════
+const NOTA = { ro: NOTE_TEST.ro[2], en: NOTE_TEST.en[2] };
+const FARA_NOTE = { ro: 'Fără note pentru acest slide', en: 'No notes for this slide' };
+const MOTIV = { ro: { admin: 'Disponibilă pentru administratori', ecran: 'Necesită un ecran mai mare sau orientare orizontală' }, en: { admin: 'Available to administrators', ecran: 'Requires a larger screen or landscape orientation' } };
+const titluSlide = (lang, nr) => (lang === 'ro' ? RO : EN).slide_uri[nr - 1].titlu.replace(/\s*\{denumire\}/, '');
+
+async function optiunePrezentator(pg) {
+  await pg.waitForFunction(() => !/Se verifică|Checking/.test(document.querySelector('.pdp-meniu') ? document.querySelector('.pdp-meniu').textContent : ''), null, { timeout: 6000 }).catch(() => {});
+  await pg.click('#pd-prezinta');
+  await pg.waitForFunction(() => !/Se verifică|Checking/.test(document.querySelector('.pdp-meniu').textContent), null, { timeout: 6000 }).catch(() => {});
+  return pg.evaluate(() => {
+    const o = document.querySelector('.pdp-meniu [data-mod="prezentator"]');
+    return { dezactivata: o.getAttribute('aria-disabled') === 'true', motiv: (o.querySelector('.pdp-motiv') || {}).textContent || '' };
+  });
+}
+// Starea vederii prezentatorului (în fereastra ei sau pe același ecran).
+async function stareVedere(p) {
+  return p.evaluate(() => {
+    const r = (s) => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return b.width ? [b.left, b.top, b.right, b.bottom].map(Math.round) : null; };
+    const pv = document.querySelector('.pdp-pv');
+    if (!pv) return null;
+    return {
+      curent: Number((pv.querySelector('.pdp-pv-deck .mdpd-activ') || {}).dataset?.nr || 0),
+      urmator: (pv.querySelector('.pdp-pv-urm-deck .mdpd-slide') || {}).getAttribute?.('aria-label') || '',
+      final: !pv.querySelector('.pdp-pv-final').hidden,
+      note: pv.querySelector('.pdp-pv-note-text').textContent, contor: pv.querySelector('.pdp-pv-contor').textContent,
+      timp: pv.querySelector('.pdp-pv-timp').textContent, ora: pv.querySelector('.pdp-pv-ora').textContent,
+      mini: pv.querySelectorAll('.pdp-pv-mini-btn').length, miniVizibile: !!r('.pdp-pv-mini'),
+      zone: { cap: r('.pdp-pv-cap'), cur: r('.pdp-pv-curent'), urm: r('.pdp-pv-urm'), note: r('.pdp-pv-note'), nav: r('.pdp-pv-nav'), mini: r('.pdp-pv-mini') },
+      latDeck: pv.querySelector('.pdp-pv-deck').getBoundingClientRect().width, latCurent: pv.querySelector('.pdp-pv-curent').getBoundingClientRect().width,
+      W: window.innerWidth, H: window.innerHeight, scrollW: document.documentElement.scrollWidth,
+    };
+  });
+}
+function zoneSuprapuse(z) {
+  const k = Object.keys(z).filter((x) => z[x]);
+  const rau = [];
+  for (let i = 0; i < k.length; i++) for (let j = i + 1; j < k.length; j++) {
+    const a = z[k[i]], b = z[k[j]];
+    if (Math.min(a[2], b[2]) - Math.max(a[0], b[0]) > 1 && Math.min(a[3], b[3]) - Math.max(a[1], b[1]) > 1) rau.push(k[i] + '/' + k[j]);
+  }
+  return rau.join(', ');
+}
+const slideMain = (pg) => pg.evaluate(() => Number(document.querySelector('#pd-deck .mdpd-activ').dataset.nr));
+function faraBroadcast() { try { delete window.BroadcastChannel; } catch (e) { window.BroadcastChannel = undefined; } }
+
+async function testPrezentator(browser, baza) {
+  // Fereastra separată (desktop / laptop), cu BroadcastChannel și cu revenire pe postMessage.
+  for (const lang of ['ro', 'en']) {
+    for (const [w, h, faraBC] of [[1440, 900, false], [1280, 800, false], [1440, 900, true]]) {
+      const et = `P ${lang} ${w}×${h}${faraBC ? ' fără BroadcastChannel' : ''}`;
+      reset();
+      const { ctx, pg } = await pagina(browser, baza, { lang, w, h, tok: 'tok-sup', hash: '#slide-1', init: faraBC ? faraBroadcast : null });
+      const o = await optiunePrezentator(pg);
+      verifica(!o.dezactivata && !o.motiv, `${et}: opțiunea activă pentru superadmin (${o.motiv})`);
+      const [pop] = await Promise.all([ctx.waitForEvent('page', { timeout: 8000 }), pg.click('.pdp-meniu [data-mod="prezentator"]')]);
+      pop.erori = [];
+      pop.on('pageerror', (e) => pop.erori.push(e.message.slice(0, 200)));
+      await pop.setViewportSize({ width: w, height: h });
+      await pop.waitForSelector('.pdp-pv', { timeout: 8000 }).catch(() => {});
+      await pop.waitForTimeout(400);
+      let v = await stareVedere(pop);
+      verifica(!!v, `${et}: fereastra prezentatorului se deschide (${pop.url()})`);
+      if (!v) { await ctx.close(); continue; }
+      const aud = await stareEcran(pg);
+      verifica(aud.activ, `${et}: fereastra publicului trece în ecran complet (${aud.real ? 'real' : 'simulat'})`);
+      verifica(v.curent === 1 && v.contor === '1 / 20' && v.urmator.includes(titluSlide(lang, 2)), `${et}: slide-ul curent 1, următorul 2 (${v.contor}, „${v.urmator.slice(0, 60)}”)`);
+      verifica(v.note === FARA_NOTE[lang], `${et}: „${FARA_NOTE[lang]}” pe slide-ul fără note („${v.note}”)`);
+      verifica(v.mini === 20 && v.miniVizibile, `${et}: banda cu cele 20 de miniaturi`);
+      verifica(v.ora && /^\d{2}:\d{2}$/.test(v.ora) && /^\d{2}:\d{2}$/.test(v.timp), `${et}: ora curentă și cronometrul (${v.ora}, ${v.timp})`);
+      // Layout: două coloane (curent | următor + note), fără suprapuneri.
+      const z = v.zone;
+      verifica(z.cur && z.urm && z.note && z.cur[2] <= z.urm[0] && z.cur[2] <= z.note[0] && z.urm[3] <= z.note[1], `${et}: două coloane — curent | următor + note (${JSON.stringify(z)})`);
+      verifica(v.latDeck / v.W > 0.5, `${et}: slide-ul curent ~60 % din lățime (${Math.round(v.latDeck / v.W * 100)} %)`);
+      const s = zoneSuprapuse(z); verifica(!s && v.scrollW <= v.W, `${et}: zonele nu se suprapun, fără derulare laterală (${s})`);
+      if (lang === 'ro' && w === 1440 && !faraBC) await captura(pop, 'prezentator-1440x900');
+      // Prezentatorul → publicul.
+      await pop.keyboard.press('ArrowRight');
+      await pop.waitForTimeout(300);
+      v = await stareVedere(pop);
+      verifica(await slideMain(pg) === 2 && v.curent === 2 && v.note === NOTA[lang], `${et}: → în prezentator: publicul pe slide-ul 2; nota slide-ului 2 („${v.note}”)`);
+      // Publicul → prezentatorul.
+      await pg.keyboard.press('ArrowRight');
+      await pg.waitForTimeout(300);
+      v = await stareVedere(pop);
+      verifica(v.curent === 3 && v.contor === '3 / 20' && v.urmator.includes(titluSlide(lang, 4)), `${et}: → în fereastra publicului: prezentatorul pe 3, următorul 4 (${v.contor})`);
+      // Miniatura 7, Home / End, Space.
+      await pop.click('.pdp-pv-mini-btn[data-mergi="6"]');
+      await pop.waitForTimeout(250);
+      verifica(await slideMain(pg) === 7 && (await stareVedere(pop)).curent === 7, `${et}: clic pe miniatura 7 → ambele pe 7`);
+      await pop.keyboard.press('End'); await pop.waitForTimeout(250);
+      v = await stareVedere(pop);
+      verifica(await slideMain(pg) === 20 && v.final, `${et}: End → 20, „${lang === 'ro' ? 'Sfârșitul prezentării' : 'End of the presentation'}”`);
+      await pop.keyboard.press('Home'); await pop.keyboard.press(' '); await pop.waitForTimeout(250);
+      verifica(await slideMain(pg) === 2, `${et}: Home, apoi Space → 2`);
+      // B: ecran negru pe fereastra publicului.
+      await pop.keyboard.press('b'); await pop.waitForTimeout(200);
+      const negru = await pg.evaluate(() => { const n = document.querySelector('#pd-deck .pdp-negru'); const r = n.getBoundingClientRect(); return !n.hidden && r.width >= window.innerWidth - 1 && getComputedStyle(n).backgroundColor; });
+      verifica(negru === 'rgb(0, 0, 0)' && !(await pop.isHidden('.pdp-pv-negru')), `${et}: B → ecranul publicului negru (${negru})`);
+      await pop.keyboard.press('B'); await pop.waitForTimeout(200);
+      verifica(await pg.evaluate(() => document.querySelector('#pd-deck .pdp-negru').hidden), `${et}: B din nou → slide-ul revine`);
+      // Cronometrul: pauză / resetare.
+      await pop.click('[data-pv="cron"]'); const t1 = (await stareVedere(pop)).timp; await pop.waitForTimeout(1200);
+      verifica((await stareVedere(pop)).timp === t1, `${et}: cronometrul pe pauză (${t1})`);
+      await pop.click('[data-pv="reset"]');
+      verifica((await stareVedere(pop)).timp === '00:00', `${et}: cronometrul resetat`);
+      // A− / A+
+      const f0 = await pop.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.pdp-pv-note-text')).fontSize));
+      await pop.click('[data-pv="mare"]'); await pop.click('[data-pv="mare"]');
+      const f1 = await pop.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.pdp-pv-note-text')).fontSize));
+      verifica(f1 > f0, `${et}: A+ mărește textul notelor (${f0} → ${f1})`);
+      verifica(!pg.erori.length && !pop.erori.length, `${et}: 0 erori JS (${pg.erori.concat(pop.erori).join(' | ')})`);
+      // Escape în prezentator: se închide, publicul rămâne pe slide.
+      await Promise.all([pop.waitForEvent('close', { timeout: 4000 }).catch(() => {}), pop.keyboard.press('Escape').catch(() => {})]);
+      verifica(pop.isClosed() && await slideMain(pg) === 2, `${et}: Escape închide fereastra prezentatorului, publicul rămâne pe 2`);
+      await ctx.close();
+    }
+  }
+
+  // Fereastra blocată de browser → mesaj clar și varianta pe un singur ecran.
+  for (const lang of ['ro', 'en']) {
+    const et = `P ${lang} 1440×900 fereastră blocată`;
+    reset();
+    const { ctx, pg } = await pagina(browser, baza, { lang, w: 1440, h: 900, tok: 'tok-cit', init: () => { window.open = () => null; } });
+    const o = await optiunePrezentator(pg);
+    verifica(!o.dezactivata, `${et}: opțiunea activă pentru adminul cu drept de citire pe Investitori`);
+    await pg.click('.pdp-meniu [data-mod="prezentator"]');
+    await pg.waitForTimeout(200);
+    const d = await pg.evaluate(() => { const e = document.querySelector('.pdp-dialog'); return e ? e.textContent : ''; });
+    verifica(/blocat|blocked/.test(d), `${et}: mesajul „fereastra a fost blocată” („${d.slice(0, 70)}”)`);
+    await pg.click('.pdp-dialog .pdp-pv-primar');
+    await pg.waitForTimeout(300);
+    const v = await stareVedere(pg);
+    verifica(v && v.curent === 1 && v.miniVizibile, `${et}: varianta pe un singur ecran, cu miniaturi pe desktop`);
+    await pg.keyboard.press('ArrowRight'); await pg.waitForTimeout(200);
+    verifica(await slideMain(pg) === 2 && (await stareVedere(pg)).curent === 2, `${et}: → mută și deck-ul din spate`);
+    await pg.keyboard.press('Escape'); await pg.waitForTimeout(150);
+    verifica(!(await pg.$('.pdp-pv-ecran')) && (await pg.evaluate(() => document.activeElement.id)) === 'pd-prezinta', `${et}: Escape închide vederea, focusul revine pe buton`);
+    verifica(!pg.erori.length, `${et}: 0 erori JS (${pg.erori.join(' | ')})`);
+    await ctx.close();
+  }
+
+  // Tabletă landscape (atingere): pe același ecran; fără suprapuneri.
+  for (const lang of ['ro', 'en']) {
+    for (const [w, h] of [[1024, 768], [900, 600], [768, 560]]) {
+      const et = `P ${lang} ${w}×${h} tabletă`;
+      reset();
+      const { ctx, pg } = await pagina(browser, baza, { lang, w, h, tok: 'tok-sup', atingere: true, hash: '#slide-2' });
+      const o = await optiunePrezentator(pg);
+      verifica(!o.dezactivata, `${et}: opțiunea activă (${o.motiv})`);
+      await pg.click('.pdp-meniu [data-mod="prezentator"]');
+      await pg.waitForTimeout(400);
+      const v = await stareVedere(pg);
+      verifica(v && !(await pg.$('.pdp-dialog')), `${et}: vederea pe același ecran, fără fereastră nouă`);
+      if (!v) { await ctx.close(); continue; }
+      const z = v.zone;
+      verifica(v.curent === 2 && v.note === NOTA[lang] && v.urmator.includes(titluSlide(lang, 3)), `${et}: slide 2, nota lui, următorul 3`);
+      verifica(z.cur[2] <= z.urm[0] && z.cur[3] <= z.note[1] && z.urm[3] <= z.note[1] && !v.miniVizibile, `${et}: curent sus-stânga, următor sus-dreapta, note jos (${JSON.stringify(z)})`);
+      const s = zoneSuprapuse(z); verifica(!s && v.scrollW <= v.W, `${et}: fără suprapuneri (${s})`);
+      const g = await geometrie(pg, '.pdp-pv-cap > *:not([hidden]):not(.pdp-pv-spatiu), .pdp-pv-nav .pdp-pv-btn');
+      verifica(!g, `${et}: butoanele în ecran, fără suprapuneri (${g})`);
+      const mici = await pg.evaluate(() => [...document.querySelectorAll('.pdp-pv .pdp-pv-btn:not([hidden])')].filter((b) => { const r = b.getBoundingClientRect(); return r.width && (r.width < 44 || r.height < 44); }).length);
+      verifica(!mici, `${et}: ținte de atingere ≥ 44 px (${mici} mai mici)`);
+      if (lang === 'ro' && w === 1024) await captura(pg, 'prezentator-1024x768');
+      verifica(!pg.erori.length, `${et}: 0 erori JS (${pg.erori.join(' | ')})`);
+      await ctx.close();
+    }
+  }
+
+  // Cine NU are opțiunea: vizitator, admin fără drept, client (orice ecran); admin pe telefon / portrait.
+  for (const lang of ['ro', 'en']) {
+    for (const [w, h] of LATIMI) {
+      for (const [cine, tok] of [['vizitator', null], ['admin fără drept', 'tok-adm'], ['client', 'tok-cli'], ['superadmin', 'tok-sup']]) {
+        if (cine === 'superadmin' && ecranMareTest(w, h)) continue;
+        if (cine !== 'vizitator' && cine !== 'superadmin' && w !== 1440) continue;
+        const et = `P ${lang} ${w}×${h} ${cine}`;
+        reset();
+        const { ctx, pg } = await pagina(browser, baza, { lang, w, h, tok });
+        const o = await optiunePrezentator(pg);
+        const asteptat = cine === 'superadmin' ? MOTIV[lang].ecran : MOTIV[lang].admin;
+        verifica(o.dezactivata && o.motiv === asteptat, `${et}: opțiunea dezactivată, „${asteptat}” (${o.motiv})`);
+        await pg.$eval('.pdp-meniu [data-mod="prezentator"]', (e) => e.click());
+        await pg.waitForTimeout(150);
+        verifica(!(await pg.$('.pdp-pv')) && !(await pg.isHidden('.pdp-meniu')), `${et}: clicul nu deschide nimic, meniul rămâne`);
+        verifica(!pg.erori.length, `${et}: 0 erori JS (${pg.erori.join(' | ')})`);
+        await ctx.close();
+      }
+    }
+  }
+
+  // Vizibilitate restrânsă: superadminul (fără KYC) vede rezumatul; la prezentare publicul primește deck-ul complet.
+  {
+    const et = 'P en 1440×900 rezumat → complet';
+    reset({ vizibilitate: 'investitori_aprobati' });
+    const { ctx, pg } = await pagina(browser, baza, { lang: 'en', w: 1440, h: 900, tok: 'tok-sup', init: () => { window.open = () => null; } });
+    const inainte = await pg.evaluate(() => document.querySelectorAll('#pd-deck .mdpd-slide').length);
+    await optiunePrezentator(pg);
+    await pg.click('.pdp-meniu [data-mod="prezentator"]');
+    await pg.click('.pdp-dialog .pdp-pv-primar');
+    await pg.waitForTimeout(300);
+    const dupa = await pg.evaluate(() => document.querySelectorAll('#pd-deck .mdpd-slide').length);
+    verifica(inainte === 4 && dupa === 20 && (await stareVedere(pg)).contor === '1 / 20', `${et}: ${inainte} → ${dupa} slide-uri`);
+    verifica(!pg.erori.length, `${et}: 0 erori JS (${pg.erori.join(' | ')})`);
+    await ctx.close();
+  }
+  console.log('P: gata');
+}
+function ecranMareTest(w, h) { return w >= 768 && w >= h && h >= 500; }
+
 (async () => {
   const srv = await porneste(0);
   const baza = 'http://localhost:' + srv.address().port;
@@ -290,6 +498,7 @@ async function testEcran(browser, baza) {
   try {
     if (!process.env.DOAR || process.env.DOAR === 'M') await testMeniu(browser, baza);
     if (!process.env.DOAR || process.env.DOAR === 'E') await testEcran(browser, baza);
+    if (!process.env.DOAR || process.env.DOAR === 'P') await testPrezentator(browser, baza);
   } finally {
     await browser.close();
     srv.close();
