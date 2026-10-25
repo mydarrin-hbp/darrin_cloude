@@ -114,6 +114,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 <script type="module" src="lib/supabaseClient.js"></script>
 <script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
 <script src="/ui-feedback.js"></script>
+<script src="/forme-juridice-public.js"></script>
 <script src="seo-meta.js"></script>
 <script src="cookie-consent.js" defer></script>
 <script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="analytics-loader.js" defer></script>
@@ -255,6 +256,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
             <span data-i18n="devino.hero.cta_cum_functioneaza">Cum funcționează</span>
           </a>
         </div>
+        <p class="reveal d3 text-[13px] leading-relaxed -mt-4 mb-6" style="color:rgba(255,255,255,.62)">Înscrierea e pentru firme, PFA și întreprinderi individuale.</p>
         <div class="reveal d4 flex flex-wrap gap-2">
           <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11.5px] font-medium" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.72)"><span class="w-1.5 h-1.5 rounded-full bg-[#0E9E99] inline-block"></span>Înregistrare gratuită</span>
           <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11.5px] font-medium" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.72)"><span class="w-1.5 h-1.5 rounded-full bg-[#FF8C00] inline-block"></span>Plată prin escrow</span>
@@ -1202,15 +1204,15 @@ function submitNewsletter() {
 
         <!-- Tip entitate juridică -->
         <div style="margin-bottom:14px">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:8px">Tip entitate juridică *</div>
-          <select id="f-entitate" onchange="toggleTrezorerie(this.value)" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;background:#fff;cursor:pointer">
-            <option value="srl" selected>SRL</option>
-            <option value="srl_d">SRL-D</option>
-            <option value="pfa">PFA</option>
-            <option value="sa">SA</option>
-            <option value="institutie_publica">Instituție publică / Autoritate contractantă</option>
-            <option value="persoana_fizica">Persoană fizică</option>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:8px">Formă juridică *</div>
+          <!-- Pasul 11-P1: opțiunile vin din forme-juridice-public.js (aceleași coduri ca lib/forme-juridice.js). -->
+          <select id="f-entitate" onchange="toggleTrezorerie(this.value)" required style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;background:#fff;cursor:pointer">
+            <option value="">Alege forma juridică</option>
           </select>
+          <div id="f-forma-locala-wrap" style="display:none;margin-top:8px">
+            <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Forma juridică locală *</label>
+            <input type="text" id="f-forma-locala" placeholder="GmbH, Ltd, EOOD..." maxlength="60" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
+          </div>
           <div id="f-trezorerie-wrap" style="display:none;margin-top:8px">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
               <input type="checkbox" id="f-trezorerie" style="width:16px;height:16px;accent-color:#FF8C00"/>
@@ -1222,12 +1224,12 @@ function submitNewsletter() {
         <!-- Date firmă -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
           <div>
-            <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Denumire firmă / Nume *</label>
+            <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Denumire firmă *</label>
             <input type="text" id="f-firma" placeholder="Construct Val SRL" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
           </div>
           <div>
-            <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">CUI / CNP * <span id="cui-status" style="font-size:9px;color:#0E9E99"></span></label>
-            <input type="text" id="f-cui" placeholder="RO12345678" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="validateCUI(this)" oninput="this.value=this.value.replace(/[^0-9RO]/g,'')"/>
+            <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">CUI / nr. de înregistrare * <span id="cui-status" style="font-size:9px;color:#0E9E99"></span></label>
+            <input type="text" id="f-cui" placeholder="RO12345678" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="validateCUI(this)" oninput="if(!MDFormeJuridice.esteStraina(document.getElementById('f-entitate').value))this.value=this.value.replace(/[^0-9RO]/g,'')"/>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-bottom:10px">
@@ -2030,7 +2032,11 @@ function toggleTrezorerie(tip) {
   const wrap = document.getElementById('f-trezorerie-wrap');
   if (wrap) wrap.style.display = tip === 'institutie_publica' ? 'block' : 'none';
   if (tip !== 'institutie_publica') { const cb = document.getElementById('f-trezorerie'); if (cb) cb.checked = false; }
+  // Pasul 11-P1: „Forma juridică locală” doar pentru o firmă din altă țară.
+  const locala = document.getElementById('f-forma-locala-wrap');
+  if (locala) locala.style.display = MDFormeJuridice.esteStraina(tip) ? 'block' : 'none';
 }
+document.addEventListener('DOMContentLoaded', () => MDFormeJuridice.completeazaSelect(document.getElementById('f-entitate')));
 
 // Regiunile depind de țara detectată (window.MYD_GEO, GPS→IP→manual, real).
 async function incarcaRegiuniPublic() {
@@ -2063,6 +2069,12 @@ async function validateCUI(input) {
       body: JSON.stringify({ tara, cui: val }),
     });
     const data = await res.json();
+    if (data.ok && data.cod === 'firma_inactiva') {
+      // Pasul 11-P1: firma inactivă sau radiată nu se poate înscrie.
+      const en = window.MYD_I18N && window.MYD_I18N.lang && window.MYD_I18N.lang !== 'ro';
+      if (status) { status.textContent = (en && data.motiv_en) || data.motiv; status.style.color = '#C0392B'; }
+      return;
+    }
     if (data.ok && data.denumire) {
       if (status) { status.textContent = 'Găsit: ' + data.denumire; status.style.color = '#0E9E99'; }
       input.style.borderColor = '#0E9E99';
@@ -2117,6 +2129,7 @@ async function submitRegistration() {
   const iban       = document.getElementById('f-iban')?.value || '';
   const banca      = document.getElementById('f-banca')?.value || '';
   const tip_entitate_legala = document.getElementById('f-entitate')?.value || '';
+  const forma_juridica_locala = (document.getElementById('f-forma-locala')?.value || '').trim();
   const is_treasury_account = document.getElementById('f-trezorerie')?.checked || false;
   const regiune_cod = document.getElementById('f-judet')?.value || null;
 
@@ -2125,8 +2138,19 @@ async function submitRegistration() {
   // în `partners` eșua mereu (nume_firma/cui sunt NOT NULL în baza reală),
   // lăsând contul Auth creat (email de invitație trimis) fără rândul
   // corespunzător în partners. Blocaj real, pe toate cele 5 tipuri.
+  // Pasul 11-P1: partener poate fi doar o entitate cu statut juridic.
+  if (!tip_entitate_legala) {
+    showToast('Alege forma juridică a firmei.');
+    if (btn) { btn.textContent='Trimite cererea'; btn.disabled=false; }
+    return;
+  }
   if (!nume_firma || !cui) {
-    showToast('Completează denumirea firmei și CUI/CNP.');
+    showToast('Completează denumirea firmei și CUI-ul.');
+    if (btn) { btn.textContent='Trimite cererea'; btn.disabled=false; }
+    return;
+  }
+  if (MDFormeJuridice.esteStraina(tip_entitate_legala) && !forma_juridica_locala) {
+    showToast('Scrie forma juridică din țara firmei (de exemplu GmbH, Ltd, EOOD).');
     if (btn) { btn.textContent='Trimite cererea'; btn.disabled=false; }
     return;
   }
@@ -2144,7 +2168,7 @@ async function submitRegistration() {
   // ruta autentificată; partner-register.js (cont nou) nu se folosește.
   if (CONT_EXISTENT) {
     if (btn) { btn.textContent = 'Înregistrează-mă ca ' + (PARTNER_META[selectedPartnerType]?.title || ''); btn.disabled = false; }
-    return adaugaRolPartenerPeCont({ nume_firma, cui, iban, banca, tip_entitate_legala, is_treasury_account, regiune_cod }, btn);
+    return adaugaRolPartenerPeCont({ nume_firma, cui, iban, banca, tip_entitate_legala, forma_juridica_locala, is_treasury_account, regiune_cod }, btn);
   }
 
   // Țara detectată (GPS→IP→manual, myd-geo.js) — determină limba emailului
@@ -2156,12 +2180,13 @@ async function submitRegistration() {
     const res = await fetch('/api/public/partner-register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nume, prenume, telefon, email, tip: selectedPartnerType, nume_firma, cui, tara, iban, banca, tip_entitate_legala, is_treasury_account, regiune_cod,
+      body: JSON.stringify({ nume, prenume, telefon, email, tip: selectedPartnerType, nume_firma, cui, tara, iban, banca, tip_entitate_legala, forma_juridica_locala, is_treasury_account, regiune_cod,
         nr_reg_com: document.getElementById('f-nrregcom')?.value || '',
         adresa_sediu_social: document.getElementById('f-sediu')?.value || '' }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    const enLimba = window.MYD_I18N && window.MYD_I18N.lang && window.MYD_I18N.lang !== 'ro';
+    if (!res.ok) throw new Error((enLimba && data.error_en) || data.error || 'Eroare necunoscută');
 
     const meta = PARTNER_META[selectedPartnerType];
     const idEl     = document.getElementById('partner-id-display');
@@ -2254,6 +2279,7 @@ async function adaugaRolPartenerPeCont(d, btn) {
     adresa_sediu_social: document.getElementById('f-sediu')?.value || '',
   };
   if (d.tip_entitate_legala) corp.tip_entitate_legala = d.tip_entitate_legala;
+  if (d.forma_juridica_locala) corp.forma_juridica_locala = d.forma_juridica_locala;
   if (d.iban) {
     if (!d.banca) { MDFeedback.mesaj(msg, 'eroare', 'Completează și banca pentru contul bancar, sau lasă IBAN-ul gol.'); return; }
     corp.cont_bancar = { nume_titular: d.nume_firma, iban: d.iban, banca: d.banca, moneda: { RO: 'RON', MD: 'MDL', DE: 'EUR', FR: 'EUR', BG: 'EUR', AT: 'EUR', GR: 'EUR', GB: 'GBP' }[tara] || 'RON' };

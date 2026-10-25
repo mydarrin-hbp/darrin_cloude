@@ -47,6 +47,14 @@ const apiDoc = require(path.join(RADACINA, 'api/investitori/kyc-document.js'));
 const apiSub = require(path.join(RADACINA, 'api/investitori/subscrie.js'));
 const apiAprobare = require(path.join(RADACINA, 'api/admin/investitori-aprobare.js'));
 const apiAdminKyc = require(path.join(RADACINA, 'api/admin/investitori-kyc.js'));
+// Pasul 11-P1: rutele de partener verifică starea firmei la ANAF; aici ANAF
+// e simulat (firmă activă), fără rețea.
+const fetchOriginal = global.fetch;
+global.fetch = async (url, opt) => {
+  if (!String(url).includes('anaf.ro')) return fetchOriginal(url, opt);
+  const item = { date_generale: { cui: 46577229, denumire: 'FIRMA SIMULATA SRL' }, inregistrare_scop_Tva: { scpTVA: true }, stare_inactiv: { statusInactivi: false } };
+  return { ok: true, status: 200, json: async () => ({ found: [item], notFound: [] }) };
+};
 const apiWizard = require(path.join(RADACINA, 'api/partener/wizard-companie.js'));
 const apiRegister = require(path.join(RADACINA, 'api/public/partner-register.js'));
 const apiProfil = require(path.join(RADACINA, 'api/cont/profil.js'));
@@ -190,15 +198,15 @@ async function rutaCompleta(token, id) {
   await test('investitor → partener de materiale: același cont, ambele roluri', async () => {
     reset();
     DB.tabele.profiles.find((p) => p.id === A).roles = ['client', 'investor'];
-    const r = await cheama(apiWizard, { token: 'tok-a', metoda: 'POST', body: { nume_firma: 'Albu Materiale SRL', cui: 'RO123', partner_type: 'materiale' } });
+    const r = await cheama(apiWizard, { token: 'tok-a', metoda: 'POST', body: { nume_firma: 'Albu Materiale SRL', cui: 'RO46577229', partner_type: 'materiale', tip_entitate_legala: 'srl' } });
     egal(r.statusCode, 200);
     egal(roluri(A), ['client', 'investor', 'partener_materiale']);
     egal(DB.tabele.partners.length, 1); egal(DB.tabele.partners[0].id, A); egal(DB.tabele.partners[0].status_verificare, 'pending_review');
   });
   await test('al doilea tip de partener pe același cont → 409', async () => {
     reset();
-    DB.tabele.partners.push({ id: A, partner_type: 'furnizor_materiale', nume_firma: 'X', cui: '1', status_verificare: 'pending_review' });
-    const r = await cheama(apiWizard, { token: 'tok-a', metoda: 'POST', body: { nume_firma: 'X', cui: '1', partner_type: 'curier' } });
+    DB.tabele.partners.push({ id: A, partner_type: 'furnizor_materiale', nume_firma: 'X', cui: 'RO46577229', tip_entitate_legala: 'srl', status_verificare: 'pending_review' });
+    const r = await cheama(apiWizard, { token: 'tok-a', metoda: 'POST', body: { nume_firma: 'X', cui: 'RO46577229', partner_type: 'curier', tip_entitate_legala: 'srl' } });
     egal(r.statusCode, 409); egal(r.corp.cod, 'alt_tip_partener');
   });
   await test('partner-register refuză un utilizator autentificat (fără cont nou)', async () => {

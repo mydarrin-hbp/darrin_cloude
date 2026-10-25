@@ -22,6 +22,15 @@ const kvPath = require.resolve('@vercel/kv', { paths: [RADACINA] });
 require.cache[kvPath] = { id: kvPath, filename: kvPath, loaded: true, exports: { kv: { incr: async () => 1, expire: async () => 1 } } };
 delete process.env.RESEND_API_KEY;
 
+// Pasul 11-P1: rutele de partener verifică starea firmei la ANAF; aici ANAF
+// e simulat (firmă activă), fără rețea.
+const fetchOriginal = global.fetch;
+global.fetch = async (url, opt) => {
+  if (!String(url).includes('anaf.ro')) return fetchOriginal(url, opt);
+  const item = { date_generale: { cui: 46577229, denumire: 'FIRMA SIMULATA SRL' }, inregistrare_scop_Tva: { scpTVA: true }, stare_inactiv: { statusInactivi: false } };
+  return { ok: true, status: 200, json: async () => ({ found: [item], notFound: [] }) };
+};
+
 const R = require(path.join(RADACINA, 'lib/roluri-partener.js'));
 
 let trecute = 0;
@@ -61,7 +70,7 @@ const verifica = require(path.join(RADACINA, 'api/admin/verifica-document.js'));
 
 async function inregistreaza(tip, email) {
   const res = raspuns();
-  await register(cerere({ metoda: 'POST', body: { email, tip, nume_firma: `Firma ${tip}`, cui: 'RO1', tara: 'RO', nume: 'Ion' } }), res);
+  await register(cerere({ metoda: 'POST', body: { email, tip, nume_firma: `Firma ${tip}`, cui: 'RO46577229', tara: 'RO', nume: 'Ion', tip_entitate_legala: 'srl' } }), res);
   return res;
 }
 const profil = (email) => DB.tabele.profiles.find((p) => p.email === email);
@@ -145,7 +154,7 @@ const profil = (email) => DB.tabele.profiles.find((p) => p.email === email);
   await test('aprobarea adaugă rolul lipsă și scrie în audit', async () => {
     reset();
     DB.tabele.profiles.push({ id: 'hbp', email: 'contact@homebestpal.ro', role: 'client', roles: ['client'], status: 'pending_otp' });
-    DB.tabele.partners.push({ id: 'hbp', partner_type: 'furnizor_materiale', nume_firma: 'Home Best Pal', cui: 'RO46577229', status_verificare: 'pending_review' });
+    DB.tabele.partners.push({ id: 'hbp', partner_type: 'furnizor_materiale', nume_firma: 'Home Best Pal', cui: 'RO46577229', tip_entitate_legala: 'srl', status_verificare: 'pending_review' });
     const res = raspuns();
     await verifica(cerere({ metoda: 'POST', token: 'tok-admin', body: { tip: 'partener', id: 'hbp', decizie: 'aprobat' } }), res);
     egal(res.statusCode, 200, JSON.stringify(res.corp));
@@ -158,7 +167,7 @@ const profil = (email) => DB.tabele.profiles.find((p) => p.email === email);
   await test('aprobarea unui partener cu rolul deja corect nu scrie audit de rol', async () => {
     reset();
     DB.tabele.profiles.push({ id: 'p1', email: 'p1@x', role: 'partener_servicii', roles: ['partener_servicii'] });
-    DB.tabele.partners.push({ id: 'p1', partner_type: 'servicii_tehnice', status_verificare: 'pending_review' });
+    DB.tabele.partners.push({ id: 'p1', partner_type: 'servicii_tehnice', tip_entitate_legala: 'pfa', status_verificare: 'pending_review' });
     const res = raspuns();
     await verifica(cerere({ metoda: 'POST', token: 'tok-admin', body: { tip: 'partener', id: 'p1', decizie: 'aprobat' } }), res);
     egal(res.corp.rol_adaugat, null);

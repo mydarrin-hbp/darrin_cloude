@@ -35,6 +35,12 @@ module.exports = async function handler(req, res) {
       if (!cuiNumeric) return res.status(400).json({ error: 'CUI invalid' });
       const rezultat = await cautaANAF(cuiNumeric);
       if (!rezultat) return res.status(200).json({ ok: false, manual: true, motiv: 'CUI negăsit în registrul ANAF' });
+      // Pasul 11-P1: firma inactivă sau radiată nu se poate înscrie ca partener;
+      // formularul arată motivul, iar partner-register / wizard-companie o refuză.
+      if (rezultat.inactiva || rezultat.radiata) {
+        const m = MESAJE_ANAF.firma_inactiva;
+        return res.status(200).json({ ok: true, ...rezultat, cod: 'firma_inactiva', motiv: m.ro, motiv_en: m.en });
+      }
       return res.status(200).json({ ok: true, ...rezultat });
     }
 

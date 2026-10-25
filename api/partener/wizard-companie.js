@@ -4,8 +4,8 @@
 // niciodată în clar în DB) — vezi migrația partner_wizard_8_pasi_schema_si_criptare.
 //
 // GET  → starea curentă (fără IBAN în clar — doar ultimele 4 cifre, pentru UI)
-// POST { nume_firma, cui, partner_type, tip_entitate_legala?, is_treasury_account?,
-//        regiune_cod?, cont_bancar:{ nume_titular, iban, swift?, banca, moneda } }
+// POST { nume_firma, cui, partner_type, tip_entitate_legala, forma_juridica_locala?,
+//        is_treasury_account?, regiune_cod?, cont_bancar:{ nume_titular, iban, swift?, banca, moneda } }
 //
 // FIX (T7, 2026-07-20): tip_entitate_legala/is_treasury_account/regiune_cod
 // lipseau complet — nicio distincție PFA/SRL/SA/Instituție Publică, niciun
@@ -21,20 +21,23 @@
 // (id = user.id), deci un cont are un singur tip de partener: cererea pentru
 // alt tip primește 409, cu explicația.
 // POST acceptă și nr_reg_com și adresa_sediu_social (ca formularul public).
+//
+// Pasul 11-P1 (25 oct. 2026): forma juridică e obligatorie și doar din
+// lib/forme-juridice.js (fără persoană fizică); țara firmei e profiles.tara.
+// Firma inactivă sau radiată la ANAF e refuzată (lib/verifica-firma-partener.js).
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { validateIBAN } = require('../../lib/iban');
 const { TIP_PARTENER_DUPA_FORMULAR, ROL_DUPA_TIP_PARTENER, asiguraRolInProfil } = require('../../lib/roluri-partener');
-
-
-const TIPURI_ENTITATE = ['persoana_fizica', 'pfa', 'srl', 'srl_d', 'sa', 'institutie_publica'];
+const { trimiteEroare, camp, formaComuna } = require('../../lib/raspuns-eroare');
+const { verificaFirmaPartener, marcheazaVerificareManuala } = require('../../lib/verifica-firma-partener');
 
 async function handler(req, res, user) {
   if (req.method === 'GET') {
     const { data: partner } = await supabaseAdmin
       .from('partners')
-      .select('nume_firma, cui, partner_type, status_verificare, tip_entitate_legala, is_treasury_account, regiune_cod')
+      .select('nume_firma, cui, partner_type, status_verificare, tip_entitate_legala, forma_juridica_locala, is_treasury_account, regiune_cod')
       .eq('id', user.id).maybeSingle();
     const { data: conturi } = await supabaseAdmin
       .from('partner_conturi_bancare')
@@ -55,14 +58,17 @@ async function handler(req, res, user) {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { nume_firma, cui, partner_type, tip_entitate_legala, is_treasury_account, regiune_cod, cont_bancar, nr_reg_com, adresa_sediu_social } = req.body || {};
-  if (!nume_firma || !cui) return res.status(400).json({ error: 'nume_firma și cui sunt obligatorii' });
-  if (tip_entitate_legala !== undefined && tip_entitate_legala !== null && !TIPURI_ENTITATE.includes(tip_entitate_legala)) {
-    return res.status(400).json({ error: `tip_entitate_legala invalid. Valori acceptate: ${TIPURI_ENTITATE.join(', ')}` });
-  }
+  const { partner_type, is_treasury_account, regiune_cod, cont_bancar, nr_reg_com, adresa_sediu_social } = req.body || {};
 
   try {
-    const { data: existent } = await supabaseAdmin.from('partners').select('id, partner_type').eq('id', user.id).maybeSingle();
+    const { data: profil } = await supabaseAdmin.from('profiles').select('tara').eq('id', user.id).maybeSingle();
+    const firma = await verificaFirmaPartener(req.body, (profil && profil.tara) || req.body?.tara || 'RO');
+    if (!firma.ok) {
+      return trimiteEroare(res, firma.status, firma.cod, firma.error, firma.error_en, [camp(firma.camp, firma.error, firma.error_en)]);
+    }
+    const { nume_firma, cui, tip_entitate_legala, forma_juridica_locala } = firma.date;
+
+    const { data: existent } = await supabaseAdmin.from('partners').select('id, partner_type, cui').eq('id', user.id).maybeSingle();
     const tipCerut = partner_type ? TIP_PARTENER_DUPA_FORMULAR[partner_type] : null;
     if (existent && tipCerut && existent.partner_type && tipCerut !== existent.partner_type) {
       return res.status(409).json({
@@ -73,7 +79,10 @@ async function handler(req, res, user) {
     }
 
     const campuriEntitate = {
-      ...(tip_entitate_legala !== undefined ? { tip_entitate_legala } : {}),
+      tip_entitate_legala,
+      // Coloana vine din migrarea 11-P1: se completează pentru firma_straina,
+      // iar pe un rând existent se golește când forma juridică se schimbă.
+      ...(forma_juridica_locala ? { forma_juridica_locala } : (existent ? { forma_juridica_locala: null } : {})),
       ...(is_treasury_account !== undefined ? { is_treasury_account: Boolean(is_treasury_account) } : {}),
       ...(regiune_cod !== undefined ? { regiune_cod } : {}),
       ...(typeof nr_reg_com === 'string' && nr_reg_com.trim() ? { nr_reg_com: nr_reg_com.trim().slice(0, 40) } : {}),
@@ -83,6 +92,7 @@ async function handler(req, res, user) {
     if (existent) {
       const { error } = await supabaseAdmin.from('partners').update({ nume_firma, cui, ...campuriEntitate }).eq('id', user.id);
       if (error) throw error;
+      if (existent.cui !== cui) await marcheazaVerificareManuala({ partenerId: user.id, motiv: firma.verificare_manuala, cui, req });
     } else {
       const enumType = TIP_PARTENER_DUPA_FORMULAR[partner_type];
       if (!enumType) return res.status(400).json({ error: 'partner_type invalid pentru un cont nou de partener' });
@@ -90,6 +100,7 @@ async function handler(req, res, user) {
         id: user.id, partner_type: enumType, nume_firma, cui, status_verificare: 'pending_review', ...campuriEntitate,
       });
       if (error) throw error;
+      await marcheazaVerificareManuala({ partenerId: user.id, motiv: firma.verificare_manuala, cui, req });
       // Rolul de partener lângă rolurile existente ale contului (pasul 11-L).
       // Comenzile și vânzarea rămân condiționate de aprobare, contract și cont
       // bancar (lib/eligibilitate-partener.js), ca la orice partener nou.
@@ -119,4 +130,5 @@ async function handler(req, res, user) {
   }
 }
 
-module.exports = requireAuth([], handler);
+// Erorile ies în forma comună (lib/raspuns-eroare.js), cu `error` / `error_en` păstrate.
+module.exports = formaComuna(requireAuth([], handler));

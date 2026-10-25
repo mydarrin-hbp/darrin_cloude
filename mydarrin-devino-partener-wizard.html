@@ -110,7 +110,7 @@ input:focus,select:focus{border-color:var(--primary)}
         </select>
       </div>
       <div>
-        <label>CUI / CNP</label>
+        <label>CUI / nr. de înregistrare</label>
         <input type="text" id="s2-cui" placeholder="RO12345678" onblur="cautaCUI()">
         <div class="msg" id="s2-cui-msg" style="margin-top:-10px;margin-bottom:12px"></div>
       </div>
@@ -119,14 +119,10 @@ input:focus,select:focus{border-color:var(--primary)}
     <input type="text" id="s2-firma" placeholder="Firma Mea SRL">
     <div class="grid2">
       <div>
-        <label>Tip entitate legală</label>
-        <select id="s2-entitate" onchange="toggleTrezorerie()">
-          <option value="srl">SRL</option>
-          <option value="srl_d">SRL-D</option>
-          <option value="pfa">PFA</option>
-          <option value="sa">SA</option>
-          <option value="institutie_publica">Instituție publică</option>
-          <option value="persoana_fizica">Persoană fizică</option>
+        <label>Formă juridică</label>
+        <!-- Pasul 11-P1: opțiunile vin din forme-juridice-public.js (aceleași coduri ca lib/forme-juridice.js). -->
+        <select id="s2-entitate" onchange="toggleTrezorerie()" required>
+          <option value="">Alege forma juridică</option>
         </select>
       </div>
       <div>
@@ -139,6 +135,10 @@ input:focus,select:focus{border-color:var(--primary)}
         <input type="checkbox" id="s2-trezorerie" style="width:auto;margin:0">
         Contul bancar de mai jos este un cont de trezorerie (instituție publică)
       </label>
+    </div>
+    <div id="s2-forma-locala-wrap" style="display:none">
+      <label>Forma juridică locală</label>
+      <input type="text" id="s2-forma-locala" placeholder="GmbH, Ltd, EOOD..." maxlength="60">
     </div>
     <div id="s2-conturi-existente" style="display:none;font-size:12.5px;color:#0E9E99;font-weight:600;margin-bottom:12px"></div>
     <div class="grid2">
@@ -255,7 +255,9 @@ input:focus,select:focus{border-color:var(--primary)}
 <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
 <script type="module" src="lib/supabaseClient.js"></script>
 <script src="account-system.js"></script>
+<script src="forme-juridice-public.js"></script>
 <script>
+MDFormeJuridice.completeazaSelect(document.getElementById('s2-entitate'));
 if (typeof lucide !== 'undefined') lucide.createIcons();
 const TOTAL_PASI = 8;
 const NUME_PASI = ['Cont', 'Companie', 'NACE', 'Utilaje', 'Angajați', 'Certificări', 'Alocare', 'Succes'];
@@ -387,7 +389,9 @@ async function incarcaStareaSalvata() {
   if (TIP_LA_SELECT[p.partner_type]) { tipEl.value = TIP_LA_SELECT[p.partner_type]; tipEl.disabled = true; }
   if (p.nume_firma) document.getElementById('s2-firma').value = p.nume_firma;
   if (p.cui) document.getElementById('s2-cui').value = p.cui;
-  if (p.tip_entitate_legala) { document.getElementById('s2-entitate').value = p.tip_entitate_legala; toggleTrezorerie(); }
+  if (p.tip_entitate_legala) { MDFormeJuridice.completeazaSelect(document.getElementById('s2-entitate'), p.tip_entitate_legala); }
+  if (p.forma_juridica_locala) document.getElementById('s2-forma-locala').value = p.forma_juridica_locala;
+  toggleTrezorerie();
   document.getElementById('s2-trezorerie').checked = !!p.is_treasury_account;
   regiuneSalvata = p.regiune_cod || null;
   const conturi = companie.conturi || [];
@@ -452,6 +456,8 @@ function toggleTrezorerie() {
   const e = document.getElementById('s2-entitate').value;
   document.getElementById('s2-trezorerie-wrap').style.display = e === 'institutie_publica' ? 'block' : 'none';
   if (e !== 'institutie_publica') document.getElementById('s2-trezorerie').checked = false;
+  // Pasul 11-P1: „Forma juridică locală” doar pentru o firmă din altă țară.
+  document.getElementById('s2-forma-locala-wrap').style.display = MDFormeJuridice.esteStraina(e) ? 'block' : 'none';
 }
 
 // Regiunile depind de țara partenerului (setată la înregistrare din
@@ -488,7 +494,11 @@ async function cautaCUI() {
       body: JSON.stringify({ tara, cui }),
     });
     const data = await res.json();
-    if (data.ok && data.denumire) {
+    if (data.ok && data.cod === 'firma_inactiva') {
+      // Pasul 11-P1: firma inactivă sau radiată nu se poate înscrie.
+      const en = window.MYD_I18N && window.MYD_I18N.lang && window.MYD_I18N.lang !== 'ro';
+      msgEl.className = 'msg err'; msgEl.textContent = (en && data.motiv_en) || data.motiv;
+    } else if (data.ok && data.denumire) {
       msgEl.className = 'msg ok'; msgEl.textContent = `Găsit: ${data.denumire}`;
       const firmaEl = document.getElementById('s2-firma');
       if (!firmaEl.value.trim()) firmaEl.value = data.denumire;
@@ -513,11 +523,20 @@ async function salveazaPasul2() {
     nume_firma: document.getElementById('s2-firma').value.trim(),
     cui: document.getElementById('s2-cui').value.trim(),
     tip_entitate_legala: document.getElementById('s2-entitate').value,
+    forma_juridica_locala: document.getElementById('s2-forma-locala').value.trim(),
     is_treasury_account: document.getElementById('s2-trezorerie').checked,
     regiune_cod: document.getElementById('s2-regiune').value || null,
   };
+  if (!body.tip_entitate_legala) {
+    msgEl.className = 'msg err'; msgEl.textContent = 'Alege forma juridică a firmei.';
+    return;
+  }
   if (!body.nume_firma || !body.cui) {
     msgEl.className = 'msg err'; msgEl.textContent = 'Completează denumirea firmei și CUI.';
+    return;
+  }
+  if (MDFormeJuridice.esteStraina(body.tip_entitate_legala) && !body.forma_juridica_locala) {
+    msgEl.className = 'msg err'; msgEl.textContent = 'Scrie forma juridică din țara firmei (de exemplu GmbH, Ltd, EOOD).';
     return;
   }
   // Contul bancar e opțional la acest pas — devine obligatoriu abia înainte
@@ -539,7 +558,8 @@ async function salveazaPasul2() {
       body: JSON.stringify(body),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    const en = window.MYD_I18N && window.MYD_I18N.lang && window.MYD_I18N.lang !== 'ro';
+    if (!res.ok) throw new Error((en && data.error_en) || data.error || 'Eroare necunoscută');
     msgEl.className = 'msg ok'; msgEl.textContent = 'Salvat.';
     marcheazaFacut(2);
     PASI_DEBLOCATI = Math.max(PASI_DEBLOCATI, 3);
