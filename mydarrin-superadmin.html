@@ -1980,8 +1980,8 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       <div class="sa-card">
         <div class="sa-card-body" style="padding:0">
           <table class="sa-table">
-            <thead><tr><th>Firmă</th><th>CUI</th><th>Tip</th><th>Status verificare</th><th>Contract</th><th>Regiune</th><th>Creat</th><th>Acțiune</th></tr></thead>
-            <tbody id="pgl-tbody"><tr><td colspan="8" style="text-align:center;color:#8C9BAD">Se încarcă...</td></tr></tbody>
+            <thead><tr><th>Firmă</th><th>CUI</th><th>Formă juridică</th><th>Tip</th><th>Status verificare</th><th>Contract</th><th>Regiune</th><th>Creat</th><th>Acțiune</th></tr></thead>
+            <tbody id="pgl-tbody"><tr><td colspan="9" style="text-align:center;color:#8C9BAD">Se încarcă...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -7492,7 +7492,7 @@ async function loadParteneriGlobali() {
   const tbody = document.getElementById('pgl-tbody');
   const countEl = document.getElementById('pgl-count');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#8C9BAD">Se încarcă...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#8C9BAD">Se încarcă...</td></tr>';
   try {
     const headers = await _adminAuthHeader();
     const res = await fetch('/api/admin/parteneri-lista', { headers });
@@ -7500,7 +7500,7 @@ async function loadParteneriGlobali() {
     if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
     countEl.textContent = `${data.total} parten${data.total === 1 ? 'er real' : 'eri reali'} în ${'partners'}`;
     if (!data.parteneri.length) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#8C9BAD">Niciun partener real încă.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#8C9BAD">Niciun partener real încă.</td></tr>';
       return;
     }
     tbody.innerHTML = data.parteneri.map((p) => {
@@ -7509,7 +7509,8 @@ async function loadParteneriGlobali() {
       return `
         <tr>
           <td>${escapeHTML(p.nume_firma || '—')}</td>
-          <td style="font-family:monospace;font-size:11.5px">${escapeHTML(p.cui || '—')}</td>
+          <td style="font-family:monospace;font-size:11.5px">${escapeHTML(p.cui || '—')}${p.verificare_anaf_manuala ? '<div style="font-family:inherit;font-size:10.5px;color:#F5A623;margin-top:2px">de verificat manual la ANAF</div>' : ''}</td>
+          <td>${p.forma_juridica ? escapeHTML(p.forma_juridica.ro) + (p.forma_juridica_locala ? ' — ' + escapeHTML(p.forma_juridica_locala) : '') : '<span style="color:#E57373">lipsă — nu poate fi aprobat</span>'}</td>
           <td>${escapeHTML(p.partner_type || '—')}</td>
           <td><span style="color:${statusColor};font-weight:700">${escapeHTML(p.status_verificare || 'pending_review')}</span></td>
           <td>${p.contract_semnat ? '<span style="color:#4CBE83">✓ semnat</span>' : '<span style="color:#8C9BAD">nesemnat</span>'}</td>
@@ -7522,7 +7523,7 @@ async function loadParteneriGlobali() {
         </tr>`;
     }).join('');
   } catch (e) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#E57373">Eroare: ${escapeHTML(e.message)}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#E57373">Eroare: ${escapeHTML(e.message)}</td></tr>`;
   }
 }
 

@@ -14,8 +14,8 @@ const { incarcaContactPlatformaSigur } = require('../../lib/contact-platforma');
 const { validateIBAN } = require('../../lib/iban');
 const { fromHeader } = require('../../lib/email-sender');
 const { ROL_DUPA_TIP_PARTENER, TIP_PARTENER_DUPA_FORMULAR, asiguraRolInProfil } = require('../../lib/roluri-partener');
-
-const TIPURI_ENTITATE = ['persoana_fizica', 'pfa', 'srl', 'srl_d', 'sa', 'institutie_publica'];
+const { trimiteEroare, camp, formaComuna } = require('../../lib/raspuns-eroare');
+const { verificaFirmaPartener, marcheazaVerificareManuala } = require('../../lib/verifica-firma-partener');
 
 // Etichetă tip partener, per limbă — folosită doar în emailul de bun venit.
 // Traduceri generate, nu revizuite nativ (vezi notă în lib/i18n.js).
@@ -98,7 +98,7 @@ async function trimiteEmailBunVenit({ email, nume, tip, limba, linkParola }) {
   }
 }
 
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -122,8 +122,8 @@ module.exports = async function handler(req, res) {
   }
 
   const {
-    nume, prenume, telefon, email, tip, nume_firma, cui, tara,
-    tip_entitate_legala, is_treasury_account, regiune_cod, iban, banca,
+    nume, prenume, telefon, email, tip, tara,
+    is_treasury_account, regiune_cod, iban, banca,
     nr_reg_com, adresa_sediu_social,
   } = req.body || {};
   const nrRegCom = typeof nr_reg_com === 'string' ? nr_reg_com.trim().slice(0, 40) : '';
@@ -141,12 +141,14 @@ module.exports = async function handler(req, res) {
   // partners — fără această validare, invitația Auth se crea cu succes,
   // dar insertul din partners eșua mereu (formularul nu le trimitea deloc
   // înainte), lăsând un cont invitat fără rând corespunzător în partners.
-  if (!nume_firma || !cui) {
-    return res.status(400).json({ error: 'Denumirea firmei și CUI/CNP sunt obligatorii.' });
+  // Pasul 11-P1: partener poate fi doar o entitate cu statut juridic; forma
+  // juridică e obligatorie, CUI-ul românesc are cifra de control corectă, iar
+  // o firmă inactivă sau radiată la ANAF e refuzată (lib/verifica-firma-partener.js).
+  const firma = await verificaFirmaPartener(req.body, tara);
+  if (!firma.ok) {
+    return trimiteEroare(res, firma.status, firma.cod, firma.error, firma.error_en, [camp(firma.camp, firma.error, firma.error_en)]);
   }
-  if (tip_entitate_legala !== undefined && tip_entitate_legala !== null && !TIPURI_ENTITATE.includes(tip_entitate_legala)) {
-    return res.status(400).json({ error: `tip_entitate_legala invalid. Valori acceptate: ${TIPURI_ENTITATE.join(', ')}` });
-  }
+  const { tip_entitate_legala, forma_juridica_locala } = firma.date;
   // FIX (T7, 2026-07-20): pagina publică colecta IBAN și-l arunca — nu
   // ajungea niciodată la backend. Acum, dacă e trimis, e validat (checksum
   // MOD-97) și salvat criptat — la fel ca în wizard-companie.js.
@@ -209,16 +211,18 @@ module.exports = async function handler(req, res) {
     const { error: partnerErr } = await supabaseAdmin.from('partners').insert({
       id: invited.user.id,
       partner_type: enumType,
-      nume_firma,
-      cui,
+      nume_firma: firma.date.nume_firma,
+      cui: firma.date.cui,
       status_verificare: 'pending_review',
-      ...(tip_entitate_legala ? { tip_entitate_legala } : {}),
+      tip_entitate_legala,
+      ...(forma_juridica_locala ? { forma_juridica_locala } : {}),
       ...(regiune_cod ? { regiune_cod } : {}),
       ...(nrRegCom ? { nr_reg_com: nrRegCom } : {}),
       ...(adresaSediu ? { adresa_sediu_social: adresaSediu } : {}),
       ...(is_treasury_account !== undefined ? { is_treasury_account: Boolean(is_treasury_account) } : {}),
     });
     if (partnerErr) throw partnerErr;
+    await marcheazaVerificareManuala({ partenerId: invited.user.id, motiv: firma.verificare_manuala, cui: firma.date.cui, req });
 
     // 2b. Cont bancar (T7, 2026-07-20) — colectat legitim înainte de
     // autentificare (spre deosebire de CNP-uri de angajați/documente, care
@@ -230,7 +234,7 @@ module.exports = async function handler(req, res) {
       if (cryptErr) throw cryptErr;
       const { error: contErr } = await supabaseAdmin.from('partner_conturi_bancare').insert({
         partner_id: invited.user.id,
-        nume_titular: nume_firma,
+        nume_titular: firma.date.nume_firma,
         iban_criptat: cripted,
         banca,
         moneda: { RO: 'RON', MD: 'MDL', DE: 'EUR', FR: 'EUR', BG: 'BGN' }[tara] || 'RON',
@@ -277,4 +281,7 @@ module.exports = async function handler(req, res) {
     }
     return res.status(500).json({ error: err.message || 'Nu am putut înregistra partenerul.' });
   }
-};
+}
+
+// Erorile ies în forma comună (lib/raspuns-eroare.js), cu `error` / `error_en` păstrate.
+module.exports = formaComuna(handler);

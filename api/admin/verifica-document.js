@@ -9,7 +9,8 @@
 // îl vede partenerul în banda de stare a contului (api/cont/profil.js).
 
 const { requireAuth } = require('../../lib/auth-middleware');
-const { formaComuna } = require('../../lib/raspuns-eroare');
+const { formaComuna, trimiteEroare, camp } = require('../../lib/raspuns-eroare');
+const { esteFormaValida } = require('../../lib/forme-juridice');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 const { rolPentruTipPartener, asiguraRolInProfil } = require('../../lib/roluri-partener');
@@ -43,6 +44,25 @@ async function handler(req, res, admin) {
         admin, req, actiune: `document_${decizie}`, entitate: 'documente_partener', entitate_id: id, detalii: { decizie },
       });
       return res.status(200).json({ ok: true, document: data });
+    }
+
+    // Pasul 11-P1: se aprobă doar o entitate cu statut juridic (forma juridică
+    // din lib/forme-juridice.js; pentru firma_straina, cu forma locală scrisă).
+    if (decizie === 'aprobat') {
+      const { data: actual } = await supabaseAdmin.from('partners').select('*').eq('id', id).maybeSingle();
+      if (!actual) return res.status(404).json({ error: 'Partenerul nu există' });
+      const forma = actual.tip_entitate_legala;
+      const formaLocalaLipsa = forma === 'firma_straina' && !String(actual.forma_juridica_locala || '').trim();
+      if (!esteFormaValida(forma) || formaLocalaLipsa) {
+        const ro = formaLocalaLipsa
+          ? 'Partenerul nu poate fi aprobat: pentru o firmă din altă țară lipsește forma juridică locală. Cere-i partenerului s-o completeze în profil.'
+          : 'Partenerul nu poate fi aprobat fără o formă juridică validă (SRL, PFA, II etc.). Persoana fizică nu poate fi partener. Cere-i partenerului să completeze forma juridică în profil.';
+        const en = formaLocalaLipsa
+          ? 'The partner cannot be approved: the local legal form is missing for a company from another country. Ask the partner to fill it in on their profile.'
+          : 'The partner cannot be approved without a valid legal form (SRL, PFA, II etc.). A private individual cannot be a partner. Ask the partner to fill in the legal form on their profile.';
+        return trimiteEroare(res, 409, 'FORMA_JURIDICA_INVALIDA', ro, en,
+          [camp(formaLocalaLipsa ? 'forma_juridica_locala' : 'tip_entitate_legala', ro, en)]);
+      }
     }
 
     const { data, error } = await supabaseAdmin
