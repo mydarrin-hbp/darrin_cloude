@@ -12,7 +12,8 @@
 //      previzualizările platformelor, exportul;
 //   0 erori JS, nimic în afara ecranului, fără derulare laterală.
 // Lățimi: 1440, 1024, 768, 390.
-// Rulare: node scripts/test-seo-panou.js   (DOAR=T|O|C, CAPTURI=<folder>)
+//   M. seo-meta.js pe o pagină publică: titlul / descrierea pe limbă, reaplicate la myd:lang;
+// Rulare: node scripts/test-seo-panou.js   (DOAR=T|O|C|M, CAPTURI=<folder>)
 
 const path = require('path');
 const sim = require('./supabase-simulat');
@@ -358,6 +359,49 @@ async function testCitire(browser, baza) {
   await ctx.close();
 }
 
+// M. seo-meta.js pe o pagină publică: titlul / descrierea pe limbă (ro → RO, altfel EN),
+// reaplicate la schimbarea limbii (myd:lang); fără suprascriere → textul static.
+async function testPaginaPublica(browser, baza) {
+  const apiPublic = require(path.join(RADACINA, 'api/public/seo-config.js'));
+  reset();
+  DB.tabele.seo_config = [
+    { id: 'a', page_path: '/despre-noi', limba: 'ro', meta_title: 'Titlu RO DE TEST', meta_description: 'Descriere RO DE TEST' },
+    { id: 'b', page_path: '/despre-noi', limba: 'en', meta_title: 'EN TEST title' },
+  ];
+  for (const [lang, titlu, desc] of [['ro', 'Titlu RO DE TEST', 'Descriere RO DE TEST'], ['en', 'EN TEST title', null], ['de', 'EN TEST title', null]]) {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    await ctx.addInitScript((l) => { try { localStorage.setItem('myd_lang_v1', l); localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), versiune: 1 })); } catch (e) {} }, lang);
+    await ctx.route(/\.supabase\.co\//, (r) => r.abort());
+    const cereri = [];
+    await ctx.route(/\/api\/public\/seo-config/, async (r) => {
+      const url = new URL(r.request().url());
+      cereri.push(url.searchParams.get('lang'));
+      const res = raspuns();
+      await apiPublic(cerere({ query: Object.fromEntries(url.searchParams) }), res);
+      return r.fulfill({ status: res.statusCode, contentType: 'application/json', body: JSON.stringify(res.corp) });
+    });
+    const pg = await ctx.newPage();
+    const erori = [];
+    pg.on('pageerror', (e) => erori.push(e.message.slice(0, 160)));
+    await pg.goto(baza + '/despre-noi', { waitUntil: 'networkidle' });
+    await pg.waitForFunction((t) => document.title === t, titlu, { timeout: 5000 }).catch(() => {});
+    const st = await pg.evaluate(() => ({ t: document.title, d: (document.querySelector('meta[name="description"]') || {}).content }));
+    verifica(st.t === titlu, `M ${lang}: titlul ${titlu} (${st.t}; cereri lang=${cereri})`);
+    verifica(cereri.length && cereri.every((l) => l === (lang === 'ro' ? 'ro' : 'en')), `M ${lang}: seo-meta cere lang=${lang === 'ro' ? 'ro' : 'en'} (${cereri})`);
+    if (desc) verifica(st.d === desc, `M ${lang}: descrierea suprascrisă (${st.d})`);
+    else verifica(st.d && st.d !== 'Descriere RO DE TEST', `M ${lang}: fără descriere EN → descrierea statică / tradusă, nu cea RO (${st.d})`);
+    if (lang === 'ro') {
+      // Schimbarea limbii din antet (evenimentul myd:lang) → reaplicat pe EN.
+      await pg.evaluate(() => { document.documentElement.lang = 'en'; window.dispatchEvent(new CustomEvent('myd:lang', { detail: { lang: 'en' } })); });
+      await pg.waitForFunction(() => document.title === 'EN TEST title', null, { timeout: 5000 }).catch(() => {});
+      const d2 = await pg.evaluate(() => ({ t: document.title, d: document.querySelector('meta[name="description"]').content }));
+      verifica(d2.t === 'EN TEST title' && d2.d !== 'Descriere RO DE TEST', `M: la myd:lang en se reaplică varianta EN, descrierea RO revine la cea statică (${JSON.stringify(d2)})`);
+    }
+    verifica(!erori.length, `M ${lang}: 0 erori JS (${erori.join(' | ')})`);
+    await ctx.close();
+  }
+}
+
 module.exports.ruleaza = async function () {
   const srv = await porneste(0);
   const baza = `http://127.0.0.1:${srv.address().port}`;
@@ -365,6 +409,7 @@ module.exports.ruleaza = async function () {
   try {
     if (ruleaza('T') || ruleaza('O') || ruleaza('C')) await testTaburi(browser, baza);
     if (ruleaza('T')) await testCitire(browser, baza);
+    if (ruleaza('M')) await testPaginaPublica(browser, baza);
   } finally {
     await browser.close();
     srv.close();
