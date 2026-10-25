@@ -21,6 +21,8 @@
 //                                              (cu `lipsuri`, ca la GET);
 //                                              retrage aprobarea versiunii anterioare DIN ACEEAȘI LIMBĂ
 // POST { actiune: 'retrage', id }            → retrage aprobarea
+// POST { actiune: 'sterge', id }             → șterge o CIORNĂ (pasul 11-K4); versiunea aprobată
+//                                              → 409 VERSIUNE_APROBATA (întâi „Retrage aprobarea”)
 // POST { actiune: 'previzualizare', id }     → același conținut ca pagina publică (deck complet),
 //                                              plus notele prezentatorului (pasul 11-K3)
 // POST { actiune: 'prezentare', limba }      → versiunea APROBATĂ a limbii (ro → RO, altfel EN),
@@ -201,6 +203,26 @@ async function retrage(req, res, admin) {
   return res.status(200).json({ ok: true, versiune: data });
 }
 
+// Pasul 11-K4: ștergerea unei ciorne (ex. importul făcut de două ori). Versiunea
+// aprobată nu se șterge; condiția `aprobat = false` e și în cererea de ștergere,
+// iar recitirea de după prinde o aprobare făcută între timp.
+function refuzAprobata(res) {
+  return trimiteEroare(res, 409, 'VERSIUNE_APROBATA', 'Versiunea aprobată nu se șterge: retrageți întâi aprobarea („Retrage aprobarea”).', 'The approved version cannot be deleted: first withdraw the approval (“Withdraw approval”).');
+}
+async function sterge(req, res, admin) {
+  const { v, error } = await citeste(req.body && req.body.id);
+  if (error) { if (P.migrareLipsa(error)) return refuzMigrare(res); throw error; }
+  if (!v) return refuzLipsa(res);
+  if (v.aprobat) return refuzAprobata(res);
+  const { error: e2 } = await supabaseAdmin.from('pitch_deck_versiuni').delete().eq('id', v.id).eq('aprobat', false);
+  if (e2) throw e2;
+  const { v: ramas, error: e3 } = await citeste(v.id);
+  if (e3) throw e3;
+  if (ramas) return refuzAprobata(res);
+  await inregistreazaAudit({ admin, req, actiune: 'pitch_deck_ciorna_stearsa', entitate: 'pitch_deck_versiuni', entitate_id: v.id, detalii: { titlu: v.titlu, limba: v.limba, slideuri: Array.isArray(v.slide_uri) ? v.slide_uri.length : 0 } });
+  return res.status(200).json({ ok: true, sters: v.id });
+}
+
 async function urlIncarcare(req, res, admin) {
   const tip = req.body && req.body.tip;
   const marime = Number(req.body && req.body.marime);
@@ -264,7 +286,7 @@ async function handler(req, res, admin) {
       return res.status(200).json({ ok: true, ...(await P.construiestePayload(v, { note: true })) });
     }
 
-    const scrieri = { importa, salveaza, duplica, aproba, retrage, url_incarcare: urlIncarcare, vizibilitate };
+    const scrieri = { importa, salveaza, duplica, aproba, retrage, sterge, url_incarcare: urlIncarcare, vizibilitate };
     if (!scrieri[actiune]) {
       return trimiteEroare(res, 400, 'ACTIUNE_INVALIDA', 'Acțiune necunoscută.', 'Unknown action.');
     }

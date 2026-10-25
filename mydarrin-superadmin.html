@@ -4950,8 +4950,9 @@ async function importaPitchDeck(input) {
 }
 
 // ── Pasul 11-K: acțiunile unei versiuni ───────────────────────
-// Ciorna: Editează, Previzualizează, Aprobă, Duplică. Aprobată: Previzualizează,
-// Retrage aprobarea, Duplică. Doar citire: Previzualizează. Serverul decide oricum.
+// Ciorna: Editează, Previzualizează, Aprobă, Duplică, Șterge ciorna (11-K4).
+// Aprobată: Previzualizează, Retrage aprobarea, Duplică. Doar citire:
+// Previzualizează. Serverul decide oricum.
 // Pasul 11-K4: cu lipsuri, butonul e „Aprobă · N de rezolvat”, dezactivat vizual
 // (estompat, data-pd-blocat); clicul deschide lista „Ce mai lipsește” de sub rând
 // (aria-expanded / aria-controls), nu trimite cererea.
@@ -4965,6 +4966,7 @@ function actiuniPitchDeck(v) {
     else if (n) lista.push(b('aproba', `Aprobă · ${n} de rezolvat`, 'btn-p', { stil: 'opacity:.55;cursor:help', atr: `data-pd-blocat="1" aria-controls="pd-lipsuri-${escapeHTML(v.id)}" aria-expanded="${PD_LIPSURI_DESCHISE.has(v.id) ? 'true' : 'false'}" title="Nu se poate aproba încă: deschide lista „Ce mai lipsește pentru aprobare”"` }));
     else lista.push(b('aproba', 'Aprobă', 'btn-p'));
     lista.push(b('duplica', 'Duplică ca ciornă nouă'));
+    if (!v.aprobat) lista.push(b('sterge', 'Șterge ciorna', 'btn-s', { stil: 'color:#F87171;border-color:rgba(248,113,113,.5)' }));
   }
   return lista.join('');
 }
@@ -5006,6 +5008,21 @@ async function pdActiune(act, btn) {
       return `Aprobarea versiunii ${limba} a fost retrasă.`;
     }, { textSalveaza: 'Se retrage…' });
     if (r.ok) loadPitchDeck();
+    return;
+  }
+  // Pasul 11-K4: ștergerea unei ciorne (doar neaprobate; serverul verifică și el).
+  if (act === 'sterge') {
+    if (v.aprobat) return;
+    if (!(await MDFeedback.confirma(`Ștergi ciorna „${v.titlu}” (${limba}, ${v.slideuri} slide-uri)? Ciorna și notele ei de verificare se șterg definitiv; versiunea publică nu se schimbă.`, { textOk: 'Șterge ciorna', periculos: true }))) return;
+    const r = await MDFeedback.salveaza(btn, zona, async () => {
+      await kycApi('/api/admin/pitch-deck', { metoda: 'POST', corp: { actiune: 'sterge', id } });
+      return `Ciorna „${v.titlu}” a fost ștearsă.`;
+    }, { textSalveaza: 'Se șterge…', textOk: '✓ Ștearsă' });
+    if (r.ok) {
+      PD_LIPSURI_DESCHISE.delete(id);
+      if (PD_ED && PD_ED.v && PD_ED.v.id === id) inchideEditorPitchDeck();
+      loadPitchDeck();
+    }
     return;
   }
   if (act === 'duplica') {

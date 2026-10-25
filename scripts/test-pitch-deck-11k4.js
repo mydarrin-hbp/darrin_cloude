@@ -4,6 +4,8 @@
 //   A. `lipsuri` (ce mai lipsește pentru aprobare): v1.1 → 14 note + 7 surse = 21,
 //      în listă, în GET ?id și în refuzul acțiunii `aproba`, din aceeași funcție
 //      ca verificarea serverului; o versiune completă → 0 și se aprobă;
+//   B. `sterge`: doar ciornele, doar cu drept de scriere pe Investitori, cu audit
+//      (titlu, limbă, număr de slide-uri); versiunea aprobată → 409;
 // Cifrele rundei sunt DE TEST, nu ale rundei Seed reale.
 // Rulare: node scripts/test-pitch-deck-11k4.js
 
@@ -142,6 +144,48 @@ const numara = (l) => l.reduce((o, x) => { o[x.tip] = (o[x.tip] || 0) + 1; retur
     const v = await completeaza(await importa(RO11));
     await admin(SCRIE, { actiune: 'salveaza', id: v.id, titlu: v.titlu, sursa: v.sursa, disclaimer: '', slide_uri: v.slide_uri, note_verificare: v.note_verificare });
     egal((await admin(SCRIE)).corp.versiuni[0].lipsuri.map((x) => [x.slide, x.tip, x.camp]), [[null, 'eticheta', 'disclaimer']]);
+  });
+
+  console.log('B. Ștergerea ciornei (`sterge`)');
+  await test('ciorna dublă (importată de două ori) se șterge, cu audit; cealaltă rămâne', async () => {
+    reset();
+    const a = await importa(RO11);
+    const b = await importa(RO11);
+    const r = await admin(SCRIE, { actiune: 'sterge', id: b.id });
+    egal(r.statusCode, 200, JSON.stringify(r.corp)); egal(r.corp.sters, b.id);
+    egal(DB.tabele.pitch_deck_versiuni.map((x) => x.id), [a.id]);
+    const au = DB.tabele.audit_log.find((x) => x.actiune === 'pitch_deck_ciorna_stearsa');
+    adevarat(au && au.entitate_id === b.id, 'audit');
+    egal(au.detalii, { titlu: 'Pitch deck v1.1 · RO', limba: 'ro', slideuri: 20 });
+  });
+  await test('versiunea aprobată → 409 VERSIUNE_APROBATA (RO + EN), nimic șters', async () => {
+    reset();
+    const v = await completeaza(await importa(RO11));
+    egal((await admin(SCRIE, { actiune: 'aproba', id: v.id })).statusCode, 200);
+    const r = await admin(SUPER, { actiune: 'sterge', id: v.id });
+    egal(r.statusCode, 409); egal(r.corp.cod, 'VERSIUNE_APROBATA');
+    adevarat(/Retrage aprobarea/.test(r.corp.mesaj.ro) && /withdraw the approval/.test(r.corp.mesaj.en), 'mesajul spune ce e de făcut');
+    egal(DB.tabele.pitch_deck_versiuni.length, 1);
+    adevarat(!DB.tabele.audit_log.some((x) => x.actiune === 'pitch_deck_ciorna_stearsa'), 'fără audit de ștergere');
+    // după „Retrage aprobarea”, se poate șterge
+    egal((await admin(SCRIE, { actiune: 'retrage', id: v.id })).statusCode, 200);
+    egal((await admin(SCRIE, { actiune: 'sterge', id: v.id })).statusCode, 200);
+    egal(DB.tabele.pitch_deck_versiuni.length, 0);
+  });
+  await test('admin fără poate_scrie → 403 FARA_DREPT_SCRIERE; fără drept pe Investitori → 403; investitor → 403; fără sesiune → 401', async () => {
+    reset();
+    const v = await importa(RO11);
+    const r = await admin(CITESTE, { actiune: 'sterge', id: v.id });
+    egal(r.statusCode, 403); egal(r.corp.cod, 'FARA_DREPT_SCRIERE');
+    egal((await admin(FARA, { actiune: 'sterge', id: v.id })).statusCode, 403);
+    egal((await admin(INV, { actiune: 'sterge', id: v.id })).statusCode, 403);
+    egal((await admin(null, { actiune: 'sterge', id: v.id })).statusCode, 401);
+    egal(DB.tabele.pitch_deck_versiuni.length, 1);
+  });
+  await test('id inexistent → 404 VERSIUNE_LIPSA', async () => {
+    reset();
+    const r = await admin(SCRIE, { actiune: 'sterge', id: 'nu-exista' });
+    egal(r.statusCode, 404); egal(r.corp.cod, 'VERSIUNE_LIPSA');
   });
 
   console.log(`\n${ok} trecute, ${esec} picate`);

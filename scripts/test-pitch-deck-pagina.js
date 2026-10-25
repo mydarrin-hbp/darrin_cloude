@@ -160,7 +160,7 @@ async function testAdmin(browser, baza) {
       const butoaneRo = await pg.$$eval(`${rand} .pd-actiuni button`, (b) => b.map((x) => x.textContent));
       // Pasul 11-K4: cu note / surse lipsă, butonul spune câte sunt de rezolvat.
       const nLipsuri = notePe(RO) + 7;
-      verifica(JSON.stringify(butoaneRo) === JSON.stringify(['Editează', 'Previzualizează', `Aprobă · ${nLipsuri} de rezolvat`, 'Duplică ca ciornă nouă']), `${et}: acțiunile ciornei (${butoaneRo.join(', ')})`);
+      verifica(JSON.stringify(butoaneRo) === JSON.stringify(['Editează', 'Previzualizează', `Aprobă · ${nLipsuri} de rezolvat`, 'Duplică ca ciornă nouă', 'Șterge ciorna']), `${et}: acțiunile ciornei (${butoaneRo.join(', ')})`);
       // Aprobarea cu note nerezolvate → clicul deschide lista „Ce mai lipsește”, fără cerere
       const auditInainte = DB.tabele.audit_log.length;
       await pg.click(`${rand} [data-pd-act="aproba"]`);
