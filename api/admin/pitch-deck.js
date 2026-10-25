@@ -10,11 +10,15 @@
 // (lib/raspuns-eroare.js), RO + EN, cu câmpul greșit.
 //
 // GET                                        → { ok, versiuni, poate_scrie, este_superadmin, vizibilitate }
-// GET ?id=                                   → { ok, versiune }   (cu slide_uri și note_verificare)
+//                                              fiecare versiune neaprobată are `lipsuri` (pasul 11-K4):
+//                                              [{ slide, tip: 'continut' | 'nota' | 'sursa' | 'eticheta', text, camp, nota? }]
+//                                              — aceeași funcție (lib/pitch-deck.js, lipsuriAprobare) ca `aproba`
+// GET ?id=                                   → { ok, versiune, blocaje, lipsuri }   (cu slide_uri și note_verificare)
 // POST { actiune: 'importa', fisier }        → ciornă nouă din pitch-deck-v1-<limba>.json (aprobat = false)
 // POST { actiune: 'salveaza', id, titlu, sursa, disclaimer, slide_uri, note_verificare }   doar ciornele
 // POST { actiune: 'duplica', id }            → ciornă nouă, copie a versiunii
-// POST { actiune: 'aproba', id }             → 409 NOTE_NEREZOLVATE dacă mai sunt note / surse lipsă;
+// POST { actiune: 'aproba', id }             → 409 NOTE_NEREZOLVATE dacă mai sunt note / surse lipsă
+//                                              (cu `lipsuri`, ca la GET);
 //                                              retrage aprobarea versiunii anterioare DIN ACEEAȘI LIMBĂ
 // POST { actiune: 'retrage', id }            → retrage aprobarea
 // POST { actiune: 'previzualizare', id }     → același conținut ca pagina publică (deck complet),
@@ -41,11 +45,11 @@ function refuzMigrare(res) {
     'Tabela pitch deck-ului nu are încă limbile: aplicați migrarea docs/migrations-propuse/2026-10-22_pitch_deck_limbi.sql.',
     'The pitch deck table does not have languages yet: apply the migration docs/migrations-propuse/2026-10-22_pitch_deck_limbi.sql.');
 }
-function refuzValidare(res, erori) {
+function refuzValidare(res, erori, extra) {
   return trimiteEroare(res, 400, 'CONTINUT_INVALID',
     `Conținutul are ${erori.length} ${erori.length === 1 ? 'problemă' : 'probleme'}; corectați câmpurile marcate.`,
     `The content has ${erori.length} ${erori.length === 1 ? 'problem' : 'problems'}; correct the marked fields.`,
-    erori.slice(0, 50).map((e) => camp(e.camp, e.ro, e.en)));
+    erori.slice(0, 50).map((e) => camp(e.camp, e.ro, e.en)), extra);
 }
 function refuzLipsa(res) {
   return trimiteEroare(res, 404, 'VERSIUNE_LIPSA', 'Versiunea nu există.', 'The version does not exist.');
@@ -75,6 +79,8 @@ function rezumatVersiune(v, mail) {
     slideuri: Array.isArray(v.slide_uri) ? v.slide_uri.length : 0,
     note_total: note.length, note_nerezolvate: note.filter((n) => n && n.rezolvat !== true).length,
     blocaje: P.blocajeAprobare(v).length,
+    // Pasul 11-K4: ce mai lipsește pentru aprobare (aceeași funcție ca `aproba`).
+    lipsuri: v.aprobat === true ? [] : P.lipsuriAprobare(v),
   };
 }
 
@@ -161,12 +167,15 @@ async function aproba(req, res, admin) {
   if (error) { if (P.migrareLipsa(error)) return refuzMigrare(res); throw error; }
   if (!v) return refuzLipsa(res);
   if (v.aprobat) return res.status(200).json({ ok: true, versiune: v, retrase: [] });
+  // Pasul 11-K4: refuzurile trimit și `lipsuri` (aceeași listă ca răspunsul GET),
+  // ca back-office-ul să arate lista „Ce mai lipsește”, nu un bloc de text.
+  const lipsuri = P.lipsuriAprobare(v);
   const erori = P.valideaza(v.slide_uri);
-  if (erori.length) return refuzValidare(res, erori);
+  if (erori.length) return refuzValidare(res, erori, { lipsuri });
   const blocaje = P.blocajeAprobare(v);
   if (blocaje.length) {
     return trimiteEroare(res, 409, 'NOTE_NEREZOLVATE', 'Rezolvați notele de verificare înainte de aprobare.', 'Resolve the verification notes before approval.',
-      blocaje.map((x) => camp(x.camp, x.ro, x.en)));
+      blocaje.map((x) => camp(x.camp, x.ro, x.en)), { lipsuri });
   }
   // Doar versiunea aprobată din ACEEAȘI limbă își pierde aprobarea (indexul unic
   // parțial din migrare: cel mult una aprobată pe limbă).
@@ -236,7 +245,7 @@ async function handler(req, res, admin) {
         const { v, error } = await citeste(id);
         if (error) { if (P.migrareLipsa(error)) return refuzMigrare(res); throw error; }
         if (!v) return refuzLipsa(res);
-        return res.status(200).json({ ok: true, versiune: v, blocaje: P.blocajeAprobare(v), poate_scrie: poateScrie });
+        return res.status(200).json({ ok: true, versiune: v, blocaje: P.blocajeAprobare(v), lipsuri: v.aprobat === true ? [] : P.lipsuriAprobare(v), poate_scrie: poateScrie });
       }
       return lista(res, poateScrie, await hasRole(admin, ['superadmin']));
     }

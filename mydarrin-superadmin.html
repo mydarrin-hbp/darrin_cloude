@@ -4851,8 +4851,81 @@ function renderPitchDeck() {
       <td style="font-size:11px;color:#8BA3C0">${fmtDataOra(v.actualizat_la || v.creat_la)}</td>
       <td style="font-size:11px;color:#8BA3C0">${escapeHTML(v.actualizat_de || v.creat_de || '—')}</td>
       <td style="text-align:center"><div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap" class="pd-actiuni">${typeof actiuniPitchDeck === 'function' ? actiuniPitchDeck(v) : ''}</div></td>
-    </tr>`;
+    </tr>${pdLipsuriHtml(v)}`;
   }).join('');
+}
+
+// ── Pasul 11-K4: „Ce mai lipsește pentru aprobare” ─────────────
+// Lista vine de la server (v.lipsuri, aceeași funcție ca acțiunea `aproba`:
+// lib/pitch-deck.js, lipsuriAprobare); aici doar se grupează pe slide.
+const PD_LIPSURI_DESCHISE = new Set();
+const pdNr = (n, unu, mai) => `${n} ${n === 1 ? unu : mai}`;
+
+function pdGrupeazaLipsuri(lipsuri) {
+  const grupe = new Map();
+  (lipsuri || []).forEach((x) => {
+    const k = x.slide == null ? 'deck' : String(x.slide);
+    if (!grupe.has(k)) grupe.set(k, { slide: x.slide, sursa: false, eticheta: false, note: [], continut: [] });
+    const g = grupe.get(k);
+    if (x.tip === 'sursa') g.sursa = true;
+    else if (x.tip === 'eticheta') g.eticheta = true;
+    else if (x.tip === 'nota') g.note.push(x);
+    else g.continut.push(x);
+  });
+  return [...grupe.values()].sort((a, b) => (a.slide == null ? -1 : b.slide == null ? 1 : a.slide - b.slide));
+}
+
+function pdLipsuriHtml(v) {
+  const lipsuri = !v.aprobat && Array.isArray(v.lipsuri) ? v.lipsuri : [];
+  if (!lipsuri.length) return '';
+  const grupe = pdGrupeazaLipsuri(lipsuri);
+  const deschisa = PD_LIPSURI_DESCHISE.has(v.id);
+  const li = grupe.map((g) => {
+    const parti = [];
+    if (g.eticheta) parti.push('Lipsește eticheta de prognoză');
+    if (g.sursa) parti.push('Lipsește sursa cifrelor');
+    if (g.note.length) parti.push(pdNr(g.note.length, 'notă nerezolvată', 'note nerezolvate'));
+    if (g.continut.length) parti.push(pdNr(g.continut.length, 'câmp de corectat', 'câmpuri de corectat'));
+    // Ținta linkului: sursa cifrelor, altfel prima notă, altfel primul câmp greșit.
+    const tinta = g.eticheta ? 'eticheta' : g.sursa ? 'sursa' : g.note.length ? 'nota:' + g.note[0].nota : 'camp:' + ((g.continut[0] && g.continut[0].camp) || '');
+    const detalii = g.note.map((n) => `<li>${escapeHTML(n.text)}</li>`).concat(g.continut.map((c) => `<li>${escapeHTML(c.text)}</li>`)).join('');
+    return `<li class="pd-lipsa" data-pd-lipsa-slide="${g.slide == null ? '' : g.slide}" style="padding:7px 0;border-top:1px solid #22324A;min-width:0">
+      <div style="display:flex;gap:6px 10px;align-items:baseline;flex-wrap:wrap;justify-content:space-between">
+        <span style="font-size:12px;color:#E2E8F0;min-width:0;overflow-wrap:anywhere"><strong>${g.slide == null ? 'Deck-ul întreg' : 'Slide ' + g.slide}</strong> — ${escapeHTML(parti.join(' · '))}</span>
+        <button type="button" class="btn-s" style="font-size:10.5px;padding:3px 8px;white-space:nowrap" data-pd-deschide-slide="${g.slide == null ? '' : g.slide}" data-pd-tinta="${escapeHTML(tinta)}" onclick="pdDeschideLipsa(this)">Deschide slide-ul →</button>
+      </div>
+      ${detalii ? `<ul style="margin:4px 0 0;padding-left:18px;font-size:11px;color:#8BA3C0;line-height:1.5;overflow-wrap:anywhere">${detalii}</ul>` : ''}
+    </li>`;
+  }).join('');
+  return `<tr class="pd-lipsuri-tr" data-pd-lipsuri-id="${escapeHTML(v.id)}"><td colspan="6" style="padding:0 10px 10px;border-top:0">
+    <details class="pd-lipsuri" id="pd-lipsuri-${escapeHTML(v.id)}" ${deschisa ? 'open' : ''} ontoggle="pdLipsuriToggle(this)"
+      style="position:sticky;left:10px;max-width:min(100%,calc(100vw - 56px));box-sizing:border-box;border:1px solid rgba(255,140,0,.35);border-radius:10px;background:#1A1408;padding:8px 12px">
+      <summary style="cursor:pointer;font-size:12px;font-weight:700;color:#FFD9A8">Ce mai lipsește pentru aprobare (${lipsuri.length} de rezolvat)</summary>
+      <ul style="list-style:none;margin:6px 0 0;padding:0">${li}</ul>
+      <div style="font-size:10.5px;color:#C9A36A;margin-top:6px">Lista e calculată de server cu aceeași verificare ca „Aprobă”. Bifează notele „rezolvat”, completează sursele și salvează ciorna.</div>
+    </details></td></tr>`;
+}
+
+function pdLipsuriToggle(d) {
+  const id = d.closest('[data-pd-lipsuri-id]').dataset.pdLipsuriId;
+  if (d.open) PD_LIPSURI_DESCHISE.add(id); else PD_LIPSURI_DESCHISE.delete(id);
+  const b = document.querySelector(`[aria-controls="${CSS.escape(d.id)}"]`);
+  if (b) b.setAttribute('aria-expanded', d.open ? 'true' : 'false');
+}
+
+function pdDeschideLipsa(btn) {
+  const id = btn.closest('[data-pd-lipsuri-id]').dataset.pdLipsuriId;
+  const slide = btn.dataset.pdDeschideSlide ? Number(btn.dataset.pdDeschideSlide) : null;
+  return deschideEditorPitchDeck(id, { slide, tinta: btn.dataset.pdTinta || '' });
+}
+
+// Lista „Ce mai lipsește” a unei versiuni: deschisă (sau închisă) și vizibilă.
+function pdArataLipsuri(id, comuta) {
+  const d = document.getElementById('pd-lipsuri-' + id);
+  if (!d) return;
+  d.open = comuta ? !d.open : true;
+  if (d.open) PD_LIPSURI_DESCHISE.add(id); else PD_LIPSURI_DESCHISE.delete(id);
+  if (d.open) { d.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); d.querySelector('summary').focus({ preventScroll: true }); }
 }
 
 // Importul: fiecare fișier ales devine o ciornă în limba lui (meta.limba).
@@ -4879,12 +4952,18 @@ async function importaPitchDeck(input) {
 // ── Pasul 11-K: acțiunile unei versiuni ───────────────────────
 // Ciorna: Editează, Previzualizează, Aprobă, Duplică. Aprobată: Previzualizează,
 // Retrage aprobarea, Duplică. Doar citire: Previzualizează. Serverul decide oricum.
+// Pasul 11-K4: cu lipsuri, butonul e „Aprobă · N de rezolvat”, dezactivat vizual
+// (estompat, data-pd-blocat); clicul deschide lista „Ce mai lipsește” de sub rând
+// (aria-expanded / aria-controls), nu trimite cererea.
 function actiuniPitchDeck(v) {
-  const b = (act, txt, cls) => `<button class="${cls || 'btn-s'}" style="font-size:10px;padding:3px 8px" data-pd-act="${act}" onclick="pdActiune('${act}', this)">${txt}</button>`;
+  const b = (act, txt, cls, extra) => `<button class="${cls || 'btn-s'}" style="font-size:10px;padding:3px 8px${extra && extra.stil ? ';' + extra.stil : ''}" data-pd-act="${act}" ${(extra && extra.atr) || ''} onclick="pdActiune('${act}', this)">${txt}</button>`;
   const lista = [b('previzualizeaza', 'Previzualizează')];
   if (PD.poate_scrie) {
     if (!v.aprobat) lista.unshift(b('editeaza', 'Editează'));
-    lista.push(v.aprobat ? b('retrage', 'Retrage aprobarea') : b('aproba', 'Aprobă', 'btn-p'));
+    const n = Array.isArray(v.lipsuri) ? v.lipsuri.length : 0;
+    if (v.aprobat) lista.push(b('retrage', 'Retrage aprobarea'));
+    else if (n) lista.push(b('aproba', `Aprobă · ${n} de rezolvat`, 'btn-p', { stil: 'opacity:.55;cursor:help', atr: `data-pd-blocat="1" aria-controls="pd-lipsuri-${escapeHTML(v.id)}" aria-expanded="${PD_LIPSURI_DESCHISE.has(v.id) ? 'true' : 'false'}" title="Nu se poate aproba încă: deschide lista „Ce mai lipsește pentru aprobare”"` }));
+    else lista.push(b('aproba', 'Aprobă', 'btn-p'));
     lista.push(b('duplica', 'Duplică ca ciornă nouă'));
   }
   return lista.join('');
@@ -4898,22 +4977,26 @@ async function pdActiune(act, btn) {
   if (act === 'previzualizeaza') return previzualizarePitchDeck(id, null, btn);
   if (act === 'editeaza') return deschideEditorPitchDeck(id);
   if (act === 'aproba') {
+    // Pasul 11-K4: cât mai lipsește ceva, clicul doar deschide lista (nicio cerere).
+    if (Array.isArray(v.lipsuri) && v.lipsuri.length) return pdArataLipsuri(id, true);
     if (!(await MDFeedback.confirma(`Aprobi „${v.titlu}”? Devine pitch deck-ul public ${limba}${limba === 'EN' ? ' (en, bg, de, el, fr, tr)' : ' (limba română)'}; versiunea aprobată anterior din aceeași limbă își pierde aprobarea. Cealaltă limbă nu se schimbă.`, { textOk: 'Aprobă' }))) return;
     const r = await MDFeedback.salveaza(btn, zona, async () => {
-      try {
-        const j = await kycApi('/api/admin/pitch-deck', { metoda: 'POST', corp: { actiune: 'aproba', id } });
-        return `Versiunea ${limba} e aprobată și publică.` + (j.retrase && j.retrase.length ? ' Versiunea aprobată anterior în ' + limba + ' a fost retrasă.' : '');
-      } catch (e) {
-        if (e.cod === 'NOTE_NEREZOLVATE' && e.campuri && e.campuri.length) {
-          const n = e.campuri.length;
-          const detalii = e.campuri.slice(0, 8).map((c) => (c.mesaj && (c.mesaj.ro || c.mesaj)) || c.camp).join(' · ');
-          const x = new Error(`${e.message} ${n} ${n === 1 ? 'motiv' : 'motive'}: ${detalii}${n > 8 ? ' …' : ''} — deschide „Editează”, bifează notele rezolvate și completează sursele.`);
-          throw x;
-        }
-        throw e;
-      }
+      const j = await kycApi('/api/admin/pitch-deck', { metoda: 'POST', corp: { actiune: 'aproba', id } });
+      return `Versiunea ${limba} e aprobată și publică.` + (j.retrase && j.retrase.length ? ' Versiunea aprobată anterior în ' + limba + ' a fost retrasă.' : '');
     }, { textSalveaza: 'Se aprobă…' });
-    if (r.ok) loadPitchDeck();
+    if (r.ok) { loadPitchDeck(); return; }
+    // Refuzul serverului (ex. ciorna s-a schimbat între timp): aceeași listă
+    // „Ce mai lipsește”, nu un bloc de text; rândul se redesenează pe loc, deci
+    // butonul nu rămâne „✕ Nu s-a salvat”.
+    const e = r.eroare;
+    const lipsuri = e && e.date && Array.isArray(e.date.lipsuri) ? e.date.lipsuri : null;
+    if (lipsuri && lipsuri.length && (e.cod === 'NOTE_NEREZOLVATE' || e.cod === 'CONTINUT_INVALID')) {
+      v.lipsuri = lipsuri;
+      PD_LIPSURI_DESCHISE.add(id);
+      renderPitchDeck();
+      MDFeedback.mesaj(zona, 'info', `„${v.titlu}” nu s-a aprobat: mai sunt ${lipsuri.length} de rezolvat — vezi lista „Ce mai lipsește pentru aprobare” de sub rând.`);
+      pdArataLipsuri(id);
+    }
     return;
   }
   if (act === 'retrage') {
@@ -4940,7 +5023,11 @@ let PD_ED = null; // { v, slide_uri, note }
 const PD_STIL_IN = 'display:block;width:100%;box-sizing:border-box;margin-top:4px;background:#0D1B2A;border:1px solid #2D3F55;border-radius:8px;padding:7px 9px;color:#E2E8F0;font-size:12.5px;font-family:inherit';
 const pdSrcImagine = (v) => /^https:\/\//.test(v) ? v : '/assets/pitch-deck/v1/' + v;
 
-async function deschideEditorPitchDeck(id) {
+// Pasul 11-K4: `la` = { slide, tinta } din lista „Ce mai lipsește”: editorul se
+// deschide direct pe acel slide, cu focusul pe „Sursa cifrelor” (tinta 'sursa'),
+// pe nota respectivă ('nota:<id>'), pe eticheta de prognoză ('eticheta') sau pe
+// primul câmp greșit ('camp:<cale>').
+async function deschideEditorPitchDeck(id, la) {
   const box = document.getElementById('pd-editor');
   box.hidden = false;
   box.innerHTML = '<div style="color:#8BA3C0;font-size:12px">Se încarcă versiunea…</div>';
@@ -4948,10 +5035,33 @@ async function deschideEditorPitchDeck(id) {
     const j = await kycApi('/api/admin/pitch-deck?id=' + encodeURIComponent(id));
     PD_ED = { v: j.versiune, slide_uri: JSON.parse(JSON.stringify(j.versiune.slide_uri || [])), note: (j.versiune.note_verificare || []).map((n) => ({ ...n })) };
     renderEditorPitchDeck();
+    if (la && pdMergiLa(la)) return;
     box.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (e) {
     box.innerHTML = `<div style="color:#F87171;font-size:12px">${escapeHTML(e.message)}</div>`;
   }
+}
+
+function pdMergiLa({ slide, tinta }) {
+  const box = document.getElementById('pd-editor');
+  const i = slide ? slide - 1 : null;
+  const det = i != null ? box.querySelector(`[data-pd-slide="${i}"]`) : null;
+  if (det) det.open = true;
+  const t = String(tinta || '');
+  let el = null;
+  if (t === 'eticheta') el = document.getElementById('pd-ed-disclaimer');
+  else if (t === 'sursa' && det) el = det.querySelector(`[data-cale="slide_uri.${i}.sursa"]`);
+  else if (t.startsWith('nota:')) el = (det || box).querySelector(`[data-pd-nota="${CSS.escape(t.slice(5))}"]`);
+  else if (t.startsWith('camp:')) {
+    // Câmpul exact sau, dacă e o listă / un obiect, primul câmp din interiorul lui.
+    const cale = t.slice(5);
+    el = box.querySelector(`[data-cale="${CSS.escape(cale)}"]`) || box.querySelector(`[data-cale^="${CSS.escape(cale)}."]`);
+  }
+  el = el || (det && det.querySelector('summary'));
+  if (!el) return false;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el.focus({ preventScroll: true });
+  return true;
 }
 
 function pdCampHtml(d, val, cale, slide) {
@@ -5014,7 +5124,19 @@ function pdSlideHtml(s, i) {
       ${faraSursa ? '<span class="chip" style="font-size:9.5px;margin-left:4px;background:#7A2020;color:#FECACA">fără sursă</span>' : ''}</summary>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;padding:4px 12px 12px">
       ${Object.keys(campuri).filter((k) => !campuri[k].intern && (k !== 'sursa' || s.prognoza === true)).map((k) => pdCampHtml(campuri[k], s[k], `slide_uri.${i}.${k}`, s)).join('')}
-    </div>${pdNoteHtml(s, i)}</details>`;
+    </div>${pdNoteVerificareSlideHtml(s)}${pdNoteHtml(s, i)}</details>`;
+}
+
+// Pasul 11-K4: notele de verificare ale slide-ului, și în slide (aceleași bife
+// ca lista de sus; pdEditorSchimbare le ține sincronizate).
+function pdNoteVerificareSlideHtml(s) {
+  const note = PD_ED.note.filter((n) => n.slide === s.nr);
+  if (!note.length) return '';
+  return `<div style="margin:0 12px 10px;padding:8px 10px;border-radius:8px;background:#1A1408;border:1px solid rgba(255,140,0,.35)">
+    <div style="font-size:11px;font-weight:700;color:#FFD9A8;margin-bottom:4px">Note de verificare pentru acest slide</div>
+    ${note.map((n) => `<label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;color:#E2E8F0;margin-bottom:4px">
+      <input type="checkbox" data-pd-nota="${escapeHTML(n.id)}" ${n.rezolvat ? 'checked' : ''} style="margin-top:2px"> <span>${escapeHTML(n.text)} <em style="color:#8BA3C0">— rezolvat</em></span></label>`).join('')}
+  </div>`;
 }
 
 // Pasul 11-K3: notele prezentatorului — o casetă sub fiecare slide, interne
@@ -5075,6 +5197,7 @@ function pdEditorSchimbare(e) {
   if (el.dataset.pdNota) {
     const n = PD_ED.note.find((x) => x.id === el.dataset.pdNota);
     if (n) n.rezolvat = el.checked;
+    document.querySelectorAll(`#pd-editor [data-pd-nota="${CSS.escape(el.dataset.pdNota)}"]`).forEach((x) => { x.checked = el.checked; });
     return;
   }
   if (el.dataset.pdIncarca && e.type === 'change') return incarcaImaginePitchDeck(el);
