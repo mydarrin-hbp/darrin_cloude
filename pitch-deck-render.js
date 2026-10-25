@@ -94,8 +94,10 @@
     return new Intl.DateTimeFormat(loc(l), { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Bucharest' }).format(d);
   }
   function formatCifra(c, l) { return (c.prefix || '') + formatNumar(c.valoare, l) + (c.sufix || ''); }
+  // Pasul 11-K4: eticheta unei serii din grafic (eticheta_serie1 / 2), altfel cea implicită.
+  function etichetaSerie(v, implicit) { return typeof v === 'string' && v.trim() ? v.trim() : implicit; }
 
-  var exporturi = { TEXTE: TEXTE, ALT: ALT, NR_LIVE: NR_LIVE, formatNumar: formatNumar, formatCompact: formatCompact, formatBani: formatBani, formatProcent: formatProcent, formatData: formatData, formatCifra: formatCifra };
+  var exporturi = { TEXTE: TEXTE, ALT: ALT, NR_LIVE: NR_LIVE, formatNumar: formatNumar, formatCompact: formatCompact, formatBani: formatBani, formatProcent: formatProcent, formatData: formatData, formatCifra: formatCifra, etichetaSerie: etichetaSerie };
   if (!win) return exporturi;
 
   var doc = win.document;
@@ -233,27 +235,30 @@
     },
     grafice: function (s, l, ctx) {
       var ani = s.ani || [], v = s.venituri || [], p = s.profit_net || [];
+      // Pasul 11-K4: etichetele seriilor (opționale); fără ele, „Venituri” /
+      // „Profit net” (RO) și „Revenue” / „Net profit” (EN), ca înainte.
+      var e1 = etichetaSerie(s.eticheta_serie1, TEXTE[l].venituri), e2 = etichetaSerie(s.eticheta_serie2, TEXTE[l].profit);
       var W = 600, H = 300, sus = 30, jos = 40, st = 10;
       var max = Math.max.apply(null, v.concat(p).concat([0])), min = Math.min.apply(null, p.concat([0]));
       var y = function (x) { return sus + ((max - x) / ((max - min) || 1)) * (H - sus - jos); };
       var pas = (W - st * 2) / Math.max(1, ani.length), lat = pas * 0.5;
       var bare = v.map(function (x, k) {
         var cx = st + pas * k + pas / 2, y0 = y(0), y1 = y(x);
-        return '<rect class="mdpd-bara' + (k === v.length - 1 ? ' mdpd-ultima' : '') + '" style="--i:' + k + '" x="' + (cx - lat / 2).toFixed(1) + '" y="' + Math.min(y0, y1).toFixed(1) + '" width="' + lat.toFixed(1) + '" height="' + Math.abs(y0 - y1).toFixed(1) + '" rx="4"><title>' + esc(TEXTE[l].an + ' ' + ani[k] + ': ' + formatBani(x, s.moneda, l)) + '</title></rect>' +
+        return '<rect class="mdpd-bara' + (k === v.length - 1 ? ' mdpd-ultima' : '') + '" style="--i:' + k + '" x="' + (cx - lat / 2).toFixed(1) + '" y="' + Math.min(y0, y1).toFixed(1) + '" width="' + lat.toFixed(1) + '" height="' + Math.abs(y0 - y1).toFixed(1) + '" rx="4"><title>' + esc(e1 + ' · ' + TEXTE[l].an + ' ' + ani[k] + ': ' + formatBani(x, s.moneda, l)) + '</title></rect>' +
           '<text x="' + cx.toFixed(1) + '" y="' + (Math.min(y0, y1) - 8).toFixed(1) + '" text-anchor="middle">' + esc(formatBani(x, s.moneda, l, { compact: Math.abs(x) >= 1e6 })) + '</text>' +
           '<text x="' + cx.toFixed(1) + '" y="' + (H - 12) + '" text-anchor="middle">' + esc(TEXTE[l].an + ' ' + ani[k]) + '</text>';
       }).join('');
       var puncte = p.map(function (x, k) { return (st + pas * k + pas / 2).toFixed(1) + ',' + y(x).toFixed(1); });
       var linie = puncte.length ? '<polyline class="mdpd-traseu" pathLength="1" points="' + puncte.join(' ') + '"/>' + p.map(function (x, k) {
         var xy = puncte[k].split(',');
-        return '<circle class="mdpd-punct" cx="' + xy[0] + '" cy="' + xy[1] + '" r="5"><title>' + esc(TEXTE[l].profit + ' · ' + TEXTE[l].an + ' ' + ani[k] + ': ' + formatBani(x, s.moneda, l)) + '</title></circle>';
+        return '<circle class="mdpd-punct" cx="' + xy[0] + '" cy="' + xy[1] + '" r="5"><title>' + esc(e2 + ' · ' + TEXTE[l].an + ' ' + ani[k] + ': ' + formatBani(x, s.moneda, l)) + '</title></circle>';
       }).join('') : '';
       return '<div class="mdpd-2col mdpd-c-grafic"><div class="mdpd-col"><h2' + a(0) + '>' + esc(s.titlu) + '</h2>' +
         (s.subtitlu ? '<p' + aCls(1, 'mdpd-sub') + '>' + esc(s.subtitlu) + '</p>' : '') +
         '<div' + a(2) + '>' + baniAnimati(s.cifra.valoare, s.moneda, l, 'mdpd-num-xl') + '<div class="mdpd-num-et">' + esc(s.cifra.text) + '</div></div></div>' +
         '<div class="mdpd-col"><div class="mdpd-grafic"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(s.titlu) + '">' +
         '<line class="mdpd-ax" x1="0" x2="' + W + '" y1="' + y(0).toFixed(1) + '" y2="' + y(0).toFixed(1) + '"/>' + bare + linie + '</svg></div>' +
-        '<div class="mdpd-legenda"><span style="--c:#0BA39A">' + esc(TEXTE[l].venituri) + '</span><span style="--c:#22C55E">' + esc(TEXTE[l].profit) + '</span></div></div></div>';
+        '<div class="mdpd-legenda"><span style="--c:#0BA39A">' + esc(e1) + '</span><span style="--c:#22C55E">' + esc(e2) + '</span></div></div></div>';
     },
     runda: function (s, l, ctx) {
       var r = ctx.runda;

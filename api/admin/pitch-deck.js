@@ -10,19 +10,32 @@
 // (lib/raspuns-eroare.js), RO + EN, cu câmpul greșit.
 //
 // GET                                        → { ok, versiuni, poate_scrie, este_superadmin, vizibilitate }
-// GET ?id=                                   → { ok, versiune }   (cu slide_uri și note_verificare)
+//                                              fiecare versiune neaprobată are `lipsuri` (pasul 11-K4):
+//                                              [{ slide, tip: 'continut' | 'nota' | 'sursa' | 'eticheta', text, camp, nota? }]
+//                                              — aceeași funcție (lib/pitch-deck.js, lipsuriAprobare) ca `aproba`
+// GET ?id=                                   → { ok, versiune, blocaje, lipsuri }   (cu slide_uri și note_verificare)
 // POST { actiune: 'importa', fisier }        → ciornă nouă din pitch-deck-v1-<limba>.json (aprobat = false)
 // POST { actiune: 'salveaza', id, titlu, sursa, disclaimer, slide_uri, note_verificare }   doar ciornele
 // POST { actiune: 'duplica', id }            → ciornă nouă, copie a versiunii
-// POST { actiune: 'aproba', id }             → 409 NOTE_NEREZOLVATE dacă mai sunt note / surse lipsă;
+// POST { actiune: 'aproba', id }             → 409 NOTE_NEREZOLVATE dacă mai sunt note / surse lipsă
+//                                              (cu `lipsuri`, ca la GET);
 //                                              retrage aprobarea versiunii anterioare DIN ACEEAȘI LIMBĂ
 // POST { actiune: 'retrage', id }            → retrage aprobarea
+// POST { actiune: 'sterge', id }             → șterge o CIORNĂ (pasul 11-K4); versiunea aprobată
+//                                              → 409 VERSIUNE_APROBATA (întâi „Retrage aprobarea”)
 // POST { actiune: 'previzualizare', id }     → același conținut ca pagina publică (deck complet),
 //                                              plus notele prezentatorului (pasul 11-K3)
 // POST { actiune: 'prezentare', limba }      → versiunea APROBATĂ a limbii (ro → RO, altfel EN),
 //                                              cu notele prezentatorului: vederea prezentatorului
 //                                              de pe pagina publică (pasul 11-K3). 404 fără versiune aprobată.
-// Previzualizarea și prezentarea cer doar dreptul de citire pe Investitori.
+// POST { actiune: 'ciorna', limba }         → cea mai nouă CIORNĂ a limbii (ro → RO, altfel EN), ca
+//                                              pe pagina publică, fără notele prezentatorului, cu
+//                                              `ciorna: { id, titlu, actualizat_la }` (pasul 11-K4:
+//                                              linkul „Vezi ciorna (doar administratori)” de pe
+//                                              pagina Investitori). 404 fără ciornă.
+// POST { actiune: 'ciorna', limba, doar_stare: true } → { ok, exista, limba } (fără conținut)
+// Previzualizarea, prezentarea și ciorna cer doar dreptul de citire pe Investitori;
+// vizitatorii și investitorii primesc 401 / 403 (requireAuth + nivelInvestitori).
 // POST { actiune: 'url_incarcare', tip, marime } → adresă semnată în bucket-ul pitch-deck-media
 // POST { actiune: 'vizibilitate', valoare }  → doar superadmin: public / investitori_aprobati
 
@@ -41,11 +54,11 @@ function refuzMigrare(res) {
     'Tabela pitch deck-ului nu are încă limbile: aplicați migrarea docs/migrations-propuse/2026-10-22_pitch_deck_limbi.sql.',
     'The pitch deck table does not have languages yet: apply the migration docs/migrations-propuse/2026-10-22_pitch_deck_limbi.sql.');
 }
-function refuzValidare(res, erori) {
+function refuzValidare(res, erori, extra) {
   return trimiteEroare(res, 400, 'CONTINUT_INVALID',
     `Conținutul are ${erori.length} ${erori.length === 1 ? 'problemă' : 'probleme'}; corectați câmpurile marcate.`,
     `The content has ${erori.length} ${erori.length === 1 ? 'problem' : 'problems'}; correct the marked fields.`,
-    erori.slice(0, 50).map((e) => camp(e.camp, e.ro, e.en)));
+    erori.slice(0, 50).map((e) => camp(e.camp, e.ro, e.en)), extra);
 }
 function refuzLipsa(res) {
   return trimiteEroare(res, 404, 'VERSIUNE_LIPSA', 'Versiunea nu există.', 'The version does not exist.');
@@ -75,6 +88,8 @@ function rezumatVersiune(v, mail) {
     slideuri: Array.isArray(v.slide_uri) ? v.slide_uri.length : 0,
     note_total: note.length, note_nerezolvate: note.filter((n) => n && n.rezolvat !== true).length,
     blocaje: P.blocajeAprobare(v).length,
+    // Pasul 11-K4: ce mai lipsește pentru aprobare (aceeași funcție ca `aproba`).
+    lipsuri: v.aprobat === true ? [] : P.lipsuriAprobare(v),
   };
 }
 
@@ -161,12 +176,15 @@ async function aproba(req, res, admin) {
   if (error) { if (P.migrareLipsa(error)) return refuzMigrare(res); throw error; }
   if (!v) return refuzLipsa(res);
   if (v.aprobat) return res.status(200).json({ ok: true, versiune: v, retrase: [] });
+  // Pasul 11-K4: refuzurile trimit și `lipsuri` (aceeași listă ca răspunsul GET),
+  // ca back-office-ul să arate lista „Ce mai lipsește”, nu un bloc de text.
+  const lipsuri = P.lipsuriAprobare(v);
   const erori = P.valideaza(v.slide_uri);
-  if (erori.length) return refuzValidare(res, erori);
+  if (erori.length) return refuzValidare(res, erori, { lipsuri });
   const blocaje = P.blocajeAprobare(v);
   if (blocaje.length) {
     return trimiteEroare(res, 409, 'NOTE_NEREZOLVATE', 'Rezolvați notele de verificare înainte de aprobare.', 'Resolve the verification notes before approval.',
-      blocaje.map((x) => camp(x.camp, x.ro, x.en)));
+      blocaje.map((x) => camp(x.camp, x.ro, x.en)), { lipsuri });
   }
   // Doar versiunea aprobată din ACEEAȘI limbă își pierde aprobarea (indexul unic
   // parțial din migrare: cel mult una aprobată pe limbă).
@@ -190,6 +208,35 @@ async function retrage(req, res, admin) {
   if (e2) throw e2;
   await inregistreazaAudit({ admin, req, actiune: 'pitch_deck_aprobare_retrasa', entitate: 'pitch_deck_versiuni', entitate_id: v.id, detalii: { limba: v.limba } });
   return res.status(200).json({ ok: true, versiune: data });
+}
+
+// Pasul 11-K4: ștergerea unei ciorne (ex. importul făcut de două ori). Versiunea
+// aprobată nu se șterge; condiția `aprobat = false` e și în cererea de ștergere,
+// iar recitirea de după prinde o aprobare făcută între timp.
+function refuzAprobata(res) {
+  return trimiteEroare(res, 409, 'VERSIUNE_APROBATA', 'Versiunea aprobată nu se șterge: retrageți întâi aprobarea („Retrage aprobarea”).', 'The approved version cannot be deleted: first withdraw the approval (“Withdraw approval”).');
+}
+// Pasul 11-K4: cea mai nouă ciornă (neaprobată) a unei limbi.
+async function ciornaRecenta(limba) {
+  const { data, error } = await supabaseAdmin.from('pitch_deck_versiuni').select(P.COLOANE)
+    .eq('limba', P.limbaDeck(limba)).eq('aprobat', false)
+    .order('actualizat_la', { ascending: false }).order('creat_la', { ascending: false }).limit(1);
+  if (error) return { error };
+  return { v: (data && data[0]) || null };
+}
+
+async function sterge(req, res, admin) {
+  const { v, error } = await citeste(req.body && req.body.id);
+  if (error) { if (P.migrareLipsa(error)) return refuzMigrare(res); throw error; }
+  if (!v) return refuzLipsa(res);
+  if (v.aprobat) return refuzAprobata(res);
+  const { error: e2 } = await supabaseAdmin.from('pitch_deck_versiuni').delete().eq('id', v.id).eq('aprobat', false);
+  if (e2) throw e2;
+  const { v: ramas, error: e3 } = await citeste(v.id);
+  if (e3) throw e3;
+  if (ramas) return refuzAprobata(res);
+  await inregistreazaAudit({ admin, req, actiune: 'pitch_deck_ciorna_stearsa', entitate: 'pitch_deck_versiuni', entitate_id: v.id, detalii: { titlu: v.titlu, limba: v.limba, slideuri: Array.isArray(v.slide_uri) ? v.slide_uri.length : 0 } });
+  return res.status(200).json({ ok: true, sters: v.id });
 }
 
 async function urlIncarcare(req, res, admin) {
@@ -236,7 +283,7 @@ async function handler(req, res, admin) {
         const { v, error } = await citeste(id);
         if (error) { if (P.migrareLipsa(error)) return refuzMigrare(res); throw error; }
         if (!v) return refuzLipsa(res);
-        return res.status(200).json({ ok: true, versiune: v, blocaje: P.blocajeAprobare(v), poate_scrie: poateScrie });
+        return res.status(200).json({ ok: true, versiune: v, blocaje: P.blocajeAprobare(v), lipsuri: v.aprobat === true ? [] : P.lipsuriAprobare(v), poate_scrie: poateScrie });
       }
       return lista(res, poateScrie, await hasRole(admin, ['superadmin']));
     }
@@ -249,13 +296,21 @@ async function handler(req, res, admin) {
       if (!v) return refuzLipsa(res);
       return res.status(200).json({ ok: true, ...(await P.construiestePayload(v, { note: true })) });
     }
+    if (actiune === 'ciorna') {
+      const limba = P.limbaDeck(req.body.limba);
+      const { v, error } = await ciornaRecenta(limba);
+      if (error) { if (P.migrareLipsa(error)) return refuzMigrare(res); throw error; }
+      if (req.body.doar_stare) return res.status(200).json({ ok: true, exista: !!v, limba });
+      if (!v) return trimiteEroare(res, 404, 'CIORNA_LIPSA', 'Nu există nicio ciornă în această limbă.', 'There is no draft in this language.');
+      return res.status(200).json({ ok: true, ciorna: { id: v.id, titlu: v.titlu, actualizat_la: v.actualizat_la || v.creat_la || null }, ...(await P.construiestePayload(v, { note: false })) });
+    }
     if (actiune === 'prezentare') {
       const v = await P.versiuneAprobata(P.limbaDeck(req.body.limba));
       if (!v) return refuzLipsa(res);
       return res.status(200).json({ ok: true, ...(await P.construiestePayload(v, { note: true })) });
     }
 
-    const scrieri = { importa, salveaza, duplica, aproba, retrage, url_incarcare: urlIncarcare, vizibilitate };
+    const scrieri = { importa, salveaza, duplica, aproba, retrage, sterge, url_incarcare: urlIncarcare, vizibilitate };
     if (!scrieri[actiune]) {
       return trimiteEroare(res, 400, 'ACTIUNE_INVALIDA', 'Acțiune necunoscută.', 'Unknown action.');
     }

@@ -158,18 +158,20 @@ async function testAdmin(browser, baza) {
       const idEn = DB.tabele.pitch_deck_versiuni.find((v) => v.limba === 'en').id;
       const rand = `[data-pd-id="${idRo}"]`;
       const butoaneRo = await pg.$$eval(`${rand} .pd-actiuni button`, (b) => b.map((x) => x.textContent));
-      verifica(JSON.stringify(butoaneRo) === JSON.stringify(['Editează', 'Previzualizează', 'Aprobă', 'Duplică ca ciornă nouă']), `${et}: acțiunile ciornei (${butoaneRo.join(', ')})`);
-      // Aprobarea cu note nerezolvate → refuzată, cu mesajul cerut
+      // Pasul 11-K4: cu note / surse lipsă, butonul spune câte sunt de rezolvat.
+      const nLipsuri = notePe(RO) + 7;
+      verifica(JSON.stringify(butoaneRo) === JSON.stringify(['Editează', 'Previzualizează', `Aprobă · ${nLipsuri} de rezolvat`, 'Duplică ca ciornă nouă', 'Șterge ciorna']), `${et}: acțiunile ciornei (${butoaneRo.join(', ')})`);
+      // Aprobarea cu note nerezolvate → clicul deschide lista „Ce mai lipsește”, fără cerere
+      const auditInainte = DB.tabele.audit_log.length;
       await pg.click(`${rand} [data-pd-act="aproba"]`);
-      await confirmaDialog(pg);
-      await pg.waitForFunction(() => /Rezolvați notele de verificare înainte de aprobare/.test(document.getElementById('pd-import-msg').textContent), null, { timeout: 6000 }).catch(() => {});
-      verifica(/Rezolvați notele de verificare înainte de aprobare/.test(await pg.innerText('#pd-import-msg')), `${et}: aprobarea cu note nerezolvate e refuzată („${(await pg.innerText('#pd-import-msg')).slice(0, 120)}”)`);
-      verifica(DB.tabele.pitch_deck_versiuni.every((v) => !v.aprobat), `${et}: nimic aprobat`);
+      verifica(await pg.evaluate((id) => document.getElementById('pd-lipsuri-' + id).open, idRo), `${et}: „Aprobă · N de rezolvat” deschide lista „Ce mai lipsește”`);
+      verifica(!(await pg.$('[role="alertdialog"], [role="dialog"]')), `${et}: fără fereastră de confirmare`);
+      verifica(DB.tabele.pitch_deck_versiuni.every((v) => !v.aprobat) && DB.tabele.audit_log.length === auditInainte, `${et}: nimic aprobat, nicio cerere de aprobare`);
       // Editorul: câmpurile tipurilor, notele
       await pg.click(`${rand} [data-pd-act="editeaza"]`);
       await pg.waitForSelector('#pd-ed-slideuri details', { timeout: 6000 }).catch(() => {});
       verifica(await pg.evaluate(() => document.querySelectorAll('#pd-ed-slideuri details').length) === 20, `${et}: editorul arată cele 20 de slide-uri`);
-      verifica(await pg.evaluate(() => document.querySelectorAll('[data-pd-nota]').length) === notePe(RO), `${et}: editorul arată notele de verificare`);
+      verifica(await pg.evaluate(() => document.querySelectorAll('#pd-ed-note [data-pd-nota]').length) === notePe(RO), `${et}: editorul arată notele de verificare`);
       // Un câmp greșit → marcat de server, slide-ul lui deschis
       await pg.evaluate(() => { const el = document.querySelector('[data-cale="slide_uri.8.nivele.0.eticheta"]'); el.removeAttribute('required'); el.value = ''; el.dispatchEvent(new Event('input', { bubbles: true })); });
       await pg.click('#pd-ed-salveaza');
@@ -181,7 +183,7 @@ async function testAdmin(browser, baza) {
       { const d = await inAfaraEcranului(pg, '#pd-editor, #pd-editor *'); verifica(!d, `${et}: editorul (toate slide-urile deschise) în ecran (${d})`); }
       await pg.fill('[data-cale="slide_uri.3.cifre.0.valoare"]', '12');
       for (const n of [4, 9, 10, 12, 15, 17, 19]) await pg.fill(`[data-cale="slide_uri.${n - 1}.sursa"]`, 'Sursă DE TEST ' + n);
-      for (const c of await pg.$$('[data-pd-nota]')) await c.check();
+      for (const c of await pg.$$('#pd-ed-note [data-pd-nota]')) await c.check();
       await pg.waitForTimeout(2700); // butonul revine după eroare
       await pg.click('#pd-ed-salveaza');
       await pg.waitForFunction(() => /Ciorna a fost salvată/.test(document.getElementById('pd-ed-msg').textContent), null, { timeout: 6000 }).catch(() => {});

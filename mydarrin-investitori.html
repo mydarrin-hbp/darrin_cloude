@@ -2315,6 +2315,13 @@ if(document.readyState==='loading'){
       style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:14px 30px;font-size:15px;font-weight:800;font-family:inherit;cursor:not-allowed">
       Pitch deck în pregătire
     </button>
+    <!-- Pasul 11-K4: doar pentru administratorii cu drept de citire pe Investitori
+         (verificat pe server: api/admin/pitch-deck, acțiunea `ciorna`); vizitatorii
+         și investitorii nu văd linkul și nu pot cere ciorna. -->
+    <div id="pd-cta-ciorna-zona" hidden style="margin-top:14px">
+      <a id="pd-cta-ciorna" href="/mydarrin-pitch-deck?ciorna=1"
+        style="display:inline-flex;align-items:center;min-height:44px;color:#7FE3DA;font-size:14px;font-weight:700;text-underline-offset:3px">Vezi ciorna (doar administratori)</a>
+    </div>
   </div>
 </section>
 <script>
@@ -2334,12 +2341,27 @@ if(document.readyState==='loading'){
         document.getElementById('pd-cta-link').style.display = 'none';
         document.getElementById('pd-cta-pregatire').hidden = false;
         sub.textContent = TEXTE.pregatire;
+        arataLinkCiorna();
       } else {
         sub.textContent = j.vizibilitate === 'public' ? TEXTE.complet : TEXTE.rezumat;
       }
       sub.setAttribute('data-stare-pitch', j.stare + '|' + j.vizibilitate);
     })
     .catch(function () {});
+
+  // Pasul 11-K4: „Vezi ciorna (doar administratori)” — doar cu o sesiune pe care
+  // serverul o acceptă (admin cu drept de citire pe Investitori) și o ciornă
+  // în limba curentă. Fără sesiune: nicio cerere.
+  async function arataLinkCiorna() {
+    try {
+      for (var i = 0; i < 30 && !window.supabaseClient; i++) await new Promise(function (r) { setTimeout(r, 100); });
+      var tok = typeof tokenInv === 'function' ? await tokenInv() : null;
+      if (!tok) return;
+      var r = await fetch('/api/admin/pitch-deck', { method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: JSON.stringify({ actiune: 'ciorna', limba: limba, doar_stare: true }) });
+      var j = r.ok ? await r.json().catch(function () { return null; }) : null;
+      if (j && j.ok && j.exista) document.getElementById('pd-cta-ciorna-zona').hidden = false;
+    } catch (e) { /* fără link */ }
+  }
 })();
 </script>
 <!-- ════ END PITCH DECK ════ -->
