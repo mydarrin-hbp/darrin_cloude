@@ -28,6 +28,8 @@
 const path = require('path');
 const sim = require('./supabase-simulat');
 sim.instaleaza();
+// Pasul 11-P2a: secretul amprentei CNP / NIF, valoare de test doar în acest proces.
+process.env.KYC_HMAC_SECRET = 'test-' + '0'.repeat(59);
 const { DB, cerere, raspuns, RADACINA } = sim;
 
 function stub(fisier, exp) {
@@ -70,6 +72,11 @@ const B = '30000000-0000-4000-8000-00000000000b';
 const ADMIN = '30000000-0000-4000-8000-0000000000ad';
 const SUPER = '30000000-0000-4000-8000-0000000000sa';
 const IBAN = 'RO49AAAA1B31007593840000';
+// Pasul 11-P2a: datele de identificare cerute la pașii 1 și 2 (CNP-uri de test, cifra de control corectă).
+const ADRESA = { strada: 'Str. Exemplu nr. 1', localitate: 'Cluj-Napoca', judet: 'Cluj', cod_postal: '400001', tara: 'RO' };
+const IDENT_A = { data_nasterii: '1985-03-14', cetatenie: 'RO', adresa_domiciliu: ADRESA, id_fiscal_tip: 'cnp', id_fiscal: '1850314401239' };
+const IDENT_B = { data_nasterii: '1996-11-25', cetatenie: 'RO', adresa_domiciliu: ADRESA, id_fiscal_tip: 'cnp', id_fiscal: '2961125400171' };
+const ACT = { act_serie_numar: 'RX 123456', act_valabil_pana: '2099-12-31' };
 
 // Rundă de test: pre-money 900.000, țintă 100.000, 900 de acțiuni → preț 1.000.
 const RUNDA_TEST = (x = {}) => Object.assign({
@@ -117,12 +124,12 @@ const roluri = (id) => DB.tabele.profiles.find((p) => p.id === id).roles;
 
 // Ruta completă pentru un cont (fișierele „încărcate” în storage-ul simulat).
 async function rutaCompleta(token, id) {
-  egal((await cheama(apiKyc, { token, metoda: 'POST', body: { pas: 1, date: { prenume: 'Ana', nume: 'Albu', telefon: '+40700000001', tara: 'RO', iban: IBAN } } })).statusCode, 200, 'pas 1');
+  egal((await cheama(apiKyc, { token, metoda: 'POST', body: { pas: 1, date: { prenume: 'Ana', nume: 'Albu', telefon: '+40700000001', tara: 'RO', iban: IBAN, ...IDENT_A } } })).statusCode, 200, 'pas 1');
   const fata = (await cheama(apiDoc, { token, metoda: 'POST', body: { latura: 'fata', mime: 'image/jpeg', marime: 1000 } })).corp.path;
   const verso = (await cheama(apiDoc, { token, metoda: 'POST', body: { latura: 'verso', mime: 'application/pdf', marime: 2000 } })).corp.path;
   DB.storage['investitori-kyc'] = DB.storage['investitori-kyc'] || new Set();
   DB.storage['investitori-kyc'].add(fata); DB.storage['investitori-kyc'].add(verso);
-  egal((await cheama(apiKyc, { token, metoda: 'POST', body: { pas: 2, date: { tip_document: 'ci', document_fata_path: fata, document_verso_path: verso } } })).statusCode, 200, 'pas 2');
+  egal((await cheama(apiKyc, { token, metoda: 'POST', body: { pas: 2, date: { tip_document: 'ci', document_fata_path: fata, document_verso_path: verso, ...ACT } } })).statusCode, 200, 'pas 2');
   egal((await cheama(apiKyc, { token, metoda: 'POST', body: { pas: 3, date: { mifid: { experienta: 1, toleranta: 0, scop: 2 }, este_pep: false, sanctiuni_declarat: true } } })).statusCode, 200, 'pas 3');
   egal((await cheama(apiKyc, { token, metoda: 'POST', body: { pas: 4, date: { rezidenta_fiscala_tara: 'RO' } } })).statusCode, 200, 'pas 4');
   return { fata, verso };
@@ -142,7 +149,7 @@ async function rutaCompleta(token, id) {
   });
   await test('IBAN-ul se salvează criptat; proprietarul vede doar ultimele 4 cifre', async () => {
     reset();
-    await cheama(apiKyc, { token: 'tok-a', metoda: 'POST', body: { pas: 1, date: { prenume: 'Ana', nume: 'Albu', telefon: '1', tara: 'RO', iban: IBAN } } });
+    await cheama(apiKyc, { token: 'tok-a', metoda: 'POST', body: { pas: 1, date: { prenume: 'Ana', nume: 'Albu', telefon: '1', tara: 'RO', iban: IBAN, ...IDENT_A } } });
     const rand = DB.tabele.investitori_kyc[0];
     adevarat(rand.iban_criptat && !String(rand.iban_criptat).includes(IBAN), 'IBAN criptat, nu în clar');
     egal(rand.iban_ultimele4, '0000');
@@ -152,20 +159,20 @@ async function rutaCompleta(token, id) {
   });
   await test('IBAN invalid → 400, nimic salvat', async () => {
     reset();
-    const r = await cheama(apiKyc, { token: 'tok-a', metoda: 'POST', body: { pas: 1, date: { prenume: 'Ana', nume: 'Albu', telefon: '1', tara: 'RO', iban: 'RO49AAAA1B31007593840001' } } });
+    const r = await cheama(apiKyc, { token: 'tok-a', metoda: 'POST', body: { pas: 1, date: { prenume: 'Ana', nume: 'Albu', telefon: '1', tara: 'RO', iban: 'RO49AAAA1B31007593840001', ...IDENT_A } } });
     egal(r.statusCode, 400); egal(r.corp.cod, 'iban'); adevarat(r.corp.error_en, 'mesaj EN');
     egal(DB.tabele.investitori_kyc.length, 0);
   });
   await test('progresul pe server: pas_curent avansează, GET îl întoarce cu datele contului', async () => {
     reset();
-    await cheama(apiKyc, { token: 'tok-a', metoda: 'POST', body: { pas: 1, date: { prenume: 'Ana', nume: 'Albu', telefon: '1', tara: 'RO', iban: IBAN } } });
+    await cheama(apiKyc, { token: 'tok-a', metoda: 'POST', body: { pas: 1, date: { prenume: 'Ana', nume: 'Albu', telefon: '1', tara: 'RO', iban: IBAN, ...IDENT_A } } });
     const g = await cheama(apiKyc, { token: 'tok-a' });
     egal(g.corp.kyc.pas_curent, 2); egal(g.corp.kyc.status, 'ciorna');
     egal(g.corp.cont.email, 'a@test'); egal(g.corp.cont.prenume, 'Ana'); egal(g.corp.cont.telefon, '+40700000001');
   });
   await test('trimiterea unui dosar incomplet → 400 cu lista, fără rol', async () => {
     reset();
-    await cheama(apiKyc, { token: 'tok-a', metoda: 'POST', body: { pas: 1, date: { prenume: 'Ana', nume: 'Albu', telefon: '1', tara: 'RO', iban: IBAN } } });
+    await cheama(apiKyc, { token: 'tok-a', metoda: 'POST', body: { pas: 1, date: { prenume: 'Ana', nume: 'Albu', telefon: '1', tara: 'RO', iban: IBAN, ...IDENT_A } } });
     const r = await cheama(apiKyc, { token: 'tok-a', metoda: 'POST', body: { pas: 5, date: { confirma: true } } });
     egal(r.statusCode, 400); adevarat(r.corp.lipsa.includes('document_fata') && r.corp.lipsa.includes('mifid'), 'lista lipsurilor');
     egal(roluri(A), ['client']);
@@ -179,7 +186,7 @@ async function rutaCompleta(token, id) {
     reset();
     const r1 = await cheama(apiKyc, { token: 'tok-a', metoda: 'POST', body: { pas: 2, date: { tip_document: 'ci', document_fata_path: A + '/fata-1.jpg' } } });
     egal(r1.corp.cod, 'document_verso');
-    const r2 = await cheama(apiKyc, { token: 'tok-a', metoda: 'POST', body: { pas: 2, date: { tip_document: 'pasaport', document_fata_path: A + '/fata-1.jpg' } } });
+    const r2 = await cheama(apiKyc, { token: 'tok-a', metoda: 'POST', body: { pas: 2, date: { tip_document: 'pasaport', document_fata_path: A + '/fata-1.jpg', ...ACT } } });
     egal(r2.statusCode, 200);
   });
   await test('dosarul trimis nu se mai modifică (409)', async () => {
@@ -320,7 +327,7 @@ async function rutaCompleta(token, id) {
     reset();
     await rutaCompleta('tok-a', A);
     await cheama(apiKyc, { token: 'tok-a', metoda: 'POST', body: { pas: 5, date: { confirma: true } } });
-    await cheama(apiKyc, { token: 'tok-b', metoda: 'POST', body: { pas: 1, date: { prenume: 'B', nume: 'B', telefon: '1', tara: 'RO', iban: IBAN } } });
+    await cheama(apiKyc, { token: 'tok-b', metoda: 'POST', body: { pas: 1, date: { prenume: 'B', nume: 'B', telefon: '1', tara: 'RO', iban: IBAN, ...IDENT_B } } });
     await cheama(apiSub, { token: 'tok-a', metoda: 'POST', body: { suma: 25000, instrument: 'safe' } });
     const r = await cheama(apiAdminKyc, { token: 'tok-super' });
     egal(r.corp.cereri.map((c) => c.user_id), [A]);
@@ -354,14 +361,14 @@ async function rutaCompleta(token, id) {
   });
   await test('decizia doar pentru un dosar în verificare (409 altfel)', async () => {
     reset();
-    await cheama(apiKyc, { token: 'tok-a', metoda: 'POST', body: { pas: 1, date: { prenume: 'A', nume: 'A', telefon: '1', tara: 'RO', iban: IBAN } } });
+    await cheama(apiKyc, { token: 'tok-a', metoda: 'POST', body: { pas: 1, date: { prenume: 'A', nume: 'A', telefon: '1', tara: 'RO', iban: IBAN, ...IDENT_A } } });
     egal((await cheama(apiAdminKyc, { token: 'tok-super', metoda: 'POST', body: { user_id: A, actiune: 'aproba' } })).statusCode, 409);
   });
 
   console.log('F. Profilul contului');
   await test('/api/cont/profil: starea investitorului și precompletarea', async () => {
     reset();
-    await cheama(apiKyc, { token: 'tok-a', metoda: 'POST', body: { pas: 1, date: { prenume: 'Ana', nume: 'Albu', telefon: '1', tara: 'RO', iban: IBAN } } });
+    await cheama(apiKyc, { token: 'tok-a', metoda: 'POST', body: { pas: 1, date: { prenume: 'Ana', nume: 'Albu', telefon: '1', tara: 'RO', iban: IBAN, ...IDENT_A } } });
     const r = await cheama(apiProfil, { token: 'tok-a' });
     egal(r.statusCode, 200);
     egal(r.corp.investitor.status, 'ciorna'); egal(r.corp.investitor.pas_curent, 2);
