@@ -11,6 +11,12 @@
 //                       cererile trimise (în verificare / aprobate / respinse) și
 //                       subscrierile, fiecare cu starea KYC a contului;
 // GET ?document=<cale> → { ok, url }  adresă semnată de 2 minute (auditată);
+// GET ?identitate=<user_id> → { ok, id_fiscal_tip, id_fiscal, act_serie_numar }
+//                       acțiunea `date_identitate` (pasul 11-P2a): CNP-ul / NIF-ul
+//                       și seria-numărul actului, decriptate, pentru cine are
+//                       drept de citire pe Investitori. Fiecare acces se scrie
+//                       în audit_log (investitor_identitate_vazuta); fără rândul
+//                       de audit, datele nu se trimit. În listă, doar mascate;
 // POST { user_id, actiune: 'aproba'|'respinge', motiv_ro?, motiv_en? }
 //                     → { ok, kyc, email_trimis }
 //   Respingerea cere motivul în română și în engleză. Decizia se auditează
@@ -24,6 +30,7 @@ const { inregistreazaAudit } = require('../../lib/audit-log');
 const { renderEmailKycDecizie, limbaProfilEmailComportamental } = require('../../lib/i18n');
 const { incarcaContactPlatformaSigur } = require('../../lib/contact-platforma');
 const K = require('../../lib/investitori-kyc');
+const { mascheaza } = require('../../lib/identitate-pf');
 const { nivelInvestitori, refuzaFaraDrept, refuzaFaraScriere } = require('../../lib/permisiuni-investitori');
 
 const STARI_TRIMISE = ['in_verificare', 'aprobat', 'respins'];
@@ -50,6 +57,13 @@ function cerere(kyc, profil) {
     document_fata_path: kyc.document_fata_path || null,
     document_verso_path: kyc.document_verso_path || null,
     rezidenta_fiscala_tara: kyc.rezidenta_fiscala_tara || null,
+    data_nasterii: kyc.data_nasterii || null,
+    cetatenie: kyc.cetatenie || null,
+    adresa_domiciliu: kyc.adresa_domiciliu || null,
+    id_fiscal_tip: kyc.id_fiscal_tip || null,
+    id_fiscal_mascat: mascheaza(kyc.id_fiscal_ultimele3),
+    act_serie_numar_mascat: mascheaza(kyc.act_ultimele3),
+    act_valabil_pana: kyc.act_valabil_pana || null,
     mifid_raspunsuri: kyc.mifid_raspunsuri || null,
     pep: K.estePep(kyc),
     pep_functie: (kyc.pep_declaratie && kyc.pep_declaratie.functie) || null,
@@ -98,6 +112,28 @@ async function document(req, res, user, cale) {
   if (error || !data) throw error || new Error('createSignedUrl fără date');
   await inregistreazaAudit({ admin: user, actiune: 'investitori_kyc_document_vazut', entitate: 'investitori_kyc', entitate_id: userId, detalii: { cale }, req });
   return res.status(200).json({ ok: true, url: data.signedUrl });
+}
+
+async function decripteaza(valoare) {
+  if (!valoare) return null;
+  const { data, error } = await supabaseAdmin.rpc('decripteaza_camp', { valoare_criptata: valoare });
+  if (error) throw error;
+  return data || null;
+}
+
+// Acțiunea date_identitate: auditul se scrie înainte ca datele să plece.
+async function dateIdentitate(req, res, user, userId) {
+  const kyc = await K.citesteKyc(userId);
+  if (!kyc || (!kyc.id_fiscal_criptat && !kyc.act_serie_numar_criptat)) {
+    return trimiteEroare(res, 404, 'NEGASIT', 'Dosarul nu are date de identitate salvate.', 'The file has no saved identity data.');
+  }
+  const idFiscal = await decripteaza(kyc.id_fiscal_criptat);
+  const act = await decripteaza(kyc.act_serie_numar_criptat);
+  await inregistreazaAudit({
+    admin: user, actiune: 'investitor_identitate_vazuta', entitate: 'investitori_kyc', entitate_id: userId,
+    detalii: { campuri: ['id_fiscal', 'act_serie_numar'] }, req, obligatoriu: true,
+  });
+  return res.status(200).json({ ok: true, id_fiscal_tip: kyc.id_fiscal_tip || null, id_fiscal: idFiscal, act_serie_numar: act });
 }
 
 async function trimiteEmail(userId, aprobat, motivRo, motivEn) {
@@ -166,6 +202,9 @@ async function handler(req, res, user) {
     if (!nivel) return refuzaFaraDrept(res);
     if (req.method === 'GET') {
       const cale = req.query && req.query.document;
+      const identitate = req.query && req.query.identitate;
+      // await: o eroare (decriptare, audit) ajunge în catch-ul de mai jos → 500
+      if (identitate) return await dateIdentitate(req, res, user, String(identitate));
       return cale ? document(req, res, user, String(cale)) : lista(res, nivel === 'scriere');
     }
     if (req.method === 'POST') {

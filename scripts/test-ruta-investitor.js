@@ -98,9 +98,11 @@ function serverSimulat() {
       if (!d.prenume || !d.nume || !d.telefon || !d.tara) return [400, { error: 'Completează prenumele, numele, telefonul și țara.', error_en: 'Fill in your first name, last name, phone and country.' }];
       if (!d.iban && !k.iban_mascat) return [400, { error: 'Contul bancar (IBAN) e obligatoriu.', error_en: 'The bank account (IBAN) is required.' }];
       k.date_personale = { prenume: d.prenume, nume: d.nume, telefon: d.telefon, tara: d.tara };
+      stare.identitate = { data_nasterii: d.data_nasterii, cetatenie: d.cetatenie, id_fiscal: d.id_fiscal, adresa_domiciliu: d.adresa_domiciliu };
       if (d.iban) k.iban_mascat = '•••• ' + d.iban.slice(-4);
     } else if (corp.pas === 2) {
       if (!d.tip_document || !d.document_fata_path || (d.tip_document !== 'pasaport' && !d.document_verso_path)) return [400, { error: 'Încarcă documentele.', error_en: 'Upload the documents.' }];
+      stare.act = { act_serie_numar: d.act_serie_numar, act_valabil_pana: d.act_valabil_pana };
       Object.assign(k, { tip_document: d.tip_document, document_fata_path: d.document_fata_path, document_verso_path: d.document_verso_path, document_fata: true, document_verso: !!d.document_verso_path });
     } else if (corp.pas === 3) {
       Object.assign(k, { mifid_raspunsuri: d.mifid, pep_declaratie: { este_pep: d.este_pep }, sanctiuni_declarat: d.sanctiuni_declarat });
@@ -257,9 +259,23 @@ async function depaseste(p) {
         { const r = await romanaInEn(p, lang, '#mi-fer'); verifica(!r, `${et} C: pasul 1 fără text românesc în EN (${r})`); }
         await p.fill('#mi-iban', 'RO49AAAA1B31007593840000');
         await p.selectOption('#mi-tara', 'RO');
+        // 11-P2a: datele de identificare; eticheta „CNP” devine „NIF” pentru alt cetățean
+        await p.fill('#mi-data_nasterii', '1985-03-14');
+        await p.selectOption('#mi-cetatenie', 'DE');
+        verifica(/NIF|TIN/.test(await p.textContent('label[for="mi-id_fiscal"]')), `${et} C: eticheta devine NIF pentru alt cetățean`);
+        await p.selectOption('#mi-cetatenie', 'RO');
+        verifica(/CNP/.test(await p.textContent('label[for="mi-id_fiscal"]')), `${et} C: eticheta CNP pentru cetățean RO`);
+        await p.fill('#mi-id_fiscal', '1850314401239');
+        await p.fill('#mi-adresa_strada', 'Str. Exemplu nr. 1');
+        await p.fill('#mi-adresa_localitate', 'Cluj-Napoca');
+        await p.fill('#mi-adresa_judet', 'Cluj');
+        await p.fill('#mi-adresa_cod_postal', '400001');
+        await p.selectOption('#mi-adresa_tara', 'RO');
         await p.click('#mi-continua');
         await p.waitForSelector('input[name="mi-tip"]', { timeout: 5000 });
         verifica(server.stare.kyc && server.stare.kyc.date_personale && server.stare.kyc.pas_curent === 2, `${et} C: pasul 1 salvat pe server`);
+        { const d = server.stare.identitate || {}; const a = d.adresa_domiciliu || {};
+          verifica(d.data_nasterii === '1985-03-14' && d.cetatenie === 'RO' && d.id_fiscal === '1850314401239' && a.judet === 'Cluj' && a.tara === 'RO', `${et} C: pasul 1 trimite datele de identificare (${JSON.stringify(d)})`); }
         // pasul 2: tip, fișier refuzat, JPEG (previzualizare), PDF
         await p.check('input[name="mi-tip"][value="ci"]');
         await p.setInputFiles('#mi-fisier-fata', { name: 'nota.txt', mimeType: 'text/plain', buffer: Buffer.from('x') });
@@ -275,9 +291,12 @@ async function depaseste(p) {
         verifica(!!(await p.$('[data-sterge="fata"]')) && !!(await p.$('label[for="mi-fisier-fata"]')), `${et} C: butoanele „Șterge” și „Înlocuiește”`);
         verifica(await depaseste(p) === 0, `${et} C: fereastra nu iese din ecran (pasul 2)`);
         { const r = await romanaInEn(p, lang, '#mi-fer'); verifica(!r, `${et} C: pasul 2 fără text românesc în EN (${r})`); }
+        await p.fill('#mi-act_serie_numar', 'RX 123456');
+        await p.fill('#mi-act_valabil_pana', '2030-12-31');
         await p.click('#mi-continua');
         await p.waitForSelector('input[name="mi-experienta"]', { timeout: 5000 });
         // pasul 3
+        verifica(server.stare.act && server.stare.act.act_serie_numar === 'RX 123456' && server.stare.act.act_valabil_pana === '2030-12-31', `${et} C: pasul 2 trimite seria și valabilitatea actului`);
         { const r = await romanaInEn(p, lang, '#mi-fer'); verifica(!r, `${et} C: pasul 3 fără text românesc în EN (${r})`); }
         await p.check('input[name="mi-experienta"][value="1"]');
         await p.check('input[name="mi-toleranta"][value="0"]');

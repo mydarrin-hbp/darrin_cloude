@@ -4492,7 +4492,7 @@ function renderKycCereri(rows) {
       : `<div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap">${docs}</div>`;
     const motiv = r.status === 'respins' && r.motiv_respingere_ro ? `<div style="font-size:10px;color:#C0392B;margin-top:3px">${escapeHTML(r.motiv_respingere_ro)}</div>` : '';
     return `<tr>
-      <td><div style="font-size:12px;color:#E2E8F0;font-weight:600">${escapeHTML(r.nume || '—')}</div><div style="font-size:10px;color:#4A6080">${escapeHTML(r.email || '—')} · ${escapeHTML(r.tara || '—')} · ${escapeHTML(r.iban_mascat || 'fără IBAN')}</div></td>
+      <td><div style="font-size:12px;color:#E2E8F0;font-weight:600">${escapeHTML(r.nume || '—')}</div><div style="font-size:10px;color:#4A6080">${escapeHTML(r.email || '—')} · ${escapeHTML(r.tara || '—')} · ${escapeHTML(r.iban_mascat || 'fără IBAN')}</div>${kycIdentitateHtml(r, i)}</td>
       <td style="color:#8BA3C0">${escapeHTML(KYC_TIP_DOC[r.tip_document] || '—')}</td>
       <td style="color:#8BA3C0">${escapeHTML(r.rezidenta_fiscala_tara || '—')}</td>
       <td style="color:${r.pep ? '#F87171' : '#8BA3C0'}">${r.pep ? 'PEP' + (r.pep_functie ? ' · ' + escapeHTML(r.pep_functie) : '') : 'Nu e PEP'} · ${r.sanctiuni_declarat ? 'fără sancțiuni (declarat)' : 'declarație lipsă'}</td>
@@ -4501,6 +4501,38 @@ function renderKycCereri(rows) {
       <td>${decizie}</td>
     </tr>`;
   }).join('');
+}
+
+// Pasul 11-P2a: datele de identificare. În listă doar mascate; „Arată datele de
+// identitate” le cere decriptate (acțiunea date_identitate), iar accesul se
+// înregistrează în audit_log. Valorile în clar rămân doar în rândul afișat.
+function kycDataRo(d) {
+  return d ? String(d).slice(0, 10).split('-').reverse().join('.') : '—';
+}
+function kycIdentitateHtml(r, i) {
+  const a = r.adresa_domiciliu || {};
+  const adresa = [a.strada, a.localitate, a.judet, a.cod_postal, a.tara].filter(Boolean).join(', ');
+  const eticheta = r.id_fiscal_tip === 'nif' ? 'NIF' : 'CNP';
+  return `<div style="font-size:10px;color:#4A6080;margin-top:3px">Născut(ă): ${escapeHTML(kycDataRo(r.data_nasterii))} · cetățenie ${escapeHTML(r.cetatenie || '—')}</div>
+    <div style="font-size:10px;color:#4A6080">${escapeHTML(adresa || 'fără adresă de domiciliu')}</div>
+    <div style="font-size:10px;color:#4A6080" id="kyc-ident-${i}">${eticheta} <span translate="no">${escapeHTML(r.id_fiscal_mascat || '—')}</span> · act <span translate="no">${escapeHTML(r.act_serie_numar_mascat || '—')}</span>, valabil până la ${escapeHTML(kycDataRo(r.act_valabil_pana))}</div>
+    ${r.id_fiscal_mascat || r.act_serie_numar_mascat ? `<button class="btn-s" style="font-size:10px;padding:3px 8px;margin-top:4px" title="Show identity data" onclick="arataIdentitateKyc(${i},this)">Arată datele de identitate</button>` : ''}`;
+}
+
+async function arataIdentitateKyc(i, btn) {
+  const r = KYC_CERERI[i];
+  if (!r) return;
+  if (btn) btn.disabled = true;
+  try {
+    const j = await kycApi('/api/admin/investitori-kyc?identitate=' + encodeURIComponent(r.user_id));
+    const zona = document.getElementById('kyc-ident-' + i);
+    const eticheta = j.id_fiscal_tip === 'nif' ? 'NIF' : 'CNP';
+    if (zona) zona.innerHTML = `${eticheta} <span translate="no" style="color:#E2E8F0">${escapeHTML(j.id_fiscal || '—')}</span> · act <span translate="no" style="color:#E2E8F0">${escapeHTML(j.act_serie_numar || '—')}</span>, valabil până la ${escapeHTML(kycDataRo(r.act_valabil_pana))}`;
+    if (btn) btn.remove();
+  } catch (e) {
+    showSAToast('⚠ ' + e.message);
+    if (btn) btn.disabled = false;
+  }
 }
 
 async function veziDocumentKyc(i, latura, btn) {

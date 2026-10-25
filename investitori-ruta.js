@@ -34,6 +34,11 @@
        nu deschide două ferestre). Un clic dat înainte ca scriptul să se
        încarce (e `defer`) nu se pierde: pagina îl ține în
        window.__MYD_INV_COADA și îl rulăm aici.
+     - pasul 11-P2a (25 oct. 2026): datele de identificare (Legea 129/2019).
+       Pasul 1: data nașterii, cetățenia, CNP-ul (devine „NIF” când cetățenia
+       nu e RO) și adresa de domiciliu; pasul 2: seria și numărul actului și
+       valabilitatea lui. CNP-ul / NIF-ul și seria salvate se văd doar mascate;
+       câmpul gol le păstrează. Câmpul greșit primit de la server se marchează.
 
    Textele sunt în română, cu traducerile EN în i18n/en/mydarrin-investitori.json.
    ════════════════════════════════════════════════════════════════ */
@@ -99,7 +104,12 @@
       return fetch(url, { method: o.metoda || 'GET', headers: h, body: o.corp !== undefined ? JSON.stringify(o.corp) : undefined, cache: 'no-store' })
         .then(function (r) {
           return r.json().catch(function () { return {}; }).then(function (j) {
-            if (!r.ok) { var e = new Error(mesajServer(j, 'Nu am putut salva. Încearcă din nou.')); e.status = r.status; e.corp = j; throw e; }
+            if (!r.ok) {
+              var e = new Error(mesajServer(j, 'Nu am putut salva. Încearcă din nou.')); e.status = r.status; e.corp = j;
+              // 11-P2a: câmpul vizat de server se marchează (MDFeedback.aplicaErori)
+              if (j && j.camp) e.campuri = [{ camp: j.camp, mesaj: { ro: j.error, en: j.error_en || j.error } }];
+              throw e;
+            }
             return j;
           });
         });
@@ -223,6 +233,7 @@
     var corp = el('mi-corp');
     corp.innerHTML = [null, pas1, pas2, pas3, pas4, pas5][n]();
     corp.scrollTop = 0;
+    if (n === 1) legaturiPas1();
     if (n === 2) legaturiPas2();
     var prim = corp.querySelector('input:not([readonly]),select,button');
     if (prim) prim.focus(); else el('mi-x').focus();
@@ -232,9 +243,9 @@
   function camp(id, eticheta, valoare, atribute) {
     return '<div class="mi-camp"><label for="' + id + '">' + esc(tr(eticheta)) + '</label><input id="' + id + '" value="' + esc(valoare || '') + '" ' + (atribute || '') + '></div>';
   }
-  function selectTara(id, eticheta, valoare) {
+  function selectTara(id, eticheta, valoare, atribute) {
     var lista = TARI.map(function (c) { return { c: c, n: numeTara(c) }; }).sort(function (a, b) { return a.n.localeCompare(b.n); });
-    return '<div class="mi-camp"><label for="' + id + '">' + esc(tr(eticheta)) + '</label><select id="' + id + '"><option value="">' + esc(tr('Alege țara')) + '</option>' +
+    return '<div class="mi-camp"><label for="' + id + '">' + esc(tr(eticheta)) + '</label><select id="' + id + '" ' + (atribute || '') + '><option value="">' + esc(tr('Alege țara')) + '</option>' +
       lista.map(function (x) { return '<option value="' + x.c + '"' + (x.c === valoare ? ' selected' : '') + ' translate="no">' + esc(x.n) + '</option>'; }).join('') + '</select></div>';
   }
 
@@ -247,11 +258,44 @@
       selectTara('mi-tara', 'Țara', d.tara || c.tara) +
       camp('mi-iban', 'IBAN', '', 'autocomplete="off" spellcheck="false" placeholder="' + esc(st.kyc && st.kyc.iban_mascat ? tr('Lasă gol ca să păstrezi contul salvat') : 'RO49 AAAA 1B31 0075 9384 0000') + '"') +
       (st.kyc && st.kyc.iban_mascat ? '<p class="mi-nota">' + esc(tr('Cont bancar salvat:')) + ' <span translate="no">' + esc(st.kyc.iban_mascat) + '</span></p>' : '') +
-      '<p class="mi-nota">' + esc(tr('IBAN-ul se verifică și se păstrează criptat; după salvare vezi doar ultimele 4 cifre.')) + '</p>';
+      '<p class="mi-nota">' + esc(tr('IBAN-ul se verifică și se păstrează criptat; după salvare vezi doar ultimele 4 cifre.')) + '</p>' +
+      campuriIdentitate();
+  }
+
+  // 11-P2a: datele de identificare (Legea 129/2019). CNP-ul / NIF-ul salvat nu
+  // se mai trimite înapoi; se vede doar mascat, iar câmpul gol îl păstrează.
+  function etichetaIdFiscal(cetatenie) {
+    return cetatenie && cetatenie !== 'RO' ? 'Număr de identificare fiscală (NIF)' : 'CNP';
+  }
+  function campuriIdentitate() {
+    var k = st.kyc || {};
+    var a = k.adresa_domiciliu || {};
+    var cetatenie = k.cetatenie || (st.cont && st.cont.tara) || '';
+    return '<div class="mi-doua">' + camp('mi-data_nasterii', 'Data nașterii', k.data_nasterii, 'type="date" autocomplete="bday"') +
+        selectTara('mi-cetatenie', 'Cetățenia', cetatenie) + '</div>' +
+      camp('mi-id_fiscal', etichetaIdFiscal(cetatenie), '', 'autocomplete="off" spellcheck="false" inputmode="text"' +
+        (k.id_fiscal_mascat ? ' placeholder="' + esc(tr('Lasă gol ca să păstrezi valoarea salvată')) + '"' : '')) +
+      (k.id_fiscal_mascat ? '<p class="mi-nota">' + esc(tr('Salvat:')) + ' <span translate="no">' + esc(k.id_fiscal_mascat) + '</span></p>' : '') +
+      '<span class="mi-eticheta">' + esc(tr('Adresa de domiciliu')) + '</span>' +
+      camp('mi-adresa_strada', 'Strada și numărul', a.strada, 'autocomplete="street-address"') +
+      '<div class="mi-doua">' + camp('mi-adresa_localitate', 'Localitatea', a.localitate, 'autocomplete="address-level2"') +
+        camp('mi-adresa_judet', 'Județul (obligatoriu în România)', a.judet, 'autocomplete="address-level1"') + '</div>' +
+      '<div class="mi-doua">' + camp('mi-adresa_cod_postal', 'Codul poștal', a.cod_postal, 'autocomplete="postal-code"') +
+        selectTara('mi-adresa_tara', 'Țara', a.tara || (st.cont && st.cont.tara), 'autocomplete="country"') + '</div>' +
+      '<p class="mi-nota">' + esc(tr('Datele de identificare sunt cerute de legislația privind prevenirea spălării banilor (Legea 129/2019). Le păstrăm criptat și le vede doar echipa de verificare.')) + '</p>';
+  }
+  function legaturiPas1() {
+    var c = el('mi-cetatenie');
+    if (!c) return;
+    c.addEventListener('change', function () {
+      var lb = document.querySelector('label[for="mi-id_fiscal"]');
+      if (lb) lb.textContent = tr(etichetaIdFiscal(c.value));
+    });
   }
 
   function pas2() {
     var tip = st.tip || (st.kyc && st.kyc.tip_document) || '';
+    var k = st.kyc || {};
     var tipuri = [['ci', 'Carte de identitate'], ['pasaport', 'Pașaport'], ['permis_sedere', 'Permis de ședere']];
     return '<p class="mi-nota">' + esc(tr('Documentele se păstrează privat și le verifică manual echipa My Darrin. Verificarea identității e obligatorie pentru orice investitor.')) + '</p>' +
       '<span class="mi-eticheta" id="mi-tip-et">' + esc(tr('Tipul documentului')) + '</span>' +
@@ -259,7 +303,11 @@
         return '<label><input type="radio" name="mi-tip" value="' + x[0] + '"' + (x[0] === tip ? ' checked' : '') + '> ' + esc(tr(x[1])) + '</label>';
       }).join('') + '</div>' +
       '<div id="mi-sloturi"></div>' +
-      '<p class="mi-nota">' + esc(tr('Fișiere acceptate: JPEG, PNG, WEBP sau PDF, cel mult 5 MB fiecare.')) + '</p>';
+      '<p class="mi-nota">' + esc(tr('Fișiere acceptate: JPEG, PNG, WEBP sau PDF, cel mult 5 MB fiecare.')) + '</p>' +
+      '<div class="mi-doua">' + camp('mi-act_serie_numar', 'Seria și numărul actului', '', 'autocomplete="off" spellcheck="false"' +
+          (k.act_serie_numar_mascat ? ' placeholder="' + esc(tr('Lasă gol ca să păstrezi valoarea salvată')) + '"' : '')) +
+        camp('mi-act_valabil_pana', 'Valabil până la', k.act_valabil_pana, 'type="date"') + '</div>' +
+      (k.act_serie_numar_mascat ? '<p class="mi-nota">' + esc(tr('Salvat:')) + ' <span translate="no">' + esc(k.act_serie_numar_mascat) + '</span></p>' : '');
   }
 
   function slot(latura) {
@@ -390,8 +438,11 @@
   }
 
   var NUME_LIPSA = {
-    date_personale: 'Date personale', cont_bancar: 'Cont bancar', tip_document: 'Tipul documentului',
-    document_fata: 'Fața documentului', document_verso: 'Verso-ul documentului', mifid: 'Profil de risc',
+    date_personale: 'Date personale', data_nasterii: 'Data nașterii', cetatenie: 'Cetățenia',
+    adresa_domiciliu: 'Adresa de domiciliu', id_fiscal: 'CNP / număr de identificare fiscală',
+    cont_bancar: 'Cont bancar', tip_document: 'Tipul documentului',
+    document_fata: 'Fața documentului', document_verso: 'Verso-ul documentului',
+    act_serie_numar: 'Seria și numărul actului', act_valabil_pana: 'Valabilitatea actului', mifid: 'Profil de risc',
     pep: 'Declarația PEP', sanctiuni: 'Declarația privind sancțiunile', rezidenta_fiscala: 'Rezidență fiscală',
   };
   function pas5() {
@@ -413,10 +464,16 @@
     if (n === 1) {
       var iban = el('mi-iban').value.replace(/\s+/g, '').toUpperCase();
       if (iban && !ibanValid(iban)) throw new Error(tr('IBAN invalid: verifică cifrele.'));
-      return { prenume: el('mi-prenume').value, nume: el('mi-nume').value, telefon: el('mi-telefon').value, tara: el('mi-tara').value, iban: iban };
+      var cetatenie = el('mi-cetatenie').value;
+      return { prenume: el('mi-prenume').value, nume: el('mi-nume').value, telefon: el('mi-telefon').value, tara: el('mi-tara').value, iban: iban,
+        data_nasterii: el('mi-data_nasterii').value, cetatenie: cetatenie,
+        id_fiscal_tip: cetatenie && cetatenie !== 'RO' ? 'nif' : 'cnp', id_fiscal: el('mi-id_fiscal').value.trim(),
+        adresa_domiciliu: { strada: el('mi-adresa_strada').value, localitate: el('mi-adresa_localitate').value, judet: el('mi-adresa_judet').value,
+          cod_postal: el('mi-adresa_cod_postal').value, tara: el('mi-adresa_tara').value } };
     }
     if (n === 2) {
-      return { tip_document: st.tip, document_fata_path: st.fisiere.fata && st.fisiere.fata.cale, document_verso_path: st.fisiere.verso && st.fisiere.verso.cale };
+      return { tip_document: st.tip, document_fata_path: st.fisiere.fata && st.fisiere.fata.cale, document_verso_path: st.fisiere.verso && st.fisiere.verso.cale,
+        act_serie_numar: el('mi-act_serie_numar').value.trim(), act_valabil_pana: el('mi-act_valabil_pana').value };
     }
     if (n === 3) {
       var mifid = {};
@@ -450,7 +507,7 @@
         setTimeout(function () { if (st) arataPas(n + 1); }, 450);
         return tr('Salvat.');
       });
-    }, { textSalveaza: n === PASI.length ? 'Se trimite…' : 'Se salvează…' });
+    }, { textSalveaza: n === PASI.length ? 'Se trimite…' : 'Se salvează…', form: el('mi-corp') });
   }
 
   function maiTarziu() {
@@ -460,7 +517,7 @@
         setTimeout(function () { inchide(true); toast(tr('Progresul tău e salvat. Poți continua oricând de aici sau din „Rolurile mele”.')); }, 600);
         return tr('Salvat.');
       });
-    });
+    }, { form: el('mi-corp') });
   }
 
   function toast(text) {
