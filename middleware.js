@@ -31,6 +31,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { next, rewrite } from '@vercel/functions';
+import seoOg from './lib/seo-og.js';
 
 export const config = {
   runtime: 'edge',
@@ -314,6 +315,31 @@ const PAGINI_PUBLICE = new Set([
 // de fondator — funcțional corect chiar dacă variabila nu e setată în Vercel.
 const SUPERADMIN_EMAIL = (process.env.SUPERADMIN_EMAIL || 'cristianpopaban@gmail.com').toLowerCase();
 
+// Pasul 11-S (23 oct. 2026): previzualizarea la partajare pentru roboții care
+// nu rulează JavaScript (Facebook, LinkedIn, WhatsApp, X, TikTok…) — doar pe
+// paginile publice. Ia HTML-ul original (cerere internă, marcată cu
+// seoOg.ANTET_INTERN, ca să nu reintre aici) și scrie etichetele og: din
+// seo_config, pe limbă. Întoarce null (→ HTML-ul original, neschimbat) când nu
+// există suprascriere sau la orice eroare.
+async function raspunsOg(request, url, destinatie, supabaseAdmin) {
+  try {
+    const limba = seoOg.limbaCerere(url.searchParams.get('lang'), request.headers.get('accept-language'));
+    const cfg = await seoOg.citesteConfig(supabaseAdmin, seoOg.caleSeo(url.pathname), limba);
+    if (!seoOg.areOg(cfg)) return null;
+    const sursa = await fetch(destinatie.toString(), { headers: { [seoOg.ANTET_INTERN]: '1', accept: 'text/html' } });
+    if (!sursa.ok || !/text\/html/i.test(sursa.headers.get('content-type') || '')) return null;
+    const html = await sursa.text();
+    const nou = seoOg.inlocuiesteOg(html, cfg, { limba, url: seoOg.urlOg(cfg, url, limba) });
+    return new Response(nou, {
+      status: 200,
+      headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=300', 'x-myd-og': limba },
+    });
+  } catch (e) {
+    console.error(`[middleware-og] HTML original — ${e && e.message} path=${url.pathname}`);
+    return null;
+  }
+}
+
 export default async function middleware(request) {
   const url = new URL(request.url);
   const pathname = url.pathname;
@@ -362,13 +388,22 @@ export default async function middleware(request) {
   // lui ruteazaPublic() sunt, prin construcție, pagini din PAGINI_PUBLICE.
   const publicRoute = ruteazaPublic(pathname);
   if (PAGINI_PUBLICE.has(pathname) || publicRoute) {
+    let dest = null;
     if (publicRoute) {
-      const dest = new URL(publicRoute.destinatie, request.url);
+      dest = new URL(publicRoute.destinatie, request.url);
       if (publicRoute.query) {
         for (const [k, v] of Object.entries(publicRoute.query)) dest.searchParams.set(k, v);
       } else {
         for (const [k, v] of url.searchParams.entries()) dest.searchParams.set(k, v);
       }
+    }
+    // Roboții de previzualizare (pasul 11-S). Vizitatorii obișnuiți nu ajung
+    // aici: doar o verificare a User-Agent-ului, fără cereri în plus.
+    if (seoOg.esteRobot(request.headers.get('user-agent')) && !request.headers.get(seoOg.ANTET_INTERN)) {
+      const og = await raspunsOg(request, url, dest || url, supabaseAdmin);
+      if (og) return og;
+    }
+    if (dest) {
       console.log(`[middleware-debug] dest=${dest.toString()}`);
       return rewrite(dest);
     }
