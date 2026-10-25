@@ -80,6 +80,9 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 .pd-grafic-l svg{width:100%;height:auto;display:block}
 .pd-grafic-l text{fill:rgba(255,255,255,.7);font-size:12px;font-family:inherit}
 .pd-link{background:none;border:0;color:#7FE3DA;font:700 13px inherit;font-family:inherit;cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:0}
+/* Pasul 11-K4: banda ciornei (?ciorna=1, doar administratori) */
+.pd-ciorna-banda{width:min(100%,1600px);margin:0 0 10px;display:flex;flex-wrap:wrap;gap:2px 12px;align-items:center;justify-content:center;padding:8px 14px;border-radius:10px;background:repeating-linear-gradient(135deg,#F08120 0 14px,#E57512 14px 28px);color:#1A0E00;font-size:13px;line-height:1.4;text-align:center}
+.pd-ciorna-banda strong{font-weight:900;letter-spacing:.06em}
 /* Butonul „▶ Prezintă” (11-K3): aceeași înălțime ca restul controalelor din bară */
 .pd-prezinta{background:#0BA39A;border-color:#0BA39A;padding:0 14px;white-space:nowrap}
 .pd-prezinta:hover{background:#0A8F87}
@@ -100,6 +103,7 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
   .pd-titlu{display:none}
   .pd-bara{display:none}
   .pd-mesaj{margin:20px 16px}
+  .pd-ciorna-banda{margin:0;border-radius:0}
 }
 /* Telefon: două rânduri aliniate — [← Investitori … limba] / [Prognoză | Live … ▶ Prezintă] */
 @media (max-width:560px){
@@ -133,6 +137,7 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
     <button type="button" class="pd-btn-ico pd-prezinta" id="pd-prezinta" hidden><span class="pd-play" aria-hidden="true">▶</span><span data-t="prezinta"></span></button>
   </header>
   <main id="pd-main" aria-live="polite">
+    <div id="pd-ciorna-banda" class="pd-ciorna-banda" role="status" hidden><strong data-t="ciorna_banda"></strong><span data-t="ciorna_sub"></span></div>
     <div id="pd-mesaj" class="pd-mesaj" hidden></div>
     <div id="pd-deck" hidden><div class="pdp-cadru"><div id="pd-deck-slideuri"></div></div></div>
     <div id="pd-live" hidden></div>
@@ -167,6 +172,9 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
       evolutie: 'Comenzi finalizate pe lună · ultimele 12 luni', inv_doar: 'Indicatorii financiari și evoluția lunară sunt disponibile investitorilor cu identitatea verificată.',
       inapoi_prognoza: '← Înapoi la prognoză', venit_partial: 'Venitul include doar comenzile cu comision cunoscut.', live_eroare: 'Aceste date nu se pot încărca acum.',
       se_incarca_live: 'Se încarcă datele reale…', comenzi: 'comenzi',
+      ciorna_banda: 'CIORNĂ — nepublicată', ciorna_sub: 'Vizibilă doar administratorilor; pagina publică arată „Pitch deck în pregătire” până la aprobare.',
+      ciorna_fara_drept_t: 'Ciorna nu e disponibilă', ciorna_fara_drept_p: 'Ciorna se vede doar de administratorii cu drept pe secțiunea Investitori. Conectează-te cu un cont de administrator.',
+      ciorna_lipsa_t: 'Nicio ciornă în această limbă', ciorna_lipsa_p: 'Nu există o ciornă de previzualizat pentru limba aleasă.', vezi_public: 'Vezi pagina publică',
     },
     en: {
       titlu: 'Pitch deck · My Darrin', inapoi: '← Investors', prognoza: 'Forecast', live: 'Live', limba: 'Language', prezinta: 'Present',
@@ -182,12 +190,20 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
       evolutie: 'Completed orders per month · last 12 months', inv_doar: 'The financial indicators and the monthly trend are available to investors with a verified identity.',
       inapoi_prognoza: '← Back to the forecast', venit_partial: 'Revenue includes only the orders with a known commission.', live_eroare: 'This data cannot be loaded right now.',
       se_incarca_live: 'Loading the real data…', comenzi: 'orders',
+      ciorna_banda: 'DRAFT — not published', ciorna_sub: 'Visible to administrators only; the public page shows “Pitch deck in preparation” until approval.',
+      ciorna_fara_drept_t: 'The draft is not available', ciorna_fara_drept_p: 'The draft is visible only to administrators with rights on the Investors section. Sign in with an administrator account.',
+      ciorna_lipsa_t: 'No draft in this language', ciorna_lipsa_p: 'There is no draft to preview for the selected language.', vezi_public: 'See the public page',
     },
   };
   var LANG_KEY = 'myd_lang_v1';
   var LIMBI = ['ro', 'en', 'bg', 'de', 'el', 'fr', 'tr'];
   var $ = function (id) { return document.getElementById(id); };
   var stare = { limba: 'en', deck: null, payload: null, cerere: 0, mod: 'prognoza', vedere: 'mesaj', live: null };
+  // Pasul 11-K4: ?ciorna=1 — cea mai nouă ciornă a limbii, prin api/admin/pitch-deck
+  // (acțiunea `ciorna`, drept de citire pe Investitori verificat pe server), cu banda
+  // „CIORNĂ — nepublicată”. Fără drept: mesaj, niciun conținut.
+  var CIORNA = /(?:^|[?&])ciorna=1(?:&|$)/.test(location.search.slice(1));
+  if (CIORNA) { var mr = document.createElement('meta'); mr.name = 'robots'; mr.content = 'noindex, nofollow'; document.head.appendChild(mr); }
 
   function limbaPagina() {
     var l = (window.MYD_I18N && window.MYD_I18N.lang) || (function () { try { return localStorage.getItem(LANG_KEY); } catch (e) { return null; } })() || 'en';
@@ -224,6 +240,7 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
     $('pd-deck').hidden = live || stare.vedere !== 'deck';
     $('pd-nav').hidden = live || stare.vedere !== 'deck';
     $('pd-prezinta').hidden = live || stare.vedere !== 'deck';
+    $('pd-ciorna-banda').hidden = !CIORNA || live || stare.vedere !== 'deck';
     $('pd-mod-prognoza').setAttribute('aria-pressed', live ? 'false' : 'true');
     $('pd-mod-live').setAttribute('aria-pressed', live ? 'true' : 'false');
   }
@@ -239,11 +256,30 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
     window.scrollTo(0, 0);
   }
 
+  // Pasul 11-K4: ciorna (doar administratori).
+  async function incarcaCiorna(nr, l) {
+    var tok = await token();
+    var r = tok ? await fetch('/api/admin/pitch-deck', { method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: JSON.stringify({ actiune: 'ciorna', limba: stare.limba }) }) : null;
+    var j = r ? await r.json().catch(function () { return null; }) : null;
+    if (nr !== stare.cerere) return;
+    var mesajCiorna = function (t, p) {
+      if (stare.deck) { stare.deck.distruge(); stare.deck = null; }
+      arataMesaj('<h1 data-ciorna-indisponibila>' + esc(t) + '</h1><p>' + esc(p) + '</p><a class="pd-cta" href="/mydarrin-pitch-deck">' + esc(T().vezi_public) + '</a>');
+      document.dispatchEvent(new CustomEvent('mdpd:gata', { detail: { stare: 'ciorna_indisponibila', limba: l } }));
+    };
+    if (!r || r.status === 401 || r.status === 403) return mesajCiorna(T().ciorna_fara_drept_t, T().ciorna_fara_drept_p);
+    if (r.status === 404) return mesajCiorna(T().ciorna_lipsa_t, T().ciorna_lipsa_p);
+    if (!r.ok || !j || !j.ok || !j.deck) throw new Error('http ' + r.status);
+    stare.payload = j;
+    deseneaza(l);
+  }
+
   async function incarca() {
     var nr = ++stare.cerere;
     var l = limbaDeck(stare.limba);
     arataMesaj('<p>' + esc(T().se_incarca) + '</p>');
     try {
+      if (CIORNA) return await incarcaCiorna(nr, l);
       var tok = await token();
       var r = await fetch('/api/public/pitch-deck?limba=' + encodeURIComponent(stare.limba), { headers: tok ? { Authorization: 'Bearer ' + tok } : {} });
       var j = await r.json().catch(function () { return null; });
@@ -401,6 +437,8 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
     if (acces.limba === l && acces.stare !== 'verifica') return;
     var nr = ++acces.cerere;
     acces.limba = l; acces.stare = 'verifica'; acces.payload = null;
+    // Ciorna: fără vederea prezentatorului (aceea arată versiunea aprobată).
+    if (CIORNA) { acces.stare = 'nu'; prez.actualizeaza(); return; }
     prez.actualizeaza();
     var tok = await token();
     var r = null;

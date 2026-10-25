@@ -28,7 +28,14 @@
 // POST { actiune: 'prezentare', limba }      → versiunea APROBATĂ a limbii (ro → RO, altfel EN),
 //                                              cu notele prezentatorului: vederea prezentatorului
 //                                              de pe pagina publică (pasul 11-K3). 404 fără versiune aprobată.
-// Previzualizarea și prezentarea cer doar dreptul de citire pe Investitori.
+// POST { actiune: 'ciorna', limba }         → cea mai nouă CIORNĂ a limbii (ro → RO, altfel EN), ca
+//                                              pe pagina publică, fără notele prezentatorului, cu
+//                                              `ciorna: { id, titlu, actualizat_la }` (pasul 11-K4:
+//                                              linkul „Vezi ciorna (doar administratori)” de pe
+//                                              pagina Investitori). 404 fără ciornă.
+// POST { actiune: 'ciorna', limba, doar_stare: true } → { ok, exista, limba } (fără conținut)
+// Previzualizarea, prezentarea și ciorna cer doar dreptul de citire pe Investitori;
+// vizitatorii și investitorii primesc 401 / 403 (requireAuth + nivelInvestitori).
 // POST { actiune: 'url_incarcare', tip, marime } → adresă semnată în bucket-ul pitch-deck-media
 // POST { actiune: 'vizibilitate', valoare }  → doar superadmin: public / investitori_aprobati
 
@@ -209,6 +216,15 @@ async function retrage(req, res, admin) {
 function refuzAprobata(res) {
   return trimiteEroare(res, 409, 'VERSIUNE_APROBATA', 'Versiunea aprobată nu se șterge: retrageți întâi aprobarea („Retrage aprobarea”).', 'The approved version cannot be deleted: first withdraw the approval (“Withdraw approval”).');
 }
+// Pasul 11-K4: cea mai nouă ciornă (neaprobată) a unei limbi.
+async function ciornaRecenta(limba) {
+  const { data, error } = await supabaseAdmin.from('pitch_deck_versiuni').select(P.COLOANE)
+    .eq('limba', P.limbaDeck(limba)).eq('aprobat', false)
+    .order('actualizat_la', { ascending: false }).order('creat_la', { ascending: false }).limit(1);
+  if (error) return { error };
+  return { v: (data && data[0]) || null };
+}
+
 async function sterge(req, res, admin) {
   const { v, error } = await citeste(req.body && req.body.id);
   if (error) { if (P.migrareLipsa(error)) return refuzMigrare(res); throw error; }
@@ -279,6 +295,14 @@ async function handler(req, res, admin) {
       if (error) { if (P.migrareLipsa(error)) return refuzMigrare(res); throw error; }
       if (!v) return refuzLipsa(res);
       return res.status(200).json({ ok: true, ...(await P.construiestePayload(v, { note: true })) });
+    }
+    if (actiune === 'ciorna') {
+      const limba = P.limbaDeck(req.body.limba);
+      const { v, error } = await ciornaRecenta(limba);
+      if (error) { if (P.migrareLipsa(error)) return refuzMigrare(res); throw error; }
+      if (req.body.doar_stare) return res.status(200).json({ ok: true, exista: !!v, limba });
+      if (!v) return trimiteEroare(res, 404, 'CIORNA_LIPSA', 'Nu există nicio ciornă în această limbă.', 'There is no draft in this language.');
+      return res.status(200).json({ ok: true, ciorna: { id: v.id, titlu: v.titlu, actualizat_la: v.actualizat_la || v.creat_la || null }, ...(await P.construiestePayload(v, { note: false })) });
     }
     if (actiune === 'prezentare') {
       const v = await P.versiuneAprobata(P.limbaDeck(req.body.limba));

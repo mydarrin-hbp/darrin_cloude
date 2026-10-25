@@ -188,6 +188,59 @@ const numara = (l) => l.reduce((o, x) => { o[x.tip] = (o[x.tip] || 0) + 1; retur
     egal(r.statusCode, 404); egal(r.corp.cod, 'VERSIUNE_LIPSA');
   });
 
+  console.log('C. Ciorna pentru administratori (`ciorna`)');
+  await test('fără drept → 403 (investitor cu KYC, admin fără Investitori); fără sesiune → 401; nimic din conținut', async () => {
+    reset();
+    await importa(RO11);
+    for (const [id, st] of [[INV, 403], [FARA, 403], [null, 401]]) {
+      for (const body of [{ actiune: 'ciorna', limba: 'ro' }, { actiune: 'ciorna', limba: 'ro', doar_stare: true }]) {
+        const r = await admin(id, body);
+        egal(r.statusCode, st, `${id} ${JSON.stringify(body)}`);
+        adevarat(!r.corp.deck && r.corp.exista === undefined && !JSON.stringify(r.corp).includes('Proiecții'), 'fără conținut');
+      }
+    }
+  });
+  await test('admin doar cu citire: cea mai nouă ciornă a limbii, fără notele prezentatorului', async () => {
+    reset();
+    const vechi = await importa(RO11);
+    DB.tabele.pitch_deck_versiuni.find((x) => x.id === vechi.id).actualizat_la = '2026-10-20T10:00:00Z';
+    const v = await importa(RO11);
+    const sl = copie(v.slide_uri); sl[0].note_prezentator = 'NOTĂ INTERNĂ DE TEST';
+    await admin(SCRIE, { actiune: 'salveaza', id: v.id, titlu: 'Ciorna nouă', sursa: v.sursa, disclaimer: v.disclaimer, slide_uri: sl, note_verificare: v.note_verificare });
+    const st = await admin(CITESTE, { actiune: 'ciorna', limba: 'ro', doar_stare: true });
+    egal(st.statusCode, 200); egal(st.corp, { ok: true, exista: true, limba: 'ro' });
+    const r = await admin(CITESTE, { actiune: 'ciorna', limba: 'ro' });
+    egal(r.statusCode, 200, JSON.stringify(r.corp).slice(0, 200));
+    egal(r.corp.ciorna.id, v.id); egal(r.corp.ciorna.titlu, 'Ciorna nouă');
+    egal(r.corp.deck.slide_uri.length, 20); egal(r.corp.limba, 'ro');
+    adevarat(!JSON.stringify(r.corp).includes('NOTĂ INTERNĂ DE TEST'), 'fără note_prezentator');
+  });
+  await test('limbile: de / fr → ciorna EN; fără ciornă în limbă → exista: false și 404 CIORNA_LIPSA', async () => {
+    reset();
+    await importa(RO11);
+    egal((await admin(SCRIE, { actiune: 'ciorna', limba: 'de', doar_stare: true })).corp, { ok: true, exista: false, limba: 'en' });
+    const r = await admin(SCRIE, { actiune: 'ciorna', limba: 'fr' });
+    egal(r.statusCode, 404); egal(r.corp.cod, 'CIORNA_LIPSA');
+    const en = await importa(EN11);
+    const r2 = await admin(SUPER, { actiune: 'ciorna', limba: 'tr' });
+    egal(r2.statusCode, 200); egal(r2.corp.ciorna.id, en.id); egal(r2.corp.limba, 'en');
+  });
+  await test('versiunea aprobată nu e „ciornă”; API-ul public rămâne „în pregătire” fără aprobare', async () => {
+    reset();
+    const v = await completeaza(await importa(RO11));
+    egal((await admin(SCRIE, { actiune: 'aproba', id: v.id })).statusCode, 200);
+    egal((await admin(SCRIE, { actiune: 'ciorna', limba: 'ro', doar_stare: true })).corp.exista, false);
+    reset();
+    await importa(RO11);
+    const apiPublic = require(path.join(RADACINA, 'api/public/pitch-deck.js'));
+    for (const tok of [null, TOKEN[CITESTE]]) {
+      const res = raspuns();
+      await apiPublic(cerere({ metoda: 'GET', token: tok, query: { limba: 'ro', ciorna: '1' } }), res);
+      egal(res.corp.stare, 'in_pregatire', 'public ' + tok);
+      adevarat(!res.corp.deck, 'fără deck');
+    }
+  });
+
   console.log(`\n${ok} trecute, ${esec} picate`);
   process.exit(esec ? 1 : 0);
 })();
