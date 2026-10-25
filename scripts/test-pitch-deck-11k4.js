@@ -277,24 +277,26 @@ const numara = (l) => l.reduce((o, x) => { o[x.tip] = (o[x.tip] || 0) + 1; retur
     // HTML-ul e scăpat
     egal(grafic({ ...s17(RO11), eticheta_serie1: '<b>x</b>' }, 'ro').legenda, ['&lt;b&gt;x&lt;/b&gt;', 'Profit net']);
   });
-  await test('schema: opționale, cel mult 40 de caractere; v1.2 = v1.1 + cele două etichete', async () => {
+  await test('schema: opționale, cel mult 40 de caractere; v1.2 (versiunea aprobată live) e validă și are etichetele', async () => {
     egal(S.valideaza([s17(RO11)]), []);
     egal(S.valideaza([s17(RO12)]), []);
     const e = S.valideaza([{ ...s17(RO11), eticheta_serie1: 'x'.repeat(41), eticheta_serie2: 7 }]).map((x) => x.camp);
     egal(e, ['slide_uri.0.eticheta_serie1', 'slide_uri.0.eticheta_serie2']);
     egal(S.valideaza([{ ...s17(RO11), eticheta_serie1: 'x'.repeat(40) }]), []);
-    for (const [a, b] of [[RO11, RO12], [EN11, EN12]]) {
-      const x = copie(b); delete x.slide_uri[16].eticheta_serie1; delete x.slide_uri[16].eticheta_serie2;
-      egal(x.slide_uri, a.slide_uri, 'slide-urile');
-      egal(x.meta.versiune, 'v1.2');
+    // v1.2 = versiunea aprobată live pe 25 oct. 2026 (fișierele LM, copiate exact):
+    // conținut propriu, nu v1.1 + etichete.
+    for (const [b, e1, cifra] of [[RO12, 'Valoarea proiectelor', 'valoarea proiectelor estimată · Anul 5'], [EN12, 'Project value', 'estimated project value · Year 5']]) {
+      egal(b.meta.versiune, 'v1.2');
+      egal(S.valideaza(P.extrageNote(copie(b.slide_uri)).slide_uri), [], b.meta.limba);
+      egal([b.slide_uri[16].eticheta_serie1, b.slide_uri[16].cifra.text, b.slide_uri[16].profit_net[4]], [e1, cifra, 4200000], b.meta.limba);
     }
   });
-  await test('importul v1.2 păstrează etichetele; salvarea fără ele le scoate; 21 de lipsuri, ca v1.1', async () => {
+  await test('importul v1.2 păstrează etichetele; salvarea fără ele le scoate; 0 lipsuri (note și surse rezolvate)', async () => {
     reset();
     const v = await importa(RO12);
     egal([v.slide_uri[16].eticheta_serie1, v.slide_uri[16].eticheta_serie2], ['Valoarea proiectelor', 'Profit net']);
     egal(v.titlu, 'Pitch deck v1.2 · RO');
-    egal((await admin(SCRIE)).corp.versiuni[0].lipsuri.length, 21);
+    egal((await admin(SCRIE)).corp.versiuni[0].lipsuri, []);
     const sl = copie(v.slide_uri); delete sl[16].eticheta_serie1;
     const s = await admin(SCRIE, { actiune: 'salveaza', id: v.id, titlu: v.titlu, sursa: v.sursa, disclaimer: v.disclaimer, slide_uri: sl, note_verificare: v.note_verificare });
     egal(s.statusCode, 200);
