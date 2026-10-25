@@ -6,9 +6,14 @@
 //      ca verificarea serverului; o versiune completă → 0 și se aprobă;
 //   B. `sterge`: doar ciornele, doar cu drept de scriere pe Investitori, cu audit
 //      (titlu, limbă, număr de slide-uri); versiunea aprobată → 409;
+//   C. `ciorna`: cea mai nouă ciornă a limbii pentru adminii cu drept de citire
+//      pe Investitori; 401 / 403 pentru ceilalți; API-ul public neschimbat;
+//   D. etichetele seriilor (eticheta_serie1 / 2) în legendă și la mouse, cu și
+//      fără câmpurile noi; schema; fișierele v1.2.
 // Cifrele rundei sunt DE TEST, nu ale rundei Seed reale.
 // Rulare: node scripts/test-pitch-deck-11k4.js
 
+const fs = require('fs');
 const path = require('path');
 const sim = require('./supabase-simulat');
 sim.instaleaza();
@@ -20,6 +25,7 @@ function stub(fisier, exp) {
 }
 stub('lib/rate-limit.js', { checkRateLimit: async () => true });
 
+const S = require(path.join(RADACINA, 'pitch-deck-schema.js'));
 const P = require(path.join(RADACINA, 'lib/pitch-deck.js'));
 const apiAdmin = require(path.join(RADACINA, 'api/admin/pitch-deck.js'));
 const RO11 = require(path.join(RADACINA, 'docs/pitch-deck/pitch-deck-v1.1-ro.json'));
@@ -239,6 +245,60 @@ const numara = (l) => l.reduce((o, x) => { o[x.tip] = (o[x.tip] || 0) + 1; retur
       egal(res.corp.stare, 'in_pregatire', 'public ' + tok);
       adevarat(!res.corp.deck, 'fără deck');
     }
+  });
+
+  console.log('D. Etichetele seriilor din graficul slide-ului 17');
+  // Renderul real (pitch-deck-render.js), cu o fereastră minimă: doar HTML-ul slide-ului.
+  const win = { document: {}, location: { hash: '' } };
+  new Function('self', 'module', fs.readFileSync(path.join(RADACINA, 'pitch-deck-render.js'), 'utf8'))(win, undefined);
+  const grafic = (slide, limba) => {
+    const c = { innerHTML: '', querySelector: () => ({ classList: { add() {} }, removeAttribute() {} }) };
+    win.MDPitchDeck.creeazaStatic(c, { payload: { stare: 'complet', deck: { slide_uri: [slide] } }, limba, index: 0 });
+    const legenda = [...(c.innerHTML.match(/<div class="mdpd-legenda">(.*?)<\/div>/) || [, ''])[1].matchAll(/<span[^>]*>([^<]*)<\/span>/g)].map((m) => m[1]);
+    const titluri = [...c.innerHTML.matchAll(/<title>([^<]*)<\/title>/g)].map((m) => m[1]);
+    return { legenda, bara: titluri[0], punct: titluri[5] };
+  };
+  const s17 = (j) => ({ ...copie(j.slide_uri[16]), nr: 1 });
+  const RO12 = require(path.join(RADACINA, 'docs/pitch-deck/pitch-deck-v1.2-ro.json'));
+  const EN12 = require(path.join(RADACINA, 'docs/pitch-deck/pitch-deck-v1.2-en.json'));
+  await test('fără câmpurile noi: „Venituri” / „Profit net” (RO), „Revenue” / „Net profit” (EN), ca înainte', async () => {
+    const ro = grafic(s17(RO11), 'ro'), en = grafic(s17(EN11), 'en');
+    egal(ro.legenda, ['Venituri', 'Profit net']); egal(en.legenda, ['Revenue', 'Net profit']);
+    adevarat(/^Venituri · Anul 1: /.test(ro.bara) && /^Profit net · Anul 1: /.test(ro.punct), `RO: ${ro.bara} | ${ro.punct}`);
+    adevarat(/^Revenue · Year 1: /.test(en.bara) && /^Net profit · Year 1: /.test(en.punct), `EN: ${en.bara} | ${en.punct}`);
+    // gol sau doar spații → eticheta implicită
+    egal(grafic({ ...s17(RO11), eticheta_serie1: '  ', eticheta_serie2: '' }, 'ro').legenda, ['Venituri', 'Profit net']);
+  });
+  await test('cu etichetele v1.2: „Valoarea proiectelor” / „Profit net” și „Project value” / „Net profit”, în legendă și la mouse', async () => {
+    const ro = grafic(s17(RO12), 'ro'), en = grafic(s17(EN12), 'en');
+    egal(ro.legenda, ['Valoarea proiectelor', 'Profit net']); egal(en.legenda, ['Project value', 'Net profit']);
+    adevarat(/^Valoarea proiectelor · Anul 1: /.test(ro.bara) && /^Profit net · Anul 1: /.test(ro.punct), `RO: ${ro.bara} | ${ro.punct}`);
+    adevarat(/^Project value · Year 1: /.test(en.bara) && /^Net profit · Year 1: /.test(en.punct), `EN: ${en.bara} | ${en.punct}`);
+    // HTML-ul e scăpat
+    egal(grafic({ ...s17(RO11), eticheta_serie1: '<b>x</b>' }, 'ro').legenda, ['&lt;b&gt;x&lt;/b&gt;', 'Profit net']);
+  });
+  await test('schema: opționale, cel mult 40 de caractere; v1.2 = v1.1 + cele două etichete', async () => {
+    egal(S.valideaza([s17(RO11)]), []);
+    egal(S.valideaza([s17(RO12)]), []);
+    const e = S.valideaza([{ ...s17(RO11), eticheta_serie1: 'x'.repeat(41), eticheta_serie2: 7 }]).map((x) => x.camp);
+    egal(e, ['slide_uri.0.eticheta_serie1', 'slide_uri.0.eticheta_serie2']);
+    egal(S.valideaza([{ ...s17(RO11), eticheta_serie1: 'x'.repeat(40) }]), []);
+    for (const [a, b] of [[RO11, RO12], [EN11, EN12]]) {
+      const x = copie(b); delete x.slide_uri[16].eticheta_serie1; delete x.slide_uri[16].eticheta_serie2;
+      egal(x.slide_uri, a.slide_uri, 'slide-urile');
+      egal(x.meta.versiune, 'v1.2');
+    }
+  });
+  await test('importul v1.2 păstrează etichetele; salvarea fără ele le scoate; 21 de lipsuri, ca v1.1', async () => {
+    reset();
+    const v = await importa(RO12);
+    egal([v.slide_uri[16].eticheta_serie1, v.slide_uri[16].eticheta_serie2], ['Valoarea proiectelor', 'Profit net']);
+    egal(v.titlu, 'Pitch deck v1.2 · RO');
+    egal((await admin(SCRIE)).corp.versiuni[0].lipsuri.length, 21);
+    const sl = copie(v.slide_uri); delete sl[16].eticheta_serie1;
+    const s = await admin(SCRIE, { actiune: 'salveaza', id: v.id, titlu: v.titlu, sursa: v.sursa, disclaimer: v.disclaimer, slide_uri: sl, note_verificare: v.note_verificare });
+    egal(s.statusCode, 200);
+    egal(Object.prototype.hasOwnProperty.call(s.corp.versiune.slide_uri[16], 'eticheta_serie1'), false);
   });
 
   console.log(`\n${ok} trecute, ${esec} picate`);

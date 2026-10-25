@@ -99,6 +99,11 @@
       ani: { t: 'lista_numar', et: 'Anii (unul pe rând)', obl: true },
       venituri: { t: 'lista_numar', et: 'Venituri pe an (în ordinea anilor)', obl: true },
       profit_net: { t: 'lista_numar', et: 'Profit net pe an (în ordinea anilor)', obl: true },
+      // Pasul 11-K4 (24 oct. 2026): etichetele seriilor din legendă și din textele
+      // de la trecerea cu mouse-ul, opționale; fără ele, „Venituri” / „Profit net”
+      // (RO) și „Revenue” / „Net profit” (EN).
+      eticheta_serie1: TEXT('Eticheta barelor (implicit „Venituri” / „Revenue”)', false, 40),
+      eticheta_serie2: TEXT('Eticheta liniei (implicit „Profit net” / „Net profit”)', false, 40),
       cifra: { t: 'obiect', et: 'Cifra evidențiată', obl: true, campuri: { valoare: NUMAR('Valoare', true), text: TEXT('Text', true) } },
     },
     runda: {
