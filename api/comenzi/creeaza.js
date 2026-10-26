@@ -19,7 +19,7 @@
 // auditul extins, secțiunea 3) — comanda e persistată real, dar alocarea
 // automată către un partener rămâne un pas separat, neconstruit.
 //
-// Body: { valoare_totala, adresa, tara_cod?, regiune?, localitate?, suma_asigurare?, catalog_serviciu_id?, data_programata?, ora_inceput_programata?, ora_sfarsit_programata?, masa_totala_kg?, nivel_transport_marfa? }
+// Body: { date_facturare, adresa_lucrare?, valoare_totala, adresa, tara_cod?, regiune?, localitate?, suma_asigurare?, catalog_serviciu_id?, data_programata?, ora_inceput_programata?, ora_sfarsit_programata?, masa_totala_kg?, nivel_transport_marfa? }
 //
 // FIX (G2, audit Secțiunea 6/36, 30 Iulie 2026): masa_totala_kg/
 // nivel_transport_marfa — acceptate și persistate DOAR ca informație
@@ -66,6 +66,17 @@
 // neschimbat: comanda e persistată ca înainte, cu toate componentele noi la
 // 0 — elibereaza-escrow.js tratează acest caz ca fallback cu un singur
 // partener (comportamentul dinainte de acest audit), flagat explicit acolo.
+//
+// Pasul 11-P2b (25 oct. 2026): datele de facturare (`date_facturare`) sunt
+// obligatorii pentru comenzile noi — persoană fizică (tip_client 'b2c') sau
+// factură pe firmă ('b2b'); validarea în lib/date-facturare.js. Firma din RO
+// se verifică la ANAF: inactivă / radiată → 400 FIRMA_INACTIVA; ANAF
+// indisponibil → comanda trece, cu sursa 'manual'. CNP-ul (opțional) se
+// salvează doar criptat (comenzi.client_cnp_criptat); pe comandă și în
+// răspuns rămân doar cnp_furnizat și cnp_ultimele3. `adresa_lucrare`
+// (opțional, pe câmpuri) e adresa copiată ca adresă de facturare când
+// clientul nu dă alta; fără ea, se folosesc adresa / localitate / regiune.
+// Fluxul B2G (api/comenzi/creeaza-b2g.js) nu trece pe aici.
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
@@ -78,6 +89,9 @@ const { renderEmailComandaPrimita, limbaProfilEmailComportamental } = require('.
 const { incarcaContactPlatformaSigur } = require('../../lib/contact-platforma');
 const { notificaAdminFaraPartener } = require('../../lib/notificari-comanda');
 const { fromHeader } = require('../../lib/email-sender');
+const { valideazaDateFacturare } = require('../../lib/date-facturare');
+const { verificaFirmaRoLaAnaf, MESAJE_ANAF } = require('../../lib/cauta-firma');
+const { trimiteEroare, camp } = require('../../lib/raspuns-eroare');
 
 async function handler(req, res, user) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -92,6 +106,7 @@ async function handler(req, res, user) {
     nivel_id = null, cantitate = null,
     addon_materiale = [],
     produse_marketplace = null,
+    date_facturare = null, adresa_lucrare = null,
   } = req.body || {};
 
   // „Preț per cantitate reală comandată", pașii 1-3 (22 august 2026, aprobat,
@@ -175,6 +190,18 @@ async function handler(req, res, user) {
     return res.status(400).json({ error: 'adresa este obligatorie' });
   }
 
+  // Datele de facturare (pasul 11-P2b) — obligatorii.
+  const facturare = valideazaDateFacturare(date_facturare, {
+    taraComanda: tara_cod,
+    adresaLucrare: adresa_lucrare && typeof adresa_lucrare === 'object'
+      ? adresa_lucrare
+      : { strada: adresa, localitate, judet: regiune, tara: tara_cod },
+  });
+  if (!facturare.ok) {
+    return trimiteEroare(res, 400, 'DATE_FACTURARE_INVALIDE', facturare.error, facturare.error_en,
+      [camp(facturare.camp, facturare.error, facturare.error_en)], { camp: facturare.camp });
+  }
+
   // FIX (Etapa 4, audit 2026-07-12): "prima țară activă este România" —
   // verificare server-side, reală, nu doar bannerul din UI (ocolibil de
   // oricine trimite direct un POST). Blocăm doar dacă tara_cod e cunoscută
@@ -191,6 +218,20 @@ async function handler(req, res, user) {
         error: 'Darrin inca nu este disponibil in zona ta. Imediat ce suntem live, te vom anunta cu email. Multumim pentru intelegere.',
         code: 'ZONA_INDISPONIBILA',
       });
+    }
+  }
+
+  // Factură pe o firmă din RO: verificarea la ANAF (aceeași ca la parteneri).
+  const df = facturare.date_facturare;
+  if (df.tip === 'pj' && df.adresa.tara === 'RO') {
+    const v = await verificaFirmaRoLaAnaf(df.cui);
+    if (v.stare === 'inactiva') {
+      const m = MESAJE_ANAF.firma_inactiva;
+      return trimiteEroare(res, 400, 'FIRMA_INACTIVA', m.ro, m.en, [camp('cui', m.ro, m.en)], { camp: 'cui' });
+    }
+    if (v.stare === 'activa') {
+      df.sursa = 'anaf';
+      df.tva_activ = !!v.anaf.tva_activ;
     }
   }
 
@@ -323,6 +364,14 @@ async function handler(req, res, user) {
 
     const nr_comanda = `DA-${year}-${String((count || 0) + 1).padStart(5, '0')}`;
 
+    // CNP-ul (opțional) doar criptat, înainte de inserare: fără criptare, nicio comandă.
+    let clientCnpCriptat = null;
+    if (facturare.cnp) {
+      const { data: criptat, error: cryptErr } = await supabaseAdmin.rpc('cripteaza_camp', { valoare: facturare.cnp });
+      if (cryptErr || !criptat) throw cryptErr || new Error('cripteaza_camp nu a întors valoarea');
+      clientCnpCriptat = criptat;
+    }
+
     const insertBase = {
       nr_comanda,
       client_id: user.id,
@@ -342,6 +391,9 @@ async function handler(req, res, user) {
       masa_totala_kg,
       nivel_transport_marfa,
       metoda_plata,
+      tip_client: facturare.tip_client,
+      date_facturare: df,
+      ...(clientCnpCriptat ? { client_cnp_criptat: clientCnpCriptat } : {}),
       // 'neinitiat', nu 'blocat': acest endpoint nu procesează plăți reale
       // (niciun procesator de plăți nu e integrat — vezi api/financiar/comision.js),
       // deci ar fi incorect să pretindem că suma e deja blocată în escrow.
@@ -549,7 +601,9 @@ async function handler(req, res, user) {
       : { alocat: false, motiv: produseCalculate ? 'comanda_produse_marketplace' : 'fara_serviciu_specificat' };
     if (!alocare.alocat) await notificaAdminFaraPartener(data, alocare.motiv);
 
-    return res.status(200).json({ ok: true, comanda: data, alocare });
+    // CNP-ul criptat nu pleacă înapoi la client.
+    const { client_cnp_criptat: _cnpCriptat, ...comandaPublica } = data;
+    return res.status(200).json({ ok: true, comanda: comandaPublica, alocare });
   } catch (err) {
     console.error('[comenzi/creeaza]', err);
     return res.status(500).json({ error: err.message || 'Nu am putut înregistra comanda' });
