@@ -37,6 +37,8 @@ stub('lib/notificari-comanda.js', { notificaAdminFaraPartener: async (c, motiv) 
 
 const apiMarketplace = require(path.join(RADACINA, 'api/public/marketplace-produse.js'));
 const apiCreeaza = require(path.join(RADACINA, 'api/comenzi/creeaza.js'));
+// Pasul 11-P2b: datele de facturare sunt obligatorii pe comandă.
+const FACTURARE_PF = { tip: 'pf', prenume: 'Ana', nume: 'Albu' };
 const { elibereazaEscrow } = require(path.join(RADACINA, 'lib/elibereaza-escrow.js'));
 const { calculeazaPret, incarcaConfigPret, aplicaFormulaPret } = require(path.join(RADACINA, 'lib/calculeaza-pret.js'));
 // Prețurile așteptate vin din aceeași formulă ca la servicii (lib/calculeaza-pret.js).
@@ -227,7 +229,7 @@ function server() {
   console.log('B. Comanda de produse și escrow-ul ei');
   reseteaza();
   const resC = raspuns();
-  await apiCreeaza(cerere({ metoda: 'POST', token: 'tok-client', body: { adresa: 'Str. Exemplu 1, București', tara_cod: 'RO', produse_marketplace: [{ id: `mp:materiale:${ID.m1}`, qty: 10 }], valoare_totala: 1, cost_materiale: 1 } }), resC);
+  await apiCreeaza(cerere({ metoda: 'POST', token: 'tok-client', body: { adresa: 'Str. Exemplu 1, București', tara_cod: 'RO', date_facturare: FACTURARE_PF, produse_marketplace: [{ id: `mp:materiale:${ID.m1}`, qty: 10 }], valoare_totala: 1, cost_materiale: 1 } }), resC);
   const comanda = DB.tabele.comenzi[0];
   await test('comanda se creează cu prețul calculat pe server (ignoră valoare_totala / cost_* din client)', async () => {
     egal(resC.statusCode, 200, JSON.stringify(resC.corp));
@@ -252,7 +254,7 @@ function server() {
   await test('produs care nu e live în comandă → 400, nicio comandă', async () => {
     reseteaza();
     const r = raspuns();
-    await apiCreeaza(cerere({ metoda: 'POST', token: 'tok-client', body: { adresa: 'Str. Exemplu 1', tara_cod: 'RO', produse_marketplace: [{ id: `mp:materiale:${ID.m3}`, qty: 1 }] } }), r);
+    await apiCreeaza(cerere({ metoda: 'POST', token: 'tok-client', body: { adresa: 'Str. Exemplu 1', tara_cod: 'RO', date_facturare: FACTURARE_PF, produse_marketplace: [{ id: `mp:materiale:${ID.m3}`, qty: 1 }] } }), r);
     egal([r.statusCode, DB.tabele.comenzi.length], [400, 0]);
   });
 

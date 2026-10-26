@@ -1396,6 +1396,46 @@ function triggerHeaderSearch(){
             <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Județ</label><select class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white cursor-pointer" id="co-judet" name="co-judet" autocomplete="address-level1" required><option value="">Alege județul</option><option>Alba</option><option>Arad</option><option>Argeș</option><option>Bacău</option><option>Bihor</option><option>Bistrița-Năsăud</option><option>Botoșani</option><option>Brăila</option><option>Brașov</option><option>București</option><option>Buzău</option><option>Călărași</option><option>Caraș-Severin</option><option>Cluj</option><option>Constanța</option><option>Covasna</option><option>Dâmbovița</option><option>Dolj</option><option>Galați</option><option>Giurgiu</option><option>Gorj</option><option>Harghita</option><option>Hunedoara</option><option>Ialomița</option><option>Iași</option><option>Ilfov</option><option>Maramureș</option><option>Mehedinți</option><option>Mureș</option><option>Neamț</option><option>Olt</option><option>Prahova</option><option>Sălaj</option><option>Satu Mare</option><option>Sibiu</option><option>Suceava</option><option>Teleorman</option><option>Timiș</option><option>Tulcea</option><option>Vâlcea</option><option>Vaslui</option><option>Vrancea</option></select></div>
           </div>
           <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Instrucțiuni acces (opțional)</label><textarea rows="2" placeholder="Ex: Interfon 45, cod poartă 1234..." class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition resize-none bg-white"></textarea></div>
+
+          <!-- Datele de facturare (pasul 11-P2b): persoană fizică sau firmă. Ascunse și
+               netrimise când e bifat B2G (fluxul B2G are datele lui, în pasul „Plată”). -->
+          <div id="fact-bloc" class="pt-4 border-t border-[#D5DFE8] space-y-4">
+            <fieldset>
+              <legend class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Factura</legend>
+              <div class="grid grid-cols-2 gap-4">
+                <label class="flex items-center gap-2.5 cursor-pointer border border-[#D5DFE8] rounded-xl px-3 py-2.5 bg-white"><input type="radio" name="fact-tip" id="fact-tip-pf" value="pf" checked class="w-4 h-4 accent-[#003366]"/><span class="text-sm font-semibold text-[#003366]">Persoană fizică</span></label>
+                <label class="flex items-center gap-2.5 cursor-pointer border border-[#D5DFE8] rounded-xl px-3 py-2.5 bg-white"><input type="radio" name="fact-tip" id="fact-tip-pj" value="pj" class="w-4 h-4 accent-[#003366]"/><span class="text-sm font-semibold text-[#003366]">Factură pe firmă</span></label>
+              </div>
+            </fieldset>
+            <div id="fact-pf" class="space-y-4">
+              <div id="fact-cnp-camp"><label for="fact-cnp" class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">CNP (opțional)</label><input type="text" id="fact-cnp" name="fact-cnp" inputmode="numeric" maxlength="13" autocomplete="off" aria-describedby="fact-cnp-ajutor" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/><div id="fact-cnp-ajutor" class="text-[11px] text-[#8C9BAD] mt-1">Îl trecem pe factură doar dacă îl completezi.</div></div>
+              <label class="flex items-center gap-2.5 cursor-pointer"><input type="checkbox" id="fact-adresa-alta" class="w-4 h-4 accent-[#003366]"/><span class="text-xs text-[#6B7A8D]">Adresa de facturare e alta decât adresa lucrării</span></label>
+            </div>
+            <div id="fact-pj" class="hidden space-y-4">
+              <div>
+                <label for="fact-cui" class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5"><span id="fact-cui-eticheta-ro">CUI</span><span id="fact-cui-eticheta-strain" class="hidden">Nr. înregistrare / TVA</span></label>
+                <div class="flex gap-2 items-start">
+                  <div class="flex-1 min-w-0"><input type="text" id="fact-cui" name="fact-cui" placeholder="RO12345678" autocomplete="off" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white uppercase"/></div>
+                  <button type="button" id="fact-cauta" class="btn-ghost flex-shrink-0" style="padding:10px 14px;font-size:12px"><span id="fact-cauta-ro">Caută la ANAF</span><span id="fact-cauta-strain" class="hidden">Caută</span></button>
+                </div>
+                <div id="fact-anaf-status" class="text-[11px] mt-1" aria-live="polite"></div>
+              </div>
+              <div><label for="fact-denumire" class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Denumirea firmei</label><input type="text" id="fact-denumire" name="fact-denumire" autocomplete="organization" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
+              <div><label for="fact-nrregcom" class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Nr. Reg. Com.</label><input type="text" id="fact-nrregcom" name="fact-nrregcom" placeholder="J12/3456/2020" autocomplete="off" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white uppercase"/></div>
+            </div>
+            <div id="fact-adresa" class="hidden space-y-4">
+              <div class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD]"><span id="fact-adresa-titlu-pf">Adresa de facturare</span><span id="fact-adresa-titlu-pj" class="hidden">Sediul firmei</span></div>
+              <div><label for="fact-strada" class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Strada și numărul</label><input type="text" id="fact-strada" name="fact-strada" autocomplete="billing street-address" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
+              <div class="grid grid-cols-2 gap-4">
+                <div><label for="fact-localitate" class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Localitatea</label><input type="text" id="fact-localitate" name="fact-localitate" autocomplete="billing address-level2" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
+                <div><label for="fact-judet" class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Județul</label><input type="text" id="fact-judet" name="fact-judet" autocomplete="billing address-level1" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div><label for="fact-cod-postal" class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Cod poștal (opțional)</label><input type="text" id="fact-cod-postal" name="fact-cod-postal" autocomplete="billing postal-code" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
+                <div><label for="fact-tara" class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Țara</label><select id="fact-tara" name="fact-tara" autocomplete="billing country" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white cursor-pointer"><option value="RO">România</option><option value="MD">Moldova</option><option value="BG">Bulgaria</option><option value="DE">Germania</option><option value="FR">Franța</option></select></div>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="flex gap-3 mt-5">
           <button onclick="goToStep('cart')" class="btn-ghost flex-shrink-0" style="padding:12px 20px;font-size:13px">← Înapoi</button>
@@ -2593,7 +2633,13 @@ document.addEventListener('DOMContentLoaded', function() {
           cui_client_b2g: document.getElementById('b2g-cui')?.value.trim(),
           cont_trezorerie: !!document.getElementById('b2g-trezorerie')?.checked,
           metoda_plata: (document.querySelector('input[name="b2g-metoda"]:checked')?.value) || 'card',
-        } : corpComun;
+        } : {
+          // Pasul 11-P2b: datele de facturare și adresa lucrării pe câmpuri
+          // (copiată ca adresă de facturare când clientul nu dă alta).
+          ...corpComun,
+          date_facturare: construiesteDateFacturare(),
+          adresa_lucrare: { strada: document.getElementById('co-adresa')?.value.trim() || '', localitate: document.getElementById('co-oras')?.value.trim() || '', judet: document.getElementById('co-judet')?.value || '', tara: taraComanda || 'RO' },
+        };
 
         const res = await fetch(endpoint, {
           method: 'POST',
@@ -2607,7 +2653,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (modal) modal.classList.remove('hidden');
             return;
           }
-          throw new Error(data.error || 'Eroare la plasarea comenzii');
+          if (!esteB2G && arataEroareFacturareServer(data)) return;
+          const enEroare = window.MYD_I18N && window.MYD_I18N.lang && window.MYD_I18N.lang !== 'ro';
+          throw new Error((enEroare && data.error_en) || data.error || 'Eroare la plasarea comenzii');
         }
         if (esteB2G) {
           showComandaInregistrataScreen(data.comanda.nr_comanda, data.mesaj);
@@ -3434,6 +3482,7 @@ function valideazaPas(pas) {
       if (valid((el.value || '').trim())) stergeEroareCamp(el);
       else { arataEroareCamp(el, mesaj); primul = primul || el; }
     });
+    primul = valideazaFacturare() || primul;
     if (primul) { primul.focus({ preventScroll: false }); return false; }
     return true;
   }
@@ -3459,6 +3508,213 @@ function confirmaFinalizarea(e) {
   if (e) e.stopImmediatePropagation();
   if (!valideazaPas('details')) goToStep('details');
 }
+
+// ── Datele de facturare (pasul 11-P2b) ──
+// Aceleași reguli ca lib/date-facturare.js; serverul rămâne sursa finală.
+// Când e bifat B2G, blocul se ascunde și nu se trimite (fluxul B2G are datele lui).
+const FACT_CAMPURI = {
+  prenume: 'co-prenume', nume: 'co-nume', cnp: 'fact-cnp', cui: 'fact-cui', denumire: 'fact-denumire',
+  'adresa.strada': 'fact-strada', 'adresa.localitate': 'fact-localitate', 'adresa.judet': 'fact-judet', 'adresa.tara': 'fact-tara',
+};
+const factEl = (id) => document.getElementById(id);
+const factVal = (id) => ((factEl(id) && factEl(id).value) || '').trim();
+const factB2G = () => !!factEl('b2g-toggle')?.checked;
+const factTip = () => (document.querySelector('input[name="fact-tip"]:checked') || {}).value || 'pf';
+const factLimbaEn = () => !!(window.MYD_I18N && window.MYD_I18N.lang && window.MYD_I18N.lang !== 'ro');
+
+// Țara facturii: a adresei de facturare, dacă se cere una; altfel a lucrării (RO).
+function factTara() {
+  if (factTip() === 'pj' || factEl('fact-adresa-alta')?.checked) return factVal('fact-tara') || 'RO';
+  return (typeof MYD_CFG !== 'undefined' && MYD_CFG?.tara_cod) || 'RO';
+}
+
+function factCnpValid(cnp) {
+  if (!/^[1-8]\d{12}$/.test(cnp)) return false;
+  const cheie = '279146358279';
+  let suma = 0;
+  for (let i = 0; i < 12; i++) suma += Number(cnp[i]) * Number(cheie[i]);
+  const control = suma % 11 === 10 ? 1 : suma % 11;
+  if (control !== Number(cnp[12])) return false;
+  const secol = { 1: 1900, 2: 1900, 3: 1800, 4: 1800, 5: 2000, 6: 2000 }[cnp[0]];
+  if (!secol) return true; // 7/8: rezident străin, secolul nu e în CNP
+  const a = secol + Number(cnp.slice(1, 3)), l = Number(cnp.slice(3, 5)), z = Number(cnp.slice(5, 7));
+  const d = new Date(Date.UTC(a, l - 1, z));
+  return d.getUTCFullYear() === a && d.getUTCMonth() === l - 1 && d.getUTCDate() === z;
+}
+
+function factCuiRoValid(cui) {
+  const c = String(cui || '').replace(/\s+/g, '').toUpperCase().replace(/^RO/, '');
+  if (!/^\d{2,10}$/.test(c)) return false;
+  const cheie = '753217532', corp = c.slice(0, -1).padStart(9, '0');
+  let suma = 0;
+  for (let i = 0; i < 9; i++) suma += Number(corp[i]) * Number(cheie[i]);
+  let rest = (suma * 10) % 11;
+  if (rest === 10) rest = 0;
+  return rest === Number(c.slice(-1));
+}
+
+function actualizeazaFactura() {
+  const bloc = factEl('fact-bloc');
+  if (!bloc) return;
+  bloc.classList.toggle('hidden', factB2G());
+  const pj = factTip() === 'pj';
+  const alta = !!factEl('fact-adresa-alta')?.checked;
+  factEl('fact-pf').classList.toggle('hidden', pj);
+  factEl('fact-pj').classList.toggle('hidden', !pj);
+  factEl('fact-adresa').classList.toggle('hidden', !pj && !alta);
+  factEl('fact-adresa-titlu-pf').classList.toggle('hidden', pj);
+  factEl('fact-adresa-titlu-pj').classList.toggle('hidden', !pj);
+  const ro = factTara() === 'RO';
+  factEl('fact-cnp-camp').classList.toggle('hidden', !ro);
+  ['fact-cui-eticheta-ro', 'fact-cauta-ro'].forEach((id) => factEl(id).classList.toggle('hidden', !ro));
+  ['fact-cui-eticheta-strain', 'fact-cauta-strain'].forEach((id) => factEl(id).classList.toggle('hidden', ro));
+  factEl('fact-cui').placeholder = ro ? 'RO12345678' : '';
+}
+
+// Primul câmp greșit (cu mesajul afișat sub el) sau null.
+function valideazaFacturare() {
+  const ids = ['fact-cnp', 'fact-cui', 'fact-denumire', 'fact-strada', 'fact-localitate', 'fact-judet'];
+  ids.forEach((id) => stergeEroareCamp(factEl(id)));
+  if (factB2G() || !factEl('fact-bloc')) return null;
+  const greseli = [];
+  const tara = factTara();
+  if (factTip() === 'pf') {
+    const cnp = factVal('fact-cnp').replace(/\s+/g, '');
+    if (cnp && tara === 'RO' && !factCnpValid(cnp)) greseli.push(['fact-cnp', 'CNP-ul nu este valid: verifică cele 13 cifre sau lasă câmpul gol.']);
+  } else {
+    const cui = factVal('fact-cui');
+    if (tara === 'RO') {
+      if (!cui) greseli.push(['fact-cui', 'Completează CUI-ul firmei.']);
+      else if (!factCuiRoValid(cui)) greseli.push(['fact-cui', 'CUI-ul nu este valid: cifra de control nu se potrivește. Verifică-l în certificatul de înregistrare.']);
+    } else if (!(cui.length >= 4 && cui.length <= 30 && /^[A-Za-z0-9 \-/]+$/.test(cui))) {
+      greseli.push(['fact-cui', 'Completează numărul de înregistrare sau de TVA al firmei (4–30 caractere: litere, cifre, spațiu, „-” sau „/”).']);
+    }
+    if (factVal('fact-denumire').length < 2) greseli.push(['fact-denumire', 'Completează denumirea firmei.']);
+  }
+  if (factTip() === 'pj' || factEl('fact-adresa-alta').checked) {
+    if (factVal('fact-strada').length < 3) greseli.push(['fact-strada', 'Completează adresa de facturare: strada și numărul.']);
+    if (factVal('fact-localitate').length < 2) greseli.push(['fact-localitate', 'Completează localitatea din adresa de facturare.']);
+    if (tara === 'RO' && !factVal('fact-judet')) greseli.push(['fact-judet', 'Completează județul din adresa de facturare.']);
+  }
+  greseli.forEach(([id, mesaj]) => arataEroareCamp(factEl(id), mesaj));
+  return greseli.length ? factEl(greseli[0][0]) : null;
+}
+
+// Corpul `date_facturare` pentru api/comenzi/creeaza (null pentru B2G).
+function construiesteDateFacturare() {
+  if (factB2G()) return null;
+  const adresa = { strada: factVal('fact-strada'), localitate: factVal('fact-localitate'), judet: factVal('fact-judet'), cod_postal: factVal('fact-cod-postal'), tara: factVal('fact-tara') || 'RO' };
+  if (factTip() === 'pj') {
+    return { tip: 'pj', cui: factVal('fact-cui'), denumire: factVal('fact-denumire'), nr_reg_com: factVal('fact-nrregcom'), adresa };
+  }
+  const alta = !!factEl('fact-adresa-alta').checked;
+  return {
+    tip: 'pf', prenume: factVal('co-prenume'), nume: factVal('co-nume'),
+    cnp: factTara() === 'RO' ? factVal('fact-cnp').replace(/\s+/g, '') : '',
+    adresa_alta: alta, ...(alta ? { adresa } : {}),
+  };
+}
+
+function factStare(text, culoare) {
+  const s = factEl('fact-anaf-status');
+  if (!s) return;
+  s.textContent = text;
+  s.style.color = culoare;
+}
+
+// „Caută la ANAF” (RO) / „Caută” (VIES, alte țări): precompletează denumirea,
+// Nr. Reg. Com. și sediul; câmpurile rămân editabile. Fără răspuns → completare manuală.
+async function cautaFirmaFactura() {
+  const input = factEl('fact-cui');
+  const tara = factTara();
+  const cui = factVal('fact-cui');
+  stergeEroareCamp(input);
+  if (tara === 'RO' && !factCuiRoValid(cui)) {
+    arataEroareCamp(input, cui ? 'CUI-ul nu este valid: cifra de control nu se potrivește. Verifică-l în certificatul de înregistrare.' : 'Completează CUI-ul firmei.');
+    input.focus();
+    return;
+  }
+  if (!cui) { input.focus(); return; }
+  const btn = factEl('fact-cauta');
+  btn.disabled = true;
+  factStare(window.t(null, 'Se caută…'), '#5A6B7D');
+  try {
+    const res = await fetch('/api/public/cui-lookup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tara, cui }) });
+    const data = await res.json();
+    if (data.ok && data.cod === 'firma_inactiva') {
+      const mesaj = (factLimbaEn() && data.motiv_en) || data.motiv;
+      factStare(mesaj, '#C0392B');
+      arataEroareCamp(input, mesaj);
+      return;
+    }
+    if (data.ok && data.denumire) {
+      factEl('fact-denumire').value = data.denumire;
+      if (data.nr_reg_com) factEl('fact-nrregcom').value = data.nr_reg_com;
+      const s = data.sediu;
+      if (s) {
+        if (s.strada) factEl('fact-strada').value = s.strada;
+        if (s.localitate) factEl('fact-localitate').value = s.localitate;
+        if (s.judet) factEl('fact-judet').value = s.judet;
+        if (s.cod_postal) factEl('fact-cod-postal').value = s.cod_postal;
+      } else if (data.adresa && !factVal('fact-strada')) {
+        factEl('fact-strada').value = data.adresa;
+      }
+      ['fact-denumire', 'fact-strada', 'fact-localitate', 'fact-judet'].forEach((id) => stergeEroareCamp(factEl(id)));
+      factStare(window.t(null, 'Date preluate din registru. Verifică-le înainte să continui.'), '#0E9E99');
+      return;
+    }
+    const mesaj = data.cod && data.motiv ? ((factLimbaEn() && data.motiv_en) || data.motiv) : window.t(null, 'Nu am găsit date. Completează manual.');
+    factStare(mesaj, '#8C9BAD');
+  } catch (e) {
+    factStare(window.t(null, 'Verificarea nu e disponibilă acum. Completează manual.'), '#8C9BAD');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// Precompletare din ultima comandă (api/client/date-facturare); doar câmpurile goale.
+async function precompleteazaFactura() {
+  try {
+    const session = (await window.supabaseClient?.auth.getSession())?.data?.session;
+    if (!session?.access_token) return;
+    const res = await fetch('/api/client/date-facturare', { headers: { Authorization: `Bearer ${session.access_token}` } });
+    if (!res.ok) return;
+    const df = (await res.json()).date_facturare;
+    if (!df) return;
+    const pune = (id, v) => { const el = factEl(id); if (el && v && !el.value.trim()) el.value = v; };
+    if (df.tip === 'pj') {
+      factEl('fact-tip-pj').checked = true;
+      pune('fact-cui', df.cui); pune('fact-denumire', df.denumire); pune('fact-nrregcom', df.nr_reg_com);
+    } else {
+      pune('co-prenume', df.prenume); pune('co-nume', df.nume);
+    }
+    const a = df.adresa || {};
+    pune('fact-strada', a.strada); pune('fact-localitate', a.localitate); pune('fact-judet', a.judet); pune('fact-cod-postal', a.cod_postal);
+    if (a.tara && factEl('fact-tara').querySelector(`option[value="${a.tara}"]`)) factEl('fact-tara').value = a.tara;
+    actualizeazaFactura();
+  } catch (e) { /* precompletarea e doar o comoditate */ }
+}
+
+// Eroarea serverului pe un câmp de facturare: marcată sub câmp, în pasul „Detalii”.
+function arataEroareFacturareServer(data) {
+  const id = data && FACT_CAMPURI[data.camp];
+  if (!id) return false;
+  goToStep('details');
+  const el = factEl(id);
+  arataEroareCamp(el, (factLimbaEn() && data.error_en) || data.error);
+  el?.focus();
+  return true;
+}
+
+function initFactura() {
+  document.querySelectorAll('input[name="fact-tip"]').forEach((r) => r.addEventListener('change', actualizeazaFactura));
+  ['fact-adresa-alta', 'fact-tara', 'b2g-toggle'].forEach((id) => factEl(id)?.addEventListener('change', actualizeazaFactura));
+  factEl('fact-cauta')?.addEventListener('click', cautaFirmaFactura);
+  actualizeazaFactura();
+  precompleteazaFactura();
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initFactura);
+else initFactura();
 
 document.addEventListener('input', (e) => {
   if (e.target && e.target.matches && e.target.matches('[aria-invalid="true"]')) stergeEroareCamp(e.target);
