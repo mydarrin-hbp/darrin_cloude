@@ -248,7 +248,7 @@ async function testeServer() {
   await test('fără comenzi → null; fără autentificare → 401', async () => {
     reset();
     const r = await cheama(apiDateFacturare, { metoda: 'GET' });
-    egal([r.statusCode, r.corp], [200, { ok: true, date_facturare: null }]);
+    egal([r.statusCode, r.corp], [200, { ok: true, date_facturare: null, sursa: null }]);
     egal((await cheama(apiDateFacturare, { metoda: 'GET', token: null })).statusCode, 401);
   });
   await test('ultima comandă a clientului, fără CNP (doar cnp_furnizat și cnp_ultimele3)', async () => {

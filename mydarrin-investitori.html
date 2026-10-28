@@ -556,6 +556,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 <!-- Pasul 10b: harta unică rol → dashboard și paza după rol (cont-dashboard.js) -->
 <script src="lib/destinatie-rol.js"></script>
 <script src="cont-dashboard.js"></script>
+<script src="agenda-cont.js"></script>
 <!-- Pasul 11-L: ruta de investitor legată de cont (fereastra în 5 pași, KYC, subscrierea) -->
 <script src="investitori-ruta.js" defer></script>
 <script>
@@ -738,6 +739,9 @@ function pornesteInvestitor(b) {
       <div style="background:#FFF0F0;border-radius:13px;border:1px solid rgba(192,57,43,.2);padding:12px 16px;text-align:center;font-size:11px;color:#C0392B">
         Investițiile în companii early-stage implică riscul pierderii totale a capitalului · Instrumentele nu sunt garantate de FGDB · MiFID II Art. 24
       </div>
+
+      <!-- Pasul 11-P3a: adresele și profilurile de facturare (agenda-cont.js). -->
+      <div id="agenda-cont-sectiune" style="margin-top:16px"></div>
     </div>
   </section>
 </div>
@@ -1068,6 +1072,7 @@ async function initiazaExitReal(btn) {
 function arataDashboardInvestitor(p) {
   const dash = document.getElementById('inv-private-dashboard');
   if (dash) dash.style.display = 'block';
+  if (window.MYD_AGENDA) window.MYD_AGENDA.monteaza(document.getElementById('agenda-cont-sectiune'));
   incarcaPortofoliu();
   incarcaIndicatori();
   const c = document.getElementById('inv-kyc-banda');

@@ -19,7 +19,7 @@
 // auditul extins, secțiunea 3) — comanda e persistată real, dar alocarea
 // automată către un partener rămâne un pas separat, neconstruit.
 //
-// Body: { date_facturare, adresa_lucrare?, valoare_totala, adresa, tara_cod?, regiune?, localitate?, suma_asigurare?, catalog_serviciu_id?, data_programata?, ora_inceput_programata?, ora_sfarsit_programata?, masa_totala_kg?, nivel_transport_marfa? }
+// Body: { date_facturare | profil_facturare_id (+ adresa_facturare_id?), adresa_prestare_id?, salveaza_in_cont?, adresa_lucrare?, valoare_totala, adresa, tara_cod?, regiune?, localitate?, suma_asigurare?, catalog_serviciu_id?, data_programata?, ora_inceput_programata?, ora_sfarsit_programata?, masa_totala_kg?, nivel_transport_marfa? }
 //
 // FIX (G2, audit Secțiunea 6/36, 30 Iulie 2026): masa_totala_kg/
 // nivel_transport_marfa — acceptate și persistate DOAR ca informație
@@ -77,6 +77,15 @@
 // (opțional, pe câmpuri) e adresa copiată ca adresă de facturare când
 // clientul nu dă alta; fără ea, se folosesc adresa / localitate / regiune.
 // Fluxul B2G (api/comenzi/creeaza-b2g.js) nu trece pe aici.
+//
+// Pasul 11-P3a (26 oct. 2026): datele pot veni și din agenda contului —
+// `adresa_prestare_id`, `profil_facturare_id` și, opțional,
+// `adresa_facturare_id` (verificate că aparțin contului; altfel 404). Din ele
+// se construiesc aceeași `adresa` și aceeași copie `date_facturare`; CNP-ul
+// din profil se copiază criptat. `salveaza_in_cont: true` cu date noi →
+// după crearea comenzii, adresa / profilul se salvează în agendă
+// (lib/agenda-cont.js); dacă salvarea eșuează, comanda rămâne validă și
+// răspunsul are `agenda_nesalvata: true`.
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
@@ -92,9 +101,26 @@ const { fromHeader } = require('../../lib/email-sender');
 const { valideazaDateFacturare } = require('../../lib/date-facturare');
 const { verificaFirmaRoLaAnaf, MESAJE_ANAF } = require('../../lib/cauta-firma');
 const { trimiteEroare, camp } = require('../../lib/raspuns-eroare');
+const { adresaPrestareDinAgenda, dateFacturareDinAgenda, salveazaDinComanda } = require('../../lib/agenda-cont');
+
+function refuzAgenda(res, r) {
+  return trimiteEroare(res, r.status || 400, r.cod || 'DATE_INVALIDE', r.error, r.error_en,
+    [camp(r.camp, r.error, r.error_en)], { camp: r.camp });
+}
 
 async function handler(req, res, user) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  // Adresa de prestare din agendă (pasul 11-P3a) înlocuiește adresa trimisă.
+  const corpCerere = { ...(req.body || {}) };
+  if (corpCerere.adresa_prestare_id) {
+    const r = await adresaPrestareDinAgenda(user.id, corpCerere.adresa_prestare_id);
+    if (!r.ok) return refuzAgenda(res, r);
+    corpCerere.adresa = r.adresa;
+    corpCerere.adresa_lucrare = r.adresa_lucrare;
+    corpCerere.tara_cod = corpCerere.tara_cod || r.adresa_lucrare.tara;
+    corpCerere.localitate = corpCerere.localitate || r.adresa_lucrare.localitate;
+  }
 
   const {
     valoare_totala, adresa, tara_cod = null, regiune = null, localitate = null,
@@ -107,7 +133,9 @@ async function handler(req, res, user) {
     addon_materiale = [],
     produse_marketplace = null,
     date_facturare = null, adresa_lucrare = null,
-  } = req.body || {};
+    adresa_prestare_id = null, profil_facturare_id = null, adresa_facturare_id = null,
+    salveaza_in_cont = false,
+  } = corpCerere;
 
   // „Preț per cantitate reală comandată", pașii 1-3 (22 august 2026, aprobat,
   // funcțional doar pe cele 5 servicii pilot cu rețetă tehnică legată —
@@ -191,12 +219,22 @@ async function handler(req, res, user) {
   }
 
   // Datele de facturare (pasul 11-P2b) — obligatorii.
-  const facturare = valideazaDateFacturare(date_facturare, {
-    taraComanda: tara_cod,
-    adresaLucrare: adresa_lucrare && typeof adresa_lucrare === 'object'
-      ? adresa_lucrare
-      : { strada: adresa, localitate, judet: regiune, tara: tara_cod },
-  });
+  const adresaLucrare = adresa_lucrare && typeof adresa_lucrare === 'object'
+    ? adresa_lucrare
+    : { strada: adresa, localitate, judet: regiune, tara: tara_cod };
+  // Din agendă (profil_facturare_id) sau din formular (date_facturare).
+  let facturare;
+  let cnpCriptatProfil = null;
+  if (profil_facturare_id) {
+    const r = await dateFacturareDinAgenda(user.id, {
+      profilId: profil_facturare_id, adresaFacturareId: adresa_facturare_id, taraComanda: tara_cod, adresaLucrare,
+    });
+    if (!r.ok) return refuzAgenda(res, r);
+    facturare = { ok: true, tip_client: r.tip_client, date_facturare: r.date_facturare, cnp: null };
+    cnpCriptatProfil = r.cnp_criptat;
+  } else {
+    facturare = valideazaDateFacturare(date_facturare, { taraComanda: tara_cod, adresaLucrare });
+  }
   if (!facturare.ok) {
     return trimiteEroare(res, 400, 'DATE_FACTURARE_INVALIDE', facturare.error, facturare.error_en,
       [camp(facturare.camp, facturare.error, facturare.error_en)], { camp: facturare.camp });
@@ -370,6 +408,8 @@ async function handler(req, res, user) {
       const { data: criptat, error: cryptErr } = await supabaseAdmin.rpc('cripteaza_camp', { valoare: facturare.cnp });
       if (cryptErr || !criptat) throw cryptErr || new Error('cripteaza_camp nu a întors valoarea');
       clientCnpCriptat = criptat;
+    } else if (cnpCriptatProfil) {
+      clientCnpCriptat = cnpCriptatProfil;
     }
 
     const insertBase = {
@@ -601,9 +641,28 @@ async function handler(req, res, user) {
       : { alocat: false, motiv: produseCalculate ? 'comanda_produse_marketplace' : 'fara_serviciu_specificat' };
     if (!alocare.alocat) await notificaAdminFaraPartener(data, alocare.motiv);
 
+    // „Salvează în contul meu” (pasul 11-P3a): best-effort, după comandă.
+    let agendaNesalvata = false;
+    const prestareNoua = !adresa_prestare_id && adresa_lucrare && typeof adresa_lucrare === 'object' ? adresa_lucrare : null;
+    const facturareNoua = !profil_facturare_id ? df : null;
+    if (salveaza_in_cont === true && (prestareNoua || facturareNoua)) {
+      try {
+        const r = await salveazaDinComanda(user.id, {
+          adresaPrestare: prestareNoua,
+          dateFacturare: facturareNoua,
+          adresaFacturareSeparata: !!(date_facturare && date_facturare.adresa_alta === true),
+          cnpCriptat: clientCnpCriptat,
+        });
+        if (!r.ok) { agendaNesalvata = true; console.warn('[comenzi/creeaza] agenda nesalvată:', r.cod, r.camp); }
+      } catch (agendaErr) {
+        agendaNesalvata = true;
+        console.warn('[comenzi/creeaza] agenda nesalvată:', agendaErr.message);
+      }
+    }
+
     // CNP-ul criptat nu pleacă înapoi la client.
     const { client_cnp_criptat: _cnpCriptat, ...comandaPublica } = data;
-    return res.status(200).json({ ok: true, comanda: comandaPublica, alocare });
+    return res.status(200).json({ ok: true, comanda: comandaPublica, alocare, ...(agendaNesalvata ? { agenda_nesalvata: true } : {}) });
   } catch (err) {
     console.error('[comenzi/creeaza]', err);
     return res.status(500).json({ error: err.message || 'Nu am putut înregistra comanda' });

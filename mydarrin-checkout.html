@@ -717,6 +717,8 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
      performLogin()/performRegister() local, complet fals (doar sessionStorage). -->
 <script type="module" src="lib/supabaseClient.js"></script>
 <script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
+<script src="/ui-feedback.js"></script>
+<script src="agenda-cont.js"></script>
 <script src="myd-unavail-msg.js"></script>
 <script src="format-currency.js"></script>
 <script src="tva-config.js"></script>
@@ -1390,16 +1392,23 @@ function triggerHeaderSearch(){
             <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Telefon</label><input type="tel" value="" placeholder="+40 7xx xxx xxx" id="co-telefon" name="co-telefon" autocomplete="tel" required class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
             <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Email</label><input type="email" value="" placeholder="adresa@exemplu.ro" id="co-email" name="co-email" autocomplete="email" required class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
           </div>
-          <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Adresă completă</label><input type="text" value="" placeholder="Strada, număr, bloc, apartament" id="co-adresa" name="co-adresa" autocomplete="street-address" required class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
-          <div class="grid grid-cols-2 gap-4">
-            <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Oraș</label><input type="text" value="" placeholder="Oraș" id="co-oras" name="co-oras" autocomplete="address-level2" required class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
-            <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Județ</label><select class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white cursor-pointer" id="co-judet" name="co-judet" autocomplete="address-level1" required><option value="">Alege județul</option><option>Alba</option><option>Arad</option><option>Argeș</option><option>Bacău</option><option>Bihor</option><option>Bistrița-Năsăud</option><option>Botoșani</option><option>Brăila</option><option>Brașov</option><option>București</option><option>Buzău</option><option>Călărași</option><option>Caraș-Severin</option><option>Cluj</option><option>Constanța</option><option>Covasna</option><option>Dâmbovița</option><option>Dolj</option><option>Galați</option><option>Giurgiu</option><option>Gorj</option><option>Harghita</option><option>Hunedoara</option><option>Ialomița</option><option>Iași</option><option>Ilfov</option><option>Maramureș</option><option>Mehedinți</option><option>Mureș</option><option>Neamț</option><option>Olt</option><option>Prahova</option><option>Sălaj</option><option>Satu Mare</option><option>Sibiu</option><option>Suceava</option><option>Teleorman</option><option>Timiș</option><option>Tulcea</option><option>Vâlcea</option><option>Vaslui</option><option>Vrancea</option></select></div>
+          <!-- Pasul 11-P3a: adresa lucrării din agenda contului (agenda-cont.js). -->
+          <div id="agenda-prestare" class="hidden"></div>
+          <div id="co-adresa-manuala" class="space-y-4">
+            <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Adresă completă</label><input type="text" value="" placeholder="Strada, număr, bloc, apartament" id="co-adresa" name="co-adresa" autocomplete="street-address" required class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
+            <div class="grid grid-cols-2 gap-4">
+              <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Oraș</label><input type="text" value="" placeholder="Oraș" id="co-oras" name="co-oras" autocomplete="address-level2" required class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
+              <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Județ</label><select class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white cursor-pointer" id="co-judet" name="co-judet" autocomplete="address-level1" required><option value="">Alege județul</option><option>Alba</option><option>Arad</option><option>Argeș</option><option>Bacău</option><option>Bihor</option><option>Bistrița-Năsăud</option><option>Botoșani</option><option>Brăila</option><option>Brașov</option><option>București</option><option>Buzău</option><option>Călărași</option><option>Caraș-Severin</option><option>Cluj</option><option>Constanța</option><option>Covasna</option><option>Dâmbovița</option><option>Dolj</option><option>Galați</option><option>Giurgiu</option><option>Gorj</option><option>Harghita</option><option>Hunedoara</option><option>Ialomița</option><option>Iași</option><option>Ilfov</option><option>Maramureș</option><option>Mehedinți</option><option>Mureș</option><option>Neamț</option><option>Olt</option><option>Prahova</option><option>Sălaj</option><option>Satu Mare</option><option>Sibiu</option><option>Suceava</option><option>Teleorman</option><option>Timiș</option><option>Tulcea</option><option>Vâlcea</option><option>Vaslui</option><option>Vrancea</option></select></div>
+            </div>
           </div>
           <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Instrucțiuni acces (opțional)</label><textarea rows="2" placeholder="Ex: Interfon 45, cod poartă 1234..." class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition resize-none bg-white"></textarea></div>
 
           <!-- Datele de facturare (pasul 11-P2b): persoană fizică sau firmă. Ascunse și
                netrimise când e bifat B2G (fluxul B2G are datele lui, în pasul „Plată”). -->
           <div id="fact-bloc" class="pt-4 border-t border-[#D5DFE8] space-y-4">
+            <!-- Pasul 11-P3a: profilul și adresa de facturare din agenda contului. -->
+            <div id="agenda-facturare" class="hidden"></div>
+            <div id="fact-formular" class="space-y-4">
             <fieldset>
               <legend class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Factura</legend>
               <div class="grid grid-cols-2 gap-4">
@@ -1435,7 +1444,10 @@ function triggerHeaderSearch(){
                 <div><label for="fact-tara" class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Țara</label><select id="fact-tara" name="fact-tara" autocomplete="billing country" class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white cursor-pointer"><option value="RO">România</option><option value="MD">Moldova</option><option value="BG">Bulgaria</option><option value="DE">Germania</option><option value="FR">Franța</option></select></div>
               </div>
             </div>
+            </div>
           </div>
+          <!-- Pasul 11-P3a: datele noi (adresă / profil) se salvează în agendă, dacă bifa e activă. -->
+          <label id="co-salveaza-cont-rand" class="hidden flex items-center gap-2.5 cursor-pointer"><input type="checkbox" id="co-salveaza-cont" checked class="w-4 h-4 accent-[#003366]"/><span class="text-xs text-[#6B7A8D]">Salvează în contul meu</span></label>
         </div>
         <div class="flex gap-3 mt-5">
           <button onclick="goToStep('cart')" class="btn-ghost flex-shrink-0" style="padding:12px 20px;font-size:13px">← Înapoi</button>
@@ -2525,7 +2537,8 @@ document.addEventListener('DOMContentLoaded', function() {
       // Adresa confirmată de client în pasul „Detalii" (validată de
       // valideazaPas('details')); înainte se citea textul primului element
       // cu „addr" în id, care putea fi „Adresă necompletată".
-      const adresa = ['co-adresa', 'co-oras', 'co-judet']
+      // Pasul 11-P3a: adresa aleasă din agendă, dacă există.
+      const adresa = (typeof adresaTextAgenda === 'function' && !agendaCheckout().p.manual && adresaTextAgenda()) || ['co-adresa', 'co-oras', 'co-judet']
         .map((id) => (document.getElementById(id)?.value || '').trim())
         .filter(Boolean).join(', ');
       // FIX (G15, 25 Iulie 2026 · extins G16, 26 Iulie 2026): până acum se
@@ -2637,7 +2650,8 @@ document.addEventListener('DOMContentLoaded', function() {
           // Pasul 11-P2b: datele de facturare și adresa lucrării pe câmpuri
           // (copiată ca adresă de facturare când clientul nu dă alta).
           ...corpComun,
-          date_facturare: construiesteDateFacturare(),
+          ...corpAgendaCheckout(),
+          ...(agendaCheckout().f.manual ? { date_facturare: construiesteDateFacturare() } : {}),
           adresa_lucrare: { strada: document.getElementById('co-adresa')?.value.trim() || '', localitate: document.getElementById('co-oras')?.value.trim() || '', judet: document.getElementById('co-judet')?.value || '', tara: taraComanda || 'RO' },
         };
 
@@ -2661,6 +2675,8 @@ document.addEventListener('DOMContentLoaded', function() {
           showComandaInregistrataScreen(data.comanda.nr_comanda, data.mesaj);
         } else {
           showComandaInregistrataScreen(data.comanda.nr_comanda);
+          if (data.agenda_nesalvata) showToastCheckout(window.t(null, 'Comanda e plasată, dar datele nu s-au salvat în contul tău. Le poți adăuga din „Adrese și facturare”.'));
+          window.MYD_AGENDA?.incarca(true);
         }
       } catch (err) {
         showToastCheckout('' + (err.message || 'Comanda nu a putut fi înregistrată'));
@@ -3476,15 +3492,22 @@ function valideazaPas(pas) {
   }
   if (pas === 'details') {
     let primul = null;
+    const agP = agendaCheckout().p;
     REGULI_DETALII.forEach(([id, valid, mesaj]) => {
       const el = document.getElementById(id);
       if (!el) return;
+      // Adresa lucrării aleasă din agendă: câmpurile manuale nu se cer.
+      if (!agP.manual && ['co-adresa', 'co-oras', 'co-judet'].includes(id)) { stergeEroareCamp(el); return; }
       if (valid((el.value || '').trim())) stergeEroareCamp(el);
       else { arataEroareCamp(el, mesaj); primul = primul || el; }
     });
     primul = valideazaFacturare() || primul;
+    // Alegerea din agendă (de ex. adresa aleasă a fost ștearsă între timp),
+    // marcată odată cu celelalte câmpuri.
+    const okPrestare = AGENDA_CO.prestare ? AGENDA_CO.prestare.valideaza() : true;
+    const okFacturare = factB2G() || !AGENDA_CO.facturare ? true : AGENDA_CO.facturare.valideaza();
     if (primul) { primul.focus({ preventScroll: false }); return false; }
-    return true;
+    return okPrestare && okFacturare;
   }
   if (pas === 'payment') {
     if (!document.getElementById('b2g-toggle')?.checked) return true;
@@ -3576,6 +3599,7 @@ function valideazaFacturare() {
   const ids = ['fact-cnp', 'fact-cui', 'fact-denumire', 'fact-strada', 'fact-localitate', 'fact-judet'];
   ids.forEach((id) => stergeEroareCamp(factEl(id)));
   if (factB2G() || !factEl('fact-bloc')) return null;
+  if (!agendaCheckout().f.manual) return null; // profil ales din agendă
   const greseli = [];
   const tara = factTara();
   if (factTip() === 'pf') {
@@ -3706,12 +3730,63 @@ function arataEroareFacturareServer(data) {
   return true;
 }
 
+// ── Agenda contului în checkout (pasul 11-P3a) ──
+// Aceeași componentă ca în dashboard-uri (agenda-cont.js): alegerea din listă,
+// „Gestionează” (fereastra de gestionare) și „Adaugă alta” → formularele de mai sus.
+const AGENDA_CO = { prestare: null, facturare: null };
+function agendaCheckout() {
+  const p = AGENDA_CO.prestare ? AGENDA_CO.prestare.stare() : {};
+  const f = AGENDA_CO.facturare ? AGENDA_CO.facturare.stare() : {};
+  // Formularele manuale: fără agendă sau pentru „Adaugă alta”; o alegere goală
+  // (de ex. adresa aleasă a fost ștearsă) cere alegerea alteia, nu formularul.
+  p.manual = !AGENDA_CO.prestare || !!p.prestare_noua;
+  f.manual = !AGENDA_CO.facturare || !!f.facturare_noua;
+  return { p, f };
+}
+function actualizeazaAgendaCheckout() {
+  const d = window.MYD_AGENDA ? window.MYD_AGENDA.date() : null;
+  const { p, f } = agendaCheckout();
+  const areAdrese = !!(d && d.adrese.some((a) => a.folosire !== 'facturare'));
+  const areProfiluri = !!(d && d.profiluri.length);
+  factEl('agenda-prestare')?.classList.toggle('hidden', !areAdrese);
+  factEl('agenda-facturare')?.classList.toggle('hidden', !areProfiluri);
+  factEl('co-adresa-manuala')?.classList.toggle('hidden', !p.manual);
+  factEl('fact-formular')?.classList.toggle('hidden', !f.manual);
+  // „Salvează în contul meu”: doar cu cont și doar pentru date introduse acum.
+  const nou = p.manual || (!factB2G() && f.manual);
+  factEl('co-salveaza-cont-rand')?.classList.toggle('hidden', !(d && nou));
+}
+function initAgendaCheckout() {
+  if (!window.MYD_AGENDA) return;
+  AGENDA_CO.prestare = window.MYD_AGENDA.selector(factEl('agenda-prestare'), { prestare: true, adaugaAlta: true, laSchimbare: actualizeazaAgendaCheckout });
+  AGENDA_CO.facturare = window.MYD_AGENDA.selector(factEl('agenda-facturare'), { facturare: true, adaugaAlta: true, laSchimbare: actualizeazaAgendaCheckout });
+  window.MYD_AGENDA.incarca(true);
+}
+// Câmpurile din agendă pentru corpul comenzii (fără B2G).
+function corpAgendaCheckout() {
+  const { p, f } = agendaCheckout();
+  const corp = {};
+  if (p.adresa_prestare_id) corp.adresa_prestare_id = p.adresa_prestare_id;
+  if (f.profil_facturare_id) {
+    corp.profil_facturare_id = f.profil_facturare_id;
+    if (f.adresa_facturare_id) corp.adresa_facturare_id = f.adresa_facturare_id;
+  }
+  if (!factEl('co-salveaza-cont-rand')?.classList.contains('hidden') && factEl('co-salveaza-cont')?.checked) corp.salveaza_in_cont = true;
+  return corp;
+}
+function adresaTextAgenda() {
+  const a = agendaCheckout().p.adresa_prestare;
+  return a ? [a.strada, a.localitate, a.judet].filter(Boolean).join(', ') : '';
+}
+
 function initFactura() {
   document.querySelectorAll('input[name="fact-tip"]').forEach((r) => r.addEventListener('change', actualizeazaFactura));
   ['fact-adresa-alta', 'fact-tara', 'b2g-toggle'].forEach((id) => factEl(id)?.addEventListener('change', actualizeazaFactura));
   factEl('fact-cauta')?.addEventListener('click', cautaFirmaFactura);
+  factEl('b2g-toggle')?.addEventListener('change', actualizeazaAgendaCheckout);
   actualizeazaFactura();
   precompleteazaFactura();
+  initAgendaCheckout();
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initFactura);
 else initFactura();
