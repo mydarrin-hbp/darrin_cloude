@@ -101,7 +101,7 @@ const { fromHeader } = require('../../lib/email-sender');
 const { valideazaDateFacturare } = require('../../lib/date-facturare');
 const { verificaFirmaRoLaAnaf, MESAJE_ANAF } = require('../../lib/cauta-firma');
 const { trimiteEroare, camp } = require('../../lib/raspuns-eroare');
-const { adresaPrestareDinAgenda, dateFacturareDinAgenda, salveazaDinComanda } = require('../../lib/agenda-cont');
+const { adresaPrestareDinAgenda, dateFacturareDinAgenda, salveazaDinComanda, aceeasiZona, MESAJE: MESAJE_AGENDA } = require('../../lib/agenda-cont');
 
 function refuzAgenda(res, r) {
   return trimiteEroare(res, r.status || 400, r.cod || 'DATE_INVALIDE', r.error, r.error_en,
@@ -112,14 +112,38 @@ async function handler(req, res, user) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   // Adresa de prestare din agendă (pasul 11-P3a) înlocuiește adresa trimisă.
+  // Corecția PR #36: țara, județul (`regiune`) și localitatea vin DOAR din
+  // adresa salvată — prețul, verificarea zonei și alocarea partenerului
+  // folosesc adresa aleasă, nu ce a trimis pagina.
+  //   - altă țară decât cea trimisă de pagină → 409 ADRESA_ALTA_TARA (moneda și
+  //     TVA-ul diferă; serviciul trebuie reconfigurat);
+  //   - pe calea cu preț din client (fără nivel_id și fără produse din
+  //     marketplace), alt județ / altă localitate → 409 ADRESA_SCHIMBATA_PRET:
+  //     prețul vechi nu se acceptă. Pe calea nivel_id prețul se recalculează
+  //     oricum aici, cu noua regiune; produsele din marketplace nu depind de zonă.
   const corpCerere = { ...(req.body || {}) };
   if (corpCerere.adresa_prestare_id) {
     const r = await adresaPrestareDinAgenda(user.id, corpCerere.adresa_prestare_id);
     if (!r.ok) return refuzAgenda(res, r);
+    const z = r.zona;
+    const taraPagina = typeof corpCerere.tara_cod === 'string' && corpCerere.tara_cod.trim() ? corpCerere.tara_cod.trim().toUpperCase() : null;
+    if (taraPagina && taraPagina !== z.tara_cod) {
+      return trimiteEroare(res, 409, 'ADRESA_ALTA_TARA', MESAJE_AGENDA.adresa_alta_tara.ro, MESAJE_AGENDA.adresa_alta_tara.en,
+        [camp('adresa_prestare_id', MESAJE_AGENDA.adresa_alta_tara.ro, MESAJE_AGENDA.adresa_alta_tara.en)],
+        { camp: 'adresa_prestare_id', tara_adresa: z.tara_cod, tara_serviciu: taraPagina });
+    }
+    const pretDinServer = (typeof corpCerere.nivel_id === 'string' && corpCerere.nivel_id.length > 0)
+      || (Array.isArray(corpCerere.produse_marketplace) && corpCerere.produse_marketplace.length > 0);
+    if (!pretDinServer && !aceeasiZona(z, corpCerere.regiune, corpCerere.localitate)) {
+      return trimiteEroare(res, 409, 'ADRESA_SCHIMBATA_PRET', MESAJE_AGENDA.adresa_schimbata_pret.ro, MESAJE_AGENDA.adresa_schimbata_pret.en,
+        [camp('adresa_prestare_id', MESAJE_AGENDA.adresa_schimbata_pret.ro, MESAJE_AGENDA.adresa_schimbata_pret.en)],
+        { camp: 'adresa_prestare_id', zona_adresa: { regiune: z.regiune, localitate: z.localitate } });
+    }
     corpCerere.adresa = r.adresa;
     corpCerere.adresa_lucrare = r.adresa_lucrare;
-    corpCerere.tara_cod = corpCerere.tara_cod || r.adresa_lucrare.tara;
-    corpCerere.localitate = corpCerere.localitate || r.adresa_lucrare.localitate;
+    corpCerere.tara_cod = z.tara_cod;
+    corpCerere.regiune = z.regiune;
+    corpCerere.localitate = z.localitate;
   }
 
   const {

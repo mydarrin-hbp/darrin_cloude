@@ -668,9 +668,19 @@
     };
   }
 
+  // Județ / localitate fără diacritice, majuscule și prefixe („Județul Cluj” =
+  // „Cluj”), aceeași regulă ca normalizeazaLoc din lib/agenda-cont.js: pagina
+  // decide la fel ca serverul dacă adresa aleasă e în aceeași zonă ca prețul.
+  function normalizeazaLoc(v) {
+    return String(v == null ? '' : v).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+      .replace(/\b(judetul|judet|county|municipiul|municipiu|orasul|oras|comuna|sectorul)\b/g, ' ')
+      .replace(/[^a-z0-9]+/g, ' ').trim();
+  }
+
   window.MYD_AGENDA = {
     monteaza: monteaza, deschidePanou: deschidePanou, selector: selector,
     incarca: incarca, abonare: abonare, textAdresa: textAdresa,
+    normalizeazaLoc: normalizeazaLoc,
     date: function () { return stare.date; },
   };
 })();

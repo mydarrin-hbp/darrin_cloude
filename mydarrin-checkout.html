@@ -1394,6 +1394,7 @@ function triggerHeaderSearch(){
           </div>
           <!-- Pasul 11-P3a: adresa lucrării din agenda contului (agenda-cont.js). -->
           <div id="agenda-prestare" class="hidden"></div>
+          <div id="agenda-prestare-zona" tabindex="-1" aria-live="polite"></div>
           <div id="co-adresa-manuala" class="space-y-4">
             <div><label class="block text-[10px] font-bold uppercase tracking-widest text-[#8C9BAD] mb-1.5">Adresă completă</label><input type="text" value="" placeholder="Strada, număr, bloc, apartament" id="co-adresa" name="co-adresa" autocomplete="street-address" required class="w-full border border-[#D5DFE8] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#003366] transition bg-white"/></div>
             <div class="grid grid-cols-2 gap-4">
@@ -2667,6 +2668,15 @@ document.addEventListener('DOMContentLoaded', function() {
             if (modal) modal.classList.remove('hidden');
             return;
           }
+          // Corecția PR #36: adresa din agendă e în altă țară / altă zonă decât prețul.
+          if (!esteB2G && (data.cod === 'ADRESA_ALTA_TARA' || data.cod === 'ADRESA_SCHIMBATA_PRET')) {
+            const enZona = window.MYD_I18N && window.MYD_I18N.lang && window.MYD_I18N.lang !== 'ro';
+            goToStep('details');
+            ZONA_PRESTARE.stare = 'blocat';
+            zonaMesaj('eroare', (enZona && data.error_en) || data.error);
+            factEl('agenda-prestare-zona')?.focus();
+            return;
+          }
           if (!esteB2G && arataEroareFacturareServer(data)) return;
           const enEroare = window.MYD_I18N && window.MYD_I18N.lang && window.MYD_I18N.lang !== 'ro';
           throw new Error((enEroare && data.error_en) || data.error || 'Eroare la plasarea comenzii');
@@ -3507,6 +3517,8 @@ function valideazaPas(pas) {
     const okPrestare = AGENDA_CO.prestare ? AGENDA_CO.prestare.valideaza() : true;
     const okFacturare = factB2G() || !AGENDA_CO.facturare ? true : AGENDA_CO.facturare.valideaza();
     if (primul) { primul.focus({ preventScroll: false }); return false; }
+    // Corecția PR #36: prețul și disponibilitatea verificate pentru adresa aleasă.
+    if (okPrestare && !factB2G() && !zonaPrestareValida()) return false;
     return okPrestare && okFacturare;
   }
   if (pas === 'payment') {
@@ -3755,6 +3767,135 @@ function actualizeazaAgendaCheckout() {
   // „Salvează în contul meu”: doar cu cont și doar pentru date introduse acum.
   const nou = p.manual || (!factB2G() && f.manual);
   factEl('co-salveaza-cont-rand')?.classList.toggle('hidden', !(d && nou));
+  verificaZonaPrestare();
+}
+
+// ── Prețul și disponibilitatea pentru adresa aleasă din agendă (corecția PR #36) ──
+// Serverul ia țara, județul și localitatea comenzii DOAR din adresa salvată
+// (api/comenzi/creeaza.js). Când clientul alege altă adresă, pagina le
+// verifică înainte de „Plasează comanda”:
+//   - altă țară decât cea a serviciului → blocat (moneda și TVA-ul diferă);
+//   - nivel_id (rețetă): prețul se recalculează (/api/public/calculeaza-pret-nivel)
+//     cu noul județ; produse din marketplace: prețul nu depinde de zonă;
+//   - prețul calculat în pagina produsului (calea veche): nu se poate reface
+//     aici → blocat, cu cererea de a reconfigura serviciul;
+//   - intervalul programat se verifică din nou (/api/public/sloturi-disponibile).
+// Cu altă adresă (formularul manual) se revine la zona și prețul inițiale.
+const ZONA_PRESTARE = { cheie: null, stare: 'ok', cerere: 0, initiala: null };
+function zonaMesaj(tip, text) {
+  const z = factEl('agenda-prestare-zona');
+  if (!z) return;
+  if (!text) { z.innerHTML = ''; return; }
+  if (window.MDFeedback) window.MDFeedback.mesaj(z, tip, text); else z.textContent = text;
+}
+function zonaPret(valoare) {
+  BASE_SUBTOTAL = valoare;
+  MYD_CFG.total = valoare;
+  setEl2('ci1-price', Number(valoare || 0).toLocaleString('ro-RO'));
+  recalcCheckoutTotal();
+}
+async function verificaZonaPrestare() {
+  if (!MYD_CFG) return;
+  const tr = (ro, p) => window.t(null, ro, p);
+  if (!ZONA_PRESTARE.initiala) {
+    ZONA_PRESTARE.initiala = { tara_cod: MYD_CFG.tara_cod || null, regiune: MYD_CFG.regiune || null, localitate: MYD_CFG.localitate || null, total: BASE_SUBTOTAL };
+  }
+  const { p } = agendaCheckout();
+  const a = !p.manual ? p.adresa_prestare : null;
+  if (!a) {
+    // Fără adresă din agendă: zona și prețul de la configurarea serviciului.
+    if (ZONA_PRESTARE.cheie !== null) {
+      const ini = ZONA_PRESTARE.initiala;
+      Object.assign(MYD_CFG, { tara_cod: ini.tara_cod, regiune: ini.regiune, localitate: ini.localitate });
+      if (ini.total !== BASE_SUBTOTAL) zonaPret(ini.total);
+    }
+    ZONA_PRESTARE.cheie = null; ZONA_PRESTARE.stare = 'ok'; ZONA_PRESTARE.cerere++;
+    zonaMesaj();
+    return;
+  }
+  const cheie = [a.id, a.tara, a.judet, a.localitate].join('|');
+  if (cheie === ZONA_PRESTARE.cheie) return;
+  ZONA_PRESTARE.cheie = cheie;
+  const nr = ++ZONA_PRESTARE.cerere;
+  const seteaza = (stare, tip, text) => {
+    if (nr !== ZONA_PRESTARE.cerere) return false;
+    ZONA_PRESTARE.stare = stare;
+    if (stare === 'eroare') ZONA_PRESTARE.cheie = null; // se reîncearcă la „Continuă”
+    zonaMesaj(tip, text);
+    return true;
+  };
+  const N = window.MYD_AGENDA.normalizeazaLoc;
+  const ini = ZONA_PRESTARE.initiala;
+  const tara = String(a.tara || '').toUpperCase();
+  const loc = [a.localitate, a.judet].filter(Boolean).join(', ');
+  if (ini.tara_cod && String(ini.tara_cod).toUpperCase() !== tara) {
+    seteaza('blocat', 'eroare', tr('Adresa aleasă e în altă țară decât cea pentru care ai configurat serviciul. Reconfigurează serviciul pentru noua adresă.'));
+    return;
+  }
+  const aceeasiZona = N(a.judet) === N(ini.regiune) && N(a.localitate) === N(ini.localitate);
+  const marketplace = MYD_CFG.tip_comanda === 'marketplace';
+  if (!aceeasiZona && !MYD_CFG.nivel_id && !marketplace) {
+    seteaza('blocat', 'eroare', tr('Prețul serviciului a fost calculat pentru altă localitate. Reconfigurează serviciul pentru {loc} ca să vezi prețul corect, apoi plasează comanda.', { loc }));
+    return;
+  }
+  let pretNou = null;
+  if (!aceeasiZona || MYD_CFG.selDateISO) seteaza('verificare', 'info', tr('Se verifică prețul și disponibilitatea pentru {loc}…', { loc }));
+  try {
+    if (!aceeasiZona && MYD_CFG.nivel_id) {
+      const r = await fetch('/api/public/calculeaza-pret-nivel', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nivel_id: MYD_CFG.nivel_id, cantitate: MYD_CFG.cantitate || 1, tara_cod: tara, regiune: a.judet || null,
+          addon_materiale: [...(MYD_CFG.materiale || []), ...(MYD_CFG.inchirieri || [])].map((m) => ({ id: m.id, qty: m.qty })),
+        }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.ok) throw new Error('pret');
+      if (!j.disponibil) {
+        seteaza('blocat', 'eroare', tr('Serviciul nu se poate calcula pentru {loc}. Alege altă adresă sau reconfigurează serviciul.', { loc }));
+        return;
+      }
+      pretNou = Number(j.pret_final);
+    }
+    if (MYD_CFG.selDateISO && MYD_CFG.selOraInceput) {
+      const q = new URLSearchParams({ data: MYD_CFG.selDateISO, tara, regiune: a.judet || '' });
+      const r = await fetch('/api/public/sloturi-disponibile?' + q.toString());
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error('sloturi');
+      const ora = String(MYD_CFG.selOraInceput).slice(0, 5);
+      const slot = (j.sloturi || []).find((s) => s.inceput === ora);
+      if (!slot || !slot.disponibil) {
+        seteaza('blocat', 'eroare', tr('Intervalul programat ({data}, {ora}) nu e disponibil pentru {loc}. Alege altă adresă sau altă dată în configurarea serviciului.', { data: MYD_CFG.selDate || MYD_CFG.selDateISO, ora, loc }));
+        return;
+      }
+    }
+  } catch (e) {
+    seteaza('eroare', 'eroare', tr('Nu am putut verifica prețul și disponibilitatea pentru noua adresă. Verifică conexiunea și apasă din nou „Continuă”.'));
+    return;
+  }
+  if (nr !== ZONA_PRESTARE.cerere) return;
+  Object.assign(MYD_CFG, { tara_cod: tara, regiune: a.judet || null, localitate: a.localitate || null });
+  // Înapoi în zona pentru care a fost configurat serviciul: prețul inițial.
+  if (aceeasiZona && ini.total !== BASE_SUBTOTAL) zonaPret(ini.total);
+  if (pretNou != null) {
+    zonaPret(pretNou);
+    const text = window.formatCurrency ? window.formatCurrency(pretNou) : pretNou.toLocaleString('ro-RO') + ' Lei';
+    seteaza('ok', 'ok', tr('Prețul a fost recalculat pentru {loc}: {pret}.', { loc, pret: text }));
+  } else if (!aceeasiZona || MYD_CFG.selDateISO) {
+    seteaza('ok', 'ok', tr('Prețul și disponibilitatea sunt valabile pentru {loc}.', { loc }));
+  } else {
+    seteaza('ok');
+  }
+}
+// La „Continuă” / „Plasează comanda”: adresa din agendă trebuie să fie verificată.
+function zonaPrestareValida() {
+  const { p } = agendaCheckout();
+  if (p.manual || !p.adresa_prestare) return true;
+  if (ZONA_PRESTARE.stare === 'ok' && ZONA_PRESTARE.cheie !== null) return true;
+  if (ZONA_PRESTARE.cheie === null) verificaZonaPrestare();
+  else if (ZONA_PRESTARE.stare === 'verificare') zonaMesaj('info', window.t(null, 'Așteaptă verificarea prețului pentru noua adresă, apoi continuă.'));
+  factEl('agenda-prestare-zona')?.focus({ preventScroll: false });
+  return false;
 }
 function initAgendaCheckout() {
   if (!window.MYD_AGENDA) return;
