@@ -24,6 +24,8 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 };
 </script>
 <script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
+<script src="/ui-feedback.js"></script>
+<script src="agenda-cont.js"></script>
 <script src="format-currency.js"></script>
 <style>
   *{box-sizing:border-box}
@@ -84,6 +86,8 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
   <div id="summary-wrap" style="display:none" class="summary">
     <div class="summary-row"><span id="summary-count">0 itemi</span><span id="summary-sub">—</span></div>
     <div class="summary-row total"><span>Total estimat</span><span id="summary-total">—</span></div>
+    <!-- Pasul 11-P3a: profilul și adresa de facturare, din agenda contului (agenda-cont.js). -->
+    <div id="cos-facturare" style="margin-top:14px"></div>
     <button class="btn-submit" id="btn-submit" onclick="trimiteComenzile()">Trimite comenzile</button>
     <p class="note">Fiecare item devine o comandă separată, cu propriul escrow și partener alocat. Plata se face prin ordin de plată, conform politicii curente. Prețurile marcate „se calculează la trimitere" sunt confirmate integral, server-side, în acel moment.</p>
   </div>
@@ -214,7 +218,8 @@ function _mostrareStatus(tip, mesaj) {
   ok.style.display = 'none'; err.style.display = 'none';
   const el = tip === 'ok' ? ok : err;
   el.textContent = mesaj;
-  el.style.display = '';
+  // .status-box e ascuns din CSS: '' lăsa mesajul invizibil (pasul 11-P3a).
+  el.style.display = 'block';
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -223,33 +228,25 @@ function _mostrareStatus(tip, mesaj) {
 // comandă compusă cu escrow unic. Itemii reușiți sunt eliminați din coș;
 // cei eșuați rămân, cu mesajul real de eroare, ca utilizatorul să corecteze
 // (de regulă: adresă lipsă sau rețetă incompletă) și să reîncerce.
-// Pasul 11-P2b: datele de facturare sunt obligatorii pe fiecare comandă.
-// Coșul le preia din ultima comandă (api/client/date-facturare, fără CNP);
-// adresa salvată se trimite ca adresă de facturare explicită.
-async function dateFacturareSalvate(auth) {
-  const res = await fetch('/api/client/date-facturare', { headers: auth.headers });
-  if (!res.ok) throw new Error('date-facturare ' + res.status);
-  const df = (await res.json()).date_facturare;
-  if (!df) return null;
-  return df.tip === 'pj'
-    ? { tip: 'pj', cui: df.cui, denumire: df.denumire, nr_reg_com: df.nr_reg_com, adresa: df.adresa }
-    : { tip: 'pf', prenume: df.prenume, nume: df.nume, adresa_alta: true, adresa: df.adresa };
+// Pasul 11-P3a: datele de facturare (obligatorii pe fiecare comandă) se aleg
+// din agenda contului, cu același bloc ca în checkout (agenda-cont.js); un
+// client nou își adaugă profilul din „Adaugă profil de facturare”, fără să
+// treacă întâi prin checkout.
+let FACTURARE_COS = null;
+function initFacturareCos() {
+  if (window.MYD_AGENDA) FACTURARE_COS = window.MYD_AGENDA.selector(document.getElementById('cos-facturare'), { facturare: true });
 }
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initFacturareCos); else initFacturareCos();
 
 async function trimiteComenzile() {
   const auth = await _authHeaders();
   const btn = document.getElementById('btn-submit');
 
-  let dateFacturare = null;
-  if (auth.token) {
-    try { dateFacturare = await dateFacturareSalvate(auth); } catch (e) {
-      _mostrareStatus('err', 'Nu am putut citi datele de facturare. Încearcă din nou.');
-      return;
-    }
-    if (!dateFacturare) {
-      _mostrareStatus('err', 'Plasează prima comandă din checkout, ca să-ți salvăm datele de facturare. După aceea poți trimite comenzile din coș.');
-      return;
-    }
+  let facturare = {};
+  if (auth.token && FACTURARE_COS) {
+    if (!FACTURARE_COS.valideaza()) return;
+    const st = FACTURARE_COS.stare();
+    facturare = { profil_facturare_id: st.profil_facturare_id, ...(st.adresa_facturare_id ? { adresa_facturare_id: st.adresa_facturare_id } : {}) };
   }
 
   btn.disabled = true;
@@ -276,7 +273,7 @@ async function trimiteComenzile() {
         adresa: c.addr, tara_cod: taraComanda, regiune: regiuneComanda, localitate: localitateComanda,
         nivel_id: c.nivel_id, cantitate: c.cantitate || 1, addon_materiale: addonMateriale,
         data_programata: c.selDateISO || null, ora_inceput_programata: c.selOraInceput || null, ora_sfarsit_programata: c.selOraSfarsit || null,
-        metoda_plata: 'ordin_plata', date_facturare: dateFacturare,
+        metoda_plata: 'ordin_plata', ...facturare,
       };
     } else {
       // Calea veche (cost_*), identică formulei din mydarrin-checkout.html —
@@ -290,7 +287,7 @@ async function trimiteComenzile() {
         cost_baza_servicii, cost_asigurare, cost_materiale, cost_chirie_scule,
         valoare_totala: cost_baza_servicii + cost_asigurare + cost_materiale + cost_chirie_scule,
         data_programata: c.selDateISO || null, ora_inceput_programata: c.selOraInceput || null, ora_sfarsit_programata: c.selOraSfarsit || null,
-        metoda_plata: 'ordin_plata', date_facturare: dateFacturare,
+        metoda_plata: 'ordin_plata', ...facturare,
       };
     }
 

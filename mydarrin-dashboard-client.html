@@ -718,6 +718,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 <!-- Pasul 10b: harta unică rol → dashboard și paza după rol (cont-dashboard.js) -->
 <script src="lib/destinatie-rol.js"></script>
 <script src="cont-dashboard.js"></script>
+<script src="agenda-cont.js"></script>
 <script src="seo-meta.js"></script>
 <script src="cookie-consent.js" defer></script>
 <script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="analytics-loader.js" defer></script>
@@ -840,6 +841,9 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
       const paza = await window.MYD_PAZA.verifica({ container: 'myd-cont-antet' });
       if (!paza) return;
       document.getElementById('auth-gate-overlay')?.remove();
+      // Pasul 11-P3a: „Adrese și facturare”, în „Profilul meu”.
+      const montaAgenda = () => { window.MYD_AGENDA?.monteaza(document.getElementById('agenda-cont-sectiune')); window.MYD_AGENDA?.incarca(true); };
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', montaAgenda); else montaAgenda();
 
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => { populateUserData(user); loadComenziReale(); });
@@ -1547,6 +1551,8 @@ function triggerHeaderSearch(){
             </div>
           </div>
         </div>
+        <!-- Pasul 11-P3a: adresele și profilurile de facturare (agenda-cont.js). -->
+        <div id="agenda-cont-sectiune" class="mt-4"></div>
       </div>
 
     </div>

@@ -453,6 +453,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 <!-- Pasul 10b: harta unică rol → dashboard și paza după rol (cont-dashboard.js) -->
 <script src="lib/destinatie-rol.js"></script>
 <script src="cont-dashboard.js"></script>
+<script src="agenda-cont.js"></script>
 <script src="profil-partener-card.js"></script>
 <script src="seo-meta.js"></script>
 <script src="cookie-consent.js" defer></script>
@@ -799,6 +800,15 @@ function renderNav(type) {
 function stareGoala() {
   return '<div class="dp-card"><div class="dp-card-body myd-stare-goala" style="text-align:center;color:#8C9BAD;padding:28px 16px;font-size:13px">Nu ai încă date aici.</div></div>';
 }
+// Pasul 11-P3a: „Adrese și facturare” (agenda-cont.js), sub „Profil & KYC”.
+function montaAgenda(content) {
+  if (!window.MYD_AGENDA) return;
+  const c = document.createElement('div');
+  c.id = 'agenda-cont-sectiune';
+  c.style.cssText = 'max-width:820px;margin-top:14px';
+  content.appendChild(c);
+  window.MYD_AGENDA.monteaza(c);
+}
 function showPanel(id) {
   currentPanel = id;
   const t = TYPES[currentType];
@@ -833,7 +843,7 @@ function showPanel(id) {
   else if (id === 'venituri')   { content.innerHTML = renderVenituri(); loadEscrowReal(); loadFacturareParteneri(); }
   else if (id === 'garantii')   content.innerHTML = renderGarantii();
   else if (id === 'documente')  content.innerHTML = renderDocumente();
-  else if (id === 'profil')     content.innerHTML = renderProfil();
+  else if (id === 'profil')     { content.innerHTML = renderProfil(); montaAgenda(content); }
   else if (id === 'curse')      content.innerHTML = renderCurse();
   else if (id === 'activ')      content.innerHTML = renderCursaActiva();
   else if (id === 'polite')     content.innerHTML = renderPolite();

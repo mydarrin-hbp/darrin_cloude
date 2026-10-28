@@ -440,6 +440,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 <!-- Pasul 10b: harta unică rol → dashboard și paza după rol (cont-dashboard.js) -->
 <script src="lib/destinatie-rol.js"></script>
 <script src="cont-dashboard.js"></script>
+<script src="agenda-cont.js"></script>
 <!-- Faza 2 (30 sept. 2026): import CSV real, mutat aici din mydarrin-marketplace.html -->
 <script src="/myd-csv.js"></script>
 <script src="/ui-feedback.js"></script>
@@ -563,6 +564,7 @@ const FTYPES = {
       {id:'garantii',icon:'🛡',label:'Garanții materiale'},
       {section:'Cont'},
       {id:'documente',icon:'📋',label:'Documentele mele'},
+      {id:'adrese',icon:'📍',label:'Adrese și facturare'},
       // Pasul 11-H1: nicio legătură spre paginile de admin în meniul partenerului.
       {href:'/',icon:'🏠',label:'Platformă'},
     ],
@@ -583,6 +585,7 @@ const FTYPES = {
       {id:'garantii',icon:'🛡',label:'Garanții echipamente'},
       {section:'Cont'},
       {id:'documente',icon:'📋',label:'Documentele mele'},
+      {id:'adrese',icon:'📍',label:'Adrese și facturare'},
       {href:'/',icon:'🏠',label:'Platformă'},
     ],
   },
@@ -734,7 +737,7 @@ function renderAlerte(){ return titluPanou('Alerte siguranță') + stareGoala();
 function showPanel(id){
   if (PANOURI_ASCUNSE.has(id)) id = 'overview';
   currentPanel=id;
-  const titles={overview:'Prezentare generală',comenzi:'Comenzi primite',stocuri:'Stocuri',produse:'Produse active',import:'Import CSV / API',venituri:'Venituri & Discount',garantii:'Garanții',documente:'Documentele mele',rezervari:'Rezervări active',echipamente:'Echipamente & Stoc',calendar:'Calendar disponibilitate',alerte:'Alerte siguranță'};
+  const titles={overview:'Prezentare generală',comenzi:'Comenzi primite',stocuri:'Stocuri',produse:'Produse active',import:'Import CSV / API',venituri:'Venituri & Discount',garantii:'Garanții',documente:'Documentele mele',adrese:'Adrese și facturare',rezervari:'Rezervări active',echipamente:'Echipamente & Stoc',calendar:'Calendar disponibilitate',alerte:'Alerte siguranță'};
   document.getElementById('fb-page-title').textContent=titles[id]||id;
   renderNav(currentType);
   const c=document.getElementById('fb-content'); if(!c)return;
@@ -747,10 +750,13 @@ function showPanel(id){
     venituri:    renderVenituri,
     garantii:    renderGarantii,
     documente:   renderDocumente,
+    // Pasul 11-P3a: agenda contului (agenda-cont.js).
+    adrese:      ()=>'<div id="agenda-cont-sectiune" style="max-width:820px"></div>',
     rezervari:   ()=>renderComenzi('Rezervări active'),
     echipamente: renderStocuri,
   };
   c.innerHTML = (panels[id]||stareGoala)();
+  if (id === 'adrese') window.MYD_AGENDA?.monteaza(document.getElementById('agenda-cont-sectiune'));
   if (id === 'produse') loadProduseLive();
   if (id === 'stocuri' || id === 'echipamente') loadStocuriLive();
 }
