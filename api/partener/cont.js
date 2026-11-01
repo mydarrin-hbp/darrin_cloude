@@ -100,7 +100,7 @@ async function numarePeComanda(ids) {
 async function handleGet(req, res, user) {
   const { data: partner, error: perr } = await supabaseAdmin
     .from('partners')
-    .select('id, partner_type, nume_firma, cui, nr_reg_com, adresa_sediu_social, tip_entitate_legala, regiune_cod, status_verificare, contract_semnat, contract_semnat_la, contract_versiune, creata_la')
+    .select('id, partner_type, nume_firma, cui, nr_reg_com, adresa_sediu_social, tip_entitate_legala, forma_juridica_locala, regiune_cod, status_verificare, contract_semnat, contract_semnat_la, contract_versiune, creata_la')
     .eq('id', user.id)
     .maybeSingle();
   if (perr) {

@@ -15,6 +15,10 @@
 //      comenzii vin doar din adresa salvată (și prețul pe calea nivel_id se
 //      calculează cu județul ei); altă țară → 409 ADRESA_ALTA_TARA; preț din
 //      client cu altă localitate / alt județ → 409 ADRESA_SCHIMBATA_PRET;
+//   B3. pasul 11-P3b: județul comenzii se salvează cu codul din geo_regiuni
+//      („Cluj” / „Județul Cluj” / „Cluj County” / „CJ” → „CJ”; București →
+//      „B”); necunoscut → 400 camp 'regiune'; în agendă, județul se păstrează
+//      cu denumirea canonică, necunoscut → 400 camp 'judet';
 //   C. api/client/date-facturare.js: profilul implicit din agendă;
 //   D. paginile în Chromium, 390 și 1366 px, RO și EN: secțiunea din fiecare
 //      dashboard; alegerea și gestionarea din checkout (panoul se deschide și
@@ -69,6 +73,7 @@ modulReteta.calculeazaCostNivel = async ({ regiune }) => {
 };
 
 const apiAgenda = require(path.join(RADACINA, 'api/cont/agenda.js'));
+const REGIUNE = require(path.join(RADACINA, 'lib/regiune.js'));
 const apiCreeaza = require(path.join(RADACINA, 'api/comenzi/creeaza.js'));
 const apiDateFacturare = require(path.join(RADACINA, 'api/client/date-facturare.js'));
 const apiCuiLookup = require(path.join(RADACINA, 'api/public/cui-lookup.js'));
@@ -97,7 +102,11 @@ function reset() {
       { sectiune: 'asigurari', cheie: 'cost_asigurare_pct', valoare: '1', tara_cod: 'ALL' },
     ],
     adrese_cont: [], profiluri_facturare: [], partners: [],
+    // Pasul 11-P3b: rândurile reale din geo_regiuni (cod, denumire) pentru județele folosite aici.
+    geo_regiuni: [['B', 'București'], ['BV', 'Brașov'], ['CJ', 'Cluj'], ['IF', 'Ilfov'], ['IS', 'Iași'], ['SB', 'Sibiu']]
+      .map(([cod, denumire], i) => ({ id: 'g' + i, tara_cod: 'RO', cod, denumire, ordine: i + 1 })),
   };
+  REGIUNE._golesteCache();
   DB.coloane = {};
   DB.implicite = { comenzi: { moneda: 'RON' }, adrese_cont: { creat_la: '2026-10-26T00:00:00Z' }, profiluri_facturare: { creat_la: '2026-10-26T00:00:00Z' } };
   DB.rpc = { cripteaza_camp: async ({ valoare }) => 'cripta:' + Buffer.from(valoare).toString('base64') };
@@ -363,8 +372,8 @@ async function testeServer() {
     const r = await comanda({ adresa_prestare_id: iasi, profil_facturare_id: pf, nivel_id: 'nivel-test', valoare_totala: undefined, tara_cod: 'RO', regiune: 'Cluj', localitate: 'Cluj-Napoca' });
     egal(r.statusCode, 200, JSON.stringify(r.corp));
     const c = DB.tabele.comenzi[0];
-    egal([c.tara_cod, c.regiune, c.localitate, c.adresa], ['RO', 'Iași', 'Iași', 'Str. Iașului 3, Iași, Iași']);
-    egal(RETETA.regiuni, ['Iași'], 'județul folosit la calculul prețului');
+    egal([c.tara_cod, c.regiune, c.localitate, c.adresa], ['RO', 'IS', 'Iași', 'Str. Iașului 3, Iași, Iași']);
+    egal(RETETA.regiuni, ['IS'], 'județul (codul) folosit la calculul prețului');
   });
   await test('pagina fără tara_cod / regiune / localitate (nivel_id) → toate din adresa salvată', async () => {
     reset();
@@ -372,7 +381,7 @@ async function testeServer() {
     const iasi = await adresaIasi();
     const r = await comanda({ adresa_prestare_id: iasi, profil_facturare_id: pf, nivel_id: 'nivel-test', valoare_totala: undefined, tara_cod: undefined, regiune: undefined, localitate: undefined });
     egal(r.statusCode, 200, JSON.stringify(r.corp));
-    egal([DB.tabele.comenzi[0].tara_cod, DB.tabele.comenzi[0].regiune, DB.tabele.comenzi[0].localitate], ['RO', 'Iași', 'Iași']);
+    egal([DB.tabele.comenzi[0].tara_cod, DB.tabele.comenzi[0].regiune, DB.tabele.comenzi[0].localitate], ['RO', 'IS', 'Iași']);
   });
   await test('adresă salvată în altă țară decât cea a serviciului → 409 ADRESA_ALTA_TARA (RO + EN), nicio comandă', async () => {
     reset();
@@ -402,7 +411,55 @@ async function testeServer() {
     const { a, pf } = await agendaCompleta();
     const r = await comanda({ adresa_prestare_id: a, profil_facturare_id: pf, regiune: 'Județul Cluj', localitate: 'cluj-napoca' });
     egal(r.statusCode, 200, JSON.stringify(r.corp));
-    egal([DB.tabele.comenzi[0].regiune, DB.tabele.comenzi[0].localitate, DB.tabele.comenzi[0].suma_totala_platita], ['Cluj', 'Cluj-Napoca', 500]);
+    egal([DB.tabele.comenzi[0].regiune, DB.tabele.comenzi[0].localitate, DB.tabele.comenzi[0].suma_totala_platita], ['CJ', 'Cluj-Napoca', 500]);
+  });
+  await test('calea veche: pagina trimite codul („CJ”), adresa are numele („Cluj”) → aceeași zonă, comanda trece', async () => {
+    reset();
+    const { a, pf } = await agendaCompleta();
+    const r = await comanda({ adresa_prestare_id: a, profil_facturare_id: pf, regiune: 'CJ' });
+    egal([r.statusCode, DB.tabele.comenzi[0] && DB.tabele.comenzi[0].regiune], [200, 'CJ'], JSON.stringify(r.corp));
+  });
+
+  console.log('B3. Județul comenzii și al agendei (pasul 11-P3b)');
+  await test('„Cluj” / „Județul Cluj” / „Jud. Cluj” / „Cluj County” / „CJ” → comenzi.regiune = „CJ”; adresa lucrării copiată la facturare are numele', async () => {
+    for (const v of ['Cluj', 'Județul Cluj', 'Jud. Cluj', 'Cluj County', 'CJ', 'cj']) {
+      reset();
+      const r = await comanda({ regiune: v, date_facturare: { tip: 'pf', prenume: 'Dan', nume: 'Pop' } });
+      egal(r.statusCode, 200, v + ' ' + JSON.stringify(r.corp));
+      egal([DB.tabele.comenzi[0].regiune, DB.tabele.comenzi[0].date_facturare.adresa.judet], ['CJ', 'Cluj'], v);
+    }
+  });
+  await test('București în toate formele → „B”; Ilfov → „IF”', async () => {
+    for (const [v, c] of [['București', 'B'], ['Bucuresti', 'B'], ['Municipiul București', 'B'], ['B', 'B'], ['Bucharest', 'B'], ['Ilfov County', 'IF']]) {
+      reset();
+      const r = await comanda({ regiune: v, localitate: 'București', date_facturare: { tip: 'pf', prenume: 'Dan', nume: 'Pop' } });
+      egal([r.statusCode, DB.tabele.comenzi[0] && DB.tabele.comenzi[0].regiune], [200, c], v);
+    }
+  });
+  await test('județ necunoscut pentru RO → 400, camp regiune, RO + EN, nicio comandă', async () => {
+    reset();
+    const r = await comanda({ regiune: 'Narnia', date_facturare: { tip: 'pf', prenume: 'Dan', nume: 'Pop' } });
+    egal([r.statusCode, r.corp.cod, r.corp.camp], [400, 'REGIUNE_NECUNOSCUTA', 'regiune']);
+    egal([r.corp.error, r.corp.error_en], ['Județul nu e recunoscut. Alege-l din listă.', 'The county is not recognised. Choose it from the list.']);
+    egal(DB.tabele.comenzi.length, 0);
+  });
+  await test('geo_regiuni indisponibil → comanda trece cu județul ca atare (citire tolerantă)', async () => {
+    reset();
+    delete DB.tabele.geo_regiuni;
+    REGIUNE._golesteCache();
+    const r = await comanda({ regiune: 'Cluj', date_facturare: { tip: 'pf', prenume: 'Dan', nume: 'Pop' } });
+    egal([r.statusCode, DB.tabele.comenzi[0].regiune], [200, 'Cluj']);
+  });
+  await test('agenda: județul „judetul cluj” se salvează „Cluj”; „Narnia” → 400 camp judet (și în adresa nouă a profilului)', async () => {
+    reset();
+    const r = await agenda({ actiune: 'adresa_salveaza', ...ADR({ judet: 'judetul cluj' }) });
+    egal([r.statusCode, adreseU()[0].judet], [200, 'Cluj']);
+    const gresit = await agenda({ actiune: 'adresa_salveaza', ...ADR({ judet: 'Narnia' }) });
+    egal([gresit.statusCode, gresit.corp.cod, gresit.corp.camp], [400, 'REGIUNE_NECUNOSCUTA', 'judet']);
+    adevarat(/not recognised/.test(gresit.corp.error_en), 'mesaj EN');
+    const p = await agenda({ actiune: 'profil_salveaza', tip: 'pj', cui: CUI, denumire: 'Firma Simulata SRL', nr_reg_com: 'J12/3456/2020', adresa_noua: { strada: 'Str. Sediu 1', localitate: 'Cluj-Napoca', judet: 'Narnia', tara: 'RO' } });
+    egal([p.statusCode, p.corp.camp], [400, 'adresa_noua.judet']);
+    egal(adreseU().length, 1);
   });
 
   console.log('C. api/client/date-facturare.js');

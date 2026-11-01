@@ -18,6 +18,7 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { normalizeazaRegiune } = require('../../lib/regiune');
 
 async function handler(req, res, user) {
   if (req.method === 'GET') {
@@ -28,7 +29,12 @@ async function handler(req, res, user) {
       .eq('activ', true)
       .order('created_at', { ascending: false });
     if (error) return res.status(500).json({ error: error.message });
-    return res.status(200).json({ ok: true, zone: data || [] });
+    // Pasul 11-P3b: regiunea (text liber) citită tolerant prin lib/regiune.js:
+    // `regiune` = { cod, denumire } din geo_regiuni, sau null; regiune_cod rămâne cum e salvat.
+    const zone = await Promise.all((data || []).map(async (z) => ({
+      ...z, regiune: z.regiune_cod ? await normalizeazaRegiune(z.tara_cod, z.regiune_cod) : null,
+    })));
+    return res.status(200).json({ ok: true, zone });
   }
 
   if (req.method === 'DELETE') {

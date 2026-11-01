@@ -25,6 +25,7 @@ const { checkRateLimit } = require('../../lib/rate-limit');
 const { calculeazaCostNivel } = require('../../lib/calculeaza-cost-recipe');
 const { calculeazaPret } = require('../../lib/calculeaza-pret');
 const { rezolvaAddonMateriale } = require('../../lib/rezolva-addon-materiale');
+const { codPentruCitire } = require('../../lib/regiune');
 
 const CANTITATE_MAX = 100000;
 
@@ -46,7 +47,10 @@ module.exports = async function handler(req, res) {
   const taraCod = String(tara_cod || 'RO').toUpperCase();
 
   try {
-    const cost = await calculeazaCostNivel({ nivelId: nivel_id, taraCod, cantitate: cantitateNum, regiune: typeof regiune === 'string' ? regiune.slice(0, 80) : null });
+    // Pasul 11-P3b: județul ca la comandă (api/comenzi/creeaza.js) — codul din
+    // geo_regiuni, ca previzualizarea să folosească aceleași reguli de preț.
+    const regiuneText = typeof regiune === 'string' ? regiune.slice(0, 80) : null;
+    const cost = await calculeazaCostNivel({ nivelId: nivel_id, taraCod, cantitate: cantitateNum, regiune: regiuneText ? await codPentruCitire(taraCod, regiuneText) : null });
 
     // Reguli pe niveluri (9 oct. 2026): un nivel dezactivat de LM nu se afișează.
     if (cost.nivel_activ === false) {
