@@ -455,6 +455,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 <script src="cont-dashboard.js"></script>
 <script src="agenda-cont.js"></script>
 <script src="profil-partener-card.js"></script>
+<script src="forme-juridice-public.js"></script>
 <script src="seo-meta.js"></script>
 <script src="cookie-consent.js" defer></script>
 <script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="analytics-loader.js" defer></script>
@@ -2762,7 +2763,7 @@ function renderProfil() {
         ${camp('Denumire', p.nume_firma)}
         ${camp('CUI / CNP', p.cui)}
         ${camp('Tip partener', _NUME_TIP_PARTENER[p.partner_type] || p.partner_type)}
-        ${camp('Formă juridică', p.tip_entitate_legala)}
+        ${camp('Formă juridică', window.MDFormeJuridice ? window.MDFormeJuridice.eticheta(p.tip_entitate_legala, p.forma_juridica_locala) : p.tip_entitate_legala)}
         ${camp('Email', c.profil.email)}
         ${camp('Țară · regiune', [c.profil.tara, p.regiune_cod].filter(Boolean).join(' · '))}
         ${camp('Cont bancar activ', c.are_cont_bancar ? 'Da' : 'Nu — adaugă unul în „Cont bancar”')}

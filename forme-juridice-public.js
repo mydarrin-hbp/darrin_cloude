@@ -49,5 +49,15 @@
 
   function esteStraina(cod) { return cod === 'firma_straina'; }
 
-  window.MDFormeJuridice = { FORME_JURIDICE: FORME_JURIDICE, completeazaSelect: completeazaSelect, esteStraina: esteStraina };
+  // Pasul 11-P3b: eticheta formei juridice în limba paginii (dashboard-ul
+  // partenerului afișa codul, ex. „srl”); la firma străină, și forma locală
+  // („Firmă înregistrată în altă țară — GmbH”). Un cod necunoscut rămâne ca atare.
+  function eticheta(cod, formaLocala) {
+    var f = FORME_JURIDICE.filter(function (x) { return x.cod === cod; })[0];
+    if (!f) return cod || '';
+    var t = f[limba()];
+    return esteStraina(cod) && formaLocala ? t + ' — ' + formaLocala : t;
+  }
+
+  window.MDFormeJuridice = { FORME_JURIDICE: FORME_JURIDICE, completeazaSelect: completeazaSelect, esteStraina: esteStraina, eticheta: eticheta };
 })();

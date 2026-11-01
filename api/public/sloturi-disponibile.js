@@ -5,8 +5,14 @@
 // lib/calculeaza-sloturi-disponibile.js pentru mecanismul real).
 //
 // GET ?tara=RO&regiune=Bacău&data=2026-08-03
+//
+// Pasul 11-P3b: `regiune` se acceptă ca nume sau cod („Bacău”, „BC”,
+// „Județul Bacău”) și se aduce la codul din geo_regiuni (lib/regiune.js);
+// un județ nerecunoscut, pentru o țară cu regiuni → 400, camp 'regiune'.
 
 const { calculeazaSloturiDisponibile } = require('../../lib/calculeaza-sloturi-disponibile');
+const { rezolvaRegiune, MESAJ_REGIUNE } = require('../../lib/regiune');
+const { trimiteEroare, camp } = require('../../lib/raspuns-eroare');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -20,11 +26,17 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const rezultat = await calculeazaSloturiDisponibile({
-      taraCod: tara ? String(tara).toUpperCase() : null,
-      regiune: regiune || null,
-      data,
-    });
+    const taraCod = tara ? String(tara).toUpperCase() : null;
+    let regiuneCod = regiune || null;
+    if (regiuneCod) {
+      const r = await rezolvaRegiune(taraCod || 'RO', regiuneCod);
+      if (r.areRegiuni && !r.regiune) {
+        return trimiteEroare(res, 400, 'REGIUNE_NECUNOSCUTA', MESAJ_REGIUNE.ro, MESAJ_REGIUNE.en,
+          [camp('regiune', MESAJ_REGIUNE.ro, MESAJ_REGIUNE.en)], { camp: 'regiune' });
+      }
+      if (r.regiune) regiuneCod = r.regiune.cod;
+    }
+    const rezultat = await calculeazaSloturiDisponibile({ taraCod, regiune: regiuneCod, data });
     res.setHeader('Cache-Control', 'public, max-age=120');
     return res.status(200).json({ ok: true, ...rezultat });
   } catch (err) {

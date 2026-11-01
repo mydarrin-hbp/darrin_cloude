@@ -203,18 +203,21 @@ async function handler(req, res, user) {
     if (req.method === 'GET') {
       const cale = req.query && req.query.document;
       const identitate = req.query && req.query.identitate;
-      // await: o eroare (decriptare, audit) ajunge în catch-ul de mai jos → 500
+      // await (pasul 11-P3b, și la document / lista / decizie): o eroare
+      // (decriptare, audit, bază de date) ajunge în catch-ul de mai jos → 500,
+      // nu rămâne o promisiune respinsă neprinsă.
       if (identitate) return await dateIdentitate(req, res, user, String(identitate));
-      return cale ? document(req, res, user, String(cale)) : lista(res, nivel === 'scriere');
+      return cale ? await document(req, res, user, String(cale)) : await lista(res, nivel === 'scriere');
     }
     if (req.method === 'POST') {
       if (nivel !== 'scriere') return refuzaFaraScriere(res);
-      return decizie(req, res, user);
+      return await decizie(req, res, user);
     }
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (err) {
+    // Mesajul comun (RO + EN); detaliul erorii rămâne doar în log.
     console.error('[admin/investitori-kyc]', err);
-    return res.status(500).json({ error: err.message || 'Eroare internă.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Eroare internă.', 'Internal error.');
   }
 }
 

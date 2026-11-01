@@ -102,6 +102,7 @@ const { valideazaDateFacturare } = require('../../lib/date-facturare');
 const { verificaFirmaRoLaAnaf, MESAJE_ANAF } = require('../../lib/cauta-firma');
 const { trimiteEroare, camp } = require('../../lib/raspuns-eroare');
 const { adresaPrestareDinAgenda, dateFacturareDinAgenda, salveazaDinComanda, aceeasiZona, MESAJE: MESAJE_AGENDA } = require('../../lib/agenda-cont');
+const { rezolvaRegiune, MESAJ_REGIUNE } = require('../../lib/regiune');
 
 function refuzAgenda(res, r) {
   return trimiteEroare(res, r.status || 400, r.cod || 'DATE_INVALIDE', r.error, r.error_en,
@@ -134,7 +135,7 @@ async function handler(req, res, user) {
     }
     const pretDinServer = (typeof corpCerere.nivel_id === 'string' && corpCerere.nivel_id.length > 0)
       || (Array.isArray(corpCerere.produse_marketplace) && corpCerere.produse_marketplace.length > 0);
-    if (!pretDinServer && !aceeasiZona(z, corpCerere.regiune, corpCerere.localitate)) {
+    if (!pretDinServer && !(await aceeasiZona(z, corpCerere.regiune, corpCerere.localitate))) {
       return trimiteEroare(res, 409, 'ADRESA_SCHIMBATA_PRET', MESAJE_AGENDA.adresa_schimbata_pret.ro, MESAJE_AGENDA.adresa_schimbata_pret.en,
         [camp('adresa_prestare_id', MESAJE_AGENDA.adresa_schimbata_pret.ro, MESAJE_AGENDA.adresa_schimbata_pret.en)],
         { camp: 'adresa_prestare_id', zona_adresa: { regiune: z.regiune, localitate: z.localitate } });
@@ -144,6 +145,24 @@ async function handler(req, res, user) {
     corpCerere.tara_cod = z.tara_cod;
     corpCerere.regiune = z.regiune;
     corpCerere.localitate = z.localitate;
+  }
+
+  // Pasul 11-P3b: județul comenzii → codul din geo_regiuni („Cluj”, „Cluj
+  // County”, „Județul Cluj”, „CJ” → „CJ”), o singură dată, aici; pe comandă se
+  // salvează codul (alocarea, sloturile și zonele compară coduri). Denumirea
+  // rămâne pentru adresa copiată la facturare. Un județ nerecunoscut, pentru o
+  // țară cu regiuni în geo_regiuni → 400, camp 'regiune'.
+  let regiuneDenumire = null;
+  if (corpCerere.regiune != null && corpCerere.regiune !== '') {
+    if (typeof corpCerere.regiune !== 'string') return res.status(400).json({ error: 'regiune trebuie să fie text.' });
+    const taraRegiune = typeof corpCerere.tara_cod === 'string' && corpCerere.tara_cod.trim() ? corpCerere.tara_cod.trim().toUpperCase() : 'RO';
+    const rz = await rezolvaRegiune(taraRegiune, corpCerere.regiune);
+    if (rz.areRegiuni && !rz.regiune) {
+      return trimiteEroare(res, 400, 'REGIUNE_NECUNOSCUTA', MESAJ_REGIUNE.ro, MESAJ_REGIUNE.en,
+        [camp('regiune', MESAJ_REGIUNE.ro, MESAJ_REGIUNE.en)], { camp: 'regiune' });
+    }
+    regiuneDenumire = rz.regiune ? rz.regiune.denumire : corpCerere.regiune.trim();
+    if (rz.regiune) corpCerere.regiune = rz.regiune.cod;
   }
 
   const {
@@ -245,7 +264,7 @@ async function handler(req, res, user) {
   // Datele de facturare (pasul 11-P2b) — obligatorii.
   const adresaLucrare = adresa_lucrare && typeof adresa_lucrare === 'object'
     ? adresa_lucrare
-    : { strada: adresa, localitate, judet: regiune, tara: tara_cod };
+    : { strada: adresa, localitate, judet: regiuneDenumire, tara: tara_cod };
   // Din agendă (profil_facturare_id) sau din formular (date_facturare).
   let facturare;
   let cnpCriptatProfil = null;

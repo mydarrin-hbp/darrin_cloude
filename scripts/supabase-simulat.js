@@ -68,6 +68,7 @@ function interogare(tabel) {
     lte(k, v) { st.filtre.push((r) => r[k] != null && r[k] <= v); return b; },
     ilike(k, v) { st.filtre.push(conditie(`${k}.ilike.${v}`)); return b; },
     contains(k, v) { st.filtre.push((r) => Array.isArray(r[k]) && v.every((x) => r[k].includes(x))); return b; },
+    overlaps(k, v) { st.filtre.push((r) => Array.isArray(r[k]) && v.some((x) => r[k].includes(x))); return b; },
     not(k, op, v) { const f = conditie(`${k}.${op}.${v}`); st.filtre.push((r) => !f(r)); return b; },
     or(expr) { const c = expr.split(',').map(conditie); st.filtre.push((r) => c.some((f) => f(r))); return b; },
     order(k, o = {}) { st.ordine.push([k, o.ascending !== false]); return b; },
