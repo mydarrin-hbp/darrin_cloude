@@ -4,7 +4,7 @@
 //
 // GET, cu Authorization: Bearer <access_token>
 // → { ok, email, nume, prenume, nume_familie, telefon, tara, roles, roluri_dashboard,
-//     destinatie, tip_destinatie, furnizor_propriu,
+//     destinatie, tip_destinatie, are_comenzi, rol_solicitat, furnizor_propriu,
 //     partener: null | { nume_firma, partner_type, rol, status_verificare,
 //                        contract_semnat, cont_bancar, motiv_respingere,
 //                        poate_vinde, motiv_nu_poate_vinde },
@@ -22,6 +22,11 @@
 // furnizorul propriu al platformei (partners.entitate_platforma_id setat);
 // fără alte date despre entitate.
 //
+// Pasul 11-R2: are_comenzi (true / false / null = necunoscut) — clientul fără
+// comenzi nu are dashboard, deci roluri_dashboard nu conține „client”, iar
+// antetul și meniul lateral nu arată „Comenzile mele”. rol_solicitat = rolul
+// ales la înscriere (doar o alegere, nu un drept).
+//
 // roles vine din profiles.roles (singura sursă pentru acces). Fără date
 // sensibile: fără IBAN (doar „are cont bancar activ: da / nu”), fără CNP,
 // fără CUI. Paza din pagini e doar pentru experiența utilizatorului; accesul
@@ -29,7 +34,7 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
-const { destinatiePentru } = require('../../lib/destinatie-cont');
+const { destinatiePentru, contextCont } = require('../../lib/destinatie-cont');
 const { roluriCuDashboard } = require('../../lib/destinatie-rol');
 const { rolPentruTipPartener } = require('../../lib/roluri-partener');
 const { eligibilitatePartener } = require('../../lib/eligibilitate-partener');
@@ -83,7 +88,8 @@ async function handler(req, res, user) {
     try { investitor = starePublica(await citesteKyc(user.id)); } catch (e) { console.warn('[cont/profil] KYC:', e.message || e); }
 
     const m = user.user_metadata || {};
-    const d = await destinatiePentru(user);
+    const ctx = await contextCont(user);
+    const d = await destinatiePentru(user, ctx);
     return res.status(200).json({
       ok: true,
       email: user.email || null,
@@ -93,9 +99,11 @@ async function handler(req, res, user) {
       telefon: (profil && (profil.phone || profil.telefon)) || null,
       tara: (profil && profil.tara) || null,
       roles,
-      roluri_dashboard: roluriCuDashboard(roles),
+      roluri_dashboard: roluriCuDashboard(roles, ctx.areComenzi === false ? { areComenzi: false } : null),
       destinatie: d && d.destinatie ? d.destinatie : null,
       tip_destinatie: d ? d.tip : null,
+      are_comenzi: ctx.areComenzi,
+      rol_solicitat: ctx.rolSolicitat,
       furnizor_propriu: !!(p && p.furnizor_propriu),
       partener,
       investitor,

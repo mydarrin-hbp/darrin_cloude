@@ -11,6 +11,12 @@
 // Decide unde ajunge userul DUPĂ ce Supabase i-a confirmat deja parola
 // (acest endpoint nu verifică parola). Pasul 10b (16 oct. 2026): destinația
 // vine din profiles.roles, cu harta unică — vezi lib/destinatie-cont.js.
+//
+// Pasul 11-R2 (1 nov. 2026): clientul fără nicio comandă nu are dashboard →
+// 200 { ok, tip: 'client_fara_comenzi', destinatie: null }: fereastra de cont
+// se închide și utilizatorul rămâne pe pagina curentă. Rolul de partener ales
+// la înscriere și încă neacordat → { tip: 'completare_partener', destinatie:
+// '/mydarrin-devino-partener.html?type=<tip>' } (datele firmei, modul „cont existent”).
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { destinatiePentru } = require('../../lib/destinatie-cont');
@@ -29,6 +35,7 @@ async function handler(req, res, user) {
   try {
     const d = await destinatiePentru(user);
     if (d && d.tip === 'acces_expirat') return res.status(403).json(ACCES_EXPIRAT);
+    if (d && d.tip === 'client_fara_comenzi') return res.status(200).json({ ok: true, ...d });
     if (!d || !d.destinatie) return res.status(403).json(FARA_ACCES);
     return res.status(200).json({ ok: true, ...d });
   } catch (err) {

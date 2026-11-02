@@ -3,6 +3,9 @@
 // (lib/destinatie-rol.js, copiată în ui-comun.js) și destinația după login
 // (api/public/destinatie-post-login.js) pentru fiecare rol, roluri multiple,
 // acces temporar și cont fără rol. Supabase simulat în memorie.
+// Pasul 11-R2 (1 nov. 2026): clientul fără comenzi (fără destinație), rolul de
+// partener ales la înscriere și încă neacordat (formularul firmei), fereastra
+// comună de cont (cont-fereastra.js) în locul celor 14 copii.
 //
 // Rulare: node scripts/test-destinatie-rol.js
 
@@ -28,14 +31,15 @@ const MAINE = new Date(Date.now() + 86400000).toISOString();
 const IERI = new Date(Date.now() - 86400000).toISOString();
 
 function reset() {
-  DB.tabele = { profiles: [], admin_permissions: [], accese_temporare: [] };
+  DB.tabele = { profiles: [], admin_permissions: [], accese_temporare: [], comenzi: [] };
   DB.coloane = {};
   DB.utilizatori = {};
 }
 function cont(id, roles, extra = {}) {
-  DB.tabele.profiles.push({ id, email: `${id}@test`, roles });
-  DB.utilizatori[`tok-${id}`] = { id, email: extra.email || `${id}@test` };
+  DB.tabele.profiles.push({ id, email: `${id}@test`, roles, rol_solicitat: extra.rol_solicitat || null });
+  DB.utilizatori[`tok-${id}`] = { id, email: extra.email || `${id}@test`, user_metadata: extra.user_metadata || {} };
 }
+function comanda(clientId) { DB.tabele.comenzi.push({ id: `c-${++DB.seq}`, client_id: clientId, status: 'creata' }); }
 async function dupaLogin(id) {
   const res = raspuns();
   await destinatie(cerere({ token: `tok-${id}` }), res);
@@ -91,12 +95,13 @@ async function dupaLogin(id) {
     ['curier', ['partener_curier'], '/mydarrin-dashboard-partener.html?type=curier'],
     ['asigurător', ['partener_asigurari'], '/mydarrin-dashboard-partener.html?type=asigurari'],
     ['investitor', ['investor'], '/mydarrin-investitori.html'],
-    ['client', ['client'], '/mydarrin-dashboard-client.html'],
+    ['client cu o comandă', ['client'], '/mydarrin-dashboard-client.html'],
   ];
   for (const [nume, roles, asteptat] of cazuri) {
     await test(`${nume} → ${asteptat}`, async () => {
       reset();
       cont('u1', roles);
+      comanda('u1');
       const res = await dupaLogin('u1');
       egal(res.statusCode, 200, JSON.stringify(res.corp));
       egal(res.corp.destinatie, asteptat);
@@ -124,6 +129,115 @@ async function dupaLogin(id) {
     egal(res.corp.destinatie, '/mydarrin-rolurile-mele'); // pasul 11-L: alegerea rolului e pagina „Rolurile mele”
     egal(res.corp.roluri, ['partener_curier', 'investor']);
   });
+
+  console.log('\nPasul 11-R2: clientul fără comenzi și rolul ales la înscriere');
+  await test('client fără nicio comandă → 200, fără destinație (rămâne pe pagina curentă)', async () => {
+    reset();
+    cont('k1', ['client']);
+    const res = await dupaLogin('k1');
+    egal(res.statusCode, 200, JSON.stringify(res.corp));
+    egal(res.corp.tip, 'client_fara_comenzi');
+    egal(res.corp.destinatie, null);
+  });
+  await test('comenzile altui client nu contează', async () => {
+    reset();
+    cont('k2', ['client']);
+    comanda('altcineva');
+    egal((await dupaLogin('k2')).corp.destinatie, null);
+  });
+  await test('client cu cel puțin o comandă → dashboard-ul clientului', async () => {
+    reset();
+    cont('k3', ['client']);
+    comanda('k3'); comanda('k3');
+    egal((await dupaLogin('k3')).corp.destinatie, '/mydarrin-dashboard-client.html');
+  });
+  const solicitate = [
+    ['partener_servicii', '/mydarrin-devino-partener.html?type=servicii'],
+    ['partener_materiale', '/mydarrin-devino-partener.html?type=materiale'],
+    ['partener_inchirieri', '/mydarrin-devino-partener.html?type=inchirieri'],
+    ['partener_curier', '/mydarrin-devino-partener.html?type=curier'],
+    ['partener_asigurari', '/mydarrin-devino-partener.html?type=asigurator'],
+  ];
+  for (const [rol, asteptat] of solicitate) {
+    await test(`a ales ${rol} la înscriere, încă fără rol → ${asteptat} (modul „cont existent”)`, async () => {
+      reset();
+      cont('s1', ['client'], { rol_solicitat: rol });
+      const res = await dupaLogin('s1');
+      egal(res.statusCode, 200, JSON.stringify(res.corp));
+      egal(res.corp.tip, 'completare_partener');
+      egal(res.corp.destinatie, asteptat);
+    });
+  }
+  await test('rolul ales nu dă niciun drept: profiles.roles rămâne neschimbat', async () => {
+    reset();
+    cont('s2', ['client'], { rol_solicitat: 'partener_curier' });
+    await dupaLogin('s2');
+    egal(DB.tabele.profiles[0].roles, ['client']);
+  });
+  await test('a ales un rol de partener și îl are activ → dashboard-ul rolului (ca azi)', async () => {
+    reset();
+    cont('s3', ['client', 'partener_servicii'], { rol_solicitat: 'partener_servicii' });
+    egal((await dupaLogin('s3')).corp.destinatie, '/mydarrin-dashboard-partener.html?type=servicii');
+  });
+  await test('a ales alt tip de partener decât cel activ → dashboard-ul rolului activ (un singur tip pe cont)', async () => {
+    reset();
+    cont('s4', ['client', 'partener_materiale'], { rol_solicitat: 'partener_curier' });
+    egal((await dupaLogin('s4')).corp.destinatie, '/mydarrin-dashboard-furnizor.html?type=materiale');
+  });
+  await test('a ales „client” la înscriere, fără comenzi → fără destinație', async () => {
+    reset();
+    cont('s5', ['client'], { rol_solicitat: 'client' });
+    egal((await dupaLogin('s5')).corp.tip, 'client_fara_comenzi');
+  });
+  await test('valoare necunoscută în rol_solicitat (ex. superadmin) → ignorată', async () => {
+    reset();
+    cont('s6', ['client'], { rol_solicitat: 'superadmin' });
+    const res = await dupaLogin('s6');
+    egal(res.corp.tip, 'client_fara_comenzi');
+    egal(DB.tabele.profiles[0].roles, ['client']);
+  });
+  await test('mai multe roluri, fără comenzi de client → „Rolurile mele” (ca azi)', async () => {
+    reset();
+    cont('s7', ['client', 'partener_curier', 'investor']);
+    const res = await dupaLogin('s7');
+    egal(res.corp.destinatie, '/mydarrin-rolurile-mele');
+    egal(res.corp.roluri, ['partener_curier', 'investor']);
+  });
+  await test('migrarea neaplicată (fără coloana rol_solicitat) → citește doar roles, ca înainte', async () => {
+    reset();
+    DB.coloane.profiles = ['id', 'email', 'roles'];
+    DB.tabele.profiles.push({ id: 'm2', email: 'm2@test', roles: ['client'] });
+    DB.utilizatori['tok-m2'] = { id: 'm2', email: 'm2@test' };
+    comanda('m2');
+    const res = await dupaLogin('m2');
+    egal(res.statusCode, 200, JSON.stringify(res.corp));
+    egal(res.corp.destinatie, '/mydarrin-dashboard-client.html');
+  });
+  await test('tabela comenzi indisponibilă → clientul își păstrează dashboard-ul (ca înainte)', async () => {
+    reset();
+    delete DB.tabele.comenzi;
+    cont('m3', ['client']);
+    egal((await dupaLogin('m3')).corp.destinatie, '/mydarrin-dashboard-client.html');
+  });
+  await test('/api/cont/profil: clientul fără comenzi nu are dashboard (roluri_dashboard gol, are_comenzi false)', async () => {
+    reset();
+    ['partners', 'audit_log', 'investitori_kyc', 'partner_conturi_bancare', 'investitori', 'entitati_platforma'].forEach((t) => { DB.tabele[t] = []; });
+    cont('p1', ['client'], { rol_solicitat: 'client' });
+    const profil = require(path.join(RADACINA, 'api/cont/profil.js'));
+    const res = raspuns();
+    await profil(cerere({ token: 'tok-p1' }), res);
+    egal(res.statusCode, 200, JSON.stringify(res.corp));
+    egal(res.corp.roluri_dashboard, []);
+    egal(res.corp.are_comenzi, false);
+    egal(res.corp.destinatie, null);
+    egal(res.corp.rol_solicitat, 'client');
+    comanda('p1');
+    const res2 = raspuns();
+    await profil(cerere({ token: 'tok-p1' }), res2);
+    egal(res2.corp.roluri_dashboard, ['client']);
+    egal(res2.corp.are_comenzi, true);
+  });
+
   await test('acces temporar activ, NDA acceptat → ruta alocată (ca azi)', async () => {
     reset();
     cont('t1', ['client']);
@@ -162,18 +276,35 @@ async function dupaLogin(id) {
     egal(res.statusCode, 401);
   });
 
-  console.log('\nPaginile de login trimit la destinație, nu la reload()');
-  await test('performLogin din cele 13 pagini → MyDarrinAuth.mergiDupaLogin; checkout rămâne pe pagină', () => {
-    const cuLogin = fs.readdirSync(RADACINA).filter((f) => f.endsWith('.html') && fs.readFileSync(path.join(RADACINA, f), 'utf8').includes('async function performLogin('));
+  console.log('\nFereastra comună de cont (pasul 11-R2)');
+  await test('nicio pagină nu mai are copia ei de #auth-modal sau funcțiile de login / înscriere', () => {
+    const NUME = ['performLogin', 'performRegister', 'confirmaCod', 'retrimiteCod', 'switchAuthTab', 'toggleAuthModal', 'oauthLogin', 'cerereResetareParola', 'redirectDupaAutentificare'];
     const gresite = [];
-    for (const f of cuLogin) {
+    for (const f of fs.readdirSync(RADACINA).filter((x) => x.endsWith('.html'))) {
       const t = fs.readFileSync(path.join(RADACINA, f), 'utf8');
-      const corp = t.slice(t.indexOf('async function performLogin('), t.indexOf('\n}\n', t.indexOf('async function performLogin(')));
-      const merge = corp.includes('MyDarrinAuth.mergiDupaLogin()');
-      if (f === 'mydarrin-checkout.html' ? merge : !merge) gresite.push(f);
+      if (t.includes('id="auth-modal"')) gresite.push(`${f}: #auth-modal`);
+      NUME.forEach((n) => { if (new RegExp('function\\s+' + n + '\\s*\\(').test(t)) gresite.push(`${f}: ${n}`); });
+      if (/function\s+checkAuth\s*\([^)]*\)\s*\{\s*alert\(/.test(t)) gresite.push(`${f}: checkAuth cu alert()`);
     }
     egal(gresite, []);
-    adevarat(cuLogin.length === 14, `${cuLogin.length} pagini cu performLogin`);
+  });
+  await test('paginile publice cu ui-comun.js includ cont-fereastra.js înaintea lui; checkout rămâne pe pagină', () => {
+    const INTERNE = ['mydarrin-superadmin.html', 'mydarrin-deviz-engine.html', 'mydarrin-design-system.html', 'mydarrin-business-model.html', 'mydarrin-sync-architecture.html'];
+    const gresite = [];
+    for (const f of fs.readdirSync(RADACINA).filter((x) => x.endsWith('.html') && !INTERNE.includes(x))) {
+      const t = fs.readFileSync(path.join(RADACINA, f), 'utf8');
+      const uc = t.search(/<script src="\/?ui-comun\.js"/);
+      if (uc < 0) continue;
+      const cf = t.search(/<script src="\/?cont-fereastra\.js"/);
+      if (cf < 0 || cf > uc) gresite.push(f);
+    }
+    egal(gresite, []);
+    adevarat(/cont-fereastra\.js" data-dupa-login="ramai"/.test(fs.readFileSync(path.join(RADACINA, 'mydarrin-checkout.html'), 'utf8')), 'checkout fără data-dupa-login="ramai"');
+  });
+  await test('cont-fereastra.js trimite după login / cod la destinația de pe server (mergiDupaLogin), fără reload()', () => {
+    const t = fs.readFileSync(path.join(RADACINA, 'cont-fereastra.js'), 'utf8');
+    adevarat(t.includes('MyDarrinAuth.mergiDupaLogin('), 'fără mergiDupaLogin');
+    adevarat(!/alert\(|confirm\(|prompt\(/.test(t.replace(/\/\/.*$/gm, '')), 'alert / confirm / prompt în cont-fereastra.js');
   });
   await test('reset-password.html cere destinația după setarea parolei', () => {
     const t = fs.readFileSync(path.join(RADACINA, 'reset-password.html'), 'utf8');

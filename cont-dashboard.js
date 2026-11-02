@@ -4,6 +4,8 @@
    Paza comună a dashboard-urilor (client, partener, furnizor, investitori)
    și starea contului:
      - fără sesiune → fereastra de login, cu revenire la pagina cerută;
+     - clientul fără nicio comandă (pasul 11-R2) → pagina principală, cu un
+       mesaj scurt: dashboard-ul clientului apare după prima comandă;
      - rol greșit → redirect la dashboard-ul corect, cu un mesaj scurt
        („Te-am dus în contul tău de furnizor.”), nu pagină goală;
      - antetul de identitate: inițiale, numele firmei (sau numele din
@@ -401,6 +403,17 @@
       var permise = roluriPagina();
       var areRol = permise.filter(function (x) { return p.roles.indexOf(x) !== -1; });
       var admin = p.roles.indexOf('admin') !== -1 || p.roles.indexOf('superadmin') !== -1;
+
+      // Pasul 11-R2: dashboard-ul clientului apare după prima comandă. Fără
+      // comenzi → dashboard-ul altui rol, dacă are, altfel pagina principală
+      // cu un mesaj scurt (cont-fereastra.js îl afișează).
+      if (areRol.length === 1 && areRol[0] === 'client' && permise.length === 1 && p.are_comenzi === false && !admin && !opt.public) {
+        var alt = (p.roluri_dashboard || []).length ? tintaCorecta(p) : null;
+        if (alt && alt.url) { if (alt.mesaj) ss(CHEIE_MESAJ, alt.mesaj); location.replace(alt.url); return false; }
+        ss('myd_mesaj_pagina', 'Dashboard-ul clientului apare după prima ta comandă.');
+        location.replace('/');
+        return false;
+      }
 
       if (!areRol.length) {
         if (opt.public) return { profil: p };
