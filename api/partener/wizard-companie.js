@@ -25,6 +25,12 @@
 // Pasul 11-P1 (25 oct. 2026): forma juridică e obligatorie și doar din
 // lib/forme-juridice.js (fără persoană fizică); țara firmei e profiles.tara.
 // Firma inactivă sau radiată la ANAF e refuzată (lib/verifica-firma-partener.js).
+//
+// Pasul 11-R3 (2 nov. 2026): e pasul „Firma” din lista „Activează contul”.
+// Un cont fără rând în partners îl poate folosi doar dacă a ales un rol de
+// partener (profiles.rol_solicitat, prin /api/cont/rol-solicitat) sau are deja
+// un rol de partener în profiles.roles; tipul vine din alegerea lui (un alt
+// tip în cerere → 409). Restul endpoint-urilor de partener cer rolul.
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
@@ -32,12 +38,22 @@ const { validateIBAN } = require('../../lib/iban');
 const { TIP_PARTENER_DUPA_FORMULAR, ROL_DUPA_TIP_PARTENER, asiguraRolInProfil } = require('../../lib/roluri-partener');
 const { trimiteEroare, camp, formaComuna } = require('../../lib/raspuns-eroare');
 const { verificaFirmaPartener, marcheazaVerificareManuala } = require('../../lib/verifica-firma-partener');
+const { TIP_DUPA_ROL, esteRolPartener } = require('../../lib/activare-partener');
+
+const FARA_ROL_ALES = {
+  ro: 'Alege întâi tipul de partener („Devino partener” sau „Rolurile mele”), apoi completează datele firmei.',
+  en: 'First choose the partner type (“Become a partner” or “My roles”), then fill in the company details.',
+};
+const ALT_TIP = {
+  ro: 'Ai ales alt tip de partener. Datele firmei se completează pentru tipul ales; pentru alt tip, alege-l din „Rolurile mele”.',
+  en: 'You chose a different partner type. The company details are filled in for the chosen type; for another type, choose it from “My roles”.',
+};
 
 async function handler(req, res, user) {
   if (req.method === 'GET') {
     const { data: partner } = await supabaseAdmin
       .from('partners')
-      .select('nume_firma, cui, partner_type, status_verificare, tip_entitate_legala, forma_juridica_locala, is_treasury_account, regiune_cod')
+      .select('nume_firma, cui, partner_type, status_verificare, tip_entitate_legala, forma_juridica_locala, is_treasury_account, regiune_cod, nr_reg_com, adresa_sediu_social')
       .eq('id', user.id).maybeSingle();
     const { data: conturi } = await supabaseAdmin
       .from('partner_conturi_bancare')
@@ -58,10 +74,25 @@ async function handler(req, res, user) {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { partner_type, is_treasury_account, regiune_cod, cont_bancar, nr_reg_com, adresa_sediu_social } = req.body || {};
+  const { is_treasury_account, regiune_cod, cont_bancar, nr_reg_com, adresa_sediu_social } = req.body || {};
+  let { partner_type } = req.body || {};
 
   try {
-    const { data: profil } = await supabaseAdmin.from('profiles').select('tara').eq('id', user.id).maybeSingle();
+    let { data: profil, error: profilErr } = await supabaseAdmin.from('profiles').select('tara, roles, rol_solicitat').eq('id', user.id).maybeSingle();
+    // Înainte de migrarea 2026-11-01 coloana rol_solicitat lipsește.
+    if (profilErr) ({ data: profil } = await supabaseAdmin.from('profiles').select('tara, roles').eq('id', user.id).maybeSingle());
+
+    // Cine poate crea un partener nou: rol de partener ales sau deja acordat.
+    const { data: dejaPartener } = await supabaseAdmin.from('partners').select('id').eq('id', user.id).maybeSingle();
+    if (!dejaPartener) {
+      const roluri = Array.isArray(profil?.roles) ? profil.roles : [];
+      const ales = esteRolPartener(profil?.rol_solicitat) ? profil.rol_solicitat : roluri.find(esteRolPartener);
+      if (!ales) return trimiteEroare(res, 403, 'FARA_ROL_ALES', FARA_ROL_ALES.ro, FARA_ROL_ALES.en);
+      const tipAles = TIP_DUPA_ROL[ales];
+      if (partner_type && partner_type !== tipAles) return trimiteEroare(res, 409, 'ALT_TIP_PARTENER', ALT_TIP.ro, ALT_TIP.en, [camp('partner_type', ALT_TIP.ro, ALT_TIP.en)]);
+      partner_type = tipAles;
+    }
+
     const firma = await verificaFirmaPartener(req.body, (profil && profil.tara) || req.body?.tara || 'RO');
     if (!firma.ok) {
       return trimiteEroare(res, firma.status, firma.cod, firma.error, firma.error_en, [camp(firma.camp, firma.error, firma.error_en)]);

@@ -1,6 +1,7 @@
 // scripts/test-roluri-partener.js
 // Teste pentru pasul 10b, 2.1: rolul de partener ajunge în profiles.roles
-// la înregistrare (api/public/partner-register.js) și la aprobare
+// la pasul „Firma” (api/partener/wizard-companie.js; de la pasul 11-R3,
+// partner-register.js răspunde 410) și la aprobare
 // (api/admin/verifica-document.js), cu harta unică din lib/roluri-partener.js,
 // aceeași ca în migrarea docs/migrations-propuse/2026-10-16_roluri_parteneri.sql.
 //
@@ -60,12 +61,28 @@ supabaseAdmin.rpc = async () => ({ data: 'criptat', error: null });
 
 function reset() {
   DB.tabele = { profiles: [], partners: [], partner_conturi_bancare: [], audit_log: [], backoffice_config: [], contact_platforma: [] };
-  DB.coloane = { profiles: ['id', 'email', 'role', 'roles', 'status', 'tara', 'limba', 'phone'] };
+  DB.seq = 1000;
+  DB.coloane = { profiles: ['id', 'email', 'role', 'roles', 'status', 'tara', 'limba', 'phone', 'rol_solicitat'] }; // rol_solicitat: migrarea 2026-11-01
   DB.utilizatori = { 'tok-admin': { id: 'admin-1', email: 'admin@x' } };
   DB.tabele.profiles.push({ id: 'admin-1', email: 'admin@x', role: 'admin', roles: ['admin'], status: 'active' });
 }
 
 const register = require(path.join(RADACINA, 'api/public/partner-register.js'));
+const wizard = require(path.join(RADACINA, 'api/partener/wizard-companie.js'));
+const rolSolicitat = require(path.join(RADACINA, 'api/cont/rol-solicitat.js'));
+
+// Pasul 11-R3: contul se creează în fereastra comună (client), alege rolul,
+// apoi completează firma; rolul îl adaugă serverul.
+async function activeaza(tip, email) {
+  const id = `u-${++DB.seq}`;
+  DB.tabele.profiles.push({ id, email, role: 'client', roles: ['client'], status: 'active', tara: 'RO' });
+  DB.utilizatori[`tok-${id}`] = { id, email };
+  const ales = raspuns();
+  await rolSolicitat(cerere({ metoda: 'POST', token: `tok-${id}`, body: { rol: 'partener_' + tip } }), ales);
+  const res = raspuns();
+  await wizard(cerere({ metoda: 'POST', token: `tok-${id}`, body: { nume_firma: `Firma ${tip}`, cui: 'RO46577229', tip_entitate_legala: 'srl' } }), res);
+  return { ales, res, id };
+}
 const verifica = require(path.join(RADACINA, 'api/admin/verifica-document.js'));
 
 async function inregistreaza(tip, email) {
@@ -104,24 +121,24 @@ const profil = (email) => DB.tabele.profiles.find((p) => p.email === email);
     }
   });
 
-  console.log('\nÎnregistrare (partner-register)');
+  console.log('\nActivare (rol ales → pasul „Firma”)');
   for (const [tip, rol] of [['materiale', 'partener_materiale'], ['curier', 'partener_curier'], ['asigurari', 'partener_asigurari'], ['inchirieri', 'partener_inchirieri'], ['servicii', 'partener_servicii']]) {
-    await test(`cont nou de ${tip} → ${rol} în profiles.roles, status active`, async () => {
+    await test(`${tip}: rol ales → firma salvată → ${rol} în profiles.roles, lângă client`, async () => {
       reset();
-      const res = await inregistreaza(tip, `${tip}@firma.ro`);
+      const { ales, res, id } = await activeaza(tip, `${tip}@firma.ro`);
+      egal(ales.statusCode, 200, JSON.stringify(ales.corp));
       egal(res.statusCode, 200, JSON.stringify(res.corp));
-      const p = profil(`${tip}@firma.ro`);
-      adevarat(p.roles.includes(rol), `roles = ${JSON.stringify(p.roles)}`);
+      const p = DB.tabele.profiles.find((x) => x.id === id);
+      egal(p.roles, ['client', rol], 'profiles.roles');
       egal(p.role, rol, 'profiles.role');
-      egal(p.status, 'active', 'profiles.status');
       egal(DB.tabele.partners[0].partner_type, R.TIP_PARTENER_DUPA_FORMULAR[tip]);
     });
   }
-  await test('tip invalid → 400, niciun cont creat', async () => {
+  await test('partner-register → 410, niciun cont creat', async () => {
     reset();
-    const res = await inregistreaza('altceva', 'x@firma.ro');
-    egal(res.statusCode, 400);
-    egal(Object.keys(conturiAuth).filter((id) => conturiAuth[id].email === 'x@firma.ro').length, 0);
+    const res = await inregistreaza('materiale', 'x@firma.ro');
+    egal(res.statusCode, 410);
+    egal(Object.keys(conturiAuth).length, 0);
   });
 
   console.log('\nRol adăugat, nu înlocuit (asiguraRolInProfil)');

@@ -6,6 +6,12 @@
      - fără sesiune → fereastra de login, cu revenire la pagina cerută;
      - clientul fără nicio comandă (pasul 11-R2) → pagina principală, cu un
        mesaj scurt: dashboard-ul clientului apare după prima comandă;
+     - modul activare (pasul 11-R3, decizia LM din 2 nov. 2026): cine a ales un
+       rol de partener (profiles.rol_solicitat) intră în dashboard-ul acelui rol
+       înainte să-l aibă; pagina arată doar lista „Activează contul”, iar
+       celelalte panouri sunt blocate („Disponibil după activarea contului”).
+       Partenerul cu rol, dar încă neactiv, vede lista deasupra dashboard-ului.
+       Accesul la date rămâne pe server: endpoint-urile cer rolul;
      - rol greșit → redirect la dashboard-ul corect, cu un mesaj scurt
        („Te-am dus în contul tău de furnizor.”), nu pagină goală;
      - antetul de identitate: inițiale, numele firmei (sau numele din
@@ -26,8 +32,10 @@
 
    Utilizare (în scriptul de pază al paginii, după account-system.js):
      const paza = await MYD_PAZA.verifica({ container: 'myd-cont-antet', tema: 'intunecata',
-       actiuni: { cont_bancar: () => showPanel('cont-bancar') } });
+       actiuni: { cont_bancar: () => showPanel('cont-bancar'), panou: (id) => showPanel(id) },
+       blocheaza: { continut: 'dp-content', nav: 'dp-nav' } });
      if (!paza) return;           // false = redirect în curs (login sau alt dashboard)
+     if (paza.activare) return;   // modul activare: doar lista, fără panouri
      // paza.profil: profilul contului (null dacă nu s-a putut citi; pagina continuă)
    Pagina publică (investitori): { public: true } — fără redirect.
    ════════════════════════════════════════════════════════════════ */
@@ -141,6 +149,28 @@
       '.myd-banda-atentie{border-color:#C77700;background:#FFF6E5;color:#6B4200}.myd-banda-atentie button{background:#CC7000}' +
       '.myd-banda-eroare{border-color:#C0392B;background:#FDECEA;color:#7A1F16}.myd-banda-eroare button{background:#C0392B}' +
       '.myd-banda-ok{border-color:#1A7A3A;background:#EDF7F0;color:#14532D}' +
+      '.myd-act{border:1px solid #E2E8F0;background:#fff;color:#1A2332;border-radius:14px;padding:16px;margin:0 0 14px;box-sizing:border-box;max-width:820px}' +
+      '.myd-act.intunecata{background:#192433;border-color:#2D3F55;color:#E2E8F0}' +
+      '.myd-act-cap{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap}' +
+      '.myd-act h2{margin:0;font-size:16px;font-weight:800}' +
+      '.myd-act-progres{font-size:12px;font-weight:700;color:#5A6B7D}.myd-act.intunecata .myd-act-progres,.myd-act.intunecata .myd-act-intro,.myd-act.intunecata .myd-act-txt span{color:#8BA3C0}' +
+      '.myd-act-intro{font-size:12.5px;color:#5A6B7D;line-height:1.5;margin:6px 0 12px}' +
+      '.myd-act-lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}' +
+      '.myd-act-pas{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:1px solid #E2E8F0;border-radius:12px;padding:10px 12px}' +
+      '.myd-act.intunecata .myd-act-pas{border-color:#2D3F55}' +
+      '.myd-act-nr{flex:0 0 auto;width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;background:#EBF4FB;color:#003366}' +
+      '.myd-act-pas.completat .myd-act-nr{background:#1A7A3A;color:#fff}' +
+      '.myd-act-txt{flex:1 1 200px;min-width:0}.myd-act-txt b{display:block;font-size:13.5px}.myd-act-txt span{display:block;font-size:12px;color:#5A6B7D;line-height:1.45}' +
+      '.myd-act-stare{flex:0 0 auto;font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px;white-space:nowrap;background:#FFF6E5;color:#6B4200}' +
+      '.myd-act-pas.completat .myd-act-stare{background:#EDF7F0;color:#14532D}' +
+      '.myd-act-pas.in_verificare .myd-act-stare{background:#EBF4FB;color:#1A3A5C}' +
+      '.myd-act-pas.blocat .myd-act-stare{background:#F4F7F9;color:#5A6B7D}' +
+      '.myd-act-pas button{flex:0 0 auto;border:0;border-radius:10px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;color:#fff;background:#003366;min-height:44px}' +
+      '.myd-act-pas.completat button,.myd-act-pas.in_verificare button{background:#F4F7F9;color:#1A2332}' +
+      '.myd-act-pas button[disabled]{background:#E2E8F0;color:#5A6B7D;cursor:default}' +
+      '.myd-act-final{margin-top:12px;font-size:12.5px;line-height:1.5;padding:10px 12px;border-radius:12px;border:1.5px solid #2B6CB0;background:#EBF4FB;color:#1A3A5C}' +
+      '.myd-blocat{border:1.5px dashed #D5DFE8;border-radius:14px;padding:22px 16px;margin:0 18px 18px;text-align:center;font-size:13px;color:#5A6B7D;max-width:820px;box-sizing:border-box}' +
+      '@media (max-width:480px){.myd-act{padding:12px}.myd-act-pas{padding:10px}.myd-act-pas button{width:100%}.myd-blocat{margin:0 12px 12px}}' +
       '.myd-fer{position:fixed;inset:0;z-index:9600;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.55)}' +
       '.myd-fer-cutie{background:#fff;color:#1A2332;border-radius:16px;width:100%;max-width:560px;max-height:90vh;overflow:auto;padding:22px;box-sizing:border-box}' +
       '.myd-fer-cutie h3{margin:0 0 12px;font-size:17px;font-weight:800}' +
@@ -232,6 +262,107 @@
     }
     if (st === 'approved' && !pt.contract_semnat) {
       banda(container, 'atentie', tr('Semnează contractul ca să primești comenzi.'), tr('Semnează contractul'), actiuni.contract, 'myd-banda-contract');
+    }
+  }
+
+  // ── Lista „Activează contul” (pasul 11-R3) ─────────────────────────
+  // Starea vine din /api/cont/profil (activare, lib/activare-partener.js).
+  var TITLU_PAS = {
+    firma: 'Firma',
+    cont_bancar: 'Contul bancar',
+    profesii: { implicit: 'Profesii, servicii și zone', curier: 'Zonele de livrare' },
+    dotari: {
+      servicii: 'Dotări, utilaje, angajați, certificări', curier: 'Vehiculul de livrare', asigurari: 'Polițele oferite',
+      materiale: 'Catalogul de produse', inchirieri: 'Catalogul de echipamente',
+    },
+    documente: 'Documente',
+    contract: 'Contractul',
+  };
+  var TEXT_PAS = {
+    firma: 'Forma juridică, CUI (date de la ANAF), denumirea, nr. Reg. Com., sediul, județul.',
+    cont_bancar: 'IBAN-ul și banca; contul de trezorerie, pentru instituțiile publice.',
+    profesii: {
+      servicii: 'Codurile NACE ale profesiilor tale și zona în care lucrezi.',
+      curier: 'Zonele în care livrezi și raza de livrare (km).',
+      implicit: 'Zona în care onorezi comenzile (clauza de zonă).',
+    },
+    dotari: {
+      servicii: 'Sculele și utilajele, echipa și certificările (de exemplu ISCIR).',
+      curier: 'Tipul de livrare: bicicletă, scuter, autoturism sau autoutilitară.',
+      asigurari: 'Tipurile de poliță, limitele de acoperire și discountul; atestatul ASF îl încarci la Documente.',
+      materiale: 'Produsele, cu poze și fișe tehnice: manual sau import CSV.',
+      inchirieri: 'Echipamentele, cu tarife pe zi, pe săptămână și pe lună.',
+    },
+    documente: 'CI-ul administratorului, certificatul de înregistrare și documentele cerute pentru tipul tău.',
+    contract: 'Contractul-cadru, semnat cu un cod trimis pe email.',
+  };
+  var STARE_PAS = { de_completat: 'De completat', completat: '✓ Completat', in_verificare: 'În verificare', blocat: 'După pasul 1' };
+
+  function textDupaTip(v, tip) { return typeof v === 'string' ? v : (v[tip] || v.implicit || ''); }
+
+  function deschidePas(pas, opt) {
+    var d = pas.deschide;
+    if (!d || pas.stare === 'blocat') return;
+    var act = actiuniFinale(opt);
+    var a = opt.actiuni || {};
+    if (d.tip === 'wizard') { location.href = '/mydarrin-devino-partener-wizard.html?pas=' + Number(d.pas); return; }
+    if (d.tip === 'panou' && typeof a.panou === 'function') { a.panou(d.id); return; }
+    if (d.tip === 'actiune' && act[d.cheie]) act[d.cheie]();
+  }
+
+  function listaActivare(container, p, opt) {
+    var act = p && p.activare;
+    if (!container || !act) return null;
+    stil();
+    var vechi = document.getElementById('myd-activare');
+    if (vechi) vechi.remove();
+    var gata = act.pasi.filter(function (x) { return x.stare === 'completat'; }).length;
+    var s = document.createElement('section');
+    s.className = 'myd-act' + (opt.tema === 'intunecata' ? ' intunecata' : '');
+    s.id = 'myd-activare';
+    s.setAttribute('aria-labelledby', 'myd-act-titlu');
+    var final;
+    if (act.verificare === 'pending_review') final = tr('Firma e în verificare la echipa My Darrin (cel mult 48 de ore). Între timp, completează restul pașilor.');
+    else if (act.verificare === 'approved') final = tr('Firma e aprobată. Contul devine „Partener activ” după ce ai contul bancar activ și contractul semnat.');
+    else final = tr('Apoi: verificarea echipei, cel mult 48 de ore. Contul devine „Partener activ” după aprobare, cu contul bancar activ și contractul semnat.');
+    s.innerHTML =
+      '<div class="myd-act-cap"><h2 id="myd-act-titlu">' + esc(tr('Activează contul')) + '</h2>' +
+      '<span class="myd-act-progres">' + esc(tr('{n} din {total} completate', { n: gata, total: act.pasi.length })) + '</span></div>' +
+      '<p class="myd-act-intro">' + esc(tr('Completează pașii de mai jos, în ordine. Poți reveni oricând; ce ai salvat rămâne.')) + '</p>' +
+      '<ol class="myd-act-lista">' + act.pasi.map(function (x, i) {
+        var buton = x.stare === 'completat' || x.stare === 'in_verificare' ? tr('Vezi') : tr('Completează');
+        return '<li class="myd-act-pas ' + esc(x.stare) + '" data-pas="' + esc(x.cheie) + '">' +
+          '<span class="myd-act-nr" aria-hidden="true">' + (x.stare === 'completat' ? '✓' : (i + 1)) + '</span>' +
+          '<div class="myd-act-txt"><b>' + esc(tr(textDupaTip(TITLU_PAS[x.cheie], act.tip))) + '</b><span>' + esc(tr(textDupaTip(TEXT_PAS[x.cheie], act.tip))) + '</span></div>' +
+          '<span class="myd-act-stare">' + esc(tr(STARE_PAS[x.stare] || x.stare)) + '</span>' +
+          '<button type="button"' + (x.stare === 'blocat' ? ' disabled' : '') + ' aria-label="' + esc(buton + ': ' + tr(textDupaTip(TITLU_PAS[x.cheie], act.tip))) + '">' + esc(buton) + '</button>' +
+        '</li>';
+      }).join('') + '</ol>' +
+      '<div class="myd-act-final" role="status">' + esc(final) + '</div>';
+    container.appendChild(s);
+    Array.prototype.forEach.call(s.querySelectorAll('.myd-act-pas button'), function (b, i) {
+      b.onclick = function () { deschidePas(act.pasi[i], opt); };
+    });
+    return s;
+  }
+
+  // Modul activare: panourile paginii nu apar; în locul lor, explicația.
+  function blocheazaPanouri(b) {
+    if (!b) return;
+    var continut = document.getElementById(b.continut);
+    var nav = document.getElementById(b.nav);
+    if (nav) nav.style.display = 'none';
+    (b.ascunde || []).forEach(function (id) { var e = document.getElementById(id); if (e) e.style.display = 'none'; });
+    if (continut) {
+      continut.style.display = 'none';
+      if (!document.getElementById('myd-blocat')) {
+        var n = document.createElement('div');
+        n.id = 'myd-blocat';
+        n.className = 'myd-blocat';
+        n.setAttribute('role', 'note');
+        n.textContent = tr('Comenzile, facturile, sarcinile și celelalte secțiuni: disponibil după activarea contului.');
+        continut.parentNode.insertBefore(n, continut);
+      }
     }
   }
 
@@ -365,7 +496,9 @@
       if (!r.profil || !c) return;
       window.__MYD_PROFIL = r.profil;
       Array.prototype.forEach.call(c.querySelectorAll('.myd-banda'), function (b) { b.remove(); });
-      benziPartener(c, r.profil, actiuniFinale(ultimaOptiune));
+      // Pasul 11-R3: lista „Activează contul” se reface cu starea nouă.
+      if (r.profil.activare && !r.profil.activare.activ) listaActivare(c, r.profil, ultimaOptiune);
+      else benziPartener(c, r.profil, actiuniFinale(ultimaOptiune));
     });
   }
 
@@ -415,6 +548,21 @@
         return false;
       }
 
+      // Pasul 11-R3: rolul de partener ales, încă neacordat → modul activare.
+      var act = p.activare;
+      if (!areRol.length && !admin && !opt.public && act && act.mod_activare && permise.indexOf(act.rol) !== -1) {
+        var ca = document.getElementById(opt.container || 'myd-cont-antet');
+        document.documentElement.classList.add('myd-mod-activare');
+        if (ca) {
+          stil();
+          ca.innerHTML = '';
+          antet(ca, p, act.rol, opt.tema);
+          listaActivare(ca, p, opt);
+        }
+        blocheazaPanouri(opt.blocheaza);
+        return { profil: p, rol: act.rol, activare: true };
+      }
+
       if (!areRol.length) {
         if (opt.public) return { profil: p };
         if (!admin) {
@@ -436,7 +584,13 @@
         var mesaj = ss(CHEIE_MESAJ);
         if (mesaj) { ss(CHEIE_MESAJ, null); banda(c, 'ok', tr(mesaj), null, null, 'myd-banda-redirect'); }
         antet(c, p, rol || (p.roluri_dashboard || [])[0] || 'client', opt.tema);
-        if (p.partener && (!rol || rol.indexOf('partener_') === 0)) benziPartener(c, p, actiuniFinale(opt));
+        var partenerPagina = p.partener && (!rol || rol.indexOf('partener_') === 0);
+        // Partenerul încă neactiv: lista „Activează contul” în locul benzilor
+        // de cont bancar și contract (respingerea rămâne bandă).
+        if (partenerPagina && !opt.public && p.activare && !p.activare.activ) {
+          if (p.partener.status_verificare === 'rejected') benziPartener(c, p, actiuniFinale(opt));
+          listaActivare(c, p, opt);
+        } else if (partenerPagina) benziPartener(c, p, actiuniFinale(opt));
       }
       return { profil: p, rol: rol };
     }).catch(function (e) {
@@ -445,5 +599,5 @@
     });
   }
 
-  window.MYD_PAZA = { verifica: verifica, laLogin: laLogin, reincarcaBenzi: reincarcaBenzi, bandaProduse: bandaProduse, fereastraContBancar: fereastraContBancar, fereastraContract: fereastraContract };
+  window.MYD_PAZA = { verifica: verifica, laLogin: laLogin, reincarcaBenzi: reincarcaBenzi, bandaProduse: bandaProduse, fereastraContBancar: fereastraContBancar, fereastraContract: fereastraContract, listaActivare: listaActivare };
 })();

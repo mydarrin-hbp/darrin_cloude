@@ -460,9 +460,16 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       if (!user) { window.MYD_PAZA.laLogin(); return; }
       // Pasul 10b: rolul din profiles.roles (/api/cont/profil); rol greșit →
       // dashboard-ul corect, cu mesaj. Antetul de identitate și banda de stare.
-      const paza = await window.MYD_PAZA.verifica({ container: 'myd-cont-antet', tema: 'intunecata' });
+      const paza = await window.MYD_PAZA.verifica({
+        container: 'myd-cont-antet', tema: 'intunecata',
+        // Pasul 11-R3: punctele din lista „Activează contul” deschid secțiunea lor.
+        actiuni: { panou: (id) => showPanel(id) },
+        // Modul activare: doar lista; secțiunile se deschid după activare.
+        blocheaza: { continut: 'fb-content', nav: 'fb-nav', ascunde: ['profil-incomplet-card'] },
+      });
       if (!paza) return;
       document.getElementById('auth-gate-overlay')?.remove();
+      if (paza.activare) return;
       const emailEl = document.getElementById('fb-user-email');
       if (emailEl) emailEl.textContent = user.email;
 

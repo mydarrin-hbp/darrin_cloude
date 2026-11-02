@@ -2,8 +2,10 @@
 // Teste pentru căutarea firmei la ANAF (pasul 10d, 16 oct. 2026): adresa
 // nouă v9, citirea câmpurilor, erorile spuse adevărat (indisponibil vs.
 // eroare de configurare) și CUI negăsit. `fetch` simulat — fără rețea.
-// Secțiunea 8 deschide „Devino partener” în Chromium (RO și EN) cu
-// /api/public/cui-lookup simulat; se sare dacă Playwright nu e instalat:
+// Secțiunea 8 deschide pasul „Firma” din „Completare profil partener”
+// (mydarrin-devino-partener-wizard.html; pasul 11-R3 a scos formularul public
+// din „Devino partener”) în Chromium (RO și EN), cu /api/public/cui-lookup
+// simulat; se sare dacă Playwright nu e instalat:
 //   npm i --no-save playwright && npx playwright install chromium
 //
 // Rulare: node scripts/test-cauta-firma.js
@@ -186,7 +188,7 @@ function server() {
 }
 
 async function testeBrowser() {
-  console.log('8. Browser: „Devino partener” cu ANAF căzut');
+  console.log('8. Browser: pasul „Firma” (wizard) cu ANAF căzut');
   let chromium;
   try { ({ chromium } = require('playwright')); } catch (e) {
     console.log('  – Playwright nu e instalat; secțiunea se sare.');
@@ -216,14 +218,20 @@ async function testeBrowser() {
           const page = await ctx.newPage();
           const erori = [];
           page.on('pageerror', (e) => erori.push(e.message));
-          await page.goto(`${baza}/mydarrin-devino-partener.html`, { waitUntil: 'domcontentloaded' });
+          await page.goto(`${baza}/mydarrin-devino-partener-wizard.html`, { waitUntil: 'domcontentloaded' });
           await page.waitForFunction(() => !document.documentElement.classList.contains('myd-i18n-pending'));
-          const inainte = await page.evaluate(() => ['f-firma', 'f-nrregcom', 'f-sediu'].map((id) => { const el = document.getElementById(id); return [el.disabled, el.readOnly]; }));
-          await page.evaluate(() => { const el = document.getElementById('f-cui'); el.value = 'RO46577229'; return validateCUI(el); });
+          // Cont simulat (țara RO); Supabase e blocat în test.
+          await page.evaluate(() => {
+            window.MyDarrinAuth = Object.assign(window.MyDarrinAuth || {}, { getCurrentUser: async () => ({ id: 'u-test' }) });
+            window.supabaseClient = { from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { tara: 'RO' } }) }) }) }) };
+          });
+          const campuri = ['s2-firma', 's2-nrregcom', 's2-sediu'];
+          const inainte = await page.evaluate((ids) => ids.map((id) => { const el = document.getElementById(id); return [el.disabled, el.readOnly]; }), campuri);
+          await page.evaluate(() => { document.getElementById('s2-cui').value = 'RO46577229'; return cautaCUI(); });
           const asteptat = MESAJE_ANAF[cod][limba];
-          await page.waitForFunction((t) => (document.getElementById('cui-status').textContent || '').trim() === t, asteptat, { timeout: 3000 })
-            .catch(async () => { throw new Error(`mesaj afișat: ${JSON.stringify(await page.textContent('#cui-status'))}`); });
-          const dupa = await page.evaluate(() => ['f-firma', 'f-nrregcom', 'f-sediu'].map((id) => { const el = document.getElementById(id); return [el.disabled, el.readOnly]; }));
+          await page.waitForFunction((t) => (document.getElementById('s2-cui-msg').textContent || '').trim() === t, asteptat, { timeout: 3000 })
+            .catch(async () => { throw new Error(`mesaj afișat: ${JSON.stringify(await page.textContent('#s2-cui-msg'))}`); });
+          const dupa = await page.evaluate((ids) => ids.map((id) => { const el = document.getElementById(id); return [el.disabled, el.readOnly]; }), campuri);
           egal(dupa, inainte, 'starea câmpurilor după eroarea ANAF');
           egal(dupa.some(([, ro]) => ro), false, 'câmp readonly');
           egal(erori, [], 'erori JS');

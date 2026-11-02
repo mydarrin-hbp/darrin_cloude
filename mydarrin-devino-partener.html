@@ -141,6 +141,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
     }
   </script>
 <link rel="stylesheet" href="ui-public.css">
+<style>.svc-card.type-opt.sel{outline:2px solid #FF8C00;outline-offset:2px}</style>
 </head>
 <body>
 
@@ -517,9 +518,10 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 
   <script>
   function switchHeroTab(tab) {
-    // Pasul 11-R2: fără cont, fereastra comună se deschide cu rolul tipului ales.
-    if (tab === 'wizard' && window.MDCont && typeof selectedPartnerType !== 'undefined') {
-      window.MDCont.deschidePentruRol('partener_' + selectedPartnerType);
+    // Pasul 11-R3: alegerea tipului duce la cont (fereastra comună) sau, conectat, la dashboard.
+    if (tab === 'wizard' && typeof openPartnerModal === 'function') {
+      openPartnerModal(selectedPartnerType);
+      return;
     }
     var tabs   = ['intro','wizard','cumfunc','benefits'];
     var panels = { wizard:'hpanel-wizard', cumfunc:'hpanel-cumfunc', benefits:'hpanel-benefits' };
@@ -575,7 +577,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
 
       <!-- SERVICII -->
-      <div class="svc-card reveal" onclick="openPartnerModal('servicii')">
+      <div class="svc-card reveal type-opt" data-partner-type="servicii" role="button" tabindex="0" onclick="openPartnerModal('servicii')" onkeydown="if(event.key==='Enter')openPartnerModal('servicii')">
         <div class="hot-badge">Popular</div>
         <div class="card-bar" style="background:#FF8C00"></div>
         <div class="p-7 flex flex-col gap-4 flex-1">
@@ -603,7 +605,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
       </div>
 
       <!-- MATERIALE -->
-      <div class="svc-card reveal d1" onclick="openPartnerModal('materiale')">
+      <div class="svc-card reveal d1 type-opt" data-partner-type="materiale" role="button" tabindex="0" onclick="openPartnerModal('materiale')" onkeydown="if(event.key==='Enter')openPartnerModal('materiale')">
         <div class="card-bar" style="background:#003366"></div>
         <div class="p-7 flex flex-col gap-4 flex-1">
           <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl" style="background:linear-gradient(135deg,#EBF4FB,#DDE6F5)"><i data-lucide="package" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
@@ -630,7 +632,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
       </div>
 
       <!-- INCHIRIERI -->
-      <div class="svc-card reveal d2" onclick="openPartnerModal('inchirieri')">
+      <div class="svc-card reveal d2 type-opt" data-partner-type="inchirieri" role="button" tabindex="0" onclick="openPartnerModal('inchirieri')" onkeydown="if(event.key==='Enter')openPartnerModal('inchirieri')">
         <div class="card-bar" style="background:#7C3AED"></div>
         <div class="p-7 flex flex-col gap-4 flex-1">
           <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl" style="background:linear-gradient(135deg,#F3E8FF,#E9D5FF)"><i data-lucide="hard-hat" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
@@ -657,7 +659,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
       </div>
 
       <!-- CURIER -->
-      <div class="svc-card reveal" onclick="openPartnerModal('curier')">
+      <div class="svc-card reveal type-opt" data-partner-type="curier" role="button" tabindex="0" onclick="openPartnerModal('curier')" onkeydown="if(event.key==='Enter')openPartnerModal('curier')">
         <div class="card-bar" style="background:#D97706"></div>
         <div class="p-7 flex flex-col gap-4 flex-1">
           <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl" style="background:linear-gradient(135deg,#FEF3C7,#FDE68A)"><i data-lucide="truck" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
@@ -684,7 +686,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
       </div>
 
       <!-- ASIGURARI -->
-      <div class="svc-card reveal d1" onclick="openPartnerModal('asigurari')">
+      <div class="svc-card reveal d1 type-opt" data-partner-type="asigurari" role="button" tabindex="0" onclick="openPartnerModal('asigurari')" onkeydown="if(event.key==='Enter')openPartnerModal('asigurari')">
         <div class="card-bar" style="background:#0E9E99"></div>
         <div class="p-7 flex flex-col gap-4 flex-1">
           <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl" style="background:linear-gradient(135deg,#E0F5F4,#B3E8E6)"><i data-lucide="shield" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
@@ -1116,209 +1118,6 @@ function submitNewsletter() {
 
 </footer>
 
-<!-- ════ WIZARD MODAL ════ -->
-<div id="partner-modal" class="hidden fixed inset-0 z-[400] flex items-center justify-center p-3" style="display:none">
-  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closePartnerModal()"></div>
-  <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl z-10 overflow-hidden" style="max-height:92vh;overflow-y:auto">
-
-    <!-- Header gradient -->
-    <div id="pm-header" style="background:linear-gradient(135deg,#001E3C,#003366);padding:22px 28px 18px;position:sticky;top:0;z-index:10">
-      <button onclick="closePartnerModal()" style="position:absolute;top:16px;right:16px;width:30px;height:30px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);cursor:pointer;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center">×</button>
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
-        <div id="pm-icon" style="width:42px;height:42px;border-radius:12px;background:#FF8C00;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0"><i data-lucide="wrench" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-        <div>
-          <div id="pm-title" style="font-weight:800;color:#fff;font-size:16px;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Devino Partener My Darrin</div>
-          <div id="pm-subtitle" style="font-size:11px;color:rgba(255,255,255,.55);margin-top:2px">Înregistrare gratuită · Verificare de către echipa My Darrin</div>
-        </div>
-      </div>
-      <!-- Progress steps -->
-      <div style="display:flex;gap:0;align-items:center" id="pm-steps">
-        <div class="pm-step active" id="pms-0" onclick="goWizStep(0)" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer">
-          <div style="width:26px;height:26px;border-radius:50%;background:#FF8C00;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center">1</div>
-          <div style="font-size:9px;font-weight:700;color:#FF8C00;text-align:center">Date bază</div>
-        </div>
-        <div style="flex:1;height:2px;background:rgba(255,255,255,.15);margin-bottom:14px"></div>
-        <div class="pm-step" id="pms-1" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="goWizStep(1)">
-          <div id="pm-dot-1" style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.15);color:rgba(255,255,255,.5);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center">2</div>
-          <div style="font-size:9px;font-weight:600;color:rgba(255,255,255,.4);text-align:center">Profesii</div>
-        </div>
-        <div style="flex:1;height:2px;background:rgba(255,255,255,.15);margin-bottom:14px"></div>
-        <div class="pm-step" id="pms-2" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="goWizStep(2)">
-          <div id="pm-dot-2" style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.15);color:rgba(255,255,255,.5);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center">3</div>
-          <div style="font-size:9px;font-weight:600;color:rgba(255,255,255,.4);text-align:center">Dotări</div>
-        </div>
-        <div style="flex:1;height:2px;background:rgba(255,255,255,.15);margin-bottom:14px"></div>
-        <div class="pm-step" id="pms-3" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="goWizStep(3)">
-          <div id="pm-dot-3" style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.15);color:rgba(255,255,255,.5);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center">4</div>
-          <div style="font-size:9px;font-weight:600;color:rgba(255,255,255,.4);text-align:center">Documente</div>
-        </div>
-        <div style="flex:1;height:2px;background:rgba(255,255,255,.15);margin-bottom:14px"></div>
-        <div class="pm-step" id="pms-4" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="goWizStep(4)">
-          <div id="pm-dot-4" style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.15);color:rgba(255,255,255,.5);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center">5</div>
-          <div style="font-size:9px;font-weight:600;color:rgba(255,255,255,.4);text-align:center">Contract</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- CONTENT STEPS -->
-    <div style="padding:22px 24px" id="pm-content">
-
-      <div id="wiz-step-0">
-        <!-- Selector tip furnizor -->
-        <div style="margin-bottom:18px">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:10px">Selectează tipul de partener *</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px" id="type-selector">
-            <div onclick="selectType('servicii',this)" data-partner-type="servicii" class="type-opt" style="border:1.5px solid #D5DFE8;border-radius:13px;padding:12px 10px;cursor:pointer;text-align:center;transition:all .18s" onmouseover="if(!this.classList.contains('sel'))this.style.borderColor='#FF8C00'" onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='#D5DFE8'">
-              <div style="font-size:22px;margin-bottom:6px"><i data-lucide="wrench" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-              <div style="font-size:11.5px;font-weight:700;color:#1A2332">Servicii</div>
-              <div style="font-size:10px;color:#5A6B7D;margin-top:3px">Instalatori, electricieni...</div>
-            </div>
-            <div onclick="selectType('materiale',this)" data-partner-type="materiale" class="type-opt" style="border:1.5px solid #D5DFE8;border-radius:13px;padding:12px 10px;cursor:pointer;text-align:center;transition:all .18s" onmouseover="if(!this.classList.contains('sel'))this.style.borderColor='#003366'" onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='#D5DFE8'">
-              <div style="font-size:22px;margin-bottom:6px"><i data-lucide="package" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-              <div style="font-size:11.5px;font-weight:700;color:#1A2332">Materiale</div>
-              <div style="font-size:10px;color:#5A6B7D;margin-top:3px">Construcții, finisaje...</div>
-            </div>
-            <div onclick="selectType('inchirieri',this)" data-partner-type="inchirieri" class="type-opt" style="border:1.5px solid #D5DFE8;border-radius:13px;padding:12px 10px;cursor:pointer;text-align:center;transition:all .18s" onmouseover="if(!this.classList.contains('sel'))this.style.borderColor='#0E9E99'" onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='#D5DFE8'">
-              <div style="font-size:22px;margin-bottom:6px"><i data-lucide="hard-hat" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-              <div style="font-size:11.5px;font-weight:700;color:#1A2332">Închirieri</div>
-              <div style="font-size:10px;color:#5A6B7D;margin-top:3px">Utilaje, echipamente...</div>
-            </div>
-            <div onclick="selectType('curier',this)" data-partner-type="curier" class="type-opt" style="border:1.5px solid #D5DFE8;border-radius:13px;padding:12px 10px;cursor:pointer;text-align:center;transition:all .18s" onmouseover="if(!this.classList.contains('sel'))this.style.borderColor='#7C3AED'" onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='#D5DFE8'">
-              <div style="font-size:22px;margin-bottom:6px"><i data-lucide="bike" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-              <div style="font-size:11.5px;font-weight:700;color:#1A2332">Curier cartier</div>
-              <div style="font-size:10px;color:#5A6B7D;margin-top:3px">Livrare ultimul km</div>
-            </div>
-            <div onclick="selectType('asigurari',this)" data-partner-type="asigurari" class="type-opt" style="border:1.5px solid #D5DFE8;border-radius:13px;padding:12px 10px;cursor:pointer;text-align:center;transition:all .18s" onmouseover="if(!this.classList.contains('sel'))this.style.borderColor='#1A7A3A'" onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='#D5DFE8'">
-              <div style="font-size:22px;margin-bottom:6px"><i data-lucide="shield" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-              <div style="font-size:11.5px;font-weight:700;color:#1A2332">Asigurări</div>
-              <div style="font-size:10px;color:#5A6B7D;margin-top:3px">Polițe, atestate ASF</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tip entitate juridică -->
-        <div style="margin-bottom:14px">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:8px">Formă juridică *</div>
-          <!-- Pasul 11-P1: opțiunile vin din forme-juridice-public.js (aceleași coduri ca lib/forme-juridice.js). -->
-          <select id="f-entitate" onchange="toggleTrezorerie(this.value)" required style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;background:#fff;cursor:pointer">
-            <option value="">Alege forma juridică</option>
-          </select>
-          <div id="f-forma-locala-wrap" style="display:none;margin-top:8px">
-            <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Forma juridică locală *</label>
-            <input type="text" id="f-forma-locala" placeholder="GmbH, Ltd, EOOD..." maxlength="60" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
-          </div>
-          <div id="f-trezorerie-wrap" style="display:none;margin-top:8px">
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-              <input type="checkbox" id="f-trezorerie" style="width:16px;height:16px;accent-color:#FF8C00"/>
-              <span style="font-size:12px;color:#1A2332">Contul bancar de mai jos este un cont de trezorerie</span>
-            </label>
-          </div>
-        </div>
-
-        <!-- Date firmă -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-          <div>
-            <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Denumire firmă *</label>
-            <input type="text" id="f-firma" placeholder="Construct Val SRL" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
-          </div>
-          <div>
-            <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">CUI / nr. de înregistrare * <span id="cui-status" style="font-size:9px;color:#0E9E99"></span></label>
-            <input type="text" id="f-cui" placeholder="RO12345678" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="validateCUI(this)" oninput="if(!MDFormeJuridice.esteStraina(document.getElementById('f-entitate').value))this.value=this.value.replace(/[^0-9RO]/g,'')"/>
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-bottom:10px">
-          <div>
-            <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Nr. reg. comerțului</label>
-            <input type="text" id="f-nrregcom" placeholder="J22/123/2020" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
-          </div>
-          <div>
-            <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Adresă sediu social <span id="sediu-status" style="font-size:9px;color:#0E9E99"></span></label>
-            <input type="text" id="f-sediu" placeholder="Str. Exemplu 1, Iași" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-          <div>
-            <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Prenume administrator *</label>
-            <input type="text" id="f-prenume" placeholder="Valentin" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
-          </div>
-          <div>
-            <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Nume administrator *</label>
-            <input type="text" id="f-nume" placeholder="Popescu" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-          <div>
-            <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Email *</label>
-            <input type="email" id="f-email" placeholder="nume@firma.ro" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
-          </div>
-          <div>
-            <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Telefon *</label>
-            <input type="tel" id="f-tel" placeholder="+40 7xx xxx xxx" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
-          </div>
-        </div>
-        <!-- Cont bancar + Zona -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-          <div>
-            <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">IBAN cont încasări <span style="text-transform:none;font-weight:500;color:#8C9BAD">(opțional acum)</span> <span id="iban-status" style="font-size:9px"></span></label>
-            <input type="text" id="f-iban" placeholder="RO49RZBR0000060001234567" maxlength="34" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:12px;font-family:monospace;outline:none;transition:border-color .18s;letter-spacing:.04em" onfocus="this.style.borderColor='#003366'" oninput="validateIBAN(this)" onblur="this.style.borderColor='#D5DFE8'"/>
-          </div>
-          <div>
-            <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Banca <span style="text-transform:none;font-weight:500;color:#8C9BAD">(opțional acum)</span></label>
-            <input type="text" id="f-banca" placeholder="Banca Transilvania" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'"/>
-          </div>
-        </div>
-        <p style="font-size:11px;color:#8C9BAD;margin:-4px 0 10px">Poți crea contul și fără datele bancare — le vei completa obligatoriu înainte de a putea prelua prima comandă.</p>
-        <div style="margin-bottom:10px">
-          <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:5px">Regiune / Județ</label>
-          <select id="f-judet" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;background:#fff;cursor:pointer" onfocus="this.style.borderColor='#003366'" onblur="this.style.borderColor='#D5DFE8'">
-            <option value="">Se încarcă regiunile...</option>
-          </select>
-        </div>
-
-        <!-- ECHIPĂ — mutat post-autentificare (Pasul 5 din wizard-ul complet):
-             colectarea de CNP-uri fără o sesiune reală (înainte de cont) nu
-             poate fi legată în siguranță de un partener autentificat. -->
-        <div style="border-top:1px solid #EEF2F7;padding-top:14px;margin-bottom:10px">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:6px">Membri echipă autorizați</div>
-          <div style="font-size:12px;color:#5A6B7D;line-height:1.6">Se completează după confirmarea contului, la Pasul 5 din wizard-ul complet de înregistrare (registru angajați, legat de nomenclatorul ESCO).</div>
-        </div>
-
-        <button onclick="goWizStep(1)" style="width:100%;padding:13px;border-radius:13px;border:none;background:#FF8C00;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 5px 18px rgba(255,140,0,.3);transition:all .2s" onmouseover="this.style.background='#CC7000'" onmouseout="this.style.background='#FF8C00'">
-          Continuă → Profesii & Servicii
-        </button>
-      </div>
-
-      <!-- ═══ STEP 1: Profesii & Categorii ═══ -->
-
-      <div id="wiz-step-1" style="display:none"></div>
-      <div id="wiz-step-2" style="display:none"></div>
-      <div id="wiz-step-3" style="display:none"></div>
-      <div id="wiz-step-4" style="display:none"></div>
-
-      <div id="wiz-step-success" style="display:none;text-align:center;padding:20px 10px">
-        <div style="font-size:56px;margin-bottom:14px"><i data-lucide="party-popper" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-        <h3 style="font-size:20px;font-weight:800;color:#1A2332;margin-bottom:8px;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Cerere înregistrată cu succes!</h3>
-        <div style="background:linear-gradient(135deg,#E0F5F4,#EBF4FB);border-radius:14px;padding:16px;margin:16px 0;border:1px solid #D5DFE8">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:8px">Cod cont</div>
-          <div style="font-size:24px;font-weight:800;color:#003366;letter-spacing:.06em;font-family:monospace" id="partner-id-display">—</div>
-          <div style="font-size:10px;color:#5A6B7D;margin-top:6px;font-weight:600">Cod de referință al contului tău</div>
-        </div>
-        <div style="font-size:13px;color:#5A6B7D;line-height:1.7;margin-bottom:16px">
-          <span id="confirm-email-line">—</span><br/>
-          Documentele se încarcă din dashboard, la „Documentele mele”; le verifică echipa My Darrin.<br/>
-          Cont: <strong style="color:#0E9E99" id="final-ocr-score">—</strong>
-        </div>
-        <div style="display:flex;gap:10px;flex-direction:column">
-          <a id="success-dashboard-link" href="mydarrin-dashboard-partener.html" style="display:block;padding:13px;border-radius:13px;background:#003366;color:#fff;font-size:14px;font-weight:700;text-decoration:none;transition:all .2s">
-            Accesează Dashboard →
-          </a>
-          <button onclick="closePartnerModal()" style="padding:11px;border-radius:12px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Închide</button>
-        </div>
-      </div>
-
-</div>
-  </div>
-</div>
 <script>
 (function() {
   function initReveal() {
@@ -1332,295 +1131,18 @@ function submitNewsletter() {
 </script>
 
 <script>
-const WIZARD_DATA = {
-
-  // ════ SERVICII ════
-  servicii: {
-    steps: ['Date bază','Profesii & Servicii','Echipamente','Documente','Contract'],
-    step1: {
-      title:'Profesii & Servicii active',
-      subtitle:'Selectează domeniu NACE → subcategorie → serviciile pe care le oferi.',
-      naceOptions:[
-        {val:'F43',label:'Lucrări construcții speciale'},
-        {val:'F41',label:'Construcții clădiri'},
-        {val:'F42',label:'Construcții drumuri'},
-      ],
-      naceSubOptions:[
-        {val:'F43.22',label:'Instalații sanitare, termice, AC'},
-        {val:'F43.21',label:'Instalații electrice'},
-        {val:'F43.31',label:'Lucrări tencuială'},
-        {val:'F43.34',label:'Zugrăveli & vopsitorie'},
-      ],
-      services:[
-        {label:'Montaj obiecte sanitare (lavoar, WC, cadă)',sub:'Instalator · Zona A',price:'',checked:true},
-        {label:'Reparații instalații apă-canal',sub:'Instalator',price:'',checked:true},
-        {label:'Montaj centrală termică + calorifere',sub:'Instalator + Atestat ISCIR',price:'',checked:true},
-        {label:'Instalații AC split',sub:'Necesită atestat F-gas',price:'',checked:false},
-        {label:'Desfundare canalizare profesională',sub:'Echipament special',price:'',checked:false},
-      ],
-      rateInfo:'Tarifele se calculează pe server din rețetele tehnice; <strong>nu editezi prețurile direct.</strong> Serviciile și zonele se configurează după înregistrare, din dashboard.',
-      zones:['Sector 1','Sector 2','Sector 3','Sector 4','Sector 5','Sector 6','Ilfov'],
-      zonesChecked:[true,true,true,false,false,false,false],
-    },
-    step2: {
-      title:'Echipamente & Dotări obligatorii',
-      subtitle:'Bazat pe serviciile selectate, confirmă că deții echipamentele necesare.',
-      source:'Instalator · Instalații sanitare, termice, AC',
-      items:[
-        {label:'Set scule instalații sanitare (chei, cleșți, clupă)',sub:'Obligatoriu',checked:true,required:true},
-        {label:'Aparat sudură polipropilene (PPR)',sub:'Obligatoriu pentru montaj țevi PPR',checked:true,required:true},
-        {label:'Telefon cu acces la internet',sub:'Pentru dashboard-ul de partener',checked:true,required:true},
-        {label:'Transport propriu',sub:'Recomandat pentru mobilitate rapidă',checked:true,required:false},
-        {label:'Echipament desfundare (spirală motorică)',sub:'Necesar dacă oferi serviciul desfundare',checked:false,required:false},
-      ],
-    },
-    step3: {
-      title:'Documente KYC & Autorizații',
-      subtitle:'Documentele se încarcă din dashboard, după ce îți setezi parola',
-      docs:[
-        {label:'CI / Pașaport administrator',required:true,note:''},
-        {label:'Certificat înregistrare firmă (J/...)',required:true,note:''},
-        {label:'Atestat ISCIR / Autorizație instalator',required:true,note:''},
-        {label:'Poliță asigurare RC (opțional)',required:false,note:''},
-      ],
-    },
-  },
-
-  // ════ MATERIALE ════
-  materiale: {
-    steps: ['Date bază','Catalog produse','Logistică & Stoc','Documente','Contract'],
-    step1: {
-      title:'Catalog produse & Categorii',
-      subtitle:'Selectează categoriile de materiale pe care le furnizezi în Marketplace My Darrin.',
-      naceOptions:[
-        {val:'G46',label:'Comerț cu ridicata'},
-        {val:'G47',label:'Comerț cu amănuntul'},
-      ],
-      naceSubOptions:[
-        {val:'G46.73',label:'Materiale de construcții'},
-        {val:'G46.69',label:'Produse electrice & sanitare'},
-        {val:'G46.61',label:'Mașini agricole și forestiere'},
-      ],
-      services:[
-        {label:'Materiale construcții (ciment, BCA, cărămidă)',sub:'Livrare șantier · Paleți',price:'',checked:true},
-        {label:'Produse sanitare (țevi PPR, PEX, fitinguri)',sub:'Stoc permanent · Livrare 24h',price:'',checked:true},
-        {label:'Produse electrice & cabluri',sub:'Certificare CE obligatorie',price:'',checked:true},
-        {label:'Finisaje & vopsele (Caparol, Baumit)',sub:'Disponibil la comandă',price:'',checked:false},
-        {label:'Lemn & cherestea (OSB, PAL, MDF)',sub:'Livrare la dimensiune',price:'',checked:false},
-      ],
-      rateInfo:'Prețurile le introduci tu, per produs, în Catalog, după înregistrare. Acorzi un discount comercial de 5–15% față de prețul public, configurat la crearea contului sau din dashboard; facturarea e automată, doar pentru ce s-a livrat.',
-      zones:['București','Ilfov','Iași','Cluj','Brașov','Timiș','Național'],
-      zonesChecked:[true,true,false,false,false,false,false],
-    },
-    step2: {
-      title:'Logistică, stoc și produse',
-      subtitle:'Configurează modul de livrare și felul în care îți adaugi produsele.',
-      source:'Marketplace My Darrin · catalog_resources',
-      items:[
-        {label:'Stoc propriu disponibil pentru livrare imediată',sub:'Actualizat de tine, din dashboard sau prin CSV',checked:true,required:true},
-        {label:'Transport / Livrare proprie',sub:'Camionete, paleți, transport ADR dacă e cazul',checked:true,required:false},
-        {label:'Poze produse (min 1 poză per produs)',sub:'JPG/PNG · min 800×800px',checked:true,required:true},
-        {label:'Fișe tehnice PDF produse principale',sub:'Recomandat pentru produse tehnice',checked:false,required:false},
-      ],
-      integrations:[
-        {icon:'',label:'Adăugare manuală',note:'Din dashboard-ul de furnizor'},
-        {icon:'',label:'Import CSV',note:'După șablonul din dashboard'},
-        {icon:'',label:'Feed / API magazin propriu',note:'În curând'},
-      ],
-    },
-    step3: {
-      title:'Documente furnizor materiale',
-      subtitle:'Documente necesare pentru activarea în Marketplace.',
-      docs:[
-        {label:'CI / Pașaport administrator',required:true,note:''},
-        {label:'Certificat înregistrare firmă + CUI',required:true,note:'Validare ANAF automată'},
-        {label:'Certificat calitate / ISO 9001 (dacă există)',required:false,note:'Crește vizibilitatea în catalog'},
-        {label:'Listă produse cu specificații tehnice',required:false,note:'PDF sau XLS · Importat în catalog'},
-        {label:'Poliță asigurare marfă (opțional)',required:false,note:''},
-      ],
-    },
-  },
-
-  // ════ ÎNCHIRIERI ════
-  inchirieri: {
-    steps: ['Date bază','Echipamente disponibile','Calendar & Tarife','Documente','Contract'],
-    step1: {
-      title:'Echipamente disponibile pentru închiriere',
-      subtitle:'Selectează categoriile de echipamente și utilaje pe care le pui la dispoziție.',
-      naceOptions:[
-        {val:'N77',label:'Activități de închiriere și leasing'},
-        {val:'F43',label:'Lucrări construcții specializate'},
-      ],
-      naceSubOptions:[
-        {val:'N77.32',label:'Închiriere mașini și echipamente construcții'},
-        {val:'N77.11',label:'Închiriere autoturisme și autoutilitare'},
-        {val:'N77.39',label:'Alte activități de închiriere și leasing'},
-      ],
-      services:[
-        {label:'Utilaje grele (excavatoare, buldozere, încărcătoare)',sub:'Cu sau fără operator calificat',price:'',checked:true},
-        {label:'Scule electrice (flex, mașini sudură, generatoare)',sub:'Livrare și ridicare inclusă',price:'',checked:true},
-        {label:'Acces & Siguranță (nacele, schele, macarale)',sub:'Montaj și demontaj inclus',price:'',checked:false},
-        {label:'Vehicule & Transport (camionete, dubițe, camioane)',sub:'Cu sau fără șofer',price:'',checked:false},
-        {label:'Personal calificat (operator, electrician, sudor)',sub:'Trimis la șantier',price:'',checked:false},
-      ],
-      rateInfo:'Tarifele le propui tu, per echipament, după înregistrare. Acorzi un discount comercial de 5–15% față de prețul public, configurat la crearea contului sau din dashboard; facturarea e automată, doar pentru ce s-a livrat.',
-      zones:['Sector 1','Sector 2','Sector 3','Sector 4','Sector 5','Sector 6','Ilfov','Național'],
-      zonesChecked:[true,true,true,true,false,false,false,false],
-    },
-    step2: {
-      title:'Calendar disponibilitate & Tarife',
-      subtitle:'Setează disponibilitatea echipamentelor și tarifele per interval.',
-      source:'Disponibilitate · Rezervări prin platformă',
-      items:[
-        {label:'Calendar de disponibilitate — în curând',sub:'Calendarul din dashboard este în pregătire',checked:false,required:false},
-        {label:'Poze echipamente (min 2 per echipament)',sub:'JPG/PNG · Stare actuală · Fără watermark',checked:true,required:true},
-        {label:'Fișe tehnice echipamente (PDF)',sub:'Capacitate, dimensiuni, consum combustibil',checked:false,required:false},
-        {label:'Service & Inspecție tehnică la zi',sub:'ITP, tahograf, verificări periodice',checked:true,required:true},
-        {label:'Asigurare CASCO / RCA echipamente',sub:'Obligatorie pentru utilaje și vehicule',checked:true,required:true},
-      ],
-      tarife:[
-        {label:'Tarif pe zi',placeholder:'ex: 800 Lei/zi'},
-        {label:'Tarif pe săptămână',placeholder:'ex: 4.500 Lei/săpt.'},
-        {label:'Tarif pe lună',placeholder:'ex: 16.000 Lei/lună'},
-      ],
-    },
-    step3: {
-      title:'Documente furnizor închirieri',
-      subtitle:'Documente necesare pentru activare și asigurarea juridică a operațiunilor.',
-      docs:[
-        {label:'CI / Pașaport administrator',required:true,note:''},
-        {label:'Certificat înregistrare firmă + CUI',required:true,note:'Validare ANAF'},
-        {label:'ITP / Inspecție tehnică utilaje (valabile)',required:true,note:'Alertă expirare automată'},
-        {label:'Polița RCA + CASCO echipamente',required:true,note:'Obligatorie pentru vehicule'},
-        {label:'Autorizații operator (ISCIR, permise)',required:false,note:'Dacă oferi operator inclus'},
-        {label:'Regulament intern utilizare echipamente',required:false,note:'Semnat de chiriaș la predare'},
-      ],
-    },
-  },
-
-  // ════ CURIER CARTIER ════
-  curier: {
-    steps: ['Date bază','Tip livrare & Vehicul','Disponibilitate & Zonă','Documente','Contract'],
-    step1: {
-      title:'Tip livrare & Vehicul de transport',
-      subtitle:'Selectează modul de livrare și tipul de vehicul folosit.',
-      naceOptions:[
-        {val:'H49',label:'Transport rutier de mărfuri'},
-        {val:'H53',label:'Activități poștale și de curierat'},
-      ],
-      naceSubOptions:[
-        {val:'H49.41',label:'Transport rutier de mărfuri'},
-        {val:'H53.20',label:'Alte activități poștale și curierat'},
-      ],
-      services:[
-        {label:'Bicicletă / Trotinetă electrică',sub:'Colete mici · max 10kg · Eco friendly',price:'',checked:true},
-        {label:'Motocicletă / Scuter',sub:'Colete medii · max 25kg · Rapid',price:'',checked:false},
-        {label:'Autoturism',sub:'Colete mari · max 50kg · Confort',price:'',checked:false},
-        {label:'Autoutilitară',sub:'Paleți, mobilă · max 500kg',price:'',checked:false},
-        {label:'Livrare materiale construcții',sub:'Coordonare cu furnizori Marketplace',price:'',checked:false},
-      ],
-      rateInfo:'Tarifele le propui tu, după înregistrare. 0% comision: primești 100% din tariful de transport. Comenzile se alocă automat în funcție de zonă.',
-      zones:['Sector 1','Sector 2','Sector 3','Sector 4','Sector 5','Sector 6'],
-      zonesChecked:[false,true,true,false,false,false],
-    },
-    step2: {
-      title:'Program, disponibilitate & Zona exactă',
-      subtitle:'Setează orarul de lucru și raza maximă de livrare.',
-      source:'Program și zonă de livrare',
-      items:[
-        {label:'Program de lucru (ore, zile)',sub:'Setezi orele din dashboard',checked:true,required:true},
-        {label:'Raza maximă de livrare (km)',sub:'Tu alegi raza de livrare',checked:true,required:true},
-        {label:'Disponibil pentru comenzi urgente',sub:'Tariful de urgență se configurează în back-office',checked:true,required:false},
-        {label:'Program extins (seri, weekend)',sub:'Seri și weekend',checked:false,required:false},
-        {label:'Notificări pe email pentru comenzi noi',sub:'Comenzile apar și în dashboard',checked:true,required:true},
-      ],
-      program:[
-        {zi:'Luni–Vineri',ore:'08:00–20:00'},
-        {zi:'Sâmbătă',ore:'09:00–16:00'},
-        {zi:'Duminică',ore:'Indisponibil'},
-      ],
-    },
-    step3: {
-      title:'Documente curier cartier',
-      subtitle:'Documente necesare pentru activare și conformitate ANAF/ARR.',
-      docs:[
-        {label:'CI / Pașaport',required:true,note:''},
-        {label:'Permis conducere categoria corespunzătoare',required:true,note:'B pentru auto, A pentru moto'},
-        {label:'RCA vehicul (valabilă)',required:true,note:''},
-        {label:'Licență transport ARR',required:true,note:'OBLIGATORIE LEGAL — ARR pentru transport comercial mărfuri.'},
-        {label:'Cazier judiciar (dacă nu există PFA/SRL)',required:false,note:'Pentru persoane fizice'},
-      ],
-    },
-  },
-
-  // ════ ASIGURĂRI ════
-  asigurari: {
-    steps: ['Date bază','Tipuri polițe','Integrare API & Tarife','Documente ASF','Contract'],
-    step1: {
-      title:'Tipuri de polițe oferite',
-      subtitle:'Selectează produsele de asigurare pe care le poți emite automat în fluxul My Darrin.',
-      naceOptions:[
-        {val:'K65',label:'Activități de asigurare și reasigurare'},
-        {val:'K66',label:'Activități auxiliare asigurărilor'},
-      ],
-      naceSubOptions:[
-        {val:'K65.12',label:'Alte tipuri de asigurare generală'},
-        {val:'K66.22',label:'Activități de intermediere în asigurări'},
-      ],
-      services:[
-        {label:'Poliță garanție lucrare (Work Guarantee)',sub:'Emisă automat la finalizarea comenzii',price:'',checked:true},
-        {label:'Asigurare bunuri client (All Risk)',sub:'Opțional pentru client la comandă',price:'',checked:true},
-        {label:'Răspundere civilă profesională partener',sub:'RC Profesional · Obligatorie recomandată',price:'',checked:false},
-        {label:'Asigurare incendiu și calamități',sub:'Disponibilă la cerere client',price:'',checked:false},
-        {label:'RCA parteneri flotă My Darrin',sub:'Ofertă preferențială parteneri platformă',price:'',checked:false},
-      ],
-      rateInfo:'Polițele se înregistrează manual de echipa My Darrin; nu există încă integrare cu un asigurător extern. Acorzi un discount comercial de 5–15%, configurat la crearea contului sau din dashboard; facturarea e automată, doar pentru polițele emise. Atestat ASF obligatoriu.',
-      zones:['Național','EU Cross-border'],
-      zonesChecked:[true,false],
-    },
-    step2: {
-      title:'Integrare API & Configurare tarife',
-      subtitle:'Conectează sistemul tău de emitere polițe cu API-ul My Darrin.',
-      source:'API My Darrin · POST /insurance/emit · Webhook confirmare',
-      items:[
-        {label:'API Key emitere polițe (REST/SOAP)',sub:'Endpoint-ul sistemului tău de asigurări',checked:true,required:true},
-        {label:'Mod Sandbox / Test API',sub:'OBLIGATORIU — testează integrarea înainte de go-live cu polițe simulate fără costuri reale',checked:true,required:true,sandbox:true},
-        {label:'Emiterea poliței după acceptare',sub:'Poliță trimisă pe email clientului',checked:true,required:true},
-        {label:'Template-uri polițe (PDF customizate)',sub:'Brand-ul tău + sigla My Darrin co-brand',checked:false,required:false},
-        {label:'Webhook notificare expirare',sub:'Email către client înainte de expirare',checked:true,required:false},
-      ],
-      tarife:[
-        {label:'Discount (%) — poliță Work Guarantee',placeholder:'între 5 și 15',min:5,max:15},
-        {label:'Discount (%) — RC Profesional partener',placeholder:'între 5 și 15',min:5,max:15},
-        {label:'Limita maximă acoperire per eveniment',placeholder:'ex: 50.000 Lei'},
-        {label:'Fransiza per eveniment',placeholder:'ex: 500 Lei'},
-      ],
-    },
-    step3: {
-      title:'Documente ASF & Autorizații',
-      subtitle:'Documente obligatorii pentru intermediarii/asigurătorii autorizați ASF.',
-      docs:[
-        {label:'CI / Pașaport administrator',required:true,note:''},
-        {label:'Certificat înregistrare firmă + CUI',required:true,note:'Validare ANAF'},
-        {label:'Autorizație ASF (broker/agent asigurări)',required:true,note:'OBLIGATORIU · Verificare registru ASF'},
-        {label:'Certificat calificare IVASS/ASF',required:true,note:'Atestat agent/broker în vigoare'},
-        {label:'Poliță RC Profesională broker',required:true,note:'Obligatorie conform Legii 236/2018'},
-        {label:'Raport solvabilitate (dacă asigurător)',required:false,note:'Doar pentru companii asigurătoare'},
-      ],
-    },
-  },
-};
-
-// ══════════════════════════════════════════════════════════════
-// STATE GLOBAL
-// ══════════════════════════════════════════════════════════════
-let currentStep         = 0;
+// ══ Pasul 11-R3 (decizia LM, 2 nov. 2026) ═════════════════════════════
+// Pagina „Devino partener” e informativă. Fereastra publică de înscriere
+// (5 etape, 14 câmpuri, fără parolă) s-a scos: butoanele „Înscrie-te” și
+// cardurile de tip deschid fereastra comună de cont (cont-fereastra.js), cu
+// rolul deja ales. Utilizatorul conectat care alege un tip ajunge direct în
+// dashboard-ul rolului, în modul activare (lista „Activează contul”); alegerea
+// se salvează pe server (/api/cont/rol-solicitat). Datele firmei, contul
+// bancar, profesiile, dotările, documentele și contractul se completează din
+// dashboard.
 let selectedPartnerType = 'servicii';
+const TIPURI_PARTENER = ['servicii', 'materiale', 'inchirieri', 'curier', 'asigurari'];
 
-// ══════════════════════════════════════════════════════════════
-// OPEN / CLOSE
-// ══════════════════════════════════════════════════════════════
-// Întrebările frecvente (reconstruit din istoric, 79f1e8b; 9 oct. 2026).
 function toggleFAQ(btn){
   var item=btn.closest(".faq-item");
   if(!item) return;
@@ -1630,654 +1152,50 @@ function toggleFAQ(btn){
 }
 
 function handlePartnerNavigation(type) {
-  // Wrapper — toate navigările din mega-menu/sidebar trec prin gardă de cont, identic openPartnerModal
-  if (typeof openPartnerModal === 'function') {
-    openPartnerModal(type);
-  }
+  openPartnerModal(type);
 }
 
-function openPartnerModal(type) {
-  // Pasul 11-R1: linkurile „Asigurator” trimit type=asigurator; formularul e „asigurari”.
+// Cardul tipului ales, marcat pe pagină.
+function selectType(type) {
   if (type === 'asigurator') type = 'asigurari';
-  const modal = document.getElementById('partner-modal'); // modal guard
-  if (modal) {
-    modal.classList.remove('hidden');
-    modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-  }
-  selectedPartnerType = type || 'servicii';
-  renderStep(0);
-  // Scroll wizard into view
-  setTimeout(() => {
-    const wiz = document.getElementById('partner-modal') ||
-                document.getElementById('partner-wizard') ||
-                document.querySelector('.wizard-wrap');
-    if (wiz) wiz.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 50);
-  // Preselect type visually
-  setTimeout(() => {
-    if (type) {
-      const opts = document.querySelectorAll('.type-opt');
-      const idx  = {servicii:0,materiale:1,inchirieri:2,curier:3,asigurari:4}[type] ?? 0;
-      if (opts[idx]) selectType(type, opts[idx]);
-    }
-  }, 80);
-  // Pasul 11-R2: partenerul își face întâi contul, în fereastra comună, cu rolul
-  // deja ales; datele firmei le completează după cod (modul „cont existent”).
-  if (!CONT_EXISTENT && window.MDCont) window.MDCont.deschidePentruRol('partener_' + selectedPartnerType);
-}
-function closePartnerModal() {
-  const modal = document.getElementById('partner-modal');
-  if (modal) { modal.classList.add('hidden'); modal.style.display = 'none'; }
-  document.body.style.overflow = '';
-}
-
-// ══════════════════════════════════════════════════════════════
-// STEP NAVIGATION & RENDERING
-// ══════════════════════════════════════════════════════════════
-function goWizStep(n) {
-  currentStep = n;
-  renderStep(n);
-  // Scroll top
-  const c = document.getElementById('pm-content');
-  if (c) c.scrollTop = 0;
-}
-
-function renderStep(n) {
-  // Ascundem toate
-  for (let i = 0; i <= 4; i++) {
-    const el = document.getElementById('wiz-step-' + i);
-    if (el) el.style.display = 'none';
-  }
-  const succ = document.getElementById('wiz-step-success');
-  if (succ) succ.style.display = 'none';
-
-  // Actualizăm step dots
-  updateDots(n);
-
-  // Afișăm stepul curent
-  const el = document.getElementById('wiz-step-' + n);
-  if (!el) return;
-  el.style.display = 'block';
-
-  // Step 0 e static (HTML deja în pagină)
-  if (n === 0) return;
-
-  // Steps 1-4: randăm dinamic
-  const data = WIZARD_DATA[selectedPartnerType];
-  if (!data) return;
-
-  if (n === 1) el.innerHTML = renderStep1(data.step1, data.steps[1]);
-  if (n === 2) el.innerHTML = renderStep2(data.step2, data.steps[2]);
-  if (n === 3) el.innerHTML = renderStep3(data.step3, data.steps[3]);
-  if (n === 4) el.innerHTML = renderStep4();
-}
-
-function updateDots(n) {
-  const meta  = PARTNER_META[selectedPartnerType];
-  const color = meta?.color || '#FF8C00';
-  // Actualizăm titlul
-  const pmIcon  = document.getElementById('pm-icon');
-  const pmTitle = document.getElementById('pm-title');
-  const pmSub   = document.getElementById('pm-subtitle');
-  if (pmIcon)  { pmIcon.textContent = meta?.icon || ''; pmIcon.style.background = color; }
-  if (pmTitle) pmTitle.textContent = 'Devino ' + (meta?.title || 'Partener');
-  // Step labels
-  const data   = WIZARD_DATA[selectedPartnerType];
-  const labels = data?.steps || ['Date bază','Profesii','Dotări','Documente','Contract'];
-  // Dot 0
-  const d0 = document.querySelector('#pms-0 div');
-  if (d0) { d0.style.background = n===0 ? color : '#0E9E99'; d0.textContent = n===0 ? '1' : ''; }
-  for (let i = 1; i <= 4; i++) {
-    const dot = document.getElementById('pm-dot-' + i);
-    const lbl = document.getElementById('pm-lbl-' + i);
-    if (!dot) continue;
-    if (i < n) { dot.style.background='#0E9E99'; dot.style.color='#fff'; dot.textContent=''; }
-    else if (i === n) { dot.style.background=color; dot.style.color='#fff'; dot.textContent=String(i+1); }
-    else { dot.style.background='rgba(255,255,255,.15)'; dot.style.color='rgba(255,255,255,.5)'; dot.textContent=String(i+1); }
-    if (lbl && labels[i]) lbl.textContent = labels[i];
-  }
-}
-
-// ── STEP 1: Profesii / Catalog / Echipamente disponibile / Tip livrare / Polițe ──
-function renderStep1(d, stepTitle) {
-  const color  = PARTNER_META[selectedPartnerType]?.color || '#FF8C00';
-  const isMatOrInch = selectedPartnerType==='materiale' || selectedPartnerType==='inchirieri';
-  const isAsig = selectedPartnerType === 'asigurari';
-
-  let naceHtml = '';
-  if (!isAsig) {
-    naceHtml = `
-    <div style="margin-bottom:12px">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:7px">Domeniu NACE/CAEN</div>
-      <select id="nace-cat" onchange="loadSubCat(this.value)" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;background:#fff;margin-bottom:8px">
-        ${d.naceOptions.map(o=>`<option value="${o.val}">${o.label}</option>`).join('')}
-      </select>
-      <select id="nace-sub" style="width:100%;border:1.5px solid #D5DFE8;border-radius:11px;padding:10px 13px;font-size:13px;font-family:inherit;outline:none;background:#fff">
-        ${d.naceSubOptions.map(o=>`<option value="${o.val}">${o.label}</option>`).join('')}
-      </select>
-    </div>`;
-  }
-
-  const servicesHtml = d.services.map(s => `
-    <label style="display:flex;align-items:center;gap:10px;padding:10px 13px;background:#F8FAFC;border-radius:11px;border:1px solid #EEF2F7;cursor:pointer;transition:all .18s;margin-bottom:6px">
-      <input type="checkbox" ${s.checked?'checked':''} style="width:16px;height:16px;accent-color:${color};flex-shrink:0"/>
-      <div style="flex:1">
-        <div style="font-size:12.5px;font-weight:700;color:#1A2332">${s.label}</div>
-        <div style="font-size:10.5px;color:#5A6B7D">${s.sub}${s.price ? ' · <strong style="color:' + color + '">' + s.price + '</strong>' : ''}</div>
-      </div>
-      <span style="font-size:9.5px;font-weight:700;padding:3px 8px;border-radius:99px;background:${s.checked?'rgba(14,158,153,.1)':'#F0F4F8'};color:${s.checked?'#0B7A76':'#8C9BAD'}">${s.checked?'Selectat':'Neselectat'}</span>
-    </label>`).join('');
-
-  const zonesHtml = d.zones.map((z,i) => `
-    <label style="cursor:pointer;white-space:nowrap">
-      <input type="checkbox" ${d.zonesChecked[i]?'checked':''} style="accent-color:${color}"/>
-      <span style="font-size:12px;font-weight:600;color:#1A2332;margin-left:4px">${z}</span>
-    </label>`).join('');
-
-  // Integrări pentru materiale
-  let integrHtml = '';
-  if (selectedPartnerType === 'materiale' && d.services) {
-    integrHtml = `
-    <div style="background:#EBF4FB;border-radius:12px;padding:12px 14px;margin-bottom:12px;border:1px solid #D6E8F5">
-      <div style="font-size:10px;font-weight:700;color:#003366;margin-bottom:6px">Cum adaugi produsele</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <span style="font-size:11.5px;padding:5px 12px;border-radius:99px;background:#fff;border:1px solid #D5DFE8;cursor:pointer;color:#003366;font-weight:600">Adăugare manuală</span>
-        <span style="font-size:11.5px;padding:5px 12px;border-radius:99px;background:#fff;border:1px solid #D5DFE8;cursor:pointer;color:#003366;font-weight:600">Import CSV</span>
-        <span style="font-size:11.5px;padding:5px 12px;border-radius:99px;background:#fff;border:1px solid #D5DFE8;cursor:pointer;color:#003366;font-weight:600">Feed / API — în curând</span>
-      </div>
-    </div>`;
-  }
-
-  return `
-    <h3 style="font-size:15px;font-weight:800;color:#1A2332;margin-bottom:4px;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">${stepTitle}</h3>
-    <p style="font-size:12px;color:#5A6B7D;margin-bottom:14px">${d.subtitle}</p>
-    <div style="background:#EBF4FB;border:1px solid #D6E8F5;border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:11.5px;color:#1A5FAD;line-height:1.6">Selecțiile din acest pas sunt orientative și <strong>nu se salvează la înregistrare</strong>. Se trimit doar datele firmei și ale administratorului. Portofoliul, echipamentele și zonele le configurezi din dashboard, după ce îți setezi parola.</div>
-    ${naceHtml}
-    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:8px">
-      Servicii / Produse disponibile
-      <span style="font-size:9px;color:#8C9BAD;margin-left:5px">orientativ</span>
-    </div>
-    ${servicesHtml}
-    ${integrHtml}
-    <div style="background:#FFF8EE;border-radius:12px;padding:10px 14px;border:1px solid rgba(255,140,0,.2);margin-bottom:12px">
-      <div style="font-size:11.5px;color:#5A6B7D;line-height:1.6">${d.rateInfo}</div>
-    </div>
-    <div style="margin-bottom:14px">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:8px">Zona de activitate</div>
-      <div style="display:flex;gap:12px;flex-wrap:wrap">${zonesHtml}</div>
-    </div>
-    <div style="display:flex;gap:10px">
-      <button onclick="goWizStep(0)" style="flex:1;padding:12px;border-radius:12px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">← Înapoi</button>
-      <button onclick="goWizStep(2)" style="flex:2;padding:12px;border-radius:12px;border:none;background:${color};color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(0,0,0,.15)">Continuă →</button>
-    </div>`;
-}
-
-// ── STEP 2: Dotări / Logistică / Calendar / Program / API Asigurări ──
-function renderStep2(d, stepTitle) {
-  const color = PARTNER_META[selectedPartnerType]?.color || '#FF8C00';
-  const isCurier  = selectedPartnerType === 'curier';
-  const isAsig    = selectedPartnerType === 'asigurari';
-  const isInch    = selectedPartnerType === 'inchirieri';
-  const isMat     = selectedPartnerType === 'materiale';
-
-  const itemsHtml = d.items.map(it => `
-    <label style="display:flex;align-items:center;gap:10px;padding:10px 13px;background:#F8FAFC;border-radius:11px;border:1px solid #EEF2F7;cursor:pointer;margin-bottom:6px">
-      <input type="checkbox" ${it.checked?'checked':''} style="width:16px;height:16px;accent-color:${color};flex-shrink:0"/>
-      <div style="flex:1">
-        <div style="font-size:12.5px;font-weight:700;color:#1A2332">${it.label}${it.required?'<span style="color:#C0392B;margin-left:4px">*</span>':''}</div>
-        <div style="font-size:10.5px;color:#5A6B7D">${it.sub}</div>
-      </div>
-    </label>`).join('');
-
-  // Extra per tip
-  let extraHtml = '';
-
-  if (isInch && d.tarife) {
-    extraHtml = `
-    <div style="margin-top:12px;margin-bottom:12px">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:8px">Tarife echipament principal</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        ${d.tarife.map(t=>`
-        <div>
-          <label style="display:block;font-size:10.5px;font-weight:600;color:#5A6B7D;margin-bottom:4px">${t.label}</label>
-          <input ${t.min != null ? `type="number" min="${t.min}" max="${t.max}" step="0.5"` : 'type="text"'} placeholder="${t.placeholder}" style="width:100%;border:1.5px solid #D5DFE8;border-radius:9px;padding:9px 12px;font-size:12.5px;font-family:inherit;outline:none"/>
-        </div>`).join('')}
-      </div>
-    </div>`;
-  }
-
-  if (isCurier && d.program) {
-    extraHtml = `
-    <div style="margin-top:12px;margin-bottom:12px">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:8px">Program implicit</div>
-      <div style="display:flex;flex-direction:column;gap:6px">
-        ${d.program.map(p=>`
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#F8FAFC;border-radius:9px;border:1px solid #EEF2F7">
-          <span style="font-size:12.5px;font-weight:600;color:#1A2332">${p.zi}</span>
-          <input type="text" value="${p.ore}" style="border:1px solid #D5DFE8;border-radius:8px;padding:5px 10px;font-size:12px;font-family:inherit;outline:none;width:140px;text-align:center"/>
-        </div>`).join('')}
-      </div>
-    </div>`;
-  }
-
-  if (isMat && d.integrations) {
-    extraHtml = `
-    <div style="margin-top:12px;margin-bottom:12px">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:8px">Cum adaugi produsele</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        ${d.integrations.map(ig=>`
-        <div style="padding:10px 12px;background:#F8FAFC;border-radius:11px;border:1.5px solid #D5DFE8;cursor:pointer;transition:all .18s" onclick="this.style.borderColor='${color}';this.style.background='#EBF4FB'">
-          <div style="font-size:18px;margin-bottom:4px">${ig.icon}</div>
-          <div style="font-size:12px;font-weight:700;color:#1A2332">${ig.label}</div>
-          <div style="font-size:10.5px;color:#5A6B7D;margin-top:2px">${ig.note}</div>
-        </div>`).join('')}
-      </div>
-    </div>`;
-  }
-
-  if (isAsig && d.tarife) {
-    extraHtml = `
-    <!-- Tarife -->
-    <div style="margin-top:4px;margin-bottom:12px">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:8px">Configurare tarife & limite</div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        ${d.tarife.map(t=>`
-        <div>
-          <label style="display:block;font-size:10.5px;font-weight:600;color:#5A6B7D;margin-bottom:4px">${t.label}</label>
-          <input ${t.min != null ? `type="number" min="${t.min}" max="${t.max}" step="0.5"` : 'type="text"'} placeholder="${t.placeholder}" style="width:100%;border:1.5px solid #D5DFE8;border-radius:9px;padding:9px 12px;font-size:12.5px;font-family:inherit;outline:none"/>
-        </div>`).join('')}
-      </div>
-    </div>`;
-  }
-
-  return `
-    <h3 style="font-size:15px;font-weight:800;color:#1A2332;margin-bottom:4px;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">${stepTitle}</h3>
-    <p style="font-size:12px;color:#5A6B7D;margin-bottom:12px">${d.subtitle}</p>
-    <div style="background:#EBF4FB;border:1px solid #D6E8F5;border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:11.5px;color:#1A5FAD;line-height:1.6">Bifările din acest pas sunt orientative și <strong>nu se salvează la înregistrare</strong>. Echipamentele, integrările și programul se configurează din dashboard.</div>
-    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7D;margin-bottom:8px">
-      Cerințe obligatorii
-      <span style="font-size:9px;color:#0E9E99;margin-left:5px">● ${d.source}</span>
-    </div>
-    ${itemsHtml}
-    ${extraHtml}
-    <div style="display:flex;gap:10px;margin-top:4px">
-      <button onclick="goWizStep(1)" style="flex:1;padding:12px;border-radius:12px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">← Înapoi</button>
-      <button onclick="goWizStep(3)" style="flex:2;padding:12px;border-radius:12px;border:none;background:${color};color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(0,0,0,.15)">Continuă →</button>
-    </div>`;
-}
-
-// ── STEP 3: Documente ──
-function renderStep3(d, stepTitle) {
-  const color = PARTNER_META[selectedPartnerType]?.color || '#FF8C00';
-  const isAsig = selectedPartnerType === 'asigurari';
-  const asfBadge = isAsig ? `<div style="background:rgba(192,57,43,.1);border:1px solid rgba(192,57,43,.3);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:11.5px;color:#C0392B;font-weight:600">Atestat ASF obligatoriu — verificat în Registrul ASF al intermediarilor autorizați</div>` : '';
-
-  const docsHtml = d.docs.map(doc => `
-    <div style="background:#F8FAFC;border-radius:12px;padding:11px 14px;border:1px solid ${doc.required?'rgba(255,140,0,.2)':'#EEF2F7'};margin-bottom:8px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
-        <div style="font-size:12.5px;font-weight:700;color:#1A2332">${doc.label}</div>
-        <span style="font-size:9.5px;font-weight:700;padding:3px 9px;border-radius:99px;background:${doc.required?'rgba(255,140,0,.1)':'#F0F4F8'};color:${doc.required?'#CC7000':'#8C9BAD'}">${doc.required?'Obligatoriu':'Opțional'}</span>
-      </div>
-      ${doc.note?`<div style="font-size:10.5px;color:#5A6B7D;margin-bottom:6px">${doc.note}</div>`:''}
-      <div style="border:1.5px dashed #D5DFE8;border-radius:9px;padding:9px;text-align:center;font-size:11.5px;color:#8C9BAD">Se încarcă din dashboard, la „Documentele mele”, după ce îți setezi parola · PDF/JPG/PNG · max 10 MB</div>
-    </div>`).join('');
-
-  return `
-    <h3 style="font-size:15px;font-weight:800;color:#1A2332;margin-bottom:4px;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">${stepTitle}</h3>
-    <p style="font-size:12px;color:#5A6B7D;margin-bottom:12px">${d.subtitle}</p>
-    <div style="font-size:11px;color:#8C9BAD;margin-bottom:12px">Documentele se încarcă din dashboard, după ce îți setezi parola. Le verifică echipa My Darrin; nu există verificare automată sau scor de aprobare.</div>
-    ${asfBadge}
-    ${docsHtml}
-    <div style="display:flex;gap:10px;margin-top:4px">
-      <button onclick="goWizStep(2)" style="flex:1;padding:12px;border-radius:12px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">← Înapoi</button>
-      <button onclick="goWizStep(4)" style="flex:2;padding:12px;border-radius:12px;border:none;background:${color};color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(0,0,0,.15)">Continuă → Contract</button>
-    </div>`;
-}
-
-// ── STEP 4: Contract eIDAS ──
-function renderStep4() {
-  const meta  = PARTNER_META[selectedPartnerType];
-  const color = meta?.color || '#FF8C00';
-  const contractText = {
-    servicii:  'Partenerul prestează servicii conform devizelor calculate de platformă. 0% comision din manoperă: primește 100% din prețul de manoperă afișat. Contractul-cadru se semnează cu cod OTP din dashboard.',
-    materiale: 'Furnizorul listează produse în Marketplace My Darrin și acordă un discount comercial de 5–15% față de prețul public; facturarea e automată, doar pentru ce s-a livrat. Contractul-cadru se semnează cu cod OTP din dashboard.',
-    inchirieri:'Furnizorul pune la dispoziție echipamente conform calendarului de disponibilitate și acordă un discount comercial de 5–15% față de prețul public; facturarea e automată, doar pentru ce s-a livrat. Contractul-cadru se semnează cu cod OTP din dashboard.',
-    curier:    'Curierul preia comenzile de livrare din zona definită. 0% comision: primește 100% din tariful de transport. Contractul-cadru se semnează cu cod OTP din dashboard.',
-    asigurari: 'Asigurătorul înregistrează polițele emise pentru comenzile cu asigurare și acordă un discount comercial de 5–15%; facturarea e automată, doar pentru polițele emise. Contractul-cadru se semnează cu cod OTP din dashboard. Atestat ASF obligatoriu.',
-  }[selectedPartnerType] || '';
-
-  return `
-    <h3 style="font-size:15px;font-weight:800;color:#1A2332;margin-bottom:4px;font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Contract & acceptare termeni</h3>
-    <p style="font-size:12px;color:#5A6B7D;margin-bottom:12px">Contractul-cadru se semnează după înregistrare, cu cod OTP din dashboard. Aici accepți termenii și politica GDPR.</p>
-    <div style="background:#F8FAFC;border-radius:12px;border:1px solid #EEF2F7;padding:14px;margin-bottom:14px;max-height:140px;overflow-y:auto">
-      <div style="font-size:11px;color:#1A2332;line-height:1.8;font-family:Georgia,serif">
-        <strong>CONTRACT PARTENERIAT My Darrin · ${meta?.title}</strong><br/>
-        <br/>
-        Între <strong>Home Best Pal SRL</strong> (Platformă) și <strong id="contract-partner-name">${document.getElementById('f-firma')?.value || 'Partener'}</strong>, se încheie prezentul contract.<br/><br/>
-        <strong>Art. 1 · Obiect:</strong> ${contractText}<br/>
-        <strong>Art. 2 · Escrow:</strong> Plățile sunt gestionate prin sistem Escrow securizat.<br/>
-        <strong>Art. 3 · Garanție:</strong> Garanția de execuție se aplică potrivit nivelului serviciului, conform contractului-cadru.<br/>
-        <strong>Art. 4 · Dispatch:</strong> Comenzile sunt alocate automat, în funcție de zonă, competențe și program.
-      </div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:14px">
-      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
-        <input type="checkbox" id="cb-termeni" style="width:18px;height:18px;accent-color:${color};flex-shrink:0;margin-top:1px"/>
-        <div style="font-size:12.5px;color:#1A2332;line-height:1.5">Accept <a href="mydarrin-termeni.html" style="color:#003366">Termenii și Condițiile</a> + <a href="mydarrin-devino-partener.html#faq" style="color:#003366">Termenii Specifici ${meta?.title}</a> *</div>
-      </label>
-      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
-        <input type="checkbox" id="cb-gdpr" style="width:18px;height:18px;accent-color:${color};flex-shrink:0;margin-top:1px"/>
-        <div style="font-size:12.5px;color:#1A2332;line-height:1.5">Am citit și accept <a href="mydarrin-politica-confidentialitate.html" style="color:#003366">Politica GDPR</a> *</div>
-      </label>
-      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
-        <input type="checkbox" id="cb-contract" style="width:18px;height:18px;accent-color:${color};flex-shrink:0;margin-top:1px"/>
-        <div style="font-size:12.5px;color:#1A2332;line-height:1.5">Confirm că datele introduse sunt reale și voi semna contractul-cadru cu cod OTP din dashboard *</div>
-      </label>
-      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
-        <input type="checkbox" id="cb-notif" style="width:18px;height:18px;accent-color:${color};flex-shrink:0;margin-top:1px" checked/>
-        <div style="font-size:12.5px;color:#5A6B7D;line-height:1.5">Accept notificări prin email pentru comenzi și documente</div>
-      </label>
-    </div>
-    <button id="btn-inregistrare" onclick="submitRegistration()" style="width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,${color},${color}cc);color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 6px 20px rgba(0,0,0,.2);transition:all .2s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">
-      Înregistrează-mă ca ${PARTNER_META[selectedPartnerType]?.title}
-    </button>
-    <div id="inregistrare-msg"></div>
-    <div style="text-align:center;margin-top:8px;font-size:10.5px;color:#8C9BAD">${CONT_EXISTENT ? 'Rolul de partener se adaugă pe contul tău; nu se creează alt cont.' : 'Primești pe email un link pentru setarea parolei.'}</div>`;
-}
-
-// ══════════════════════════════════════════════════════════════
-// FUNCȚII AUXILIARE
-// ══════════════════════════════════════════════════════════════
-
-function selectType(type, el) {
+  if (!TIPURI_PARTENER.includes(type)) return;
   selectedPartnerType = type;
-  document.querySelectorAll('.type-opt').forEach(opt => {
-    opt.classList.remove('sel');
-    opt.style.borderColor = '#D5DFE8';
-    opt.style.background  = '';
-  });
-  const colors = {servicii:'#FF8C00',materiale:'#003366',inchirieri:'#0E9E99',curier:'#7C3AED',asigurari:'#1A7A3A'};
-  el.classList.add('sel');
-  el.style.borderColor = colors[type] || '#FF8C00';
-  el.style.background  = '#FFFBF5';
-  updateDots(0);
+  document.querySelectorAll('.type-opt').forEach(function (el) { el.classList.toggle('sel', el.getAttribute('data-partner-type') === type); });
 }
 
-// Validare IBAN reală (checksum MOD-97) — nicio dependență externă, doar
-// aritmetică pe stringuri (identică logic cu lib/iban.js server-side, care
-// e sursa autoritativă la salvare — asta e doar feedback rapid în UI).
-function ibanValid(ibanRaw) {
-  const iban = String(ibanRaw || '').replace(/\s+/g, '').toUpperCase();
-  if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/.test(iban)) return false;
-  const rearranjat = iban.slice(4) + iban.slice(0, 4);
-  const numeric = rearranjat.replace(/[A-Z]/g, ch => String(ch.charCodeAt(0) - 55));
-  let rest = 0;
-  for (let i = 0; i < numeric.length; i += 7) rest = Number(String(rest) + numeric.slice(i, i + 7)) % 97;
-  return rest === 1;
+// Numele păstrat pentru meniuri și linkuri (?type=): alege tipul și trece la cont.
+function openPartnerModal(type) {
+  if (type === 'asigurator') type = 'asigurari';
+  if (!TIPURI_PARTENER.includes(type)) type = 'servicii';
+  selectType(type);
+  alegeRolPartener('partener_' + type);
 }
 
-function toggleTrezorerie(tip) {
-  const wrap = document.getElementById('f-trezorerie-wrap');
-  if (wrap) wrap.style.display = tip === 'institutie_publica' ? 'block' : 'none';
-  if (tip !== 'institutie_publica') { const cb = document.getElementById('f-trezorerie'); if (cb) cb.checked = false; }
-  // Pasul 11-P1: „Forma juridică locală” doar pentru o firmă din altă țară.
-  const locala = document.getElementById('f-forma-locala-wrap');
-  if (locala) locala.style.display = MDFormeJuridice.esteStraina(tip) ? 'block' : 'none';
-}
-document.addEventListener('DOMContentLoaded', () => MDFormeJuridice.completeazaSelect(document.getElementById('f-entitate')));
-
-// Regiunile depind de țara detectată (window.MYD_GEO, GPS→IP→manual, real).
-async function incarcaRegiuniPublic() {
-  const sel = document.getElementById('f-judet');
-  if (!sel) return;
-  const tara = (window.MYD_GEO && window.MYD_GEO.data && window.MYD_GEO.data.cc) || 'RO';
-  try {
-    const res = await fetch('/api/public/geo-regiuni?tara=' + encodeURIComponent(tara));
-    const data = await res.json();
-    const regiuni = data?.regiuni || [];
-    sel.innerHTML = '<option value="">Selectează regiunea...</option>' + regiuni.map(r => `<option value="${r.cod}">${escapeHTML(r.denumire)}</option>`).join('');
-  } catch (e) {
-    sel.innerHTML = '<option value="">Nedisponibil — completează manual mai târziu</option>';
-  }
-}
-document.addEventListener('DOMContentLoaded', () => setTimeout(incarcaRegiuniPublic, 400));
-
-// CUI real — ANAF pentru RO, VIES pentru DE/FR/BG (vezi api/public/cui-lookup.js).
-// Nu suprascrie tăcut denumirea firmei dacă utilizatorul a scris deja ceva.
-async function validateCUI(input) {
-  const val = input.value.replace(/\s/g, '');
-  const status = document.getElementById('cui-status');
-  input.style.borderColor = '#D5DFE8';
-  if (val.length < 6) { if (status) status.textContent = ''; return; }
-  if (status) { status.textContent = 'Verific...'; status.style.color = '#5A6B7D'; }
-  try {
-    const tara = (window.MYD_GEO && window.MYD_GEO.data && window.MYD_GEO.data.cc) || 'RO';
-    const res = await fetch('/api/public/cui-lookup', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tara, cui: val }),
-    });
-    const data = await res.json();
-    if (data.ok && data.cod === 'firma_inactiva') {
-      // Pasul 11-P1: firma inactivă sau radiată nu se poate înscrie.
-      const en = window.MYD_I18N && window.MYD_I18N.lang && window.MYD_I18N.lang !== 'ro';
-      if (status) { status.textContent = (en && data.motiv_en) || data.motiv; status.style.color = '#C0392B'; }
-      return;
-    }
-    if (data.ok && data.denumire) {
-      if (status) { status.textContent = 'Găsit: ' + data.denumire; status.style.color = '#0E9E99'; }
-      input.style.borderColor = '#0E9E99';
-      const f = document.getElementById('f-firma');
-      if (f && !f.value.trim()) f.value = data.denumire;
-      // Nr. reg. com. și adresa vin din registru; se pre-completează doar câmpurile goale,
-      // iar utilizatorul le verifică și le poate corecta înainte de trimitere.
-      const nr = document.getElementById('f-nrregcom');
-      const sediu = document.getElementById('f-sediu');
-      const sst = document.getElementById('sediu-status');
-      let preluat = false;
-      if (nr && data.nr_reg_com && !nr.value.trim()) { nr.value = data.nr_reg_com; preluat = true; }
-      if (sediu && data.adresa && !sediu.value.trim()) { sediu.value = data.adresa; preluat = true; }
-      if (sst && preluat) sst.textContent = '· preluat din registru, verifică';
-    } else if (status) {
-      // ANAF indisponibil sau eroare de configurare: mesajul adevărat de la
-      // server (RO; dicționarul paginii îl traduce). Câmpurile rămân libere.
-      status.textContent = data.cod && data.motiv ? data.motiv : 'Nu am găsit date — completează manual';
-      status.style.color = '#8C9BAD';
-    }
-  } catch (e) {
-    if (status) { status.textContent = 'Verificare indisponibilă — completează manual'; status.style.color = '#8C9BAD'; }
-  }
+async function sesiuneCurenta() {
+  for (let i = 0; i < 40 && !window.supabaseClient; i++) await new Promise(r => setTimeout(r, 100));
+  if (!window.supabaseClient) return null;
+  try { return (await window.supabaseClient.auth.getSession()).data.session || null; } catch (e) { return null; }
 }
 
-function validateIBAN(input) {
-  const val = input.value.toUpperCase().replace(/\s/g, '');
-  const status = document.getElementById('iban-status');
-  input.value = val;
-  if (!val) { if (status) status.textContent = ''; return; }
-  const valid = ibanValid(val);
-  if (status) { status.textContent = valid ? 'IBAN valid' : 'Format invalid'; status.style.color = valid ? '#0E9E99' : '#C0392B'; }
-  input.style.borderColor = valid ? '#0E9E99' : '#D5DFE8';
-}
-
-async function submitRegistration() {
-  const cb1 = document.getElementById('cb-termeni');
-  const cb2 = document.getElementById('cb-gdpr');
-  const cb3 = document.getElementById('cb-contract');
-  if (!cb1?.checked || !cb2?.checked || !cb3?.checked) {
-    showToast('Bifează toate câmpurile obligatorii (*)'); return;
-  }
-  const btn = event?.target;
-  if (btn) { btn.textContent='⏳ Se procesează...'; btn.disabled=true; }
-
-  const nume       = document.getElementById('f-nume')?.value || '';
-  const prenume    = document.getElementById('f-prenume')?.value || '';
-  const telefon    = document.getElementById('f-tel')?.value || '';
-  const email      = document.getElementById('f-email')?.value || '';
-  const nume_firma = document.getElementById('f-firma')?.value || '';
-  const cui        = document.getElementById('f-cui')?.value || '';
-  const iban       = document.getElementById('f-iban')?.value || '';
-  const banca      = document.getElementById('f-banca')?.value || '';
-  const tip_entitate_legala = document.getElementById('f-entitate')?.value || '';
-  const forma_juridica_locala = (document.getElementById('f-forma-locala')?.value || '').trim();
-  const is_treasury_account = document.getElementById('f-trezorerie')?.checked || false;
-  const regiune_cod = document.getElementById('f-judet')?.value || null;
-
-  // FIX (audit 2026-07-12): formularul colectează firma + CUI (câmpuri
-  // marcate obligatorii *), dar nu erau trimise deloc către API — insert-ul
-  // în `partners` eșua mereu (nume_firma/cui sunt NOT NULL în baza reală),
-  // lăsând contul Auth creat (email de invitație trimis) fără rândul
-  // corespunzător în partners. Blocaj real, pe toate cele 5 tipuri.
-  // Pasul 11-P1: partener poate fi doar o entitate cu statut juridic.
-  if (!tip_entitate_legala) {
-    showToast('Alege forma juridică a firmei.');
-    if (btn) { btn.textContent='Trimite cererea'; btn.disabled=false; }
+// Fără cont → fereastra comună, cu rolul ales; conectat → dashboard-ul rolului.
+async function alegeRolPartener(rol) {
+  const sesiune = await sesiuneCurenta();
+  if (!sesiune) {
+    if (window.MDCont) window.MDCont.deschide({ tab: 'register', rol: rol });
     return;
   }
-  if (!nume_firma || !cui) {
-    showToast('Completează denumirea firmei și CUI-ul.');
-    if (btn) { btn.textContent='Trimite cererea'; btn.disabled=false; }
-    return;
-  }
-  if (MDFormeJuridice.esteStraina(tip_entitate_legala) && !forma_juridica_locala) {
-    showToast('Scrie forma juridică din țara firmei (de exemplu GmbH, Ltd, EOOD).');
-    if (btn) { btn.textContent='Trimite cererea'; btn.disabled=false; }
-    return;
-  }
-  // IBAN/banca sunt OPȚIONALE la creare cont (api/public/partner-register.js
-  // le acceptă lipsă) — datele bancare devin obligatorii abia înainte de
-  // prima preluare de comandă, nu la înregistrare. Validăm doar formatul,
-  // și doar dacă utilizatorul chiar a completat un IBAN.
-  if (iban && !ibanValid(iban)) {
-    showToast('IBAN invalid — verifică și încearcă din nou, sau lasă câmpul gol.');
-    if (btn) { btn.textContent='Trimite cererea'; btn.disabled=false; }
-    return;
-  }
-
-  // Pasul 11-L: utilizatorul conectat își adaugă rolul pe contul lui, prin
-  // ruta autentificată; partner-register.js (cont nou) nu se folosește.
-  if (CONT_EXISTENT) {
-    if (btn) { btn.textContent = 'Înregistrează-mă ca ' + (PARTNER_META[selectedPartnerType]?.title || ''); btn.disabled = false; }
-    return adaugaRolPartenerPeCont({ nume_firma, cui, iban, banca, tip_entitate_legala, forma_juridica_locala, is_treasury_account, regiune_cod }, btn);
-  }
-
-  // Pasul 11-R2 (1 nov. 2026): contul de partener se creează în fereastra
-  // comună de cont (cont-fereastra.js), cu parolă și cod pe email; datele de
-  // aici se trimit după aceea, pe contul confirmat (modul „cont existent”).
-  if (btn) { btn.textContent = 'Finalizează înregistrarea'; btn.disabled = false; }
-  if (window.MDCont) window.MDCont.deschide({ tab: 'register', rol: 'partener_' + selectedPartnerType });
-  const msgCont = document.getElementById('inregistrare-msg');
-  if (msgCont && window.MDFeedback) {
-    MDFeedback.mesaj(msgCont, 'info', 'Creează-ți întâi contul (cu parolă și codul primit pe email). Apoi revii aici și trimiți datele firmei.');
-  }
-}
-
-// ══ Pasul 11-L: modul „cont existent” ═════════════════════════════
-// Un utilizator conectat (client, investitor) își adaugă rolul de partener pe
-// același cont: datele contului sunt precompletate, nu se creează alt cont,
-// iar rolul îl adaugă serverul (api/partener/wizard-companie.js →
-// asiguraRolInProfil). Un cont are un singur tip de partener (partners.id = user.id).
-var CONT_EXISTENT = null; // { token, profil }
-
-async function detecteazaContExistent() {
-  for (let i = 0; i < 50 && !window.supabaseClient; i++) await new Promise(r => setTimeout(r, 100));
-  if (!window.supabaseClient) return;
-  try {
-    const { data } = await window.supabaseClient.auth.getSession();
-    const sesiune = data && data.session;
-    if (!sesiune) return;
-    const r = await fetch('/api/cont/profil', { headers: { Authorization: 'Bearer ' + sesiune.access_token }, cache: 'no-store' });
-    if (!r.ok) return;
-    const p = await r.json();
-    CONT_EXISTENT = { token: sesiune.access_token, profil: p };
-    const pune = (id, v, blocat) => { const el = document.getElementById(id); if (el && v) { el.value = v; if (blocat) { el.readOnly = true; el.style.background = '#F4F7F9'; } } };
-    pune('f-email', p.email, true);
-    pune('f-prenume', p.prenume);
-    pune('f-nume', p.nume_familie);
-    pune('f-tel', p.telefon);
-    arataBandaContExistent(p);
-  } catch (e) {
-    console.warn('[devino-partener] contul existent nu a putut fi citit:', e && e.message);
-  }
-}
-
-function arataBandaContExistent(p) {
-  const pas0 = document.getElementById('wiz-step-0');
-  if (!pas0 || document.getElementById('banda-cont-existent')) return;
-  const b = document.createElement('div');
-  b.id = 'banda-cont-existent';
-  b.setAttribute('role', 'status');
-  b.style.cssText = 'margin:0 0 16px;padding:11px 14px;border-radius:12px;font-size:12.5px;line-height:1.5;border:1.5px solid #2B6CB0;background:#EBF4FB;color:#1A3A5C';
-  if (p.partener) {
-    b.style.borderColor = '#C77700'; b.style.background = '#FFF6E5'; b.style.color = '#6B4200';
-    b.innerHTML = '<span>Contul tău are deja un rol de partener. Un cont poate avea un singur tip de partener; pentru alt tip, scrie-ne din pagina Contact.</span> <a href="/mydarrin-rolurile-mele" style="color:#003366;font-weight:700">Rolurile mele</a>';
-  } else {
-    const t = document.createElement('span');
-    t.textContent = 'Ești conectat. Rolul de partener se adaugă pe contul tău; nu se creează alt cont.';
-    b.appendChild(t);
-  }
-  pas0.insertBefore(b, pas0.firstChild);
-}
-
-async function adaugaRolPartenerPeCont(d, btn) {
-  const msg = document.getElementById('inregistrare-msg');
-  const tara = (window.MYD_GEO && window.MYD_GEO.data && window.MYD_GEO.data.cc) || null;
-  const corp = {
-    nume_firma: d.nume_firma, cui: d.cui, partner_type: selectedPartnerType,
-    is_treasury_account: d.is_treasury_account, regiune_cod: d.regiune_cod,
-    nr_reg_com: document.getElementById('f-nrregcom')?.value || '',
-    adresa_sediu_social: document.getElementById('f-sediu')?.value || '',
-  };
-  if (d.tip_entitate_legala) corp.tip_entitate_legala = d.tip_entitate_legala;
-  if (d.forma_juridica_locala) corp.forma_juridica_locala = d.forma_juridica_locala;
-  if (d.iban) {
-    if (!d.banca) { MDFeedback.mesaj(msg, 'eroare', 'Completează și banca pentru contul bancar, sau lasă IBAN-ul gol.'); return; }
-    corp.cont_bancar = { nume_titular: d.nume_firma, iban: d.iban, banca: d.banca, moneda: { RO: 'RON', MD: 'MDL', DE: 'EUR', FR: 'EUR', BG: 'EUR', AT: 'EUR', GR: 'EUR', GB: 'GBP' }[tara] || 'RON' };
-  }
-  await MDFeedback.salveaza(btn, msg, async () => {
-    const res = await fetch('/api/partener/wizard-companie', {
+  if (!window.MDFeedback) return;
+  const tr = (t) => (typeof window.t === 'function' ? window.t(null, t) : t);
+  await MDFeedback.salveaza(null, null, async () => {
+    const j = await MDFeedback.cerere('/api/cont/rol-solicitat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + CONT_EXISTENT.token },
-      body: JSON.stringify(corp),
+      headers: { Authorization: 'Bearer ' + sesiune.access_token },
+      body: { rol: rol },
     });
-    const j = await res.json().catch(() => ({}));
-    const en = window.MYD_I18N && window.MYD_I18N.lang && window.MYD_I18N.lang !== 'ro';
-    if (!res.ok) throw new Error((en && j.error_en) || j.error || 'Nu am putut adăuga rolul de partener.');
-    setTimeout(() => arataSuccesContExistent(), 900);
-    return 'Rolul de partener a fost adăugat pe contul tău.';
-  }, { textSalveaza: 'Se trimite…' });
+    setTimeout(() => { window.location.href = j.destinatie; }, 600);
+    return tr('Te ducem în dashboard-ul tău, la lista „Activează contul”.');
+  }, { toast: true, textSalveaza: 'Se salvează…' });
 }
-
-function arataSuccesContExistent() {
-  const meta = PARTNER_META[selectedPartnerType];
-  const idEl = document.getElementById('partner-id-display');
-  const emailEl = document.getElementById('confirm-email-line');
-  const ocrEl = document.getElementById('final-ocr-score');
-  const dashLink = document.getElementById('success-dashboard-link');
-  if (idEl) idEl.textContent = meta ? meta.title : '';
-  if (emailEl) emailEl.textContent = 'Rolul de partener e pe contul tău. Cererea e în verificare; te anunțăm prin email.';
-  if (ocrEl) ocrEl.textContent = 'Rol adăugat pe contul existent';
-  const dashUrl = window.MYD_DESTINATIE_ROL && window.MYD_DESTINATIE_ROL.dashboardPentruRol('partener_' + selectedPartnerType);
-  if (dashLink && dashUrl) { dashLink.href = dashUrl; dashLink.textContent = 'Intră în dashboard →'; }
-  for (let i = 0; i <= 4; i++) { const el = document.getElementById('wiz-step-' + i); if (el) el.style.display = 'none'; }
-  const succ = document.getElementById('wiz-step-success');
-  if (succ) succ.style.display = 'block';
-}
-
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', detecteazaContExistent);
-else detecteazaContExistent();
-
-function loadSubCat(nace) { /* GET /backoffice/categorii?nace= */ }
-function loadServices(sub) { /* GET /backoffice/servicii?competente= */ }
-
-function showToast(msg) {
-  const t = document.createElement('div');
-  t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;background:#1A2332;color:#fff;padding:12px 22px;border-radius:13px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25);white-space:nowrap;max-width:90vw;text-align:center;font-family:inherit';
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3000);
-}
-
-
 
 document.addEventListener('DOMContentLoaded', () => {
   if (typeof lucide!=='undefined') lucide.createIcons();

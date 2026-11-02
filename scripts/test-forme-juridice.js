@@ -86,8 +86,8 @@ function reset() {
   };
   DB.tabele.profiles.push(
     { id: 'admin-1', email: 'admin@x', role: 'admin', roles: ['admin'], status: 'active' },
-    { id: 'cont-ro', email: 'ro@x', role: 'client', roles: ['client'], status: 'active', tara: 'RO' },
-    { id: 'cont-de', email: 'de@x', role: 'client', roles: ['client'], status: 'active', tara: 'DE' },
+    { id: 'cont-ro', email: 'ro@x', role: 'client', roles: ['client'], status: 'active', tara: 'RO', rol_solicitat: 'partener_materiale' },
+    { id: 'cont-de', email: 'de@x', role: 'client', roles: ['client'], status: 'active', tara: 'DE', rol_solicitat: 'partener_materiale' },
   );
 }
 
@@ -216,63 +216,14 @@ function verificaEroare(res, status, campAsteptat) {
     egal(cuLista.map((p) => path.relative(RADACINA, p)), []);
   });
 
-  console.log('\n3a. partner-register');
-  await test('fără formă juridică → 400 cu camp tip_entitate_legala, fără cont creat', async () => {
+  console.log('\n3a. partner-register (pasul 11-R3: înscrierea s-a mutat)');
+  await test('orice cerere → 410 cu mesajul RO + EN, fără cont și fără partener creat', async () => {
     reset();
-    const r = await cheama(register, { metoda: 'POST', body: { ...BAZA_REG } });
-    verificaEroare(r, 400, 'tip_entitate_legala');
+    const r = await cheama(register, { metoda: 'POST', body: { ...BAZA_REG, tip_entitate_legala: 'srl' } });
+    egal(r.statusCode, 410, JSON.stringify(r.corp));
+    egal(r.corp.cod, 'INSCRIERE_MUTATA');
+    adevarat(r.corp.mesaj.ro && r.corp.mesaj.en, 'mesajul RO + EN');
     egal(Object.keys(conturiAuth).length, 0); egal(DB.tabele.partners.length, 0);
-  });
-  await test('persoana_fizica → 400 cu mesajul RO + EN', async () => {
-    reset();
-    const r = await cheama(register, { metoda: 'POST', body: { ...BAZA_REG, tip_entitate_legala: 'persoana_fizica' } });
-    verificaEroare(r, 400, 'tip_entitate_legala');
-    egal(r.corp.mesaj, { ro: MESAJ_PF.ro, en: MESAJ_PF.en });
-    egal([r.corp.error, r.corp.error_en], [MESAJ_PF.ro, MESAJ_PF.en]);
-    egal(Object.keys(conturiAuth).length, 0);
-  });
-  await test('CUI fără cifra de control corectă → 400 pe cui', async () => {
-    reset();
-    const r = await cheama(register, { metoda: 'POST', body: { ...BAZA_REG, tip_entitate_legala: 'srl', cui: 'RO1' } });
-    verificaEroare(r, 400, 'cui');
-  });
-  await test('SRL cu CUI valid → 200, rândul din partners are forma juridică', async () => {
-    reset();
-    const r = await cheama(register, { metoda: 'POST', body: { ...BAZA_REG, tip_entitate_legala: 'srl' } });
-    egal(r.statusCode, 200, JSON.stringify(r.corp));
-    egal(DB.tabele.partners.length, 1);
-    egal([DB.tabele.partners[0].tip_entitate_legala, DB.tabele.partners[0].cui, DB.tabele.partners[0].nume_firma], ['srl', 'RO46577229', 'Firma Test SRL']);
-    adevarat(!('forma_juridica_locala' in DB.tabele.partners[0]), 'forma locală doar pentru firma_straina');
-    egal(apeluriAnaf, 1, 'starea firmei se verifică la ANAF');
-    adevarat(!DB.tabele.audit_log.some((a) => a.actiune === 'partener_verificare_anaf_manuala'), 'fără marcaj când ANAF a confirmat');
-  });
-  await test('firmă inactivă la ANAF → 400 FIRMA_INACTIVA, fără cont creat', async () => {
-    reset(); stareAnaf = 'inactiva';
-    const r = await cheama(register, { metoda: 'POST', body: { ...BAZA_REG, tip_entitate_legala: 'srl' } });
-    verificaEroare(r, 400, 'cui');
-    egal(r.corp.cod, 'FIRMA_INACTIVA');
-    egal(r.corp.mesaj, { ro: 'Firma apare ca inactivă sau radiată la ANAF.', en: 'The company is listed as inactive or deregistered with ANAF.' });
-    egal(Object.keys(conturiAuth).length, 0);
-  });
-  await test('firmă radiată la ANAF → 400 FIRMA_INACTIVA', async () => {
-    reset(); stareAnaf = 'radiata';
-    const r = await cheama(register, { metoda: 'POST', body: { ...BAZA_REG, tip_entitate_legala: 'pfa' } });
-    egal([r.statusCode, r.corp.cod], [400, 'FIRMA_INACTIVA']);
-  });
-  await test('ANAF nu răspunde → înregistrarea trece și e marcată pentru verificare manuală', async () => {
-    reset(); stareAnaf = 'indisponibil';
-    const r = await cheama(register, { metoda: 'POST', body: { ...BAZA_REG, tip_entitate_legala: 'srl' } });
-    egal(r.statusCode, 200, JSON.stringify(r.corp));
-    const marcaj = DB.tabele.audit_log.find((a) => a.actiune === 'partener_verificare_anaf_manuala');
-    adevarat(marcaj, 'lipsește marcajul din audit_log');
-    egal([marcaj.entitate, marcaj.entitate_id, marcaj.admin_id, marcaj.detalii.motiv], ['partners', r.corp.user_id, null, 'anaf_indisponibil']);
-  });
-  await test('firma_straina din DE cu forma locală → 200, fără ANAF', async () => {
-    reset();
-    const r = await cheama(register, { metoda: 'POST', body: { ...BAZA_REG, tara: 'DE', cui: 'HRB 12345', nume_firma: 'Muster GmbH', tip_entitate_legala: 'firma_straina', forma_juridica_locala: 'GmbH' } });
-    egal(r.statusCode, 200, JSON.stringify(r.corp));
-    egal([DB.tabele.partners[0].tip_entitate_legala, DB.tabele.partners[0].forma_juridica_locala], ['firma_straina', 'GmbH']);
-    egal(apeluriAnaf, 0);
   });
 
   console.log('\n3b. wizard-companie');
@@ -315,6 +266,47 @@ function verificaEroare(res, status, campAsteptat) {
     reset(); stareAnaf = 'inactiva';
     const r = await cheama(wizard, { metoda: 'POST', token: 'tok-ro', body: { ...BAZA_WIZ, tip_entitate_legala: 'srl' } });
     egal([r.statusCode, r.corp.cod], [400, 'FIRMA_INACTIVA']);
+    egal(r.corp.mesaj, { ro: 'Firma apare ca inactivă sau radiată la ANAF.', en: 'The company is listed as inactive or deregistered with ANAF.' });
+    egal(DB.tabele.partners.length, 0);
+  });
+  // Cazurile 11-P1 care erau verificate pe partner-register (410 de la pasul 11-R3).
+  await test('CUI fără cifra de control corectă → 400 pe cui', async () => {
+    reset();
+    const r = await cheama(wizard, { metoda: 'POST', token: 'tok-ro', body: { ...BAZA_WIZ, tip_entitate_legala: 'srl', cui: 'RO1' } });
+    verificaEroare(r, 400, 'cui');
+  });
+  await test('firmă radiată la ANAF → 400 FIRMA_INACTIVA', async () => {
+    reset(); stareAnaf = 'radiata';
+    const r = await cheama(wizard, { metoda: 'POST', token: 'tok-ro', body: { ...BAZA_WIZ, tip_entitate_legala: 'pfa' } });
+    egal([r.statusCode, r.corp.cod], [400, 'FIRMA_INACTIVA']);
+  });
+  await test('ANAF nu răspunde → firma se salvează și e marcată pentru verificare manuală', async () => {
+    reset(); stareAnaf = 'indisponibil';
+    const r = await cheama(wizard, { metoda: 'POST', token: 'tok-ro', body: { ...BAZA_WIZ, tip_entitate_legala: 'srl' } });
+    egal(r.statusCode, 200, JSON.stringify(r.corp));
+    const marcaj = DB.tabele.audit_log.find((a) => a.actiune === 'partener_verificare_anaf_manuala');
+    adevarat(marcaj, 'lipsește marcajul din audit_log');
+    egal([marcaj.entitate, marcaj.entitate_id, marcaj.detalii.motiv], ['partners', 'cont-ro', 'anaf_indisponibil']);
+  });
+  await test('ANAF a confirmat firma → fără marcaj de verificare manuală; starea s-a cerut o dată', async () => {
+    reset();
+    const r = await cheama(wizard, { metoda: 'POST', token: 'tok-ro', body: { ...BAZA_WIZ, tip_entitate_legala: 'srl' } });
+    egal(r.statusCode, 200, JSON.stringify(r.corp));
+    egal(apeluriAnaf, 1);
+    adevarat(!DB.tabele.audit_log.some((a) => a.actiune === 'partener_verificare_anaf_manuala'), 'marcaj nejustificat');
+  });
+  await test('fără rol de partener ales → 403 FARA_ROL_ALES, RO + EN, fără partener creat', async () => {
+    reset();
+    DB.tabele.profiles.find((p) => p.id === 'cont-ro').rol_solicitat = null;
+    const r = await cheama(wizard, { metoda: 'POST', token: 'tok-ro', body: { ...BAZA_WIZ, tip_entitate_legala: 'srl' } });
+    egal([r.statusCode, r.corp.cod], [403, 'FARA_ROL_ALES']);
+    adevarat(r.corp.mesaj.ro && r.corp.mesaj.en, 'mesajul RO + EN');
+    egal(DB.tabele.partners.length, 0);
+  });
+  await test('alt tip decât cel ales → 409 ALT_TIP_PARTENER', async () => {
+    reset();
+    const r = await cheama(wizard, { metoda: 'POST', token: 'tok-ro', body: { ...BAZA_WIZ, partner_type: 'curier', tip_entitate_legala: 'srl' } });
+    egal([r.statusCode, r.corp.cod], [409, 'ALT_TIP_PARTENER']);
     egal(DB.tabele.partners.length, 0);
   });
 
@@ -380,8 +372,12 @@ function verificaEroare(res, status, campAsteptat) {
   });
 
   console.log('\n7. Paginile publice');
-  await test('wizard-ul și „Devino partener” nu mai oferă „Persoană fizică” și folosesc lista comună', () => {
-    for (const [fisier, idSelect, idLocala] of [['mydarrin-devino-partener-wizard.html', 's2-entitate', 's2-forma-locala'], ['mydarrin-devino-partener.html', 'f-entitate', 'f-forma-locala']]) {
+  await test('wizard-ul nu mai oferă „Persoană fizică” și folosește lista comună; „Devino partener” nu are formular', () => {
+    // Pasul 11-R3: formularul firmei e doar în wizard („Activează contul” → Firma);
+    // „Devino partener” e informativă, fără formular.
+    const publica = fs.readFileSync(path.join(RADACINA, 'mydarrin-devino-partener.html'), 'utf8');
+    adevarat(!/value="persoana_fizica"/.test(publica) && !/id="f-entitate"/.test(publica), 'mydarrin-devino-partener.html: formularul firmei a rămas');
+    for (const [fisier, idSelect, idLocala] of [['mydarrin-devino-partener-wizard.html', 's2-entitate', 's2-forma-locala']]) {
       const html = fs.readFileSync(path.join(RADACINA, fisier), 'utf8');
       adevarat(!/value="persoana_fizica"/.test(html), `${fisier}: opțiunea persoana_fizica a rămas`);
       adevarat(/forme-juridice-public\.js/.test(html), `${fisier}: nu încarcă forme-juridice-public.js`);

@@ -477,10 +477,15 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
         actiuni: {
           cont_bancar: () => showPanel('cont-bancar'),
           contract: () => { showPanel('overview'); setTimeout(() => document.getElementById('hard-stop-banner')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 600); },
+          // Pasul 11-R3: punctele din lista „Activează contul” deschid secțiunea lor.
+          panou: (id) => showPanel(id),
         },
+        // Modul activare: doar lista; secțiunile se deschid după activare.
+        blocheaza: { continut: 'dp-content', nav: 'dp-nav', ascunde: ['type-switcher', 'profil-incomplet-card'] },
       });
       if (!paza) return;
       document.getElementById('auth-gate-overlay')?.remove();
+      if (paza.activare) return;
       const emailEl = document.getElementById('dp-user-email');
       if (emailEl) emailEl.textContent = user.email;
 

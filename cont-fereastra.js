@@ -24,10 +24,16 @@
    OAUTH_PROVIDERS_ACTIVI (account-system.js); lista e goală până la 11-R4.
 
    După cod și după login, destinația o decide serverul
-   (api/public/destinatie-post-login.js): dashboard-ul rolului, formularul
-   firmei pentru rolul de partener ales, „Rolurile mele”; clientul fără
-   comenzi rămâne pe pagina curentă („Contul a fost creat”).
-   Pe checkout (data-dupa-login="ramai") pagina doar se reîncarcă.
+   (api/public/destinatie-post-login.js). Pasul 11-R3 (2 nov. 2026):
+   partenerul ajunge în dashboard-ul lui (lista „Activează contul”), clientul
+   fără comenzi în catalog; din coș sau din checkout utilizatorul revine acolo
+   (myd_revenire_dupa_login), ca să nu piardă coșul. „Contul a fost creat”
+   apare pe pagina de destinație.
+
+   Ecranul rolului (varianta A, aprobată de LM pe 2 nov. 2026): două carduri
+   alăturate, Client și Partener; sub ele, doar cu „Partener” ales, grila de
+   2 coloane cu cele 5 tipuri. Iconițe Lucide de 16 px, cercuri de 16 px,
+   butoane de cel puțin 44 px.
 
    Folosește account-system.js (Supabase Auth) și ui-feedback.js
    (MDFeedback); le încarcă singur dacă pagina nu le are. Textele trec prin
@@ -44,19 +50,40 @@
   if (window.MDCont) return;
 
   var SCRIPT = document.currentScript;
-  var RAMAI_PE_PAGINA = !!SCRIPT && SCRIPT.getAttribute('data-dupa-login') === 'ramai';
+  // Coșul și checkout-ul: după login sau cod, utilizatorul revine aici.
+  var REVINO_AICI = (!!SCRIPT && SCRIPT.getAttribute('data-dupa-login') === 'ramai') ||
+    /\/mydarrin-(checkout|cos)(\.html)?$/.test(location.pathname);
+  var CHEIE_REVENIRE = 'myd_revenire_dupa_login';
   var CHEIE_EMAIL = 'myd_pending_confirm_email';
   var CHEIE_REDIRECT = 'myd_post_auth_redirect';
   var CHEIE_MESAJ_PAGINA = 'myd_mesaj_pagina';
 
-  var ROLURI = [
-    { rol: 'client', ico: '🛍', titlu: 'Client', text: 'Comand servicii, materiale și închirieri.' },
-    { rol: 'partener_servicii', ico: '🔧', titlu: 'Furnizor de servicii', text: 'Execut lucrări prin My Darrin.' },
-    { rol: 'partener_materiale', ico: '📦', titlu: 'Furnizor de materiale', text: 'Vând materiale de construcții.' },
-    { rol: 'partener_inchirieri', ico: '🏗', titlu: 'Furnizor de închirieri', text: 'Închiriez utilaje și echipamente.' },
-    { rol: 'partener_curier', ico: '🚚', titlu: 'Curier de cartier', text: 'Livrez comenzi în zona mea.' },
-    { rol: 'partener_asigurari', ico: '🛡', titlu: 'Asigurător', text: 'Ofer asigurări pentru lucrări.' },
+  // Iconițele, din setul Lucide (același ca pe site), desenate inline: fereastra
+  // nu depinde de încărcarea scriptului Lucide pe pagină.
+  var ICONE = {
+    client: '<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>',
+    partener: '<rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
+    servicii: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+    materiale: '<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+    inchirieri: '<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>',
+    curier: '<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/>',
+    asigurari: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
+  };
+  function icona(nume) {
+    return '<svg class="mdc-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONE[nume] || '') + '</svg>';
+  }
+
+  // Primul ecran: Client sau Partener; pentru Partener, unul dintre cele 5 tipuri.
+  var CLIENT = { rol: 'client', ico: 'client', titlu: 'Client', text: 'Comand servicii', nume: 'Client' };
+  var PARTENER = { ico: 'partener', titlu: 'Partener', text: 'Lucrez prin My Darrin' };
+  var TIPURI = [
+    { rol: 'partener_servicii', ico: 'servicii', titlu: 'Servicii', nume: 'Furnizor de servicii' },
+    { rol: 'partener_materiale', ico: 'materiale', titlu: 'Materiale', nume: 'Furnizor de materiale' },
+    { rol: 'partener_inchirieri', ico: 'inchirieri', titlu: 'Închirieri', nume: 'Furnizor de închirieri' },
+    { rol: 'partener_curier', ico: 'curier', titlu: 'Curier de cartier', nume: 'Curier de cartier' },
+    { rol: 'partener_asigurari', ico: 'asigurari', titlu: 'Asigurător', nume: 'Asigurător' },
   ];
+  var ROLURI = [CLIENT].concat(TIPURI);
   // ?type= din „Devino partener” → rolul; „asigurator” = „asigurari”.
   var TIP_ROL = {
     servicii: 'partener_servicii', materiale: 'partener_materiale', inchirieri: 'partener_inchirieri',
@@ -158,9 +185,12 @@
     st.textContent =
       '#auth-modal{position:fixed;inset:0;z-index:9500;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box}' +
       '#auth-modal.hidden{display:none!important}' +
+      // Unele pagini limitează pe telefon orice [id$="-modal"] la 95vw / 95vh:
+      // fereastra ocupă tot ecranul, iar cutia păstrează marginile de 16 px.
+      'html body #auth-modal[data-mdc]{max-width:none!important;max-height:none!important;width:auto!important;height:auto!important}' +
       '#auth-modal *{box-sizing:border-box}' +
       '.mdc-fundal{position:absolute;inset:0;background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}' +
-      '.mdc-cutie{position:relative;z-index:1;background:#fff;border-radius:24px;box-shadow:0 25px 50px -12px rgba(0,0,0,.25);width:100%;max-width:448px;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow-y:auto;overflow-x:hidden;font-family:inherit;color:#2D2D2D;text-align:left}' +
+      '.mdc-cutie{position:relative;z-index:1;background:#fff;border-radius:24px;box-shadow:0 25px 50px -12px rgba(0,0,0,.25);width:100%;max-width:448px;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;font-family:inherit;color:#2D2D2D;text-align:left}' +
       '.mdc-x{position:absolute;top:20px;right:20px;z-index:2;padding:6px;border-radius:8px;border:0;background:none;color:#9CA3AF;cursor:pointer;line-height:0}' +
       '.mdc-x:hover{background:#F3F4F6}' +
       '.mdc-taburi{display:flex;border-bottom:1px solid #F3F4F6;padding:28px 56px 0 28px}' +
@@ -200,16 +230,34 @@
       '.mdc-gdpr input{margin-top:2px;width:16px;height:16px;flex:0 0 auto;accent-color:#FF8C00}' +
       '.mdc-gdpr span{font-size:12px;color:#9CA3AF;line-height:1.6}' +
       '.mdc-gdpr a{color:#003366;text-decoration:none}.mdc-gdpr a:hover{text-decoration:underline}' +
-      '.mdc-roluri{display:grid;grid-template-columns:1fr;gap:8px;margin:0 0 20px;padding:0;border:0}' +
-      '.mdc-roluri legend{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}' +
-      '.mdc-rol{display:flex;align-items:center;gap:12px;border:1px solid #E5E7EB;border-radius:12px;padding:10px 14px;cursor:pointer;transition:border-color .15s,background .15s;min-height:52px}' +
-      '.mdc-rol:hover{border-color:#B9C7D6}' +
-      '.mdc-rol input{width:16px;height:16px;flex:0 0 auto;accent-color:#003366;margin:0}' +
-      '.mdc-rol-ico{font-size:18px;line-height:1;flex:0 0 auto}' +
-      '.mdc-rol-txt{min-width:0}.mdc-rol-txt b{display:block;font-size:13.5px;color:#2D2D2D}.mdc-rol-txt small{display:block;font-size:11.5px;color:#9CA3AF;line-height:1.35}' +
-      '.mdc-rol.ales{border-color:#003366;background:#EBF4FB}' +
-      '.mdc-rol:focus-within{border-color:#003366}' +
+      '.mdc-cat{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin:0 0 16px;padding:0;border:0;min-width:0}' +
+      '.mdc-card{position:relative;display:flex;align-items:flex-start;gap:10px;border:1.5px solid #E5E7EB;border-radius:12px;padding:12px;cursor:pointer;min-height:64px;background:#fff;transition:border-color .15s,background .15s}' +
+      '.mdc-card:hover,.mdc-tip:hover{border-color:#B9C7D6}' +
+      '.mdc-card.ales,.mdc-tip.ales{border-color:#FF8C00;background:#FFF7EB}' +
+      '.mdc-card:focus-within{box-shadow:0 0 0 2px rgba(255,140,0,.35)}' +
+      '.mdc-card input{position:absolute;opacity:0;width:1px;height:1px;margin:0;pointer-events:none;min-width:0!important;min-height:0!important}' +
+      // Unele pagini dau tuturor radio-urilor 44 × 44 px (ținte de atingere): aici
+      // ținta e tot butonul (≥ 44 px), iar cercul rămâne de 16 px.
+      '#auth-modal .mdc-tip input{width:16px!important;height:16px!important;min-width:0!important;min-height:0!important;padding:0!important;border:1.5px solid #9CA3AF!important;box-shadow:none!important;outline-color:#FF8C00}' +
+      '#auth-modal .mdc-tip input:checked{border-color:#FF8C00!important}' +
+      '.mdc-ico{flex:0 0 auto;width:16px;height:16px;color:#5A6B7D}' +
+      '.mdc-card .mdc-ico{margin-top:2px}' +
+      '.mdc-card.ales .mdc-ico,.mdc-tip.ales .mdc-ico{color:#FF8C00}' +
+      '.mdc-card-txt{min-width:0}' +
+      '.mdc-card-txt b{display:block;font-size:14px;font-weight:700;color:#2D2D2D;line-height:1.3}' +
+      '.mdc-card-txt small{display:block;font-size:12px;color:#5A6B7D;line-height:1.35;margin-top:2px}' +
+      '.mdc-tipuri{margin:0 0 16px;padding:0;border:0;min-width:0}' +
+      '.mdc-tipuri[hidden]{display:none}' +
+      '.mdc-eticheta{display:block;float:left;width:100%;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5A6B7D;margin:0 0 8px;padding:0}' +
+      '.mdc-grila{clear:both;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}' +
+      '.mdc-tip{min-width:0;display:flex;align-items:center;gap:8px;border:1.5px solid #E5E7EB;border-radius:10px;padding:8px 10px;min-height:44px;cursor:pointer;background:#fff;transition:border-color .15s,background .15s}' +
+      '.mdc-tip span{flex:1;min-width:0;font-size:13px;font-weight:600;color:#2D2D2D;line-height:1.25}' +
+      '.mdc-tip input{-webkit-appearance:none;appearance:none;flex:0 0 16px;width:16px;height:16px;margin:0;border:1.5px solid #9CA3AF;border-radius:50%;background:#fff;display:grid;place-content:center;cursor:pointer}' +
+      '.mdc-tip input::before{content:"";width:8px;height:8px;border-radius:50%;background:#FF8C00;transform:scale(0);transition:transform .12s}' +
+      '.mdc-tip input:checked{border-color:#FF8C00}.mdc-tip input:checked::before{transform:scale(1)}' +
+      '.mdc-tip input:focus-visible{outline:2px solid #FF8C00;outline-offset:2px}' +
       '.mdc-rol-ales{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:0 0 16px;padding:8px 12px;border-radius:12px;background:#EBF4FB;font-size:12.5px;color:#003366;font-weight:600}' +
+      '.mdc-rol-ales span{display:inline-flex;align-items:center;gap:6px}.mdc-rol-ales .mdc-ico{color:#003366}' +
       '.mdc-cod{text-align:center;font-size:20px;font-weight:700;letter-spacing:.4em;margin-bottom:16px}' +
       '.mdc-sr{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}' +
       '.mdc-zona:empty{display:none}' +
@@ -295,13 +343,18 @@
           '<div id="mdc-pas-rol">' +
             '<h3 class="mdc-h" id="mdc-titlu-rol">' + esc(tr('Creează cont gratuit')) + '</h3>' +
             '<p class="mdc-sub" id="mdc-sub-rol">' + esc(tr('Cum vrei să folosești My Darrin?')) + '</p>' +
-            '<fieldset class="mdc-roluri" id="mdc-roluri"><legend>' + esc(tr('Alege tipul contului')) + '</legend>' +
-              ROLURI.map(function (r) {
-                return '<label class="mdc-rol" data-mdc-rol="' + r.rol + '"><input type="radio" name="mdc-rol" value="' + r.rol + '">' +
-                  '<span class="mdc-rol-ico" aria-hidden="true">' + r.ico + '</span>' +
-                  '<span class="mdc-rol-txt"><b>' + esc(tr(r.titlu)) + '</b><small>' + esc(tr(r.text)) + '</small></span></label>';
+            '<fieldset class="mdc-cat" id="mdc-categorii"><legend class="mdc-sr">' + esc(tr('Alege tipul contului')) + '</legend>' +
+              [['client', CLIENT], ['partener', PARTENER]].map(function (c) {
+                return '<label class="mdc-card" data-mdc-cat="' + c[0] + '"><input type="radio" name="mdc-cat" value="' + c[0] + '">' +
+                  icona(c[1].ico) + '<span class="mdc-card-txt"><b>' + esc(tr(c[1].titlu)) + '</b><small>' + esc(tr(c[1].text)) + '</small></span></label>';
               }).join('') +
             '</fieldset>' +
+            '<fieldset class="mdc-tipuri" id="mdc-tipuri" hidden><legend class="mdc-eticheta">' + esc(tr('Tipul de partener')) + '</legend><div class="mdc-grila" id="mdc-roluri">' +
+              TIPURI.map(function (r) {
+                return '<label class="mdc-tip" data-mdc-rol="' + r.rol + '">' + icona(r.ico) + '<span>' + esc(tr(r.titlu)) + '</span>' +
+                  '<input type="radio" name="mdc-rol" value="' + r.rol + '"></label>';
+              }).join('') +
+            '</div></fieldset>' +
             '<button type="button" class="mdc-btn mdc-btn-portocaliu" id="mdc-rol-continua">' + esc(tr('Continuă')) + '</button>' +
             '<div id="mdc-rol-msg" class="mdc-zona"></div>' +
           '</div>' +
@@ -353,7 +406,7 @@
   }
 
   // ── Starea ──
-  var stare = { tab: 'login', pasInscriere: 'rol', rol: null, inapoi: null };
+  var stare = { tab: 'login', pasInscriere: 'rol', categorie: null, rol: null, inapoi: null };
 
   function arataPanou(tab) {
     var m = construieste();
@@ -371,19 +424,39 @@
     if (tab === 'register') arataPasInscriere(stare.pasInscriere);
   }
 
-  function alegeRol(rol) {
-    if (!rolValid(rol)) rol = null;
-    stare.rol = rol;
-    Array.prototype.forEach.call(document.querySelectorAll('#mdc-roluri .mdc-rol'), function (l) {
-      var al = l.getAttribute('data-mdc-rol') === rol;
+  function esteTip(rol) { return TIPURI.some(function (t) { return t.rol === rol; }); }
+
+  // categorie: 'client' | 'partener' | null; rol: 'client', un tip de partener sau null.
+  function randeazaRol() {
+    construieste();
+    Array.prototype.forEach.call(document.querySelectorAll('#mdc-categorii .mdc-card'), function (l) {
+      var al = l.getAttribute('data-mdc-cat') === stare.categorie;
       l.classList.toggle('ales', al);
       l.querySelector('input').checked = al;
     });
-    var d = definitieRol(rol);
+    Array.prototype.forEach.call(document.querySelectorAll('#mdc-roluri .mdc-tip'), function (l) {
+      var al = l.getAttribute('data-mdc-rol') === stare.rol;
+      l.classList.toggle('ales', al);
+      l.querySelector('input').checked = al;
+    });
+    $('mdc-tipuri').hidden = stare.categorie !== 'partener';
+    var d = definitieRol(stare.rol);
     var t = $('mdc-rol-ales-text');
-    if (t) t.textContent = d ? d.ico + ' ' + tr('Cont de {rol}', { rol: tr(d.titlu) }) : '';
+    if (t) t.innerHTML = d ? icona(d.ico) + esc(tr('Cont de {rol}', { rol: tr(d.nume) })) : '';
     var sub = $('mdc-sub-rol');
-    if (sub) sub.textContent = rol && rol !== 'client' ? tr('Confirmă tipul contului și continuă.') : tr('Cum vrei să folosești My Darrin?');
+    if (sub) sub.textContent = esteTip(stare.rol) ? tr('Confirmă tipul contului și continuă.') : tr('Cum vrei să folosești My Darrin?');
+  }
+  function alegeCategorie(cat) {
+    stare.categorie = cat === 'client' || cat === 'partener' ? cat : null;
+    if (stare.categorie === 'client') stare.rol = 'client';
+    else if (!esteTip(stare.rol)) stare.rol = null;
+    randeazaRol();
+  }
+  function alegeRol(rol) {
+    if (rol === 'client') { alegeCategorie('client'); return; }
+    if (esteTip(rol)) { stare.categorie = 'partener'; stare.rol = rol; }
+    else { stare.categorie = null; stare.rol = null; }
+    randeazaRol();
   }
 
   function arataPasInscriere(pas) {
@@ -397,6 +470,9 @@
     setTimeout(function () {
       var panou = stare.tab === 'login' ? $('auth-login') : stare.tab === 'register' ? (stare.pasInscriere === 'rol' ? $('mdc-pas-rol') : $('mdc-pas-date')) : $('auth-verify-cod');
       var peRol = stare.tab === 'register' && stare.pasInscriere === 'rol';
+      // Nu mută cursorul dintr-un câmp în care utilizatorul a început deja să scrie.
+      var activ = document.activeElement;
+      if (panou && activ && panou.contains(activ) && /^(INPUT|TEXTAREA|SELECT)$/.test(activ.tagName)) return;
       var el = panou && ((peRol && panou.querySelector('input[type=radio]:checked')) || panou.querySelector('input'));
       if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } }
     }, 30);
@@ -419,13 +495,15 @@
       alegeRol(rol);
       tab = 'register';
       stare.pasInscriere = 'rol';
-    } else if (tab === 'register' && !stare.rol) {
+    } else if (tab === 'register' && !stare.categorie) {
       alegeRol(null);
     }
     var pm = $('auth-modal-persistent-msg');
     if (o.mesaj) { pm.textContent = o.mesaj; pm.style.display = 'block'; }
     else if (o.mesaj === null) { pm.textContent = ''; pm.style.display = 'none'; }
     m.classList.remove('hidden');
+    // Pagina din spate nu se derulează (nici html, nici body).
+    document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
     arataPanou(tab);
     focusPrimul();
@@ -436,6 +514,7 @@
     var m = $('auth-modal');
     if (!m) return;
     m.classList.add('hidden');
+    document.documentElement.style.overflow = '';
     document.body.style.overflow = '';
     if (focusInainte && document.contains(focusInainte) && focusInainte.focus) { try { focusInainte.focus({ preventScroll: true }); } catch (e) {} }
     focusInainte = null;
@@ -476,13 +555,10 @@
 
   function dupaAutentificare(tip) {
     var textOk = tip === 'cont_creat' ? tr('Contul a fost creat.') : tr('Te-ai autentificat.');
-    if (RAMAI_PE_PAGINA) {
-      // Checkout: comanda e în curs, pagina rămâne și se reîncarcă.
-      inchide();
-      toast('succes', textOk);
-      setTimeout(function () { window.location.reload(); }, 900);
-      return;
-    }
+    // Coșul sau checkout-ul: revenirea aici, ca să nu se piardă coșul.
+    if (REVINO_AICI) ss(CHEIE_REVENIRE, location.pathname + location.search);
+    // „Contul a fost creat” apare pe pagina de destinație (laIncarcare).
+    if (tip === 'cont_creat') ss(CHEIE_MESAJ_PAGINA, 'Contul a fost creat.');
     // Revenirea cerută de vechile linkuri (?reason=auth_required / profil_partener).
     var redirect = ss(CHEIE_REDIRECT);
     if (redirect) {
@@ -491,11 +567,13 @@
       if (/^[a-z0-9-]+$/i.test(pagina)) { window.location.href = pagina + '.html'; return; }
     }
     window.MyDarrinAuth.mergiDupaLogin(function laEroare(e) {
+      ss(CHEIE_MESAJ_PAGINA, null);
       inchide();
       if (window.MDFeedback) window.MDFeedback.toast('eroare', e.message);
       reincarcaAntet();
     }, function laFaraDestinatie() {
-      // Clientul fără comenzi: rămâne pe pagina de unde a venit.
+      // Fără destinație de la server: rămâne pe pagină.
+      ss(CHEIE_MESAJ_PAGINA, null);
       inchide();
       toast('succes', textOk);
       reincarcaAntet();
@@ -544,9 +622,10 @@
   }
 
   function continuaRol() {
-    if (!stare.rol) {
-      window.MDFeedback.mesaj($('mdc-rol-msg'), 'eroare', tr('Alege tipul contului, apoi apasă „Continuă”.'));
-      var primul = document.querySelector('#mdc-roluri input');
+    if (!stare.categorie || !stare.rol) {
+      var faraTip = stare.categorie === 'partener';
+      window.MDFeedback.mesaj($('mdc-rol-msg'), 'eroare', faraTip ? tr('Alege tipul de partener, apoi apasă „Continuă”.') : tr('Alege tipul contului, apoi apasă „Continuă”.'));
+      var primul = document.querySelector(faraTip ? '#mdc-roluri input' : '#mdc-categorii input');
       if (primul) primul.focus();
       return;
     }
@@ -671,11 +750,12 @@
       if (so) { oauth(so.getAttribute('data-mdc-oauth')); return; }
     });
     m.addEventListener('change', function (e) {
+      if (e.target && e.target.name === 'mdc-cat') { alegeCategorie(e.target.value); $('mdc-rol-msg').innerHTML = ''; }
       if (e.target && e.target.name === 'mdc-rol') { alegeRol(e.target.value); $('mdc-rol-msg').innerHTML = ''; }
     });
     m.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') { inchide(); return; }
-      if (e.key === 'Enter' && e.target && e.target.name === 'mdc-rol') { e.preventDefault(); continuaRol(); }
+      if (e.key === 'Enter' && e.target && (e.target.name === 'mdc-rol' || e.target.name === 'mdc-cat')) { e.preventDefault(); continuaRol(); }
       if (e.key === 'Tab') capcanaFocus(e, m);
     });
     $('auth-login').addEventListener('submit', cuFeedback(login));
@@ -730,7 +810,7 @@
   window.MDCont = {
     deschide: deschide, inchide: inchide, deschisa: deschisa, toggle: toggleAuthModal,
     switchTab: switchAuthTab, deschidePentruRol: deschidePentruRol, rolDinTip: rolDinTip,
-    ROLURI: ROLURI, CHEIE_MESAJ_PAGINA: CHEIE_MESAJ_PAGINA,
+    ROLURI: ROLURI, TIPURI: TIPURI, CHEIE_MESAJ_PAGINA: CHEIE_MESAJ_PAGINA,
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', laIncarcare);
