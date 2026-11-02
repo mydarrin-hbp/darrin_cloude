@@ -2339,7 +2339,7 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
   //    Called from every entry point (navbar, sidebar, CTA, footer)
   // ─────────────────────────────────────────────────────────────
   window.handlePartnerNavigation = function (type) {
-    const t = (VALID_TYPES.includes(type) ? type : 'servicii');
+    const t = (VALID_TYPES.includes(type) ? type : (type === 'asigurator' ? 'asigurari' : 'servicii'));
 
     // A. Already on devino-partener.html → switch type in-place
     if (IS_PARTNER_PAGE) {
@@ -2427,7 +2427,7 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
   function _autoOpenFromURLParam() {
     if (!IS_PARTNER_PAGE) return;
     const params = new URLSearchParams(window.location.search);
-    const type   = params.get('type');
+    const type   = params.get('type') === 'asigurator' ? 'asigurari' : params.get('type');
     if (!type || !VALID_TYPES.includes(type)) return;
 
     // Wait for wizard init then open
@@ -2859,12 +2859,8 @@ document.querySelectorAll(".reveal").forEach(el=>ro.observe(el));
 function openSidebar(){document.getElementById("sidebar").classList.add("open");document.getElementById("sidebar-overlay").classList.add("show");document.body.style.overflow="hidden";}
 function closeSidebar(){document.getElementById("sidebar").classList.remove("open");document.getElementById("sidebar-overlay").classList.remove("show");document.body.style.overflow="";}
 function toggleSbSection(id){const el=document.getElementById(id);const ico=document.getElementById("ico-"+id);el.classList.toggle("hidden");if(ico)ico.style.transform=el.classList.contains("hidden")?"":"rotate(180deg)";}
-function openPartnerModal(t){document.getElementById("partner-modal").classList.remove("hidden");document.body.style.overflow="hidden";if(t)setTimeout(()=>selectPartnerType(t),80);}
-function closePartnerModal(){document.getElementById("partner-modal").classList.add("hidden");document.body.style.overflow="";}
 function openInvestorModal(){document.getElementById("investor-modal").classList.remove("hidden");document.body.style.overflow="hidden";}
 function closeInvestorModal(){document.getElementById("investor-modal").classList.add("hidden");document.body.style.overflow="";}
-function selectPartnerType(type){const PM={servicii:{icon:"",title:"Furnizor de Servicii",color:"#FF8C00",bg:"linear-gradient(135deg,#FFF0D6,#FDE8C4)"},materiale:{icon:"",title:"Furnizor de Materiale",color:"#003366",bg:"linear-gradient(135deg,#EBF4FB,#DDE6F5)"},inchirieri:{icon:"",title:"Furnizor de Închirieri",color:"#0E9E99",bg:"linear-gradient(135deg,#E0F5F4,#C5EEEC)"},curier:{icon:"",title:"Curier de Cartier",color:"#D97706",bg:"linear-gradient(135deg,#FEF3C7,#FDE68A)"},asigurari:{icon:"",title:"Furnizor de Asigurări",color:"#0E9E99",bg:"linear-gradient(135deg,#E0F5F4,#B3E8E6)"}};const m=PM[type];if(!m)return;document.getElementById("partner-cards").classList.add("hidden");document.getElementById("partner-form").classList.remove("hidden");document.getElementById("pf-icon").textContent=m.icon;document.getElementById("pf-icon").style.background=m.bg;document.getElementById("pf-title").textContent=m.title;document.getElementById("pf-title").style.color=m.color;}
-function resetPartnerType(){document.getElementById("partner-cards").classList.remove("hidden");document.getElementById("partner-form").classList.add("hidden");}
 
 // ══ G18 (26 Iulie 2026) — TRACKER REAL DE COMENZI ══
 // Înlocuiește lista de 4 comenzi demo (cu nume reale de firme partenere,

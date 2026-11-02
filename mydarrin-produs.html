@@ -2897,7 +2897,7 @@ function showNivelExplain(){
   //    Called from every entry point (navbar, sidebar, CTA, footer)
   // ─────────────────────────────────────────────────────────────
   window.handlePartnerNavigation = function (type) {
-    const t = (VALID_TYPES.includes(type) ? type : 'servicii');
+    const t = (VALID_TYPES.includes(type) ? type : (type === 'asigurator' ? 'asigurari' : 'servicii'));
 
     // A. Already on devino-partener.html → switch type in-place
     if (IS_PARTNER_PAGE) {
@@ -2985,7 +2985,7 @@ function showNivelExplain(){
   function _autoOpenFromURLParam() {
     if (!IS_PARTNER_PAGE) return;
     const params = new URLSearchParams(window.location.search);
-    const type   = params.get('type');
+    const type   = params.get('type') === 'asigurator' ? 'asigurari' : params.get('type');
     if (!type || !VALID_TYPES.includes(type)) return;
 
     // Wait for wizard init then open
@@ -5058,12 +5058,8 @@ window.addEventListener('scroll',()=>{const s=document.documentElement;document.
 function openSidebar(){document.getElementById("sidebar")?.classList.add("open");document.getElementById("sidebar-overlay")?.classList.add("show");document.body.style.overflow="hidden";}
 function closeSidebar(){document.getElementById("sidebar")?.classList.remove("open");document.getElementById("sidebar-overlay")?.classList.remove("show");document.body.style.overflow="";}
 function toggleSbSection(id){const el=document.getElementById(id);const ico=document.getElementById("ico-"+id);if(el)el.classList.toggle("hidden");if(ico)ico.style.transform=el.classList.contains("hidden")?"":"rotate(180deg)";}
-function openPartnerModal(){document.getElementById("partner-modal")?.classList.remove("hidden");document.body.style.overflow="hidden";}
-function closePartnerModal(){document.getElementById("partner-modal")?.classList.add("hidden");document.body.style.overflow="";}
 function openInvestorModal(){document.getElementById("investor-modal")?.classList.remove("hidden");document.body.style.overflow="hidden";}
 function closeInvestorModal(){document.getElementById("investor-modal")?.classList.add("hidden");document.body.style.overflow="";}
-function selectPartnerType(){}function resetPartnerType(){}function submitInvestorForm(){}
-function switchTab(){}function toggleBasket(){}
 if(typeof lucide!=="undefined") lucide.createIcons();
 </script>
 <script src="branding-loader.js" defer></script>

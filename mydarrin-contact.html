@@ -2030,11 +2030,6 @@ function redirectDupaAutentificare() {
 function checkAuth(){alert('Trebuie să fii autentificat pentru a vedea comenzile. Te rugăm să te loghezi.');}
 
 // Basket
-function toggleBasket(){
-  const p=document.getElementById('basket-panel');
-  p.classList.toggle('hidden');
-  document.body.style.overflow=p.classList.contains('hidden')?'':'hidden';
-}
 function changeQty(btn,delta){
   const item=btn.closest('.basket-item');
   const qEl=item.querySelector('.basket-qty');
@@ -2111,45 +2106,9 @@ if (window.MYD_GEO) {
   });
 }
 
-// ── PARTNER MODAL ──
-const PARTNER_META = {
-  servicii:   { icon:'', title:'Furnizor de Servicii',   color:'#FF8C00', bg:'linear-gradient(135deg,#FFF0D6,#FDE8C4)' },
-  materiale:  { icon:'', title:'Furnizor de Materiale',  color:'#003366', bg:'linear-gradient(135deg,#EBF4FB,#DDE6F5)' },
-  inchirieri: { icon:'', title:'Furnizor de Închirieri', color:'#0E9E99', bg:'linear-gradient(135deg,#E0F5F4,#C5EEEC)' },
-};
 
-function openPartnerModal(type) {
-  document.getElementById('partner-modal').classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
-  if (type) {
-    setTimeout(() => selectPartnerType(type), 80);
-  } else {
-    resetPartnerType();
-  }
-}
 
-function closePartnerModal() {
-  document.getElementById('partner-modal').classList.add('hidden');
-  document.body.style.overflow = '';
-  resetPartnerType();
-}
 
-function selectPartnerType(type) {
-  const meta = PARTNER_META[type];
-  if (!meta) return;
-  // Hide cards, show form
-  document.getElementById('partner-cards').classList.add('hidden');
-  document.getElementById('partner-form').classList.remove('hidden');
-  document.getElementById('pf-icon').textContent = meta.icon;
-  document.getElementById('pf-icon').style.background = meta.bg;
-  document.getElementById('pf-title').textContent = meta.title;
-  document.getElementById('pf-title').style.color = meta.color;
-}
-
-function resetPartnerType() {
-  document.getElementById('partner-cards').classList.remove('hidden');
-  document.getElementById('partner-form').classList.add('hidden');
-}
 
 
 // ── INVESTOR MODAL ──
@@ -2200,11 +2159,8 @@ window.addEventListener("scroll",()=>{const s=document.documentElement;document.
 function openSidebar(){document.getElementById("sidebar")?.classList.add("open");document.getElementById("sidebar-overlay")?.classList.add("show");document.body.style.overflow="hidden";}
 function closeSidebar(){document.getElementById("sidebar")?.classList.remove("open");document.getElementById("sidebar-overlay")?.classList.remove("show");document.body.style.overflow="";}
 function toggleSbSection(id){const el=document.getElementById(id);const ico=document.getElementById("ico-"+id);if(el)el.classList.toggle("hidden");if(ico)ico.style.transform=el.classList.contains("hidden")?"":"rotate(180deg)";}
-function openPartnerModal(){document.getElementById("partner-modal")?.classList.remove("hidden");document.body.style.overflow="hidden";}
-function closePartnerModal(){document.getElementById("partner-modal")?.classList.add("hidden");document.body.style.overflow="";}
 function openInvestorModal(){document.getElementById("investor-modal")?.classList.remove("hidden");document.body.style.overflow="hidden";}
 function closeInvestorModal(){document.getElementById("investor-modal")?.classList.add("hidden");document.body.style.overflow="";}
-function selectPartnerType(){}function resetPartnerType(){}function submitInvestorForm(){}function switchTab(){}function toggleBasket(){}
 if(typeof lucide!=="undefined")lucide.createIcons();
 </script>
 <script src="branding-loader.js" defer></script>

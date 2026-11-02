@@ -1646,7 +1646,7 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
   //    Called from every entry point (navbar, sidebar, CTA, footer)
   // ─────────────────────────────────────────────────────────────
   window.handlePartnerNavigation = function (type) {
-    const t = (VALID_TYPES.includes(type) ? type : 'servicii');
+    const t = (VALID_TYPES.includes(type) ? type : (type === 'asigurator' ? 'asigurari' : 'servicii'));
 
     // A. Already on devino-partener.html → switch type in-place
     if (IS_PARTNER_PAGE) {
@@ -1734,7 +1734,7 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
   function _autoOpenFromURLParam() {
     if (!IS_PARTNER_PAGE) return;
     const params = new URLSearchParams(window.location.search);
-    const type   = params.get('type');
+    const type   = params.get('type') === 'asigurator' ? 'asigurari' : params.get('type');
     if (!type || !VALID_TYPES.includes(type)) return;
 
     // Wait for wizard init then open
@@ -2946,13 +2946,6 @@ function toggleAuthModal(){
   document.body.style.overflow=m.classList.contains('hidden')?'':'hidden';
 }
 // Catalog tabs
-function switchTab(name,btn){
-  document.querySelectorAll('.tab-content').forEach(t=>t.classList.add('hidden'));
-  document.querySelectorAll('.cat-tab').forEach(b=>b.classList.remove('active'));
-  document.getElementById('tab-'+name).classList.remove('hidden');
-  btn.classList.add('active');
-  document.querySelectorAll('#tab-'+name+' .reveal').forEach(el=>{el.classList.remove('visible');setTimeout(()=>el.classList.add('visible'),60);});
-}
 
 // G31b (27 Iulie 2026): al 2-lea din 3 blocuri gasite in acest fisier,
 // eliminat - acesta era cel mai daunator, pentru ca (spre deosebire de
@@ -2961,45 +2954,9 @@ function switchTab(name,btn){
 // cu propria versiune veche, anuland efectiv detectarea GPS reala pentru
 // orice s-ar fi intamplat dupa incarcarea paginii.
 
-// ── PARTNER MODAL ──
-const PARTNER_META = {
-  servicii:   { icon:'', title:'Furnizor de Servicii',   color:'#FF8C00', bg:'linear-gradient(135deg,#FFF0D6,#FDE8C4)' },
-  materiale:  { icon:'', title:'Furnizor de Materiale',  color:'#003366', bg:'linear-gradient(135deg,#EBF4FB,#DDE6F5)' },
-  inchirieri: { icon:'', title:'Furnizor de Închirieri', color:'#0E9E99', bg:'linear-gradient(135deg,#E0F5F4,#C5EEEC)' },
-};
 
-function openPartnerModal(type) {
-  document.getElementById('partner-modal').classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
-  if (type) {
-    setTimeout(() => selectPartnerType(type), 80);
-  } else {
-    resetPartnerType();
-  }
-}
 
-function closePartnerModal() {
-  document.getElementById('partner-modal').classList.add('hidden');
-  document.body.style.overflow = '';
-  resetPartnerType();
-}
 
-function selectPartnerType(type) {
-  const meta = PARTNER_META[type];
-  if (!meta) return;
-  // Hide cards, show form
-  document.getElementById('partner-cards').classList.add('hidden');
-  document.getElementById('partner-form').classList.remove('hidden');
-  document.getElementById('pf-icon').textContent = meta.icon;
-  document.getElementById('pf-icon').style.background = meta.bg;
-  document.getElementById('pf-title').textContent = meta.title;
-  document.getElementById('pf-title').style.color = meta.color;
-}
-
-function resetPartnerType() {
-  document.getElementById('partner-cards').classList.remove('hidden');
-  document.getElementById('partner-form').classList.add('hidden');
-}
 
 
 // ── INVESTOR MODAL ──
@@ -3013,17 +2970,6 @@ function closeInvestorModal() {
   document.body.style.overflow = '';
 }
 
-function submitInvestorForm() {
-  const modal = document.getElementById('investor-modal');
-  const inner = modal.querySelector('.relative.bg-white');
-  inner.innerHTML = `
-    <div class="p-10 text-center">
-      <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl" style="background:linear-gradient(135deg,#EBF4FB,#DDE6F5)"><i data-lucide="trending-up" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-      <h3 class="font-bold text-xl text-[#2D2D2D] mb-2" style="font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif">Solicitare primită!</h3>
-      <p class="text-gray-400 text-sm leading-relaxed mb-6 max-w-xs mx-auto">Echipa My Darrin te va contacta în curând cu pachetul complet pentru investitori și detaliile rundei de finanțare.</p>
-      <button onclick="closeInvestorModal()" class="bg-[#003366] text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-[#002855] transition">Închide</button>
-    </div>`;
-}
 
 // ── COUNTERS
 function animateCounter(el){
@@ -3054,11 +3000,8 @@ window.addEventListener("scroll",()=>{const s=document.documentElement;document.
 function openSidebar(){document.getElementById("sidebar")?.classList.add("open");document.getElementById("sidebar-overlay")?.classList.add("show");document.body.style.overflow="hidden";}
 function closeSidebar(){document.getElementById("sidebar")?.classList.remove("open");document.getElementById("sidebar-overlay")?.classList.remove("show");document.body.style.overflow="";}
 function toggleSbSection(id){const el=document.getElementById(id);const ico=document.getElementById("ico-"+id);if(el)el.classList.toggle("hidden");if(ico)ico.style.transform=el.classList.contains("hidden")?"":"rotate(180deg)";}
-function openPartnerModal(){document.getElementById("partner-modal")?.classList.remove("hidden");document.body.style.overflow="hidden";}
-function closePartnerModal(){document.getElementById("partner-modal")?.classList.add("hidden");document.body.style.overflow="";}
 function openInvestorModal(){document.getElementById("investor-modal")?.classList.remove("hidden");document.body.style.overflow="hidden";}
 function closeInvestorModal(){document.getElementById("investor-modal")?.classList.add("hidden");document.body.style.overflow="";}
-function selectPartnerType(){}function resetPartnerType(){}function submitInvestorForm(){}function switchTab(){}function toggleBasket(){}
 if(typeof lucide!=="undefined")lucide.createIcons();
 </script>
 <script src="branding-loader.js" defer></script>
