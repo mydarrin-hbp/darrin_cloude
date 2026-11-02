@@ -2339,7 +2339,7 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
   //    Called from every entry point (navbar, sidebar, CTA, footer)
   // ─────────────────────────────────────────────────────────────
   window.handlePartnerNavigation = function (type) {
-    const t = (VALID_TYPES.includes(type) ? type : 'servicii');
+    const t = (VALID_TYPES.includes(type) ? type : (type === 'asigurator' ? 'asigurari' : 'servicii'));
 
     // A. Already on devino-partener.html → switch type in-place
     if (IS_PARTNER_PAGE) {
@@ -2427,7 +2427,7 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
   function _autoOpenFromURLParam() {
     if (!IS_PARTNER_PAGE) return;
     const params = new URLSearchParams(window.location.search);
-    const type   = params.get('type');
+    const type   = params.get('type') === 'asigurator' ? 'asigurari' : params.get('type');
     if (!type || !VALID_TYPES.includes(type)) return;
 
     // Wait for wizard init then open

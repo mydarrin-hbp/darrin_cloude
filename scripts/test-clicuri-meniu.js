@@ -4,6 +4,7 @@
 // trebuie să facă ceva: partenerul ajunge la mydarrin-devino-partener.html?type=<tip>
 // (sau se deschide fereastra partenerului de pe pagină), coșul deschide panoul
 // sau duce la checkout. Fără erori JS. Chromium (Playwright), 390 și 1366 px.
+// „Asigurator” (type=asigurator) trebuie să ajungă la formularul asigurari.
 //
 // Navigarea spre pagina partenerului sau spre checkout e oprită cu un răspuns
 // 204 (pagina rămâne pe loc), așa că pe aceeași încărcare se încearcă toate
@@ -32,14 +33,16 @@ const pagini = process.argv.slice(2).length ? process.argv.slice(2) : PUBLICE;
 let ok = 0, esec = 0;
 function verifica(c, m) { if (c) ok++; else { esec++; console.log('  ✗ ' + m); } }
 const asteapta = (ms) => new Promise((r) => setTimeout(r, ms));
-// Intrările cu tipul „asigurator” (nu e în lista routerului: servicii, materiale,
-// inchirieri, curier, asigurari) ajung la pagina partenerului, dar cu alt tip.
-// Nu țin de 11-R1 (clicul răspunde); se numără separat, pentru raport.
-const asigurator = new Set();
+// Linkurile „Asigurator” trimit type=asigurator; formularul e „asigurari”.
+const tipFormular = (tip) => (tip === 'asigurator' ? 'asigurari' : tip);
 
 // Erori de consolă care nu țin de cod: resurse oprite intenționat (Supabase,
-// /api simulat cu 503, fonturi/CDN fără rețea, fetch spre Supabase oprit).
-const ZGOMOT = /Failed to load resource|net::ERR_|ERR_FAILED|Failed to fetch|status of 50[0-9]|status of 40[0-9]|http 503/i;
+// ipapi.co, fonturi/CDN fără rețea) și răspunsurile 4xx/5xx ale serverului de test.
+const ZGOMOT = /Failed to load resource|net::ERR_|ERR_FAILED|Failed to fetch|status of 50[0-9]|status of 40[0-9]/i;
+// Pe mydarrin-pitch-deck, /api/public/pitch-deck nu e simulat de server-test (503),
+// iar pagina scrie în consolă „[pitch-deck] Error: http 503”. Doar mesajul acesta,
+// doar pe pagina aceea, nu se numără (urmat doar de stiva erorii).
+const ZGOMOT_PAGINA = { 'mydarrin-pitch-deck': /^\[pitch-deck\] Error: http 503(\n\s+at |$)/ };
 
 (async () => {
   const srv = await porneste(0);
@@ -61,7 +64,11 @@ const ZGOMOT = /Failed to load resource|net::ERR_|ERR_FAILED|Failed to fetch|sta
         const p = await ctx.newPage();
         const erori = [];
         p.on('pageerror', (e) => erori.push(e.message.slice(0, 160)));
-        p.on('console', (m) => { if (m.type() === 'error' && !ZGOMOT.test(m.text())) erori.push('console: ' + m.text().slice(0, 160)); });
+        const zgomotPagina = ZGOMOT_PAGINA[numePagina];
+        p.on('console', (m) => {
+          if (m.type() !== 'error' || ZGOMOT.test(m.text()) || (zgomotPagina && zgomotPagina.test(m.text()))) return;
+          erori.push('console: ' + m.text().slice(0, 160));
+        });
 
         // După încărcare, navigările spre partener / checkout se rețin și se opresc.
         let armat = false;
@@ -100,24 +107,17 @@ const ZGOMOT = /Failed to load resource|net::ERR_|ERR_FAILED|Failed to fetch|sta
 
         for (const intr of intrari) {
           navigari.length = 0;
-          const inainte = await p.evaluate(() => location.href);
+          const asteptat = tipFormular(intr.tip);
+          // Pe pagina partenerului, clicul alege formularul pe loc: se verifică tipul ales.
+          if (peParteneri) await p.evaluate(() => { try { selectedPartnerType = null; } catch (e) {} });
           await p.evaluate((id) => { const el = document.querySelector(`[data-test-intrare="${id}"]`); if (el) el.click(); }, intr.id);
           await asteapta(400);
-          const stare = await p.evaluate(() => {
-            const m = document.getElementById('partner-modal');
-            const deschisa = !!m && !m.classList.contains('hidden') && getComputedStyle(m).display !== 'none';
-            return { deschisa, href: location.href };
-          });
-          const spreTip = navigari.some((u) => { const x = new URL(u); return /devino-partener|\/partener$/.test(x.pathname) && x.searchParams.get('type') === intr.tip; });
-          const peLoc = peParteneri && (stare.deschisa || stare.href !== inainte || new URL(stare.href).searchParams.get('type') === intr.tip);
-          if (intr.tip === 'asigurator') {
-            const sprePartener = navigari.some((u) => /devino-partener|\/partener$/.test(new URL(u).pathname));
-            verifica(sprePartener || stare.deschisa || peLoc, `${et}: „${intr.text}” (${intr.loc}, asigurator) nu face nimic`);
-            if (!spreTip) asigurator.add(numePagina);
-          } else {
-            verifica(spreTip || stare.deschisa || peLoc,
-              `${et}: „${intr.text}” (${intr.loc}, ${intr.tip}) nu face nimic`);
-          }
+          // Altundeva: ajunge la pagina partenerului cu tipul care deschide formularul așteptat
+          // (type=asigurator e acceptat acolo ca asigurari — verificat mai jos, la deschiderea din URL).
+          const spreTip = navigari.some((u) => { const x = new URL(u); return /devino-partener|\/partener$/.test(x.pathname) && tipFormular(x.searchParams.get('type')) === asteptat; });
+          const ales = peParteneri ? await p.evaluate(() => { try { return selectedPartnerType; } catch (e) { return null; } }) : null;
+          verifica(spreTip || ales === asteptat,
+            `${et}: „${intr.text}” (${intr.loc}, ${intr.tip}) nu duce la formularul ${asteptat} (navigare: ${navigari.join(' ') || '—'}, ales: ${ales})`);
           // Înapoi la starea inițială pentru următoarea intrare.
           await p.evaluate(() => {
             try { if (typeof window.closePartnerModal === 'function') window.closePartnerModal(); } catch (e) {}
@@ -155,11 +155,37 @@ const ZGOMOT = /Failed to load resource|net::ERR_|ERR_FAILED|Failed to fetch|sta
         await ctx.close();
       }
     }
+
+    // Deschiderea din URL: mydarrin-devino-partener.html?type=<tip> alege formularul tipului;
+    // type=asigurator (linkurile „Asigurator” de pe celelalte pagini) → formularul asigurari.
+    if (!process.argv.slice(2).length || pagini.includes('mydarrin-devino-partener')) {
+      for (const latime of LATIMI) {
+        for (const tip of ['servicii', 'materiale', 'inchirieri', 'curier', 'asigurari', 'asigurator']) {
+          const et = `mydarrin-devino-partener?type=${tip} ${latime}px`;
+          const ctx = await browser.newContext({ viewport: { width: latime, height: 900 } });
+          await ctx.route(/\.supabase\.co\//, (r) => r.abort());
+          await ctx.route(/ipapi\.co\//, (r) => r.abort());
+          const p = await ctx.newPage();
+          const erori = []; p.on('pageerror', (e) => erori.push(e.message.slice(0, 160)));
+          await p.goto(`${baza}/mydarrin-devino-partener.html?type=${tip}`, { waitUntil: 'networkidle', timeout: 60000 });
+          await p.waitForFunction((t) => { try { return selectedPartnerType === t; } catch (e) { return false; } }, tipFormular(tip), { timeout: 5000 }).catch(() => {});
+          const stare = await p.evaluate(() => {
+            let ales = null; try { ales = selectedPartnerType; } catch (e) {}
+            const sel = document.querySelector('.type-opt.sel');
+            return { ales, card: sel ? sel.getAttribute('data-partner-type') : null };
+          });
+          verifica(stare.ales === tipFormular(tip) && stare.card === tipFormular(tip),
+            `${et}: formularul ales „${stare.ales}”, cardul „${stare.card}” (așteptat „${tipFormular(tip)}”)`);
+          verifica(!erori.length, `${et}: ${erori.length} erori JS (${erori.slice(0, 3).join(' | ')})`);
+          await ctx.close();
+        }
+        console.log(`mydarrin-devino-partener?type=… ${latime}px: gata`);
+      }
+    }
   } finally {
     await browser.close();
     srv.close();
   }
-  if (asigurator.size) console.log(`\nDe reținut: pe ${asigurator.size} pagini, intrarea „asigurator” ajunge la pagina partenerului cu alt tip: ${[...asigurator].join(', ')}`);
   console.log(`\n${ok} trecute, ${esec} picate`);
   process.exit(esec ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });
