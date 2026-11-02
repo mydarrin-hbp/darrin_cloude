@@ -275,7 +275,9 @@ async function dupaLogin(id) {
       // Lista actualizată: firma în verificare, restul deschise.
       const p2 = await profilul('f1');
       egal(p2.activare.mod_activare, false);
-      egal(p2.activare.pasi.map((x) => x.stare), ['in_verificare', 'de_completat', 'de_completat', 'de_completat', 'de_completat', 'de_completat']);
+      // Contractul se semnează după aprobarea firmei (corecția 11-R3).
+      egal(p2.activare.pasi.map((x) => x.stare), ['in_verificare', 'de_completat', 'de_completat', 'de_completat', 'de_completat', 'dupa_verificare']);
+      egal(p2.activare.complet, false);
       egal(p2.activare.verificare, 'pending_review');
       egal(p2.activare.activ, false);
       egal(p2.activare.pasi[3].deschide, tip === 'materiale' ? { tip: 'panou', id: 'produse' } : { tip: 'wizard', pas: 4 });
@@ -284,11 +286,17 @@ async function dupaLogin(id) {
       // Datele completate schimbă starea punctelor.
       DB.tabele.partner_conturi_bancare.push({ id: 'cb1', partner_id: 'f1', activ: true });
       DB.tabele.documente_partener.push({ id: 'd1', partener_id: 'f1', status: 'pending' });
+      DB.tabele.partner_coduri_nace.push({ id: 'n1', partner_id: 'f1', cod_nace: tip === 'materiale' ? '47.52' : '43.22' });
       if (tip === 'materiale') DB.tabele.marketplace_materiale.push({ id: 'm1', furnizor_id: 'f1' });
-      else { DB.tabele.partner_coduri_nace.push({ id: 'n1', partner_id: 'f1', cod_nace: '43.22' }); DB.tabele.partner_utilaje.push({ id: 'u1', partner_id: 'f1' }); }
-      DB.tabele.partner_alocari_sarcini.push({ id: 'a1', partner_id: 'f1', zona_livrare_acceptata: true });
+      else DB.tabele.partner_utilaje.push({ id: 'u1', partner_id: 'f1' });
       const p3 = await profilul('f1');
-      egal(p3.activare.pasi.map((x) => x.stare), ['in_verificare', 'completat', 'completat', 'completat', 'in_verificare', 'de_completat']);
+      egal(p3.activare.pasi.map((x) => x.stare), ['in_verificare', 'completat', 'completat', 'completat', 'in_verificare', 'dupa_verificare']);
+      // Pașii 1–5 făcuți, contractul după verificare: activarea e trimisă.
+      egal(p3.activare.complet, true);
+      // După aprobare, contractul devine de semnat și activarea nu mai e completă.
+      DB.tabele.partners[0].status_verificare = 'approved';
+      const p4 = await profilul('f1');
+      egal([p4.activare.pasi[5].stare, p4.activare.complet], ['de_completat', false]);
     });
   }
 
