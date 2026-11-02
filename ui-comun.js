@@ -18,8 +18,11 @@
  *     mydarrin-produs.html pentru GPS). Nimic nou.
  *   - Dacă pagina nu are markup-ul meniului lateral, îl preia din
  *     index.html (o singură sursă), la primul click pe ≡.
- *   - Dacă pagina nu are fereastra de cont, trimite la index.html, care o
- *     deschide (?reason=cont).
+ *   - Fereastra de cont e una singură, cont-fereastra.js (pasul 11-R2,
+ *     1 nov. 2026): se deschide pe loc, pe orice pagină; dacă scriptul lipsește
+ *     din pagină, se încarcă la primul clic.
+ *   - Clientul fără nicio comandă nu are dashboard (pasul 11-R2): antetul și
+ *     meniul lateral nu arată „Comenzile mele” și „Dashboard-ul meu”.
  */
 // <destinatie-rol:inceput>
 // Generat din lib/destinatie-rol.js de scripts/genereaza-destinatie-rol.js — nu edita aici.
@@ -82,12 +85,16 @@
   }
 
   // Rolurile care duc într-un dashboard, în ordinea din ROLURI; „client” nu
-  // contează lângă alt rol cu dashboard.
-  function roluriCuDashboard(roles) {
+  // contează lângă alt rol cu dashboard. Pasul 11-R2: cu optiuni.areComenzi === false,
+  // „client” nu are dashboard (apare după prima comandă).
+  function roluriCuDashboard(roles, optiuni) {
     var lista = Array.isArray(roles) ? roles : [];
-    var cu = ROLURI.filter(function (r) { return lista.indexOf(r.rol) !== -1; }).map(function (r) { return r.rol; });
+    var faraClient = !!optiuni && optiuni.areComenzi === false;
+    var cu = ROLURI.filter(function (r) { return lista.indexOf(r.rol) !== -1 && !(faraClient && r.rol === 'client'); }).map(function (r) { return r.rol; });
     return cu.length > 1 ? cu.filter(function (r) { return r !== 'client'; }) : cu;
   }
+
+  function esteRolPartener(rol) { return /^partener_/.test(String(rol || '')) && !!definitie(rol); }
 
   // { tip, destinatie, rol?, roluri? } sau null (niciun rol).
   function alegeDestinatie(roles, optiuni) {
@@ -96,10 +103,16 @@
     if (lista.indexOf('superadmin') !== -1) return { tip: 'superadmin', destinatie: PAGINA_SUPERADMIN };
     var admin = lista.indexOf('admin') !== -1;
     if (admin && opt.adminCatalog) return { tip: 'admin_catalog', destinatie: PAGINA_ADMIN_CATALOG };
-    var cu = roluriCuDashboard(lista);
+    // Rolul de partener ales la înscriere, încă neacordat: întâi datele firmei.
+    var arePartener = lista.some(esteRolPartener);
+    if (!arePartener && esteRolPartener(opt.rolSolicitat)) {
+      return { tip: 'completare_partener', rol: opt.rolSolicitat, destinatie: adaugaPentruRol(opt.rolSolicitat) };
+    }
+    var cu = roluriCuDashboard(lista, opt);
     if (cu.length === 1) return { tip: 'rol', rol: cu[0], destinatie: dashboardPentruRol(cu[0]) };
     if (cu.length > 1) return { tip: 'alegere', destinatie: PAGINA_ALEGERE, roluri: cu };
     if (admin) return { tip: 'admin', destinatie: PAGINA_SUPERADMIN };
+    if (lista.indexOf('client') !== -1) return { tip: 'client_fara_comenzi', destinatie: null };
     return null;
   }
 
@@ -114,6 +127,7 @@
     adaugaPentruRol: adaugaPentruRol,
     roluriPentruPagina: roluriPentruPagina,
     roluriCuDashboard: roluriCuDashboard,
+    esteRolPartener: esteRolPartener,
     alegeDestinatie: alegeDestinatie,
   };
 });
@@ -152,14 +166,15 @@
     return promMeniu;
   }
 
-  // „Comenzile mele” / „Rolurile mele” apar doar cu sesiune (ca pe index).
+  // „Rolurile mele” apare doar cu sesiune (ca pe index); „Comenzile mele”, doar
+  // dacă clientul are dashboard (cel puțin o comandă, pasul 11-R2).
   function afiseazaLinkuriCont() {
-    utilizatorCurent().then(function (u) {
-      if (!u) return;
-      ['sb-comenzi-link', 'sb-roluri-link'].forEach(function (id) {
-        var a = el(id);
-        if (a) a.style.display = 'flex';
-      });
+    profilCont().then(function (p) {
+      if (!p) return;
+      var a = el('sb-roluri-link');
+      if (a) a.style.display = 'flex';
+      var c = el('sb-comenzi-link');
+      if (c) c.style.display = areDashboardClient(p) ? 'flex' : 'none';
       if (window.MYD_CONT) window.MYD_CONT.aplica();
     });
   }
@@ -279,19 +294,59 @@
     return Promise.resolve(null);
   }
 
-  defineste('toggleAuthModal', function () {
-    var m = el('auth-modal');
-    if (!m) { window.location.href = 'index.html?reason=cont'; return; }
-    m.classList.toggle('hidden');
-    document.body.style.overflow = m.classList.contains('hidden') ? '' : 'hidden';
-  });
+  // Fereastra comună de cont (cont-fereastra.js): dacă pagina nu o include,
+  // se încarcă acum și se deschide pe loc, fără plecare de pe pagină.
+  var promFereastra = null;
+  function fereastraCont() {
+    if (window.MDCont) return Promise.resolve(window.MDCont);
+    if (promFereastra) return promFereastra;
+    promFereastra = new Promise(function (ok) {
+      if (!document.querySelector('script[src$="cont-fereastra.js"]')) {
+        var s = document.createElement('script');
+        s.src = '/cont-fereastra.js';
+        (document.head || document.documentElement).appendChild(s);
+      }
+      var n = 0;
+      (function verifica() {
+        if (window.MDCont) return ok(window.MDCont);
+        if (++n > 100) { promFereastra = null; return ok(null); }
+        setTimeout(verifica, 50);
+      })();
+    });
+    return promFereastra;
+  }
+  function deschideCont(optiuni) {
+    return fereastraCont().then(function (c) {
+      if (c) c.deschide(optiuni || {});
+      else console.warn('[ui-comun] fereastra de cont nu s-a putut încărca');
+    });
+  }
 
-  // „Comenzile mele”: cu sesiune → dashboard-ul clientului; fără → contul.
+  defineste('toggleAuthModal', function () {
+    if (window.MDCont) { window.MDCont.toggle(); return; }
+    deschideCont({});
+  });
+  defineste('switchAuthTab', function (tab) { deschideCont({ tab: tab }); });
+
+  // Dashboard-ul clientului există doar după prima comandă (pasul 11-R2);
+  // are_comenzi null = necunoscut: rămâne ca înainte (rolul client).
+  function areDashboardClient(p) {
+    if (!p) return false;
+    if (p.are_comenzi === true) return true;
+    return p.are_comenzi == null && (p.roles || []).indexOf('client') !== -1;
+  }
+
+  // „Comenzile mele”: cu sesiune și comenzi → dashboard-ul clientului; cu
+  // sesiune, fără comenzi → un mesaj; fără sesiune → fereastra de cont.
   defineste('checkAuth', function () {
     utilizatorCurent().then(function (u) {
-      if (u) { window.location.href = 'mydarrin-dashboard-client.html'; return; }
-      window.toggleAuthModal();
-      if (typeof window.switchAuthTab === 'function' && el('auth-modal')) window.switchAuthTab('login');
+      if (!u) { deschideCont({ tab: 'login' }); return; }
+      profilCont().then(function (p) {
+        if (!p || areDashboardClient(p)) { window.location.href = 'mydarrin-dashboard-client.html'; return; }
+        var text = trC('Nu ai încă nicio comandă. „Comenzile mele” apare după prima comandă.');
+        if (window.MDFeedback) window.MDFeedback.toast('info', text);
+        else if (typeof window.showToastMsg === 'function') window.showToastMsg(text);
+      });
     });
   });
 
@@ -346,6 +401,9 @@
     var s = cuv.length > 1 ? cuv[0].charAt(0) + cuv[1].charAt(0) : (cuv[0] || '?').slice(0, 2);
     return s.toUpperCase();
   }
+
+  // Fără dashboard (clientul fără comenzi, pasul 11-R2): nimic de deschis.
+  function areDashboard(p) { return (p.roluri_dashboard || []).length > 0 || !!p.destinatie; }
 
   function mergiInDashboard(p) {
     var roluri = p.roluri_dashboard || [];
@@ -405,13 +463,15 @@
     m.setAttribute('role', 'menu');
     m.innerHTML =
       '<div class="myd-cont-meniu-cap"><b>' + esc(numeCont(p)) + '</b><span>' + esc(conectatCa(p)) + '</span></div>' +
-      '<button type="button" role="menuitem" class="myd-cont-opt" data-actiune="dashboard">' + esc(trC('Dashboard-ul meu')) + '</button>' +
+      (areDashboard(p) ? '<button type="button" role="menuitem" class="myd-cont-opt" data-actiune="dashboard">' + esc(trC('Dashboard-ul meu')) + '</button>' : '') +
       '<button type="button" role="menuitem" class="myd-cont-opt" data-actiune="roluri">' + esc(trC('Rolurile mele')) + '</button>' +
       '<button type="button" role="menuitem" class="myd-cont-opt myd-cont-iesi" data-actiune="iesi">' + esc(trC('Ieși')) + '</button>';
     document.body.appendChild(m);
     var r = buton.getBoundingClientRect();
     var latime = m.offsetWidth;
-    m.style.top = Math.round(r.bottom + 6) + 'px';
+    // Butonul din bara de jos (mobil): meniul se deschide deasupra lui.
+    if (r.bottom + 6 + m.offsetHeight > window.innerHeight) m.style.top = Math.max(8, Math.round(r.top - 6 - m.offsetHeight)) + 'px';
+    else m.style.top = Math.round(r.bottom + 6) + 'px';
     m.style.left = Math.max(16, Math.min(window.innerWidth - latime - 16, Math.round(r.right - latime))) + 'px';
     m.addEventListener('click', function (e) {
       var b = e.target.closest && e.target.closest('[data-actiune]');
@@ -450,9 +510,15 @@
     btn.setAttribute('data-myd-cont', '1');
     btn.id = btn.id || 'header-account-btn';
     btn.removeAttribute('onclick');
-    btn.onclick = function (e) { e.preventDefault(); mergiInDashboard(p); };
+    var cuDashboard = areDashboard(p);
+    btn.onclick = function (e) {
+      e.preventDefault();
+      if (cuDashboard) mergiInDashboard(p);
+      else { e.stopPropagation(); deschideMeniuCont(btn, p); }
+    };
     btn.title = p.email || '';
-    btn.setAttribute('aria-label', conectatCa(p) + ' — ' + trC('Dashboard-ul meu'));
+    btn.setAttribute('aria-label', conectatCa(p) + ' — ' + trC(cuDashboard ? 'Dashboard-ul meu' : 'Meniul contului'));
+    if (!cuDashboard) { btn.setAttribute('aria-haspopup', 'menu'); btn.setAttribute('aria-expanded', 'false'); }
     btn.innerHTML = avatarHtml(p) + '<span class="hidden md:inline myd-cont-nume">' + esc(numeCont(p)) + '</span>' +
       '<span class="myd-sr">' + esc(conectatCa(p)) + '</span>';
     var sageata = document.createElement('button');
@@ -473,9 +539,14 @@
     if (!b || b.getAttribute('data-myd-cont') === '1') return;
     b.setAttribute('data-myd-cont', '1');
     b.removeAttribute('onclick');
-    b.onclick = function (e) { e.preventDefault(); mergiInDashboard(p); };
+    var cuDashboard = areDashboard(p);
+    b.onclick = function (e) {
+      e.preventDefault();
+      if (cuDashboard) mergiInDashboard(p);
+      else { e.stopPropagation(); deschideMeniuCont(b, p); }
+    };
     b.title = p.email || '';
-    b.setAttribute('aria-label', conectatCa(p) + ' — ' + trC('Dashboard-ul meu'));
+    b.setAttribute('aria-label', conectatCa(p) + ' — ' + trC(cuDashboard ? 'Dashboard-ul meu' : 'Meniul contului'));
     var svg = b.querySelector('svg');
     if (svg) svg.outerHTML = avatarHtml(p, 'width:22px;height:22px;font-size:9px');
     Array.prototype.forEach.call(b.childNodes, function (n) {
@@ -512,10 +583,17 @@
     iesi.innerHTML = '<div class="sb-ico" style="background:#FDECEA"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C0392B" stroke-width="2" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div>' + esc(trC('Ieși'));
     iesi.onclick = function (e) { e.preventDefault(); window.MyDarrinAuth.performLogout(); };
     reper.parentNode.insertBefore(cap, reper);
-    cap.insertAdjacentElement('afterend', dash);
+    // Clientul fără comenzi: fără „Dashboard-ul meu” și fără „Comenzile mele”.
+    var cuDashboard = areDashboard(p);
+    if (cuDashboard) cap.insertAdjacentElement('afterend', dash);
+    if (!areDashboardClient(p)) {
+      Array.prototype.forEach.call(sb.querySelectorAll('[onclick*="checkAuth"]'), function (a) { a.style.display = 'none'; });
+    }
+    var comenzi = el('sb-comenzi-link');
+    if (comenzi) comenzi.style.display = areDashboardClient(p) ? 'flex' : 'none';
     var roluri = el('sb-roluri-link');
     if (roluri) { roluri.style.display = 'flex'; roluri.insertAdjacentElement('afterend', iesi); }
-    else dash.insertAdjacentElement('afterend', iesi);
+    else (cuDashboard ? dash : cap).insertAdjacentElement('afterend', iesi);
   }
 
   function aplicaCont() {
@@ -528,7 +606,12 @@
       return p;
     });
   }
-  window.MYD_CONT = { profil: profilCont, aplica: aplicaCont, mergiInDashboard: mergiInDashboard, initiale: initiale, numeCont: numeCont, avatarHtml: avatarHtml, stil: stilCont };
+  // După login în fereastra de cont, fără plecare de pe pagină (pasul 11-R2).
+  function reincarcaCont() {
+    promProfil = null;
+    return aplicaCont().then(function (p) { if (p) afiseazaLinkuriCont(); return p; });
+  }
+  window.MYD_CONT = { profil: profilCont, aplica: aplicaCont, reincarca: reincarcaCont, mergiInDashboard: mergiInDashboard, areDashboardClient: areDashboardClient, initiale: initiale, numeCont: numeCont, avatarHtml: avatarHtml, stil: stilCont };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', aplicaCont);
   else aplicaCont();
 

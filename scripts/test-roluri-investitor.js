@@ -42,7 +42,7 @@ stub('lib/eligibilitate-partener.js', { eligibilitatePartener: async (id) => {
   const p = DB.tabele.partners.find((x) => x.id === id);
   return p ? { nume_firma: p.nume_firma, partner_type: p.partner_type, status_verificare: p.status_verificare, contract_semnat: false, cont_bancar: false, poate_vinde: false, motiv: 'in_verificare', furnizor_propriu: false } : null;
 } });
-stub('lib/destinatie-cont.js', { destinatiePentru: async () => null });
+stub('lib/destinatie-cont.js', { destinatiePentru: async () => null, contextCont: async () => ({ roles: [], rolSolicitat: null, areComenzi: null }) });
 
 const apiKyc = require(path.join(RADACINA, 'api/investitori/kyc.js'));
 const apiDoc = require(path.join(RADACINA, 'api/investitori/kyc-document.js'));

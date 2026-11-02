@@ -92,11 +92,21 @@ function _taraLimbaDetectate() {
   return { tara, limba };
 }
 
-async function performRegister(email, parola, nume, gdprAcceptat) {
+// Pasul 11-R2 (1 nov. 2026), extra (opțional, din cont-fereastra.js):
+//   { prenume, telefon, rolSolicitat } — handle_new_user() pune telefonul în
+//   profiles.phone (phone_verificat = false) și alegerea în
+//   profiles.rol_solicitat. rol_solicitat e doar o alegere: rolul îl dă
+//   serverul, niciodată user_metadata.
+async function performRegister(email, parola, nume, gdprAcceptat, extra) {
   const { tara, limba } = _taraLimbaDetectate();
+  const x = extra || {};
+  const date = { nume, roles: [], gdpr_acceptat: !!gdprAcceptat, tara, limba };
+  if (x.prenume) date.prenume = x.prenume;
+  if (x.telefon) date.telefon = x.telefon;
+  if (x.rolSolicitat) date.rol_solicitat = x.rolSolicitat;
   const { data, error } = await sb().auth.signUp({
     email, password: parola,
-    options: { data: { nume, roles: [], gdpr_acceptat: !!gdprAcceptat, tara, limba } },
+    options: { data: date },
   });
   if (error) throw error;
 
@@ -111,7 +121,7 @@ async function performRegister(email, parola, nume, gdprAcceptat) {
     }).catch(() => {});
   } catch (e) {}
 
-  return data.user; // status: pending_otp până la verificarea telefonului (pasul 2)
+  return data.user; // fără sesiune până la codul din email (confirmaCodEmail)
 }
 
 /* ── Verificare telefon — protocol nativ Supabase Auth (Bug #27, reparat
@@ -198,7 +208,8 @@ function mesajServer(j, implicit) {
   return (en && j && j.error_en) || (j && j.error) || implicit;
 }
 
-async function destinatieDupaLogin() {
+// Răspunsul complet al serverului: { destinatie, tip, rol?, roluri? } sau null fără sesiune.
+async function raspunsDestinatie() {
   const session = (await sb().auth.getSession()).data.session;
   if (!session) return null;
   const r = await fetch('/api/public/destinatie-post-login', { headers: { Authorization: 'Bearer ' + session.access_token } });
@@ -208,20 +219,28 @@ async function destinatieDupaLogin() {
     e.status = r.status;
     throw e;
   }
-  return j.destinatie || null;
+  return j;
+}
+
+async function destinatieDupaLogin() {
+  const j = await raspunsDestinatie();
+  return (j && j.destinatie) || null;
 }
 
 // Trimite utilizatorul la destinația lui. La eroare: mesajul (dacă pagina are
 // unde să-l arate) și rămâne pe pagina curentă, reîncărcată.
-async function mergiDupaLogin(laEroare) {
+// Pasul 11-R2: fără destinație (clientul fără comenzi) → laFaraDestinatie(j),
+// dacă e dată: utilizatorul rămâne pe pagină, fără reîncărcare.
+async function mergiDupaLogin(laEroare, laFaraDestinatie) {
   // Revenirea la pagina cerută înainte de login (cont-dashboard.js → laLogin):
   // pagina își verifică singură rolul și trimite mai departe, dacă e cazul.
   let revenire = null;
   try { revenire = sessionStorage.getItem('myd_revenire_dupa_login'); sessionStorage.removeItem('myd_revenire_dupa_login'); } catch (e) {}
   if (revenire && /^\/(?!\/)/.test(revenire)) { window.location.href = revenire; return true; }
   try {
-    const d = await destinatieDupaLogin();
-    if (d) { window.location.href = d; return true; }
+    const j = await raspunsDestinatie();
+    if (j && j.destinatie) { window.location.href = j.destinatie; return true; }
+    if (typeof laFaraDestinatie === 'function') { laFaraDestinatie(j); return false; }
   } catch (e) {
     console.warn('[account-system] destinația după login:', e.message);
     if (typeof laEroare === 'function') { laEroare(e); return false; }
@@ -393,5 +412,5 @@ window.MyDarrinAuth = {
   resetPasswordForEmail, emailDejaInregistrat, injecteazaLinkRecuperareParola,
   togglePasswordVisibility,
   confirmaCodEmail, retrimiteCodEmail, performOAuthLogin,
-  destinatieDupaLogin, mergiDupaLogin,
+  destinatieDupaLogin, mergiDupaLogin, raspunsDestinatie, OAUTH_PROVIDERS_ACTIVI,
 };
