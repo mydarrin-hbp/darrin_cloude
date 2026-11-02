@@ -37,9 +37,20 @@
 -- Readus din schema.sql (secțiunea 10), pe care varianta din 14 oct. îl
 -- pierduse: numele (profiles.nume) și consimțământul GDPR
 -- (profiles.gdpr_consimtamant_at = now() când gdpr_acceptat = true).
--- Ambele coloane există în schema.sql; verificarea 4 de la final le arată.
+--
+-- Corectat la pasul 11-R2b (2 nov. 2026), după verificarea bazei reale:
+--   - profiles.nume și profiles.gdpr_consimtamant_at NU există în baza reală
+--     (sunt doar în schema.sql): migrarea le adaugă, înainte de funcție;
+--     altfel funcția ar eșua și orice înscriere ar fi refuzată.
+--   - profiles.phone e unic (profiles_phone_key: UNIQUE (phone)): un telefon
+--     deja folosit pe alt profil nu se salvează (contul se creează, fără
+--     telefon). Regula de unicitate rămâne.
 
 begin;
+
+-- ── 0. Coloanele scrise de funcție care lipsesc din baza reală ──
+alter table public.profiles add column if not exists nume text;
+alter table public.profiles add column if not exists gdpr_consimtamant_at timestamptz;
 
 -- ── 1. Coloana rol_solicitat ──
 alter table public.profiles add column if not exists rol_solicitat text;
@@ -118,6 +129,11 @@ begin
   if _telefon !~ '^\+[1-9][0-9]{7,14}$' then
     _telefon := null;
   end if;
+  -- Telefonul e unic (profiles_phone_key): deja folosit pe alt profil → nu se
+  -- salvează, iar contul se creează fără telefon.
+  if _telefon is not null and exists (select 1 from public.profiles where phone = _telefon) then
+    _telefon := null;
+  end if;
 
   -- Numele afișat: prenume + nume (fereastra de cont le trimite separat).
   _nume := nullif(trim(concat_ws(' ', nullif(trim(new.raw_user_meta_data->>'prenume'), ''),
@@ -171,8 +187,8 @@ commit;
 --  where table_schema = 'public' and table_name = 'profiles'
 --    and column_name in ('nume', 'gdpr_consimtamant_at', 'rol_solicitat', 'phone', 'phone_verificat', 'limba');
 --
--- 5) Telefonul nu are constrângere de unicitate (altfel două conturi cu același
---    telefon nu s-ar putea crea) → 0 rânduri
+-- 5) Regula de unicitate a telefonului există (handle_new_user() sare peste un
+--    telefon deja folosit) → 1 rând: profiles_phone_key
 -- select conname from pg_constraint
 --  where conrelid = 'public.profiles'::regclass and contype = 'u'
 --    and pg_get_constraintdef(oid) ilike '%phone%';
