@@ -3956,11 +3956,6 @@ function toggleAuthModal(){
 function checkAuth(){alert('Trebuie să fii autentificat pentru a vedea comenzile. Te rugăm să te loghezi.');}
 
 // Basket
-function toggleBasket(){
-  const p=document.getElementById('basket-panel');
-  p.classList.toggle('hidden');
-  document.body.style.overflow=p.classList.contains('hidden')?'':'hidden';
-}
 function changeQty(btn,delta){
   const item=btn.closest('.basket-item');
   const qEl=item.querySelector('.basket-qty');
@@ -3978,15 +3973,6 @@ function recalcBasket(){
   document.querySelectorAll('#basket-panel .basket-price').forEach(el=>{t+=parseInt(el.textContent);});
   document.getElementById('basket-subtotal').textContent=t+' Lei';
   document.getElementById('basket-total').textContent=Math.round(t*1.12)+' Lei';
-}
-
-// Catalog tabs
-function switchTab(name,btn){
-  document.querySelectorAll('.tab-content').forEach(t=>t.classList.add('hidden'));
-  document.querySelectorAll('.cat-tab').forEach(b=>b.classList.remove('active'));
-  document.getElementById('tab-'+name).classList.remove('hidden');
-  btn.classList.add('active');
-  document.querySelectorAll('#tab-'+name+' .reveal').forEach(el=>{el.classList.remove('visible');setTimeout(()=>el.classList.add('visible'),60);});
 }
 
 // G31b (27 Iulie 2026): bloc mort eliminat (CURRENCIES/ACTIVE_ZONES/
@@ -6832,14 +6818,13 @@ window.addEventListener('scroll',()=>{
 function openSidebar(){document.getElementById("sidebar").classList.add("open");document.getElementById("sidebar-overlay").classList.add("show");document.body.style.overflow="hidden";}
 function closeSidebar(){document.getElementById("sidebar").classList.remove("open");document.getElementById("sidebar-overlay").classList.remove("show");document.body.style.overflow="";}
 function toggleSbSection(id){const el=document.getElementById(id);const ico=document.getElementById("ico-"+id);el.classList.toggle("hidden");if(ico)ico.style.transform=el.classList.contains("hidden")?"":"rotate(180deg)";}
-function openPartnerModal(t){document.getElementById("partner-modal").classList.remove("hidden");document.body.style.overflow="hidden";}
 
 function openInvestorModal(){document.getElementById("investor-modal").classList.remove("hidden");document.body.style.overflow="hidden";}
 function closeInvestorModal(){document.getElementById("investor-modal").classList.add("hidden");document.body.style.overflow="";}
-function selectPartnerType(){}
 
 
-function submitInvestorForm(){}
+// Pasul 11-R1: apelurile switchTab('…') din meniul lateral au un singur argument și nu
+// există #tab-inchirieri; varianta goală lasă filterCat() de după să ruleze.
 function switchTab(name,btn){}
 
 // ── CONFIGURE ITEM ──

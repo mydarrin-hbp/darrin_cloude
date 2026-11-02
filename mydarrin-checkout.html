@@ -2278,11 +2278,6 @@ function switchAuthTab(tab){
 function checkAuth(){alert('Trebuie să fii autentificat pentru a vedea comenzile. Te rugăm să te loghezi.');}
 
 // Basket
-function toggleBasket(){
-  const p=document.getElementById('basket-panel');
-  p.classList.toggle('hidden');
-  document.body.style.overflow=p.classList.contains('hidden')?'':'hidden';
-}
 function changeQty(btn,delta){
   const item=btn.closest('.basket-item');
   const qEl=item.querySelector('.basket-qty');
@@ -3326,12 +3321,8 @@ document.querySelectorAll(".reveal").forEach(el=>ro.observe(el));
 function openSidebar(){document.getElementById("sidebar").classList.add("open");document.getElementById("sidebar-overlay").classList.add("show");document.body.style.overflow="hidden";}
 function closeSidebar(){document.getElementById("sidebar").classList.remove("open");document.getElementById("sidebar-overlay").classList.remove("show");document.body.style.overflow="";}
 function toggleSbSection(id){const el=document.getElementById(id);const ico=document.getElementById("ico-"+id);el.classList.toggle("hidden");if(ico)ico.style.transform=el.classList.contains("hidden")?"":"rotate(180deg)";}
-function openPartnerModal(t){document.getElementById("partner-modal").classList.remove("hidden");document.body.style.overflow="hidden";if(t)setTimeout(()=>selectPartnerType(t),80);}
-function closePartnerModal(){document.getElementById("partner-modal").classList.add("hidden");document.body.style.overflow="";}
 function openInvestorModal(){document.getElementById("investor-modal").classList.remove("hidden");document.body.style.overflow="hidden";}
 function closeInvestorModal(){document.getElementById("investor-modal").classList.add("hidden");document.body.style.overflow="";}
-function selectPartnerType(type){const PM={servicii:{icon:"",title:"Furnizor de Servicii",color:"#FF8C00",bg:"linear-gradient(135deg,#FFF0D6,#FDE8C4)"},materiale:{icon:"",title:"Furnizor de Materiale",color:"#003366",bg:"linear-gradient(135deg,#EBF4FB,#DDE6F5)"},inchirieri:{icon:"",title:"Furnizor de Închirieri",color:"#0E9E99",bg:"linear-gradient(135deg,#E0F5F4,#C5EEEC)"},curier:{icon:"",title:"Curier de Cartier",color:"#D97706",bg:"linear-gradient(135deg,#FEF3C7,#FDE68A)"},asigurari:{icon:"",title:"Furnizor de Asigurări",color:"#0E9E99",bg:"linear-gradient(135deg,#E0F5F4,#B3E8E6)"}};const m=PM[type];if(!m)return;document.getElementById("partner-cards").classList.add("hidden");document.getElementById("partner-form").classList.remove("hidden");document.getElementById("pf-icon").textContent=m.icon;document.getElementById("pf-icon").style.background=m.bg;document.getElementById("pf-title").textContent=m.title;document.getElementById("pf-title").style.color=m.color;}
-function resetPartnerType(){document.getElementById("partner-cards").classList.remove("hidden");document.getElementById("partner-form").classList.add("hidden");}
 
 function removeItem(id){if(confirm("Elimini serviciul din coș?"))alert("Serviciu eliminat din coș.");}
 
