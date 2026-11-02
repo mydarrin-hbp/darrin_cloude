@@ -11,24 +11,36 @@
 //
 // Rulează pe Vercel Cron, protejat cu CRON_SECRET, exact ca celelalte
 // cron-uri din acest proiect.
+//
+// Pasul 11-R3 (2 nov. 2026): „complet” = lista „Activează contul” din
+// dashboard (lib/activare-partener.js), nu doar cont bancar + serviciu.
+// Partenerul nu mai e creat de api/public/partner-register.js (410): primesc
+// reminderul și conturile care au ales un rol de partener (profiles.rol_solicitat)
+// dar n-au completat încă firma (fără rând în partners). Linkul duce în
+// dashboard-ul rolului, la listă.
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { renderEmailReminderProfilIncomplet, limbaProfilEmailComportamental } = require('../../lib/i18n');
 const { incarcaContactPlatformaSigur } = require('../../lib/contact-platforma');
 const { esteSuprimat } = require('../../lib/email-suppression');
-const { esteProfilComplet } = require('../../lib/verifica-profil-complet-partener');
+const { stareActivare, ROLURI_PARTENER } = require('../../lib/activare-partener');
+const { rolPentruTipPartener } = require('../../lib/roluri-partener');
+const { dashboardPentruRol } = require('../../lib/destinatie-rol');
+
+const SITE_URL = process.env.SITE_URL || 'https://mydarrin.homebestpal.com';
 
 const PRAG_ORE = 48;
 const TIP_EMAIL = 'profil_partener_incomplet_48h';
 
-async function trimiteReminder(email, limba, nume) {
+async function trimiteReminder(email, limba, nume, rol) {
   if (!process.env.RESEND_API_KEY) {
     console.warn('[reminder-profil-partener] RESEND_API_KEY lipsă — email netrimis către', email);
     return;
   }
   if (await esteSuprimat(email)) return;
   await incarcaContactPlatformaSigur(); // footerul de dezabonare / GDPR din back-office
-  const { subiect, html } = renderEmailReminderProfilIncomplet(limba, { nume });
+  const link = rol ? SITE_URL + dashboardPentruRol(rol) : undefined;
+  const { subiect, html } = renderEmailReminderProfilIncomplet(limba, { nume, link });
   await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
@@ -43,14 +55,26 @@ module.exports = async function handler(req, res) {
     return res.status(401).json({ error: 'Neautorizat' });
   }
 
-  const { data: candidati, error: selErr } = await supabaseAdmin
+  const { data: parteneri, error: selErr } = await supabaseAdmin
     .from('partners')
-    .select('id, nume_firma, status_verificare, creata_la')
+    .select('id, nume_firma, status_verificare, creata_la, partner_type')
     .neq('status_verificare', 'rejected');
   if (selErr) {
     console.error('[reminder-profil-partener]', selErr);
     return res.status(500).json({ error: 'Eroare la căutarea candidaților' });
   }
+  const candidati = (parteneri || []).map((p) => ({ ...p, rol: rolPentruTipPartener(p.partner_type) }));
+
+  // Conturile care au ales un rol de partener, dar n-au completat firma.
+  const { data: alesi, error: aleErr } = await supabaseAdmin
+    .from('profiles')
+    .select('id, nume, rol_solicitat, created_at')
+    .in('rol_solicitat', ROLURI_PARTENER);
+  if (aleErr) console.warn('[reminder-profil-partener] rol_solicitat:', aleErr.message || aleErr);
+  const cuPartener = new Set(candidati.map((p) => p.id));
+  (alesi || []).filter((p) => !cuPartener.has(p.id)).forEach((p) => {
+    candidati.push({ id: p.id, nume_firma: p.nume || null, creata_la: p.created_at, rol: p.rol_solicitat });
+  });
 
   let trimise = 0;
   let sarite = 0;
@@ -59,8 +83,8 @@ module.exports = async function handler(req, res) {
 
   for (const partener of candidati || []) {
     try {
-      const complet = await esteProfilComplet(partener.id);
-      if (complet) continue; // deja complet — nu mai e candidat, indiferent de istoric
+      const stare = await stareActivare(partener.id, { roles: [], rolSolicitat: partener.rol });
+      if (!stare || stare.activ || stare.complet) continue; // lista e completă — nu mai e candidat
 
       const { data: logExistent } = await supabaseAdmin
         .from('email_comportamental_log')
@@ -79,7 +103,7 @@ module.exports = async function handler(req, res) {
         .maybeSingle();
       if (!profil?.email) continue;
 
-      await trimiteReminder(profil.email, limbaProfilEmailComportamental(profil), partener.nume_firma);
+      await trimiteReminder(profil.email, limbaProfilEmailComportamental(profil), partener.nume_firma, partener.rol);
 
       if (logExistent) {
         await supabaseAdmin.from('email_comportamental_log').update({ trimis_la: new Date().toISOString() }).eq('id', logExistent.id);

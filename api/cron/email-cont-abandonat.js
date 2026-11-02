@@ -25,6 +25,12 @@
 // email_comportamental_log (user_id, tip) — unique — previne retrimiterea
 // aceluiași email aceluiași cont la fiecare rulare zilnică a cron-ului.
 //
+// Pasul 11-R3 (2 nov. 2026): partenerii nu mai vin din
+// api/public/partner-register.js (410), ci din fereastra comună de cont, cu
+// rolul „client” până la pasul „Firma”. Un cont care a ales un rol de partener
+// (profiles.rol_solicitat) nu primește emailul de client abandonat: lui îi
+// scrie reminderul listei „Activează contul” (api/cron/reminder-profil-partener.js).
+//
 // Rulează pe Vercel Cron, protejat cu CRON_SECRET, exact ca
 // api/cron/auto-confirma-comenzi.js / api/cron/expira-acces-temporar.js.
 
@@ -32,6 +38,8 @@ const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { renderEmailContAbandonat, limbaProfilEmailComportamental } = require('../../lib/i18n');
 const { incarcaContactPlatformaSigur } = require('../../lib/contact-platforma');
 const { esteSuprimat } = require('../../lib/email-suppression');
+
+const { esteRolPartener } = require('../../lib/activare-partener');
 
 const PRAG_ZILE = 3;
 const TIP_EMAIL_CLIENT = 'cont_abandonat_3zile';
@@ -70,17 +78,23 @@ module.exports = async function handler(req, res) {
   const erori = [];
 
   // ── 1. Clienți — cont creat, nicio comandă plasată ──────────────────
-  const { data: clienti, error: selErrC } = await supabaseAdmin
+  let { data: clienti, error: selErrC } = await supabaseAdmin
     .from('profiles')
-    .select('id, email, tara, limba')
+    .select('id, email, tara, limba, rol_solicitat')
     .eq('role', 'client')
     .lt('created_at', pragData);
+  // Înainte de migrarea 2026-11-01 coloana rol_solicitat lipsește.
+  if (selErrC && /rol_solicitat/.test(selErrC.message || '')) {
+    ({ data: clienti, error: selErrC } = await supabaseAdmin
+      .from('profiles').select('id, email, tara, limba').eq('role', 'client').lt('created_at', pragData));
+  }
   if (selErrC) {
     console.error('[email-cont-abandonat]', selErrC);
     return res.status(500).json({ error: 'Eroare la căutarea clienților candidați' });
   }
 
   for (const profil of clienti || []) {
+    if (esteRolPartener(profil.rol_solicitat)) continue; // partener în activare, nu client
     try {
       const { count } = await supabaseAdmin
         .from('comenzi')

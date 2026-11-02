@@ -4,7 +4,7 @@
 //
 // GET, cu Authorization: Bearer <access_token>
 // → { ok, email, nume, prenume, nume_familie, telefon, tara, roles, roluri_dashboard,
-//     destinatie, tip_destinatie, are_comenzi, rol_solicitat, furnizor_propriu,
+//     destinatie, tip_destinatie, are_comenzi, rol_solicitat, activare, furnizor_propriu,
 //     partener: null | { nume_firma, partner_type, rol, status_verificare,
 //                        contract_semnat, cont_bancar, motiv_respingere,
 //                        poate_vinde, motiv_nu_poate_vinde },
@@ -26,6 +26,8 @@
 // comenzi nu are dashboard, deci roluri_dashboard nu conține „client”, iar
 // antetul și meniul lateral nu arată „Comenzile mele”. rol_solicitat = rolul
 // ales la înscriere (doar o alegere, nu un drept).
+// Pasul 11-R3: activare = lista „Activează contul” (lib/activare-partener.js),
+// cu starea fiecărui punct; null dacă nu e partener și n-a ales un rol de partener.
 //
 // roles vine din profiles.roles (singura sursă pentru acces). Fără date
 // sensibile: fără IBAN (doar „are cont bancar activ: da / nu”), fără CNP,
@@ -39,6 +41,7 @@ const { roluriCuDashboard } = require('../../lib/destinatie-rol');
 const { rolPentruTipPartener } = require('../../lib/roluri-partener');
 const { eligibilitatePartener } = require('../../lib/eligibilitate-partener');
 const { citesteKyc, starePublica } = require('../../lib/investitori-kyc');
+const { stareActivare } = require('../../lib/activare-partener');
 
 function numeAfisat(user) {
   const m = user.user_metadata || {};
@@ -90,6 +93,9 @@ async function handler(req, res, user) {
     const m = user.user_metadata || {};
     const ctx = await contextCont(user);
     const d = await destinatiePentru(user, ctx);
+    // Lista de activare: o eroare de citire nu oprește profilul.
+    let activare = null;
+    try { activare = await stareActivare(user.id, ctx); } catch (e) { console.warn('[cont/profil] activare:', e.message || e); }
     return res.status(200).json({
       ok: true,
       email: user.email || null,
@@ -104,6 +110,7 @@ async function handler(req, res, user) {
       tip_destinatie: d ? d.tip : null,
       are_comenzi: ctx.areComenzi,
       rol_solicitat: ctx.rolSolicitat,
+      activare,
       furnizor_propriu: !!(p && p.furnizor_propriu),
       partener,
       investitor,

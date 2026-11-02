@@ -6,6 +6,14 @@
      - fără sesiune → fereastra de login, cu revenire la pagina cerută;
      - clientul fără nicio comandă (pasul 11-R2) → pagina principală, cu un
        mesaj scurt: dashboard-ul clientului apare după prima comandă;
+     - modul activare (pasul 11-R3, decizia LM din 2 nov. 2026): cine a ales un
+       rol de partener (profiles.rol_solicitat) intră în dashboard-ul acelui rol
+       înainte să-l aibă; pagina arată doar fluxul „Activează contul”, pe pași
+       (activare-pasi.js, corecția 11-R3), iar celelalte panouri sunt blocate
+       („Disponibil după activarea contului”). Partenerul cu rol, dar cu
+       activarea neterminată, vede fluxul peste dashboard; după ce îl închide,
+       o bandă scurtă („Continuă activarea”) îl redeschide.
+       Accesul la date rămâne pe server: endpoint-urile cer rolul;
      - rol greșit → redirect la dashboard-ul corect, cu un mesaj scurt
        („Te-am dus în contul tău de furnizor.”), nu pagină goală;
      - antetul de identitate: inițiale, numele firmei (sau numele din
@@ -26,8 +34,10 @@
 
    Utilizare (în scriptul de pază al paginii, după account-system.js):
      const paza = await MYD_PAZA.verifica({ container: 'myd-cont-antet', tema: 'intunecata',
-       actiuni: { cont_bancar: () => showPanel('cont-bancar') } });
+       actiuni: { cont_bancar: () => showPanel('cont-bancar'), panou: (id) => showPanel(id) },
+       blocheaza: { continut: 'dp-content', nav: 'dp-nav' } });
      if (!paza) return;           // false = redirect în curs (login sau alt dashboard)
+     if (paza.activare) return;   // modul activare: doar lista, fără panouri
      // paza.profil: profilul contului (null dacă nu s-a putut citi; pagina continuă)
    Pagina publică (investitori): { public: true } — fără redirect.
    ════════════════════════════════════════════════════════════════ */
@@ -141,6 +151,8 @@
       '.myd-banda-atentie{border-color:#C77700;background:#FFF6E5;color:#6B4200}.myd-banda-atentie button{background:#CC7000}' +
       '.myd-banda-eroare{border-color:#C0392B;background:#FDECEA;color:#7A1F16}.myd-banda-eroare button{background:#C0392B}' +
       '.myd-banda-ok{border-color:#1A7A3A;background:#EDF7F0;color:#14532D}' +
+      '.myd-blocat{border:1.5px dashed #D5DFE8;border-radius:14px;padding:22px 16px;margin:0 18px 18px;text-align:center;font-size:13px;color:#5A6B7D;max-width:820px;box-sizing:border-box}' +
+      '@media (max-width:480px){.myd-blocat{margin:0 12px 12px}}' +
       '.myd-fer{position:fixed;inset:0;z-index:9600;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.55)}' +
       '.myd-fer-cutie{background:#fff;color:#1A2332;border-radius:16px;width:100%;max-width:560px;max-height:90vh;overflow:auto;padding:22px;box-sizing:border-box}' +
       '.myd-fer-cutie h3{margin:0 0 12px;font-size:17px;font-weight:800}' +
@@ -232,6 +244,47 @@
     }
     if (st === 'approved' && !pt.contract_semnat) {
       banda(container, 'atentie', tr('Semnează contractul ca să primești comenzi.'), tr('Semnează contractul'), actiuni.contract, 'myd-banda-contract');
+    }
+  }
+
+  // ── Activarea contului (pasul 11-R3) ───────────────────────────────
+  // Corecția 11-R3: lista de 6 carduri e înlocuită de fluxul pe pași
+  // (activare-pasi.js). În dashboard rămâne doar o bandă care îl redeschide.
+  function deschideFlux(p, opt, pas) {
+    if (window.MYD_ACTIVARE) return window.MYD_ACTIVARE.deschide(p, opt, pas ? { pas: pas } : null);
+    return null;
+  }
+  function listaActivare(container, p, opt) {
+    var act = p && p.activare;
+    if (!container || !act) return null;
+    stil();
+    var vechi = document.getElementById('myd-activare');
+    if (vechi) vechi.remove();
+    var gata = act.pasi.filter(function (x) { return x.stare === 'completat' || x.stare === 'in_verificare'; }).length;
+    var text = act.complet
+      ? (act.verificare === 'approved' ? tr('Activarea contului: mai rămâne contractul.') : tr('Activarea contului e trimisă. Firma e în verificare (cel mult 48 de ore).'))
+      : tr('Activarea contului: {n} din {total} pași făcuți.', { n: gata, total: act.pasi.length });
+    var b = banda(container, 'info', text, act.complet && act.verificare !== 'approved' ? null : tr('Continuă activarea'), function () { deschideFlux(p, opt); }, 'myd-activare');
+    return b;
+  }
+
+  // Modul activare: panourile paginii nu apar; în locul lor, explicația.
+  function blocheazaPanouri(b) {
+    if (!b) return;
+    var continut = document.getElementById(b.continut);
+    var nav = document.getElementById(b.nav);
+    if (nav) nav.style.display = 'none';
+    (b.ascunde || []).forEach(function (id) { var e = document.getElementById(id); if (e) e.style.display = 'none'; });
+    if (continut) {
+      continut.style.display = 'none';
+      if (!document.getElementById('myd-blocat')) {
+        var n = document.createElement('div');
+        n.id = 'myd-blocat';
+        n.className = 'myd-blocat';
+        n.setAttribute('role', 'note');
+        n.textContent = tr('Comenzile, facturile, sarcinile și celelalte secțiuni: disponibil după activarea contului.');
+        continut.parentNode.insertBefore(n, continut);
+      }
     }
   }
 
@@ -365,7 +418,9 @@
       if (!r.profil || !c) return;
       window.__MYD_PROFIL = r.profil;
       Array.prototype.forEach.call(c.querySelectorAll('.myd-banda'), function (b) { b.remove(); });
-      benziPartener(c, r.profil, actiuniFinale(ultimaOptiune));
+      // Pasul 11-R3: lista „Activează contul” se reface cu starea nouă.
+      if (r.profil.activare && !r.profil.activare.activ) listaActivare(c, r.profil, ultimaOptiune);
+      else benziPartener(c, r.profil, actiuniFinale(ultimaOptiune));
     });
   }
 
@@ -415,6 +470,22 @@
         return false;
       }
 
+      // Pasul 11-R3: rolul de partener ales, încă neacordat → modul activare.
+      var act = p.activare;
+      if (!areRol.length && !admin && !opt.public && act && act.mod_activare && permise.indexOf(act.rol) !== -1) {
+        var ca = document.getElementById(opt.container || 'myd-cont-antet');
+        document.documentElement.classList.add('myd-mod-activare');
+        if (ca) {
+          stil();
+          ca.innerHTML = '';
+          antet(ca, p, act.rol, opt.tema);
+          listaActivare(ca, p, opt);
+        }
+        blocheazaPanouri(opt.blocheaza);
+        deschideFlux(p, opt);
+        return { profil: p, rol: act.rol, activare: true };
+      }
+
       if (!areRol.length) {
         if (opt.public) return { profil: p };
         if (!admin) {
@@ -436,7 +507,16 @@
         var mesaj = ss(CHEIE_MESAJ);
         if (mesaj) { ss(CHEIE_MESAJ, null); banda(c, 'ok', tr(mesaj), null, null, 'myd-banda-redirect'); }
         antet(c, p, rol || (p.roluri_dashboard || [])[0] || 'client', opt.tema);
-        if (p.partener && (!rol || rol.indexOf('partener_') === 0)) benziPartener(c, p, actiuniFinale(opt));
+        var partenerPagina = p.partener && (!rol || rol.indexOf('partener_') === 0);
+        // Partenerul încă neactiv: lista „Activează contul” în locul benzilor
+        // de cont bancar și contract (respingerea rămâne bandă).
+        if (partenerPagina && !opt.public && p.activare && !p.activare.activ) {
+          if (p.partener.status_verificare === 'rejected') benziPartener(c, p, actiuniFinale(opt));
+          listaActivare(c, p, opt);
+          var inchisa = false;
+          try { inchisa = sessionStorage.getItem('myd_activare_inchisa') === '1'; } catch (e) {}
+          if (!p.activare.complet && !inchisa) deschideFlux(p, opt);
+        } else if (partenerPagina) benziPartener(c, p, actiuniFinale(opt));
       }
       return { profil: p, rol: rol };
     }).catch(function (e) {
@@ -445,5 +525,5 @@
     });
   }
 
-  window.MYD_PAZA = { verifica: verifica, laLogin: laLogin, reincarcaBenzi: reincarcaBenzi, bandaProduse: bandaProduse, fereastraContBancar: fereastraContBancar, fereastraContract: fereastraContract };
+  window.MYD_PAZA = { verifica: verifica, laLogin: laLogin, reincarcaBenzi: reincarcaBenzi, bandaProduse: bandaProduse, fereastraContBancar: fereastraContBancar, fereastraContract: fereastraContract, listaActivare: listaActivare, deschideActivare: deschideFlux };
 })();

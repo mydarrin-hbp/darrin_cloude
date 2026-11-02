@@ -70,7 +70,7 @@ input:focus,select:focus{border-color:var(--primary)}
       <div class="logo-mark">D</div>
       <span style="font-weight:800;font-size:15px;color:#1A2332">My Darrin</span>
     </a>
-    <a href="mydarrin-dashboard-partener.html" style="font-size:12.5px;font-weight:600;color:#5A6B7D">← Înapoi la dashboard</a>
+    <a id="link-dashboard" href="mydarrin-dashboard-partener.html" style="font-size:12.5px;font-weight:600;color:#5A6B7D">← Înapoi la dashboard</a>
   </div>
 </header>
 
@@ -97,6 +97,7 @@ input:focus,select:focus{border-color:var(--primary)}
   <!-- PASUL 2 — Date companie + cont bancar -->
   <div class="card" id="step-2" style="display:none">
     <h2>Pasul 2 · Date companie și cont bancar</h2>
+    <div id="s2-activare" class="msg ok" style="display:none;margin:0 0 12px"></div>
     <p class="sub">Contul bancar e opțional acum — îl poți completa aici sau mai târziu, din profil. Devine obligatoriu abia înainte de a putea prelua prima comandă. IBAN-ul e criptat înainte de a fi salvat — nu e stocat niciodată în clar.</p>
     <div class="grid2">
       <div>
@@ -117,6 +118,17 @@ input:focus,select:focus{border-color:var(--primary)}
     </div>
     <label>Denumire firmă</label>
     <input type="text" id="s2-firma" placeholder="Firma Mea SRL">
+    <!-- Pasul 11-R3: aceleași câmpuri ca fostul formular public „Devino partener”. -->
+    <div class="grid2">
+      <div>
+        <label>Nr. Registrul Comerțului</label>
+        <input type="text" id="s2-nrregcom" placeholder="J40/1234/2020" maxlength="40">
+      </div>
+      <div>
+        <label>Sediul social</label>
+        <input type="text" id="s2-sediu" placeholder="Str. Exemplu nr. 1, București" maxlength="300">
+      </div>
+    </div>
     <div class="grid2">
       <div>
         <label>Formă juridică</label>
@@ -348,7 +360,30 @@ async function verificaPasul1() {
       arataBariera('Confirmă-ți emailul din mesajul primit, apoi revino aici.', false);
       return;
     }
+    // Pasul 11-R3: lista „Activează contul” din dashboard deschide pașii de aici.
+    const profil = await citesteProfil();
+    const act = profil && profil.activare;
+    if (act) {
+      // Dashboard-ul rolului (harta din lib/destinatie-rol.js: materiale și închirieri la furnizor).
+      const pagina = ['materiale', 'inchirieri'].includes(act.tip) ? 'mydarrin-dashboard-furnizor.html' : 'mydarrin-dashboard-partener.html';
+      document.getElementById('link-dashboard').href = pagina + '?type=' + encodeURIComponent(act.tip);
+    }
     const stare = await incarcaStareaSalvata();
+    if (!stare && act && act.mod_activare) {
+      // Modul activare: firma încă nu există. Doar pasul „Firma”, cu tipul ales;
+      // la salvare serverul creează partenerul și adaugă rolul (wizard-companie).
+      statusEl.innerHTML = `Autentificat ca <strong>${escapeHTML(user.email)}</strong> — email confirmat.`;
+      const tipEl = document.getElementById('s2-tip');
+      tipEl.value = act.tip; tipEl.disabled = true;
+      const nota = document.getElementById('s2-activare');
+      nota.style.display = 'block';
+      nota.textContent = 'Activezi contul de partener. După ce salvezi firma, rolul de partener se adaugă pe contul tău și continui cu ceilalți pași.';
+      btn.disabled = false;
+      PASI_FACUTI.add(1);
+      PASI_DEBLOCATI = 2;
+      mergiLaPasul(2);
+      return;
+    }
     if (!stare) {
       statusEl.textContent = 'Contul tău nu este încă un cont de partener.';
       arataBariera('Profilul de partener se completează după înregistrare. Înregistrează-te mai întâi ca partener.', false);
@@ -370,6 +405,15 @@ async function verificaPasul1() {
   }
 }
 
+// Profilul contului (/api/cont/profil): lista de activare, dacă există.
+async function citesteProfil() {
+  try {
+    const token = await accessToken();
+    const r = await fetch('/api/cont/profil', { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
+    return r.ok ? await r.json() : null;
+  } catch (e) { return null; }
+}
+
 // Citește ce a salvat deja partenerul (aceleași endpoint-uri ca la salvare).
 // null = utilizatorul nu are rând în partners (nu e partener).
 async function incarcaStareaSalvata() {
@@ -389,6 +433,8 @@ async function incarcaStareaSalvata() {
   if (TIP_LA_SELECT[p.partner_type]) { tipEl.value = TIP_LA_SELECT[p.partner_type]; tipEl.disabled = true; }
   if (p.nume_firma) document.getElementById('s2-firma').value = p.nume_firma;
   if (p.cui) document.getElementById('s2-cui').value = p.cui;
+  if (p.nr_reg_com) document.getElementById('s2-nrregcom').value = p.nr_reg_com;
+  if (p.adresa_sediu_social) document.getElementById('s2-sediu').value = p.adresa_sediu_social;
   if (p.tip_entitate_legala) { MDFormeJuridice.completeazaSelect(document.getElementById('s2-entitate'), p.tip_entitate_legala); }
   if (p.forma_juridica_locala) document.getElementById('s2-forma-locala').value = p.forma_juridica_locala;
   toggleTrezorerie();
@@ -502,6 +548,11 @@ async function cautaCUI() {
       msgEl.className = 'msg ok'; msgEl.textContent = `Găsit: ${data.denumire}`;
       const firmaEl = document.getElementById('s2-firma');
       if (!firmaEl.value.trim()) firmaEl.value = data.denumire;
+      // Datele de la ANAF completează doar câmpurile goale.
+      const regEl = document.getElementById('s2-nrregcom');
+      if (data.nr_reg_com && !regEl.value.trim()) regEl.value = data.nr_reg_com;
+      const sediuEl = document.getElementById('s2-sediu');
+      if (data.adresa && !sediuEl.value.trim()) sediuEl.value = data.adresa;
     } else {
       // ANAF indisponibil sau eroare de configurare: mesajul adevărat de la
       // server (RO; dicționarul paginii îl traduce). Câmpurile rămân libere.
@@ -526,6 +577,8 @@ async function salveazaPasul2() {
     forma_juridica_locala: document.getElementById('s2-forma-locala').value.trim(),
     is_treasury_account: document.getElementById('s2-trezorerie').checked,
     regiune_cod: document.getElementById('s2-regiune').value || null,
+    nr_reg_com: document.getElementById('s2-nrregcom').value.trim(),
+    adresa_sediu_social: document.getElementById('s2-sediu').value.trim(),
   };
   if (!body.tip_entitate_legala) {
     msgEl.className = 'msg err'; msgEl.textContent = 'Alege forma juridică a firmei.';

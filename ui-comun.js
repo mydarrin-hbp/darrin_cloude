@@ -49,6 +49,7 @@
   var PAGINA_ADMIN_CATALOG = '/mydarrin-admin-catalog';
   var PAGINA_ROLURI = '/mydarrin-rolurile-mele';
   var PAGINA_ALEGERE = PAGINA_ROLURI;
+  var PAGINA_CATALOG = '/mydarrin-catalog.html';
 
   function definitie(rol) {
     for (var i = 0; i < ROLURI.length; i++) if (ROLURI[i].rol === rol) return ROLURI[i];
@@ -103,16 +104,16 @@
     if (lista.indexOf('superadmin') !== -1) return { tip: 'superadmin', destinatie: PAGINA_SUPERADMIN };
     var admin = lista.indexOf('admin') !== -1;
     if (admin && opt.adminCatalog) return { tip: 'admin_catalog', destinatie: PAGINA_ADMIN_CATALOG };
-    // Rolul de partener ales la înscriere, încă neacordat: întâi datele firmei.
+    // Rolul de partener ales, încă neacordat: dashboard-ul lui, în modul activare.
     var arePartener = lista.some(esteRolPartener);
     if (!arePartener && esteRolPartener(opt.rolSolicitat)) {
-      return { tip: 'completare_partener', rol: opt.rolSolicitat, destinatie: adaugaPentruRol(opt.rolSolicitat) };
+      return { tip: 'activare_partener', rol: opt.rolSolicitat, destinatie: dashboardPentruRol(opt.rolSolicitat) };
     }
     var cu = roluriCuDashboard(lista, opt);
     if (cu.length === 1) return { tip: 'rol', rol: cu[0], destinatie: dashboardPentruRol(cu[0]) };
     if (cu.length > 1) return { tip: 'alegere', destinatie: PAGINA_ALEGERE, roluri: cu };
     if (admin) return { tip: 'admin', destinatie: PAGINA_SUPERADMIN };
-    if (lista.indexOf('client') !== -1) return { tip: 'client_fara_comenzi', destinatie: null };
+    if (lista.indexOf('client') !== -1) return { tip: 'client_fara_comenzi', destinatie: PAGINA_CATALOG };
     return null;
   }
 
@@ -122,6 +123,7 @@
     PAGINA_ADMIN_CATALOG: PAGINA_ADMIN_CATALOG,
     PAGINA_ALEGERE: PAGINA_ALEGERE,
     PAGINA_ROLURI: PAGINA_ROLURI,
+    PAGINA_CATALOG: PAGINA_CATALOG,
     definitie: definitie,
     dashboardPentruRol: dashboardPentruRol,
     adaugaPentruRol: adaugaPentruRol,
@@ -403,7 +405,8 @@
   }
 
   // Fără dashboard (clientul fără comenzi, pasul 11-R2): nimic de deschis.
-  function areDashboard(p) { return (p.roluri_dashboard || []).length > 0 || !!p.destinatie; }
+  // Pasul 11-R3: destinația clientului fără comenzi e catalogul, nu un dashboard.
+  function areDashboard(p) { return (p.roluri_dashboard || []).length > 0 || (!!p.destinatie && p.tip_destinatie !== 'client_fara_comenzi'); }
 
   function mergiInDashboard(p) {
     var roluri = p.roluri_dashboard || [];

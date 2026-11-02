@@ -92,6 +92,9 @@ async function handler(req, res, user) {
     detalii: { versiune: CONTRACT_VERSIUNE, numar: contract.numar },
   });
 
+  // Pasul 11-R3: activarea s-a încheiat — ciorna ei nu mai e necesară (fără tabel: nimic de șters).
+  try { await supabaseAdmin.from('partener_activare_ciorna').delete().eq('user_id', user.id); } catch (e) { /* fără ciornă */ }
+
   return res.status(200).json({ ok: true, contract_semnat_la: semnatLa });
 }
 

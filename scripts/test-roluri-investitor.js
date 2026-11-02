@@ -205,6 +205,8 @@ async function rutaCompleta(token, id) {
   await test('investitor → partener de materiale: același cont, ambele roluri', async () => {
     reset();
     DB.tabele.profiles.find((p) => p.id === A).roles = ['client', 'investor'];
+    // Pasul 11-R3: tipul de partener se alege întâi („Rolurile mele” → /api/cont/rol-solicitat).
+    DB.tabele.profiles.find((p) => p.id === A).rol_solicitat = 'partener_materiale';
     const r = await cheama(apiWizard, { token: 'tok-a', metoda: 'POST', body: { nume_firma: 'Albu Materiale SRL', cui: 'RO46577229', partner_type: 'materiale', tip_entitate_legala: 'srl' } });
     egal(r.statusCode, 200);
     egal(roluri(A), ['client', 'investor', 'partener_materiale']);
@@ -216,10 +218,10 @@ async function rutaCompleta(token, id) {
     const r = await cheama(apiWizard, { token: 'tok-a', metoda: 'POST', body: { nume_firma: 'X', cui: 'RO46577229', partner_type: 'curier', tip_entitate_legala: 'srl' } });
     egal(r.statusCode, 409); egal(r.corp.cod, 'alt_tip_partener');
   });
-  await test('partner-register refuză un utilizator autentificat (fără cont nou)', async () => {
+  await test('partner-register nu mai creează conturi (410, pasul 11-R3), nici pentru un utilizator autentificat', async () => {
     reset();
     const r = await cheama(apiRegister, { token: 'tok-a', metoda: 'POST', body: { email: 'a@test', tip: 'materiale', nume_firma: 'X', cui: '1' } });
-    egal(r.statusCode, 409); egal(r.corp.cod, 'cont_existent_autentificat');
+    egal(r.statusCode, 410); egal(r.corp.cod, 'INSCRIERE_MUTATA');
   });
 
   console.log('C. Documentele KYC');

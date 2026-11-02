@@ -124,6 +124,13 @@
     investor: 'Te înscrii ca investitor: datele tale, verificarea identității și profilul de risc.',
   };
 
+  // Pasul 11-R3: rolul de partener în activare (ales, lista „Activează contul” neterminată).
+  function inActivare(p, rol) {
+    var a = p.activare;
+    return !!(a && a.rol === rol && !a.activ && !(p.partener && p.partener.status_verificare === 'rejected'));
+  }
+  function clientFaraComenzi(p, rol) { return rol === 'client' && p.are_comenzi === false; }
+
   // Starea unui rol activ: { cls, text, motiv }.
   function stareRol(p, rol) {
     if (rol === 'investor') {
@@ -134,6 +141,7 @@
       return { cls: 'verificare', text: 'Verificarea identității e în curs' };
     }
     if (rol.indexOf('partener_') === 0) {
+      if (inActivare(p, rol)) return { cls: 'verificare', text: 'În activare' };
       var pt = p.partener;
       if (!pt || pt.rol !== rol) return { cls: 'verificare', text: 'În verificare' };
       if (pt.status_verificare === 'approved') return { cls: 'aprobat', text: 'Aprobat' };
@@ -153,7 +161,11 @@
       '<h3>' + esc(tr(d.titlu)) + '</h3>' +
       '<span class="stare stare-' + st.cls + '">' + esc(tr(st.text)) + '</span>' +
       (st.motiv ? '<div class="motiv"><span>' + esc(tr('Motiv:')) + '</span> <span translate="no">' + esc(st.motiv) + '</span></div>' : '') +
-      (dash ? '<a class="btn btn-p rm-deschide" data-rol="' + esc(rol) + '" href="' + esc(dash) + '">' + esc(tr('Deschide dashboard-ul')) + '</a>' : '') +
+      (clientFaraComenzi(p, rol)
+        ? '<p>' + esc(tr('Dashboard-ul apare după prima comandă.')) + '</p><a class="btn btn-p" href="' + esc(DR.PAGINA_CATALOG) + '">' + esc(tr('Mergi la catalog')) + '</a>'
+        : inActivare(p, rol)
+          ? '<a class="btn btn-p rm-deschide" data-rol="' + esc(rol) + '" href="' + esc(dash) + '">' + esc(tr('Continuă activarea')) + '</a>'
+          : (dash ? '<a class="btn btn-p rm-deschide" data-rol="' + esc(rol) + '" href="' + esc(dash) + '">' + esc(tr('Deschide dashboard-ul')) + '</a>' : '')) +
       '</article>';
   }
 
@@ -162,7 +174,7 @@
     var tinta = DR.adaugaPentruRol(rol);
     var corp = '<h3>' + esc(tr(d.titlu)) + '</h3><p>' + esc(tr(DESCRIERE[rol] || '')) + '</p>';
     // Tabela partners are un singur rând pe cont: un al doilea tip de partener nu se poate adăuga.
-    if (rol.indexOf('partener_') === 0 && p.partener) {
+    if (rol.indexOf('partener_') === 0 && (p.partener || p.activare)) {
       return '<article class="card" data-rol="' + esc(rol) + '">' + corp +
         '<div class="nota">' + esc(tr('Contul tău are deja un rol de partener. Un cont poate avea un singur tip de partener; pentru alt tip, scrie-ne din pagina Contact.')) + '</div></article>';
     }
@@ -171,17 +183,37 @@
         '<span class="stare stare-ciorna">' + esc(tr('Început, netrimis')) + '</span>' +
         '<a class="btn btn-p rm-adauga" data-rol="' + esc(rol) + '" href="' + esc(tinta) + '">' + esc(tr('Continuă de unde ai rămas')) + '</a></article>';
     }
+    // Pasul 11-R3: rolul de partener se alege pe server, apoi dashboard-ul lui (modul activare).
+    if (rol.indexOf('partener_') === 0) {
+      return '<article class="card" data-rol="' + esc(rol) + '">' + corp +
+        '<button type="button" class="btn btn-s rm-alege-partener" data-rol="' + esc(rol) + '">' + esc(tr('Adaugă acest rol')) + '</button></article>';
+    }
     return '<article class="card" data-rol="' + esc(rol) + '">' + corp +
       '<a class="btn btn-s rm-adauga" data-rol="' + esc(rol) + '" href="' + esc(tinta) + '">' + esc(tr('Adaugă acest rol')) + '</a></article>';
   }
 
+  function alegePartener(buton) {
+    var rol = buton.getAttribute('data-rol');
+    window.MDFeedback.salveaza(buton, null, function () {
+      return window.supabaseClient.auth.getSession().then(function (r) {
+        var s = r && r.data && r.data.session;
+        return window.MDFeedback.cerere('/api/cont/rol-solicitat', { method: 'POST', headers: { Authorization: 'Bearer ' + (s ? s.access_token : '') }, body: { rol: rol } });
+      }).then(function (j) {
+        setTimeout(function () { location.href = j.destinatie; }, 600);
+        return tr('Te ducem în dashboard-ul tău, la lista „Activează contul”.');
+      });
+    }, { toast: true });
+  }
+
   function deseneaza(p) {
     var roles = p.roles || [];
-    var cuDash = DR.roluriCuDashboard(roles);
+    var cuDash = p.roluri_dashboard || DR.roluriCuDashboard(roles);
     var ultim = rolActiv();
     var curent = cuDash.indexOf(ultim) !== -1 ? ultim : cuDash[0];
-    var active = DR.ROLURI.filter(function (d) { return roles.indexOf(d.rol) !== -1; }).map(function (d) { return d.rol; });
-    var deAdaugat = DR.ROLURI.filter(function (d) { return roles.indexOf(d.rol) === -1 && DR.adaugaPentruRol(d.rol); }).map(function (d) { return d.rol; });
+    // Rolul de partener ales, încă neacordat, apare lângă cele active („În activare”).
+    var ales = p.activare && p.activare.mod_activare ? p.activare.rol : null;
+    var active = DR.ROLURI.filter(function (d) { return roles.indexOf(d.rol) !== -1 || d.rol === ales; }).map(function (d) { return d.rol; });
+    var deAdaugat = DR.ROLURI.filter(function (d) { return active.indexOf(d.rol) === -1 && DR.adaugaPentruRol(d.rol); }).map(function (d) { return d.rol; });
 
     document.getElementById('rm-stare').hidden = true;
     var sa = document.getElementById('rm-active-sectiune');
@@ -201,6 +233,9 @@
         location.href = DR.dashboardPentruRol(sel.value);
       };
     }
+    Array.prototype.forEach.call(document.querySelectorAll('.rm-alege-partener'), function (b) {
+      b.addEventListener('click', function () { alegePartener(b); });
+    });
     Array.prototype.forEach.call(document.querySelectorAll('.rm-deschide'), function (a) {
       a.addEventListener('click', function () { salveazaRol(a.getAttribute('data-rol')); });
     });
