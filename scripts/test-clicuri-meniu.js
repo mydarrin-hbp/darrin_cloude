@@ -7,6 +7,9 @@
 // „Asigurator” (type=asigurator) trebuie să ajungă la formularul asigurari.
 // Pasul 11-R3b: pe „Devino partener”, ?type=<tip> deschide fereastra de cont cu
 // „Partener” și tipul deja alese (cardurile #partner-types s-au scos).
+// Pasul 11-R3f: meniul „Devino Partener” vine din meniu-partener.js (6 intrări
+// spre paginile de informare, plus butonul după starea contului); clicul pe
+// fiecare intrare duce la pagina ei.
 //
 // Navigarea spre pagina partenerului sau spre checkout e oprită cu un răspuns
 // 204 (pagina rămâne pe loc), așa că pe aceeași încărcare se încearcă toate
@@ -87,6 +90,20 @@ const ZGOMOT_PAGINA = { 'mydarrin-pitch-deck': /^\[pitch-deck\] Error: http 503(
         await p.evaluate(() => { try { if (typeof window.closeSidebar === 'function') window.closeSidebar(); } catch (e) {} });
         await asteapta(300);
         armat = true;
+
+        // Meniul „Devino Partener” (antet și meniul lateral): fiecare intrare duce la pagina ei.
+        const meniu = await p.evaluate(() => [...document.querySelectorAll('[data-meniu-intrare]')].map((a, i) => { a.setAttribute('data-test-meniu', String(i)); return { id: String(i), href: a.getAttribute('href'), loc: a.closest('#sidebar') ? 'meniul lateral' : 'antet' }; }));
+        if (await p.evaluate(() => !!document.querySelector('[data-meniu-partener="antet"]'))) verifica(await p.evaluate(() => document.querySelectorAll('[data-meniu-partener="antet"] [data-meniu-intrare]').length) === 6, `${et}: meniul din antet nu are 6 intrări`);
+        for (const m of meniu) {
+          const spre = await p.evaluate((id) => {
+            const a = document.querySelector(`[data-test-meniu="${id}"]`);
+            let tinta = null;
+            a.addEventListener('click', (e) => { tinta = a.href; e.preventDefault(); }, { once: true });
+            a.click();
+            return tinta;
+          }, m.id);
+          verifica(spre && new URL(spre).pathname.endsWith(m.href.split('?')[0]), `${et}: intrarea „${m.href}” (${m.loc}) nu duce la pagina ei (${spre})`);
+        }
 
         // Intrările „Devino partener”: onclick cu tipul partenerului sau link cu ?type=.
         const intrari = await p.evaluate(() => {

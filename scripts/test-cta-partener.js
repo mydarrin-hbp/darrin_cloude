@@ -95,7 +95,8 @@ async function deschide(browser, baza, pagina, stare, rol, opt) {
   await p.goto(`${baza}/${pagina}`, { waitUntil: o.fara_asteptare ? 'domcontentloaded' : 'networkidle', timeout: 60000 }).catch((e) => erori.push('goto: ' + e.message.slice(0, 100)));
   return { ctx, p, erori, navigari, postari };
 }
-const butoane = (p) => p.evaluate(() => [...document.querySelectorAll('[data-cta-partener]')].map((b) => ({
+// Butoanele paginii; cel din meniul „Devino Partener” (pasul 11-R3f) e testat de test-meniu-devino-partener.js.
+const butoane = (p) => p.evaluate(() => [...document.querySelectorAll('[data-cta-partener]')].filter((b) => !b.closest('[data-meniu-partener]')).map((b) => ({
   text: ((b.querySelector('[data-cta-text]') || b).textContent || '').replace(/\s+/g, ' ').replace(/\s*→\s*$/, '').trim(),
   stare: b.getAttribute('data-cta-stare'), href: b.getAttribute('href'),
   badge: [...b.querySelectorAll('[data-cta-badge]')].map((x) => getComputedStyle(x).display !== 'none'),
@@ -191,10 +192,12 @@ const asteaptaStare = (p) => p.waitForFunction(() => { const l = [...document.qu
     }
 
     // 3. Ancora #cum-functioneaza: butonul și deschiderea directă.
-    for (const [cum, url] of [['butonul „Cum funcționează”', 'mydarrin-devino-partener.html'], ['deschiderea cu #cum-functioneaza', 'mydarrin-devino-partener.html#cum-functioneaza']]) {
+    // Pasul 11-R3f: butonul din secțiunea de sus e „Cum devii partener” (lista tipurilor);
+    // „Cum funcționează” rămâne fila deschisă implicit (11-R3c): clic pe altă filă, apoi înapoi.
+    for (const [cum, url] of [['fila „Cum funcționează”', 'mydarrin-devino-partener.html'], ['deschiderea cu #cum-functioneaza', 'mydarrin-devino-partener.html#cum-functioneaza']]) {
       const et = `ancora: ${cum}`;
       const { ctx, p, erori } = await deschide(browser, baza, url, 'vizitator', 'partener_servicii');
-      if (!url.includes('#')) await p.click('a[href="#cum-functioneaza"]:not([data-cta-partener])');
+      if (!url.includes('#')) { await p.click('#htab-benefits'); await asteapta(200); await p.click('#htab-cumfunc'); }
       await p.waitForFunction(() => { const s = document.getElementById('cum-functioneaza'); return s && s.getClientRects().length && s.getBoundingClientRect().top < window.innerHeight; }, null, { timeout: 6000 }).catch(() => {});
       const r = await p.evaluate(() => { const s = document.getElementById('cum-functioneaza'); const b = s.getBoundingClientRect(); return { vizibil: s.getClientRects().length > 0, sus: Math.round(b.top), vh: window.innerHeight, tipuri: /Cele 5 tipuri de parteneriat/.test(s.innerText) }; });
       verifica(r.vizibil && r.sus < r.vh && r.tipuri, `${et}: secțiunea nu e afișată ${JSON.stringify(r)}`);

@@ -156,6 +156,7 @@
           var sursa = doc.getElementById(id);
           if (sursa && !el(id)) document.body.appendChild(document.importNode(sursa, true));
         });
+        completeazaMeniuPartener();
         icone();
         afiseazaLinkuriCont();
         return !!el('sidebar');
@@ -166,6 +167,17 @@
         return false;
       });
     return promMeniu;
+  }
+
+  // Meniul „Devino Partener” (pasul 11-R3f) se generează doar din
+  // meniu-partener.js; meniul lateral preluat din index.html are locul gol.
+  function completeazaMeniuPartener() {
+    if (!document.querySelector('[data-meniu-partener]:not([data-meniu-gata])')) return;
+    if (window.MYD_MENIU_PARTENER) { window.MYD_MENIU_PARTENER.completeaza(); return; }
+    if (document.querySelector('script[src$="meniu-partener.js"]')) return; // se încarcă; se completează singur
+    var s = document.createElement('script');
+    s.src = '/meniu-partener.js';
+    document.head.appendChild(s);
   }
 
   // „Rolurile mele” apare doar cu sesiune (ca pe index); „Comenzile mele”, doar
