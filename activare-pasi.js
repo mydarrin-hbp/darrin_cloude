@@ -92,7 +92,15 @@
       '.mya-logo{display:block;height:40px;width:auto}' +
       '.mya-cont{display:flex;align-items:center;gap:14px;min-width:0;font-size:14px}' +
       '.mya-cont-txt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mya-cont-txt b{font-weight:700}.mya-cont-txt span{color:#5A6B7D}' +
-      '.mya-iesi{border:0;background:none;color:#C0392B;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;min-height:44px;padding:0 4px}' +
+      // Pasul 11-R3e: „Înapoi la site” (sesiunea rămâne) și „Deconectare”, discret, cu confirmare.
+      '.mya-actiuni{display:flex;align-items:center;gap:6px;flex-shrink:0;position:relative}' +
+      '.mya-site{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border:1px solid #D5DFE8;border-radius:10px;color:#003366;font-weight:700;font-size:14px;text-decoration:none;white-space:nowrap}' +
+      '.mya-site:hover{background:#F4F7F9}' +
+      '.mya-deconectare{border:0;background:none;color:#5A6B7D;font-size:13px;text-decoration:underline;cursor:pointer;font-family:inherit;min-height:44px;padding:0 6px;white-space:nowrap}' +
+      '.mya-deconectare:hover{color:#C0392B}' +
+      '.mya-meniu-btn{display:none;border:1px solid #D5DFE8;background:#fff;border-radius:10px;min-width:44px;min-height:44px;cursor:pointer;font-size:20px;line-height:1;color:#003366;font-family:inherit}' +
+      '.mya-meniu{position:absolute;right:0;top:calc(100% + 6px);background:#fff;border:1px solid #D5DFE8;border-radius:12px;box-shadow:0 8px 24px rgba(0,30,60,.12);padding:4px;z-index:2;min-width:160px}' +
+      '.mya-meniu .mya-deconectare{display:block;width:100%;text-align:left;text-decoration:none;color:#C0392B;font-weight:700;font-size:14px;padding:0 12px}' +
       '.mya-continut{max-width:640px;margin:0 auto;padding:32px 24px 40px}' +
       '.mya-cap{display:flex;align-items:baseline;justify-content:space-between;gap:12px}' +
       '.mya-cap h1{margin:0;font-size:26px;font-weight:800;line-height:1.2}' +
@@ -133,6 +141,7 @@
       '.mya-scurt{display:none}' +
       '@media (max-width:600px){' +
         '.mya-antet{padding:12px 16px}.mya-logo{height:34px}.mya-cont-txt{display:none}' +
+        '.mya-actiuni>.mya-deconectare{display:none}.mya-meniu-btn{display:inline-block}' +
         '.mya-continut{padding:20px 16px 28px}.mya-cap h1{font-size:23px}' +
         '.mya-pasi{display:none}.mya-bara{margin-bottom:18px}' +
         '.mya-lung{display:none}.mya-scurt{display:inline}' +
@@ -595,7 +604,53 @@
     var nume = (p.partener && p.partener.nume_firma) || p.nume || String(p.email || '').split('@')[0];
     return '<header class="mya-antet"><img class="mya-logo" src="' + LOGO + '" alt="My Darrin · Home Best Pal" width="120" height="40">' +
       '<div class="mya-cont"><div class="mya-cont-txt"><b>' + esc(nume) + '</b> <span>· ' + esc(tr(d ? d.titlu : '')) + '</span></div>' +
-      '<button type="button" class="mya-iesi" id="mya-iesi">' + esc(tr('Ieși')) + '</button></div></header>';
+      '<div class="mya-actiuni">' +
+        '<a class="mya-site" id="mya-site" href="/">' + esc(tr('Înapoi la site')) + '</a>' +
+        '<button type="button" class="mya-deconectare" id="mya-deconectare">' + esc(tr('Deconectare')) + '</button>' +
+        '<button type="button" class="mya-meniu-btn" id="mya-meniu-btn" aria-haspopup="true" aria-expanded="false" aria-controls="mya-meniu" aria-label="' + esc(tr('Mai multe')) + '">⋯</button>' +
+        '<div class="mya-meniu" id="mya-meniu" hidden><button type="button" class="mya-deconectare" id="mya-deconectare-meniu">' + esc(tr('Deconectare')) + '</button></div>' +
+      '</div></div></header>';
+  }
+
+  // „Înapoi la site”: ciorna se salvează (cel mult 3 s), apoi pagina principală.
+  // Sesiunea rămâne: la revenire, dashboard-ul deschide activarea la pasul rămas.
+  function inapoiLaSite(e) {
+    if (e) e.preventDefault();
+    var pleaca = function () { window.location.href = '/'; };
+    Promise.race([salveazaCiorna(false), new Promise(function (ok) { setTimeout(ok, 3000); })]).then(pleaca, pleaca);
+  }
+  // „Deconectare”: doar după confirmare (MDFeedback.confirma), cu ciorna salvată.
+  function deconectare() {
+    $('mya-meniu').hidden = true;
+    $('mya-meniu-btn').setAttribute('aria-expanded', 'false');
+    var intreaba = window.MDFeedback && window.MDFeedback.confirma
+      ? window.MDFeedback.confirma(tr('Te deconectezi? Ce ai completat e salvat; data viitoare intri cu emailul și parola.'), { textOk: tr('Deconectează-mă'), textAnulare: tr('Rămân conectat') })
+      : Promise.resolve(false);
+    intreaba.then(function (da) {
+      if (!da) return;
+      Promise.race([salveazaCiorna(false), new Promise(function (ok) { setTimeout(ok, 3000); })])
+        .then(function () { window.MyDarrinAuth.performLogout(); });
+    });
+  }
+  function leagaAntet() {
+    $('mya-site').onclick = inapoiLaSite;
+    $('mya-deconectare').onclick = deconectare;
+    $('mya-deconectare-meniu').onclick = deconectare;
+    $('mya-meniu-btn').onclick = function (e) {
+      e.stopPropagation();
+      var m = $('mya-meniu');
+      m.hidden = !m.hidden;
+      this.setAttribute('aria-expanded', String(!m.hidden));
+      if (!m.hidden) $('mya-deconectare-meniu').focus();
+    };
+    // Meniul mic (telefon) se închide la un clic în afara lui; ascultătorul se pune o singură dată.
+    var rad = $('myd-activare-pagina');
+    if (rad.__myaMeniu) return;
+    rad.__myaMeniu = true;
+    rad.addEventListener('click', function (e) {
+      var m = $('mya-meniu');
+      if (m && !m.hidden && !e.target.closest('.mya-actiuni')) { m.hidden = true; $('mya-meniu-btn').setAttribute('aria-expanded', 'false'); }
+    });
   }
 
   function randeaza() {
@@ -643,7 +698,7 @@
     corp.addEventListener('submit', function (e) { e.preventDefault(); continua(); });
     bt.onclick = continua;
     if ($('mya-inapoi')) $('mya-inapoi').onclick = function () { retineFormular(); mergiLa(st.pas - 1); };
-    $('mya-iesi').onclick = function () { salveazaCiorna(false).then(function () { window.MyDarrinAuth.performLogout(); }); };
+    leagaAntet();
     Array.prototype.forEach.call(rad.querySelectorAll('.mya-pasi [data-deschis]'), function (b) {
       b.onclick = function () { retineFormular(); mergiLa(Number(b.getAttribute('data-pas'))); };
     });
@@ -715,6 +770,7 @@
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
     rad.innerHTML = antetHtml() + '<main class="mya-continut"><p class="mya-sub">' + esc(tr('Se încarcă…')) + '</p></main>';
+    leagaAntet();
     return cerere('/api/partener/activare-ciorna').then(function (j) {
       if (j && j.ciorna) st.ciorna = { pas_curent: j.ciorna.pas_curent, date: j.ciorna.date || {} };
       if (j && j.ciorna) st.salvatLa = j.ciorna.actualizat_la;

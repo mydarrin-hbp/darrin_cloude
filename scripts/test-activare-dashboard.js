@@ -11,7 +11,8 @@
 //     „Continuă” → reîncărcare → reluarea la pasul 2, cu ciorna;
 //     pe pasul 2, un IBAN greșit nu trece mai departe;
 //   - modul activare: panourile dashboard-ului nu apar, explicația da;
-//   - antetul: logo, nume, tip și „Ieși” (pe telefon doar „Ieși”); meniul
+//   - antetul: logo, nume, tip, „Înapoi la site” și „Deconectare” (pasul 11-R3e;
+//     pe telefon „Înapoi la site” și meniul mic); meniul
 //     dashboard-ului (☰) nu se suprapune peste antet;
 //   - fără tabelul ciornei (503): fluxul merge, fără salvare automată;
 //   - paza: un cont fără rol de partener ales nu intră în activare;
@@ -159,13 +160,13 @@ const invalid = (p, sel) => p.evaluate((s) => { const e = document.querySelector
         const vizibil = (id) => { const e = document.getElementById(id); return !!e && getComputedStyle(e).display !== 'none'; };
         const pag = document.getElementById('myd-activare-pagina');
         return {
-          logo: !!pag.querySelector('img.mya-logo[src*="logo-mydarrin-homebestpal"]'), iesi: !!pag.querySelector('#mya-iesi'),
+          logo: !!pag.querySelector('img.mya-logo[src*="logo-mydarrin-homebestpal"]'), iesi: !!pag.querySelector('#mya-site') && !!pag.querySelector('#mya-deconectare'),
           tip: (pag.querySelector('.mya-cont-txt') || {}).textContent || '', fundal: getComputedStyle(pag).backgroundColor,
           continut: vizibil(c), nav: vizibil(n), blocat: !!document.getElementById('myd-blocat'), inapoi: !!document.getElementById('mya-inapoi'),
           lista: document.querySelectorAll('.mya-pasi li').length,
         };
       }, [continut, nav]);
-      verifica(a.logo && a.iesi && /Ana Popescu|Furnizor/.test(a.tip), `${et}: antetul nu are logo / nume și tip / „Ieși”: ${JSON.stringify(a)}`);
+      verifica(a.logo && a.iesi && /Ana Popescu|Furnizor/.test(a.tip), `${et}: antetul nu are logo / nume și tip / „Înapoi la site” și „Deconectare”: ${JSON.stringify(a)}`);
       verifica(a.fundal === 'rgb(255, 255, 255)', `${et}: fundalul nu e alb (${a.fundal})`);
       verifica(!a.continut && !a.nav && a.blocat, `${et}: panourile dashboard-ului se văd în modul activare`);
       verifica(!a.inapoi, `${et}: „Înapoi” apare pe pasul 1`);
@@ -291,7 +292,7 @@ const invalid = (p, sel) => p.evaluate((s) => { const e = document.querySelector
           const m = await p.evaluate(() => {
             const pag = document.getElementById('myd-activare-pagina');
             const cont = pag.querySelector('.mya-continut').getBoundingClientRect();
-            const butoane = [...pag.querySelectorAll('#mya-continua, #mya-iesi, #mya-inapoi, .mya-btn2')].filter((b) => b.getClientRects().length).map((b) => b.getBoundingClientRect().height);
+            const butoane = [...pag.querySelectorAll('#mya-continua, #mya-site, #mya-deconectare, #mya-meniu-btn, #mya-inapoi, .mya-btn2')].filter((b) => b.getClientRects().length).map((b) => b.getBoundingClientRect().height);
             const antet = pag.querySelector('.mya-antet').getBoundingClientRect();
             const sus = document.elementFromPoint(antet.left + 30, antet.top + antet.height / 2);
             return {
@@ -308,7 +309,7 @@ const invalid = (p, sel) => p.evaluate((s) => { const e = document.querySelector
           verifica(m.latime <= 641, `${et}: conținutul are ${Math.round(m.latime)} px (peste 640)`);
           verifica(m.minButon >= 44, `${et}: buton sub 44 px (${m.minButon})`);
           verifica(m.antetLiber, `${et}: ceva se suprapune peste antet (meniul ☰?)`);
-          if (w <= 600) verifica(!m.numeVizibil && !m.pasiVizibili && m.scurt && m.nr === `${pas} / 6`, `${et}: pe telefon trebuie doar „Ieși”, „N / 6” și bara (${JSON.stringify(m)})`);
+          if (w <= 600) verifica(!m.numeVizibil && !m.pasiVizibili && m.scurt && m.nr === `${pas} / 6`, `${et}: pe telefon trebuie doar „Înapoi la site”, „N / 6” și bara (${JSON.stringify(m)})`);
           else verifica(m.numeVizibil && m.pasiVizibili, `${et}: numele, tipul sau numele pașilor lipsesc`);
           verifica(!erori.length, `${et}: ${erori.length} erori JS (${erori.slice(0, 3).join(' | ')})`);
           if (dosarCapturi && [390, 768, 1024, 1366].includes(w)) {

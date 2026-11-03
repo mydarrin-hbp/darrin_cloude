@@ -31,6 +31,13 @@
 // partener (profiles.rol_solicitat, prin /api/cont/rol-solicitat) sau are deja
 // un rol de partener în profiles.roles; tipul vine din alegerea lui (un alt
 // tip în cerere → 409). Restul endpoint-urilor de partener cer rolul.
+//
+// Pasul 11-R3e (3 nov. 2026): CUI-ul se salvează în forma unică
+// (lib/forme-juridice.js → normalizeazaCui). Un CUI deja folosit de alt cont
+// → 409 CUI_FOLOSIT pe câmpul `cui`, fără niciun detaliu despre celălalt cont
+// (o firmă = un singur cont de partener, partners_cui_key). Același cont care
+// își salvează din nou firma actualizează rândul. Orice altă eroare a bazei de
+// date: mesaj general RO + EN; textul tehnic merge doar în jurnalul serverului.
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
@@ -39,11 +46,46 @@ const { TIP_PARTENER_DUPA_FORMULAR, ROL_DUPA_TIP_PARTENER, asiguraRolInProfil } 
 const { trimiteEroare, camp, formaComuna } = require('../../lib/raspuns-eroare');
 const { verificaFirmaPartener, marcheazaVerificareManuala } = require('../../lib/verifica-firma-partener');
 const { TIP_DUPA_ROL, esteRolPartener } = require('../../lib/activare-partener');
+const { normalizeazaCui } = require('../../lib/forme-juridice');
 
 const FARA_ROL_ALES = {
   ro: 'Alege întâi tipul de partener („Devino partener” sau „Rolurile mele”), apoi completează datele firmei.',
   en: 'First choose the partner type (“Become a partner” or “My roles”), then fill in the company details.',
 };
+const CUI_FOLOSIT = {
+  ro: 'Această firmă are deja un cont de partener pe My Darrin. Dacă e firma ta și nu ai acces la cont, scrie-ne din pagina Contact.',
+  en: 'This company already has a partner account on My Darrin. If it is your company and you cannot access that account, write to us from the Contact page.',
+};
+const EROARE_GENERALA = {
+  ro: 'Nu am putut salva datele firmei. Încearcă din nou peste câteva momente; dacă se repetă, scrie-ne din pagina Contact.',
+  en: 'We could not save the company details. Please try again in a few moments; if it happens again, write to us from the Contact page.',
+};
+const CONT_BANCAR_INCOMPLET = {
+  ro: 'Contul bancar: completează titularul, IBAN-ul, banca și moneda.',
+  en: 'Bank account: fill in the holder, the IBAN, the bank and the currency.',
+};
+const IBAN_INVALID = {
+  ro: 'IBAN-ul nu e valid. Verifică cifrele și literele (de exemplu RO49 AAAA 1B31 0075 9384 0000).',
+  en: 'The IBAN is not valid. Check the digits and letters (for example RO49 AAAA 1B31 0075 9384 0000).',
+};
+const TIP_INVALID = {
+  ro: 'Tipul de partener nu e valid. Alege tipul din „Rolurile mele”.',
+  en: 'The partner type is not valid. Choose the type from “My roles”.',
+};
+
+// Alt cont cu același CUI, în forma unică sau într-o formă veche („RO46577229”,
+// „RO 46577229”…)? Pentru România se caută după cifrele de la final, apoi se
+// compară în forma unică. Răspunsul e doar da / nu.
+async function cuiFolositDeAltCont(cui, tara, userId) {
+  let q = supabaseAdmin.from('partners').select('id, cui').neq('id', userId);
+  q = String(tara || 'RO').toUpperCase() === 'RO' ? q.ilike('cui', '%' + cui) : q.ilike('cui', cui.replace(/[\\%_]/g, '\\$&'));
+  const { data, error } = await q.limit(50);
+  if (error) throw error;
+  return (data || []).some((p) => normalizeazaCui(p.cui, tara) === cui);
+}
+const esteDuplicatCui = (e) => !!e && e.code === '23505' && /cui/i.test(String(e.message || '') + String(e.details || ''));
+const raspundeCuiFolosit = (res) => trimiteEroare(res, 409, 'CUI_FOLOSIT', CUI_FOLOSIT.ro, CUI_FOLOSIT.en, [camp('cui', CUI_FOLOSIT.ro, CUI_FOLOSIT.en)]);
+
 const ALT_TIP = {
   ro: 'Ai ales alt tip de partener. Datele firmei se completează pentru tipul ales; pentru alt tip, alege-l din „Rolurile mele”.',
   en: 'You chose a different partner type. The company details are filled in for the chosen type; for another type, choose it from “My roles”.',
@@ -97,7 +139,8 @@ async function handler(req, res, user) {
     if (!firma.ok) {
       return trimiteEroare(res, firma.status, firma.cod, firma.error, firma.error_en, [camp(firma.camp, firma.error, firma.error_en)]);
     }
-    const { nume_firma, cui, tip_entitate_legala, forma_juridica_locala } = firma.date;
+    const { nume_firma, cui, tip_entitate_legala, forma_juridica_locala, tara } = firma.date;
+    if (await cuiFolositDeAltCont(cui, tara, user.id)) return raspundeCuiFolosit(res);
 
     const { data: existent } = await supabaseAdmin.from('partners').select('id, partner_type, cui').eq('id', user.id).maybeSingle();
     const tipCerut = partner_type ? TIP_PARTENER_DUPA_FORMULAR[partner_type] : null;
@@ -122,14 +165,16 @@ async function handler(req, res, user) {
 
     if (existent) {
       const { error } = await supabaseAdmin.from('partners').update({ nume_firma, cui, ...campuriEntitate }).eq('id', user.id);
+      if (esteDuplicatCui(error)) return raspundeCuiFolosit(res);
       if (error) throw error;
-      if (existent.cui !== cui) await marcheazaVerificareManuala({ partenerId: user.id, motiv: firma.verificare_manuala, cui, req });
+      if (normalizeazaCui(existent.cui, tara) !== cui) await marcheazaVerificareManuala({ partenerId: user.id, motiv: firma.verificare_manuala, cui, req });
     } else {
       const enumType = TIP_PARTENER_DUPA_FORMULAR[partner_type];
-      if (!enumType) return res.status(400).json({ error: 'partner_type invalid pentru un cont nou de partener' });
+      if (!enumType) return trimiteEroare(res, 400, 'TIP_INVALID', TIP_INVALID.ro, TIP_INVALID.en, [camp('partner_type', TIP_INVALID.ro, TIP_INVALID.en)]);
       const { error } = await supabaseAdmin.from('partners').insert({
         id: user.id, partner_type: enumType, nume_firma, cui, status_verificare: 'pending_review', ...campuriEntitate,
       });
+      if (esteDuplicatCui(error)) return raspundeCuiFolosit(res);
       if (error) throw error;
       await marcheazaVerificareManuala({ partenerId: user.id, motiv: firma.verificare_manuala, cui, req });
       // Rolul de partener lângă rolurile existente ale contului (pasul 11-L).
@@ -141,10 +186,10 @@ async function handler(req, res, user) {
     if (cont_bancar) {
       const { nume_titular, iban, swift, banca, moneda } = cont_bancar;
       if (!nume_titular || !iban || !banca || !moneda) {
-        return res.status(400).json({ error: 'cont_bancar: nume_titular, iban, banca și moneda sunt obligatorii' });
+        return trimiteEroare(res, 400, 'CONT_BANCAR_INCOMPLET', CONT_BANCAR_INCOMPLET.ro, CONT_BANCAR_INCOMPLET.en);
       }
       if (!validateIBAN(iban)) {
-        return res.status(400).json({ error: 'IBAN invalid (checksum incorect)' });
+        return trimiteEroare(res, 400, 'IBAN_INVALID', IBAN_INVALID.ro, IBAN_INVALID.en, [camp('iban', IBAN_INVALID.ro, IBAN_INVALID.en)]);
       }
       const { data: cripted, error: cryptErr } = await supabaseAdmin.rpc('cripteaza_camp', { valoare: iban });
       if (cryptErr) throw cryptErr;
@@ -156,8 +201,9 @@ async function handler(req, res, user) {
 
     return res.status(200).json({ ok: true });
   } catch (err) {
+    // Textul tehnic doar în jurnal; utilizatorul primește mesajul general.
     console.error('[wizard-companie]', err);
-    return res.status(500).json({ error: err.message || 'Nu am putut salva datele companiei' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', EROARE_GENERALA.ro, EROARE_GENERALA.en);
   }
 }
 
