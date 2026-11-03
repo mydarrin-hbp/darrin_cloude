@@ -189,8 +189,8 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
           <div class="lang-opt" onclick="setLang('pl','🇵🇱','Polski')" style="display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:13px;font-weight:500;color:#2D2D2D;cursor:pointer" onmouseover="this.style.background='#F0F4F8'" onmouseout="this.style.background=''"><span>🇵🇱</span> Polski</div>
         </div>
       </div>
-      <a class="hdr-cta" href="#partner-types" onclick="event.preventDefault();document.getElementById('partner-types').scrollIntoView({behavior:'smooth'})" style="display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:11px;background:linear-gradient(135deg,#FF8C00,#CC7000);color:#fff;font-weight:700;font-size:13px;text-decoration:none;white-space:nowrap">
-        Înregistrare gratuită <span style="font-size:10px;background:rgba(255,255,255,.2);border-radius:99px;padding:2px 7px;font-weight:700">0 LEI</span>
+      <a class="hdr-cta" href="#cum-functioneaza" data-cta-partener="" style="display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:11px;background:linear-gradient(135deg,#FF8C00,#CC7000);color:#fff;font-weight:700;font-size:13px;text-decoration:none;white-space:nowrap">
+        <span data-cta-text>Creează-ți contul de partener</span> <span data-cta-badge style="font-size:10px;background:rgba(255,255,255,.2);border-radius:99px;padding:2px 7px;font-weight:700">0 LEI</span>
       </a>
       <button id="hdr-burger" onclick="toggleHdrMobile()" style="display:none;width:42px;height:42px;border-radius:10px;border:1.5px solid #EEF2F7;background:#F8FAFC;cursor:pointer;flex-direction:column;align-items:center;justify-content:center;gap:5px" aria-label="Meniu">
         <span style="width:18px;height:2px;background:#1A2332;display:block"></span>
@@ -248,12 +248,12 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
           Alătură-te ecosistemului platformei — furnizor de servicii, materiale, închirieri, curier sau asigurări. Primești comenzi prin platformă, iar plata, păstrată ca garanție (escrow), îți ajunge după confirmarea lucrării.
         </p>
         <div class="reveal d3 flex flex-wrap gap-3 mb-7">
-          <a href="#partner-types" class="inline-flex items-center gap-2.5 bg-[#FF8C00] text-white px-7 py-4 rounded-2xl font-bold text-[14px] hover:bg-[#CC7000] transition" style="box-shadow:0 6px 22px rgba(255,140,0,.38);text-decoration:none">
+          <a href="#cum-functioneaza" data-cta-partener="" class="inline-flex items-center gap-2.5 bg-[#FF8C00] text-white px-7 py-4 rounded-2xl font-bold text-[14px] hover:bg-[#CC7000] transition" style="box-shadow:0 6px 22px rgba(255,140,0,.38);text-decoration:none">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-            <span data-i18n="devino.hero.cta_inregistreaza">Înregistrează-te gratuit</span>
-            <span style="font-size:10px;background:rgba(255,255,255,.2);border-radius:99px;padding:2px 8px;font-weight:800;letter-spacing:.04em">0 LEI</span>
+            <span data-cta-text>Creează-ți contul de partener</span>
+            <span data-cta-badge style="font-size:10px;background:rgba(255,255,255,.2);border-radius:99px;padding:2px 8px;font-weight:800;letter-spacing:.04em">0 LEI</span>
           </a>
-          <a href="#cum-functioneaza" class="inline-flex items-center gap-2 border-2 text-white px-7 py-4 rounded-2xl font-semibold text-[14px] hover:bg-white/10 transition" style="border-color:rgba(255,255,255,.22);text-decoration:none">
+          <a href="#cum-functioneaza" onclick="event.preventDefault();arataCumFunctioneaza()" class="inline-flex items-center gap-2 border-2 text-white px-7 py-4 rounded-2xl font-semibold text-[14px] hover:bg-white/10 transition" style="border-color:rgba(255,255,255,.22);text-decoration:none">
             <span data-i18n="devino.hero.cta_cum_functioneaza">Cum funcționează</span>
           </a>
         </div>
@@ -302,7 +302,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
         Devino Partener
       </button>
       <button onclick="switchHeroTab('wizard')" id="htab-wizard" class="hero-tab-btn" style="flex:1;min-width:140px;padding:11px 16px;border-radius:11px;border:none;background:transparent;color:rgba(255,255,255,.65);font-weight:600;font-size:13px;cursor:pointer;transition:all .2s;font-family:inherit">
-        Wizard înregistrare
+        Pașii înregistrării
       </button>
       <button onclick="switchHeroTab('cumfunc')" id="htab-cumfunc" class="hero-tab-btn" style="flex:1;min-width:140px;padding:11px 16px;border-radius:11px;border:none;background:transparent;color:rgba(255,255,255,.65);font-weight:600;font-size:13px;cursor:pointer;transition:all .2s;font-family:inherit">
         Cum funcționează
@@ -323,59 +323,16 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 <section class="py-4" style="position:relative;overflow:hidden">
   <div style="position:absolute;inset:0;background:radial-gradient(ellipse 65% 55% at 78% 42%,rgba(255,140,0,.08) 0%,transparent 65%),radial-gradient(ellipse 45% 55% at 8% 78%,rgba(14,158,153,.07) 0%,transparent 55%);pointer-events:none"></div>
   <div style="position:relative;z-index:10;max-width:1200px;margin:0 auto;padding:0 20px;box-sizing:border-box">
-    <div class="grid lg:grid-cols-2 gap-14 items-center">
+    <div class="max-w-2xl">
       <div>
-        <div class="reveal inline-flex items-center gap-2 mb-5 px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-widest" style="background:rgba(14,158,153,.15);border:1px solid rgba(14,158,153,.3);color:#0E9E99"><span class="pulse-dot"></span>Wizard înregistrare</div>
-        <h2 class="reveal d1 font-bold mb-4" style="font-size:clamp(28px,4vw,40px);letter-spacing:-.02em;color:#003366">Înregistrare în <span class="text-[#FF8C00]">5 pași</span></h2>
-        <p class="reveal d2 text-[15px] leading-relaxed mb-8 text-[#6B7A8D]">Completezi pas cu pas. Documentele le verifică echipa My Darrin.</p>
+        <div class="reveal inline-flex items-center gap-2 mb-5 px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-widest" style="background:rgba(14,158,153,.15);border:1px solid rgba(14,158,153,.3);color:#0E9E99"><span class="pulse-dot"></span>Pașii înregistrării</div>
+        <h2 class="reveal d1 font-bold mb-4" style="font-size:clamp(28px,4vw,40px);letter-spacing:-.02em;color:#003366">De la cont la <span class="text-[#FF8C00]">primele comenzi</span></h2>
+        <p class="reveal d2 text-[15px] leading-relaxed mb-8 text-[#6B7A8D]">Contul îl creezi în câteva minute; restul datelor le completezi din dashboard, în ritmul tău.</p>
         <div class="reveal d3 space-y-3">
-          <div class="flex items-center gap-4 p-4 rounded-2xl" style="background:rgba(14,158,153,.08);border:1px solid rgba(14,158,153,.2)"><div class="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm text-white flex-shrink-0" style="background:#0E9E99"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div><div><div class="font-bold text-[13px]" style="color:#1A2332">Date personale & cont</div><div class="text-[12px] mt-0.5 text-[#6B7A8D]">Nume, email, telefon, parolă</div></div></div>
-          <div class="flex items-center gap-4 p-4 rounded-2xl" style="background:rgba(14,158,153,.08);border:1px solid rgba(14,158,153,.2)"><div class="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm text-white flex-shrink-0" style="background:#0E9E99"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div><div><div class="font-bold text-[13px]" style="color:#1A2332">Date firmă / PFA</div><div class="text-[12px] mt-0.5 text-[#6B7A8D]">CUI, Reg. Com., IBAN, date facturare</div></div></div>
-          <div class="flex items-center gap-4 p-4 rounded-2xl" style="background:rgba(255,140,0,.1);border:1px solid rgba(255,140,0,.3)"><div class="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm text-white flex-shrink-0" style="background:#FF8C00">3</div><div><div class="font-bold text-[13px] text-[#FF8C00]">Zone de acoperire ← Activ</div><div class="text-[12px] mt-0.5 text-[#6B7A8D]">Selectezi județe pe hartă, rază km</div></div></div>
-          <div class="flex items-center gap-4 p-4 rounded-2xl" style="background:#F4F7F9;border:1px solid #E3EAF0"><div class="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0" style="background:#E3EAF0;color:#8C9BAD">4</div><div><div class="font-bold text-[13px]" style="color:#8C9BAD">Catalog & specializări ESCO</div><div class="text-[12px] mt-0.5" style="color:#B0BCC9">Servicii, tarife, categorii</div></div></div>
-          <div class="flex items-center gap-4 p-4 rounded-2xl" style="background:#F4F7F9;border:1px solid #E3EAF0"><div class="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0" style="background:#E3EAF0;color:#B0BCC9">5</div><div><div class="font-bold text-[13px]" style="color:#B0BCC9">Revizuire & trimitere dosar</div><div class="text-[12px] mt-0.5" style="color:#C7D0DA">Confirmi datele și trimiți</div></div></div>
-        </div>
-      </div>
-      <!-- Form card preview -->
-      <div class="reveal d2">
-        <div class="rounded-3xl overflow-hidden" style="background:#F4F7F9;border:1px solid #E3EAF0">
-          <div style="background:#EBF1F6;padding:20px 24px;border-bottom:1px solid #DCE6EE">
-            <div class="flex items-center gap-3 mb-4">
-              <div class="w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold text-sm" style="background:#FF8C00">3</div>
-              <div><div class="font-bold text-[14px]" style="color:#003366">Zone de acoperire</div><div class="text-[11px] text-[#6B7A8D]">Pasul 3 din 5</div></div>
-            </div>
-            <div class="h-1 rounded-full mb-4" style="background:#E3EAF0">
-              <div class="h-full rounded-full" style="width:52%;background:linear-gradient(90deg,#FF8C00,#0E9E99)"></div>
-            </div>
-            <div class="flex items-center gap-2">
-              <div class="w-7 h-7 rounded-full bg-[#0E9E99] flex items-center justify-center text-[11px] font-bold text-white"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-              <div class="w-7 h-7 rounded-full bg-[#0E9E99] flex items-center justify-center text-[11px] font-bold text-white"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-              <div class="w-7 h-7 rounded-full bg-[#FF8C00] flex items-center justify-center text-[11px] font-bold text-white" style="box-shadow:0 0 12px rgba(255,140,0,.5)">3</div>
-              <div class="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold" style="background:#E3EAF0;color:#8C9BAD">4</div>
-              <div class="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold" style="background:#E3EAF0;color:#8C9BAD">5</div>
-              <span class="ml-auto text-[10px] text-[#8C9BAD]">3 / 5</span>
-            </div>
-          </div>
-          <div class="p-6">
-            <div class="rounded-2xl h-44 flex items-center justify-center mb-4 relative overflow-hidden" style="background:#EEF3F7;border:1px solid #E3EAF0">
-              <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(0,51,102,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,51,102,.04) 1px,transparent 1px);background-size:22px 22px"></div>
-              <div style="position:absolute;width:80px;height:80px;border-radius:50%;background:rgba(255,140,0,.15);border:2px solid rgba(255,140,0,.45);top:30px;left:70px"></div>
-              <div style="position:absolute;width:55px;height:55px;border-radius:50%;background:rgba(0,51,102,.1);border:2px solid rgba(0,102,255,.35);top:55px;right:65px"></div>
-              <div class="relative z-10 text-center"><div class="text-[26px] mb-2"><i data-lucide="map" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div><div class="text-[11.5px] font-semibold text-[#6B7A8D]">Click pe hartă pentru zone</div></div>
-            </div>
-            <div class="mb-4">
-              <div class="text-[10px] font-bold uppercase tracking-widest mb-2.5 text-[#8C9BAD]">Județe selectate</div>
-              <div class="flex flex-wrap gap-2">
-                <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11.5px] font-bold text-white" style="background:#1A5FAD">Cluj</span>
-                <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11.5px] font-bold text-white" style="background:#1A5FAD">Ilfov</span>
-                <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11.5px] font-semibold cursor-pointer" style="background:#fff;border:1.5px solid #D5DFE8;color:#5A6B7D">+ Adaugă</span>
-              </div>
-            </div>
-            <div class="flex justify-between items-center pt-4" style="border-top:1px solid #E3EAF0">
-              <button style="display:flex;align-items:center;gap:6px;padding:10px 16px;background:#F4F7F9;border:1px solid #D5DFE8;border-radius:12px;color:#45566B;font-size:13px;font-weight:600;cursor:pointer">← Înapoi</button>
-              <button style="display:flex;align-items:center;gap:6px;padding:10px 20px;background:#FF8C00;border:none;border-radius:12px;color:#fff;font-size:13px;font-weight:800;cursor:pointer">Continuă →</button>
-            </div>
-          </div>
+          <div class="flex items-center gap-4 p-4 rounded-2xl" style="background:rgba(14,158,153,.08);border:1px solid rgba(14,158,153,.2)"><div class="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm text-white flex-shrink-0" style="background:#0E9E99">1</div><div><div class="font-bold text-[13px]" style="color:#1A2332">Contul nou</div><div class="text-[12px] mt-0.5 text-[#6B7A8D]">Alegi rolul de partener și tipul, scrii datele tale și confirmi emailul cu un cod de 6 cifre.</div></div></div>
+          <div class="flex items-center gap-4 p-4 rounded-2xl" style="background:rgba(255,140,0,.1);border:1px solid rgba(255,140,0,.3)"><div class="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm text-white flex-shrink-0" style="background:#FF8C00">2</div><div><div class="font-bold text-[13px]" style="color:#1A2332">Activarea, în dashboard, în 6 pași</div><div class="text-[12px] mt-0.5 text-[#6B7A8D]">Firma, contul bancar, profesiile, dotările, documentele și contractul. Ce scrii se salvează automat.</div></div></div>
+          <div class="flex items-center gap-4 p-4 rounded-2xl" style="background:#F4F7F9;border:1px solid #E3EAF0"><div class="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm text-white flex-shrink-0" style="background:#5A6B7D">3</div><div><div class="font-bold text-[13px]" style="color:#1A2332">Verificarea echipei</div><div class="text-[12px] mt-0.5 text-[#6B7A8D]">Echipa My Darrin verifică firma și documentele, în cel mult 48 de ore.</div></div></div>
+          <div class="flex items-center gap-4 p-4 rounded-2xl" style="background:#F4F7F9;border:1px solid #E3EAF0"><div class="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm text-white flex-shrink-0" style="background:#1A7A3A">4</div><div><div class="font-bold text-[13px]" style="color:#1A2332">Partener activ</div><div class="text-[12px] mt-0.5 text-[#6B7A8D]">După aprobare, cu contractul semnat și contul bancar adăugat, primești comenzi.</div></div></div>
         </div>
       </div>
     </div>
@@ -388,7 +345,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 
     <div id="hpanel-cumfunc" class="hero-tab-panel" style="display:none;background:#fff;border-radius:24px 24px 0 0;margin-top:18px">
       <div style="max-width:1200px;margin:0 auto;padding:0 20px;box-sizing:border-box">
-<section id="hero-tab-cumfunc" class="py-4">
+<section id="cum-functioneaza" class="py-4" style="scroll-margin-top:90px">
   <div class="max-w-4xl mx-auto px-6">
     <div class="text-center mb-14">
       <div class="reveal inline-flex items-center gap-2 mb-4 px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-widest bg-[#E0F5F4] text-[#0B7A76]">Cum funcționează</div>
@@ -399,8 +356,8 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
       <div class="reveal w-full">
         <div class="flow-box bg-[#EBF4FB]" style="border-color:#D6E8F5;color:#003366">
           <div class="text-2xl mb-2"><i data-lucide="pen-line" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-          <div class="font-bold">Înregistrare partener</div>
-          <div class="text-[12px] text-[#6B7A8D] mt-1">Completezi formularul în 5 pași: date personale, firmă, zone pe hartă, catalog servicii, revizuire</div>
+          <div class="font-bold">Cont nou și activare</div>
+          <div class="text-[12px] text-[#6B7A8D] mt-1">Creezi contul (rolul, datele, codul din email), apoi activezi contul din dashboard, în 6 pași: firma, contul bancar, profesiile, dotările, documentele, contractul.</div>
         </div>
       </div>
       <div class="flow-arrow my-1"></div>
@@ -409,7 +366,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
         <div class="flow-box ai-node">
           <div class="text-2xl mb-2"><i data-lucide="brain" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
           <div class="font-bold">Verificarea documentelor</div>
-          <div class="text-[12px] mt-1" style="color:rgba(14,158,153,.7)">CUI, documente, categorii ESCO, CAEN — verificate de echipa My Darrin</div>
+          <div class="text-[12px] mt-1" style="color:#0B7A76">CUI, documente, categorii ESCO, CAEN — verificate de echipa My Darrin, în cel mult 48 de ore</div>
         </div>
       </div>
       <div class="flow-arrow my-1"></div>
@@ -458,6 +415,14 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
         </div>
       </div>
 
+    </div>
+
+    <!-- Pasul 11-R3b: cele 5 tipuri de parteneriat (fosta secțiune #partner-types) -->
+    <div class="reveal max-w-lg mx-auto mt-14">
+      <h3 class="font-bold text-[#003366] mb-2" style="font-size:20px">Cele 5 tipuri de parteneriat</h3>
+      <ul style="list-style:none;margin:0 0 16px;padding:0"><li style="padding:10px 0;border-top:1px solid #E3EAF0;font-size:13.5px;color:#4A5568;line-height:1.55"><strong style="color:#1A2332">Furnizor de servicii</strong><br>Electricieni, instalatori, constructori, zugravi, grădinari, sudori: primești comenzi prin platformă.</li><li style="padding:10px 0;border-top:1px solid #E3EAF0;font-size:13.5px;color:#4A5568;line-height:1.55"><strong style="color:#1A2332">Furnizor de materiale</strong><br>Materiale de construcții, electrice, sanitare: produsele tale apar în devizele platformei.</li><li style="padding:10px 0;border-top:1px solid #E3EAF0;font-size:13.5px;color:#4A5568;line-height:1.55"><strong style="color:#1A2332">Furnizor de închirieri</strong><br>Utilaje, scule, vehicule: rezervările vin prin platformă.</li><li style="padding:10px 0;border-top:1px solid #E3EAF0;font-size:13.5px;color:#4A5568;line-height:1.55"><strong style="color:#1A2332">Curier de cartier</strong><br>Livrare locală de materiale la șantier, în zona ta.</li><li style="padding:10px 0;border-top:1px solid #E3EAF0;font-size:13.5px;color:#4A5568;line-height:1.55"><strong style="color:#1A2332">Asigurător</strong><br>Polițe integrate în comenzile platformei, cu atestat ASF.</li></ul>
+      <p class="text-[13px] leading-relaxed text-[#6B7A8D] mb-6">Înregistrare gratuită · Fără taxe de înscriere · Fără abonament lunar · Comenzi după aprobare, cu contractul semnat și contul bancar adăugat.</p>
+      <a href="#cum-functioneaza" data-cta-partener="" class="inline-flex items-center gap-2.5 bg-[#FF8C00] text-white px-7 py-4 rounded-2xl font-bold text-[14px] hover:bg-[#CC7000] transition" style="box-shadow:0 6px 22px rgba(255,140,0,.38);text-decoration:none"><span data-cta-text>Creează-ți contul de partener</span> <span data-cta-badge style="font-size:10px;background:rgba(255,255,255,.2);border-radius:99px;padding:2px 8px;font-weight:800">0 LEI</span></a>
     </div>
   </div>
 </section>
@@ -517,12 +482,20 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
   </div>
 
   <script>
+  // Pasul 11-R3b: „Cum funcționează” (#cum-functioneaza) e în tab-ul lui:
+  // îl deschide și derulează la el, și la deschiderea paginii cu #cum-functioneaza.
+  function arataCumFunctioneaza() {
+    switchHeroTab('cumfunc');
+    setTimeout(function () {
+      var el = document.getElementById('cum-functioneaza');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (history.replaceState) history.replaceState(null, '', '#cum-functioneaza');
+    }, 120);
+  }
+  document.addEventListener('DOMContentLoaded', function () {
+    if (location.hash === '#cum-functioneaza') arataCumFunctioneaza();
+  });
   function switchHeroTab(tab) {
-    // Pasul 11-R3: alegerea tipului duce la cont (fereastra comună) sau, conectat, la dashboard.
-    if (tab === 'wizard' && typeof openPartnerModal === 'function') {
-      openPartnerModal(selectedPartnerType);
-      return;
-    }
     var tabs   = ['intro','wizard','cumfunc','benefits'];
     var panels = { wizard:'hpanel-wizard', cumfunc:'hpanel-cumfunc', benefits:'hpanel-benefits' };
 
@@ -563,178 +536,6 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
   }
   </script>
 
-<section id="partner-types" class="py-20 bg-[#F4F7F9]">
-  <div style="max-width:1200px;margin:0 auto;padding:0 20px;box-sizing:border-box">
-    <div class="text-center mb-14">
-      <div class="reveal inline-flex items-center gap-2 mb-4 px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-widest bg-[#FFF0D6] text-[#CC7000]">5 tipuri de parteneriat</div>
-      <h2 class="reveal d1 text-4xl font-bold text-[#003366] mb-3" style="letter-spacing:-.02em">Alege tipul tău de parteneriat</h2>
-      <div class="reveal d1b inline-flex items-center gap-2 mb-4" style="background:linear-gradient(135deg,rgba(14,158,153,.12),rgba(14,158,153,.06));border:1.5px solid rgba(14,158,153,.3);border-radius:99px;padding:7px 18px">
-        <svg width="14" height="14" fill="none" stroke="#0E9E99" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-        <span style="font-size:12.5px;font-weight:800;color:#0B7A76;letter-spacing:.02em">CREARE CONT GRATUITĂ · FĂRĂ TAXE DE ÎNSCRIERE · FĂRĂ ABONAMENT</span>
-      </div>
-      <p class="reveal d2 text-[#6B7A8D] max-w-lg mx-auto text-[15px] leading-relaxed">Înregistrare complet gratuită · Fără taxe de înscriere · Fără abonament lunar · Comenzi după aprobare, cu contractul semnat și contul bancar adăugat.</p>
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-
-      <!-- SERVICII -->
-      <div class="svc-card reveal type-opt" data-partner-type="servicii" role="button" tabindex="0" onclick="openPartnerModal('servicii')" onkeydown="if(event.key==='Enter')openPartnerModal('servicii')">
-        <div class="hot-badge">Popular</div>
-        <div class="card-bar" style="background:#FF8C00"></div>
-        <div class="p-7 flex flex-col gap-4 flex-1">
-          <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl" style="background:linear-gradient(135deg,#FFF0D6,#FDE8C4)"><i data-lucide="wrench" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-          <div><h3 class="text-[17px] font-bold text-[#003366]">Furnizor de Servicii</h3><span class="inline-block text-[9.5px] font-bold tracking-widest uppercase bg-[#EBF4FB] text-[#1A5FAD] px-2.5 py-1 rounded-full mt-1.5 font-mono">Meserii tehnice</span></div>
-          <p class="text-[13px] text-[#6B7A8D] leading-relaxed flex-1">Electricieni, instalatori, constructori, zugravi, grădinari, sudori. Primești comenzi direct prin Darrin AI.</p>
-          <ul class="space-y-2.5">
-            <li class="flex items-start gap-2.5 text-[12.5px] text-[#6B7A8D]"><span class="benefit-dot mt-0.5" style="background:#FF8C00"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Comenzi automate din devizul AI</li>
-            <li class="flex items-start gap-2.5 text-[12.5px] text-[#6B7A8D]"><span class="benefit-dot mt-0.5" style="background:#FF8C00"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Plată prin escrow, după confirmarea lucrării</li>
-            <li class="flex items-start gap-2.5 text-[12.5px] text-[#6B7A8D]"><span class="benefit-dot mt-0.5" style="background:#FF8C00"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Factură fiscală auto → HBP SRL</li>
-            <li class="flex items-start gap-2.5 text-[12.5px] text-[#6B7A8D]"><span class="benefit-dot mt-0.5" style="background:#FF8C00"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Aplicații mobile — în curând</li>
-          </ul>
-          <div class="flex items-center gap-1.5 py-3 border-t border-[#F0F2F7]">
-            <div class="step-num" style="background:#FF8C00">1</div><div class="h-px w-3 bg-[#D5DFE8]"></div>
-            <div class="step-num" style="background:#FF8C00">2</div><div class="h-px w-3 bg-[#D5DFE8]"></div>
-            <div class="step-num" style="background:#FF8C00">3</div><div class="h-px w-3 bg-[#D5DFE8]"></div>
-            <div class="step-num" style="background:#FF8C00">4</div><div class="h-px w-3 bg-[#D5DFE8]"></div>
-            <div class="step-num" style="background:#FF8C00">5</div>
-            <span class="text-[10.5px] text-[#8C9BAD] ml-2">5 pași simpli</span>
-          </div>
-          <button class="w-full py-3.5 rounded-2xl font-bold text-[13.5px] text-white flex items-center justify-center gap-2 hover:brightness-110 transition" style="background:#FF8C00">
-            Înregistrează-te gratuit <i data-lucide="arrow-right" class="w-4 h-4"></i>
-          </button>
-        </div>
-      </div>
-
-      <!-- MATERIALE -->
-      <div class="svc-card reveal d1 type-opt" data-partner-type="materiale" role="button" tabindex="0" onclick="openPartnerModal('materiale')" onkeydown="if(event.key==='Enter')openPartnerModal('materiale')">
-        <div class="card-bar" style="background:#003366"></div>
-        <div class="p-7 flex flex-col gap-4 flex-1">
-          <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl" style="background:linear-gradient(135deg,#EBF4FB,#DDE6F5)"><i data-lucide="package" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-          <h3 class="text-[17px] font-bold text-[#003366]">Furnizor de Materiale</h3>
-          <p class="text-[13px] text-[#6B7A8D] leading-relaxed flex-1">Marketplace sau API — materiale construcții, electrice, sanitare. Produsele apar automat în devizele Darrin AI.</p>
-          <ul class="space-y-2.5">
-            <li class="flex items-start gap-2.5 text-[12.5px] text-[#6B7A8D]"><span class="benefit-dot mt-0.5" style="background:#003366"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Marketplace integrat sau API propriu</li>
-            <li class="flex items-start gap-2.5 text-[12.5px] text-[#6B7A8D]"><span class="benefit-dot mt-0.5" style="background:#003366"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Produse incluse automat în devize</li>
-            <li class="flex items-start gap-2.5 text-[12.5px] text-[#6B7A8D]"><span class="benefit-dot mt-0.5" style="background:#003366"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Stoc și prețuri actualizate de tine</li>
-            <li class="flex items-start gap-2.5 text-[12.5px] text-[#6B7A8D]"><span class="benefit-dot mt-0.5" style="background:#003366"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Livrare prin Curieri de Cartier</li>
-          </ul>
-          <div class="flex items-center gap-1.5 py-3 border-t border-[#F0F2F7]">
-            <div class="step-num" style="background:#003366">1</div><div class="h-px w-3 bg-[#D5DFE8]"></div>
-            <div class="step-num" style="background:#003366">2</div><div class="h-px w-3 bg-[#D5DFE8]"></div>
-            <div class="step-num" style="background:#003366">3</div><div class="h-px w-3 bg-[#D5DFE8]"></div>
-            <div class="step-num" style="background:#003366">4</div><div class="h-px w-3 bg-[#D5DFE8]"></div>
-            <div class="step-num" style="background:#003366">5</div>
-            <span class="text-[10.5px] text-[#8C9BAD] ml-2">5 pași simpli</span>
-          </div>
-          <button class="w-full py-3.5 rounded-2xl font-bold text-[13.5px] text-white flex items-center justify-center gap-2 hover:brightness-110 transition" style="background:#003366">
-            Înregistrează-te gratuit <i data-lucide="arrow-right" class="w-4 h-4"></i>
-          </button>
-        </div>
-      </div>
-
-      <!-- INCHIRIERI -->
-      <div class="svc-card reveal d2 type-opt" data-partner-type="inchirieri" role="button" tabindex="0" onclick="openPartnerModal('inchirieri')" onkeydown="if(event.key==='Enter')openPartnerModal('inchirieri')">
-        <div class="card-bar" style="background:#7C3AED"></div>
-        <div class="p-7 flex flex-col gap-4 flex-1">
-          <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl" style="background:linear-gradient(135deg,#F3E8FF,#E9D5FF)"><i data-lucide="hard-hat" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-          <h3 class="text-[17px] font-bold text-[#003366]">Furnizor de Închirieri</h3>
-          <p class="text-[13px] text-[#6B7A8D] leading-relaxed flex-1">Utilaje, scule, vehicule sau personal calificat. Rezervările vin prin platformă.</p>
-          <ul class="space-y-2.5">
-            <li class="flex items-start gap-2.5 text-[12.5px] text-[#6B7A8D]"><span class="benefit-dot mt-0.5" style="background:#7C3AED"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Calendar de disponibilitate — în curând</li>
-            <li class="flex items-start gap-2.5 text-[12.5px] text-[#6B7A8D]"><span class="benefit-dot mt-0.5" style="background:#7C3AED"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Echipamente afișate în catalog, după aprobare</li>
-            <li class="flex items-start gap-2.5 text-[12.5px] text-[#6B7A8D]"><span class="benefit-dot mt-0.5" style="background:#7C3AED"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Combo pachete cu transport</li>
-            <li class="flex items-start gap-2.5 text-[12.5px] text-[#6B7A8D]"><span class="benefit-dot mt-0.5" style="background:#7C3AED"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Plată prin escrow, după confirmare</li>
-          </ul>
-          <div class="flex items-center gap-1.5 py-3 border-t border-[#F0F2F7]">
-            <div class="step-num" style="background:#7C3AED">1</div><div class="h-px w-3 bg-[#D5DFE8]"></div>
-            <div class="step-num" style="background:#7C3AED">2</div><div class="h-px w-3 bg-[#D5DFE8]"></div>
-            <div class="step-num" style="background:#7C3AED">3</div><div class="h-px w-3 bg-[#D5DFE8]"></div>
-            <div class="step-num" style="background:#7C3AED">4</div><div class="h-px w-3 bg-[#D5DFE8]"></div>
-            <div class="step-num" style="background:#7C3AED">5</div>
-            <span class="text-[10.5px] text-[#8C9BAD] ml-2">5 pași simpli</span>
-          </div>
-          <button class="w-full py-3.5 rounded-2xl font-bold text-[13.5px] text-white flex items-center justify-center gap-2 hover:brightness-110 transition" style="background:#7C3AED">
-            Înregistrează-te gratuit <i data-lucide="arrow-right" class="w-4 h-4"></i>
-          </button>
-        </div>
-      </div>
-
-      <!-- CURIER -->
-      <div class="svc-card reveal type-opt" data-partner-type="curier" role="button" tabindex="0" onclick="openPartnerModal('curier')" onkeydown="if(event.key==='Enter')openPartnerModal('curier')">
-        <div class="card-bar" style="background:#D97706"></div>
-        <div class="p-7 flex flex-col gap-4 flex-1">
-          <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl" style="background:linear-gradient(135deg,#FEF3C7,#FDE68A)"><i data-lucide="truck" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-          <h3 class="text-[17px] font-bold text-[#003366]">Curier de Cartier</h3>
-          <p class="text-[13px] text-[#6B7A8D] leading-relaxed flex-1">Livrare rapidă locală de materiale la șantier. Activezi în cartierul tău și primești notificări pe email.</p>
-          <ul class="space-y-2.5">
-            <li class="flex items-start gap-2.5 text-[12.5px] text-[#6B7A8D]"><span class="benefit-dot mt-0.5" style="background:#D97706"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Comenzi în zona ta de acoperire</li>
-            <li class="flex items-start gap-2.5 text-[12.5px] text-[#6B7A8D]"><span class="benefit-dot mt-0.5" style="background:#D97706"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Notificări pe email și în dashboard</li>
-            <li class="flex items-start gap-2.5 text-[12.5px] text-[#6B7A8D]"><span class="benefit-dot mt-0.5" style="background:#D97706"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Tarif pe cursă configurat de tine</li>
-            <li class="flex items-start gap-2.5 text-[12.5px] text-[#6B7A8D]"><span class="benefit-dot mt-0.5" style="background:#D97706"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Fără abonament sau taxe fixe</li>
-          </ul>
-          <div class="flex items-center gap-1.5 py-3 border-t border-[#F0F2F7]">
-            <div class="step-num" style="background:#D97706">1</div><div class="h-px w-3 bg-[#D5DFE8]"></div>
-            <div class="step-num" style="background:#D97706">2</div><div class="h-px w-3 bg-[#D5DFE8]"></div>
-            <div class="step-num" style="background:#D97706">3</div><div class="h-px w-3 bg-[#D5DFE8]"></div>
-            <div class="step-num" style="background:#D97706">4</div><div class="h-px w-3 bg-[#D5DFE8]"></div>
-            <div class="step-num" style="background:#D97706">5</div>
-            <span class="text-[10.5px] text-[#8C9BAD] ml-2">5 pași simpli</span>
-          </div>
-          <button class="w-full py-3.5 rounded-2xl font-bold text-[13.5px] text-white flex items-center justify-center gap-2 hover:brightness-110 transition" style="background:#D97706">
-            Înregistrează-te gratuit <i data-lucide="arrow-right" class="w-4 h-4"></i>
-          </button>
-        </div>
-      </div>
-
-      <!-- ASIGURARI -->
-      <div class="svc-card reveal d1 type-opt" data-partner-type="asigurari" role="button" tabindex="0" onclick="openPartnerModal('asigurari')" onkeydown="if(event.key==='Enter')openPartnerModal('asigurari')">
-        <div class="card-bar" style="background:#0E9E99"></div>
-        <div class="p-7 flex flex-col gap-4 flex-1">
-          <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl" style="background:linear-gradient(135deg,#E0F5F4,#B3E8E6)"><i data-lucide="shield" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-          <h3 class="text-[17px] font-bold text-[#003366]">Furnizor de Asigurări</h3>
-          <p class="text-[13px] text-[#6B7A8D] leading-relaxed flex-1">Polițe integrate în devizele și comenzile platformei. Protejezi clienții și partenerii — produse personalizate ASF.</p>
-          <ul class="space-y-2.5">
-            <li class="flex items-start gap-2.5 text-[12.5px] text-[#6B7A8D]"><span class="benefit-dot mt-0.5" style="background:#0E9E99"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Polițe integrate în comenzile platformei</li>
-            <li class="flex items-start gap-2.5 text-[12.5px] text-[#6B7A8D]"><span class="benefit-dot mt-0.5" style="background:#0E9E99"><i data-lucide="check" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>Dashboard reclamații</li>
-            </ul>
-          <div class="flex items-center gap-1.5 py-3 border-t border-[#F0F2F7]">
-            <div class="step-num" style="background:#0E9E99">1</div><div class="h-px w-3 bg-[#D5DFE8]"></div>
-            <div class="step-num" style="background:#0E9E99">2</div><div class="h-px w-3 bg-[#D5DFE8]"></div>
-            <div class="step-num" style="background:#0E9E99">3</div><div class="h-px w-3 bg-[#D5DFE8]"></div>
-            <div class="step-num" style="background:#0E9E99">4</div><div class="h-px w-3 bg-[#D5DFE8]"></div>
-            <div class="step-num" style="background:#0E9E99">5</div>
-            <span class="text-[10.5px] text-[#8C9BAD] ml-2">5 pași simpli</span>
-          </div>
-          <button class="w-full py-3.5 rounded-2xl font-bold text-[13.5px] text-white flex items-center justify-center gap-2 hover:brightness-110 transition" style="background:#0E9E99">
-            Înregistrează-te gratuit <i data-lucide="arrow-right" class="w-4 h-4"></i>
-          </button>
-        </div>
-      </div>
-
-      <!-- AI CARD -->
-      <div class="svc-card reveal d2" style="background:linear-gradient(135deg,#002255,#003D7A);cursor:default">
-        <div class="card-bar" style="background:#0E9E99"></div>
-        <div class="p-7 flex flex-col items-center justify-center text-center gap-5 flex-1">
-          <div class="text-[52px]" style="animation:robot-float 3s ease-in-out infinite"><i data-lucide="brain" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-          <div>
-            <h3 class="text-[16px] font-bold text-white mb-2">Darrin AI verifică fiecare partener</h3>
-            <p class="text-[12.5px] leading-relaxed" style="color:rgba(255,255,255,.45)">Documente, competențe ESCO, istoricul de execuție — înainte de activare.</p>
-          </div>
-          <div class="w-full space-y-2">
-            <div class="flex items-center gap-3 p-3 rounded-xl" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1)"><span class="pulse-dot flex-shrink-0"></span><span class="text-[12px] text-left" style="color:rgba(255,255,255,.65)">Verificarea documentelor de către echipă</span></div>
-            <div class="flex items-center gap-3 p-3 rounded-xl" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1)"><span class="w-1.5 h-1.5 rounded-full bg-[#FF8C00] flex-shrink-0"></span><span class="text-[12px] text-left" style="color:rgba(255,255,255,.65)">Contract digital generat automat</span></div>
-            <div class="flex items-center gap-3 p-3 rounded-xl" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1)"><span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background:#4ade80"></span><span class="text-[12px] text-left" style="color:rgba(255,255,255,.65)">Cont activ după aprobare, contract și cont bancar</span></div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-    <div class="reveal mt-10 flex flex-wrap justify-center gap-6 text-[12.5px] text-[#8C9BAD]">
-      <div class="flex items-center gap-2"><span class="pulse-dot"></span>Verificare de către echipa My Darrin</div>
-      <span class="hidden sm:block">·</span>
-      <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-[#FF8C00] inline-block"></span>Contract comercial generat automat</div>
-    </div>
-  </div>
-</section>
 
 <!-- ════════ FLUX OPERAȚIONAL — stilul v3 ════════ -->
 
@@ -2186,64 +1987,10 @@ document.addEventListener('myd-geo-update', function(e) {
 <script>
 // ════ ETAPA 1+4: Gatekeeping portal parteneri & zone inactive ════
 
-// 1. Verificare sesiune + email confirmat
-(function checkPartnerAccess() {
-  var supa = window.supabaseClient;
-  if (!supa) return;
-
-  supa.auth.getUser().then(function(r) {
-    var user = r.data && r.data.user;
-    var confirmed = user && user.email_confirmed_at;
-
-    // Utilizator valid — nimic de blocat
-    if (user && confirmed) return;
-
-    // Blochează toate câmpurile din formulare de partener
-    var selectors = [
-      '#partner-form input, #partner-form select, #partner-form textarea',
-      '#partnerForm input, #partnerForm select, #partnerForm textarea',
-      '[data-partner] input, [data-partner] select, [data-partner] textarea',
-    ].join(',');
-    document.querySelectorAll(selectors).forEach(function(el){ el.disabled = true; });
-
-    // Banner avertizare
-    var reason = !user
-      ? 'Trebuie să fii autentificat pentru a deveni partener'
-      : 'Confirmă adresa de e-mail înainte de a continua';
-
-    var banner = document.getElementById('partner-gate-banner');
-    if (!banner) {
-      banner = document.createElement('div');
-      banner.id = 'partner-gate-banner';
-      banner.style.cssText = [
-        'position:fixed','top:72px','left:50%','transform:translateX(-50%)',
-        'z-index:9999','max-width:540px','width:92%',
-        'background:#FFF0D6','border:1.5px solid rgba(255,140,0,.35)',
-        'border-radius:14px','padding:16px 20px',
-        'box-shadow:0 8px 30px rgba(0,0,0,.15)',
-        'font-family:inherit','font-size:13.5px','color:#7A3200',
-        'display:flex','align-items:flex-start','gap:12px',
-      ].join(';');
-
-      var safeMsg = typeof DOMPurify !== 'undefined'
-        ? DOMPurify.sanitize(reason)
-        : reason;
-
-      banner.innerHTML =
-        '<span style="font-size:24px;flex-shrink:0"><i data-lucide="lock" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>' +
-        '<div>' +
-          '<div style="font-weight:800;font-size:14px;margin-bottom:4px">' + safeMsg + '</div>' +
-          '<div style="font-size:12px;opacity:.75">Redirecționare automată în 3 secunde…</div>' +
-        '</div>';
-      document.body.appendChild(banner);
-    }
-
-    setTimeout(function() {
-      window.location.href = window.location.origin + '/' +
-        '?redirect=devino-partener&reason=auth_required';
-    }, 3000);
-  });
-})();
+// 1. Pasul 11-R3b: pagina e informativă. Vechea barieră (redirecționa
+// vizitatorii neautentificați spre pagina principală după 3 secunde, pentru
+// formularul de partener scos la 11-R3) nu se mai aplică; butoanele de
+// înscriere urmează starea contului (cta-partener.js).
 
 // 2. Colectare demand din zone neactive — silențios, fără a bloca/descuraja
 // formularul (Devino Partener trebuie să rămână complet funcțională oriunde).
@@ -2286,6 +2033,8 @@ function collectLeadFromInactiveZone(email, cc, tara) {
 <script src="statistici-publice.js" defer></script>
 <script src="cont-fereastra.js" defer></script>
 <script src="ui-comun.js" defer></script>
+<!-- Pasul 11-R3b: butoanele de înscriere după starea contului -->
+<script src="cta-partener.js" defer></script>
 <script src="reguli-platforma.js" defer></script>
 <script src="contact-public.js" defer></script>
 </body>
