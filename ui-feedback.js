@@ -28,7 +28,7 @@
   'use strict';
   if (window.MDFeedback) return;
 
-  var VERDE = '#1A7A3A', ROSU = '#C0392B', GRI = '#5A6B7D';
+  var VERDE = '#1A7A3A', ROSU = '#C0392B', GRI = '#5A6B7D', ALBASTRU = '#1D5FA8';
   var TIMEOUT_MS = 15000;
   var DURATA_TOAST_MS = 4000;
   var tr = function (ro, param) {
@@ -73,9 +73,10 @@
     var cutie = document.createElement('div');
     cutie.setAttribute('role', tip === 'eroare' ? 'alert' : 'status');
     cutie.className = 'md-feedback md-feedback-' + tip;
-    var culoare = tip === 'ok' ? VERDE : tip === 'eroare' ? ROSU : GRI;
+    // „info” e albastru (pasul 11-R3c): o informație, nu o eroare.
+    var culoare = tip === 'ok' ? VERDE : tip === 'eroare' ? ROSU : tip === 'info' ? ALBASTRU : GRI;
     cutie.style.cssText = 'display:flex;align-items:flex-start;gap:8px;margin-top:8px;padding:9px 12px;border-radius:10px;font-size:12.5px;line-height:1.45;flex-wrap:wrap;'
-      + 'border:1.5px solid ' + culoare + ';color:' + culoare + ';background:' + (tip === 'ok' ? '#EDF7F0' : tip === 'eroare' ? '#FDECEA' : '#F4F7F9');
+      + 'border:1.5px solid ' + culoare + ';color:' + culoare + ';background:' + (tip === 'ok' ? '#EDF7F0' : tip === 'eroare' ? '#FDECEA' : tip === 'info' ? '#EAF2FB' : '#F4F7F9');
     var span = document.createElement('span');
     span.style.cssText = 'flex:1;min-width:0;overflow-wrap:anywhere';
     span.textContent = text;
@@ -436,6 +437,12 @@
     }
     try {
       var rezultat = await cuTimeout(Promise.resolve().then(fn), optiuni.timeout || TIMEOUT_MS);
+      // Acțiunea a dus în alt ecran, care își arată singur mesajul (pasul 11-R3c:
+      // contul neconfirmat → ecranul de cod): butonul revine, fără verde și fără roșu.
+      if (rezultat && rezultat.faraMesaj) {
+        if (buton) { buton.removeAttribute('aria-busy'); buton.disabled = false; buton.__mdOcupat = false; restaureaza(); }
+        return { ok: true, rezultat: rezultat };
+      }
       var textOk = typeof rezultat === 'string' ? rezultat : tr(optiuni.ok || 'Salvat.');
       if (buton) {
         buton.removeAttribute('aria-busy');

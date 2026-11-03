@@ -18,6 +18,9 @@
 // reminderul și conturile care au ales un rol de partener (profiles.rol_solicitat)
 // dar n-au completat încă firma (fără rând în partners). Linkul duce în
 // dashboard-ul rolului, la listă.
+//
+// Pasul 11-R3c (3 nov. 2026): contul care n-a introdus codul de 6 cifre
+// (auth.users.email_confirmed_at gol) nu primește reminderul (lib/email-confirmat.js).
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { renderEmailReminderProfilIncomplet, limbaProfilEmailComportamental } = require('../../lib/i18n');
@@ -26,6 +29,7 @@ const { esteSuprimat } = require('../../lib/email-suppression');
 const { stareActivare, ROLURI_PARTENER } = require('../../lib/activare-partener');
 const { rolPentruTipPartener } = require('../../lib/roluri-partener');
 const { dashboardPentruRol } = require('../../lib/destinatie-rol');
+const { emailConfirmat } = require('../../lib/email-confirmat');
 
 const SITE_URL = process.env.SITE_URL || 'https://mydarrin.homebestpal.com';
 
@@ -85,6 +89,7 @@ module.exports = async function handler(req, res) {
     try {
       const stare = await stareActivare(partener.id, { roles: [], rolSolicitat: partener.rol });
       if (!stare || stare.activ || stare.complet) continue; // lista e completă — nu mai e candidat
+      if (!(await emailConfirmat(partener.id))) continue; // fără codul de 6 cifre: niciun link spre dashboard
 
       const { data: logExistent } = await supabaseAdmin
         .from('email_comportamental_log')

@@ -298,13 +298,10 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
   <!-- ════ HERO TABS NAV — Wizard · Cum funcționează · De ce My Darrin ════ -->
   <div style="position:relative;z-index:10;max-width:1200px;margin:0 auto;padding:0 20px;margin-top:-8px;box-sizing:border-box">
     <div id="hero-tabs-bar" style="display:flex;gap:6px;flex-wrap:wrap;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:6px;backdrop-filter:blur(8px)">
-      <button onclick="switchHeroTab('intro')"  id="htab-intro"  class="hero-tab-btn hero-tab-active" style="flex:1;min-width:140px;padding:11px 16px;border-radius:11px;border:none;background:rgba(255,140,0,.18);color:#fff;font-weight:700;font-size:13px;cursor:pointer;transition:all .2s;font-family:inherit">
-        Devino Partener
-      </button>
       <button onclick="switchHeroTab('wizard')" id="htab-wizard" class="hero-tab-btn" style="flex:1;min-width:140px;padding:11px 16px;border-radius:11px;border:none;background:transparent;color:rgba(255,255,255,.65);font-weight:600;font-size:13px;cursor:pointer;transition:all .2s;font-family:inherit">
         Pașii înregistrării
       </button>
-      <button onclick="switchHeroTab('cumfunc')" id="htab-cumfunc" class="hero-tab-btn" style="flex:1;min-width:140px;padding:11px 16px;border-radius:11px;border:none;background:transparent;color:rgba(255,255,255,.65);font-weight:600;font-size:13px;cursor:pointer;transition:all .2s;font-family:inherit">
+      <button onclick="switchHeroTab('cumfunc')" id="htab-cumfunc" class="hero-tab-btn hero-tab-active" style="flex:1;min-width:140px;padding:11px 16px;border-radius:11px;border:none;background:rgba(255,140,0,.18);color:#fff;font-weight:700;font-size:13px;cursor:pointer;transition:all .2s;font-family:inherit">
         Cum funcționează
       </button>
       <button onclick="switchHeroTab('benefits')" id="htab-benefits" class="hero-tab-btn" style="flex:1;min-width:140px;padding:11px 16px;border-radius:11px;border:none;background:transparent;color:rgba(255,255,255,.65);font-weight:600;font-size:13px;cursor:pointer;transition:all .2s;font-family:inherit">
@@ -343,7 +340,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
       </div>
     </div>
 
-    <div id="hpanel-cumfunc" class="hero-tab-panel" style="display:none;background:#fff;border-radius:24px 24px 0 0;margin-top:18px">
+    <div id="hpanel-cumfunc" class="hero-tab-panel" style="display:block;background:#fff;border-radius:24px 24px 0 0;margin-top:18px">
       <div style="max-width:1200px;margin:0 auto;padding:0 20px;box-sizing:border-box">
 <section id="cum-functioneaza" class="py-4" style="scroll-margin-top:90px">
   <div class="max-w-4xl mx-auto px-6">
@@ -495,8 +492,11 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
   document.addEventListener('DOMContentLoaded', function () {
     if (location.hash === '#cum-functioneaza') arataCumFunctioneaza();
   });
+  // Pasul 11-R3c: fila „Devino Partener” (doar partea de sus a paginii, fără
+  // conținut sub bară) a fost scoasă. Pagina se deschide pe „Cum funcționează”,
+  // iar partea de sus rămâne mereu vizibilă.
   function switchHeroTab(tab) {
-    var tabs   = ['intro','wizard','cumfunc','benefits'];
+    var tabs   = ['wizard','cumfunc','benefits'];
     var panels = { wizard:'hpanel-wizard', cumfunc:'hpanel-cumfunc', benefits:'hpanel-benefits' };
 
     tabs.forEach(function(t) {
@@ -519,20 +519,9 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
       if (p) p.style.display = (key === tab) ? 'block' : 'none';
     });
 
-    var introContent = document.getElementById('hero-intro-content');
-    if (introContent) introContent.style.display = (tab === 'intro') ? '' : 'none';
-
-    // Fără conținutul introductiv (grid + robot card), secțiunea hero nu mai
-    // are nevoie de min-height 580px — altfel bara de tab-uri rămâne izolată
-    // într-un gol albastru uriaș, centrat vertical în spațiul gol rămas.
-    var heroSection = document.getElementById('hero-bg-section');
-    if (heroSection) heroSection.style.minHeight = (tab === 'intro') ? '' : '0';
-
-    if (tab !== 'intro') {
-      setTimeout(function() {
-        document.getElementById('hero-tab-panels').scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 50);
-    }
+    setTimeout(function() {
+      document.getElementById('hero-tab-panels').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
   }
   </script>
 
