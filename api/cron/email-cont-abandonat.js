@@ -31,6 +31,9 @@
 // (profiles.rol_solicitat) nu primește emailul de client abandonat: lui îi
 // scrie reminderul listei „Activează contul” (api/cron/reminder-profil-partener.js).
 //
+// Pasul 11-R3c (3 nov. 2026): clientul care n-a introdus codul de 6 cifre
+// (auth.users.email_confirmed_at gol) nu primește emailul (lib/email-confirmat.js).
+//
 // Rulează pe Vercel Cron, protejat cu CRON_SECRET, exact ca
 // api/cron/auto-confirma-comenzi.js / api/cron/expira-acces-temporar.js.
 
@@ -40,6 +43,7 @@ const { incarcaContactPlatformaSigur } = require('../../lib/contact-platforma');
 const { esteSuprimat } = require('../../lib/email-suppression');
 
 const { esteRolPartener } = require('../../lib/activare-partener');
+const { emailConfirmat } = require('../../lib/email-confirmat');
 
 const PRAG_ZILE = 3;
 const TIP_EMAIL_CLIENT = 'cont_abandonat_3zile';
@@ -96,6 +100,8 @@ module.exports = async function handler(req, res) {
   for (const profil of clienti || []) {
     if (esteRolPartener(profil.rol_solicitat)) continue; // partener în activare, nu client
     try {
+      if (!(await emailConfirmat(profil.id))) continue; // fără codul de 6 cifre: niciun email
+
       const { count } = await supabaseAdmin
         .from('comenzi')
         .select('id', { count: 'exact', head: true })

@@ -262,7 +262,8 @@
       '.mdc-tip input:focus-visible{outline:2px solid #FF8C00;outline-offset:2px}' +
       '.mdc-rol-ales{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:0 0 16px;padding:8px 12px;border-radius:12px;background:#EBF4FB;font-size:12.5px;color:#003366;font-weight:600}' +
       '.mdc-rol-ales span{display:inline-flex;align-items:center;gap:6px}.mdc-rol-ales .mdc-ico{color:#003366}' +
-      '.mdc-cod{text-align:center;font-size:20px;font-weight:700;letter-spacing:.4em;margin-bottom:16px}' +
+      '.mdc-cod{text-align:center;font-size:20px;font-weight:700;letter-spacing:.4em;margin-bottom:8px}' +
+      '.mdc-indiciu{margin:0 0 14px;font-size:12.5px;line-height:1.45;color:#5A6B7D;text-align:center}' +
       '.mdc-sr{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}' +
       '.mdc-zona:empty{display:none}' +
       '@media (max-width:420px){.mdc-taburi{padding:24px 52px 0 20px}.mdc-panou{padding:22px 20px}.mdc-mesaj-persistent{margin:14px 20px 0}.mdc-rand{flex-direction:column;gap:12px}}';
@@ -410,6 +411,7 @@
           '<h3 class="mdc-h">' + esc(tr('Confirmă adresa de email')) + '</h3>' +
           '<p class="mdc-sub">' + tr('Am trimis un cod de 6 cifre la {email}. Introdu-l mai jos.', { email: '<b id="verify-cod-email"></b>' }) + '</p>' +
           '<input type="text" id="verify-cod-input" class="mdc-in mdc-cod" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" aria-label="' + esc(tr('Codul de 6 cifre')) + '" data-eticheta="' + esc(tr('Codul de 6 cifre')) + '">' +
+          '<p class="mdc-indiciu" id="mdc-cod-indiciu">' + esc(tr('Nu găsești emailul? Verifică și folderul Spam sau Promoții.')) + '</p>' +
           '<button type="submit" class="mdc-btn mdc-btn-albastru" id="mdc-cod-btn">' + esc(tr('Confirmă codul')) + '</button>' +
           '<div id="verify-cod-msg" class="mdc-zona"></div>' +
           '<p class="mdc-jos">' + esc(tr('Nu ai primit codul?')) + ' <button type="button" class="mdc-link mdc-link-albastru" id="mdc-retrimite">' + esc(tr('Retrimite codul')) + '</button></p>' +
@@ -656,16 +658,14 @@
       if (!parola.value) lipsa.push({ camp: parola, mesaj: tr('Scrie parola.') });
       if (lipsa.length) throw eroareCampuri(lipsa);
       return asiguraAuth().then(function () {
-        return window.MyDarrinAuth.performLogin(email.value.trim(), parola.value).catch(function (e) {
+        return window.MyDarrinAuth.performLogin(email.value.trim(), parola.value).then(function () { return null; }, function (e) {
           var cod = String((e && e.code) || '').toLowerCase();
-          if (cod === 'email_not_confirmed' || /email not confirmed/i.test((e && e.message) || '')) {
-            // Contul există, dar codul din email n-a fost introdus: îl cerem aici.
-            ss(CHEIE_EMAIL, email.value.trim());
-            setTimeout(function () { switchAuthTab('verify-cod'); }, 1200);
-          }
+          // Contul există, dar codul din email n-a fost introdus: ecranul de cod, cu un cod nou.
+          if (cod === 'email_not_confirmed' || /email not confirmed/i.test((e && e.message) || '')) return treciLaCodNou(email.value.trim());
           throw new Error(mesajAuth(e));
         });
-      }).then(function () {
+      }).then(function (r) {
+        if (r) return r;
         setTimeout(function () { dupaAutentificare('login'); }, 500);
         return tr('Te-ai autentificat.');
       });
@@ -722,9 +722,15 @@
           prenume: prenume, telefon: telefon, rolSolicitat: stare.rol,
         }).catch(function (e) {
           if (window.MyDarrinAuth.emailDejaInregistrat(e) || /user_already_exists|email_exists/.test(String(e && e.code))) throw emailExistent(email);
+          // Supabase refuză un cod nou pentru același email la mai puțin de un
+          // minut („For security purposes…”): contul există, neconfirmat, creat
+          // adineauri. Ecranul de cod, nu o eroare. (Limita generală de emailuri
+          // a proiectului rămâne o eroare: contul poate să nu existe.)
+          if (/for security purposes/i.test(String((e && e.message) || ''))) return { limita: true };
           throw new Error(mesajAuth(e));
         });
       }).then(function (user) {
+        if (user && user.limita) return arataEcranCod(email, 'info', tr('Ai deja un cont neconfirmat cu {email}. Ți-am trimis un cod adineauri; dacă nu l-ai primit, așteaptă un minut, apoi apasă „Retrimite codul”.', { email: email }));
         // Cu confirmarea pe email activă, Supabase nu spune că emailul există
         // (protecție la enumerare): întoarce un utilizator fără identități.
         if (user && Array.isArray(user.identities) && user.identities.length === 0) throw emailExistent(email);
@@ -734,6 +740,8 @@
             setTimeout(function () { dupaAutentificare('cont_creat'); }, 500);
             return tr('Contul a fost creat.');
           }
+          // Cont nou sau cont existent, încă neconfirmat (Supabase retrimite
+          // codul): în ambele cazuri, ecranul de cod.
           ss(CHEIE_EMAIL, email);
           $('verify-cod-email').textContent = email;
           $('verify-cod-input').value = '';
@@ -742,6 +750,33 @@
         });
       });
     }, { form: form, textSalveaza: tr('Se creează contul…'), textOk: tr('✓ Trimis') });
+  }
+
+  // ── Contul neconfirmat (pasul 11-R3c) ──
+  function esteLimitaCoduri(e) {
+    var t = String((e && (e.code || e.error_code)) || '') + ' ' + String((e && e.message) || '');
+    return /rate limit|over_email_send_rate_limit|for security purposes|too many/i.test(t) || (e && e.status === 429);
+  }
+  // Ecranul de cod, cu mesajul dat (informativ, nu eroare). Întoarce
+  // { faraMesaj } pentru MDFeedback.salveaza: butonul de pe ecranul vechi
+  // revine fără verde și fără roșu.
+  function arataEcranCod(email, tip, text) {
+    ss(CHEIE_EMAIL, email);
+    $('verify-cod-email').textContent = email;
+    $('verify-cod-input').value = '';
+    $('mdc-retrimite-msg').innerHTML = '';
+    switchAuthTab('verify-cod');
+    window.MDFeedback.mesaj($('verify-cod-msg'), tip, text);
+    return { faraMesaj: true };
+  }
+  // Login cu un cont neconfirmat: trimitem automat un cod nou (cel vechi poate fi expirat).
+  function treciLaCodNou(email) {
+    return window.MyDarrinAuth.retrimiteCodEmail(email).then(function () {
+      return arataEcranCod(email, 'info', tr('Contul tău nu e confirmat încă. Ți-am trimis un cod nou la {email}.', { email: email }));
+    }, function (e) {
+      if (esteLimitaCoduri(e)) return arataEcranCod(email, 'info', tr('Contul tău nu e confirmat încă. Ți-am trimis deja un cod la {email}; pentru unul nou, așteaptă un minut, apoi apasă „Retrimite codul”.', { email: email }));
+      return arataEcranCod(email, 'eroare', mesajAuth(e));
+    });
   }
 
   function emailExistent(email) {

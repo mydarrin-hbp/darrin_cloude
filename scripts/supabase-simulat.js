@@ -65,6 +65,8 @@ function interogare(tabel) {
     in(k, v) { st.filtre.push((r) => v.includes(r[k])); return b; },
     is(k, v) { st.filtre.push((r) => (r[k] ?? null) === v); return b; },
     gte(k, v) { st.filtre.push((r) => r[k] != null && r[k] >= v); return b; },
+    gt(k, v) { st.filtre.push((r) => r[k] != null && r[k] > v); return b; },
+    lt(k, v) { st.filtre.push((r) => r[k] != null && r[k] < v); return b; },
     lte(k, v) { st.filtre.push((r) => r[k] != null && r[k] <= v); return b; },
     ilike(k, v) { st.filtre.push(conditie(`${k}.ilike.${v}`)); return b; },
     contains(k, v) { st.filtre.push((r) => Array.isArray(r[k]) && v.every((x) => r[k].includes(x))); return b; },
@@ -151,6 +153,12 @@ const supabaseAdmin = {
   },
   auth: {
     getUser: async (t) => (DB.utilizatori[t] ? { data: { user: DB.utilizatori[t] }, error: null } : { data: null, error: eroare('401', 'invalid') }),
+    admin: {
+      getUserById: async (id) => {
+        const u = Object.values(DB.utilizatori).find((x) => x && x.id === id);
+        return u ? { data: { user: u }, error: null } : { data: { user: null }, error: eroare('404', 'User not found') };
+      },
+    },
   },
   storage: {
     from: (nume) => ({

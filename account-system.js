@@ -109,18 +109,8 @@ async function performRegister(email, parola, nume, gdprAcceptat, extra) {
     options: { data: date },
   });
   if (error) throw error;
-
-  // Email de bun venit client (audit Secțiunea 39, 30 Iulie 2026) — best-
-  // effort, fire-and-forget, la fel ca la parteneri (api/public/partner-
-  // register.js): un eșec aici nu trebuie să blocheze înregistrarea.
-  try {
-    fetch('/api/public/trimite-bun-venit-client', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
-    }).catch(() => {});
-  } catch (e) {}
-
+  // Pasul 11-R3c: emailul de bun venit nu mai pleacă aici, ci după cod
+  // (confirmaCodEmail → trimiteBunVenit).
   return data.user; // fără sesiune până la codul din email (confirmaCodEmail)
 }
 
@@ -154,7 +144,25 @@ async function verificaCodTelefon(telefon, cod) {
 async function confirmaCodEmail(email, cod) {
   const { data, error } = await sb().auth.verifyOtp({ email, token: cod, type: 'signup' });
   if (error) throw error;
+  trimiteBunVenit(data.session);
   return data.user;
+}
+
+// Emailul de bun venit (pasul 11-R3c): doar după cod, cu sesiunea primită.
+// Serverul (api/cont/bun-venit.js) verifică singur confirmarea și trimite o
+// singură dată per cont. Best-effort: un eșec nu oprește intrarea în cont;
+// keepalive, pentru că pagina trece imediat la destinație.
+async function trimiteBunVenit(sesiune) {
+  try {
+    if (!sesiune || !sesiune.access_token) sesiune = (await sb().auth.getSession()).data.session;
+    if (!sesiune || !sesiune.access_token) return;
+    fetch('/api/cont/bun-venit', {
+      method: 'POST',
+      keepalive: true,
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + sesiune.access_token },
+      body: '{}',
+    }).catch(() => {});
+  } catch (e) {}
 }
 
 async function retrimiteCodEmail(email) {
