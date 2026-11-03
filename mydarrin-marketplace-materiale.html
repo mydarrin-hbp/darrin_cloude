@@ -226,7 +226,7 @@ function cardProdus(p, i, moneda) {
   const actiuni = DIN_CONFIGURATOR
     ? `<button class="btn-select" onclick="adaugaLaServiciu(${i})">${escapeHTML(t('Adaugă la serviciu →'))}</button>`
     : `<input class="qty" type="number" min="1" step="1" value="1" id="qty-${i}" aria-label="${escapeHTML(t(p.tip === 'materiale' ? 'Cantitate' : 'Zile de închiriere'))}"/>
-       <button class="btn-select" onclick="comanda(${i}, this)">${escapeHTML(t('Comandă'))}</button>`;
+       <button class="btn-select" onclick="comanda(${i}, this)">${escapeHTML(t('Adaugă în coș'))}</button>`;
   return `
     <article class="card">
       ${img}${thumbs}
@@ -248,35 +248,21 @@ function adaugaLaServiciu(i) {
   setTimeout(() => { window.location.href = dest; }, 500);
 }
 
-// Direct: prețul real al comenzii (pragul minim de comandă inclus) vine de la
-// server; checkout-ul trimite apoi doar id + cantitate (api/comenzi/creeaza.js).
+// Pasul 11-C1 (3 nov. 2026): produsul intră direct în coșul de pe server
+// (cos-indicator.js → MDCos.adauga, /api/client/cos-multi), cu cantitatea
+// aleasă pe card; confirmarea apare ca toast, cu „Vezi coșul”. Prețul real al
+// comenzii se calculează pe server, în coș și la checkout (api/comenzi/creeaza.js).
+// Înainte: „Comandă” trimitea produsul singur direct în checkout, ocolind coșul.
 async function comanda(i, buton) {
   const p = stare.date.produse[i];
   const zona = document.getElementById(`msg-${i}`);
   const qty = Number(document.getElementById(`qty-${i}`).value);
-  if (!Number.isInteger(qty) || qty < 1) { MDFeedback.mesaj(zona, 'eroare', t('Alege o cantitate de cel puțin 1.')); return; }
-  buton.disabled = true;
   zona.innerHTML = '';
-  try {
-    const res = await fetch('/api/public/marketplace-produse', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ produse: [{ id: p.id, qty }], tara_cod: TARA }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || t('Nu am putut calcula prețul.'));
-    if (!data.disponibil) throw new Error(data.mesaj || t('Produsul nu mai este disponibil.'));
-    const rand = { id: p.id, titlu: p.denumire, descriere: '', qty, pret: null };
-    const config = {
-      tip_comanda: 'marketplace', titlu: t('Produse din marketplace'), tier: '', tierLabel: '',
-      materiale: p.tip === 'materiale' ? [rand] : [], inchirieri: p.tip === 'echipamente' ? [rand] : [],
-      total: data.pret_final, tara_cod: TARA, salvat_la: Date.now(),
-    };
-    sessionStorage.setItem('myd_checkout_config', JSON.stringify(config));
-    window.location.href = 'mydarrin-checkout.html';
-  } catch (e) {
-    buton.disabled = false;
-    MDFeedback.mesaj(zona, 'eroare', t(e.message));
-  }
+  if (!Number.isInteger(qty) || qty < 1) { MDFeedback.mesaj(zona, 'eroare', t('Alege o cantitate de cel puțin 1.')); return; }
+  if (!window.MDCos) { MDFeedback.mesaj(zona, 'eroare', t('Coșul nu s-a încărcat. Reîncarcă pagina.')); return; }
+  buton.disabled = true;
+  await window.MDCos.adauga({ tip: 'material', id: p.id, titlu: p.denumire, unitate: p.unitate, qty, tara_cod: TARA });
+  buton.disabled = false;
 }
 
 let cautareTimer = null;
@@ -295,5 +281,6 @@ document.addEventListener('DOMContentLoaded', () => {
 window.addEventListener('myd:lang', () => { if (stare.date) randeaza(); });
 </script>
 
+<script src="cos-indicator.js" defer></script>
 </body>
 </html>

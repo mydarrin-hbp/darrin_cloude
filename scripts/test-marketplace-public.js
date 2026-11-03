@@ -37,6 +37,7 @@ stub('lib/notificari-comanda.js', { notificaAdminFaraPartener: async (c, motiv) 
 
 const apiMarketplace = require(path.join(RADACINA, 'api/public/marketplace-produse.js'));
 const apiCreeaza = require(path.join(RADACINA, 'api/comenzi/creeaza.js'));
+const apiCos = require(path.join(RADACINA, 'api/client/cos-multi.js'));
 // Pasul 11-P2b: datele de facturare sunt obligatorii pe comandă.
 const FACTURARE_PF = { tip: 'pf', prenume: 'Ana', nume: 'Albu' };
 const { elibereazaEscrow } = require(path.join(RADACINA, 'lib/elibereaza-escrow.js'));
@@ -148,6 +149,17 @@ function server() {
         await new Promise((r) => req.on('end', r));
         const r = raspuns();
         await apiMarketplace({ method: req.method, query: Object.fromEntries(url.searchParams), body: corp ? JSON.parse(corp) : null, headers: {} }, r);
+        res.writeHead(r.statusCode, { 'content-type': 'application/json' });
+        return res.end(JSON.stringify(r.corp));
+      }
+      // Pasul 11-C1: coșul de pe server (api/client/cos-multi.js real, peste baza simulată).
+      if (url.pathname === '/api/client/cos-multi') {
+        let corp = '';
+        req.on('data', (c) => { corp += c; });
+        await new Promise((r) => req.on('end', r));
+        if (!DB.tabele.cos_multi_itemi) DB.tabele.cos_multi_itemi = [];
+        const r = raspuns();
+        await apiCos({ method: req.method, query: Object.fromEntries(url.searchParams), body: corp ? JSON.parse(corp) : null, headers: {} }, r);
         res.writeHead(r.statusCode, { 'content-type': 'application/json' });
         return res.end(JSON.stringify(r.corp));
       }
@@ -327,14 +339,18 @@ function server() {
           }
           if (CAPTURI) await page.screenshot({ path: path.join(CAPTURI, `produs-${limba}-${latime}.png`), fullPage: true });
 
-          // „Comandă” (direct): prețul real de la server → coșul → checkout.
-          await page.route('**/mydarrin-checkout.html', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>checkout</title>' }));
+          // Pasul 11-C1: „Adaugă în coș” pune produsul direct în coșul de pe server
+          // (cantitatea aleasă), fără să deschidă checkout-ul; confirmarea e un toast
+          // cu „Vezi coșul”. Prețul real (10 × → 357,10 lei) e verificat la partea B.
+          DB.tabele.cos_multi_itemi = [];
+          const urlInainte = page.url();
           await page.fill('#qty-0', '10');
           await page.click('.card .btn-select');
-          await page.waitForURL('**/mydarrin-checkout.html');
-          await test(`${eticheta}: „Comandă” pune în coș produsul cu prețul real (10 × → 357,10 lei) și deschide checkout-ul`, async () => {
-            const cfg = await page.evaluate(() => JSON.parse(sessionStorage.getItem('myd_checkout_config')));
-            egal([cfg.tip_comanda, cfg.total, cfg.materiale.map((m) => [m.id, m.qty])], ['marketplace', await pretComanda(250), [[`mp:materiale:${ID.m1}`, 10]]]);
+          await page.waitForSelector('.md-toast-succes');
+          await test(`${eticheta}: „Adaugă în coș” pune produsul în coșul de pe server (cantitatea 10), fără checkout direct`, async () => {
+            egal(page.url(), urlInainte, 'pagina nu se schimbă');
+            egal(DB.tabele.cos_multi_itemi.map((r) => [r.configurare.tip, r.configurare.id, r.configurare.qty]), [['material', `mp:materiale:${ID.m1}`, 10]]);
+            adevarat(await page.$('.md-toast-succes a.md-toast-actiune[href="mydarrin-cos.html"]'), '„Vezi coșul”');
           });
 
           // Din configuratorul unui serviciu: produsul revine în mydarrin-produs.html.

@@ -47,7 +47,6 @@ const PRIORITATE = {
   '/garantii-si-asigurari': '0.5',
   '/intrebari-frecvente-clienti': '0.5',
   '/intrebari-frecvente-parteneri': '0.5',
-  '/mydarrin-serviciu': '0.4',
   '/reclamatii': '0.3',
   '/mydarrin-termeni': '0.2',
   '/mydarrin-politica-confidentialitate': '0.2',

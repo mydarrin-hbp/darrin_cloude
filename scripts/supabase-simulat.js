@@ -62,6 +62,7 @@ function interogare(tabel) {
     delete() { st.op = 'delete'; return b; },
     eq(k, v) { st.filtre.push((r) => (r[k] ?? null) === v); return b; },
     neq(k, v) { st.filtre.push((r) => r[k] !== v); return b; },
+    match(o) { Object.entries(o || {}).forEach(([k, v]) => st.filtre.push((r) => (r[k] ?? null) === v)); return b; },
     in(k, v) { st.filtre.push((r) => v.includes(r[k])); return b; },
     is(k, v) { st.filtre.push((r) => (r[k] ?? null) === v); return b; },
     gte(k, v) { st.filtre.push((r) => r[k] != null && r[k] >= v); return b; },

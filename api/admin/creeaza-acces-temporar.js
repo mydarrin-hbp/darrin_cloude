@@ -35,7 +35,6 @@ const RUTE_PERMISE = [
   '/index.html',
   '/mydarrin-catalog.html',
   '/mydarrin-investitori.html',
-  '/mydarrin-serviciu.html',
   '/mydarrin-produs.html',
   '/mydarrin-marketplace.html',
   '/mydarrin-checkout.html',

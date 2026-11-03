@@ -829,22 +829,9 @@ function navTo(page) {
 // Salvează starea reală configurată (serviciu, nivel, preț calculat, adresă
 // etc.) înainte de a naviga la checkout — fără asta, /cos citea un subtotal
 // hardcodat (BASE_SUBTOTAL), nelegat de ce configura efectiv clientul aici.
-// Etapa 1 (26 august 2026) — token de guest persistent (localStorage,
-// supraviețuiește închiderii tab-ului, spre deosebire de sessionStorage),
-// folosit doar ca identitate pentru backup-ul server-side de mai jos.
-function _guestToken() {
-  try {
-    let t = localStorage.getItem('myd_guest_token');
-    if (!t) { t = crypto.randomUUID(); localStorage.setItem('myd_guest_token', t); }
-    return t;
-  } catch (e) { return null; }
-}
-
 // Extras din salveazaStareaCheckout() (30 august 2026) — aceeași formă de
-// configurare e folosită acum în 2 locuri: backup-ul single-item existent
-// (api/client/cos) ȘI itemii coșului multi-serviciu (api/client/cos-multi,
-// vezi adaugaInCos() mai jos) — un singur loc care construiește obiectul,
-// nu duplicat.
+// configurare merge la checkout (sessionStorage) și în coș (pasul 11-C1:
+// adaugaInCosDinConfigurare() → /api/client/cos-multi), construită într-un loc.
 function _construiesteConfigCurenta() {
   const titlu = S.pilotMode
     ? (document.getElementById('prod-title')?.textContent || S.slug)
@@ -863,6 +850,9 @@ function _construiesteConfigCurenta() {
     // execuție (Nominatim), nu din locația dispozitivului — comanda se
     // execută la adresa clientului, nu neapărat unde e telefonul lui.
     tara_cod: S.tara_cod || null, regiune: S.regiune || null, localitate: S.localitate || null,
+    // Pasul 11-C1: adresa de prestare pe câmpuri (checkout-ul o precompletează).
+    adresa_prestare: typeof campuriAdresa === 'function' && cereAdresa() ? campuriAdresa() : null,
+    adresa_prestare_id: S.adresaPrestareId || null,
     total: S.total, basePrice: S.basePrice,
     // G16 (26 Iulie 2026) — componente RAW (pre-TVA/platformă), pentru
     // trimiterea itemizată reală către checkout (vezi mydarrin-checkout.html);
@@ -889,47 +879,10 @@ function salveazaStareaCheckout() {
   try {
     const config = _construiesteConfigCurenta();
     sessionStorage.setItem('myd_checkout_config', JSON.stringify(config));
-
-    // Etapa 1 — backup server-side, best-effort, nu blochează navigarea la
-    // checkout dacă eșuează (sessionStorage rămâne sursa reală pentru
-    // sesiunea curentă).
-    (async () => {
-      try {
-        const session = (await window.supabaseClient?.auth.getSession())?.data?.session;
-        const body = { configurare: config };
-        if (!session?.access_token) body.sesiune_token = _guestToken();
-        await fetch('/api/client/cos', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) },
-          body: JSON.stringify(body),
-        });
-      } catch (e) { /* best-effort */ }
-    })();
+    // Pasul 11-C1: copia de pe server (/api/client/cos, un al doilea coș) a fost
+    // scoasă — singurul coș e /api/client/cos-multi (cos-indicator.js).
   } catch (e) {
     console.warn('[checkout-config] nu am putut salva starea în sessionStorage:', e);
-  }
-}
-
-// Coș multi-serviciu (30 august 2026, cerere fondator) — adaugă configurarea
-// CURENTĂ ca item nou în cos_multi_itemi (api/client/cos-multi), distinct de
-// backup-ul single-item de mai sus. Întoarce true/false (succes), niciodată
-// nu aruncă — apelanții (continuaCumparaturile/adaugaServiciuNou) navighează
-// oricum mai departe, cu sau fără succes (best-effort, ca la salveazaStareaCheckout).
-async function adaugaInCos() {
-  try {
-    const config = _construiesteConfigCurenta();
-    const session = (await window.supabaseClient?.auth.getSession())?.data?.session;
-    const body = { configurare: config };
-    if (!session?.access_token) body.sesiune_token = _guestToken();
-    const res = await fetch('/api/client/cos-multi', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) },
-      body: JSON.stringify(body),
-    });
-    return res.ok;
-  } catch (e) {
-    console.warn('[cos-multi] nu am putut adăuga în coș:', e);
-    return false;
   }
 }
 
@@ -937,6 +890,7 @@ async function adaugaInCos() {
 const _origNextStep = window.nextStep;
 window.nextStep = function(n) {
   if (n === 5) {
+    if (typeof adresaVerificata === 'function' && !adresaVerificata()) { cereAdresaInainte(); return; }
     salveazaStareaCheckout();
     navTo('cos');
     return;
@@ -996,6 +950,23 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
     }
   </script>
 <link rel="stylesheet" href="ui-public.css">
+<style id="stil-cos-adresa">
+/* Pasul 11-C1: adresa de prestare pe câmpuri și butonul „Adaugă în coș”. */
+.adr-grid{display:grid;grid-template-columns:120px minmax(0,1fr) minmax(0,1fr);gap:8px}
+@media (max-width:600px){.adr-grid{grid-template-columns:minmax(0,1fr)}}
+#adr-disponibilitate{margin-top:8px;padding:9px 12px;border-radius:10px;font-size:12.5px;line-height:1.5;font-weight:600}
+#adr-disponibilitate.adr-ok{background:#EDF7F0;color:#1A7A3A;border:1.5px solid #1A7A3A}
+#adr-disponibilitate.adr-eroare{background:#FDECEA;color:#C0392B;border:1.5px solid #C0392B}
+#adr-disponibilitate.adr-info{background:#EAF2FB;color:#1D5FA8;border:1.5px solid #1D5FA8}
+.f-input[aria-invalid="true"]{border-color:#C0392B!important}
+.cos-actiuni{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
+.btn-adauga-cos{width:100%;min-height:46px;padding:12px;border-radius:12px;border:none;background:#FF8C00;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit}
+.btn-adauga-cos:hover:not(:disabled){background:#CC7000}
+.btn-adauga-cos:disabled{background:#B8C4CE;cursor:not-allowed}
+.adauga-motiv{font-size:12px;line-height:1.5;color:#6B7A8D}
+.adauga-motiv:empty{display:none}
+.link-continua{align-self:flex-start;font-size:12.5px;font-weight:700;color:#003366;text-decoration:none;padding:6px 0}
+</style>
 </head>
 <body>
 
@@ -1651,13 +1622,31 @@ function triggerHeaderSearch(){
           </div>
         </div>
 
-        <!-- Adresă -->
-        <div style="margin-bottom:16px">
-          <label class="f-label">Adresă de execuție / livrare *</label>
-          <input type="text" class="f-input" id="addr-input" placeholder="Str. Exemplu nr. 10, Sc. A, Ap. 5, Bacău" oninput="onAddr()"/>
-          <div id="addr-ok" style="display:none;margin-top:6px;font-size:11.5px;color:#1A7A3A;font-weight:600">
-            Adresă validată · <span id="zone-det">se detectează...</span> · My Darrin activ
+        <!-- Adresa de prestare (pasul 11-C1, regula LM, 3 nov. 2026): obligatorie
+             pentru servicii și închirieri. Județul din listă (geo_regiuni),
+             localitatea și strada; contul conectat alege și din agenda lui.
+             Disponibilitatea (parteneri activi în zonă) și transportul se
+             verifică pe server (/api/public/disponibilitate-adresa). Înainte:
+             un singur câmp liber și „Adresă validată · My Darrin activ” afișat
+             pentru orice text mai lung de 8 caractere, fără nicio verificare. -->
+        <div style="margin-bottom:16px" id="adresa-prestare-bloc">
+          <label class="f-label" for="addr-input">Adresa de prestare *</label>
+          <div id="adr-agenda-wrap" style="display:none;margin-bottom:8px">
+            <select class="f-input" id="adr-agenda" aria-label="Adresele salvate în cont" onchange="alegeAdresaAgenda()"></select>
           </div>
+          <div class="adr-grid">
+            <select class="f-input" id="adr-tara" aria-label="Țara" onchange="schimbaTaraAdresa()">
+              <option value="RO">România</option>
+              <option value="MD">Moldova</option>
+              <option value="BG">Bulgaria</option>
+            </select>
+            <select class="f-input" id="adr-judet" aria-label="Județul" onchange="onAddr(true)" required>
+              <option value="">Județul *</option>
+            </select>
+            <input type="text" class="f-input" id="adr-localitate" placeholder="Localitatea *" aria-label="Localitatea" autocomplete="address-level2" oninput="onAddr(true)" required/>
+          </div>
+          <input type="text" class="f-input" id="addr-input" placeholder="Strada, numărul, bloc, scară, apartament *" aria-label="Strada și numărul" autocomplete="street-address" oninput="onAddr(true)" required style="margin-top:8px"/>
+          <div id="adr-disponibilitate" role="status" aria-live="polite" style="display:none"></div>
         </div>
 
         <!-- Mențiuni AI -->
@@ -1703,15 +1692,15 @@ function triggerHeaderSearch(){
           <div id="addon-selected" style="margin-top:12px"></div>
         </div>
 
-        <!-- Navigare uzuală (30 august 2026, cerere fondator) — pas premergător
-             coșului multi-serviciu: clientul poate continua să răsfoiască sau
-             adăuga explicit un alt serviciu/material/echipament, fără să piardă
-             configurarea curentă (deja salvată prin salveazaStareaCheckout()). -->
-        <div style="display:flex;gap:10px;margin-bottom:10px">
-          <button type="button" onclick="continuaCumparaturile()" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid #D5DFE8;background:#fff;color:#6B7A8D;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">← Continuă cumpărăturile</button>
-          <button type="button" onclick="adaugaServiciuNou()" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid #D5DFE8;background:#fff;color:#003366;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">+ Adaugă un nou serviciu</button>
+        <!-- Adaugă în coș (pasul 11-C1): coșul de pe server (cos-indicator.js →
+             /api/client/cos-multi). Pentru servicii și închirieri, butonul rămâne
+             blocat până când adresa de prestare e completă și serverul confirmă
+             că serviciul e disponibil la ea; explicația stă sub buton. -->
+        <div class="cos-actiuni">
+          <button type="button" id="btn-adauga-cos" class="btn-adauga-cos" onclick="adaugaInCosDinConfigurare(this)" disabled aria-describedby="btn-adauga-cos-motiv">Adaugă în coș</button>
+          <div id="btn-adauga-cos-motiv" class="adauga-motiv">Completează adresa de prestare (județul, localitatea și strada) ca să poți adăuga serviciul în coș.</div>
+          <a href="mydarrin-catalog.html" class="link-continua">← Continuă cumpărăturile</a>
         </div>
-        <a href="mydarrin-cos.html" id="cos-indicator" style="display:none;margin-bottom:20px;text-align:center;padding:9px;border-radius:10px;background:#EBF4FB;color:#003366;font-size:12.5px;font-weight:700;text-decoration:none">🛒 Coș</a>
 
         <!-- „Poate te interesează și..." (30 august 2026) — recomandări reale,
              din catalog_relatii (curatoriate) sau, dacă lipsesc, din același
@@ -3258,6 +3247,8 @@ let S = {
   // G27 (26 Iulie 2026) — derivate din geocodarea reală a adresei de
   // execuție (vezi geocodazaAdresaComenzii()), null până se detectează.
   tara_cod:null,regiune:null,localitate:null,
+  // Pasul 11-C1: id-ul adresei alese din agendă și rezultatul verificării pe server.
+  adresaPrestareId:null, disponibilitate:null,
   // G16 (26 Iulie 2026) — materiale/echipamente alese explicit din catalogul
   // real, în plus față de ce e inclus implicit în pachetul de nivel.
   // Formă: { id, titlu, unitate, preturi:{bronz,argint,aur,platinum}, qty }
@@ -3528,45 +3519,6 @@ function renderAddonList() {
       <button type="button" onclick="addAddonItem('${addonActiveTab}','${item.id}')" ${dejaAdaugat ? 'disabled' : ''} style="padding:6px 12px;border-radius:8px;border:1px solid #D5DFE8;background:${dejaAdaugat ? '#F4F7F9' : '#EBF4FB'};color:${dejaAdaugat ? '#B8C4CE' : '#003366'};font-size:11.5px;font-weight:700;cursor:${dejaAdaugat ? 'default' : 'pointer'};font-family:inherit;flex-shrink:0">${dejaAdaugat ? 'Adăugat' : '+ Adaugă'}</button>
     </div>`;
   }).join('');
-}
-
-// Navigare uzuală (30 august 2026, cerere fondator) — pas premergător
-// coșului multi-serviciu. Ambele salvează explicit configurarea curentă
-// înainte de a pleca de pe pagină, ca "Continuă cumpărăturile" să nu piardă
-// ce era deja completat (coșul propriu-zis, cu mai multe servicii simultan,
-// e etapa următoare — azi rămâne o singură configurare "curentă" salvată).
-async function continuaCumparaturile() {
-  await adaugaInCos();
-  window.location.href = 'mydarrin-catalog.html';
-}
-async function adaugaServiciuNou() {
-  await adaugaInCos();
-  window.location.href = 'mydarrin-catalog.html';
-}
-
-// Indicator coș (30 august 2026) — link vizibil direct pe pagina de
-// configurare spre mydarrin-cos.html, cu numărul real de itemi deja
-// adăugați. Scop limitat, transparent: doar paginile implicate direct în
-// acest flux (produs/coș/catalog) — un indicator global în header-ul comun,
-// pe toate ~40 fișierele publice, rămâne proiect separat (Etapa DES).
-async function actualizeazaIndicatorCos() {
-  const el = document.getElementById('cos-indicator');
-  if (!el) return;
-  try {
-    const session = (await window.supabaseClient?.auth.getSession())?.data?.session;
-    const qs = session?.access_token ? '' : `?sesiune_token=${encodeURIComponent(_guestToken() || '')}`;
-    const res = await fetch(`/api/client/cos-multi${qs}`, {
-      headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
-    });
-    const data = await res.json();
-    const n = data?.ok ? (data.itemi || []).length : 0;
-    if (n > 0) {
-      el.style.display = '';
-      el.textContent = `🛒 Coș (${n})`;
-    } else {
-      el.style.display = 'none';
-    }
-  } catch (e) { /* indicator best-effort, fără cont în flux */ }
 }
 
 // „Poate te interesează și..." (30 august 2026, cerere fondator) — recomandări
@@ -4198,7 +4150,7 @@ document.addEventListener('DOMContentLoaded',async ()=>{
   setType('standard',document.getElementById('btn-std'));
   loadAddonCatalog();
   loadRecomandari();
-  actualizeazaIndicatorCos();
+  initAdresaPrestare();
   updateProgBars();
   openSec(1);
 });
@@ -4522,49 +4474,255 @@ function setType(type,btn){
 }
 
 // ══ ADDRESS ══
-// G27 (26 Iulie 2026) — până acum onAddr() doar verifica lungimea textului;
-// adresa de execuție a comenzii (cea mai relevantă pentru zonă/țară — nu
-// locația dispozitivului) nu era niciodată geocodată. Textul afișat lângă
-// checkmark era static în HTML ("Zona 1 · +5% · Bacău · RO"), identic
-// indiferent de ce scria clientul. Acum apelăm geocodare reală (Nominatim,
-// aceeași sursă deja folosită pentru reverse-geocoding GPS mai sus în acest
-// fișier), debounced ca să nu depășim limita de 1 cerere/secundă a
-// serviciului gratuit, și derivăm S.tara_cod/regiune/localitate din adresa
-// reală introdusă — folosite mai departe la trimiterea comenzii (vezi
-// salveazaStareaCheckout()), nu doar afișate.
-let _addrGeocodeTimer=null;
-function onAddr(){
-  S.addr=document.getElementById('addr-input')?.value.trim()||'';
-  setEl('fin-addr',S.addr||'—');
-  const ok=document.getElementById('addr-ok');
-  const zoneEl=document.getElementById('zone-det');
-  if(ok){ ok.style.display=S.addr.length>8?'block':'none'; }
-  clearTimeout(_addrGeocodeTimer);
-  if(S.addr.length<=8){ S.tara_cod=null; S.regiune=null; S.localitate=null; return; }
-  if(zoneEl) zoneEl.textContent='se detectează...';
-  _addrGeocodeTimer=setTimeout(()=>geocodeazaAdresaComenzii(S.addr), 900);
+// Pasul 11-C1 (3 nov. 2026, regula LM): adresa de prestare pe câmpuri — țara,
+// județul (din geo_regiuni, /api/public/geo-regiuni), localitatea și strada —
+// sau aleasă din agenda contului (agenda-cont.js). La fiecare schimbare,
+// serverul verifică dacă serviciul e disponibil la adresă (parteneri activi în
+// zonă) și calculează transportul (/api/public/disponibilitate-adresa). Doar cu
+// răspunsul „disponibil” se deblochează „Adaugă în coș” și pasul următor.
+// Înainte: un singur câmp liber, geocodat prin Nominatim, cu „Adresă validată ·
+// My Darrin activ” afișat pentru orice text mai lung de 8 caractere.
+// S.disponibilitate: null (necompletat / se verifică) | { ok, mesaj, transport }
+const ADRESA_FARA_VERIFICARE = ['material'];
+let _addrVerificareTimer = null;
+let _addrVerificareNr = 0;
+let _regiuniIncarcate = {};
+
+function trAdr(ro, p) { return typeof window.t === 'function' ? window.t(null, ro, p) : ro; }
+function limbaEnAdr() { return !!(window.MYD_I18N && window.MYD_I18N.lang && window.MYD_I18N.lang !== 'ro'); }
+function textMesajServer(m) { return m && typeof m === 'object' ? (limbaEnAdr() ? (m.en || m.ro) : m.ro) : (m || ''); }
+function cereAdresa() { return !ADRESA_FARA_VERIFICARE.includes(S.type); }
+
+async function incarcaJudete(tara) {
+  const sel = document.getElementById('adr-judet');
+  if (!sel) return;
+  if (!_regiuniIncarcate[tara]) {
+    try {
+      const r = await fetch('/api/public/geo-regiuni?tara=' + encodeURIComponent(tara));
+      const d = await r.json();
+      _regiuniIncarcate[tara] = d && d.ok ? (d.regiuni || []) : [];
+    } catch (e) { _regiuniIncarcate[tara] = []; }
+  }
+  const ales = sel.value;
+  sel.innerHTML = '';
+  const gol = document.createElement('option');
+  gol.value = ''; gol.textContent = trAdr('Județul *');
+  sel.appendChild(gol);
+  _regiuniIncarcate[tara].forEach((r) => {
+    const o = document.createElement('option');
+    o.value = r.cod; o.textContent = r.denumire;
+    sel.appendChild(o);
+  });
+  if (ales && [...sel.options].some((o) => o.value === ales)) sel.value = ales;
 }
 
-async function geocodeazaAdresaComenzii(adresa){
-  const zoneEl=document.getElementById('zone-det');
-  try{
-    const url='https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&q='+encodeURIComponent(adresa);
-    const r=await fetch(url,{headers:{'User-Agent':'MyDarrin/1.0 (homebestpal.com)'}});
-    const rez=await r.json();
-    const hit=rez&&rez[0];
-    if(!hit||!hit.address){ if(zoneEl) zoneEl.textContent='adresă nedetectată — se folosește zona implicită'; return; }
-    const a=hit.address;
-    const oras=a.city||a.town||a.village||a.municipality||'';
-    const judet=a.county||a.state||'';
-    const tara=(a.country_code||'ro').toUpperCase();
-    S.tara_cod=tara; S.regiune=judet||null; S.localitate=oras||null;
-    if(zoneEl) zoneEl.textContent=[oras,tara].filter(Boolean).join(', ')||'—';
-    // Mod pilot: pragul minim/TVA sunt per țară — recalculăm cu tara_cod real
-    // odată detectată adresa (până atunci, calculul inițial folosise fallback 'RO').
+// Alege județul după cod sau după denumire („Cluj”, „Județul Cluj”, „CJ”).
+function alegeJudet(valoare) {
+  const sel = document.getElementById('adr-judet');
+  if (!sel || !valoare) return;
+  const fara = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\b(judetul|judet|county|municipiul)\b/g, '').trim();
+  const cauta = fara(valoare);
+  const o = [...sel.options].find((x) => x.value && (x.value.toLowerCase() === String(valoare).toLowerCase() || fara(x.textContent) === cauta));
+  if (o) sel.value = o.value;
+}
+
+async function schimbaTaraAdresa() {
+  const tara = document.getElementById('adr-tara')?.value || 'RO';
+  await incarcaJudete(tara);
+  onAddr(true);
+}
+
+function campuriAdresa() {
+  return {
+    tara_cod: document.getElementById('adr-tara')?.value || 'RO',
+    judet: document.getElementById('adr-judet')?.value || '',
+    localitate: (document.getElementById('adr-localitate')?.value || '').trim(),
+    strada: (document.getElementById('addr-input')?.value || '').trim(),
+  };
+}
+
+function arataDisponibilitate(tip, text) {
+  const el = document.getElementById('adr-disponibilitate');
+  if (!el) return;
+  el.className = tip ? 'adr-' + tip : '';
+  el.textContent = text || '';
+  el.style.display = text ? 'block' : 'none';
+}
+
+// Butonul „Adaugă în coș” și motivul blocării, din starea curentă.
+function actualizeazaBlocareAdaugare() {
+  const btn = document.getElementById('btn-adauga-cos');
+  const motiv = document.getElementById('btn-adauga-cos-motiv');
+  if (!btn) return;
+  let text = '';
+  if (cereAdresa()) {
+    const a = campuriAdresa();
+    if (!a.judet || !a.localitate || a.strada.length < 3) text = trAdr('Completează adresa de prestare (județul, localitatea și strada) ca să poți adăuga serviciul în coș.');
+    else if (!S.disponibilitate) text = trAdr('Se verifică disponibilitatea serviciului la adresa aleasă…');
+    else if (!S.disponibilitate.ok) text = trAdr('Serviciul nu poate fi adăugat în coș pentru această adresă: {motiv}', { motiv: S.disponibilitate.mesaj });
+  }
+  btn.disabled = !!text;
+  if (motiv) motiv.textContent = text;
+}
+
+// Pasul 1 → 2 (și mai departe, spre checkout) doar cu adresa verificată.
+function adresaVerificata() {
+  return !cereAdresa() || !!(S.disponibilitate && S.disponibilitate.ok);
+}
+
+function onAddr(dinUtilizator){
+  const a = campuriAdresa();
+  // O modificare de mână înseamnă o adresă nouă, nu cea din agendă.
+  if (dinUtilizator && S.adresaPrestareId) {
+    S.adresaPrestareId = null;
+    const ag = document.getElementById('adr-agenda'); if (ag) ag.value = '';
+  }
+  const jud = document.getElementById('adr-judet');
+  const numeJudet = jud && jud.selectedIndex > 0 ? jud.options[jud.selectedIndex].textContent : '';
+  S.addr = [a.strada, a.localitate, numeJudet].filter(Boolean).join(', ');
+  S.tara_cod = a.tara_cod; S.regiune = a.judet || null; S.localitate = a.localitate || null;
+  setEl('fin-addr', S.addr || '—');
+  S.disponibilitate = null;
+  clearTimeout(_addrVerificareTimer);
+  ['adr-judet', 'adr-localitate', 'addr-input'].forEach((id) => document.getElementById(id)?.removeAttribute('aria-invalid'));
+  if (!cereAdresa() || !a.judet || !a.localitate || a.strada.length < 3) {
+    arataDisponibilitate(null, '');
+    actualizeazaBlocareAdaugare();
+    return;
+  }
+  arataDisponibilitate('info', trAdr('Se verifică disponibilitatea serviciului la adresa aleasă…'));
+  actualizeazaBlocareAdaugare();
+  _addrVerificareTimer = setTimeout(verificaDisponibilitateAdresa, 450);
+}
+
+async function verificaDisponibilitateAdresa() {
+  const nr = ++_addrVerificareNr;
+  const a = campuriAdresa();
+  const corp = {
+    slug: S.slug, serviciu_id: S.pilotServiciuId || undefined,
+    adresa: { strada: a.strada, localitate: a.localitate, judet: a.judet, tara_cod: a.tara_cod },
+    nivel_id: S.pilotMode ? S.pilotNivelId : undefined, cantitate: S.qty,
+  };
+  let r, d;
+  try {
+    r = await fetch('/api/public/disponibilitate-adresa', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corp) });
+    d = await r.json();
+  } catch (e) { d = null; }
+  if (nr !== _addrVerificareNr) return; // a venit între timp o adresă nouă
+  if (!r || !d) {
+    S.disponibilitate = { ok: false, mesaj: trAdr('nu am putut verifica adresa (conexiune). Încearcă din nou.') };
+    arataDisponibilitate('eroare', trAdr('Nu am putut verifica disponibilitatea: conexiunea a eșuat. Verifică internetul; verificarea se reia la următoarea modificare a adresei.'));
+  } else if (!r.ok || !d.ok) {
+    const mesaj = textMesajServer(d.mesaj) || d.error || trAdr('adresa nu a putut fi verificată.');
+    S.disponibilitate = { ok: false, mesaj };
+    arataDisponibilitate('eroare', mesaj);
+    const camp = { strada: 'addr-input', localitate: 'adr-localitate', judet: 'adr-judet' }[d.camp];
+    if (camp) document.getElementById(camp)?.setAttribute('aria-invalid', 'true');
+  } else if (!d.disponibil) {
+    const mesaj = textMesajServer(d.mesaj);
+    S.disponibilitate = { ok: false, mesaj };
+    arataDisponibilitate('eroare', mesaj);
+  } else {
+    S.disponibilitate = { ok: true, transport: d.transport, zona: d.zona };
+    S.regiune = d.zona.regiune; S.localitate = d.zona.localitate; S.tara_cod = d.zona.tara_cod;
+    S.addr = d.zona.text;
+    setEl('fin-addr', S.addr);
+    const tr = d.transport == null
+      ? trAdr('Transportul se confirmă la checkout.')
+      : d.transport > 0 ? trAdr('Transport: {suma}.', { suma: fmtCurrency(d.transport) }) : trAdr('Transport: inclus, fără cost separat.');
+    arataDisponibilitate('ok', trAdr('✓ Serviciul e disponibil la această adresă ({zona}).', { zona: [d.zona.localitate, d.zona.judet].join(', ') }) + ' ' + tr);
     if (S.pilotMode) recalcPilot();
     else actualizeazaTva().then(recalc);
-  }catch(e){
-    if(zoneEl) zoneEl.textContent='adresă nedetectată — se folosește zona implicită';
+  }
+  actualizeazaBlocareAdaugare();
+}
+
+// Agenda contului: adresele de prestare salvate (cont conectat).
+let _adreseAgenda = [];
+async function incarcaAgendaAdrese() {
+  if (!window.MYD_AGENDA || !cereAdresa()) return;
+  let d = null;
+  try { d = await window.MYD_AGENDA.incarca(); } catch (e) { d = null; }
+  _adreseAgenda = d && Array.isArray(d.adrese) ? d.adrese.filter((x) => x.folosire === 'prestare' || x.folosire === 'ambele') : [];
+  const wrap = document.getElementById('adr-agenda-wrap');
+  const sel = document.getElementById('adr-agenda');
+  if (!wrap || !sel || !_adreseAgenda.length) return;
+  sel.innerHTML = '';
+  const nou = document.createElement('option');
+  nou.value = ''; nou.textContent = trAdr('Adresă nouă (completez mai jos)');
+  sel.appendChild(nou);
+  _adreseAgenda.forEach((x) => {
+    const o = document.createElement('option');
+    o.value = x.id;
+    o.textContent = (x.eticheta ? x.eticheta + ' — ' : '') + [x.strada, x.localitate, x.judet].filter(Boolean).join(', ');
+    sel.appendChild(o);
+  });
+  wrap.style.display = '';
+  const implicita = _adreseAgenda.find((x) => x.implicita_prestare);
+  if (implicita && !campuriAdresa().strada) { sel.value = implicita.id; await alegeAdresaAgenda(); }
+}
+
+async function alegeAdresaAgenda() {
+  const id = document.getElementById('adr-agenda')?.value || '';
+  const x = _adreseAgenda.find((a) => a.id === id);
+  if (!x) { S.adresaPrestareId = null; onAddr(false); return; }
+  const tara = (x.tara || 'RO').toUpperCase();
+  const selTara = document.getElementById('adr-tara');
+  if (selTara && [...selTara.options].some((o) => o.value === tara)) selTara.value = tara;
+  await incarcaJudete(selTara ? selTara.value : 'RO');
+  alegeJudet(x.judet);
+  document.getElementById('adr-localitate').value = x.localitate || '';
+  document.getElementById('addr-input').value = x.strada || '';
+  S.adresaPrestareId = x.id;
+  onAddr(false);
+}
+
+async function initAdresaPrestare() {
+  const bloc = document.getElementById('adresa-prestare-bloc');
+  if (!cereAdresa()) {
+    // Materialele nu cer adresă aici: cantitatea se alege în coș, adresa de livrare în checkout.
+    if (bloc) bloc.style.display = 'none';
+    actualizeazaBlocareAdaugare();
+    return;
+  }
+  const tara = (S.tara_cod && ['RO', 'MD', 'BG'].includes(S.tara_cod)) ? S.tara_cod : 'RO';
+  const selTara = document.getElementById('adr-tara'); if (selTara) selTara.value = tara;
+  await incarcaJudete(tara);
+  actualizeazaBlocareAdaugare();
+  incarcaAgendaAdrese();
+}
+
+// Adaugă configurarea curentă în coș (server). Serviciu / închiriere: cu adresa
+// verificată; serverul refuză oricum fără ea. Material: direct, cantitatea aleasă.
+async function adaugaInCosDinConfigurare(btn) {
+  if (!window.MDCos) return;
+  if (cereAdresa() && !adresaVerificata()) { actualizeazaBlocareAdaugare(); return; }
+  const config = _construiesteConfigCurenta();
+  const a = campuriAdresa();
+  const tip = S.type === 'inchiriere' ? 'inchiriere' : S.type === 'material' ? 'material' : 'serviciu';
+  const corp = tip === 'material'
+    ? { tip, slug: S.slug, titlu: config.titlu, qty: Math.max(1, parseInt(S.qty, 10) || 1), tara_cod: S.tara_cod || 'RO' }
+    : Object.assign({}, config, {
+        tip, serviciu_id: S.pilotServiciuId || undefined,
+        adresa_prestare: { strada: a.strada, localitate: a.localitate, judet: a.judet, tara_cod: a.tara_cod },
+        adresa_prestare_id: S.adresaPrestareId || undefined,
+      });
+  const text = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = trAdr('Se adaugă…');
+  const r = await window.MDCos.adauga(corp, { reincearca: () => adaugaInCosDinConfigurare(btn) });
+  btn.textContent = r.ok ? trAdr('✓ Adăugat în coș') : text;
+  if (r.ok) {
+    btn.style.background = '#1A7A3A';
+    setTimeout(() => { btn.textContent = text; btn.style.background = ''; actualizeazaBlocareAdaugare(); }, 2500);
+  } else {
+    // Refuzul serverului (ex. adresa nu mai e în zonă) se vede și sub adresă.
+    const d = r.raspuns || {};
+    if (d.cod === 'SERVICIU_INDISPONIBIL' || d.camp) {
+      S.disponibilitate = { ok: false, mesaj: textMesajServer(d.mesaj) || d.error };
+      arataDisponibilitate('eroare', S.disponibilitate.mesaj);
+    }
+    actualizeazaBlocareAdaugare();
   }
 }
 
@@ -4718,7 +4876,18 @@ function selTime(oraInceput,oraSfarsit,el){
 // (Formularul de card simulat — „Fonduri verificate”, carduri salvate inventate — scos în pasul 11-A: plata se alege în checkout.)
 
 // ══ STEP MANAGEMENT ══
+// Pasul 11-C1: fără adresa de prestare verificată nu se trece de pasul 1.
+function cereAdresaInainte(){
+  openSec(1); updStep(1,'active'); S.curStep=1;
+  actualizeazaBlocareAdaugare();
+  const motiv = document.getElementById('btn-adauga-cos-motiv')?.textContent || '';
+  arataDisponibilitate('eroare', motiv || trAdr('Completează adresa de prestare ca să continui.'));
+  const gol = ['adr-judet', 'adr-localitate', 'addr-input'].map((id) => document.getElementById(id)).find((e) => e && !e.value.trim());
+  (gol || document.getElementById('adresa-prestare-bloc'))?.focus?.();
+  document.getElementById('adresa-prestare-bloc')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
 function completeStep(step){
+  if(step===1 && !adresaVerificata()){ cereAdresaInainte(); return; }
   S.doneSteps.add(step);
   updStep(step,'done');
   const next=step+1;
@@ -4786,6 +4955,7 @@ function updateProgBars(){
 // mydarrin-checkout.html, care deja știe să citească acest config și să
 // creeze comanda real (inclusiv calea nivel_id pentru serviciile pilot).
 function launchOrder(){
+  if (!adresaVerificata()) { cereAdresaInainte(); return; }
   salveazaStareaCheckout();
   window.location.href = 'mydarrin-checkout.html';
 }
@@ -4942,6 +5112,9 @@ function daiSendMessage(){
 <script src="statistici-publice.js" defer></script>
 <script src="cont-fereastra.js" defer></script>
 <script src="meniu-partener.js" defer></script>
+<script src="/ui-feedback.js" defer></script>
+<script src="agenda-cont.js" defer></script>
+<script src="cos-indicator.js" defer></script>
 <script src="ui-comun.js" defer></script>
 <script src="reguli-platforma.js" defer></script>
 <script src="contact-public.js" defer></script>
