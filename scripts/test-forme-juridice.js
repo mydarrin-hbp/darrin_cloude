@@ -170,11 +170,11 @@ function verificaEroare(res, status, campAsteptat) {
   });
   await test('firma_straina din DE cu GmbH → trece; numărul de înregistrare nu trece prin cifra RO', () => {
     const r = F.valideazaDateFirma({ tip_entitate_legala: 'firma_straina', cui: 'HRB 12345', nume_firma: 'Muster GmbH', tara: 'de', forma_juridica_locala: ' GmbH ' });
-    egal(r, { ok: true, date: { tip_entitate_legala: 'firma_straina', nume_firma: 'Muster GmbH', cui: 'HRB 12345', tara: 'DE', forma_juridica_locala: 'GmbH' } });
+    egal(r, { ok: true, date: { tip_entitate_legala: 'firma_straina', nume_firma: 'Muster GmbH', cui: 'HRB12345', tara: 'DE', forma_juridica_locala: 'GmbH' } }, 'forma unică (11-R3e): fără spații, majuscule');
   });
   await test('SRL din RO cu CUI valid → trece; forma locală se ignoră', () => {
     const r = F.valideazaDateFirma({ tip_entitate_legala: 'srl', cui: ' RO46577229 ', nume_firma: ' Firma SRL ', tara: 'RO', forma_juridica_locala: 'GmbH' });
-    egal(r, { ok: true, date: { tip_entitate_legala: 'srl', nume_firma: 'Firma SRL', cui: 'RO46577229', tara: 'RO', forma_juridica_locala: null } });
+    egal(r, { ok: true, date: { tip_entitate_legala: 'srl', nume_firma: 'Firma SRL', cui: '46577229', tara: 'RO', forma_juridica_locala: null } }, 'forma unică (11-R3e): doar cifrele');
   });
 
   console.log('\n2. O singură listă: lib/, front-end, migrare');
