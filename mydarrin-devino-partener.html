@@ -253,9 +253,13 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
             <span data-cta-text>Creează-ți contul de partener</span>
             <span data-cta-badge style="font-size:10px;background:rgba(255,255,255,.2);border-radius:99px;padding:2px 8px;font-weight:800;letter-spacing:.04em">0 LEI</span>
           </a>
-          <a href="#cum-functioneaza" onclick="event.preventDefault();arataCumFunctioneaza()" class="inline-flex items-center gap-2 border-2 text-white px-7 py-4 rounded-2xl font-semibold text-[14px] hover:bg-white/10 transition" style="border-color:rgba(255,255,255,.22);text-decoration:none">
-            <span data-i18n="devino.hero.cta_cum_functioneaza">Cum funcționează</span>
-          </a>
+          <!-- Pasul 11-R3f: „Cum devii partener” deschide lista celor 5 tipuri (meniu-partener.js). -->
+          <div class="relative" id="hero-cum-devii">
+            <button type="button" id="hero-cum-devii-btn" aria-expanded="false" aria-controls="hero-cum-devii-lista" class="inline-flex items-center gap-2 border-2 text-white px-7 py-4 rounded-2xl font-semibold text-[14px] hover:bg-white/10 transition" style="border-color:rgba(255,255,255,.22);background:transparent;font-family:inherit;cursor:pointer">
+              <span>Cum devii partener</span> <i data-lucide="chevron-down" style="width:16px;height:16px"></i>
+            </button>
+            <div id="hero-cum-devii-lista" data-meniu-partener="tipuri" hidden></div>
+          </div>
         </div>
         <p class="reveal d3 text-[13px] leading-relaxed -mt-4 mb-6" style="color:rgba(255,255,255,.62)">Înscrierea e pentru firme, PFA și întreprinderi individuale.</p>
         <div class="reveal d4 flex flex-wrap gap-2">
@@ -834,7 +838,8 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
           </a>
 
           <!-- YouTube — #FF0000 -->
-          <a href="#" title="YouTube" style="width:36px;height:36px;background:#FF0000;border-radius:8px;display:flex;align-items:center;justify-content:center;text-decoration:none;transition:opacity .15s;flex-shrink:0" onmouseover="this.style.opacity='.82'" onmouseout="this.style.opacity='1'">
+          <!-- Pasul 11-R3f: fără adresa reală a canalului, pictograma e ascunsă (nu duce nicăieri). -->
+          <a href="#" title="YouTube" style="width:36px;height:36px;background:#FF0000;border-radius:8px;display:none;align-items:center;justify-content:center;text-decoration:none;transition:opacity .15s;flex-shrink:0" onmouseover="this.style.opacity='.82'" onmouseout="this.style.opacity='1'">
             <svg width="18" height="13" viewBox="0 0 18 13" fill="none">
               <path d="M17.6 2.03A2.24 2.24 0 0 0 16.03.45C14.63 0 9 0 9 0S3.37 0 1.97.45A2.24 2.24 0 0 0 .4 2.03C0 3.44 0 6.5 0 6.5s0 3.06.4 4.47a2.24 2.24 0 0 0 1.57 1.58C3.37 13 9 13 9 13s5.63 0 7.03-.45a2.24 2.24 0 0 0 1.57-1.58C18 9.56 18 6.5 18 6.5s0-3.06-.4-4.47z" fill="#FF0000"/>
               <path d="M7.2 9.25L11.88 6.5 7.2 3.75v5.5z" fill="#ffffff"/>
@@ -2021,6 +2026,7 @@ function collectLeadFromInactiveZone(email, cc, tara) {
 <script src="share-widget.js" defer></script>
 <script src="statistici-publice.js" defer></script>
 <script src="cont-fereastra.js" defer></script>
+<script src="meniu-partener.js" defer></script>
 <script src="ui-comun.js" defer></script>
 <!-- Pasul 11-R3b: butoanele de înscriere după starea contului -->
 <script src="cta-partener.js" defer></script>

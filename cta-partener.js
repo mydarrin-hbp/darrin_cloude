@@ -16,6 +16,9 @@
      verificare „Contul tău e în verificare”         → dashboard-ul
      activ      „Mergi la dashboard-ul tău”           → dashboard-ul
 
+   Pasul 11-R3f: același buton e și în meniul „Devino Partener” al tuturor
+   paginilor (meniu-partener.js), cu data-cta-scurt.
+
    Folosire: orice element <a> cu data-cta-partener="<tip>" (servicii,
    materiale, inchirieri, curier, asigurari; gol = tipul din ?type= sau
    niciunul). În element, [data-cta-text] primește textul, iar
@@ -35,6 +38,9 @@
     verificare: 'Contul tău e în verificare',
     activ: 'Mergi la dashboard-ul tău',
   };
+  // Pasul 11-R3f: butonul din meniul „Devino Partener” (meniu-partener.js) are
+  // loc puțin: cu data-cta-scurt, activarea neterminată e „Finalizează-ți contul”.
+  var TEXT_SCURT = { activare: 'Finalizează-ți contul' };
   var SELECTOR = '[data-cta-partener]';
 
   function tr(ro) { return typeof window.t === 'function' ? window.t(null, ro) : ro; }
@@ -103,7 +109,7 @@
 
   function aplica(el, r) {
     var tip = tipButon(el);
-    var text = tr(TEXT[r.stare]);
+    var text = tr((el.hasAttribute('data-cta-scurt') && TEXT_SCURT[r.stare]) || TEXT[r.stare]);
     var tinta = el.querySelector('[data-cta-text]');
     if (tinta) tinta.textContent = text;
     else el.textContent = text + (/→\s*$/.test(el.getAttribute('data-cta-original') || '') ? ' →' : '');
