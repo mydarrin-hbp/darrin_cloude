@@ -104,6 +104,20 @@ const { trimiteEroare, camp } = require('../../lib/raspuns-eroare');
 const { adresaPrestareDinAgenda, dateFacturareDinAgenda, salveazaDinComanda, aceeasiZona, MESAJE: MESAJE_AGENDA } = require('../../lib/agenda-cont');
 const { rezolvaRegiune, MESAJ_REGIUNE } = require('../../lib/regiune');
 
+const UUID_PRODUS = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Pasul 11-C1: mesajele verificărilor de checkout, RO + EN.
+const MESAJE_CHECKOUT = {
+  adresa: {
+    ro: 'Completează adresa de prestare sau de livrare (strada, numărul și localitatea).',
+    en: 'Fill in the service or delivery address (street, number and town).',
+  },
+  metoda_plata: {
+    ro: 'Alege metoda de plată. Momentan se acceptă doar ordinul de plată (transfer bancar).',
+    en: 'Choose the payment method. Only bank transfer is accepted for now.',
+  },
+};
+
 function refuzAgenda(res, r) {
   return trimiteEroare(res, r.status || 400, r.cod || 'DATE_INVALIDE', r.error, r.error_en,
     [camp(r.camp, r.error, r.error_en)], { camp: r.camp });
@@ -212,7 +226,8 @@ async function handler(req, res, user) {
   // plată — închide gaura de integritate, nu doar restrânge opțiunile.
   const METODE_PLATA_VALIDE = ['ordin_plata'];
   if (!METODE_PLATA_VALIDE.includes(metoda_plata)) {
-    return res.status(400).json({ error: `metoda_plata trebuie să fie una din: ${METODE_PLATA_VALIDE.join(', ')} (card/cash indisponibile până la integrarea unui procesator real).` });
+    const m = MESAJE_CHECKOUT.metoda_plata;
+    return trimiteEroare(res, 400, 'METODA_PLATA_INVALIDA', m.ro, m.en, [camp('metoda_plata', m.ro, m.en)], { camp: 'metoda_plata' });
   }
 
   if (masa_totala_kg !== null && !(typeof masa_totala_kg === 'number' && masa_totala_kg > 0)) {
@@ -245,7 +260,11 @@ async function handler(req, res, user) {
   if (produse_marketplace !== null && !areNivelId && !areProduseMarketplace) {
     return res.status(400).json({ error: 'produse_marketplace trebuie să fie o listă ne-goală.' });
   }
-  if (areProduseMarketplace && (produse_marketplace.length > 50 || produse_marketplace.some((p) => !parseazaIdMarketplace(p && p.id)))) {
+  // Pasul 11-C1: pe aceeași cale, și materialele din catalog comandate din coș,
+  // fără serviciu — {id: catalog_servicii.id, qty, nivel}; prețul, tot de aici.
+  const esteProdusValid = (p) => !!p && (!!parseazaIdMarketplace(p.id)
+    || (typeof p.id === 'string' && UUID_PRODUS.test(p.id) && typeof p.nivel === 'string' && p.nivel.length > 0));
+  if (areProduseMarketplace && (produse_marketplace.length > 50 || !produse_marketplace.every(esteProdusValid))) {
     return res.status(400).json({ error: 'produse_marketplace: id de produs invalid sau prea multe produse (maximum 50).' });
   }
 
@@ -257,8 +276,11 @@ async function handler(req, res, user) {
       return res.status(400).json({ error: 'suma_asigurare trebuie să fie un număr între 0 și valoare_totala' });
     }
   }
-  if (!adresa || typeof adresa !== 'string') {
-    return res.status(400).json({ error: 'adresa este obligatorie' });
+  // Pasul 11-C1: adresa de prestare / livrare, în forma comună, pe câmpul ei
+  // (înainte: { error } simplu, iar o adresă doar din spații trecea).
+  if (typeof adresa !== 'string' || adresa.trim().length < 5) {
+    const m = MESAJE_CHECKOUT.adresa;
+    return trimiteEroare(res, 400, 'ADRESA_LIPSA', m.ro, m.en, [camp('adresa', m.ro, m.en)], { camp: 'adresa' });
   }
 
   // Datele de facturare (pasul 11-P2b) — obligatorii.

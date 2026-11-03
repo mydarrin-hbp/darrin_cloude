@@ -32,6 +32,7 @@ const { citesteTot } = require('../../lib/citeste-tot');
 const { parteneriCarePotVinde } = require('../../lib/eligibilitate-partener');
 
 const NUME_FURNIZOR_PROPRIU = 'Home Best Pal';
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TIPURI = {
   materiale: { tabel: 'marketplace_materiale', capitol: 'G', tipNod: 'materiale', cost: 'pret_fara_tva', componenta: 'cost_materiale' },
   echipamente: { tabel: 'marketplace_echipamente', capitol: 'O77', tipNod: 'inchirieri', cost: 'tarif_zi', componenta: 'cost_chirie_scule' },
@@ -181,7 +182,9 @@ async function handlePret(req, res) {
   if (!Array.isArray(produse) || !produse.length || produse.length > 50) {
     return res.status(400).json({ error: 'produse trebuie să fie o listă de 1–50 de produse {id, qty}.' });
   }
-  if (produse.some((p) => !parseazaIdMarketplace(p && p.id))) return res.status(400).json({ error: 'Id de produs invalid.' });
+  // Pasul 11-C1: și materialele din catalog, din coș — {id: catalog_servicii.id, qty, nivel}.
+  const esteValid = (p) => !!p && (!!parseazaIdMarketplace(p.id) || (typeof p.id === 'string' && UUID.test(p.id) && typeof p.nivel === 'string' && p.nivel.length > 0));
+  if (!produse.every(esteValid)) return res.status(400).json({ error: 'Id de produs invalid.' });
   const taraCod = tara(req);
   let rez;
   try {
@@ -194,7 +197,7 @@ async function handlePret(req, res) {
   return res.status(200).json({
     ok: true, disponibil: true, moneda: await monedaTarii(taraCod),
     pret_final: calc.pret_final, tva_suma: calc.tva_suma, tva_pct: calc.tva_pct, prag_minim_comanda: calc.prag_minim_comanda,
-    itemi: rez.itemi.map((i) => ({ id: `mp:${i.tip_marketplace}:${i.produs_marketplace_id}`, titlu: i.titlu, qty: i.qty, unitate_masura: i.unitate_masura })),
+    itemi: rez.itemi.map((i) => ({ id: i.produs_marketplace_id ? `mp:${i.tip_marketplace}:${i.produs_marketplace_id}` : i.catalog_serviciu_id, titlu: i.titlu, qty: i.qty, unitate_masura: i.unitate_masura })),
   });
 }
 

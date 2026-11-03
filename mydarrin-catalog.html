@@ -3646,21 +3646,6 @@ function openSidebar(){document.getElementById('sidebar').classList.add('open');
 function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('show');document.body.style.overflow='';}
 
 // Sidebar sub-sections
-// Override header basket → opens drawer
-function toggleBasket(){
-  if(zoneActive){
-    openCart();
-  } else {
-    showZoneError();
-  }
-}
-
-// Sync basket-count with cart-count
-function syncHeaderCartCount(count){
-  const el = document.getElementById('basket-count');
-  if(el){ el.textContent=count; el.style.display=count>0?'flex':'none'; }
-}
-
 function toggleSbSection(id){
   const el=document.getElementById(id);
   const ico=document.getElementById('ico-'+id);
@@ -3790,72 +3775,6 @@ function animateCounter(el){
 const cobs=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting&&!x.target.dataset.done){x.target.dataset.done='1';animateCounter(x.target);}}),{threshold:.5});
 document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
 </script>
-
-<!-- ════ CART DRAWER ════ -->
-<div id="cart-overlay" onclick="closeCart()" style="position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(3px);z-index:800;opacity:0;pointer-events:none;transition:opacity .3s"></div>
-
-<div id="cart-drawer" style="position:fixed;top:0;right:0;height:100vh;width:380px;max-width:92vw;background:#fff;z-index:801;transform:translateX(100%);transition:transform .35s cubic-bezier(.22,1,.36,1);display:flex;flex-direction:column;box-shadow:none">
-
-  <!-- Drawer header -->
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 16px;border-bottom:1px solid #D5DFE8;flex-shrink:0">
-    <div style="font-weight:800;color:#003366;font-size:16px;display:flex;align-items:center;gap:10px">
-      Coșul meu
-      <span id="cart-count" style="background:#FF8C00;color:#fff;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800">0</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px">
-      <button onclick="clearCart()" style="font-size:11.5px;color:#8C9BAD;background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:7px;transition:all .15s" onmouseover="this.style.background='#F4F7F9'" onmouseout="this.style.background='none'">Golește</button>
-      <button onclick="closeCart()" style="width:32px;height:32px;border-radius:9px;border:1px solid #D5DFE8;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;color:#6B7A8D;transition:all .15s" onmouseover="this.style.background='#F4F7F9'" onmouseout="this.style.background='#fff'">×</button>
-    </div>
-  </div>
-
-  <!-- IP / Zonă activă indicator -->
-  <div id="cart-zone-bar" style="padding:8px 20px;border-bottom:1px solid #F4F7F9;display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#F4F7F9;flex-shrink:0">
-    <div id="zone-active-indicator" style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#1A7A3A">
-      <span style="width:6px;height:6px;border-radius:50%;background:#1A7A3A;display:inline-block"></span>
-      <span id="cart-zone-text">Zona 1 · +5% · Bacău · RO</span>
-    </div>
-    <span style="font-size:10px;color:#8C9BAD;margin-left:auto" id="cart-currency-text">RON</span>
-  </div>
-
-  <!-- Darrin AI notice -->
-  <div style="margin:12px 20px 0;background:#E0F5F4;border-radius:11px;border:1px solid rgba(14,158,153,.25);padding:10px 13px;font-size:11.5px;color:#0B7A76;display:flex;align-items:flex-start;gap:7px;flex-shrink:0">
-    <span style="width:6px;height:6px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block;flex-shrink:0;margin-top:4px"></span>
-    <span><strong>Darrin AI</strong> alocă automat echipa după plasarea comenzii. Tu nu contactezi niciun partener.</span>
-  </div>
-
-  <!-- Cart items — scrollabil -->
-  <div id="cart-items" style="flex:1;overflow-y:auto;padding:12px 20px">
-    <div id="cart-empty" style="text-align:center;padding:48px 16px;color:#8C9BAD">
-      <div style="font-size:44px;margin-bottom:12px;opacity:.3"><i data-lucide="shopping-cart" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-      <div style="font-size:14px;font-weight:700;color:#2D2D2D;margin-bottom:6px">Coșul este gol</div>
-      <div style="font-size:12px;line-height:1.6">Adaugă servicii sau materiale<br>din catalog.</div>
-    </div>
-  </div>
-
-  <!-- Summary + CTA — fix în drawer -->
-  <div id="cart-summary" style="display:none;padding:16px 20px 20px;border-top:1px solid #D5DFE8;background:#fff;flex-shrink:0">
-    <div style="space-y:5px;margin-bottom:12px">
-      <div style="display:flex;justify-content:space-between;font-size:12px;color:#6B7A8D;margin-bottom:5px">
-        <span>Subtotal resurse</span><span id="cart-subtotal" style="font-weight:600">0 Lei</span>
-      </div>
-      <div style="font-size:11px;color:#6B7A8D;line-height:1.5;margin-bottom:8px">Prețul final, cu costurile platformei și TVA, se calculează la checkout.</div>
-      <div id="vmc-warning" data-regula-bloc hidden style="background:#FFF0D6;border-radius:8px;border:1px solid #FFD980;padding:8px 10px;font-size:11px;color:#CC7000;margin-bottom:8px">
-        Valoarea minimă de comandă: <span data-regula="prag-minim"></span>
-      </div>
-    </div>
-    <!-- Escrow -->
-    <div style="background:#EBF4FB;border-radius:10px;border:1px solid #D6E8F5;padding:9px 12px;margin-bottom:12px;font-size:11px;color:#1A5FAD;display:flex;align-items:flex-start;gap:6px">
-      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:1px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      <span><strong>Escrow securizat.</strong> Suma păstrată ca garanție de la plasare, eliberată după confirmarea ta.</span>
-    </div>
-    <a href="mydarrin-checkout.html" onclick="event.preventDefault();proceedCheckout()" style="display:block;width:100%;background:#FF8C00;color:#fff;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:800;cursor:pointer;text-decoration:none;text-align:center;font-family:inherit;box-shadow:0 4px 18px rgba(255,140,0,.3);transition:all .18s;margin-bottom:8px" onmouseover="this.style.background='#CC7000'" onmouseout="this.style.background='#FF8C00'">
-      Plasează comanda →
-    </a>
-    <button onclick="openDevizAI()" style="width:100%;background:#fff;color:#0E9E99;border:1.5px solid #0E9E99;border-radius:12px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .18s" onmouseover="this.style.background='#E0F5F4'" onmouseout="this.style.background='#fff'">
-      Deviz AI complet gratuit
-    </button>
-  </div>
-</div>
 
 <!-- ════ CART FAB (Floating Action Button) — vizibil DOAR dacă zona activă ════ -->
 
@@ -5274,8 +5193,8 @@ function mkCard(item, pret, tab, asoc) {
       <span class="price-from">De la</span>
       <span class="price-val"><span class="dyn-price" data-ron="${p}">${p||'—'}</span> <span class="dyn-currency">Lei</span></span>
       <span class="price-unit">/ ${item.unitate_masura||'buc'}</span>
-      
-    </div></div>
+    </div>
+    <button type="button" class="card-cta" onclick="event.stopPropagation();adaugaInCosDinCatalog('${slug}','${tab}',this)">Adaugă în coș</button></div>
   </div></div>`;
 }
 
@@ -6140,8 +6059,6 @@ let activeCat = {};
 let activeSubCat = {};
 let activeCur = 'RON';
 let maxPrice = 1000;
-let cartItems = [];
-let cartIdCounter = 0;
 
 const RATES = {RON:1, EUR:0.2, MDL:5};
 // Pasul 11-A: fără prag și procente de platformă scrise aici — prețul final
@@ -6312,43 +6229,13 @@ async function detectZoneAndActivateCart(){
   const loc = geo.city ? `${geo.city} · ${cc}` : (geo.name || cc);
 
   if(zoneActive){
-    const fab = document.getElementById('cart-fab');
-    if(fab){ fab.style.display='block'; }
-    const cur = MONEDA_AFISATA[cc] || 'EUR';
-    setEl('cart-zone-text', loc);
     await seteazaTva(cc);
-    setEl('cart-currency-text', cur+(TVA != null && window.MDTva ? ' · TVA '+window.MDTva.procent(TVA) : ''));
-    const hdrBtn = document.getElementById('cart-btn');
-    if(hdrBtn){
-      hdrBtn.style.cursor='pointer';
-      hdrBtn.onclick = openCart;
-    }
     setEl('zone-label', loc);
     setEl('cart-zone', loc);
   } else {
     setEl('zone-label', loc+' · în curând');
     setEl('cart-zone', loc);
   }
-}
-
-function openCart(){
-  if(!zoneActive){
-    showZoneError();
-    return;
-  }
-  const drawer = document.getElementById('cart-drawer');
-  const overlay = document.getElementById('cart-overlay');
-  if(drawer){ drawer.style.transform='translateX(0)'; drawer.style.boxShadow='-8px 0 40px rgba(0,51,102,.15)'; }
-  if(overlay){ overlay.style.opacity='1'; overlay.style.pointerEvents='auto'; }
-  document.body.style.overflow='hidden';
-}
-
-function closeCart(){
-  const drawer = document.getElementById('cart-drawer');
-  const overlay = document.getElementById('cart-overlay');
-  if(drawer){ drawer.style.transform='translateX(100%)'; setTimeout(()=>{ if(drawer.style.transform==='translateX(100%)') drawer.style.boxShadow='none'; },350); }
-  if(overlay){ overlay.style.opacity='0'; overlay.style.pointerEvents='none'; }
-  document.body.style.overflow='';
 }
 
 // Etapa LANSARE, Faza C (27 august 2026): ridicat de la un toast simplu la
@@ -6415,117 +6302,21 @@ async function submitZoneLead(){
   }
 }
 
-// ── CART ──
-function addToCart(id, title, priceRon){
-  if(!zoneActive){
-    showZoneError();
-    return;
-  }
-  // Găsește cardul și slugul
-  const card = document.querySelector(`[onclick*="addToCart(${id},"]`)?.closest('[data-slug]');
-  const slug = card ? card.dataset.slug : '';
-  const type = card ? (card.dataset.tab || 'servicii') : 'servicii';
-  const typeMap = {servicii:'serviciu', materiale:'material', inchiriere:'inchiriere'};
-  const typeParam = typeMap[type] || 'serviciu';
-
-  // Adaugă în coș local
-  const existing = cartItems.find(item=>item.id===id);
-  if(existing){
-    existing.qty++;
-  } else {
-    cartItems.push({id, title, priceRon, qty:1, cartId:++cartIdCounter, slug, type:typeParam});
-  }
-  updateCartDisplay();
-
-  // Pulse FAB
-  const pulse = document.getElementById('cart-fab-pulse');
-  if(pulse){ pulse.style.display='block'; setTimeout(()=>pulse.style.display='none', 2000); }
-
-  // Deschide direct pagina produsului
-  if(slug){
-    setTimeout(()=>{
-      window.location.href = `mydarrin-produs.html?slug=${slug}&type=${typeParam}`;
-    }, 150);
-  } else {
-    // fallback: deschide coșul
-    if(cartItems.length===1) setTimeout(openCart, 300);
-  }
-}
-
-
-
-function removeFromCart(cartId){
-  cartItems = cartItems.filter(i=>i.cartId!==cartId);
-  updateCartDisplay();
-}
-
-function changeQty(cartId, delta){
-  const item = cartItems.find(i=>i.cartId===cartId);
-  if(item){
-    item.qty += delta;
-    if(item.qty<=0) cartItems = cartItems.filter(i=>i.cartId!==cartId);
-  }
-  updateCartDisplay();
-}
-
-function clearCart(){
-  cartItems=[];
-  updateCartDisplay();
-}
-
-function updateCartDisplay(){
-  const count = cartItems.reduce((s,i)=>s+i.qty,0);
-  setEl('cart-count', count);
-  // Update FAB count
-  const fabCount = document.getElementById('cart-fab-count');
-  if(fabCount){ fabCount.textContent=count; fabCount.style.display=count>0?'flex':'none'; }
-  syncHeaderCartCount(count);
-  const empty = document.getElementById('cart-empty');
-  const summary = document.getElementById('cart-summary');
-  const itemsContainer = document.getElementById('cart-items');
-  if(!itemsContainer) return;
-
-  if(cartItems.length===0){
-    if(empty) empty.style.display='block';
-    if(summary) summary.style.display='none';
-    // Clear items except empty state
-    Array.from(itemsContainer.children).forEach(el=>{ if(el.id!=='cart-empty') el.remove(); });
-    return;
-  }
-
-  if(empty) empty.style.display='none';
-  if(summary) summary.style.display='block';
-
-  // Clear existing items
-  Array.from(itemsContainer.children).forEach(el=>{ if(el.id!=='cart-empty') el.remove(); });
-
-  // Add items
-  const rate = RATES[activeCur]||1;
-  let subtotal = 0;
-  cartItems.forEach(item=>{
-    const priceLocal = item.priceRon * rate * item.qty;
-    subtotal += item.priceRon * item.qty;
-    const div = document.createElement('div');
-    div.className='basket-item';
-    div.innerHTML = `
-      <div class="b-avatar"><i data-lucide="wrench" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:12.5px;font-weight:600;color:#2D2D2D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.title}</div>
-        <div style="font-size:11px;color:#8C9BAD">${(item.priceRon*rate).toFixed(0)} ${activeCur} × ${item.qty}</div>
-        <button onclick="configureItem(${JSON.stringify(item.slug||'')},${JSON.stringify(item.type||'serviciu')})" style="font-size:10.5px;color:#FF8C00;font-weight:700;background:none;border:none;cursor:pointer;padding:2px 0;font-family:inherit;margin-top:3px">Configurează & Comandă →</button>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-        <button class="qty-btn" onclick="changeQty(${item.cartId},-1)">−</button>
-        <span style="font-size:13px;font-weight:700;width:16px;text-align:center">${item.qty}</span>
-        <button class="qty-btn" onclick="changeQty(${item.cartId},1)">+</button>
-        <button onclick="removeFromCart(${item.cartId})" style="background:none;border:none;cursor:pointer;color:#D5DFE8;font-size:16px;padding:2px">×</button>
-      </div>`;
-    itemsContainer.insertBefore(div, empty);
-  });
-
-  const subtotalLocal = subtotal * rate;
-  setEl('cart-subtotal', subtotalLocal.toFixed(0)+' '+activeCur);
-  if (window.MYD_REGULI) window.MYD_REGULI.aplica(document.getElementById('cart-summary') || document);
+// ── COȘ ──
+// Pasul 11-C1 (3 nov. 2026): un singur coș, pe server (cos-indicator.js →
+// MDCos.adauga, /api/client/cos-multi). Materialul intră direct în coș, cu
+// cantitatea 1 (cantitatea și nivelul se aleg în coș); serviciul și închirierea
+// merg la configurare, unde adresa de prestare e obligatorie — fără să se
+// adauge nimic înainte.
+function adaugaInCosDinCatalog(slug, tab, buton){
+  if (tab !== 'materiale') { openService(slug); return; }
+  if (!window.MDCos) return;
+  const card = buton ? buton.closest('[data-slug]') : null;
+  const titlu = card ? (card.querySelector('.card-title')?.textContent || slug) : slug;
+  const geo = window.MYD_GEO && window.MYD_GEO.data;
+  if (buton) buton.disabled = true;
+  window.MDCos.adauga({ tip: 'material', slug, titlu, tara_cod: (geo && geo.cc) || 'RO' })
+    .finally(() => { if (buton) buton.disabled = false; });
 }
 
 // ── OPEN SERVICE ──
@@ -6549,24 +6340,6 @@ function openService(slug, title){
     return;
   }
   window.location.href = `mydarrin-produs.html?slug=${slug}&type=${typeParam}`;
-}
-
-// ── CHECKOUT + DEVIZ ──
-function proceedCheckout(){
-  if(cartItems.length===0){ alert('Coșul este gol.'); return; }
-  closeCart();
-  // Deschide pagina primului produs pentru configurare completă
-  const first = cartItems[0];
-  if(first && first.slug){
-    window.location.href = `mydarrin-produs.html?slug=${first.slug}&type=${first.type||'serviciu'}`;
-  } else {
-    window.open('mydarrin-checkout.html','_blank');
-  }
-}
-
-function openDevizAI(){
-  const first = cartItems[0];
-  window.location.href = `mydarrin-produs.html?slug=${(first&&first.slug)||'inlocuire-calorifer'}&type=${(first&&first.type)||'serviciu'}`;
 }
 
 // ── LOAD MORE ──
@@ -6595,31 +6368,14 @@ function closeInvestorModal(){document.getElementById("investor-modal").classLis
 // există #tab-inchirieri; varianta goală lasă filterCat() de după să ruleze.
 function switchTab(name,btn){}
 
-// ── CONFIGURE ITEM ──
-function configureItem(slug, type){
-  closeCart();
-  if(slug){
-    window.location.href = `mydarrin-produs.html?slug=${slug}&type=${type}`;
-  }
-}
-
 // Slide up animation
 const style=document.createElement('style');
 style.textContent='@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}';
 document.head.appendChild(style);
 
-// ESC closes cart drawer
-document.addEventListener('keydown',(e)=>{
-  if(e.key==='Escape') closeCart();
-});
 
 if(typeof lucide!=="undefined")lucide.createIcons();
 </script>
-
-<!-- ════ CART DRAWER ════ -->
-<div id="cart-overlay" onclick="closeCart()" style="position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(3px);z-index:800;opacity:0;pointer-events:none;transition:opacity .3s"></div>
-
-
 
 <!-- ════ CART FAB (Floating Action Button) — vizibil DOAR dacă zona activă ════ -->
 
@@ -6795,6 +6551,8 @@ function daiSendMessage(){
 <script src="statistici-publice.js" defer></script>
 <script src="cont-fereastra.js" defer></script>
 <script src="meniu-partener.js" defer></script>
+<script src="/ui-feedback.js" defer></script>
+<script src="cos-indicator.js" defer></script>
 <script src="ui-comun.js" defer></script>
 <script src="contact-public.js" defer></script>
 <script src="reguli-platforma.js" defer></script>

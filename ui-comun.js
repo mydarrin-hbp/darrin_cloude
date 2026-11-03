@@ -1028,10 +1028,16 @@
   function declanseaza(inp, tip) { try { inp.dispatchEvent(new Event(tip, { bubbles: true })); } catch (e) {} }
 
   function pornesteGPSLaCerere() {
-    // pagina de produs: o singură linie de adresă (onAddr() o geocodează)
+    // pagina de produs (pasul 11-C1): adresa de prestare pe câmpuri — strada,
+    // localitatea și județul din listă (alegeJudet); onAddr() o verifică pe server
     var addr = el('addr-input');
     butonGPSLangaCamp(addr, function (d) {
-      addr.value = d.address || [d.city, d.region].filter(Boolean).join(', ');
+      var loc = el('adr-localitate');
+      if (loc) {
+        addr.value = d.street || d.address || '';
+        if (d.city) loc.value = d.city;
+        if (d.region && typeof window.alegeJudet === 'function') window.alegeJudet(d.region);
+      } else addr.value = d.address || [d.city, d.region].filter(Boolean).join(', ');
       declanseaza(addr, 'input');
     });
     // checkout: stradă + oraș + județ

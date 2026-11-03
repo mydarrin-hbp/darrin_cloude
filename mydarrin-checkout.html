@@ -1248,6 +1248,7 @@ function triggerHeaderSearch(){
           <div class="font-bold text-[#003366] text-lg mb-2">Coșul tău e gol</div>
           <p class="text-sm text-[#6B7A8D] mb-5">Alege un serviciu din catalog și configurează-l; revii aici pentru detalii și plată.</p>
           <a href="mydarrin-catalog.html" class="btn-accent inline-flex justify-center items-center py-3 px-6 text-[14px]" style="min-height:44px">Mergi la catalog</a>
+          <p id="cos-gol-server" class="text-sm text-[#1D5FA8] mt-4" style="display:none"><a href="mydarrin-cos.html" class="font-bold underline">Ai produse în coș — alege ce comanzi</a></p>
         </div>
 
         <!-- Serviciul configurat — completat din sessionStorage (myd_checkout_config), salvat de mydarrin-produs.html -->
@@ -2359,7 +2360,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // (id_serviciu + cantitate DOAR, niciodată preț) — server-ul
         // (lib/rezolva-addon-materiale.js) rezolvă prețul real, identic cum
         // a fost previzualizat live în mydarrin-produs.html.
-        const addonMateriale = [...(MYD_CFG.materiale || []), ...(MYD_CFG.inchirieri || [])].map(m => ({ id: m.id, qty: m.qty }));
+        const addonMateriale = [...(MYD_CFG.materiale || []), ...(MYD_CFG.inchirieri || [])].map(m => ({ id: m.id, qty: m.qty, ...(MYD_CFG.tip_comanda === 'marketplace' && m.nivel ? { nivel: m.nivel } : {}) }));
         // Produse din marketplace, fără serviciu (pasul 10a, 16 oct. 2026):
         // doar id + cantitate; api/comenzi/creeaza.js calculează prețul real.
         const corpComun = MYD_CFG?.tip_comanda === 'marketplace'
@@ -2412,6 +2413,7 @@ document.addEventListener('DOMContentLoaded', function() {
           const enEroare = window.MYD_I18N && window.MYD_I18N.lang && window.MYD_I18N.lang !== 'ro';
           throw new Error((enEroare && data.error_en) || data.error || 'Eroare la plasarea comenzii');
         }
+        scoateDinCosDupaComanda(MYD_CFG);
         if (esteB2G) {
           showComandaInregistrataScreen(data.comanda.nr_comanda, data.mesaj);
         } else {
@@ -3680,10 +3682,18 @@ function arataServiciu(cfg){
   const gol = document.getElementById('cos-gol'); if (gol) gol.style.display = 'none';
   ['cart-item-1', 'cart-continua', 'sum-item-1'].forEach((id) => { const el = document.getElementById(id); if (el) el.style.display = ''; });
   const titlu = cfg.titlu || cfg.slug || 'Serviciu';
+  const ap = cfg.adresa_prestare || null;
   const adr = document.getElementById('co-adresa');
-  if (adr && !adr.value && cfg.addr) adr.value = cfg.addr;
+  if (adr && !adr.value && (ap ? ap.strada : cfg.addr)) adr.value = ap ? ap.strada : cfg.addr;
   const oras = document.getElementById('co-oras');
-  if (oras && !oras.value && cfg.localitate) oras.value = cfg.localitate;
+  if (oras && !oras.value && (ap ? ap.localitate : cfg.localitate)) oras.value = ap ? ap.localitate : cfg.localitate;
+  // Pasul 11-C1: județul ales în configurare (denumirea din geo_regiuni).
+  const jud = document.getElementById('co-judet');
+  if (jud && !jud.value && ap && ap.judet) {
+    const fara = (x) => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const o = [...jud.options].find((x) => x.value && fara(x.value) === fara(ap.judet));
+    if (o) jud.value = o.value;
+  }
   setEl2('sum-item-titlu', titlu);
   setEl2('sum-item-nivel', cfg.tierLabel || cfg.tier || '');
   setEl2('sum-item-pret', Number(cfg.total) > 0 ? (window.formatCurrency ? window.formatCurrency(Number(cfg.total)) : Number(cfg.total).toLocaleString('ro-RO') + ' Lei') : '—');
@@ -3701,45 +3711,37 @@ function arataServiciu(cfg){
 async function eliminaServiciuDinCos(){
   try { sessionStorage.removeItem('myd_checkout_config'); } catch (e) {}
   arataCosGol();
-  try {
-    const session = (await window.supabaseClient?.auth.getSession())?.data?.session;
-    let url = '/api/client/cos';
-    const headers = {};
-    if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
-    else {
-      const guestToken = localStorage.getItem('myd_guest_token');
-      if (!guestToken) return;
-      url += `?sesiune_token=${encodeURIComponent(guestToken)}`;
-    }
-    await fetch(url, { method: 'DELETE', headers });
-  } catch (e) { /* copia de pe server e doar o rezervă */ }
+  arataLegaturaCos();
 }
 
-// Etapa 1 (26 august 2026) — dacă sessionStorage nu are nimic (tab nou,
-// revenire după închiderea browserului, sau login pe alt dispozitiv),
-// încearcă restaurarea din backup-ul server-side (api/client/cos), înainte
-// de a rula applyChecoutConfigReal(). Best-effort — dacă eșuează sau nu
-// există nimic salvat, comportamentul rămâne identic cu înainte (fallback
-// pe mock-ul existent).
+// Pasul 11-C1 (3 nov. 2026): un singur coș, pe server (/api/client/cos-multi).
+// Checkout-ul primește configurarea de comandat prin sessionStorage
+// (myd_checkout_config), din pagina de configurare sau din coș
+// (mydarrin-cos.html → „Finalizează comanda”). Fără ea, pagina arată coșul gol
+// și, dacă pe server sunt produse, legătura spre coș. Înainte, configurarea se
+// restaura din /api/client/cos — o a doua copie, care nu era coșul.
+async function arataLegaturaCos(){
+  const el = document.getElementById('cos-gol-server');
+  if (!el || !window.MDCos) return;
+  const n = await window.MDCos.actualizeaza();
+  el.style.display = n > 0 ? '' : 'none';
+}
+
 async function initChecoutConfigCuRestaurare(){
-  if (!sessionStorage.getItem('myd_checkout_config')) {
-    try {
-      const session = (await window.supabaseClient?.auth.getSession())?.data?.session;
-      let url = '/api/client/cos';
-      const headers = {};
-      if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
-      else {
-        const guestToken = localStorage.getItem('myd_guest_token');
-        if (guestToken) url += `?sesiune_token=${encodeURIComponent(guestToken)}`;
-      }
-      const res = await fetch(url, { headers });
-      const data = await res.json();
-      if (data?.ok && data.configurare) {
-        sessionStorage.setItem('myd_checkout_config', JSON.stringify(data.configurare));
-      }
-    } catch (e) { /* best-effort — rămâne pe fallback-ul existent */ }
-  }
   applyChecoutConfigReal();
+  if (!MYD_CFG) arataLegaturaCos();
+}
+
+// După comanda creată: rândurile comandate ies din coș (cos_itemi_ids).
+async function scoateDinCosDupaComanda(cfg){
+  try { sessionStorage.removeItem('myd_checkout_config'); } catch (e) {}
+  const ids = cfg && Array.isArray(cfg.cos_itemi_ids) ? cfg.cos_itemi_ids : [];
+  if (!ids.length || !window.MDCos) return;
+  try {
+    const id = await window.MDCos.identitate(false);
+    await Promise.all(ids.map((x) => fetch('/api/client/cos-multi?id=' + encodeURIComponent(x) + (id.cont ? '' : '&' + (id.qs || '?').slice(1)), { method: 'DELETE', headers: id.headers })));
+  } catch (e) { /* coșul se curăță și manual; comanda e deja creată */ }
+  window.MDCos.actualizeaza();
 }
 
 if (document.readyState === 'loading') {
@@ -4036,6 +4038,7 @@ function daiSendMessage(){
 <script src="statistici-publice.js" defer></script>
 <script src="cont-fereastra.js" data-dupa-login="ramai" defer></script>
 <script src="meniu-partener.js" defer></script>
+<script src="cos-indicator.js" defer></script>
 <script src="ui-comun.js" defer></script>
 <script src="reguli-platforma.js" defer></script>
 <script src="contact-public.js" defer></script>

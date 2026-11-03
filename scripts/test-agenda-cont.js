@@ -799,27 +799,19 @@ async function testePagini() {
         COS = [{ id: 'cos-1', configurare: { titlu: 'Serviciu de test', addr: 'Str. Coș 3, Cluj-Napoca', tara_cod: 'RO', bazaRaw: 400, materiale: [], inchirieri: [] } }];
         const ctx3 = await context(browser, latime, lang);
         const cos = await pagina(ctx3, baza + '/mydarrin-cos.html');
-        await test(`${et} · coș: client nou adaugă profilul din panou (tastatură) și trimite comanda`, async () => {
-          await cos.waitForSelector('[data-mya="adauga-profil"]', { state: 'visible' });
+        // Pasul 11-C1: coșul nu mai trimite comenzi direct (fără datele clientului,
+        // facturare și plată); fiecare produs se finalizează în checkout, unde
+        // agenda și facturarea sunt verificate mai sus. Un rând vechi, fără adresa
+        // de prestare verificată pe server, trimite înapoi la configurare.
+        await test(`${et} · coș: rând vechi fără adresă verificată → avertisment și legătura spre configurare, fără trimitere directă`, async () => {
+          await cos.waitForSelector('.item[data-tip="serviciu"] .addr-warn a');
+          adevarat(!(await cos.$('#btn-submit')) && !(await cos.$('.item[data-tip="serviciu"] .btn-cta')), 'trimitere directă din coș');
           egal(await depasire(cos, '.wrap'), '');
-          await cos.focus('[data-mya="adauga-profil"]');
-          await cos.keyboard.press('Enter');
-          const f = '[role="dialog"] form[data-mya-form="profil"]';
-          await cos.waitForSelector(f);
-          await cos.fill(`${f} [name="prenume"]`, 'Ioana');
-          await cos.fill(`${f} [name="nume"]`, 'Pop');
-          await cos.click(`${f} button[type="submit"]`);
-          await cos.waitForSelector('[role="dialog"] [data-profil-id]');
-          if (lang === 'en') { const t = await texteSectiune(cos, '[role="dialog"]'); adevarat(!RO_TEXT.test(t), 'text românesc: ' + t.slice(0, 300)); }
-          await cos.keyboard.press('Escape');
-          await cos.waitForSelector('#cos-facturare select[name="profil_facturare_id"]');
-          egal(await cos.inputValue('#cos-facturare select[name="profil_facturare_id"]'), profiluriU()[0].id);
-          egal(await depasire(cos, '.wrap'), '');
-          await captura(cos, `11p3a-cos-${lang}-${latime}`);
-          await cos.click('#btn-submit');
-          await cos.waitForFunction(() => getComputedStyle(document.getElementById('status-ok')).display !== 'none' || getComputedStyle(document.getElementById('status-err')).display !== 'none', null, { timeout: 8000 });
-          egal(DB.tabele.comenzi.length, 1, await cos.textContent('#status-err'));
-          egal([DB.tabele.comenzi[0].date_facturare.prenume, DB.tabele.comenzi[0].date_facturare.adresa.strada], ['Ioana', 'Str. Coș 3, Cluj-Napoca']);
+          if (lang === 'en') {
+            const t = (await cos.textContent('.wrap')).replace('Serviciu de test', '');
+            adevarat(!/[ăâîșțĂÂÎȘȚ]/.test(t), 'text românesc: ' + t.slice(0, 300));
+          }
+          await captura(cos, `11c1-cos-${lang}-${latime}`);
           egal(cos.erori, []);
         });
         await ctx3.close();

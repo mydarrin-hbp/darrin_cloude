@@ -60,7 +60,8 @@ async function deschide(browser, baza, pagina, lang, cifre) {
   const baza = 'http://localhost:' + srv.address().port;
   const browser = await chromium.launch();
   try {
-    verifica(PAGINI.length >= 12, `paginile cu bloc de indicatori: ${PAGINI.length}`);
+    // Pasul 11-C1: mydarrin-serviciu.html (cu bloc) a devenit redirecționare spre catalog.
+    verifica(PAGINI.length >= 11, `paginile cu bloc de indicatori: ${PAGINI.length}`);
     // Toate paginile: aceleași chei, din statistici-homepage, și statistici-publice.js.
     for (const pagina of PAGINI) {
       const h = fs.readFileSync(path.join(RADACINA, pagina), 'utf8');

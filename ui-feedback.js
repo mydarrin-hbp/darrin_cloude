@@ -14,7 +14,7 @@
        return 'Ciornă salvată.';                  // mesajul verde (opțional)
      }, { form: formular });                      // câmpurile greșite se marchează
      MDFeedback.mesaj(zonaMesaj, 'ok' | 'eroare' | 'info', 'text');
-     MDFeedback.toast('succes' | 'eroare' | 'info', 'text', { reincearca: fn });
+     MDFeedback.toast('succes' | 'eroare' | 'info', 'text', { reincearca: fn, actiune: { text, href } });
      if (await MDFeedback.confirma('Ștergi…?', { textOk: 'Șterge', periculos: true })) { … }
      MDFeedback.aplicaErori(formular, [{ camp: 'suma_tinta', mesaj: { ro, en } }]);
    Opțiuni salveaza: { textSalveaza: 'Se verifică…', textOk: '✓ Verificat', ok, eroare,
@@ -145,6 +145,16 @@
       reia.className = 'md-reincearca';
       reia.onclick = function () { inchide(); optiuni.reincearca(); };
       t.appendChild(reia);
+    }
+    // Pasul 11-C1: o legătură în toast (ex. „Vezi coșul” după adăugare).
+    if (optiuni.actiune && optiuni.actiune.text && optiuni.actiune.href) {
+      var act = document.createElement('a');
+      act.className = 'md-toast-actiune';
+      act.href = optiuni.actiune.href;
+      act.textContent = optiuni.actiune.text;
+      act.style.cssText = 'flex:none;align-self:center;padding:5px 10px;border-radius:8px;border:1.5px solid ' + culoare
+        + ';color:' + culoare + ';background:#fff;font-size:12px;font-weight:800;text-decoration:none;white-space:nowrap';
+      t.appendChild(act);
     }
     t.appendChild(butonInchide(culoare, inchide));
     z.appendChild(t);

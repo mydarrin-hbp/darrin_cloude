@@ -33,7 +33,7 @@ const dosarCapturi = iCapturi !== -1 ? process.argv[iCapturi + 1] : null;
 const PUBLICE = ['index', 'servicii-urgente', 'despre-noi', 'afla-ce-facem', 'mydarrin-contact', 'mydarrin-app-mobile',
   'mydarrin-catalog', 'mydarrin-categorie-servicii.html?type=servicii&cat=instalatii-electrice', 'mydarrin-categorie-materiale',
   'mydarrin-categorie-inchirieri', 'mydarrin-marketplace', 'mydarrin-marketplace-materiale.html?slug=montaj-parchet-laminat&type=servicii&nace=43.33',
-  'mydarrin-produs.html?slug=inlocuire-becuri-corpuri&type=servicii', 'mydarrin-serviciu', 'mydarrin-checkout', 'mydarrin-cos',
+  'mydarrin-produs.html?slug=inlocuire-becuri-corpuri&type=servicii', 'mydarrin-checkout', 'mydarrin-cos',
   'mydarrin-creeaza-deviz', 'confirmare-livrare', 'reset-password', 'mydarrin-cum-functioneaza', 'cum-comanzi', 'cum-platesc',
   'cum-programez-serviciu', 'cum-prestam-livram', 'intrebari-frecvente-clienti', 'intrebari-frecvente-parteneri',
   'garantii-si-asigurari', 'ghidul-asiguratorului', 'reclamatii', 'mydarrin-devino-partener',
@@ -173,7 +173,7 @@ function profil(stare) {
     }
     console.log(`meniul din antet: ${cuMeniu} pagini`);
     const asteptatePublice = PUBLICE.filter((pg) => cuLoc.includes(pg.split('?')[0].replace(/\.html$/, '') + '.html')).length;
-    verifica(cuMeniu === asteptatePublice && cuMeniu >= 30, `${cuMeniu} pagini publice au meniul în antet (așteptat ${asteptatePublice})`);
+    verifica(cuMeniu === asteptatePublice && cuMeniu >= 29, `${cuMeniu} pagini publice au meniul în antet (așteptat ${asteptatePublice})`);
 
     // 2. Linkurile din meniu și din footer: 200 și ancore existente.
     const cereri = await browser.newContext();

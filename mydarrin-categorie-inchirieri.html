@@ -212,48 +212,6 @@ h1,h2,h3 { font-family:'Helvetica World','Helvetica Neue',Arial,sans-serif; }
   </div>
 </div>
 
-<!-- ════ CART FAB ════ -->
-<button onclick="toggleBasket()" style="position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;background:#FF8C00;border:none;cursor:pointer;box-shadow:0 8px 24px rgba(255,140,0,.4);z-index:300;display:flex;align-items:center;justify-content:center">
-  <i data-lucide="shopping-cart" class="w-6 h-6" style="color:#fff"></i>
-  <span id="cart-fab-count" style="position:absolute;top:-2px;right:-2px;width:20px;height:20px;background:#003366;color:#fff;font-size:10px;font-weight:800;border-radius:50%;display:none;align-items:center;justify-content:center">0</span>
-</button>
-
-<!-- ════ CART OVERLAY + DRAWER ════ -->
-<div id="cart-overlay" onclick="closeCart()" style="position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:800;opacity:0;pointer-events:none;transition:opacity .3s"></div>
-<div id="cart-drawer" style="position:fixed;top:0;right:0;height:100vh;width:380px;max-width:92vw;background:#fff;z-index:801;transform:translateX(100%);transition:transform .35s cubic-bezier(.22,1,.36,1);display:flex;flex-direction:column;box-shadow:-8px 0 40px rgba(0,51,102,.15)">
-
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 16px;border-bottom:1px solid #D5DFE8;flex-shrink:0">
-    <div style="font-weight:800;color:#003366;font-size:16px;display:flex;align-items:center;gap:10px">
-      Coșul meu
-      <span id="cart-count" style="background:#FF8C00;color:#fff;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800">0</span>
-    </div>
-    <button onclick="closeCart()" style="width:32px;height:32px;border-radius:9px;border:1px solid #D5DFE8;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;color:#6B7A8D">×</button>
-  </div>
-
-  <div style="margin:12px 20px 0;background:#E0F5F4;border-radius:11px;border:1px solid rgba(14,158,153,.25);padding:10px 13px;font-size:11.5px;color:#0B7A76;display:flex;align-items:flex-start;gap:7px;flex-shrink:0">
-    <span style="width:6px;height:6px;border-radius:50%;background:#0E9E99;display:inline-block;flex-shrink:0;margin-top:4px"></span>
-    <span><strong>Darrin AI</strong> alocă automat echipa după plasarea comenzii. Tu nu contactezi niciun partener.</span>
-  </div>
-
-  <div id="cart-items" style="flex:1;overflow-y:auto;padding:12px 20px">
-    <div id="cart-empty" style="text-align:center;padding:48px 16px;color:#8C9BAD">
-      <div style="font-size:44px;margin-bottom:12px;opacity:.3"><i data-lucide="shopping-cart" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-      <div style="font-size:14px;font-weight:600">Coșul tău e gol</div>
-      <div style="font-size:12px;margin-top:4px">Adaugă servicii din lista de mai sus.</div>
-    </div>
-  </div>
-
-  <div id="cart-summary" style="display:none;padding:16px 20px;border-top:1px solid #EEF2F7;flex-shrink:0;background:#F8FAFC">
-    <div style="display:flex;justify-content:space-between;font-size:12.5px;color:#5A6B7D;margin-bottom:4px"><span>Subtotal</span><span id="cart-subtotal">0 RON</span></div>
-    <div style="display:flex;justify-content:space-between;font-size:12.5px;color:#5A6B7D;margin-bottom:4px"><span>Comision platformă</span><span id="cart-platform">0 RON</span></div>
-    <div style="display:flex;justify-content:space-between;font-size:12.5px;color:#5A6B7D;margin-bottom:10px"><span>TVA 19%</span><span id="cart-tva">0 RON</span></div>
-    <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:800;color:#003366;margin-bottom:14px;padding-top:10px;border-top:1px solid #D5DFE8"><span>Total</span><span id="cart-total">0 RON</span></div>
-    <button onclick="proceedCheckout()" style="width:100%;padding:13px;border-radius:12px;border:none;background:#003366;color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit">
-      Continuă spre configurare →
-    </button>
-  </div>
-</div>
-
 <footer style="background:#1E2E4D;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
 
 <style>
@@ -622,15 +580,6 @@ const SLUG_ALIAS = {
 };
 
 
-// ─────────────────────────────────────────────────────────
-// CART STATE (identic cu mecanismul din catalog.html)
-// ─────────────────────────────────────────────────────────
-let cartItems = [];
-let cartIdCounter = 0;
-const RATES = {RON:1};
-const activeCur = 'RON';
-const PLATFORM_PCT = 0.15 + 0.10 + 0.03 + 0.03;
-const TVA = 0.19;
 
 function setEl(id, val){ const el=document.getElementById(id); if(el) el.textContent=val; }
 
@@ -760,7 +709,7 @@ function renderGrid(items, tab){
 
   const typeMap = {servicii:'serviciu', materiale:'material', inchiriere:'inchiriere'};
   const typeParam = typeMap[tab] || 'serviciu';
-  const ctaLabel = tab === 'inchiriere' ? 'Rezervă' : '+ Coș';
+  const ctaLabel = 'Adaugă în coș';
 
   grid.innerHTML = items.map((it, idx) => `
     <div class="rich-card reveal" data-slug="${it.slug}" data-tab="${tab}"
@@ -778,7 +727,7 @@ function renderGrid(items, tab){
             <span class="price-val">${it.price} <span class="dyn-currency">Lei</span></span>
             <span class="price-unit">${it.unit}</span>
           </div>
-          <button class="card-cta" onclick="event.stopPropagation();addItemToCart(${idx},'${it.slug}','${typeParam}','${it.title.replace(/'/g,"\\'")}', ${it.price})">${ctaLabel}</button>
+          <button class="card-cta" onclick="event.stopPropagation();addItemToCart(${idx},'${it.slug}','${typeParam}','${it.title.replace(/'/g,"\\'")}')">${ctaLabel}</button>
         </div>
       </div>
     </div>
@@ -807,110 +756,17 @@ function openProductPage(slug, type){
 }
 
 // ─────────────────────────────────────────────────────────
-// Adaugă în coș — rămâne pe pagină, NU redirecționează automat
+// Pasul 11-C1 (3 nov. 2026): un singur coș, pe server (cos-indicator.js →
+// MDCos.adauga, /api/client/cos-multi). Materialul intră direct în coș, cu
+// cantitatea 1 (cantitatea se alege în coș); serviciul și închirierea merg la
+// configurare, unde adresa de prestare e obligatorie — nu se adaugă nimic înainte.
 // ─────────────────────────────────────────────────────────
-function addItemToCart(idx, slug, type, title, priceRon){
-  const existing = cartItems.find(i => i.slug === slug);
-  if(existing){
-    existing.qty++;
-  } else {
-    cartItems.push({ cartId: ++cartIdCounter, slug, type, title, priceRon, qty: 1 });
-  }
-  updateCartDisplay();
-  showAddedFeedback(title);
-}
-
-function showAddedFeedback(title){
-  const fb = document.createElement('div');
-  fb.textContent = '' + title + ' adăugat în coș';
-  fb.style.cssText = 'position:fixed;bottom:90px;right:24px;background:#003366;color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,51,102,.3)';
-  document.body.appendChild(fb);
-  setTimeout(() => fb.remove(), 2200);
-}
-
-function updateCartDisplay(){
-  const count = cartItems.reduce((s,i) => s + i.qty, 0);
-  setEl('cart-count', count);
-  const basketCount = document.getElementById('basket-count');
-  if(basketCount){ basketCount.textContent = count; basketCount.style.display = count > 0 ? 'flex' : 'none'; }
-  const fabCount = document.getElementById('cart-fab-count');
-  if(fabCount){ fabCount.textContent = count; fabCount.style.display = count > 0 ? 'flex' : 'none'; }
-
-  const empty = document.getElementById('cart-empty');
-  const summary = document.getElementById('cart-summary');
-  const itemsContainer = document.getElementById('cart-items');
-  Array.from(itemsContainer.children).forEach(el => { if(el.id !== 'cart-empty') el.remove(); });
-
-  if(cartItems.length === 0){
-    empty.style.display = 'block';
-    summary.style.display = 'none';
+function addItemToCart(idx, slug, type, title){
+  if (type === 'material') {
+    if (window.MDCos) window.MDCos.adauga({ tip: 'material', slug: slug, titlu: title });
     return;
   }
-  empty.style.display = 'none';
-  summary.style.display = 'block';
-
-  let subtotal = 0;
-  cartItems.forEach(item => {
-    subtotal += item.priceRon * item.qty;
-    const div = document.createElement('div');
-    div.className = 'basket-item';
-    div.innerHTML = `
-      <div class="b-avatar"><i data-lucide="wrench" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:12.5px;font-weight:600;color:#2D2D2D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.title}</div>
-        <div style="font-size:11px;color:#8C9BAD">${item.priceRon} Lei × ${item.qty}</div>
-        <button onclick="openProductPage('${item.slug}','${item.type}')" style="font-size:10.5px;color:#FF8C00;font-weight:700;background:none;border:none;cursor:pointer;padding:2px 0;font-family:inherit;margin-top:3px">Configurează & Comandă →</button>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-        <button class="qty-btn" onclick="changeQty(${item.cartId},-1)">−</button>
-        <span style="font-size:13px;font-weight:700;width:16px;text-align:center">${item.qty}</span>
-        <button class="qty-btn" onclick="changeQty(${item.cartId},1)">+</button>
-        <button onclick="removeFromCart(${item.cartId})" style="background:none;border:none;cursor:pointer;color:#D5DFE8;font-size:16px;padding:2px">×</button>
-      </div>`;
-    itemsContainer.insertBefore(div, empty);
-  });
-
-  const platform = subtotal * PLATFORM_PCT;
-  const tva = (subtotal + platform) * TVA;
-  const total = subtotal + platform + tva;
-  setEl('cart-subtotal', subtotal.toFixed(0) + ' RON');
-  setEl('cart-platform', platform.toFixed(0) + ' RON');
-  setEl('cart-tva', tva.toFixed(0) + ' RON');
-  setEl('cart-total', total.toFixed(0) + ' RON');
-}
-
-function changeQty(cartId, delta){
-  const item = cartItems.find(i => i.cartId === cartId);
-  if(item){
-    item.qty += delta;
-    if(item.qty <= 0) cartItems = cartItems.filter(i => i.cartId !== cartId);
-  }
-  updateCartDisplay();
-}
-
-function removeFromCart(cartId){
-  cartItems = cartItems.filter(i => i.cartId !== cartId);
-  updateCartDisplay();
-}
-
-function proceedCheckout(){
-  if(cartItems.length === 0){ return; }
-  const first = cartItems[0];
-  window.location.href = `mydarrin-produs.html?slug=${first.slug}&type=${first.type}`;
-}
-
-function toggleBasket(){ openCart(); }
-function openCart(){
-  document.getElementById('cart-drawer').style.transform = 'translateX(0)';
-  const ov = document.getElementById('cart-overlay');
-  ov.style.opacity = '1'; ov.style.pointerEvents = 'auto';
-  document.body.style.overflow = 'hidden';
-}
-function closeCart(){
-  document.getElementById('cart-drawer').style.transform = 'translateX(100%)';
-  const ov = document.getElementById('cart-overlay');
-  ov.style.opacity = '0'; ov.style.pointerEvents = 'none';
-  document.body.style.overflow = '';
+  openProductPage(slug, type);
 }
 
 document.addEventListener('DOMContentLoaded', () => { loadCategory(); detectUserAddress(); });
@@ -921,6 +777,8 @@ document.addEventListener('DOMContentLoaded', () => { loadCategory(); detectUser
 <script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="analytics-loader.js" defer></script>
 <script src="cont-fereastra.js" defer></script>
 <script src="meniu-partener.js" defer></script>
+<script src="/ui-feedback.js" defer></script>
+<script src="cos-indicator.js" defer></script>
 <script src="ui-comun.js" defer></script>
 <script src="contact-public.js" defer></script>
 <script src="reguli-platforma.js" defer></script>
