@@ -43,6 +43,10 @@
      toggleAuthModal(), switchAuthTab('login' | 'register' | 'verify-cod')
      MDCont.deschide({ tab, rol, mesaj }), MDCont.inchide(), MDCont.deschisa()
      MDCont.deschidePentruRol(rol)  — doar fără sesiune (pagina partenerului)
+     MDCont.deschide({ tab: 'register', partener: true })  — „Partener” ales, grila deschisă
+     MDCont.alegeTipPartener({ rol })  — pasul 11-R3b: contul conectat, fără rol de
+       partener, alege tipul; alegerea se salvează (/api/cont/rol-solicitat) și
+       duce în dashboard-ul tipului, în modul activare
      MDCont.rolDinTip('servicii' | … | 'asigurator')
    ════════════════════════════════════════════════════════════════ */
 (function () {
@@ -387,6 +391,20 @@
           '<p class="mdc-jos">' + esc(tr('Ai deja cont?')) + ' <button type="button" class="mdc-link mdc-link-albastru" data-mdc-tab="login">' + esc(tr('Intră în cont')) + '</button></p>' +
         '</form>' +
 
+        // Contul conectat (client): alegerea tipului de partener (pasul 11-R3b)
+        '<form id="mdc-tip-cont" class="mdc-panou" hidden novalidate>' +
+          '<h3 class="mdc-h" id="mdc-titlu-tip-cont">' + esc(tr('Devino partener pe contul tău')) + '</h3>' +
+          '<p class="mdc-sub">' + esc(tr('Alege tipul de partener. Datele firmei le completezi apoi în dashboard.')) + '</p>' +
+          '<fieldset class="mdc-tipuri" id="mdc-tipuri-cont"><legend class="mdc-eticheta">' + esc(tr('Tipul de partener')) + '</legend><div class="mdc-grila" id="mdc-roluri-cont">' +
+            TIPURI.map(function (r) {
+              return '<label class="mdc-tip" data-mdc-rol-cont="' + r.rol + '">' + icona(r.ico) + '<span>' + esc(tr(r.titlu)) + '</span>' +
+                '<input type="radio" name="mdc-rol-cont" value="' + r.rol + '"></label>';
+            }).join('') +
+          '</div></fieldset>' +
+          '<button type="submit" class="mdc-btn mdc-btn-portocaliu" id="mdc-tip-cont-btn">' + esc(tr('Continuă')) + '</button>' +
+          '<div id="mdc-tip-cont-msg" class="mdc-zona"></div>' +
+        '</form>' +
+
         // Creare cont — 3. codul din email
         '<form id="auth-verify-cod" class="mdc-panou" hidden novalidate>' +
           '<h3 class="mdc-h">' + esc(tr('Confirmă adresa de email')) + '</h3>' +
@@ -414,13 +432,14 @@
     $('auth-login').hidden = tab !== 'login';
     $('auth-register').hidden = tab !== 'register';
     $('auth-verify-cod').hidden = tab !== 'verify-cod';
-    $('mdc-taburi').style.display = tab === 'verify-cod' ? 'none' : '';
+    $('mdc-tip-cont').hidden = tab !== 'tip-cont';
+    $('mdc-taburi').style.display = tab === 'verify-cod' || tab === 'tip-cont' ? 'none' : '';
     [['tab-login-btn', 'login'], ['tab-register-btn', 'register']].forEach(function (x) {
       var b = $(x[0]);
       b.classList.toggle('activ', tab === x[1]);
       b.setAttribute('aria-selected', tab === x[1] ? 'true' : 'false');
     });
-    m.setAttribute('aria-labelledby', tab === 'login' ? 'mdc-titlu-login' : tab === 'register' ? 'mdc-titlu-rol' : 'auth-verify-cod');
+    m.setAttribute('aria-labelledby', tab === 'login' ? 'mdc-titlu-login' : tab === 'register' ? 'mdc-titlu-rol' : tab === 'tip-cont' ? 'mdc-titlu-tip-cont' : 'auth-verify-cod');
     if (tab === 'register') arataPasInscriere(stare.pasInscriere);
   }
 
@@ -468,8 +487,8 @@
 
   function focusPrimul() {
     setTimeout(function () {
-      var panou = stare.tab === 'login' ? $('auth-login') : stare.tab === 'register' ? (stare.pasInscriere === 'rol' ? $('mdc-pas-rol') : $('mdc-pas-date')) : $('auth-verify-cod');
-      var peRol = stare.tab === 'register' && stare.pasInscriere === 'rol';
+      var panou = stare.tab === 'login' ? $('auth-login') : stare.tab === 'register' ? (stare.pasInscriere === 'rol' ? $('mdc-pas-rol') : $('mdc-pas-date')) : stare.tab === 'tip-cont' ? $('mdc-tip-cont') : $('auth-verify-cod');
+      var peRol = (stare.tab === 'register' && stare.pasInscriere === 'rol') || stare.tab === 'tip-cont';
       // Nu mută cursorul dintr-un câmp în care utilizatorul a început deja să scrie.
       var activ = document.activeElement;
       if (panou && activ && panou.contains(activ) && /^(INPUT|TEXTAREA|SELECT)$/.test(activ.tagName)) return;
@@ -495,6 +514,10 @@
       alegeRol(rol);
       tab = 'register';
       stare.pasInscriere = 'rol';
+    } else if (o.partener) {
+      tab = 'register';
+      stare.pasInscriere = 'rol';
+      alegeCategorie('partener');
     } else if (tab === 'register' && !stare.categorie) {
       alegeRol(null);
     }
@@ -578,6 +601,49 @@
       toast('succes', textOk);
       reincarcaAntet();
     });
+  }
+
+  // ── Contul conectat: alegerea tipului de partener (pasul 11-R3b) ──
+  function marcheazaTipCont(rol) {
+    Array.prototype.forEach.call(document.querySelectorAll('#mdc-roluri-cont .mdc-tip'), function (l) {
+      var al = l.getAttribute('data-mdc-rol-cont') === rol;
+      l.classList.toggle('ales', al);
+      l.querySelector('input').checked = al;
+    });
+  }
+  function alegeTipPartener(optiuni) {
+    var o = optiuni || {};
+    var m = construieste();
+    asiguraFeedback();
+    asiguraAuth().catch(function () {});
+    if (!deschisa()) focusInainte = document.activeElement;
+    marcheazaTipCont(esteTip(o.rol) ? o.rol : null);
+    $('mdc-tip-cont-msg').innerHTML = '';
+    m.classList.remove('hidden');
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    arataPanou('tip-cont');
+    focusPrimul();
+    return m;
+  }
+  function trimiteTipCont(btn) {
+    var ales = document.querySelector('#mdc-roluri-cont input:checked');
+    if (!ales) {
+      window.MDFeedback.mesaj($('mdc-tip-cont-msg'), 'eroare', tr('Alege tipul de partener, apoi apasă „Continuă”.'));
+      var primul = document.querySelector('#mdc-roluri-cont input');
+      if (primul) primul.focus();
+      return;
+    }
+    window.MDFeedback.salveaza(btn, $('mdc-tip-cont-msg'), function () {
+      return asiguraAuth().then(function () { return window.supabaseClient.auth.getSession(); }).then(function (r) {
+        var s = r && r.data && r.data.session;
+        if (!s) throw new Error(tr('Sesiunea a expirat. Autentifică-te din nou.'));
+        return window.MDFeedback.cerere('/api/cont/rol-solicitat', { method: 'POST', headers: { Authorization: 'Bearer ' + s.access_token }, body: { rol: ales.value } });
+      }).then(function (j) {
+        setTimeout(function () { window.location.href = j.destinatie; }, 600);
+        return tr('Te ducem în dashboard-ul tău, la lista „Activează contul”.');
+      });
+    }, { textSalveaza: tr('Se salvează…'), textOk: tr('✓ Gata') });
   }
 
   // ── Acțiunile ──
@@ -752,6 +818,7 @@
     m.addEventListener('change', function (e) {
       if (e.target && e.target.name === 'mdc-cat') { alegeCategorie(e.target.value); $('mdc-rol-msg').innerHTML = ''; }
       if (e.target && e.target.name === 'mdc-rol') { alegeRol(e.target.value); $('mdc-rol-msg').innerHTML = ''; }
+      if (e.target && e.target.name === 'mdc-rol-cont') { marcheazaTipCont(e.target.value); $('mdc-tip-cont-msg').innerHTML = ''; }
     });
     m.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') { inchide(); return; }
@@ -767,6 +834,7 @@
       inregistrare($('mdc-register-btn') || btn);
     }));
     $('auth-verify-cod').addEventListener('submit', cuFeedback(confirmaCod));
+    $('mdc-tip-cont').addEventListener('submit', cuFeedback(function () { trimiteTipCont($('mdc-tip-cont-btn')); }));
     $('mdc-retrimite').addEventListener('click', cuFeedback(retrimiteCod));
     $('mdc-alt-email').addEventListener('click', function () { stare.pasInscriere = 'date'; arataPanou('register'); focusPrimul(); });
     $('verify-cod-input').addEventListener('input', function () { this.value = this.value.replace(/\D/g, '').slice(0, 6); });
@@ -809,7 +877,7 @@
   window.switchAuthTab = switchAuthTab;
   window.MDCont = {
     deschide: deschide, inchide: inchide, deschisa: deschisa, toggle: toggleAuthModal,
-    switchTab: switchAuthTab, deschidePentruRol: deschidePentruRol, rolDinTip: rolDinTip,
+    switchTab: switchAuthTab, deschidePentruRol: deschidePentruRol, rolDinTip: rolDinTip, alegeTipPartener: alegeTipPartener,
     ROLURI: ROLURI, TIPURI: TIPURI, CHEIE_MESAJ_PAGINA: CHEIE_MESAJ_PAGINA,
   };
 

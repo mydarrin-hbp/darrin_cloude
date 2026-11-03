@@ -5,6 +5,8 @@
 // (sau se deschide fereastra partenerului de pe pagină), coșul deschide panoul
 // sau duce la checkout. Fără erori JS. Chromium (Playwright), 390 și 1366 px.
 // „Asigurator” (type=asigurator) trebuie să ajungă la formularul asigurari.
+// Pasul 11-R3b: pe „Devino partener”, ?type=<tip> deschide fereastra de cont cu
+// „Partener” și tipul deja alese (cardurile #partner-types s-au scos).
 //
 // Navigarea spre pagina partenerului sau spre checkout e oprită cu un răspuns
 // 204 (pagina rămâne pe loc), așa că pe aceeași încărcare se încearcă toate
@@ -169,13 +171,16 @@ const ZGOMOT_PAGINA = { 'mydarrin-pitch-deck': /^\[pitch-deck\] Error: http 503(
           const erori = []; p.on('pageerror', (e) => erori.push(e.message.slice(0, 160)));
           await p.goto(`${baza}/mydarrin-devino-partener.html?type=${tip}`, { waitUntil: 'networkidle', timeout: 60000 });
           await p.waitForFunction((t) => { try { return selectedPartnerType === t; } catch (e) { return false; } }, tipFormular(tip), { timeout: 5000 }).catch(() => {});
+          // Pasul 11-R3b: cardurile de tip (#partner-types) s-au scos; tipul ales deschide
+          // fereastra de cont cu „Partener” și tipul deja alese (vizitator).
+          await p.waitForFunction(() => { const m = document.getElementById('auth-modal'); return m && !m.classList.contains('hidden'); }, null, { timeout: 8000 }).catch(() => {});
           const stare = await p.evaluate(() => {
             let ales = null; try { ales = selectedPartnerType; } catch (e) {}
-            const sel = document.querySelector('.type-opt.sel');
-            return { ales, card: sel ? sel.getAttribute('data-partner-type') : null };
+            const r = document.querySelector('#auth-modal input[name="mdc-rol"]:checked');
+            return { ales, rol: r ? r.value : null };
           });
-          verifica(stare.ales === tipFormular(tip) && stare.card === tipFormular(tip),
-            `${et}: formularul ales „${stare.ales}”, cardul „${stare.card}” (așteptat „${tipFormular(tip)}”)`);
+          verifica(stare.ales === tipFormular(tip) && stare.rol === 'partener_' + tipFormular(tip),
+            `${et}: tipul ales „${stare.ales}”, rolul din fereastra de cont „${stare.rol}” (așteptat „${tipFormular(tip)}”)`);
           verifica(!erori.length, `${et}: ${erori.length} erori JS (${erori.slice(0, 3).join(' | ')})`);
           await ctx.close();
         }
