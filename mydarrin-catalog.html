@@ -982,7 +982,6 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 .cat-stare button{margin-top:12px;min-height:44px;padding:10px 20px;border-radius:12px;border:none;background:#003366;color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
 .db-card .card-footer{flex-wrap:wrap;row-gap:8px}
 .db-card .card-cta{white-space:normal}
-.card-icoana{width:100%;height:100%;min-height:140px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#EBF4FB,#F4F7F9);color:#003366;font-size:44px}
 </style>
 </head>
 <body>
@@ -4183,7 +4182,7 @@ const DOM = {
   "Construcții & Renovări":        {"cat":"Construcții","sub":"Renovări",        "img":"1504307651254-35680f356dfd"},
   "Consultanță tehnică și mentenanță":{"cat":"Consultanță","sub":"Reparații",   "img":"1562259949-e8e7689d7828"},
   "HVAC & Climatizare":            {"cat":"Climatizare","sub":"HVAC",            "img":"1586023492125-27b2c045efd7"},
-  "Zugrăveli & Finisaje":          {"cat":"Finisaje",   "sub":"Zugrăveli",       "img":"1558618047-3c8c76ca7d13"},
+  "Zugrăveli & Finisaje":          {"cat":"Finisaje",   "sub":"Zugrăveli",       "img":"1562259949-e8e7689d7828"},
   "Tâmplărie & Geamuri":           {"cat":"Tâmplărie",  "sub":"Geamuri & Uși",  "img":"1416879595882-3373a0480b5b"},
   "Grădinărit & Agri":             {"cat":"Exterior",   "sub":"Grădinărit",      "img":"1473116763249-2faaef81ccda"},
   "Curățenie profesională":        {"cat":"Curățenie",  "sub":"Rezidențial",     "img":"1558618666-fcd25c85cd64"},
@@ -4207,7 +4206,7 @@ const DOM = {
   "Electrocasnice":                {"cat":"Exterior",   "sub":"Reparații",       "img":"1558618666-fcd25c85cd64"},
   "Bricolaj & Consumabile":        {"cat":"Construcții","sub":"Structuri",        "img":"1587293852726-70cdb56c2866"},
   "Sanitare & Termo":              {"cat":"Construcții","sub":"Sanitare",         "img":"1615529328331-f8917597711f"},
-  "Electrice & Iluminat":          {"cat":"Instalații", "sub":"Electrice",       "img":"1558618047-3c8c76ca7d13"},
+  "Electrice & Iluminat":          {"cat":"Instalații", "sub":"Electrice",       "img":"1621905251189-08b45d6a269e"},
   "Electrice & Tablouri":          {"cat":"Instalații", "sub":"Electrice",       "img":"1601584115197-04ecc0da31d7"},
   "Sanitare & Obiecte":            {"cat":"Construcții","sub":"Sanitare & Termo", "img":"1584622650111-993a426fbf0a"},
   "Electrice & Cabluri":           {"cat":"Instalații", "sub":"Electrice",       "img":"1621905251189-08b45d6a269e"},
@@ -4225,6 +4224,23 @@ const DOM = {
   "Acces & Siguranță":             {"cat":"Acces",      "sub":"Rezidențial",     "img":"1562259949-e8e7689d7828"},
   "Echipamente grădinărit":        {"cat":"Exterior",   "sub":"Grădinărit",      "img":"1473116763249-2faaef81ccda"},
   "Închiriere Echipamente Vacanță & Outdoor":{"cat":"Vacanță","sub":"Outdoor",   "img":"1504280390367-361c6d9f38f4"},
+  // Pasul 11-C5 (4 nov. 2026): domeniile din baza de date care lipseau din hartă,
+  // cu cea mai potrivită imagine dintre cele deja folosite mai sus. cat/sub rămân
+  // cele implicite de până acum (Instalații / General), ca filtrele să nu se schimbe.
+  "Scule & Echipamente profesionale":{"cat":"Instalații","sub":"General","img":"1572981779307-38b8cabb2407"},
+  "Utilaje construcții":           {"cat":"Instalații","sub":"General","img":"1504307651254-35680f356dfd"},
+  "Construcții — Betoane":         {"cat":"Instalații","sub":"General","img":"1504307651254-35680f356dfd"},
+  "Demolări":                      {"cat":"Instalații","sub":"General","img":"1504307651254-35680f356dfd"},
+  "Proiectare Tehnică":            {"cat":"Instalații","sub":"General","img":"1504307651254-35680f356dfd"},
+  "Livrare și Turnare Betoane":    {"cat":"Instalații","sub":"General","img":"1601584115197-04ecc0da31d7"},
+  "Curierat & Livrări":            {"cat":"Instalații","sub":"General","img":"1601584115197-04ecc0da31d7"},
+  "Mutări & Logistică":            {"cat":"Instalații","sub":"General","img":"1601584115197-04ecc0da31d7"},
+  "Servicii de Mutări":            {"cat":"Instalații","sub":"General","img":"1601584115197-04ecc0da31d7"},
+  "Consultanță & Evaluare":        {"cat":"Instalații","sub":"General","img":"1586023492125-27b2c045efd7"},
+  "Pardoseli & Parchet":           {"cat":"Instalații","sub":"General","img":"1581858726788-75bc0f6a952d"},
+  "Reparații Utilaje și Echipamente Agricole":{"cat":"Instalații","sub":"General","img":"1558618666-fcd25c85cd64"},
+  "Service Auto":                  {"cat":"Instalații","sub":"General","img":"1620891549027-942fdc95d3f5"},
+  "Service Moto la domiciliu":     {"cat":"Instalații","sub":"General","img":"1620891549027-942fdc95d3f5"},
 };
 const IMG_DEF = '1562259949-e8e7689d7828';
 
@@ -4317,11 +4333,15 @@ function descDinDomeniu(item, tab) {
 // ── Build card HTML ───────────────────────────────────────────────────────
 // Pasul 11-C4: `pret` = { pret_de_la, are_pret } de la /api/public/catalog-categorie
 // (catalog_preturi, cu formula de pe server). Fără preț: „Preț prin deviz”, fără cifră;
-// cu rețetă (preț real, calculat la configurare): fără cifră „de la”. Imaginea doar
-// din catalog; fără ea, iconița categoriei (nu o poză stock).
+// cu rețetă (preț real, calculat la configurare): fără cifră „de la”.
+// Pasul 11-C5 (decizia LM, 4 nov. 2026): imaginea, ca înainte de 11-C4 — întâi cea
+// reală (catalog_servicii.imagini, din back-office), altfel imaginea de prezentare
+// a domeniului (orientativă), altfel IMG_DEF.
 function mkCard(item, pret, tab, asoc) {
-  const d   = DOM[item.domeniu] || {cat:'Instalații', sub:'General'};
+  const d   = DOM[item.domeniu] || {cat:'Instalații', sub:'General', img:IMG_DEF};
   const imgReal = Array.isArray(item.imagini) && item.imagini.length ? item.imagini[0] : null;
+  const imgPrezentare = `https://images.unsplash.com/photo-${d.img || IMG_DEF}?w=600&q=80`;
+  const img = imgReal || imgPrezentare;
   const isU = /inlocuire|electric|urgent/i.test(item.id_serviciu||'');
   const isA = tab === 'servicii';
   const tr = (ro) => (typeof window.t === 'function' ? window.t(null, ro) : ro);
@@ -4335,7 +4355,6 @@ function mkCard(item, pret, tab, asoc) {
     : arePret ? `<span class="price-from">${tr('Preț calculat la configurare')}</span>`
     : `<span class="price-from">${tr('Preț prin deviz')}</span>`;
   const eticheta = arePret ? tr('Adaugă în coș') : tr('Cere un deviz');
-  const iconita = tab === 'materiale' ? 'package' : tab === 'inchiriere' ? 'hammer' : 'wrench';
 
   const TI = {mentenanta:'Mentenanță',inlocuire:'Înlocuire',reparatie:'Reparație',montaj_nou:'Montaj'};
   function tipDin(id){ return id.includes('mentenanta')?'mentenanta':id.includes('inlocuire')?'inlocuire':id.includes('reparatie')?'reparatie':id.includes('montaj')?'montaj_nou':null; }
@@ -4359,7 +4378,7 @@ function mkCard(item, pret, tab, asoc) {
     data-slug="${slug}"
     onclick="openService('${slug}','${tit}')">
   <div class="card-media">
-    ${imgReal ? `<img src="${imgReal}" alt="${tit}" loading="lazy" onerror="this.outerHTML='<div class=&quot;card-icoana&quot; aria-hidden=&quot;true&quot;><i data-lucide=&quot;${iconita}&quot;></i></div>';if(window.lucide)lucide.createIcons()"/>` : `<div class="card-icoana" aria-hidden="true"><i data-lucide="${iconita}"></i></div>`}
+    <img src="${img}" alt="${tit}" loading="lazy"${imgReal ? ` onerror="this.onerror=null;this.src='${imgPrezentare}'"` : ''}/>
     <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
     ${isU?'<span style="position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;background:rgba(220,38,38,.85);color:#fff;padding:2px 8px;border-radius:99px">Urgent</span>':''}
     ${isA?'<div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>':''}
