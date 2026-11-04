@@ -1,31 +1,23 @@
 // /api/public/calculeaza-pret-nivel.js
-// "Preț per cantitate reală comandată" (22 August 2026, aprobat, pașii 1-3
-// din propunere) — endpoint public, fără autentificare (browsing/preț sunt
-// publice), care calculează prețul REAL, server-side, pentru un nivel de
-// catalog legat de o rețetă tehnică (azi doar cele 5 servicii pilot —
-// devize_articole.catalog_nivel_id populat), la o cantitate dată.
+// "Preț per cantitate reală comandată" (22 August 2026) — endpoint public,
+// fără autentificare, care calculează prețul REAL, server-side, pentru un
+// nivel de catalog, la o cantitate dată. Alimentează afișarea prețului în
+// mydarrin-produs.html, în coș și în checkout.
 //
-// Menit să alimenteze live afișarea prețului în mydarrin-produs.html la
-// schimbarea cantității — înlocuiește treptat calculul actual, pur
-// client-side, neverificat de server (gaura de integritate reparată azi
-// mai devreme era doar despre pragul minim; asta e verificarea prețului
-// propriu-zis).
+// Pasul 11-C2 (3 nov. 2026): calculul e cel din lib/pret-serviciu.js, același
+// care pune prețul pe comandă (api/comenzi/creeaza.js) — rețeta, dacă nivelul
+// are una, altfel prețul nivelului din catalog_preturi. Fără niciuna:
+// disponibil:false, motiv 'fara_pret' („Prețul se stabilește prin deviz”).
 //
-// Body: { nivel_id (uuid, obligatoriu), cantitate (număr pozitiv, implicit 1),
-//         tara_cod (implicit 'RO'), addon_materiale? ([{id,qty}], Faza 2/3 CAT
-//         29 aug 2026 — materiale/accesorii opționale, preț rezolvat identic
-//         ca în api/comenzi/creeaza.js, vezi lib/rezolva-addon-materiale.js) }
+// Body: { nivel_id (uuid, obligatoriu), cantitate (implicit 1), tara_cod
+//         (implicit 'RO'), regiune?, addon_materiale? ([{id,qty}]) }
 // -> { ok:true, disponibil:true, pret_final, prag_minim_comanda, subtotal_variabil,
-//      cantitate, tara_cod, moneda }
-// -> { ok:true, disponibil:false, motiv:'resurse_fara_pret', resurse_fara_pret:[...] }
-// -> { ok:true, disponibil:false, motiv:'addon_fara_pret', mesaj:'...' }
+//      defalcare, include, addon_materiale, sursa, cantitate, tara_cod, moneda }
+// -> { ok:true, disponibil:false, motiv:'fara_pret'|'nivel_inactiv'|'addon_fara_pret'|'nivel_necunoscut', mesaj:{ro,en} }
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { checkRateLimit } = require('../../lib/rate-limit');
-const { calculeazaCostNivel } = require('../../lib/calculeaza-cost-recipe');
-const { calculeazaPret } = require('../../lib/calculeaza-pret');
-const { rezolvaAddonMateriale } = require('../../lib/rezolva-addon-materiale');
-const { codPentruCitire } = require('../../lib/regiune');
+const { calculeazaPretServiciu } = require('../../lib/pret-serviciu');
 
 const CANTITATE_MAX = 100000;
 
@@ -47,73 +39,32 @@ module.exports = async function handler(req, res) {
   const taraCod = String(tara_cod || 'RO').toUpperCase();
 
   try {
-    // Pasul 11-P3b: județul ca la comandă (api/comenzi/creeaza.js) — codul din
-    // geo_regiuni, ca previzualizarea să folosească aceleași reguli de preț.
-    const regiuneText = typeof regiune === 'string' ? regiune.slice(0, 80) : null;
-    const cost = await calculeazaCostNivel({ nivelId: nivel_id, taraCod, cantitate: cantitateNum, regiune: regiuneText ? await codPentruCitire(taraCod, regiuneText) : null });
-
-    // Reguli pe niveluri (9 oct. 2026): un nivel dezactivat de LM nu se afișează.
-    if (cost.nivel_activ === false) {
-      return res.status(200).json({ ok: true, disponibil: false, motiv: 'nivel_inactiv' });
-    }
-
-    if (cost.resurse_fara_pret.length) {
+    const r = await calculeazaPretServiciu({
+      nivelId: nivel_id, cantitate: cantitateNum, taraCod,
+      regiune: typeof regiune === 'string' ? regiune.slice(0, 80) : null,
+      addonMateriale: addon_materiale,
+    });
+    if (!r.ok) {
       return res.status(200).json({
-        ok: true, disponibil: false, motiv: 'resurse_fara_pret',
-        resurse_fara_pret: cost.resurse_fara_pret.map((r) => ({ denumire: r.denumire, tip: r.tip, unitate: r.unitate })),
+        ok: true, disponibil: false, motiv: r.motiv, mesaj: r.mesaj.ro, mesaj_en: r.mesaj.en,
+        ...(r.resurse_fara_pret ? { resurse_fara_pret: r.resurse_fara_pret } : {}),
       });
     }
 
     const { data: taraCfg } = await supabaseAdmin
       .from('tax_configurations').select('moneda').eq('tara_cod', taraCod).maybeSingle();
-    const moneda = taraCfg?.moneda || 'RON';
-
-    let addonRezultat;
-    try {
-      const { data: nivelRow } = await supabaseAdmin
-        .from('catalog_niveluri').select('nivel').eq('id', nivel_id).maybeSingle();
-      addonRezultat = await rezolvaAddonMateriale(addon_materiale, nivelRow?.nivel || null, taraCod);
-    } catch (e) {
-      if (e.code === 'ADDON_FARA_PRET' || e.code === 'ADDON_INVALID') {
-        return res.status(200).json({ ok: true, disponibil: false, motiv: 'addon_fara_pret', mesaj: e.message });
-      }
-      throw e;
-    }
-
-    const calc = await calculeazaPret({
-      cost_baza_servicii: cost.cost_baza_servicii,
-      cost_materiale: cost.cost_materiale + addonRezultat.cost_materiale,
-      cost_chirie_scule: cost.cost_utilaj + addonRezultat.cost_utilaj,
-      tara: taraCod,
-    });
-
-    // Defalcarea afișată clientului pe pagina de produs (8 oct. 2026): aceleași
-    // sume din care serverul compune prețul, ca pagina să nu le mai recalculeze.
-    // Nu conține costuri interne (tarife de resurse, discounturi de partener).
-    const taxePlatforma = Math.round((calc.comision_platforma + calc.cost_marketing + calc.cost_mentenanta) * 100) / 100;
-    const inaintePrag = Math.round((calc.subtotal + taxePlatforma + calc.tva_suma) * 100) / 100;
-    const defalcare = {
-      cost_baza: calc.cost_baza,
-      asigurare: calc.cost_asigurare,
-      transport: Math.round((calc.cost_curier + calc.cost_transport_greutate + calc.cost_ajutor) * 100) / 100,
-      taxe_platforma: taxePlatforma,
-      tva_pct: calc.tva_pct,
-      tva_suma: calc.tva_suma,
-      prag_aplicat: calc.pret_final > inaintePrag,
-    };
 
     return res.status(200).json({
       ok: true, disponibil: true,
-      pret_final: calc.pret_final,
-      prag_minim_comanda: calc.prag_minim_comanda,
-      subtotal_variabil: calc.subtotal,
-      defalcare,
-      // Ce include nivelul, doar pentru afișare: materiale (nu / consumabile /
-      // complet), curățenie, testare, raport digital, timp de răspuns și
-      // materialele furnizate de client. Fără coeficienți interni.
-      include: cost.nivel_include || null,
-      addon_materiale: addonRezultat.itemi,
-      cantitate: cantitateNum, tara_cod: taraCod, moneda,
+      pret_final: r.calc.pret_final,
+      prag_minim_comanda: r.calc.prag_minim_comanda,
+      subtotal_variabil: r.calc.subtotal,
+      defalcare: r.defalcare,
+      // Ce include nivelul, doar pentru afișare (fără coeficienți interni).
+      include: r.include,
+      addon_materiale: r.addon.itemi,
+      sursa: r.sursa,
+      cantitate: cantitateNum, tara_cod: taraCod, moneda: taraCfg?.moneda || 'RON',
     });
   } catch (err) {
     console.error('[public/calculeaza-pret-nivel]', err);

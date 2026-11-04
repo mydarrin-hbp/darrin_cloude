@@ -144,9 +144,10 @@ async function cheama(api, { token = null, metoda = 'POST', body = null, query =
 const disp = (body) => cheama(apiDisp, { body });
 const adauga = (configurare, { token = null, sesiune = GUEST } = {}) => cheama(apiCos, { token, body: Object.assign({ configurare }, token ? {} : { sesiune_token: sesiune }) });
 const cos = () => DB.tabele.cos_multi_itemi;
-const SERVICIU = (x = {}) => Object.assign({ tip: 'serviciu', slug: 'montaj-tablou-electric', titlu: 'Montaj tablou electric', adresa_prestare: ADR_CJ }, x);
+// Pasul 11-C2: un serviciu intră în coș doar cu nivelul lui (preț calculat pe server).
+const SERVICIU = (x = {}) => Object.assign({ tip: 'serviciu', slug: 'montaj-tablou-electric', titlu: 'Montaj tablou electric', nivel_id: NIV_SVC, cantitate: 1, adresa_prestare: ADR_CJ }, x);
 const PF = { tip: 'pf', prenume: 'Ana', nume: 'Albu' };
-const comanda = (body, token = 'tok-u') => cheama(apiCreeaza, { token, body: Object.assign({ adresa: 'Str. Memorandumului 10, Cluj-Napoca, Cluj', tara_cod: 'RO', regiune: 'Cluj', localitate: 'Cluj-Napoca', valoare_totala: 500, date_facturare: PF }, body) });
+const comanda = (body, token = 'tok-u') => cheama(apiCreeaza, { token, body: Object.assign({ adresa: 'Str. Memorandumului 10, Cluj-Napoca, Cluj', tara_cod: 'RO', regiune: 'Cluj', localitate: 'Cluj-Napoca', nivel_id: NIV_SVC, date_facturare: PF }, body) });
 function formaComuna(corp, numeCamp) {
   adevarat(corp && corp.ok === false && corp.mesaj && corp.mesaj.ro && corp.mesaj.en, 'forma comună, RO + EN: ' + JSON.stringify(corp));
   if (numeCamp) egal([corp.camp, corp.campuri[0] && corp.campuri[0].camp], [numeCamp, numeCamp], 'câmpul');
@@ -219,7 +220,7 @@ async function testeServer() {
     formaComuna(r2.corp, 'adresa_prestare');
     const r3 = await adauga(SERVICIU({ slug: 'inventat' }));
     egal([r3.statusCode, r3.corp.camp], [404, 'serviciu']);
-    const r4 = await adauga({ tip: 'inchiriere', slug: 'inch-scule', adresa_prestare: ADR_CJ });
+    const r4 = await adauga({ tip: 'inchiriere', slug: 'inch-scule', nivel_id: NIV_SVC, adresa_prestare: ADR_CJ });
     egal(r4.statusCode, 409, 'închirierea urmează regula serviciilor');
     egal(cos().length, 0, 'coșul gol');
   });
@@ -231,7 +232,7 @@ async function testeServer() {
     const c = cos()[0].configurare;
     egal([cos()[0].sesiune_token, c.tip, c.serviciu_id, c.regiune, c.localitate, c.tara_cod], [GUEST, 'serviciu', SVC, 'CJ', 'Cluj-Napoca', 'RO']);
     egal(c.addr, 'Str. Memorandumului 10, Cluj-Napoca, Cluj');
-    egal([c.verificare.disponibil, c.verificare.pret_final], [true, null], 'verificarea e a serverului');
+    adevarat(c.verificare.disponibil && c.verificare.pret_final > 1, 'verificarea și prețul sunt ale serverului');
   });
   await test('cont conectat: rândul e pe client_id; GET vede doar coșul propriu', async () => {
     reset();
@@ -332,19 +333,19 @@ async function testeServer() {
   });
   await test('materiale din catalog fără serviciu (cu nivel) → comandă cu prețul calculat pe server; fără nivel → 400', async () => {
     reset();
-    const r = await comanda({ valoare_totala: undefined, produse_marketplace: [{ id: MAT, qty: 10, nivel: 'Gold', pret: 1 }] });
+    const r = await comanda({ nivel_id: undefined, produse_marketplace: [{ id: MAT, qty: 10, nivel: 'Gold', pret: 1 }] });
     egal(r.statusCode, 200, JSON.stringify(r.corp));
     const c = DB.tabele.comenzi[0];
     egal([c.addon_materiale_selectate[0].nivel, c.addon_materiale_selectate[0].pret_unitar, c.suma_materiale], ['Gold', 70, 700]);
     adevarat(c.suma_totala_platita > 700, 'cu taxe și TVA');
-    egal((await comanda({ valoare_totala: undefined, produse_marketplace: [{ id: MAT, qty: 1 }] })).statusCode, 400, 'fără nivel');
-    egal((await comanda({ valoare_totala: undefined, produse_marketplace: [{ id: INCH, qty: 1, nivel: 'Gold' }] })).statusCode, 400, 'o închiriere nu trece ca material');
+    egal((await comanda({ nivel_id: undefined, produse_marketplace: [{ id: MAT, qty: 1 }] })).statusCode, 400, 'fără nivel');
+    egal((await comanda({ nivel_id: undefined, produse_marketplace: [{ id: INCH, qty: 1, nivel: 'Gold' }] })).statusCode, 400, 'o închiriere nu trece ca material');
   });
   await test('marketplace-produse (POST): prețul materialelor din coș, același ca la comandă', async () => {
     reset();
     const r = await cheama(apiMp, { body: { produse: [{ id: MAT, qty: 10, nivel: 'Gold' }], tara_cod: 'RO' } });
     egal([r.statusCode, r.corp.disponibil, r.corp.itemi[0].id], [200, true, MAT], JSON.stringify(r.corp));
-    const c = await comanda({ valoare_totala: undefined, produse_marketplace: [{ id: MAT, qty: 10, nivel: 'Gold' }] });
+    const c = await comanda({ nivel_id: undefined, produse_marketplace: [{ id: MAT, qty: 10, nivel: 'Gold' }] });
     egal(c.corp.comanda.suma_totala_platita, r.corp.pret_final);
     egal((await cheama(apiMp, { body: { produse: [{ id: MAT, qty: 1 }] } })).statusCode, 400, 'fără nivel');
   });
@@ -400,13 +401,20 @@ async function testeBrowser() {
     '/api/comenzi/creeaza': apiCreeaza,
     '/api/public/marketplace-produse': apiMp,
     '/api/public/geo-regiuni': apiGeo,
+    '/api/public/calculeaza-pret-nivel': require(path.join(RADACINA, 'api/public/calculeaza-pret-nivel.js')),
     '/api/public/tari-active': async (req, res) => res.status(200).json({ ok: true, active: ['RO'], tari: [{ tara_cod: 'RO', tara_nume: 'România' }], tva: { RO: 21 } }),
     '/api/cont/profil': async (req, res) => res.status(200).json({ ok: true, email: 'client@example.com', nume: 'Ana Albu', roles: ['client'], roluri_dashboard: ['client'], partener: null, investitor: null }),
   };
-  // Catalogul citește direct din Supabase (REST): materialul de test, restul gol.
-  const REST = (u) => {
-    if (/catalog_servicii\?categorie=eq\.materiale/.test(u)) return [{ id: MAT, id_serviciu: 'mat-parchet', titlu: 'Parchet laminat 8 mm', domeniu: 'Pardoseli', unitate_masura: 'm²', descriere: 'Parchet pentru test', imagini: [] }];
-    return [];
+  // Catalogul și configurarea citesc direct din Supabase (REST): din baza simulată, filtre „eq.”.
+  const REST = (url) => {
+    const u = new URL(url);
+    let rows = (DB.tabele[u.pathname.split('/').pop()] || []).slice();
+    u.searchParams.forEach((v, k) => {
+      if (['select', 'order', 'limit', 'offset'].includes(k)) return;
+      const m = String(v).match(/^eq\.(.*)$/);
+      if (m) rows = rows.filter((x) => String(x[k]) === m[1]);
+    });
+    return rows.map((x) => { const c = Object.assign({ imagini: [] }, x); delete c.catalog_niveluri; return c; });
   };
 
   // Sesiunea simulată: clientul Supabase al paginii (account-system.js nu-l poate înlocui).

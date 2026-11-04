@@ -2274,44 +2274,12 @@ document.addEventListener('DOMContentLoaded', function() {
       const adresa = (typeof adresaTextAgenda === 'function' && !agendaCheckout().p.manual && adresaTextAgenda()) || ['co-adresa', 'co-oras', 'co-judet']
         .map((id) => (document.getElementById(id)?.value || '').trim())
         .filter(Boolean).join(', ');
-      // FIX (G15, 25 Iulie 2026 · extins G16, 26 Iulie 2026): până acum se
-      // trimitea un singur număr (valoare_totala, citit din textul afișat al
-      // totalului) — backend-ul accepta deja componentele itemizate
-      // (cost_baza_servicii/materiale/chirie_scule/asigurare, vezi
-      // api/comenzi/creeaza.js), dar checkout.html nu le trimitea niciodată.
-      //
-      // G16 a adăugat selectoare reale de materiale/închirieri în
-      // mydarrin-produs.html — dar a scos la iveală o problemă mai veche:
-      // BASE_SUBTOTAL (= cfg.total) e deja majorat cu zonă/urgență/platformă/
-      // TVA de recalc() din produs.html, deci a-l trimite direct ca
-      // cost_baza_servicii ar fi dublat TVA/platforma (calculate încă o dată,
-      // diferit, în lib/calculeaza-pret.js pe server). Corect: folosim
-      // componentele RAW, pre-majorare, salvate acum separat de produs.html
-      // (MYD_CFG.bazaRaw/insPrice/materialePrice/inchirieriPrice) — patru
-      // componente reale, nu una. Curier rămâne 0: nu are încă echivalent de
-      // catalog cu preț propriu (alocare pe zonă/disponibilitate, nu listă).
-      //
-      // Fallback (acces direct la /cos, fără să treci prin produs.html —
-      // MYD_CFG e null): comportamentul de la G15, cu BASE_SUBTOTAL și
-      // bifa de asigurare proprie a checkout-ului.
-      let cost_baza_servicii, cost_asigurare, cost_materiale, cost_chirie_scule;
-      if (MYD_CFG) {
-        cost_baza_servicii = MYD_CFG.bazaRaw ?? BASE_SUBTOTAL;
-        cost_asigurare = MYD_CFG.insPrice || 0;
-        cost_materiale = MYD_CFG.materialePrice || 0;
-        cost_chirie_scule = MYD_CFG.inchirieriPrice || 0;
-      } else {
-        cost_baza_servicii = BASE_SUBTOTAL;
-        cost_asigurare = document.getElementById('cb-insurance')?.checked ? INSURANCE_PRICE : 0;
-        cost_materiale = 0;
-        cost_chirie_scule = 0;
-      }
-      // Trimisă redundant, ca plasă de siguranță: dacă vreodată suma
-      // componentelor ar ajunge 0 (caz limită), api/comenzi/creeaza.js cade
-      // pe ramura veche (valoare_totala) în loc să respingă comanda cu 400 —
-      // nu schimbă nimic în cazul normal, unde componentele itemizate au
-      // prioritate.
-      const valoare_totala = cost_baza_servicii + cost_asigurare + cost_materiale + cost_chirie_scule;
+      // Pasul 11-C2 (regula LM, 3 nov. 2026): checkout-ul nu mai trimite nicio
+      // cifră de preț (înainte: cost_baza_servicii / cost_asigurare /
+      // cost_materiale / cost_chirie_scule / valoare_totala, calculate aici).
+      // Trimite doar ce a ales clientul — nivelul (nivel_id), cantitatea,
+      // materialele opționale, adresa — iar prețul se calculează pe server
+      // (api/comenzi/creeaza.js → lib/pret-serviciu.js), același ca cel afișat.
       // G27 (26 Iulie 2026) — până acum tara_cod/regiune/localitate ale
       // comenzii veneau din geolocalizarea DISPOZITIVULUI (window.MYD_GEO_LAST)
       // — corect doar dacă clientul comandă chiar din locul unde se execută
@@ -2367,7 +2335,8 @@ document.addEventListener('DOMContentLoaded', function() {
           ? { adresa, tara_cod: taraComanda, regiune: regiuneComanda, localitate: localitateComanda, produse_marketplace: addonMateriale, metoda_plata: metodaPlataB2C }
           : MYD_CFG?.nivel_id
           ? { adresa, tara_cod: taraComanda, regiune: regiuneComanda, localitate: localitateComanda, nivel_id: MYD_CFG.nivel_id, cantitate: MYD_CFG.cantitate || 1, addon_materiale: addonMateriale, data_programata: dataProgramata, ora_inceput_programata: oraInceputProgramata, ora_sfarsit_programata: oraSfarsitProgramata, metoda_plata: metodaPlataB2C }
-          : { adresa, tara_cod: taraComanda, regiune: regiuneComanda, localitate: localitateComanda, cost_baza_servicii, cost_asigurare, cost_materiale, cost_chirie_scule, valoare_totala, data_programata: dataProgramata, ora_inceput_programata: oraInceputProgramata, ora_sfarsit_programata: oraSfarsitProgramata, metoda_plata: metodaPlataB2C };
+          // Fără nivel din catalog: serverul răspunde 409 FARA_PRET („Cere un deviz”).
+          : { adresa, tara_cod: taraComanda, regiune: regiuneComanda, localitate: localitateComanda, data_programata: dataProgramata, ora_inceput_programata: oraInceputProgramata, ora_sfarsit_programata: oraSfarsitProgramata, metoda_plata: metodaPlataB2C };
 
         // Flux B2G (audit Secțiunea 43/44, 31 Iulie 2026) — endpoint SEPARAT,
         // api/comenzi/creeaza.js (calea B2C de mai jos, else) rămâne neatins.
@@ -3157,6 +3126,62 @@ function applyChecoutConfigReal(){
   }
 
   recalcCheckoutTotal();
+  confirmaPretServer(cfg);
+}
+
+// Pasul 11-C2 (regula LM, 3 nov. 2026): totalul afișat e cel calculat de
+// server pentru comandă — recitit la deschiderea checkout-ului (nu preluat din
+// pagina anterioară): nivel_id → /api/public/calculeaza-pret-nivel (același
+// calcul ca api/comenzi/creeaza.js), materiale → /api/public/marketplace-produse.
+// Fără nivel din catalog nu există preț real: „Prețul se stabilește prin deviz”,
+// iar comanda nu se poate plasa de aici.
+let PRET_SERVER = { stare: 'necunoscut' };
+async function confirmaPretServer(cfg) {
+  const tr = (ro, p) => (typeof window.t === 'function' ? window.t(null, ro, p) : ro);
+  const faraPret = (text) => {
+    PRET_SERVER = { stare: 'fara_pret' };
+    BASE_SUBTOTAL = null;
+    setEl2('ci1-price', '—');
+    setEl2('sum-item-pret', '—');
+    document.getElementById('total-price').textContent = text;
+    document.querySelectorAll('.conf-total').forEach((el) => { el.textContent = text; });
+  };
+  const addon = [...(cfg.materiale || []), ...(cfg.inchirieri || [])];
+  let pret = null;
+  try {
+    if (cfg.nivel_id) {
+      const r = await fetch('/api/public/calculeaza-pret-nivel', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nivel_id: cfg.nivel_id, cantitate: cfg.cantitate || 1, tara_cod: cfg.tara_cod || 'RO', regiune: cfg.regiune || null, addon_materiale: addon.map((m) => ({ id: m.id, qty: m.qty })) }),
+      });
+      const j = await r.json();
+      if (r.ok && j.ok && j.disponibil) pret = Number(j.pret_final);
+      else if (r.ok && j.ok) return faraPret(tr('Prețul se stabilește prin deviz'));
+    } else if (cfg.tip_comanda === 'marketplace') {
+      const r = await fetch('/api/public/marketplace-produse', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ produse: addon.map((m) => Object.assign({ id: m.id, qty: m.qty }, m.nivel ? { nivel: m.nivel } : {})), tara_cod: cfg.tara_cod || 'RO' }),
+      });
+      const j = await r.json();
+      if (r.ok && j.ok && j.disponibil) pret = Number(j.pret_final);
+      else if (r.ok && j.ok) return faraPret(j.mesaj || tr('Prețul se stabilește prin deviz'));
+    } else {
+      return faraPret(tr('Prețul se stabilește prin deviz'));
+    }
+  } catch (e) { pret = null; }
+  if (pret == null || !(pret > 0)) {
+    PRET_SERVER = { stare: 'eroare' };
+    BASE_SUBTOTAL = null;
+    document.getElementById('total-price').textContent = tr('Prețul nu s-a putut confirma. Reîncarcă pagina.');
+    return;
+  }
+  PRET_SERVER = { stare: 'ok', pret };
+  BASE_SUBTOTAL = pret;
+  cfg.total = pret;
+  const text = window.formatCurrency ? window.formatCurrency(pret) : pret.toLocaleString('ro-RO') + ' Lei';
+  setEl2('ci1-price', Number(pret).toLocaleString('ro-RO'));
+  setEl2('sum-item-pret', text);
+  recalcCheckoutTotal();
 }
 function setEl2(id, text){ const el = document.getElementById(id); if (el) el.textContent = text; }
 
@@ -3226,7 +3251,8 @@ const REGULI_DETALII = [
 function valideazaPas(pas) {
   if (pas === 'cart') {
     const ok = !!MYD_CFG && BASE_SUBTOTAL > 0;
-    if (!ok) arataEroareCamp(document.getElementById('cart-continua'), 'Coșul e gol: alege un serviciu din catalog.');
+    if (!ok && MYD_CFG && PRET_SERVER.stare === 'fara_pret') arataEroareCamp(document.getElementById('cart-continua'), window.t(null, 'Acest serviciu nu are încă un preț fix. Cere un deviz.'));
+    else if (!ok) arataEroareCamp(document.getElementById('cart-continua'), 'Coșul e gol: alege un serviciu din catalog.');
     return ok;
   }
   if (pas === 'details') {
