@@ -106,7 +106,9 @@ async function testeFisiere() {
     adevarat(!/rates\s*=\s*\{RON:1/.test(s), 'cursuri de schimb scrise în cod');
     adevarat(!/materiale_baza_estimat/.test(s), 'prețul „de la” din estimare');
     const mk = s.slice(s.indexOf('function mkCard('), s.indexOf('function inject('));
-    adevarat(mk.length > 100 && !/unsplash/i.test(mk), 'imagini stock pe cardurile de produs');
+    // Pasul 11-C5 (decizia LM): imaginea reală din back-office, altfel imaginea de
+    // prezentare a domeniului, altfel IMG_DEF — fără iconiță în locul imaginii.
+    adevarat(mk.length > 100 && /const img = imgReal \|\| imgPrezentare/.test(mk) && /d\.img \|\| IMG_DEF/.test(mk) && !/card-icoana/.test(mk), 'ordinea imaginilor pe cardurile de produs');
   });
   await test('vercel.json: 301 pentru cele 3 pagini (cu și fără .html) spre catalogul filtrat; rutele /servicii/<slug> spre catalog', async () => {
     const v = JSON.parse(citeste('vercel.json'));

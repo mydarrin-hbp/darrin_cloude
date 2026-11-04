@@ -205,6 +205,7 @@ function randeaza() {
     : '';
 }
 
+const IMG_PREZENTARE = 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=600&q=80';
 function cardProdus(p, i, moneda) {
   const lang = p.limba_text === 'ro' && LIMBA !== 'ro' ? ' lang="ro"' : '';
   const unitate = escapeHTML(t(p.unitate));
@@ -217,9 +218,10 @@ function cardProdus(p, i, moneda) {
     if (p.operator_inclus === 'cu_operator_optional') meta.push(t('Operator disponibil opțional'));
   }
   if (p.furnizor) meta.push(t('Furnizor: {f}', { f: p.furnizor }));
-  const img = p.imagini[0]
-    ? `<img class="card-img" id="img-${i}" src="${escapeHTML(p.imagini[0])}" alt="${escapeHTML(p.denumire)}" loading="lazy"/>`
-    : '';
+  // Pasul 11-C5 (decizia LM, 4 nov. 2026): imaginea încărcată de partener are
+  // prioritate; fără ea, imaginea de prezentare implicită a catalogului (IMG_DEF
+  // din mydarrin-catalog.html — produsele marketplace nu au domeniu).
+  const img = `<img class="card-img" id="img-${i}" src="${escapeHTML(p.imagini[0] || IMG_PREZENTARE)}" alt="${escapeHTML(p.denumire)}" loading="lazy"${p.imagini[0] ? ` onerror="this.onerror=null;this.src='${IMG_PREZENTARE}'"` : ''}/>`;
   const thumbs = p.imagini.length > 1
     ? `<div class="card-thumbs">${p.imagini.map((u) => `<img src="${escapeHTML(u)}" alt="" onclick="document.getElementById('img-${i}').src=this.src"/>`).join('')}</div>`
     : '';
