@@ -65,9 +65,10 @@ const PAGINA_STATICA = {
   '/confirmare-livrare': '/confirmare-livrare',
 };
 
-// Normalizează "inchirieri" (segment din URL, plural, cerut de business) la
-// "inchiriere" (valoarea internă folosită deja de mydarrin-categorie-servicii.html).
-const TIP_CATEGORIE = { servicii: 'servicii', materiale: 'materiale', inchirieri: 'inchiriere', inchiriere: 'inchiriere' };
+// Pasul 11-C4: un singur catalog — /servicii/<slug>, /catalog/materiale/<slug> etc.
+// duc la mydarrin-catalog cu filtrul (categorie = servicii | materiale | inchirieri,
+// subcategorie = slug-ul din categorii).
+const TIP_CATEGORIE = { servicii: 'servicii', materiale: 'materiale', inchirieri: 'inchirieri', inchiriere: 'inchirieri' };
 
 function ruteazaPublic(pathname) {
   if (PAGINA_STATICA[pathname]) {
@@ -76,12 +77,12 @@ function ruteazaPublic(pathname) {
 
   let m = pathname.match(/^\/(servicii|materiale|inchiriere)\/([^/]+)$/);
   if (m) {
-    return { destinatie: '/mydarrin-categorie-servicii', query: { type: TIP_CATEGORIE[m[1]], cat: m[2] } };
+    return { destinatie: '/mydarrin-catalog', query: { categorie: TIP_CATEGORIE[m[1]], subcategorie: m[2] } };
   }
 
   m = pathname.match(/^\/catalog\/(servicii|materiale|inchirieri)\/([^/]+)$/);
   if (m) {
-    return { destinatie: '/mydarrin-categorie-servicii', query: { type: TIP_CATEGORIE[m[1]], cat: m[2] } };
+    return { destinatie: '/mydarrin-catalog', query: { categorie: TIP_CATEGORIE[m[1]], subcategorie: m[2] } };
   }
 
   m = pathname.match(/^\/catalog\/([^/]+)\/([^/]+)\/([^/]+)$/);

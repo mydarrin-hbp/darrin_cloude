@@ -1,4 +1,8 @@
 // /api/public/catalog-categorie.js
+// Pasul 11-C4 (4 nov. 2026): paginile de categorie trimit acum spre catalog;
+// endpoint-ul dă prețurile „de la” ale catalogului (mydarrin-catalog.html),
+// cu `toate=1` (toate produsele publice ale tipului) sau pe o categorie.
+//
 // Pasul 11-C2 (3 nov. 2026, regula LM): produsele unei pagini de categorie
 // (mydarrin-categorie-servicii / -materiale / -inchirieri.html), din catalogul
 // real — același ca mydarrin-catalog.html (catalog_servicii cu status_public),
@@ -11,7 +15,7 @@
 // nu afișează nicio cifră). Imaginile: doar cele din catalog. Fără discounturi
 // de partener sau costuri interne.
 //
-// GET ?cat=<slug din categorii>&tip=servicii|materiale|inchirieri&tara=RO
+// GET ?cat=<slug din categorii> | toate=1, &tip=servicii|materiale|inchirieri&tara=RO
 // -> { ok, categorie: { slug, title, title_en, description, icon_name } | null,
 //      produse: [{ id, slug, titlu, descriere, unitate, imagine, tip, pret_de_la, are_pret }],
 //      are_pret: produsul are un preț real (rețetă sau catalog_preturi) — fără el, „Cere un deviz”.
@@ -33,6 +37,7 @@ module.exports = async function handler(req, res) {
   const slug = text(req.query?.cat, 120);
   const tip = TIPURI[text(req.query?.tip, 20)] || 'servicii';
   const tara = (text(req.query?.tara, 2) || 'RO').toUpperCase();
+  const toate = String(req.query?.toate || '') === '1';
 
   try {
     // Categoria și subcategoriile ei.
@@ -61,31 +66,31 @@ module.exports = async function handler(req, res) {
       ]);
       const vazute = new Set();
       [...(a.data || []), ...(b.data || [])].forEach((p) => { if (!vazute.has(p.id)) { vazute.add(p.id); produse.push(p); } });
+    } else if (toate) {
+      const { data } = await supabaseAdmin.from('catalog_servicii').select(coloane).eq('status_public', true).eq('categorie', tip);
+      produse = data || [];
     }
 
     // Prețul „de la”: doar niveluri fără rețetă, cu preț în catalog_preturi.
     const pretMinim = {};
     const cuPretReal = new Set();
     if (produse.length) {
-      const { data: niveluri } = await supabaseAdmin
-        .from('catalog_niveluri').select('id, serviciu_id').in('serviciu_id', produse.map((p) => p.id));
-      const idNiveluri = (niveluri || []).map((n) => n.id);
-      if (idNiveluri.length) {
-        const [{ data: preturi }, { data: articole }] = await Promise.all([
-          supabaseAdmin.from('catalog_preturi').select('nivel_id, pret, tara_cod').in('nivel_id', idNiveluri).eq('tara_cod', tara),
-          supabaseAdmin.from('devize_articole').select('catalog_nivel_id').in('catalog_nivel_id', idNiveluri),
-        ]);
-        const cuReteta = new Set((articole || []).map((x) => x.catalog_nivel_id));
-        const servPeNivel = {};
-        (niveluri || []).forEach((n) => { servPeNivel[n.id] = n.serviciu_id; if (cuReteta.has(n.id)) cuPretReal.add(n.serviciu_id); });
-        (preturi || []).forEach((p) => {
+      // Nivelurile cu prețurile lor (o singură cerere, fără liste lungi de id-uri
+      // în adresă) și nivelurile cu rețetă (puține, citite toate).
+      const [{ data: niveluri }, { data: articole }] = await Promise.all([
+        supabaseAdmin.from('catalog_niveluri').select('id, serviciu_id, catalog_preturi(pret, tara_cod)').in('serviciu_id', produse.map((p) => p.id)),
+        supabaseAdmin.from('devize_articole').select('catalog_nivel_id').not('catalog_nivel_id', 'is', null),
+      ]);
+      const cuReteta = new Set((articole || []).map((x) => x.catalog_nivel_id));
+      (niveluri || []).forEach((n) => {
+        if (cuReteta.has(n.id)) { cuPretReal.add(n.serviciu_id); return; }
+        (n.catalog_preturi || []).forEach((p) => {
           const v = Number(p.pret);
-          if (!(v > 0) || cuReteta.has(p.nivel_id)) return;
-          const s = servPeNivel[p.nivel_id];
-          if (s) cuPretReal.add(s);
-          if (s && (pretMinim[s] == null || v < pretMinim[s])) pretMinim[s] = v;
+          if (p.tara_cod !== tara || !(v > 0)) return;
+          cuPretReal.add(n.serviciu_id);
+          if (pretMinim[n.serviciu_id] == null || v < pretMinim[n.serviciu_id]) pretMinim[n.serviciu_id] = v;
         });
-      }
+      });
     }
 
     let cfg = null;

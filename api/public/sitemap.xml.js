@@ -28,9 +28,6 @@ const PRIORITATE = {
   '/despre-noi': '0.7',
   '/afla-ce-facem': '0.7',
   '/mydarrin-cum-functioneaza': '0.7',
-  '/mydarrin-categorie-servicii': '0.7',
-  '/mydarrin-categorie-materiale': '0.7',
-  '/mydarrin-categorie-inchirieri': '0.7',
   '/investitor': '0.6',
   '/cum-comanzi': '0.6',
   '/cum-platesc': '0.6',
@@ -52,7 +49,9 @@ const PRIORITATE = {
   '/mydarrin-politica-confidentialitate': '0.2',
 };
 
-const PAGINI = PAGINI_BAZA.map((p) => ({ cale: p.cale, prioritate: PRIORITATE[p.cale] || '0.5' }));
+// Pasul 11-C4: catalogul filtrat pe tipuri (fostele pagini de categorie, acum redirecționate).
+const CATALOG_FILTRAT = ['servicii', 'materiale', 'inchirieri'].map((c) => ({ cale: '/mydarrin-catalog?categorie=' + c, prioritate: '0.7' }));
+const PAGINI = PAGINI_BAZA.map((p) => ({ cale: p.cale, prioritate: PRIORITATE[p.cale] || '0.5' })).concat(CATALOG_FILTRAT);
 
 function escapeXml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

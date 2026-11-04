@@ -12,7 +12,7 @@
 //   B. prețul afișat (calculeaza-pret-nivel) = prețul din coș (cos-multi) =
 //      prețul comenzii, pentru 3 servicii fără rețetă, 1 cu rețetă, 1 închiriere
 //      și 1 material; serviciu fără preț în catalog → nu intră în coș;
-//   C. api/public/catalog-categorie: doar produse din catalog (categoria și
+//   C. api/public/catalog-categorie (prețurile catalogului, pasul 11-C4): doar produse din catalog (categoria și
 //      subcategoriile ei), prețul „de la” doar din catalog_preturi (niveluri
 //      fără rețetă), fără preț → null; paginile fără liste scrise de mână,
 //      fără Unsplash, fără prețuri în cod;
@@ -257,14 +257,15 @@ async function testeServer() {
     const ret = await cheama(apiCat, { metoda: 'GET', query: { cat: 'alta', tip: 'servicii' } });
     egal(ret.corp.produse.find((p) => p.slug === 'montaj-parchet-laminat').pret_de_la, null, 'nivel cu rețetă: fără preț din catalog_preturi');
   });
-  await test('paginile de categorie: fără liste scrise de mână, fără Unsplash, fără prețuri în cod; citesc din catalog-categorie', async () => {
-    for (const f of ['mydarrin-categorie-servicii.html', 'mydarrin-categorie-materiale.html', 'mydarrin-categorie-inchirieri.html', 'categorie-catalog.js']) {
-      const s = fs.readFileSync(path.join(RADACINA, f), 'utf8').replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
-      adevarat(!/unsplash/i.test(s), f + ': Unsplash');
-      adevarat(!/const SUBCATEGORY_DB|price\s*:\s*\d/.test(s), f + ': listă / preț scris de mână');
-      if (f.endsWith('.html')) adevarat(s.includes('src="categorie-catalog.js"') && !/max="1000"|1000 Lei/.test(s), f);
+  // Pasul 11-C4: paginile de categorie trimit spre catalog (înainte: citeau catalogul
+  // prin categorie-catalog.js, acum șters); catalogul ia prețurile din același endpoint.
+  await test('paginile de categorie: doar redirecționare spre catalog, fără liste, prețuri sau Unsplash; catalogul citește prețurile din catalog-categorie', async () => {
+    for (const f of ['mydarrin-categorie-servicii.html', 'mydarrin-categorie-materiale.html', 'mydarrin-categorie-inchirieri.html']) {
+      const s = fs.readFileSync(path.join(RADACINA, f), 'utf8').replace(/<!--[\s\S]*?-->/g, '');
+      adevarat(!/unsplash/i.test(s) && !/const SUBCATEGORY_DB|price\s*:\s*\d/.test(s), f + ': conținut vechi');
+      adevarat(s.includes("location.replace('/mydarrin-catalog?"), f + ': redirecționarea');
     }
-    adevarat(fs.readFileSync(path.join(RADACINA, 'categorie-catalog.js'), 'utf8').includes('/api/public/catalog-categorie'), 'sursa');
+    adevarat(fs.readFileSync(path.join(RADACINA, 'mydarrin-catalog.html'), 'utf8').includes('/api/public/catalog-categorie?toate=1'), 'sursa prețurilor din catalog');
   });
 
   console.log('D. Discounturile partenerilor nu apar în răspunsurile publice');
@@ -401,42 +402,35 @@ async function testeBrowser() {
       await ctx.close();
     }
 
-    console.log('E2. Paginile de categorie');
+    // Pasul 11-C4: paginile de categorie trimit spre catalogul filtrat — aceleași
+    // verificări, pe catalog (înainte: pe mydarrin-categorie-servicii.html).
+    console.log('E2. Catalogul filtrat pe categorie');
     for (const latime of [390, 768, 1024, 1366]) {
       reset();
       const ctx = await context(browser, latime);
-      await test(`${latime}: categoria de servicii — produsele din catalog, „de la” doar unde există preț, fără derulare orizontală și fără erori JS`, async () => {
-        const pg = await pagina(ctx, '/mydarrin-categorie-servicii.html?type=servicii&cat=instalatii-electrice');
-        await pg.waitForSelector('#sub-grid .rich-card');
-        const carduri = await pg.$$eval('#sub-grid .rich-card', (c) => c.map((x) => [x.dataset.slug, x.querySelector('.price-val') ? x.querySelector('.price-val').textContent : null, !!x.querySelector('img'), !!x.querySelector('.card-icoana')]));
+      await test(`${latime}: catalogul, categoria Instalații electrice — produsele din catalog, „de la” = prețul de configurare, fără preț → deviz; fără derulare orizontală și fără erori JS`, async () => {
+        const pg = await pagina(ctx, '/mydarrin-catalog.html?categorie=servicii&subcategorie=instalatii-electrice');
+        await pg.waitForFunction(() => window.FILTRU_SUBCATEGORIE && document.querySelectorAll('#grid-servicii .db-card').length > 0);
+        await pg.waitForTimeout(300);
+        const carduri = await pg.$$eval('#grid-servicii .db-card', (c) => c.filter((x) => x.offsetParent !== null).map((x) => [x.dataset.slug, x.querySelector('.price-val') ? x.querySelector('.price-val').textContent.trim() : null, x.querySelector('.card-price').textContent]));
         egal(carduri.map((c) => c[0]).sort(), ['inlocuire-becuri-corpuri', 'montaj-priza', 'montaj-tablou-electric', 'serviciu-fara-pret']);
-        egal(carduri.find((c) => c[0] === 'serviciu-fara-pret')[1], null, 'fără preț');
-        adevarat(carduri.find((c) => c[0] === 'montaj-tablou-electric')[2] && carduri.find((c) => c[0] === 'montaj-priza')[3], 'imaginea din catalog / iconița');
-        adevarat(!(await pg.content()).includes('unsplash'), 'Unsplash');
-        egal(await pg.textContent('#cat-title'), 'Instalații electrice');
+        const priza = await pg.evaluate((v) => (typeof window.formatCurrency === 'function' ? window.formatCurrency(v) : Math.round(v).toLocaleString('ro-RO') + ' Lei'), (await pretAfisat(P.priza)).pret_final);
+        egal(carduri.find((c) => c[0] === 'montaj-priza')[1], priza, 'priză = configurarea');
+        const fara = carduri.find((c) => c[0] === 'serviciu-fara-pret');
+        adevarat(fara[1] === null && /deviz/.test(fara[2]), 'fără preț: ' + fara[2]);
         egal(await depasire(pg), 0, 'derulare orizontală');
-        await captura(pg, `categorie-servicii-${latime}`);
+        await captura(pg, `catalog-categorie-${latime}`);
         egal(pg.erori, [], 'erori JS');
         await pg.close();
-      });
-      await test(`${latime}: categorie fără produse (materiale / închirieri) → mesaj clar, fără derulare și fără erori JS`, async () => {
-        for (const f of ['mydarrin-categorie-materiale.html', 'mydarrin-categorie-inchirieri.html']) {
-          const pg = await pagina(ctx, '/' + f);
-          await pg.waitForSelector('#empty-state', { state: 'visible' });
-          adevarat((await pg.textContent('#empty-state')).includes('nu avem produse'), f);
-          egal(await depasire(pg), 0, f + ': derulare orizontală');
-          egal(pg.erori, [], f + ': erori JS');
-          await pg.close();
-        }
       });
       await ctx.close();
     }
     reset();
     const ctx = await context(browser, 1366);
-    await test('categorie: „Adaugă în coș” la un serviciu → configurarea, fără să adauge nimic', async () => {
-      const pg = await pagina(ctx, '/mydarrin-categorie-servicii.html?type=servicii&cat=instalatii-electrice');
-      await pg.waitForSelector('[data-slug="montaj-priza"] .card-cta');
-      await Promise.all([pg.waitForURL(/mydarrin-produs\.html\?slug=montaj-priza&type=serviciu/), pg.click('[data-slug="montaj-priza"] .card-cta')]);
+    await test('catalog: „Adaugă în coș” la un serviciu → configurarea, fără să adauge nimic', async () => {
+      const pg = await pagina(ctx, '/mydarrin-catalog.html?categorie=servicii&subcategorie=instalatii-electrice');
+      await pg.waitForSelector('[data-slug="montaj-priza"] .card-cta', { state: 'attached' });
+      await Promise.all([pg.waitForURL(/mydarrin-produs\.html\?slug=montaj-priza&type=serviciu/), pg.$eval('[data-slug="montaj-priza"] .card-cta', (b) => b.click())]);
       egal(DB.tabele.cos_multi_itemi.length, 0);
       await pg.close();
     });
@@ -446,26 +440,21 @@ async function testeBrowser() {
     for (const latime of [390, 1366]) {
       reset();
       const ce = await context(browser, latime, 'en');
-      await test(`${latime}: EN — „Ask for a quote”, categoria (titlu și mesaj gol) fără text românesc`, async () => {
+      await test(`${latime}: EN — „Ask for a quote”, catalogul filtrat (eticheta și prețurile) fără text românesc`, async () => {
         const pg = await pagina(ce, `/mydarrin-produs.html?slug=${P.faraPret.slug}&type=serviciu`);
         await pg.waitForSelector('#cos-deviz:not([hidden])');
         await pg.waitForTimeout(400);
         const t = await pg.textContent('#cos-deviz');
         adevarat(/Ask for a quote/.test(t) && !/[ăâîșț]|deviz/i.test(t), t);
         await pg.close();
-        const pc = await pagina(ce, '/mydarrin-categorie-servicii.html?type=servicii&cat=instalatii-electrice');
-        await pc.waitForSelector('#sub-grid .rich-card');
+        const pc = await pagina(ce, '/mydarrin-catalog.html?categorie=servicii&subcategorie=instalatii-electrice');
+        await pc.waitForFunction(() => window.FILTRU_SUBCATEGORIE && !document.getElementById('filtru-subcategorie').hidden);
         await pc.waitForTimeout(400);
-        egal(await pc.textContent('#cat-title'), 'Electrical installations');
-        const preturi = await pc.$$eval('#sub-grid .card-price, #sub-grid .card-cta', (e) => e.map((x) => x.textContent).join(' | '));
-        adevarat(!/[ăâîșț]|Adaug|Prețul/.test(preturi), preturi);
-        await captura(pc, `categorie-servicii-en-${latime}`);
+        adevarat((await pc.textContent('#filtru-subcategorie')).includes('Electrical installations'), 'eticheta categoriei');
+        const preturi = await pc.$$eval('#grid-servicii .db-card .card-price, #grid-servicii .db-card .card-cta', (e) => e.map((x) => x.textContent).join(' | '));
+        adevarat(!/[ăâîșț]|Adaug|Preț/.test(preturi), preturi);
+        await captura(pc, `catalog-categorie-en-${latime}`);
         await pc.close();
-        const pm = await pagina(ce, '/mydarrin-categorie-materiale.html');
-        await pm.waitForSelector('#empty-state', { state: 'visible' });
-        await pm.waitForTimeout(400);
-        adevarat(!/[ăâîșț]/.test(await pm.textContent('#empty-state')), await pm.textContent('#empty-state'));
-        await pm.close();
       });
       await ce.close();
     }
