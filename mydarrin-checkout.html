@@ -2338,8 +2338,10 @@ document.addEventListener('DOMContentLoaded', function() {
           // Fără nivel din catalog: serverul răspunde 409 FARA_PRET („Cere un deviz”).
           : { adresa, tara_cod: taraComanda, regiune: regiuneComanda, localitate: localitateComanda, data_programata: dataProgramata, ora_inceput_programata: oraInceputProgramata, ora_sfarsit_programata: oraSfarsitProgramata, metoda_plata: metodaPlataB2C };
 
-        // Flux B2G (audit Secțiunea 43/44, 31 Iulie 2026) — endpoint SEPARAT,
-        // api/comenzi/creeaza.js (calea B2C de mai jos, else) rămâne neatins.
+        // Flux B2G (audit Secțiunea 43/44, 31 Iulie 2026) — endpoint separat.
+        // Pasul 11-C3: aceleași câmpuri ca B2C, fără prețuri, plus datele
+        // instituției; prețul se calculează pe server, în același loc
+        // (lib/comanda-pret.js), iar totalul afișat e cel de pe server.
         const esteB2G = document.getElementById('b2g-toggle')?.checked;
         const endpoint = esteB2G ? '/api/comenzi/creeaza-b2g' : '/api/comenzi/creeaza';
         const corp = esteB2G ? {
@@ -2384,7 +2386,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         scoateDinCosDupaComanda(MYD_CFG);
         if (esteB2G) {
-          showComandaInregistrataScreen(data.comanda.nr_comanda, data.mesaj);
+          const enB2g = window.MYD_I18N && window.MYD_I18N.lang && window.MYD_I18N.lang !== 'ro';
+          showComandaInregistrataScreen(data.comanda.nr_comanda, (enB2g && data.mesaj_en) || data.mesaj);
         } else {
           showComandaInregistrataScreen(data.comanda.nr_comanda);
           if (data.agenda_nesalvata) showToastCheckout(window.t(null, 'Comanda e plasată, dar datele nu s-au salvat în contul tău. Le poți adăuga din „Adrese și facturare”.'));
@@ -3107,18 +3110,11 @@ function applyChecoutConfigReal(){
 
   setEl2('cart-count-label', cfg.tip_comanda === 'marketplace' ? window.t(null, 'Produse din marketplace') : window.t(null, '1 serviciu'));
 
-  // Mod pilot (22 august 2026) — pe calea nivel_id, api/comenzi/creeaza.js
-  // calculează prețul EXCLUSIV din rețeta tehnică (nivel_id+cantitate),
-  // ignorând orice alt cost trimis. B2G, promo și asigurarea extinsă din
-  // checkout (distinctă de cea din produs.html) n-au echivalent pe această
-  // cale — dezactivate explicit aici ca prețul afișat să nu difere niciodată
-  // de ce se încasează efectiv. Rămân itemi separați, cu aprobare proprie.
+  // Prețul se calculează exclusiv pe server (nivel_id / produse). Asigurarea
+  // extinsă din checkout (o sumă fixă, fără sursă) n-are echivalent pe server —
+  // dezactivată ca prețul afișat să nu difere de ce se încasează. B2G (pasul
+  // 11-C3) folosește același calcul de pe server, deci rămâne disponibil.
   if (cfg.nivel_id || cfg.tip_comanda === 'marketplace') {
-    const b2gToggle = document.getElementById('b2g-toggle');
-    if (b2gToggle) { b2gToggle.checked = false; b2gToggle.disabled = true; }
-    const b2gLabel = b2gToggle?.closest('label');
-    if (b2gLabel) b2gLabel.title = 'Indisponibil pentru acest serviciu (mod pilot).';
-
     const cbIns = document.getElementById('cb-insurance');
     if (cbIns) { cbIns.checked = false; cbIns.disabled = true; }
     const cbInsLabel = cbIns?.closest('label');
