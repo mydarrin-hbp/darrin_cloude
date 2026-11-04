@@ -31,8 +31,9 @@ const dosarCapturi = iCapturi !== -1 ? process.argv[iCapturi + 1] : null;
 
 // Aceeași listă ca în scripts/test-clicuri-meniu.js și scripts/detector-ro.js (PUBLICE).
 const PUBLICE = ['index', 'servicii-urgente', 'despre-noi', 'afla-ce-facem', 'mydarrin-contact', 'mydarrin-app-mobile',
-  'mydarrin-catalog', 'mydarrin-categorie-servicii.html?type=servicii&cat=instalatii-electrice', 'mydarrin-categorie-materiale',
-  'mydarrin-categorie-inchirieri', 'mydarrin-marketplace', 'mydarrin-marketplace-materiale.html?slug=montaj-parchet-laminat&type=servicii&nace=43.33',
+  // Pasul 11-C4: paginile de categorie → catalogul filtrat (redirect 301).
+  'mydarrin-catalog', 'mydarrin-catalog.html?categorie=servicii&subcategorie=instalatii-electrice', 'mydarrin-catalog.html?categorie=materiale',
+  'mydarrin-marketplace', 'mydarrin-marketplace-materiale.html?slug=montaj-parchet-laminat&type=servicii&nace=43.33',
   'mydarrin-produs.html?slug=inlocuire-becuri-corpuri&type=servicii', 'mydarrin-checkout', 'mydarrin-cos',
   'mydarrin-creeaza-deviz', 'confirmare-livrare', 'reset-password', 'mydarrin-cum-functioneaza', 'cum-comanzi', 'cum-platesc',
   'cum-programez-serviciu', 'cum-prestam-livram', 'intrebari-frecvente-clienti', 'intrebari-frecvente-parteneri',
@@ -173,7 +174,7 @@ function profil(stare) {
     }
     console.log(`meniul din antet: ${cuMeniu} pagini`);
     const asteptatePublice = PUBLICE.filter((pg) => cuLoc.includes(pg.split('?')[0].replace(/\.html$/, '') + '.html')).length;
-    verifica(cuMeniu === asteptatePublice && cuMeniu >= 29, `${cuMeniu} pagini publice au meniul în antet (așteptat ${asteptatePublice})`);
+    verifica(cuMeniu === asteptatePublice && cuMeniu >= 28, `${cuMeniu} pagini publice au meniul în antet (așteptat ${asteptatePublice})`);
 
     // 2. Linkurile din meniu și din footer: 200 și ancore existente.
     const cereri = await browser.newContext();
@@ -281,7 +282,7 @@ function profil(stare) {
 
     // 6. Dimensiuni: meniul în ecran, fără derulare orizontală, fără erori JS.
     for (const [w, h] of [[360, 740], [390, 844], [768, 1024], [1024, 768], [1366, 900]]) {
-      for (const pg of ['index', 'despre-noi', 'mydarrin-categorie-materiale', 'mydarrin-termeni', 'mydarrin-devino-partener']) {
+      for (const pg of ['index', 'despre-noi', 'mydarrin-catalog', 'mydarrin-termeni', 'mydarrin-devino-partener']) {
         const et = `${pg} ${w}×${h}`;
         const { ctx, p, erori } = await deschide(pg, { w, h });
         if (await deschideAntet(p)) {

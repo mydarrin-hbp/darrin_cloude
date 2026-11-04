@@ -966,6 +966,24 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 </style>
 
 <link rel="stylesheet" href="ui-public.css">
+<style id="stil-catalog-curat">
+/* Pasul 11-C4: scheletul de încărcare și mesajul de stare al grilelor. */
+.cat-schelet{border-radius:18px;background:#fff;border:1px solid #EEF2F7;padding:12px;min-height:250px;display:flex;flex-direction:column;gap:10px}
+.cat-schelet .cs-media{height:140px;border-radius:12px}
+.cat-schelet .cs-linie{height:12px;border-radius:6px;width:80%}
+.cat-schelet .cs-linie.scurt{width:45%}
+.cat-schelet .cs-media,.cat-schelet .cs-linie{background:linear-gradient(90deg,#EEF2F7 0%,#F7F9FC 50%,#EEF2F7 100%);background-size:200% 100%;animation:csLumina 1.2s linear infinite}
+@keyframes csLumina{from{background-position:200% 0}to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.cat-schelet .cs-media,.cat-schelet .cs-linie{animation:none}}
+.cat-stare{grid-column:1/-1;text-align:center;padding:40px 16px;color:#5A6B7D;font-size:14px;line-height:1.6}
+.filtru-subcategorie{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding:8px 12px;border-radius:12px;background:#EBF4FB;border:1px solid #D6E8F5;color:#003366;font-size:13px}
+.filtru-subcategorie[hidden]{display:none}
+.filtru-subcategorie button{min-width:32px;min-height:32px;border:none;border-radius:8px;background:#fff;color:#003366;font-size:16px;font-weight:800;cursor:pointer}
+.cat-stare button{margin-top:12px;min-height:44px;padding:10px 20px;border-radius:12px;border:none;background:#003366;color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
+.db-card .card-footer{flex-wrap:wrap;row-gap:8px}
+.db-card .card-cta{white-space:normal}
+.card-icoana{width:100%;height:100%;min-height:140px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#EBF4FB,#F4F7F9);color:#003366;font-size:44px}
+</style>
 </head>
 <body>
 
@@ -1807,7 +1825,7 @@ function triggerHeaderSearch(){
     <a href="/" style="color:#6B7A8D;text-decoration:none">Acasă</a>
     <span style="color:#D5DFE8">/</span>
     <span style="font-weight:600;color:#2D2D2D">Catalog servicii, materiale & închirieri</span>
-    <span style="margin-left:auto" id="breadcrumb-count" style="font-size:11px;color:#8C9BAD">26 produse</span>
+    <span style="margin-left:auto" id="breadcrumb-count" style="font-size:11px;color:#8C9BAD"></span>
   </div>
 </div>
 
@@ -2138,7 +2156,7 @@ function triggerHeaderSearch(){
     </div>
     <div style="margin-top:10px;padding-top:10px;border-top:1px solid #F4F7F9">
       <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:6px">Preț max</div>
-      <input type="range" id="price-range" min="0" max="5000" value="5000" step="50"
+      <input type="range" id="price-range" min="0" max="0" value="0" step="1" aria-label="Preț maxim"
         oninput="updatePriceRange(this.value)"
         style="width:100%;accent-color:#FF8C00;cursor:pointer"/>
       <div style="display:flex;justify-content:space-between;font-size:11px;color:#8C9BAD;margin-top:3px">
@@ -2194,7 +2212,7 @@ function triggerHeaderSearch(){
       <button id="btn-execute-search" onclick="applyFilters()" style="display:flex;align-items:center;gap:7px;background:#FF8C00;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(255,140,0,.3);white-space:nowrap">
         Caută / Aplică filtre
       </button>
-      <div class="result-count" id="result-count"><strong>26</strong> rezultate</div>
+      <div class="result-count" id="result-count"><strong>—</strong> rezultate</div>
     </div>
 
     <!-- ACTIVE FILTERS ROW -->
@@ -2205,490 +2223,11 @@ function triggerHeaderSearch(){
     <!-- TABS + GRIDS -->
     <div id="tab-servicii" class="tab-content active">
       <div class="catalog-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full" id="grid-servicii">
-        
-        <!-- CARD 1: Instalații sanitare -->
-        <div class="rich-card reveal d1"
-             data-tab="servicii"
-             data-cat="Instalații"
-             data-subcat="Sanitare & Termo"
-             data-title="instalații sanitare"
-             data-price="85"
-             data-reviews="340"
-             data-urgent="true"
-             data-ai="true"
-             data-slug="instalatii-sanitare"
-             onclick="openService('instalatii-sanitare','Instalații sanitare')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=600&q=80" alt="Instalații sanitare" loading="lazy"/>
-            <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            <span class="card-badge hot">Popular</span>
-            <span style="position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;background:rgba(220,38,38,.85);color:#fff;padding:2px 8px;border-radius:99px;backdrop-filter:blur(4px)">Urgent</span>
-            <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>
-          </div>
-          <div class="card-body">
-            <div class="card-title">Instalații sanitare</div>
-            <div class="card-desc">Montaj, reparații și modernizare completă instalații apă-canal. Parteneri autorizați ANRE.</div>
-            <div class="card-meta" style="gap:4px"><span class="tier-pill tier-bronz">Bronz</span><span class="tier-pill tier-argint">Argint</span><span class="tier-pill tier-aur">Aur</span></div>
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">F 43.22</span><span class="chip chip-ai" style="font-size:9px;padding:2px 8px">ISCO 7411</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="85">85</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ oră manoperă</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 2: Instalații electrice -->
-        <div class="rich-card reveal d2"
-             data-tab="servicii"
-             data-cat="Instalații"
-             data-subcat="Electrice"
-             data-title="instalații electrice"
-             data-price="75"
-             data-reviews="280"
-             data-urgent="true"
-             data-ai="true"
-             data-slug="instalatii-electrice"
-             onclick="openService('instalatii-electrice','Instalații electrice')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&q=80" alt="Instalații electrice" loading="lazy"/>
-            <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            
-            <span style="position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;background:rgba(220,38,38,.85);color:#fff;padding:2px 8px;border-radius:99px;backdrop-filter:blur(4px)">Urgent</span>
-            <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>
-          </div>
-          <div class="card-body">
-            <div class="card-title">Instalații electrice</div>
-            <div class="card-desc">Tablouri, prize, corpuri de iluminat, automatizări. Autorizat ANRE cls. I și II.</div>
-            <div class="card-meta" style="gap:4px"><span class="tier-pill tier-bronz">Bronz</span><span class="tier-pill tier-argint">Argint</span><span class="tier-pill tier-aur">Aur</span><span class="tier-pill tier-platinum">Platinum</span></div>
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">F 43.21</span><span class="chip chip-ai" style="font-size:9px;padding:2px 8px">ISCO 7411</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="75">75</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ oră manoperă</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 3: Construcții & Renovări -->
-        <div class="rich-card reveal d3"
-             data-tab="servicii"
-             data-cat="Construcții"
-             data-subcat="Renovări"
-             data-title="construcții & renovări"
-             data-price="120"
-             data-reviews="520"
-             data-urgent="false"
-             data-ai="true"
-             data-slug="constructii-renovari"
-             onclick="openService('constructii-renovari','Construcții & Renovări')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&q=80" alt="Construcții & Renovări" loading="lazy"/>
-            <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            <span class="card-badge new">Nou</span>
-            
-            <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>
-          </div>
-          <div class="card-body">
-            <div class="card-title">Construcții & Renovări</div>
-            <div class="card-desc">Demolare, zidărie, șape, placaje, compartimentări. Echipă completă alocată AI.</div>
-            <div class="card-meta" style="gap:4px"><span class="tier-pill tier-bronz">Bronz</span><span class="tier-pill tier-argint">Argint</span><span class="tier-pill tier-aur">Aur</span><span class="tier-pill tier-platinum">Platinum</span></div>
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">F 43.11</span><span class="chip chip-ai" style="font-size:9px;padding:2px 8px">ISCO 7121</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="120">120</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ oră echipă</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 4: HVAC & Climatizare -->
-        <div class="rich-card reveal d1"
-             data-tab="servicii"
-             data-cat="Climatizare"
-             data-subcat="HVAC"
-             data-title="hvac & climatizare"
-             data-price="350"
-             data-reviews="190"
-             data-urgent="true"
-             data-ai="true"
-             data-slug="hvac-climatizare"
-             onclick="openService('hvac-climatizare','HVAC & Climatizare')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80" alt="HVAC & Climatizare" loading="lazy"/>
-            <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            <span class="card-badge hot">Popular</span>
-            <span style="position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;background:rgba(220,38,38,.85);color:#fff;padding:2px 8px;border-radius:99px;backdrop-filter:blur(4px)">Urgent</span>
-            <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>
-          </div>
-          <div class="card-body">
-            <div class="card-title">HVAC & Climatizare</div>
-            <div class="card-desc">Montaj și service aer condiționat, ventilație, pompe de căldură, calorifere.</div>
-            <div class="card-meta" style="gap:4px"><span class="tier-pill tier-bronz">Bronz</span><span class="tier-pill tier-argint">Argint</span><span class="tier-pill tier-aur">Aur</span></div>
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">F 43.22</span><span class="chip chip-ai" style="font-size:9px;padding:2px 8px">ISCO 7412</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="350">350</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ instalare</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 5: Zugrăveli & Finisaje -->
-        <div class="rich-card reveal d2"
-             data-tab="servicii"
-             data-cat="Finisaje"
-             data-subcat="Zugrăveli"
-             data-title="zugrăveli & finisaje"
-             data-price="18"
-             data-reviews="410"
-             data-urgent="false"
-             data-ai="true"
-             data-slug="zugraveli-finisaje"
-             onclick="openService('zugraveli-finisaje','Zugrăveli & Finisaje')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=600&q=80" alt="Zugrăveli & Finisaje" loading="lazy"/>
-            <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            
-            
-            <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>
-          </div>
-          <div class="card-body">
-            <div class="card-title">Zugrăveli & Finisaje</div>
-            <div class="card-desc">Grunduire, vopsire, glet, decorațiuni, tapet. Culori la alegere, finisaj premium.</div>
-            <div class="card-meta" style="gap:4px"><span class="tier-pill tier-bronz">Bronz</span><span class="tier-pill tier-argint">Argint</span></div>
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">F 43.34</span><span class="chip chip-ai" style="font-size:9px;padding:2px 8px">ISCO 7131</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="18">18</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ m² manoperă</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 6: Grădinărit & Agri -->
-        <div class="rich-card reveal d3"
-             data-tab="servicii"
-             data-cat="Exterior"
-             data-subcat="Grădinărit"
-             data-title="grădinărit & agri"
-             data-price="60"
-             data-reviews="155"
-             data-urgent="false"
-             data-ai="true"
-             data-slug="gradinărit-agri"
-             onclick="openService('gradinărit-agri','Grădinărit & Agri')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&q=80" alt="Grădinărit & Agri" loading="lazy"/>
-            <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            
-            
-            <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>
-          </div>
-          <div class="card-body">
-            <div class="card-title">Grădinărit & Agri</div>
-            <div class="card-desc">Amenajare grădini, toaletare copaci, gazon, sisteme irigații, peisagistică.</div>
-            <div class="card-meta" style="gap:4px"><span class="tier-pill tier-bronz">Bronz</span><span class="tier-pill tier-argint">Argint</span><span class="tier-pill tier-aur">Aur</span></div>
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">A 01.61</span><span class="chip chip-ai" style="font-size:9px;padding:2px 8px">ISCO 6111</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="60">60</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ oră</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 7: Tâmplărie & Geamuri -->
-        <div class="rich-card reveal d1"
-             data-tab="servicii"
-             data-cat="Tâmplărie"
-             data-subcat="Geamuri & Uși"
-             data-title="tâmplărie & geamuri"
-             data-price="200"
-             data-reviews="220"
-             data-urgent="false"
-             data-ai="true"
-             data-slug="tamplarie-geamuri"
-             onclick="openService('tamplarie-geamuri','Tâmplărie & Geamuri')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?w=600&q=80" alt="Tâmplărie & Geamuri" loading="lazy"/>
-            <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            <span class="card-badge hot">Popular</span>
-            
-            <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>
-          </div>
-          <div class="card-body">
-            <div class="card-title">Tâmplărie & Geamuri</div>
-            <div class="card-desc">Montaj ferestre PVC/aluminiu/lemn, uși, parapeți, obloane, rulouri.</div>
-            <div class="card-meta" style="gap:4px"><span class="tier-pill tier-bronz">Bronz</span><span class="tier-pill tier-argint">Argint</span><span class="tier-pill tier-aur">Aur</span></div>
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">F 43.32</span><span class="chip chip-ai" style="font-size:9px;padding:2px 8px">ISCO 7422</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="200">200</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ instalare</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 8: Curățenie profesională -->
-        <div class="rich-card reveal d2"
-             data-tab="servicii"
-             data-cat="Curățenie"
-             data-subcat="Rezidențial"
-             data-title="curățenie profesională"
-             data-price="45"
-             data-reviews="380"
-             data-urgent="true"
-             data-ai="true"
-             data-slug="curatenie-profesionala"
-             onclick="openService('curatenie-profesionala','Curățenie profesională')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=600&q=80" alt="Curățenie profesională" loading="lazy"/>
-            <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            <span class="card-badge new">Nou</span>
-            <span style="position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;background:rgba(220,38,38,.85);color:#fff;padding:2px 8px;border-radius:99px;backdrop-filter:blur(4px)">Urgent</span>
-            <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>
-          </div>
-          <div class="card-body">
-            <div class="card-title">Curățenie profesională</div>
-            <div class="card-desc">Curățenie generală, post-construcție, dezinfecție, spălat geamuri, mochete.</div>
-            <div class="card-meta" style="gap:4px"><span class="tier-pill tier-bronz">Bronz</span><span class="tier-pill tier-argint">Argint</span><span class="tier-pill tier-aur">Aur</span><span class="tier-pill tier-platinum">Platinum</span></div>
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">N 81.21</span><span class="chip chip-ai" style="font-size:9px;padding:2px 8px">ISCO 9112</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="45">45</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ oră echipă</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-        <!-- CARD NOU: Consultanță & Design Amenajare -->
-        <div class="rich-card reveal d2"
-             data-tab="servicii"
-             data-cat="Consultanță"
-             data-subcat="Design"
-             data-title="consultanță design amenajare"
-             data-price="450"
-             data-reviews="143"
-             data-urgent="false"
-             data-ai="true"
-             data-slug="consultanta-design-amenajare"
-             onclick="openService('consultanta-design-amenajare','Consultanță &amp; Design Amenajare Interioară')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&q=80" alt="Consultanță &amp; Design Amenajare" loading="lazy"/>
-            <span class="card-badge new">Nou</span>
-            <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>
-          </div>
-          <div class="card-body">
-            <div class="card-title">Consultanță &amp; Design Amenajare</div>
-            <div class="card-desc">Designer dedicat propune variante de amenajare interioară pe baza spațiului tău actual.</div>
-            <div class="card-meta" style="gap:4px"><span class="tier-pill tier-bronz">Bronz</span><span class="tier-pill tier-argint">Argint</span><span class="tier-pill tier-aur">Aur</span><span class="tier-pill tier-platinum">Platinum</span></div>
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">M 74.10</span><span class="chip chip-ai" style="font-size:9px;padding:2px 8px">ISCO 2163</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="450">450</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ proiect</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD NOU: Service Auto -->
-        <div class="rich-card reveal d2"
-             data-tab="servicii"
-             data-cat="Auto"
-             data-subcat="Reparații"
-             data-title="service auto la domiciliu"
-             data-price="180"
-             data-reviews="217"
-             data-urgent="true"
-             data-ai="true"
-             data-slug="service-auto"
-             onclick="openService('service-auto','Service Auto la domiciliu')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1620891549027-942fdc95d3f5?w=600&q=80" alt="Service Auto la domiciliu" loading="lazy"/>
-            <span class="card-badge new">Nou</span>
-            <span style="position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;background:rgba(220,38,38,.85);color:#fff;padding:2px 8px;border-radius:99px;backdrop-filter:blur(4px)">Urgent</span>
-            <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>
-          </div>
-          <div class="card-body">
-            <div class="card-title">Service Auto la domiciliu</div>
-            <div class="card-desc">Schimb ulei, filtre, plăcuțe frână, diagnoză — mecanic vine direct la tine.</div>
-            <div class="card-meta" style="gap:4px"><span class="tier-pill tier-bronz">Bronz</span><span class="tier-pill tier-argint">Argint</span><span class="tier-pill tier-aur">Aur</span><span class="tier-pill tier-platinum">Platinum</span></div>
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">G 45.20</span><span class="chip chip-ai" style="font-size:9px;padding:2px 8px">ISCO 7231</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="180">180</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ intervenție</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 9: Înlocuire calorifer -->
-        <div class="rich-card reveal d3"
-             data-tab="servicii"
-             data-cat="Instalații"
-             data-subcat="Termice"
-             data-title="înlocuire calorifer"
-             data-price="280"
-             data-reviews="312"
-             data-urgent="true"
-             data-ai="true"
-             data-slug="inlocuire-calorifer"
-             onclick="openService('inlocuire-calorifer','Înlocuire calorifer')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1615529328331-f8917597711f?w=600&q=80" alt="Înlocuire calorifer" loading="lazy"/>
-            <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            <span class="card-badge hot">Popular</span>
-            <span style="position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;background:rgba(220,38,38,.85);color:#fff;padding:2px 8px;border-radius:99px;backdrop-filter:blur(4px)">Urgent</span>
-            <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>
-          </div>
-          <div class="card-body">
-            <div class="card-title">Înlocuire calorifer</div>
-            <div class="card-desc">Demontare calorifer vechi, montare nou, probe etanșeitate, purjare sistem.</div>
-            <div class="card-meta" style="gap:4px"><span class="tier-pill tier-bronz">Bronz</span><span class="tier-pill tier-argint">Argint</span><span class="tier-pill tier-aur">Aur</span><span class="tier-pill tier-platinum">Platinum</span></div>
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">F 43.22</span><span class="chip chip-ai" style="font-size:9px;padding:2px 8px">ISCO 7412</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="280">280</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ calorifer Bronz</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 10: Montaj gresie & faianță -->
-        <div class="rich-card reveal d1"
-             data-tab="servicii"
-             data-cat="Finisaje"
-             data-subcat="Gresie & Faianță"
-             data-title="montaj gresie & faianță"
-             data-price="45"
-             data-reviews="267"
-             data-urgent="false"
-             data-ai="true"
-             data-slug="montaj-gresie-faianta"
-             onclick="openService('montaj-gresie-faianta','Montaj gresie & faianță')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=600&q=80" alt="Montaj gresie & faianță" loading="lazy"/>
-            <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            
-            
-            <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>
-          </div>
-          <div class="card-body">
-            <div class="card-title">Montaj gresie & faianță</div>
-            <div class="card-desc">Pregătire suport, adeziv, rosturi, sigilant. Orice format, inclusiv format mare.</div>
-            <div class="card-meta" style="gap:4px"><span class="tier-pill tier-bronz">Bronz</span><span class="tier-pill tier-argint">Argint</span><span class="tier-pill tier-aur">Aur</span></div>
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">F 43.33</span><span class="chip chip-ai" style="font-size:9px;padding:2px 8px">ISCO 7122</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="45">45</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ m² manoperă</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 11: Acoperiș & Șarpantă -->
-        <div class="rich-card reveal d2"
-             data-tab="servicii"
-             data-cat="Acoperișuri"
-             data-subcat="Șarpante"
-             data-title="acoperiș & șarpantă"
-             data-price="35"
-             data-reviews="143"
-             data-urgent="false"
-             data-ai="true"
-             data-slug="acoperis-sarpanta"
-             onclick="openService('acoperis-sarpanta','Acoperiș & Șarpantă')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=600&q=80" alt="Acoperiș & Șarpantă" loading="lazy"/>
-            <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            
-            
-            <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>
-          </div>
-          <div class="card-body">
-            <div class="card-title">Acoperiș & Șarpantă</div>
-            <div class="card-desc">Învelitori țiglă/tablă, șarpante lemn, izolații termice, jgheaburi, burlane.</div>
-            <div class="card-meta" style="gap:4px"><span class="tier-pill tier-bronz">Bronz</span><span class="tier-pill tier-argint">Argint</span><span class="tier-pill tier-aur">Aur</span></div>
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">F 43.91</span><span class="chip chip-ai" style="font-size:9px;padding:2px 8px">ISCO 7121</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="35">35</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ m² manoperă</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 12: Pavaje & Alei -->
-        <div class="rich-card reveal d3"
-             data-tab="servicii"
-             data-cat="Exterior"
-             data-subcat="Pavaje"
-             data-title="pavaje & alei"
-             data-price="55"
-             data-reviews="98"
-             data-urgent="false"
-             data-ai="true"
-             data-slug="pavaje-alei"
-             onclick="openService('pavaje-alei','Pavaje & Alei')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1545259741-2ea3ebf61fa3?w=600&q=80" alt="Pavaje & Alei" loading="lazy"/>
-            <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            <span class="card-badge new">Nou</span>
-            
-            <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>
-          </div>
-          <div class="card-body">
-            <div class="card-title">Pavaje & Alei</div>
-            <div class="card-desc">Pavele, borduri, dale, pietriș, asfalt rece. Curte, parcare, alee, trotuar.</div>
-            <div class="card-meta" style="gap:4px"><span class="tier-pill tier-bronz">Bronz</span><span class="tier-pill tier-argint">Argint</span></div>
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">F 43.12</span><span class="chip chip-ai" style="font-size:9px;padding:2px 8px">ISCO 7121</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="55">55</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ m² manoperă</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
+        <!-- Pasul 11-C4: doar produsele din baza de date (loadCatalog); cât se încarcă, scheletul. -->
+        <div class="cat-schelet" data-schelet aria-hidden="true"><div class="cs-media"></div><div class="cs-linie"></div><div class="cs-linie scurt"></div></div>
+        <div class="cat-schelet" data-schelet aria-hidden="true"><div class="cs-media"></div><div class="cs-linie"></div><div class="cs-linie scurt"></div></div>
+        <div class="cat-schelet" data-schelet aria-hidden="true"><div class="cs-media"></div><div class="cs-linie"></div><div class="cs-linie scurt"></div></div>
+        <div class="cat-schelet" data-schelet aria-hidden="true"><div class="cs-media"></div><div class="cs-linie"></div><div class="cs-linie scurt"></div></div>
       </div>
       <button class="load-more" id="load-more-servicii" onclick="loadMore('servicii')" style="display:none">
         Încarcă mai multe servicii
@@ -2697,527 +2236,21 @@ function triggerHeaderSearch(){
 
     <div id="tab-materiale" class="tab-content">
       <div class="catalog-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full" id="grid-materiale">
-        
-        <!-- CARD 13: Zidărie & Beton -->
-        <div class="rich-card reveal d1"
-             data-tab="materiale"
-             data-cat="Construcții"
-             data-subcat="Structuri"
-             data-title="zidărie & beton"
-             data-price="8"
-             data-reviews="890"
-             data-urgent="false"
-             data-ai="false"
-             data-slug="mat-zidarie-beton"
-             onclick="openService('mat-zidarie-beton','Zidărie & Beton')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=600&q=80" alt="Zidărie & Beton" loading="lazy"/>
-            <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            <span class="card-badge hot">Stoc mare</span>
-            
-            
-          </div>
-          <div class="card-body">
-            <div class="card-title">Zidărie & Beton</div>
-            <div class="card-desc">BCA, cărămidă, blocuri beton, ciment Portland, var hidratat, adaosuri.</div>
-            
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">F 41</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="8">8</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ buc / kg</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 14: Parchet & Pardoseli -->
-        <div class="rich-card reveal d2"
-             data-tab="materiale"
-             data-cat="Finisaje"
-             data-subcat="Pardoseli"
-             data-title="parchet & pardoseli"
-             data-price="45"
-             data-reviews="540"
-             data-urgent="false"
-             data-ai="false"
-             data-slug="mat-parchet"
-             onclick="openService('mat-parchet','Parchet & Pardoseli')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=600&q=80" alt="Parchet & Pardoseli" loading="lazy"/>
-            <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            
-            
-            
-          </div>
-          <div class="card-body">
-            <div class="card-title">Parchet & Pardoseli</div>
-            <div class="card-desc">Parchet stratificat, masiv, PVC, covor, mochetă. Toate clasele de uzură.</div>
-            
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">F 43.33</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="45">45</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ m²</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 15: Sanitare & Termo -->
-        <div class="rich-card reveal d3"
-             data-tab="materiale"
-             data-cat="Instalații"
-             data-subcat="Sanitare"
-             data-title="sanitare & termo"
-             data-price="5"
-             data-reviews="720"
-             data-urgent="true"
-             data-ai="false"
-             data-slug="mat-sanitare-termo"
-             onclick="openService('mat-sanitare-termo','Sanitare & Termo')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1615529328331-f8917597711f?w=600&q=80" alt="Sanitare & Termo" loading="lazy"/>
-            <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            <span style="position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;background:rgba(220,38,38,.85);color:#fff;padding:2px 8px;border-radius:99px;backdrop-filter:blur(4px)">Urgent</span>
-            
-          </div>
-          <div class="card-body">
-            <div class="card-title">Sanitare & Termo</div>
-            <div class="card-desc">Țevi PPR/cupru/PEX, robineți, fitinguri, calorifere Purmo/Radox, pompe.</div>
-            
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">F 43.22</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="5">5</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ buc</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 16: Electrice & Cabluri -->
-        <div class="rich-card reveal d1"
-             data-tab="materiale"
-             data-cat="Instalații"
-             data-subcat="Electrice"
-             data-title="electrice & cabluri"
-             data-price="3"
-             data-reviews="430"
-             data-urgent="true"
-             data-ai="false"
-             data-slug="mat-electrice"
-             onclick="openService('mat-electrice','Electrice & Cabluri')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&q=80" alt="Electrice & Cabluri" loading="lazy"/>
-            <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            <span style="position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;background:rgba(220,38,38,.85);color:#fff;padding:2px 8px;border-radius:99px;backdrop-filter:blur(4px)">Urgent</span>
-            
-          </div>
-          <div class="card-body">
-            <div class="card-title">Electrice & Cabluri</div>
-            <div class="card-desc">Cabluri NYM/MYYM, tablouri electrice, prize Legrand, siguranțe, doze.</div>
-            
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">F 43.21</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="3">3</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ ml / buc</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 17: Vopsele & Finisaje -->
-        <div class="rich-card reveal d2"
-             data-tab="materiale"
-             data-cat="Finisaje"
-             data-subcat="Vopsele"
-             data-title="vopsele & finisaje"
-             data-price="45"
-             data-reviews="310"
-             data-urgent="false"
-             data-ai="false"
-             data-slug="mat-vopsele"
-             onclick="openService('mat-vopsele','Vopsele & Finisaje')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=600&q=80" alt="Vopsele & Finisaje" loading="lazy"/>
-            <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            <span class="card-badge hot">Top vânzări</span>
-            
-            
-          </div>
-          <div class="card-body">
-            <div class="card-title">Vopsele & Finisaje</div>
-            <div class="card-desc">Vopsele lavabile, grund, glet, tapet, decoruri, Caparol, Baumit, Kober.</div>
-            
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">F 43.34</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="45">45</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ găleată 15L</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 18: Lemn & Cherestea -->
-        <div class="rich-card reveal d3"
-             data-tab="materiale"
-             data-cat="Exterior"
-             data-subcat="Lemn"
-             data-title="lemn & cherestea"
-             data-price="12"
-             data-reviews="205"
-             data-urgent="false"
-             data-ai="false"
-             data-slug="mat-lemn"
-             onclick="openService('mat-lemn','Lemn & Cherestea')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?w=600&q=80" alt="Lemn & Cherestea" loading="lazy"/>
-            <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            
-            
-            
-          </div>
-          <div class="card-body">
-            <div class="card-title">Lemn & Cherestea</div>
-            <div class="card-desc">Cherestea rășinoase, PAL, OSB, MDF, placaj, șipci, grinzi, dulapi.</div>
-            
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">F 43.32</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="12">12</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ ml / m³</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 19: Metalurgie & Profile -->
-        <div class="rich-card reveal d1"
-             data-tab="materiale"
-             data-cat="Construcții"
-             data-subcat="Metal"
-             data-title="metalurgie & profile"
-             data-price="25"
-             data-reviews="178"
-             data-urgent="false"
-             data-ai="false"
-             data-slug="mat-metal"
-             onclick="openService('mat-metal','Metalurgie & Profile')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=600&q=80" alt="Metalurgie & Profile" loading="lazy"/>
-            <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            
-            
-          </div>
-          <div class="card-body">
-            <div class="card-title">Metalurgie & Profile</div>
-            <div class="card-desc">Profile UPN/IPE, platbandă, tablă, cornier, țeavă rectangulară, sârmă.</div>
-            
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">F 43</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="25">25</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ kg / ml</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 20: Acoperiș & Izolații -->
-        <div class="rich-card reveal d2"
-             data-tab="materiale"
-             data-cat="Exterior"
-             data-subcat="Acoperișuri"
-             data-title="acoperiș & izolații"
-             data-price="35"
-             data-reviews="145"
-             data-urgent="false"
-             data-ai="false"
-             data-slug="mat-acoperis"
-             onclick="openService('mat-acoperis','Acoperiș & Izolații')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=600&q=80" alt="Acoperiș & Izolații" loading="lazy"/>
-            <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            
-            
-            
-          </div>
-          <div class="card-body">
-            <div class="card-title">Acoperiș & Izolații</div>
-            <div class="card-desc">Tablă plană/profilată, țiglă ceramică/beton, membrană bituminoasă, polistiren.</div>
-            
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">F 43.91</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="35">35</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ m²</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
+        <!-- Pasul 11-C4: doar produsele din baza de date (loadCatalog); cât se încarcă, scheletul. -->
+        <div class="cat-schelet" data-schelet aria-hidden="true"><div class="cs-media"></div><div class="cs-linie"></div><div class="cs-linie scurt"></div></div>
+        <div class="cat-schelet" data-schelet aria-hidden="true"><div class="cs-media"></div><div class="cs-linie"></div><div class="cs-linie scurt"></div></div>
+        <div class="cat-schelet" data-schelet aria-hidden="true"><div class="cs-media"></div><div class="cs-linie"></div><div class="cs-linie scurt"></div></div>
+        <div class="cat-schelet" data-schelet aria-hidden="true"><div class="cs-media"></div><div class="cs-linie"></div><div class="cs-linie scurt"></div></div>
       </div>
     </div>
 
     <div id="tab-inchiriere" class="tab-content">
       <div class="catalog-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full" id="grid-inchiriere">
-        
-        <!-- CARD 21: Utilaje & Echipamente Grele -->
-        <div class="rich-card reveal d1"
-             data-tab="inchiriere"
-             data-cat="Utilaje"
-             data-subcat="Grele"
-             data-title="utilaje & echipamente grele"
-             data-price="800"
-             data-reviews="89"
-             data-urgent="true"
-             data-ai="true"
-             data-slug="inch-utilaje-grele"
-             onclick="openService('inch-utilaje-grele','Utilaje & Echipamente Grele')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=600&q=80" alt="Utilaje & Echipamente Grele" loading="lazy"/>
-            <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            <span style="position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;background:rgba(220,38,38,.85);color:#fff;padding:2px 8px;border-radius:99px;backdrop-filter:blur(4px)">Urgent</span>
-            <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>
-          </div>
-          <div class="card-body">
-            <div class="card-title">Utilaje & Echipamente Grele</div>
-            <div class="card-desc">Excavatoare mini JCB, buldoexcavatoare, autobetoniere, compactoare. Cu sau fără operator.</div>
-            
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">N 77.32</span><span class="chip chip-ai" style="font-size:9px;padding:2px 8px">ISCO 8331</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="800">800</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ zi</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 22: Scule & Echipamente Mici -->
-        <div class="rich-card reveal d2"
-             data-tab="inchiriere"
-             data-cat="Scule"
-             data-subcat="Mici"
-             data-title="scule & echipamente mici"
-             data-price="80"
-             data-reviews="124"
-             data-urgent="true"
-             data-ai="true"
-             data-slug="inch-scule"
-             onclick="openService('inch-scule','Scule & Echipamente Mici')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80" alt="Scule & Echipamente Mici" loading="lazy"/>
-            <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            <span class="card-badge hot">Cerere mare</span>
-            <span style="position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;background:rgba(220,38,38,.85);color:#fff;padding:2px 8px;border-radius:99px;backdrop-filter:blur(4px)">Urgent</span>
-            <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>
-          </div>
-          <div class="card-body">
-            <div class="card-title">Scule & Echipamente Mici</div>
-            <div class="card-desc">Flex, bormaşini, percutoare, fierăstraie, rotopercutoare, compresoare, generatoare.</div>
-            
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">N 77.32</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="80">80</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ zi</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 23: Acces & Siguranță -->
-        <div class="rich-card reveal d3"
-             data-tab="inchiriere"
-             data-cat="Acces"
-             data-subcat="Schele"
-             data-title="acces & siguranță"
-             data-price="450"
-             data-reviews="67"
-             data-urgent="false"
-             data-ai="true"
-             data-slug="inch-acces"
-             onclick="openService('inch-acces','Acces & Siguranță')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&q=80" alt="Acces & Siguranță" loading="lazy"/>
-            <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            
-            
-            <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>
-          </div>
-          <div class="card-body">
-            <div class="card-title">Acces & Siguranță</div>
-            <div class="card-desc">Schele tubulare, nacele, scări profesionale, echipament protecție colectivă.</div>
-            
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">N 77.32</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="450">450</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ săptămână</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 24: Vehicule & Transport -->
-        <div class="rich-card reveal d1"
-             data-tab="inchiriere"
-             data-cat="Transport"
-             data-subcat="Vehicule"
-             data-title="vehicule & transport"
-             data-price="250"
-             data-reviews="201"
-             data-urgent="true"
-             data-ai="true"
-             data-slug="inch-transport"
-             onclick="openService('inch-transport','Vehicule & Transport')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=600&q=80" alt="Vehicule & Transport" loading="lazy"/>
-            <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            <span class="card-badge hot">Popular</span>
-            <span style="position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;background:rgba(220,38,38,.85);color:#fff;padding:2px 8px;border-radius:99px;backdrop-filter:blur(4px)">Urgent</span>
-            <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>
-          </div>
-          <div class="card-body">
-            <div class="card-title">Vehicule & Transport</div>
-            <div class="card-desc">Autoutilitare, platforme auto, remorci, camionete cu lift. Șofer opțional.</div>
-            
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">N 77.32</span><span class="chip chip-ai" style="font-size:9px;padding:2px 8px">ISCO 8322</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="250">250</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ zi</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 25: Personal calificat zilnic -->
-        <div class="rich-card reveal d2"
-             data-tab="inchiriere"
-             data-cat="Personal"
-             data-subcat="Calificat"
-             data-title="personal calificat zilnic"
-             data-price="65"
-             data-reviews="312"
-             data-urgent="true"
-             data-ai="true"
-             data-slug="inch-personal"
-             onclick="openService('inch-personal','Personal calificat zilnic')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1545259741-2ea3ebf61fa3?w=600&q=80" alt="Personal calificat zilnic" loading="lazy"/>
-            <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            <span class="card-badge new">Nou</span>
-            <span style="position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;background:rgba(220,38,38,.85);color:#fff;padding:2px 8px;border-radius:99px;backdrop-filter:blur(4px)">Urgent</span>
-            <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>
-          </div>
-          <div class="card-body">
-            <div class="card-title">Personal calificat zilnic</div>
-            <div class="card-desc">Day laborers calificați: zidari, electricieni, instalatori. Contracte zilnice cu HBP.</div>
-            <div class="card-meta" style="gap:4px"><span class="tier-pill tier-bronz">Bronz</span><span class="tier-pill tier-argint">Argint</span><span class="tier-pill tier-aur">Aur</span></div>
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">N 81.10</span><span class="chip chip-ai" style="font-size:9px;padding:2px 8px">ISCO 7121</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="65">65</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ oră</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 26: Echipamente grădinărit -->
-        <div class="rich-card reveal d3"
-             data-tab="inchiriere"
-             data-cat="Exterior"
-             data-subcat="Grădinărit"
-             data-title="echipamente grădinărit"
-             data-price="50"
-             data-reviews="45"
-             data-urgent="false"
-             data-ai="true"
-             data-slug="inch-gradinărit"
-             onclick="openService('inch-gradinărit','Echipamente grădinărit')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&q=80" alt="Echipamente grădinărit" loading="lazy"/>
-            <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            
-            
-            <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>
-          </div>
-          <div class="card-body">
-            <div class="card-title">Echipamente grădinărit</div>
-            <div class="card-desc">Motocoase, tocătoare, plug, freze sol, pompe irigații, mașini de tuns gazon.</div>
-            
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">N 77.32</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="50">50</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ zi</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-        <!-- CARD NOU: Echipamente Vacanță & Outdoor -->
-        <div class="rich-card reveal d3"
-             data-tab="inchiriere"
-             data-cat="Vacanță"
-             data-subcat="Outdoor"
-             data-title="echipamente vacanță outdoor"
-             data-price="45"
-             data-reviews="98"
-             data-urgent="false"
-             data-ai="true"
-             data-slug="inchiriere-echipamente-vacanta"
-             onclick="openService('inchiriere-echipamente-vacanta','Închiriere Echipamente Vacanță &amp; Outdoor')">
-          <div class="card-media">
-            <img src="https://images.unsplash.com/photo-1473116763249-2faaef81ccda?w=600&q=80" alt="Echipamente Vacanță &amp; Outdoor" loading="lazy"/>
-            <span class="card-badge new">Nou</span>
-            <div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>
-          </div>
-          <div class="card-body">
-            <div class="card-title">Echipamente Vacanță &amp; Outdoor</div>
-            <div class="card-desc">Șezlonguri, umbrele de plajă, rucsacuri trekking, corturi — pentru vară și drumeții.</div>
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"><span class="chip chip-primary" style="font-size:9px;padding:2px 8px">N 77.21</span><span class="chip chip-ai" style="font-size:9px;padding:2px 8px">ISCO 5230</span></div>
-            <div class="card-footer">
-              <div class="card-price">
-                <span class="price-from">De la</span>
-                <span class="price-val"><span class="dyn-price" data-ron="45">45</span> <span class="dyn-currency">Lei</span></span>
-                <span class="price-unit">/ set/zi</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <!-- Pasul 11-C4: doar produsele din baza de date (loadCatalog); cât se încarcă, scheletul. -->
+        <div class="cat-schelet" data-schelet aria-hidden="true"><div class="cs-media"></div><div class="cs-linie"></div><div class="cs-linie scurt"></div></div>
+        <div class="cat-schelet" data-schelet aria-hidden="true"><div class="cs-media"></div><div class="cs-linie"></div><div class="cs-linie scurt"></div></div>
+        <div class="cat-schelet" data-schelet aria-hidden="true"><div class="cs-media"></div><div class="cs-linie"></div><div class="cs-linie scurt"></div></div>
+        <div class="cat-schelet" data-schelet aria-hidden="true"><div class="cs-media"></div><div class="cs-linie"></div><div class="cs-linie scurt"></div></div>
       </div>
     </div>
 
@@ -4538,7 +3571,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&consOpen) closeCon
               <div style="font-weight:800;color:#CD7F32;font-size:14px">Bronz</div>
               <div style="font-size:10.5px;color:#8C9BAD">Darrin AI Online</div>
             </div>
-            <div style="margin-left:auto;font-size:18px;font-weight:900;color:#CD7F32" id="pret-bronz">Gratuit</div>
+            <div style="margin-left:auto;font-size:18px;font-weight:900;color:#CD7F32" id="pret-bronz">—</div>
           </div>
           <div style="font-size:12px;color:#6B7A8D;line-height:1.7;margin-bottom:14px" id="desc-bronz">Analiză nevoie + recomandare servicii prin Darrin AI. Instant, online, fără specialist uman.</div>
           <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
@@ -4562,7 +3595,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&consOpen) closeCon
               <div style="font-size:10.5px;color:#8C9BAD">Specialist Remote</div>
             </div>
             <div style="margin-left:auto;text-align:right">
-              <div style="font-size:18px;font-weight:900;color:#5A6B7D"><span id="pret-argint">50</span> <span id="curr-argint" style="font-size:12px">Lei</span></div>
+              <div style="font-size:18px;font-weight:900;color:#5A6B7D"><span id="pret-argint">—</span> <span id="curr-argint" style="font-size:12px">Lei</span></div>
               <div style="font-size:9.5px;color:#8C9BAD" id="dur-argint">30 min</div>
             </div>
           </div>
@@ -4589,7 +3622,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&consOpen) closeCon
               <div style="font-size:10.5px;color:#8C9BAD">Evaluare la Locație</div>
             </div>
             <div style="margin-left:auto;text-align:right">
-              <div style="font-size:18px;font-weight:900;color:#CC7000"><span id="pret-aur">500</span> <span id="curr-aur" style="font-size:12px">Lei</span></div>
+              <div style="font-size:18px;font-weight:900;color:#CC7000"><span id="pret-aur">—</span> <span id="curr-aur" style="font-size:12px">Lei</span></div>
               <div style="font-size:9.5px;color:#8C9BAD" id="dur-aur">60 min</div>
             </div>
           </div>
@@ -4645,35 +3678,35 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&consOpen) closeCon
           <div style="font-size:24px;margin-bottom:8px"><i data-lucide="zap" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
           <div style="font-weight:700;color:#1A2332;font-size:13px;margin-bottom:4px">Proiectare electrică</div>
           <div style="font-size:11px;color:#6B7A8D;margin-bottom:8px">Schema electrică, calcul sarcini, tablou, aviz ANRE</div>
-          <div style="font-size:14px;font-weight:800;color:#003366">De la <span id="pret-proj-electric">800</span> <span id="curr-proj">Lei</span></div>
+          <div style="font-size:14px;font-weight:800;color:#003366">De la <span id="pret-proj-electric">—</span> <span id="curr-proj">Lei</span></div>
         </div>
 
         <div class="proj-card" onclick="openConsultanta('platinum')" style="background:#fff;border:1.5px solid #E8F0FB;border-radius:14px;padding:16px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='#1A5FAD';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='#E8F0FB';this.style.transform=''">
           <div style="font-size:24px;margin-bottom:8px"><i data-lucide="shower-head" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
           <div style="font-weight:700;color:#1A2332;font-size:13px;margin-bottom:4px">Proiectare sanitară</div>
           <div style="font-size:11px;color:#6B7A8D;margin-bottom:8px">Instalație apă-canal, branșament, aviz apă</div>
-          <div style="font-size:14px;font-weight:800;color:#003366">De la <span id="pret-proj-sanitar">600</span> Lei</div>
+          <div style="font-size:14px;font-weight:800;color:#003366">De la <span id="pret-proj-sanitar">—</span> Lei</div>
         </div>
 
         <div class="proj-card" onclick="openConsultanta('platinum')" style="background:#fff;border:1.5px solid #E8F0FB;border-radius:14px;padding:16px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='#1A5FAD';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='#E8F0FB';this.style.transform=''">
           <div style="font-size:24px;margin-bottom:8px"><i data-lucide="snowflake" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
           <div style="font-weight:700;color:#1A2332;font-size:13px;margin-bottom:4px">Proiectare HVAC</div>
           <div style="font-size:11px;color:#6B7A8D;margin-bottom:8px">Climatizare, ventilație, centrale termice, pompe căldură</div>
-          <div style="font-size:14px;font-weight:800;color:#003366">De la <span id="pret-proj-hvac">900</span> Lei</div>
+          <div style="font-size:14px;font-weight:800;color:#003366">De la <span id="pret-proj-hvac">—</span> Lei</div>
         </div>
 
         <div class="proj-card" onclick="openConsultanta('platinum')" style="background:#fff;border:1.5px solid #E8F0FB;border-radius:14px;padding:16px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='#1A5FAD';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='#E8F0FB';this.style.transform=''">
           <div style="font-size:24px;margin-bottom:8px"><i data-lucide="home" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
           <div style="font-weight:700;color:#1A2332;font-size:13px;margin-bottom:4px">Design interior</div>
           <div style="font-size:11px;color:#6B7A8D;margin-bottom:8px">Plan spațiu, planșe 3D, specificații materiale, avize</div>
-          <div style="font-size:14px;font-weight:800;color:#003366">De la <span id="pret-proj-interior">1200</span> Lei</div>
+          <div style="font-size:14px;font-weight:800;color:#003366">De la <span id="pret-proj-interior">—</span> Lei</div>
         </div>
 
         <div class="proj-card" onclick="openConsultanta('platinum')" style="background:#fff;border:1.5px solid #E8F0FB;border-radius:14px;padding:16px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='#1A5FAD';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='#E8F0FB';this.style.transform=''">
           <div style="font-size:24px;margin-bottom:8px"><i data-lucide="hard-hat" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
           <div style="font-weight:700;color:#1A2332;font-size:13px;margin-bottom:4px">Proiectare structurală</div>
           <div style="font-size:11px;color:#6B7A8D;margin-bottom:8px">Calcul rezistență, extinderi, consolidări, autorizație</div>
-          <div style="font-size:14px;font-weight:800;color:#003366">De la <span id="pret-proj-structura">1500</span> Lei</div>
+          <div style="font-size:14px;font-weight:800;color:#003366">De la <span id="pret-proj-structura">—</span> Lei</div>
         </div>
 
         <div class="proj-card" onclick="openConsultanta('platinum')" style="background:linear-gradient(135deg,#F4F7F9,#EBF4FB);border:1.5px solid #D5DFE8;border-radius:14px;padding:16px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='#1A5FAD';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='#D5DFE8';this.style.transform=''">
@@ -4946,37 +3979,115 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&consOpen) closeCon
 </script>
 
 <script>
-// ── URL ?cat= HANDLER — citește parametrul și aplică filtrul corect ──
-(function() {
-  var CAT_MAP = {"instalatii-sanitare": ["servicii", "Instalații", "Sanitare & Termo"], "instalatii-electrice": ["servicii", "Instalații", "Electrice"], "constructii-renovari": ["servicii", "Construcții", "Renovări"], "hvac-climatizare": ["servicii", "Climatizare", "HVAC"], "zugraveli-finisaje": ["servicii", "Finisaje", "Zugrăveli"], "gradinarit-agri": ["servicii", "Exterior", "Grădinărit"], "tamplarie-geamuri": ["servicii", "Tâmplărie", "Geamuri & Uși"], "curatenie-profesionala": ["servicii", "Curățenie", "Rezidențial"], "inlocuire-calorifer": ["servicii", "Instalații", "Termice"], "montaj-gresie-faianta": ["servicii", "Finisaje", "Gresie & Faianță"], "acoperis-sarpanta": ["servicii", "Acoperișuri", "Șarpante"], "pavaje-alei": ["servicii", "Exterior", "Pavaje"], "lemn-cherestea": ["materiale", "Exterior", "Lemn"], "zidarie-beton": ["materiale", "Construcții", "Structuri"], "metalurgie-profile": ["materiale", "Construcții", "Metal"], "vopsele-finisaje": ["materiale", "Finisaje", "Vopsele"], "electrice-cabluri": ["materiale", "Instalații", "Electrice"], "mat-parchet": ["materiale", "Finisaje", "Pardoseli"], "mat-sanitare-termo": ["materiale", "Instalații", "Sanitare"], "mat-acoperis": ["materiale", "Exterior", "Acoperișuri"], "utilaje-grele": ["inchiriere", "Utilaje", "Grele"], "scule-echipamente": ["inchiriere", "Scule", "Mici"], "vehicule-transport": ["inchiriere", "Transport", "Vehicule"], "personal-calificat": ["inchiriere", "Personal", "Calificat"], "vacanta-drumetie": ["inchiriere", "Acces", "Schele"], "acces-siguranta": ["inchiriere", "Acces", "Schele"], "consultanta-design-amenajare": ["servicii", "Consultanță", "Design"], "inchiriere-echipamente-vacanta": ["inchiriere", "Vacanță", "Outdoor"], "service-auto": ["servicii", "Auto", "Reparații"]};
-  function applyCatFromURL() {
-    var params = new URLSearchParams(window.location.search);
-    var slug = params.get('cat');
-    if (!slug || !CAT_MAP[slug]) return;
-    var mapping = CAT_MAP[slug];
-    var tab = mapping[0], catVal = mapping[1], subcatVal = mapping[2] || 'all';
+// ── Pasul 11-C4: filtrul de categorie din adresă ──
+// Un singur catalog (decizia LM, 4 nov. 2026): vechile pagini de categorie
+// trimit aici, cu filtrul lor.
+//   ?categorie=servicii|materiale|inchirieri       → fila aleasă;
+//   ?subcategorie=<slug din categorii>             → doar produsele acelei
+//      categorii (și ale subcategoriilor ei), după categorie_id / subcategorie_id;
+//      se acceptă și ?cat=, venit de la vechile adrese.
+// Filtrul se aplică la încărcare, se vede (fila activă + eticheta categoriei,
+// cu „×”) și se poate schimba; adresa se actualizează cu history.replaceState,
+// fără reîncărcare. Un slug care nu e în categorii se ignoră (rămâne doar fila).
+(function () {
+  var TAB = { servicii: 'servicii', materiale: 'materiale', inchirieri: 'inchiriere', inchiriere: 'inchiriere' };
+  var PARAM = { servicii: 'servicii', materiale: 'materiale', inchiriere: 'inchirieri' };
+  var URL_SUPA = (window.__ENV__ && window.__ENV__.SUPABASE_URL) || 'https://aacojyvujhywanaulvuu.supabase.co';
+  var ANON = (window.__ENV__ && window.__ENV__.SUPABASE_ANON_KEY) || '';
+  window.FILTRU_SUBCATEGORIE = null;
 
-    var tryApply = function(attempts) {
-      if (attempts <= 0) return;
-      if (typeof filterCat === 'function' && typeof switchTab === 'function') {
-        switchTab(tab);
-        setTimeout(function() {
-          var el = document.querySelector('#sidebar-' + tab + ' .cat-sidebar-item[onclick*="' + catVal + '"]');
-          filterCat(tab, catVal, el, subcatVal);
-          var grid = document.getElementById('catalog-grid-section') || document.getElementById('grid-' + tab);
-          if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 150);
-      } else {
-        setTimeout(function() { tryApply(attempts - 1); }, 200);
-      }
+  function tr(ro) { return typeof window.t === 'function' ? window.t(null, ro) : ro; }
+  function en() { return !!(window.MYD_I18N && window.MYD_I18N.lang && window.MYD_I18N.lang !== 'ro'); }
+  function esc(v) { var d = document.createElement('div'); d.textContent = v == null ? '' : String(v); return d.innerHTML; }
+
+  function scrieAdresa() {
+    var tab = typeof activeTab !== 'undefined' ? activeTab : null;
+    if (!PARAM[tab]) return;
+    var p = new URLSearchParams(location.search);
+    p.set('categorie', PARAM[tab]);
+    if (window.FILTRU_SUBCATEGORIE) p.set('subcategorie', window.FILTRU_SUBCATEGORIE.slug); else p.delete('subcategorie');
+    p.delete('cat'); p.delete('type');
+    try { history.replaceState(history.state, '', location.pathname + '?' + p.toString() + location.hash); } catch (e) { /* adresa rămâne */ }
+  }
+
+  function eticheta() {
+    var c = document.getElementById('filtru-subcategorie');
+    var reper = document.getElementById('active-filters');
+    if (!c && reper) {
+      c = document.createElement('div');
+      c.id = 'filtru-subcategorie';
+      c.className = 'filtru-subcategorie';
+      reper.parentNode.insertBefore(c, reper);
+    }
+    if (!c) return;
+    var F = window.FILTRU_SUBCATEGORIE;
+    if (!F) { c.hidden = true; c.innerHTML = ''; return; }
+    c.hidden = false;
+    c.innerHTML = '<span>' + esc(tr('Categorie')) + ': <strong>' + esc(en() && F.titlu_en ? F.titlu_en : F.titlu) + '</strong></span>'
+      + '<button type="button" aria-label="' + esc(tr('Șterge filtrul de categorie')) + '">×</button>';
+    c.querySelector('button').onclick = function () {
+      window.FILTRU_SUBCATEGORIE = null;
+      eticheta();
+      if (typeof applyFilters === 'function') applyFilters();
+      scrieAdresa();
     };
-    tryApply(15);
   }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', applyCatFromURL);
-  } else {
-    applyCatFromURL();
+
+  function rest(tabel, qs) {
+    return fetch(URL_SUPA + '/rest/v1/' + tabel + '?' + qs, { headers: { apikey: ANON, Authorization: 'Bearer ' + ANON } })
+      .then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; });
   }
+
+  // Categoria din tabelul categorii, cu id-urile subcategoriilor ei.
+  function categorieDinSlug(slug) {
+    if (!slug || !ANON) return Promise.resolve(null);
+    return rest('categorii', 'slug=eq.' + encodeURIComponent(slug) + '&select=id,slug,title,title_en,category_type').then(function (d) {
+      var c = d && d[0];
+      if (!c) return null;
+      return rest('categorii', 'parent_id=eq.' + encodeURIComponent(c.id) + '&select=id').then(function (copii) {
+        return { slug: c.slug, titlu: c.title, titlu_en: c.title_en || null, tip: TAB[c.category_type] || null, ids: [c.id].concat((copii || []).map(function (x) { return x.id; })) };
+      });
+    });
+  }
+
+  // Aplică o subcategorie (din adresă sau din catalog), fără reîncărcare.
+  function aplicaSubcategorie(slug, tabCerut) {
+    return categorieDinSlug(slug).then(function (cat) {
+      var tab = tabCerut || (cat && cat.tip) || null;
+      if (tab && typeof switchMainTab === 'function') switchMainTab(tab, document.getElementById('main-tab-' + tab));
+      window.FILTRU_SUBCATEGORIE = cat;
+      eticheta();
+      if (typeof applyFilters === 'function') applyFilters();
+      if (tab || cat) scrieAdresa();
+      return cat;
+    });
+  }
+  window.MYD_CATALOG_FILTRU = { aplicaSubcategorie: aplicaSubcategorie };
+
+  function laIncarcare() {
+    // Fila schimbată de client → adresa nouă; subcategoria rămâne doar pe fila ei.
+    var orig = window.switchMainTab;
+    if (typeof orig === 'function' && !orig.__filtruAdresa) {
+      window.switchMainTab = function (tab) {
+        var r = orig.apply(this, arguments);
+        var F = window.FILTRU_SUBCATEGORIE;
+        if (F && F.tip && F.tip !== tab) { window.FILTRU_SUBCATEGORIE = null; eticheta(); }
+        scrieAdresa();
+        return r;
+      };
+      window.switchMainTab.__filtruAdresa = true;
+    }
+    var p = new URLSearchParams(location.search);
+    var tab = TAB[p.get('categorie')] || TAB[p.get('type')] || null;
+    var slug = p.get('subcategorie') || p.get('cat');
+    // Cu filtru în adresă, vizitatorul ajunge direct la produsele filtrate.
+    var laGrila = function () { var g = document.getElementById('catalog-grid-section'); if (g) g.scrollIntoView({ block: 'start' }); };
+    if (slug) aplicaSubcategorie(slug, tab).then(laGrila);
+    else if (tab && typeof switchMainTab === 'function') { switchMainTab(tab, document.getElementById('main-tab-' + tab)); laGrila(); }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', laIncarcare);
+  else laIncarcare();
+  window.addEventListener('myd:lang', eticheta);
 })();
 </script>
 
@@ -5130,7 +4241,66 @@ async function sg(table, qs) {
   const r = await fetch(`${SUPA_URL}/rest/v1/${table}?${qs}`, {
     headers:{apikey:SUPA_ANON, Authorization:`Bearer ${SUPA_ANON}`, Range:'0-999'}
   });
-  return r.ok ? r.json() : [];
+  // Pasul 11-C4: o eroare nu mai arată un catalog gol fără explicație.
+  if (!r.ok) throw new Error(table + ': HTTP ' + r.status);
+  return r.json();
+}
+
+// Pasul 11-C4: { [catalog_servicii.id]: { pret_de_la, are_pret } } pentru toate cele trei tipuri.
+async function preturiCatalog() {
+  const tara = (window.MYD_GEO_LAST && window.MYD_GEO_LAST.cc) || 'RO';
+  const rezultat = {};
+  await Promise.all(['servicii', 'materiale', 'inchirieri'].map(async (tip) => {
+    const r = await fetch('/api/public/catalog-categorie?toate=1&tip=' + tip + '&tara=' + encodeURIComponent(tara));
+    if (!r.ok) throw new Error('catalog-categorie: HTTP ' + r.status);
+    const d = await r.json();
+    (d.produse || []).forEach((p) => { rezultat[p.id] = { pret_de_la: p.pret_de_la, are_pret: p.are_pret }; });
+  }));
+  return rezultat;
+}
+
+// Mesajul unei grile: 'gol' (fără produse) sau 'eroare' (cu „Reîncearcă”).
+function stareGrila(grid, tip) {
+  const tr = (ro) => (typeof window.t === 'function' ? window.t(null, ro) : ro);
+  const d = document.createElement('div');
+  d.className = 'cat-stare';
+  d.setAttribute('role', tip === 'eroare' ? 'alert' : 'status');
+  d.textContent = tip === 'eroare'
+    ? tr('Catalogul nu s-a putut încărca. Verifică conexiunea și încearcă din nou.')
+    : tr('Încă nu avem produse în această secțiune.');
+  if (tip === 'eroare') {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = tr('Reîncearcă');
+    b.onclick = () => {
+      ['grid-servicii', 'grid-materiale', 'grid-inchiriere'].forEach((id) => {
+        const g = document.getElementById(id);
+        if (!g) return;
+        g.querySelectorAll('.cat-stare, .db-card').forEach((x) => x.remove());
+        g.insertAdjacentHTML('afterbegin', Array.from({ length: 4 }, () => '<div class="cat-schelet" data-schelet aria-hidden="true"><div class="cs-media"></div><div class="cs-linie"></div><div class="cs-linie scurt"></div></div>').join(''));
+      });
+      loadCatalog();
+    };
+    d.appendChild(document.createElement('br'));
+    d.appendChild(b);
+  }
+  grid.appendChild(d);
+}
+
+// Filtrul de preț: maximul din datele reale (nu o valoare scrisă în cod).
+// Globale: le folosesc și applyFilters / resetFilters, din alt bloc <script>.
+window.PRET_MAXIM_CATALOG = 0;
+window.seteazaFiltruPret = seteazaFiltruPret;
+function seteazaFiltruPret() {
+  const sl = document.getElementById('price-range');
+  if (!sl) return;
+  const max = Math.ceil(window.PRET_MAXIM_CATALOG || 0);
+  sl.max = String(max || 0);
+  sl.value = String(max || 0);
+  sl.step = '1';
+  const bloc = sl.parentElement;
+  if (bloc) bloc.style.display = max > 0 ? '' : 'none';
+  setEl('price-label', typeof window.t === 'function' ? window.t(null, 'Orice preț') : 'Orice preț');
 }
 
 // ── Descriere derivată — catalog_servicii nu are coloană de descriere,
@@ -5145,16 +4315,27 @@ function descDinDomeniu(item, tab) {
 }
 
 // ── Build card HTML ───────────────────────────────────────────────────────
+// Pasul 11-C4: `pret` = { pret_de_la, are_pret } de la /api/public/catalog-categorie
+// (catalog_preturi, cu formula de pe server). Fără preț: „Preț prin deviz”, fără cifră;
+// cu rețetă (preț real, calculat la configurare): fără cifră „de la”. Imaginea doar
+// din catalog; fără ea, iconița categoriei (nu o poză stock).
 function mkCard(item, pret, tab, asoc) {
-  const d   = DOM[item.domeniu] || {cat:'Instalații', sub:'General', img:IMG_DEF};
-  // Imagine reală (urcată din back-office, catalog_servicii.imagini) dacă
-  // există — altfel poza stock generică deja folosită pentru restul
-  // catalogului, nepopulat încă.
+  const d   = DOM[item.domeniu] || {cat:'Instalații', sub:'General'};
   const imgReal = Array.isArray(item.imagini) && item.imagini.length ? item.imagini[0] : null;
-  const img = imgReal || `https://images.unsplash.com/photo-${d.img}?w=600&q=80`;
   const isU = /inlocuire|electric|urgent/i.test(item.id_serviciu||'');
   const isA = tab === 'servicii';
-  const p   = pret > 0 ? pret : 0;
+  const tr = (ro) => (typeof window.t === 'function' ? window.t(null, ro) : ro);
+  const p   = pret && pret.pret_de_la > 0 ? pret.pret_de_la : 0;
+  const arePret = !!(pret && (pret.pret_de_la > 0 || pret.are_pret));
+  const fmtPret = (v) => (typeof window.formatCurrency === 'function' ? window.formatCurrency(v) : Math.round(v).toLocaleString('ro-RO') + ' Lei');
+  const pretHtml = p
+    ? `<span class="price-from">${tr('De la')}</span>
+      <span class="price-val">${fmtPret(p)}</span>
+      <span class="price-unit">/ ${item.unitate_masura||'buc'}</span>`
+    : arePret ? `<span class="price-from">${tr('Preț calculat la configurare')}</span>`
+    : `<span class="price-from">${tr('Preț prin deviz')}</span>`;
+  const eticheta = arePret ? tr('Adaugă în coș') : tr('Cere un deviz');
+  const iconita = tab === 'materiale' ? 'package' : tab === 'inchiriere' ? 'hammer' : 'wrench';
 
   const TI = {mentenanta:'Mentenanță',inlocuire:'Înlocuire',reparatie:'Reparație',montaj_nou:'Montaj'};
   function tipDin(id){ return id.includes('mentenanta')?'mentenanta':id.includes('inlocuire')?'inlocuire':id.includes('reparatie')?'reparatie':id.includes('montaj')?'montaj_nou':null; }
@@ -5171,13 +4352,14 @@ function mkCard(item, pret, tab, asoc) {
 
   return `<div class="rich-card reveal db-card"
     data-tab="${tab}" data-cat="${d.cat}" data-subcat="${d.sub}"
+    data-categorie-id="${item.categorie_id||''}" data-subcategorie-id="${item.subcategorie_id||''}"
     data-title="${item.titlu.toLowerCase()}"
     data-price="${p}" data-reviews="0"
     data-urgent="${isU}" data-ai="${isA}"
     data-slug="${slug}"
     onclick="openService('${slug}','${tit}')">
   <div class="card-media">
-    <img src="${img}" alt="${tit}" loading="lazy"/>
+    ${imgReal ? `<img src="${imgReal}" alt="${tit}" loading="lazy" onerror="this.outerHTML='<div class=&quot;card-icoana&quot; aria-hidden=&quot;true&quot;><i data-lucide=&quot;${iconita}&quot;></i></div>';if(window.lucide)lucide.createIcons()"/>` : `<div class="card-icoana" aria-hidden="true"><i data-lucide="${iconita}"></i></div>`}
     <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
     ${isU?'<span style="position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;background:rgba(220,38,38,.85);color:#fff;padding:2px 8px;border-radius:99px">Urgent</span>':''}
     ${isA?'<div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>':''}
@@ -5190,31 +4372,31 @@ function mkCard(item, pret, tab, asoc) {
     <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">
     </div>
     <div class="card-footer"><div class="card-price">
-      <span class="price-from">De la</span>
-      <span class="price-val"><span class="dyn-price" data-ron="${p}">${p||'—'}</span> <span class="dyn-currency">Lei</span></span>
-      <span class="price-unit">/ ${item.unitate_masura||'buc'}</span>
+      ${pretHtml}
     </div>
-    <button type="button" class="card-cta" onclick="event.stopPropagation();adaugaInCosDinCatalog('${slug}','${tab}',this)">Adaugă în coș</button></div>
+    <button type="button" class="card-cta" onclick="event.stopPropagation();${arePret ? `adaugaInCosDinCatalog('${slug}','${tab}',this)` : `openService('${slug}')`}">${eticheta}</button></div>
   </div></div>`;
 }
 
 // ── Injectează carduri în grid ────────────────────────────────────────────
 function inject(gridId, items, tab, pretIdx, relIdx, svcById) {
   const grid = document.getElementById(gridId);
-  if (!grid || !items.length) return;
+  if (!grid) return;
+  grid.querySelectorAll('[data-schelet], .cat-stare').forEach((e) => e.remove());
+  if (!items.length) { stareGrila(grid, 'gol'); return; }
 
   // Separator
   const sep = document.createElement('div');
   sep.style.cssText = 'width:100%;grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:14px 0 2px';
   sep.innerHTML = `<div style="flex:1;height:1px;background:#E8F0FB"></div>
     <span style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#1A5FAD;white-space:nowrap">
-      ${items.length} ${tab==='servicii'?'servicii':tab==='materiale'?'produse':'oferte'} · live Supabase
+      ${items.length} ${tab==='servicii'?'servicii':tab==='materiale'?'produse':'oferte'}
     </span>
     <div style="flex:1;height:1px;background:#E8F0FB"></div>`;
   grid.appendChild(sep);
 
   items.forEach(item => {
-    const pret = pretIdx[item.id] || 0;
+    const pret = pretIdx[item.id] || null;
     const asoc = tab === 'materiale' ? (relIdx[item.id]||[]).map(id=>svcById[id]).filter(Boolean) : [];
     const wrap = document.createElement('div');
     wrap.innerHTML = mkCard(item, pret, tab, asoc);
@@ -5270,17 +4452,20 @@ async function loadCatalog() {
       // configurare — descriere/imagini adăugate la select; mkCard() le
       // folosește dacă există, cu fallback la textul/poza generică deja
       // existentă pentru restul catalogului, nepopulat încă.
-      sg('catalog_servicii', 'categorie=eq.servicii&status_public=eq.true&select=id,id_serviciu,titlu,domeniu,unitate_masura,descriere,imagini&order=domeniu,titlu'),
-      sg('catalog_servicii', 'categorie=eq.materiale&status_public=eq.true&select=id,id_serviciu,titlu,domeniu,unitate_masura,descriere,imagini&order=domeniu,titlu'),
-      sg('catalog_servicii', 'categorie=eq.inchirieri&status_public=eq.true&select=id,id_serviciu,titlu,domeniu,unitate_masura,descriere,imagini&order=domeniu,titlu'),
-      sg('catalog_niveluri', 'nivel=eq.standard&select=serviciu_id,materiale_baza_estimat'),
+      sg('catalog_servicii', 'categorie=eq.servicii&status_public=eq.true&select=id,id_serviciu,titlu,domeniu,unitate_masura,descriere,imagini,categorie_id,subcategorie_id&order=domeniu,titlu'),
+      sg('catalog_servicii', 'categorie=eq.materiale&status_public=eq.true&select=id,id_serviciu,titlu,domeniu,unitate_masura,descriere,imagini,categorie_id,subcategorie_id&order=domeniu,titlu'),
+      sg('catalog_servicii', 'categorie=eq.inchirieri&status_public=eq.true&select=id,id_serviciu,titlu,domeniu,unitate_masura,descriere,imagini,categorie_id,subcategorie_id&order=domeniu,titlu'),
+      // Pasul 11-C4: prețurile „de la” din catalog_preturi, calculate pe server
+      // (înainte: o estimare a materialelor din catalog_niveluri, nu un preț).
+      preturiCatalog(),
       sg('catalog_relatii',  'tip_relatie=eq.obiect_asociat&select=catalog_serviciu_id,catalog_relatie_id'),
       sg('catalog_servicii', 'categorie=eq.servicii&id_serviciu=like.cal-*&select=id,id_serviciu,titlu'),
     ]);
 
     // Indecși
-    const pretIdx = {};
-    niveluri.forEach(n => { pretIdx[n.serviciu_id] = Math.round(n.materiale_baza_estimat||0); });
+    const pretIdx = niveluri;
+    window.PRET_MAXIM_CATALOG = Math.max(0, ...Object.values(pretIdx).map((x) => x.pret_de_la || 0));
+    seteazaFiltruPret();
 
     const svcById = {};
     svcAsoc.forEach(s => { svcById[s.id] = s; });
@@ -5302,12 +4487,18 @@ async function loadCatalog() {
     inject('grid-materiale',  materiale,  'materiale',  pretIdx, relIdx, svcById);
     inject('grid-inchiriere', inchirieri, 'inchiriere', pretIdx, relIdx, svcById);
 
+    // Iconițele cardurilor fără imagine (Lucide), după injectare.
+    if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
+
     // Sidebar update
     updateSidebar('servicii',   servicii);
     updateSidebar('materiale',  materiale);
     updateSidebar('inchiriere', inchirieri);
 
     // Actualizăm contoarele vizibile din pagină
+    // Pasul 11-C4: numărul real de produse (înainte: „26 produse” scris în pagină).
+    const bc = document.getElementById('breadcrumb-count');
+    if (bc) bc.textContent = typeof window.t === 'function' ? window.t(null, '{n} produse', { n: servicii.length + materiale.length + inchirieri.length }) : (servicii.length + materiale.length + inchirieri.length) + ' produse';
     document.querySelectorAll('[data-total-catalog]').forEach(el => {
       el.textContent = (servicii.length + materiale.length + inchirieri.length) + '+';
     });
@@ -5316,7 +4507,12 @@ async function loadCatalog() {
     setTimeout(() => { if (typeof applyFilters === 'function') applyFilters(); }, 150);
 
   } catch(e) {
-    console.error('[CatalogDB]', e);
+    // Eroare tratată: grilele arată mesajul cu „Reîncearcă” (avertisment, nu eroare de pagină).
+    console.warn('[CatalogDB]', e);
+    ['grid-servicii', 'grid-materiale', 'grid-inchiriere'].forEach((id) => {
+      const g = document.getElementById(id);
+      if (g && !g.querySelector('.db-card')) { g.querySelectorAll('[data-schelet], .cat-stare').forEach((x) => x.remove()); stareGrila(g, 'eroare'); }
+    });
   } finally {
     if (ind) ind.style.display = 'none';
   }
@@ -5532,7 +4728,7 @@ function applyFilters() {
   var sortBy = document.getElementById('sort-select')?.value || 'default';
   var filterUrgent = document.getElementById('filter-urgent')?.checked;
   var filterAI = document.getElementById('filter-ai')?.checked;
-  var maxPrice = parseFloat(document.getElementById('price-range')?.value || 99999);
+  var maxPrice = window.PRET_MAXIM_CATALOG > 0 ? parseFloat(document.getElementById('price-range')?.value || window.PRET_MAXIM_CATALOG) : Infinity;
   var cat = activeCat[activeTab] || 'all';
 
   var grid = document.getElementById('grid-' + activeTab);
@@ -5596,7 +4792,9 @@ function applyFilters() {
     // 4. Filtre rapide
     if (show && filterUrgent && !cardUrgent) show = false;
     if (show && filterAI && !cardAI) show = false;
-    if (show && maxPrice < 4999 && cardPrice > maxPrice && cardPrice > 0) show = false;
+    if (show && maxPrice < window.PRET_MAXIM_CATALOG && cardPrice > maxPrice && cardPrice > 0) show = false;
+    // Pasul 11-C4: subcategoria din adresă (?subcategorie= / ?cat=), după categorii.id.
+    if (show && window.FILTRU_SUBCATEGORIE && !window.FILTRU_SUBCATEGORIE.ids.includes(card.dataset.categorieId) && !window.FILTRU_SUBCATEGORIE.ids.includes(card.dataset.subcategorieId)) show = false;
 
     card.style.display = show ? '' : 'none';
     if (show) visible++;
@@ -5712,20 +4910,20 @@ async function loadConsPrices() {
 
     // Actualizăm prețurile în UI
     var mapping = {
-      'pret-bronz':        cfg['consultanta_bronz_pret']     ? (cfg['consultanta_bronz_pret']==='0'?'Gratuit':cfg['consultanta_bronz_pret']+' Lei') : 'Gratuit',
-      'pret-argint':       cfg['consultanta_argint_pret']    || '50',
-      'pret-aur':          cfg['consultanta_aur_pret']       || '500',
+      'pret-bronz':        cfg['consultanta_bronz_pret']     ? (cfg['consultanta_bronz_pret']==='0'?'Gratuit':cfg['consultanta_bronz_pret']+' Lei') : null,
+      'pret-argint':       cfg['consultanta_argint_pret']    || null,
+      'pret-aur':          cfg['consultanta_aur_pret']       || null,
       'desc-bronz':        cfg['consultanta_bronz_desc']     || null,
       'desc-argint':       cfg['consultanta_argint_desc']    || null,
       'desc-aur':          cfg['consultanta_aur_desc']       || null,
       'desc-platinum':     cfg['consultanta_platinum_desc']  || null,
       'dur-argint':        cfg['consultanta_argint_durata']  ? cfg['consultanta_argint_durata']+' min' : '30 min',
       'dur-aur':           cfg['consultanta_aur_durata']     ? cfg['consultanta_aur_durata']+' min' : '60 min',
-      'pret-proj-electric':cfg['proiectare_electric_pret']  || '800',
-      'pret-proj-sanitar': cfg['proiectare_sanitar_pret']   || '600',
-      'pret-proj-hvac':    cfg['proiectare_hvac_pret']      || '900',
-      'pret-proj-interior':cfg['proiectare_interior_pret']  || '1200',
-      'pret-proj-structura':cfg['proiectare_structura_pret']|| '1500',
+      'pret-proj-electric':cfg['proiectare_electric_pret']  || null,
+      'pret-proj-sanitar': cfg['proiectare_sanitar_pret']   || null,
+      'pret-proj-hvac':    cfg['proiectare_hvac_pret']      || null,
+      'pret-proj-interior':cfg['proiectare_interior_pret']  || null,
+      'pret-proj-structura':cfg['proiectare_structura_pret']|| null,
     };
 
     Object.entries(mapping).forEach(function([id, val]){
@@ -5882,13 +5080,8 @@ function applyGeo(d){
     el.textContent=info.currency;
   });
 
-  // ── Prețuri convertite .dyn-price[data-ron] ───────────────
-  var rates={RON:1,MDL:5,EUR:0.2,GBP:0.17,BGN:0.39};
-  var rate=rates[info.code]||1;
-  document.querySelectorAll('.dyn-price[data-ron]').forEach(function(el){
-    var ron=parseFloat(el.getAttribute('data-ron'));
-    if(!isNaN(ron))el.textContent=rate===1?ron:Math.round(ron*rate*10)/10;
-  });
+  // Pasul 11-C4: conversia cu cursuri scrise în cod a fost scoasă; prețurile
+  // vin calculate pe server, în moneda țării (lib/calculeaza-pret.js).
 
   // ── Banner zonă inactivă ───────────────────────────────────
   if(!info.active){
@@ -6058,7 +5251,7 @@ let activeTab = 'servicii';
 let activeCat = {};
 let activeSubCat = {};
 let activeCur = 'RON';
-let maxPrice = 1000;
+let maxPrice = 0;
 
 const RATES = {RON:1, EUR:0.2, MDL:5};
 // Pasul 11-A: fără prag și procente de platformă scrise aici — prețul final
@@ -6170,9 +5363,8 @@ function resetFilters(){
   document.getElementById('search-input').value='';
   document.getElementById('filter-urgent').checked=false;
   document.getElementById('filter-ai').checked=false;
-  document.getElementById('price-range').value=1000;
-  maxPrice=1000;
-  setEl('price-label','≤ 1000 Lei');
+  if (window.seteazaFiltruPret) window.seteazaFiltruPret();
+  maxPrice=window.PRET_MAXIM_CATALOG || 0;
   activeCat[activeTab]='all';
   activeSubCat[activeTab]='all';
   updatePageTitleForSubcat(activeTab,'all','all');
@@ -6186,7 +5378,7 @@ function updatePriceRange(val){
   // (maxPrice + eticheta) în timp ce utilizatorul trage slider-ul — grila nu
   // se mai re-filtrează decât la apăsarea btn-execute-search.
   maxPrice = parseInt(val);
-  setEl('price-label','≤ '+val+' Lei');
+  setEl('price-label','≤ '+(typeof window.formatCurrency==='function'?window.formatCurrency(Number(val)):val+' Lei'));
 }
 
 function updateResultCount(){ applyFilters(); }
@@ -6335,8 +5527,9 @@ function openService(slug, title){
 
   // Dacă sub-categoria are pagină dedicată cu lista de servicii individuale,
   // trecem prin ea înainte de pagina finală de produs
-  if (SUBCATEGORY_PAGES.includes(slug)) {
-    window.location.href = `mydarrin-categorie-servicii.html?cat=${slug}`;
+  // Pasul 11-C4: filtrul din catalog, nu vechea pagină de categorie.
+  if (SUBCATEGORY_PAGES.includes(slug) && window.MYD_CATALOG_FILTRU) {
+    window.MYD_CATALOG_FILTRU.aplicaSubcategorie(slug, 'servicii');
     return;
   }
   window.location.href = `mydarrin-produs.html?slug=${slug}&type=${typeParam}`;

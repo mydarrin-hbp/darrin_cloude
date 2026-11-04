@@ -366,25 +366,28 @@ async function testeServer() {
     const cu = fisiere.filter((f) => /mydarrin-serviciu(\.html)?['"?#]/.test(fs.readFileSync(path.join(RADACINA, f), 'utf8')));
     egal(cu, [], 'fișiere cu legătura veche');
   });
-  await test('niciun coș local rămas: cartItems / sertarul vechi lipsesc din catalog și din paginile de categorie', async () => {
-    for (const f of ['mydarrin-catalog.html', 'mydarrin-categorie-servicii.html', 'mydarrin-categorie-materiale.html', 'mydarrin-categorie-inchirieri.html']) {
-      const s = fs.readFileSync(path.join(RADACINA, f), 'utf8');
-      adevarat(!/cartItems|id="cart-drawer"|PLATFORM_PCT/.test(s), f);
-      adevarat(s.includes('src="cos-indicator.js"'), f + ': cos-indicator.js');
+  // Pasul 11-C4: paginile de categorie sunt doar redirecționări spre catalog
+  // (înainte: verificate ca pagini cu coșul din antet).
+  await test('niciun coș local rămas: cartItems / sertarul vechi lipsesc din catalog; paginile de categorie doar redirecționează', async () => {
+    const s = fs.readFileSync(path.join(RADACINA, 'mydarrin-catalog.html'), 'utf8');
+    adevarat(!/cartItems|id="cart-drawer"|PLATFORM_PCT/.test(s) && s.includes('src="cos-indicator.js"'), 'catalogul');
+    for (const f of ['mydarrin-categorie-servicii.html', 'mydarrin-categorie-materiale.html', 'mydarrin-categorie-inchirieri.html']) {
+      const p = fs.readFileSync(path.join(RADACINA, f), 'utf8');
+      adevarat(!/cartItems|cart-drawer/.test(p) && p.includes("location.replace('/mydarrin-catalog?"), f);
     }
   });
 }
 
 // ── E. Paginile în Chromium ─────────────────────────────────────────────
 const PAGINI_COS = ['index', 'servicii-urgente', 'despre-noi', 'afla-ce-facem', 'mydarrin-contact', 'mydarrin-catalog',
-  'mydarrin-categorie-servicii.html?type=servicii&cat=instalatii-electrice', 'mydarrin-categorie-materiale', 'mydarrin-categorie-inchirieri',
+  'mydarrin-catalog.html?categorie=servicii&subcategorie=instalatii-electrice', 'mydarrin-catalog.html?categorie=materiale',
   'mydarrin-marketplace', 'mydarrin-marketplace-materiale', 'mydarrin-produs.html?slug=montaj-tablou-electric&type=serviciu',
   'mydarrin-checkout', 'mydarrin-cos', 'mydarrin-creeaza-deviz', 'mydarrin-cum-functioneaza', 'cum-comanzi', 'cum-platesc',
   'cum-programez-serviciu', 'cum-prestam-livram', 'intrebari-frecvente-clienti', 'intrebari-frecvente-parteneri',
   'garantii-si-asigurari', 'ghidul-asiguratorului', 'reclamatii', 'mydarrin-devino-partener', 'cum-devii-partenerul-nostru',
   'cum-devii-curier-de-cartier', 'cum-devii-furnizor-materiale', 'cum-devii-operator-inchirieri', 'mydarrin-termeni',
   'mydarrin-politica-confidentialitate'];
-const PAGINI_CHEIE = ['index', 'mydarrin-catalog', 'mydarrin-categorie-materiale', 'mydarrin-marketplace-materiale',
+const PAGINI_CHEIE = ['index', 'mydarrin-catalog', 'mydarrin-catalog.html?categorie=materiale', 'mydarrin-marketplace-materiale',
   'mydarrin-produs.html?slug=montaj-tablou-electric&type=serviciu', 'mydarrin-cos', 'mydarrin-checkout'];
 const url = (p) => '/' + (p.includes('.html') ? p : p + '.html');
 
@@ -402,6 +405,8 @@ async function testeBrowser() {
     '/api/public/marketplace-produse': apiMp,
     '/api/public/geo-regiuni': apiGeo,
     '/api/public/calculeaza-pret-nivel': require(path.join(RADACINA, 'api/public/calculeaza-pret-nivel.js')),
+    // Pasul 11-C4: prețurile „de la” ale catalogului.
+    '/api/public/catalog-categorie': require(path.join(RADACINA, 'api/public/catalog-categorie.js')),
     '/api/public/tari-active': async (req, res) => res.status(200).json({ ok: true, active: ['RO'], tari: [{ tara_cod: 'RO', tara_nume: 'România' }], tva: { RO: 21 } }),
     '/api/cont/profil': async (req, res) => res.status(200).json({ ok: true, email: 'client@example.com', nume: 'Ana Albu', roles: ['client'], roluri_dashboard: ['client'], partener: null, investitor: null }),
   };
