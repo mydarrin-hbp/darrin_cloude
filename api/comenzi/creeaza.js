@@ -19,7 +19,18 @@
 // auditul extins, secțiunea 3) — comanda e persistată real, dar alocarea
 // automată către un partener rămâne un pas separat, neconstruit.
 //
-// Body: { date_facturare | profil_facturare_id (+ adresa_facturare_id?), adresa_prestare_id?, salveaza_in_cont?, adresa_lucrare?, valoare_totala, adresa, tara_cod?, regiune?, localitate?, suma_asigurare?, catalog_serviciu_id?, data_programata?, ora_inceput_programata?, ora_sfarsit_programata?, masa_totala_kg?, nivel_transport_marfa? }
+// Body: { date_facturare | profil_facturare_id (+ adresa_facturare_id?), adresa_prestare_id?, salveaza_in_cont?, adresa_lucrare?, adresa, tara_cod?, regiune?, localitate?,
+//         nivel_id + cantitate + addon_materiale?  (serviciu / închiriere)  SAU  produse_marketplace (materiale),
+//         data_programata?, ora_inceput_programata?, ora_sfarsit_programata?, masa_totala_kg?, nivel_transport_marfa? }
+//
+// Pasul 11-C2 (3 nov. 2026, regula LM): prețul comenzii se calculează doar pe
+// server — nivel_id → lib/pret-serviciu.js (rețeta sau prețul nivelului din
+// catalog_preturi), produse_marketplace → lib/rezolva-addon-materiale.js; ambele
+// cu formula din lib/calculeaza-pret.js. Câmpurile de preț din browser
+// (valoare_totala, suma_asigurare, cost_*) se ignoră; căile vechi care le
+// foloseau (descrise mai jos, istoric) au fost scoase. Fără nivel cu preț real →
+// 409 FARA_PRET. Serviciul trebuie să aibă parteneri activi în zona adresei
+// (lib/disponibilitate-adresa.js) → altfel 409 SERVICIU_INDISPONIBIL pe adresa.
 //
 // FIX (G2, audit Secțiunea 6/36, 30 Iulie 2026): masa_totala_kg/
 // nivel_transport_marfa — acceptate și persistate DOAR ca informație
@@ -90,8 +101,9 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { incearcaAlocarePartener } = require('../../lib/aloca-partener');
-const { calculeazaPret, citestePragMinimComanda } = require('../../lib/calculeaza-pret');
-const { calculeazaCostNivel } = require('../../lib/calculeaza-cost-recipe');
+const { calculeazaPret } = require('../../lib/calculeaza-pret');
+const { calculeazaPretServiciu, MESAJE: MESAJE_PRET } = require('../../lib/pret-serviciu');
+const { verificaDisponibilitate } = require('../../lib/disponibilitate-adresa');
 const { rezolvaAddonMateriale, parseazaIdMarketplace } = require('../../lib/rezolva-addon-materiale');
 const { genereazaProformaPDF } = require('../../lib/genereaza-proforma-pdf');
 const { renderEmailComandaPrimita, limbaProfilEmailComportamental } = require('../../lib/i18n');
@@ -101,7 +113,7 @@ const { fromHeader } = require('../../lib/email-sender');
 const { valideazaDateFacturare } = require('../../lib/date-facturare');
 const { verificaFirmaRoLaAnaf, MESAJE_ANAF } = require('../../lib/cauta-firma');
 const { trimiteEroare, camp } = require('../../lib/raspuns-eroare');
-const { adresaPrestareDinAgenda, dateFacturareDinAgenda, salveazaDinComanda, aceeasiZona, MESAJE: MESAJE_AGENDA } = require('../../lib/agenda-cont');
+const { adresaPrestareDinAgenda, dateFacturareDinAgenda, salveazaDinComanda, MESAJE: MESAJE_AGENDA } = require('../../lib/agenda-cont');
 const { rezolvaRegiune, MESAJ_REGIUNE } = require('../../lib/regiune');
 
 const UUID_PRODUS = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -115,6 +127,10 @@ const MESAJE_CHECKOUT = {
   metoda_plata: {
     ro: 'Alege metoda de plată. Momentan se acceptă doar ordinul de plată (transfer bancar).',
     en: 'Choose the payment method. Only bank transfer is accepted for now.',
+  },
+  zona_indisponibila: {
+    ro: 'My Darrin nu este încă disponibil în zona ta. Imediat ce pornim aici, te anunțăm pe email. Mulțumim pentru înțelegere.',
+    en: 'My Darrin is not available in your area yet. As soon as we launch here, we will let you know by email. Thank you for your understanding.',
   },
 };
 
@@ -132,10 +148,8 @@ async function handler(req, res, user) {
   // folosesc adresa aleasă, nu ce a trimis pagina.
   //   - altă țară decât cea trimisă de pagină → 409 ADRESA_ALTA_TARA (moneda și
   //     TVA-ul diferă; serviciul trebuie reconfigurat);
-  //   - pe calea cu preț din client (fără nivel_id și fără produse din
-  //     marketplace), alt județ / altă localitate → 409 ADRESA_SCHIMBATA_PRET:
-  //     prețul vechi nu se acceptă. Pe calea nivel_id prețul se recalculează
-  //     oricum aici, cu noua regiune; produsele din marketplace nu depind de zonă.
+  //   - prețul se recalculează oricum aici, cu noua regiune (pasul 11-C2: nu mai
+  //     există preț venit din pagină); produsele din marketplace nu depind de zonă.
   const corpCerere = { ...(req.body || {}) };
   if (corpCerere.adresa_prestare_id) {
     const r = await adresaPrestareDinAgenda(user.id, corpCerere.adresa_prestare_id);
@@ -147,13 +161,8 @@ async function handler(req, res, user) {
         [camp('adresa_prestare_id', MESAJE_AGENDA.adresa_alta_tara.ro, MESAJE_AGENDA.adresa_alta_tara.en)],
         { camp: 'adresa_prestare_id', tara_adresa: z.tara_cod, tara_serviciu: taraPagina });
     }
-    const pretDinServer = (typeof corpCerere.nivel_id === 'string' && corpCerere.nivel_id.length > 0)
-      || (Array.isArray(corpCerere.produse_marketplace) && corpCerere.produse_marketplace.length > 0);
-    if (!pretDinServer && !(await aceeasiZona(z, corpCerere.regiune, corpCerere.localitate))) {
-      return trimiteEroare(res, 409, 'ADRESA_SCHIMBATA_PRET', MESAJE_AGENDA.adresa_schimbata_pret.ro, MESAJE_AGENDA.adresa_schimbata_pret.en,
-        [camp('adresa_prestare_id', MESAJE_AGENDA.adresa_schimbata_pret.ro, MESAJE_AGENDA.adresa_schimbata_pret.en)],
-        { camp: 'adresa_prestare_id', zona_adresa: { regiune: z.regiune, localitate: z.localitate } });
-    }
+    // Pasul 11-C2: ADRESA_SCHIMBATA_PRET (prețul din pagină calculat pentru altă
+    // zonă) nu mai e posibil — prețul se calculează mereu aici, cu zona adresei.
     corpCerere.adresa = r.adresa;
     corpCerere.adresa_lucrare = r.adresa_lucrare;
     corpCerere.tara_cod = z.tara_cod;
@@ -180,9 +189,8 @@ async function handler(req, res, user) {
   }
 
   const {
-    valoare_totala, adresa, tara_cod = null, regiune = null, localitate = null,
-    suma_asigurare = 0, catalog_serviciu_id = null,
-    cost_baza_servicii, cost_materiale, cost_chirie_scule, cost_curier, cost_asigurare,
+    adresa, tara_cod = null, regiune = null, localitate = null,
+    catalog_serviciu_id = null,
     data_programata = null, ora_inceput_programata = null, ora_sfarsit_programata = null,
     masa_totala_kg = null, nivel_transport_marfa = null,
     metoda_plata = 'ordin_plata',
@@ -246,12 +254,6 @@ async function handler(req, res, user) {
     }
   }
 
-  // G2, partea 2 — o greutate itemizată declanșează și ea calculul real
-  // (lib/calculeaza-pret.js), chiar dacă niciun alt cost_* nu e trimis —
-  // altfel formula de transport n-ar avea niciodată ocazia să ruleze.
-  const areComponenteItemizate = [cost_baza_servicii, cost_materiale, cost_chirie_scule, cost_curier, cost_asigurare]
-    .some((v) => typeof v === 'number' && v > 0) || (typeof masa_totala_kg === 'number' && masa_totala_kg > 0);
-
   // Produse din marketplace, fără serviciu (pasul 10a, 16 oct. 2026): clientul
   // trimite doar {id: 'mp:<tip>:<uuid>', qty}; prețul se calculează integral
   // aici, cu aceeași formulă ca /api/public/marketplace-produse (POST), din
@@ -268,13 +270,13 @@ async function handler(req, res, user) {
     return res.status(400).json({ error: 'produse_marketplace: id de produs invalid sau prea multe produse (maximum 50).' });
   }
 
-  if (!areComponenteItemizate && !areNivelId && !areProduseMarketplace) {
-    if (typeof valoare_totala !== 'number' || !(valoare_totala > 0)) {
-      return res.status(400).json({ error: 'valoare_totala (numeric, pozitiv) este obligatorie' });
-    }
-    if (typeof suma_asigurare !== 'number' || suma_asigurare < 0 || suma_asigurare > valoare_totala) {
-      return res.status(400).json({ error: 'suma_asigurare trebuie să fie un număr între 0 și valoare_totala' });
-    }
+  // Pasul 11-C2 (regula LM, 3 nov. 2026): prețul comenzii se calculează doar
+  // aici. `valoare_totala`, `suma_asigurare` și `cost_*` trimise de browser se
+  // ignoră. Un serviciu fără nivel din catalog (deci fără preț real) nu se
+  // poate comanda direct: 409 FARA_PRET — „Cere un deviz”.
+  if (!areNivelId && !areProduseMarketplace) {
+    const m = MESAJE_PRET.fara_pret;
+    return trimiteEroare(res, 409, 'FARA_PRET', m.ro, m.en, [camp('nivel_id', m.ro, m.en)], { camp: 'nivel_id' });
   }
   // Pasul 11-C1: adresa de prestare / livrare, în forma comună, pe câmpul ei
   // (înainte: { error } simplu, iar o adresă doar din spații trecea).
@@ -317,10 +319,9 @@ async function handler(req, res, user) {
       .eq('tara_cod', String(tara_cod).toUpperCase())
       .maybeSingle();
     if (!config || !config.checkout_activ) {
-      return res.status(403).json({
-        error: 'Darrin inca nu este disponibil in zona ta. Imediat ce suntem live, te vom anunta cu email. Multumim pentru intelegere.',
-        code: 'ZONA_INDISPONIBILA',
-      });
+      // Pasul 11-C2: în forma comună, cu diacritice, RO + EN (`code` păstrat pentru checkout).
+      const m = MESAJE_CHECKOUT.zona_indisponibila;
+      return trimiteEroare(res, 403, 'ZONA_INDISPONIBILA', m.ro, m.en, [camp('tara_cod', m.ro, m.en)], { camp: 'tara_cod', code: 'ZONA_INDISPONIBILA' });
     }
   }
 
@@ -360,10 +361,29 @@ async function handler(req, res, user) {
   let addonMaterialeSelectate = [];
   if (areNivelId) {
     const taraCalcul = tara_cod ? String(tara_cod).toUpperCase() : 'RO';
-    const cost = await calculeazaCostNivel({ nivelId: nivel_id, taraCod: taraCalcul, cantitate: cantitateNivel, regiune: regiune || null });
-    if (cost.nivel_activ === false) {
-      return res.status(400).json({ error: 'Acest nivel nu mai este disponibil pentru comandă.', code: 'NIVEL_INACTIV' });
+    // Pasul 11-C2: un singur calcul, același ca în configurare, coș și checkout
+    // (lib/pret-serviciu.js): rețeta nivelului sau prețul lui din catalog.
+    const pret = await calculeazaPretServiciu({ nivelId: nivel_id, cantitate: cantitateNivel, taraCod: taraCalcul, regiune: regiune || null, addonMateriale: addon_materiale });
+    if (!pret.ok) {
+      if (pret.motiv === 'addon_fara_pret') return trimiteEroare(res, 400, pret.cod || 'ADDON_FARA_PRET', pret.mesaj.ro, pret.mesaj.en, [camp('addon_materiale', pret.mesaj.ro, pret.mesaj.en)], { camp: 'addon_materiale' });
+      const cod = pret.motiv === 'nivel_inactiv' ? 'NIVEL_INACTIV' : pret.motiv === 'nivel_necunoscut' ? 'NIVEL_NECUNOSCUT' : 'FARA_PRET';
+      return trimiteEroare(res, 409, cod, pret.mesaj.ro, pret.mesaj.en, [camp('nivel_id', pret.mesaj.ro, pret.mesaj.en)],
+        Object.assign({ camp: 'nivel_id' }, pret.resurse_fara_pret ? { resurse_fara_pret: pret.resurse_fara_pret } : {}));
     }
+    catalogServiciuIdEfectiv = pret.nivel.serviciu_id;
+
+    // Pasul 11-C2: aceeași verificare a zonei ca în coș — fără parteneri activi
+    // în zona adresei, comanda nu pleacă (nici trimisă direct).
+    const disp = await verificaDisponibilitate({
+      serviciu: { id: catalogServiciuIdEfectiv },
+      adresa: { strada: adresaLucrare.strada || adresa, localitate: adresaLucrare.localitate || localitate, judet: regiune || adresaLucrare.judet, tara_cod: taraCalcul },
+    });
+    if (!disp.ok) return trimiteEroare(res, disp.status, disp.cod, disp.mesaj.ro, disp.mesaj.en, [camp(disp.camp, disp.mesaj.ro, disp.mesaj.en)], { camp: disp.camp });
+    if (!disp.disponibil) {
+      return trimiteEroare(res, 409, 'SERVICIU_INDISPONIBIL', disp.mesaj.ro, disp.mesaj.en, [camp('adresa', disp.mesaj.ro, disp.mesaj.en)], { camp: 'adresa', motiv: disp.motiv });
+    }
+
+    const cost = pret.cost || {};
     // Venitul defalcat al partenerului (9 oct. 2026): manoperă + costuri fixe,
     // fără comisioanele platformei. Salvat după inserare (vezi mai jos).
     if (cost.defalcare_cost_baza) {
@@ -374,47 +394,10 @@ async function handler(req, res, user) {
         total: d.total, reguli_costuri_fixe: cost.reguli_costuri_fixe || {}, regula_nivel_id: cost.regula_nivel_id || null,
       };
     }
-    if (cost.resurse_fara_pret.length) {
-      return res.status(400).json({
-        error: 'Rețeta tehnică a acestui serviciu nu are toate resursele tarifate — comanda nu poate fi calculată automat.',
-        code: 'RETETA_INCOMPLETA',
-        resurse_fara_pret: cost.resurse_fara_pret.map((r) => ({ denumire: r.denumire, tip: r.tip, unitate: r.unitate })),
-      });
-    }
-
-    const { data: nivelRow } = await supabaseAdmin
-      .from('catalog_niveluri')
-      .select('serviciu_id, nivel')
-      .eq('id', nivel_id)
-      .maybeSingle();
-    catalogServiciuIdEfectiv = nivelRow?.serviciu_id || null;
-
-    // Faza 2/3 (29 august 2026, cerere fondator — corecție "te-ai abătut de
-    // la conceptul paginii de configurare"): materiale/accesorii OPȚIONALE
-    // (ex. plintă PVC, profil de trecere) selectate de client din selectorul
-    // de addon-uri (catalog_servicii, filtrat NACE — CAT-2a). Integritate,
-    // exact ca la restul căii nivel_id: clientul trimite DOAR id+cantitate —
-    // niciun preț venit din client nu e folosit; rezolvat identic ca în
-    // /api/public/calculeaza-pret-nivel.js (helper comun), altfel prețul
-    // previzualizat n-ar mai coincide cu cel efectiv încasat.
-    let addonRezultat;
-    try {
-      addonRezultat = await rezolvaAddonMateriale(addon_materiale, nivelRow?.nivel || null, taraCalcul);
-    } catch (e) {
-      if (e.code === 'ADDON_FARA_PRET' || e.code === 'ADDON_INVALID') {
-        return res.status(400).json({ error: e.message, code: e.code });
-      }
-      throw e;
-    }
-    addonMaterialeSelectate = addonRezultat.itemi;
-
-    const calc = await calculeazaPret({
-      cost_baza_servicii: cost.cost_baza_servicii,
-      cost_materiale: cost.cost_materiale + addonRezultat.cost_materiale,
-      cost_chirie_scule: cost.cost_utilaj + addonRezultat.cost_utilaj,
-      tara: taraCalcul,
-    });
-    nivelCalculat = { cantitate: cantitateNivel, calc };
+    // Materialele opționale (Faza 2/3 CAT): clientul trimite doar id + cantitate,
+    // prețul e rezolvat în lib/pret-serviciu.js (rezolvaAddonMateriale).
+    addonMaterialeSelectate = pret.addon.itemi;
+    nivelCalculat = { cantitate: cantitateNivel, calc: pret.calc };
 
     const escoIntrari = Object.entries(cost.manopera_per_esco || {});
     if (escoIntrari.length) {
@@ -525,8 +508,7 @@ async function handler(req, res, user) {
           tva_pct: nivelCalculat.calc.tva_pct,
           tva_suma: nivelCalculat.calc.tva_suma,
         }
-      : produseCalculate
-      ? {
+      : {
           ...insertBase,
           // furnizor_id rămâne pe fiecare item: escrow-ul înregistrează suma
           // pe furnizorul produsului (lib/elibereaza-escrow.js).
@@ -544,38 +526,10 @@ async function handler(req, res, user) {
           suma_comision_platforma: produseCalculate.calc.comision_platforma,
           tva_pct: produseCalculate.calc.tva_pct,
           tva_suma: produseCalculate.calc.tva_suma,
-        }
-      : areComponenteItemizate
-      ? await (async () => {
-          const calc = await calculeazaPret({
-            cost_baza_servicii, cost_materiale, cost_chirie_scule, cost_curier, cost_asigurare,
-            tara: insertBase.tara_cod || 'RO',
-            masa_totala_kg, nivel_transport_marfa,
-          });
-          return {
-            ...insertBase,
-            suma_totala_platita: calc.pret_final,
-            suma_manopera: calc.cost_baza_servicii,
-            suma_materiale: calc.cost_materiale,
-            suma_chirie_scule: calc.cost_chirie_scule,
-            suma_transport: calc.cost_curier,
-            suma_transport_greutate: calc.cost_transport_greutate,
-            suma_ajutor: calc.cost_ajutor,
-            suma_asigurare: calc.cost_asigurare,
-            suma_marketing: calc.cost_marketing,
-            suma_mentenanta: calc.cost_mentenanta,
-            suma_comision_platforma: calc.comision_platforma,
-            tva_pct: calc.tva_pct,
-            tva_suma: calc.tva_suma,
-          };
-        })()
-      // FIX (gaură de integritate, 22 august 2026): calea neitemizată nu
-      // trece deloc prin lib/calculeaza-pret.js — valoare_totala vine direct
-      // din body, neverificată. Același prag minim, citit acum dinamic per
-      // țară (tax_configurations.prag_minim_comanda, ca la TVA — extensia
-      // din aceeași zi), nu mai hardcodat, ca nicio comandă să nu ocolească
-      // pragul doar alegând calea neitemizată.
-      : { ...insertBase, suma_totala_platita: Math.max(valoare_totala, await citestePragMinimComanda(insertBase.tara_cod || 'RO')), suma_asigurare };
+        };
+    // Pasul 11-C2: căile cu prețul venit din browser (cost_* itemizate și
+    // valoare_totala) au fost scoase — o comandă publică are doar cele două
+    // căi de mai sus, cu prețul calculat aici.
 
     const { data, error } = await supabaseAdmin
       .from('comenzi')

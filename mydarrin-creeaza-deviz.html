@@ -2055,5 +2055,14 @@ function daiSendMessage(){
 <script src="ui-comun.js" defer></script>
 <script src="reguli-platforma.js" defer></script>
 <script src="contact-public.js" defer></script>
+<script>
+// Pasul 11-C2: din pagina unui serviciu fără preț fix („Cere un deviz”), descrierea
+// pornește cu numele serviciului (?descriere=…); clientul o completează.
+(function () {
+  var d = new URLSearchParams(location.search).get('descriere');
+  var t = document.getElementById('dv-text');
+  if (d && t && !t.value) t.value = d.slice(0, 200) + ': ';
+})();
+</script>
 </body>
 </html>

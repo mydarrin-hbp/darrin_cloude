@@ -965,6 +965,10 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 .btn-adauga-cos:disabled{background:#B8C4CE;cursor:not-allowed}
 .adauga-motiv{font-size:12px;line-height:1.5;color:#6B7A8D}
 .adauga-motiv:empty{display:none}
+.cos-deviz{background:#EAF2FB;border:1.5px solid #1D5FA8;border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.cos-deviz[hidden]{display:none}
+.cos-deviz-text{font-size:13px;font-weight:700;color:#1D5FA8}
+.btn-cere-deviz{display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;background:#003366;color:#fff;font-size:14px;font-weight:800;text-decoration:none}
 .link-continua{align-self:flex-start;font-size:12.5px;font-weight:700;color:#003366;text-decoration:none;padding:6px 0}
 </style>
 </head>
@@ -1590,7 +1594,7 @@ function triggerHeaderSearch(){
                 <div style="font-weight:700;color:#fff;font-size:14px" id="tier-detail-name">Aur — Pachet complet</div>
                 <div style="font-size:11px;color:#4A6080">Nivel selectat · Cost de bază (pre-platformă)</div>
               </div>
-              <div style="margin-left:auto;font-weight:800;color:#FF8C00;font-size:18px" id="tier-detail-price">1.063 Lei</div>
+              <div style="margin-left:auto;font-weight:800;color:#FF8C00;font-size:18px" id="tier-detail-price">—</div>
             </div>
             <p style="font-size:13px;color:#8BA3C0;line-height:1.65;margin-bottom:8px" id="tier-detail-desc"></p>
             <div id="tier-garantie-wrap" style="font-size:11.5px;color:#0E9E99;font-weight:600"></div>
@@ -1699,6 +1703,11 @@ function triggerHeaderSearch(){
         <div class="cos-actiuni">
           <button type="button" id="btn-adauga-cos" class="btn-adauga-cos" onclick="adaugaInCosDinConfigurare(this)" disabled aria-describedby="btn-adauga-cos-motiv">Adaugă în coș</button>
           <div id="btn-adauga-cos-motiv" class="adauga-motiv">Completează adresa de prestare (județul, localitatea și strada) ca să poți adăuga serviciul în coș.</div>
+          <!-- Pasul 11-C2: fără preț real calculat pe server — nicio cifră, doar deviz. -->
+          <div id="cos-deviz" class="cos-deviz" hidden>
+            <div class="cos-deviz-text">Prețul se stabilește prin deviz.</div>
+            <a id="btn-cere-deviz" class="btn-cere-deviz" href="mydarrin-creeaza-deviz.html">Cere un deviz</a>
+          </div>
           <a href="mydarrin-catalog.html" class="link-continua">← Continuă cumpărăturile</a>
         </div>
 
@@ -3757,6 +3766,49 @@ function afiseazaProcentTva(cota) {
 
 const PRET_EVALUARE = 'Preț după evaluare tehnică';
 
+// Pasul 11-C2 (regula LM, 3 nov. 2026): prețul afișat vine doar de la server
+// (/api/public/calculeaza-pret-nivel → lib/pret-serviciu.js, același calcul ca
+// la comandă). Fără preț real nu se afișează nicio cifră: „Prețul se stabilește
+// prin deviz” și „Cere un deviz”, în locul butonului „Adaugă în coș”.
+//   ascundeNiveluri: produsul nu e în catalog (tabelele vechi, scrise de mână).
+function arataModDeviz(ascundeNiveluri) {
+  const deviz = document.getElementById('cos-deviz');
+  const link = document.getElementById('btn-cere-deviz');
+  const titlu = document.getElementById('prod-title')?.textContent || S.slug;
+  if (link) link.href = 'mydarrin-creeaza-deviz.html?descriere=' + encodeURIComponent(titlu);
+  if (deviz) deviz.hidden = false;
+  ['btn-adauga-cos', 'btn-adauga-cos-motiv'].forEach((id) => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
+  const contBtn = document.querySelector('#sec-1 .btn-primary');
+  if (contBtn) { contBtn.disabled = true; contBtn.style.display = 'none'; }
+  ['s-base', 's-ins', 's-plat', 's-tva', 'dv-ins', 'dv-platform', 'dv-tva', 'tier-detail-price', 'dv-confirm-amt', 'esc-amount', 'launch-amt'].forEach((id) => setEl(id, '—'));
+  setEl('s-total', PRET_EVALUARE);
+  setEl('dv-total', PRET_EVALUARE);
+  toggleEl('s-vmc', false);
+  if (ascundeNiveluri) {
+    const t = document.getElementById('tier-section'); if (t) t.style.display = 'none';
+    document.querySelectorAll('[id^="price-"]').forEach((e) => { e.textContent = '—'; });
+  }
+}
+function ascundeModDeviz() {
+  const deviz = document.getElementById('cos-deviz');
+  if (deviz) deviz.hidden = true;
+  ['btn-adauga-cos', 'btn-adauga-cos-motiv'].forEach((id) => { const e = document.getElementById(id); if (e) e.style.display = ''; });
+  const contBtn = document.querySelector('#sec-1 .btn-primary');
+  if (contBtn) contBtn.style.display = '';
+}
+
+// Produsul din catalogul real (serviciu, închiriere sau material), după slug —
+// toate au prețul calculat pe server, nu doar cele cu rețetă.
+async function produsDinCatalog(slug) {
+  if (!SUPA_PROD_ANON || !slug) return null;
+  try {
+    const headers = { apikey: SUPA_PROD_ANON, Authorization: `Bearer ${SUPA_PROD_ANON}` };
+    const r = await fetch(`${SUPA_PROD_URL}/rest/v1/catalog_servicii?id_serviciu=eq.${encodeURIComponent(slug)}&status_public=eq.true&select=id`, { headers });
+    const d = r.ok ? await r.json() : [];
+    return Array.isArray(d) && d[0] ? d[0].id : null;
+  } catch (e) { return null; }
+}
+
 async function initPilotProdus(slug, serviciuId) {
   if (!serviciuId || !SUPA_PROD_ANON) return false;
 
@@ -3764,7 +3816,7 @@ async function initPilotProdus(slug, serviciuId) {
   try {
     const headers = { apikey: SUPA_PROD_ANON, Authorization: `Bearer ${SUPA_PROD_ANON}` };
     const [servRes, nivRes] = await Promise.all([
-      fetch(`${SUPA_PROD_URL}/rest/v1/catalog_servicii?id=eq.${serviciuId}&select=id,titlu,domeniu,unitate_masura,nace,descriere,etape_lucrare,instructiuni_intretinere,imagini`, { headers }).then(r => r.ok ? r.json() : []),
+      fetch(`${SUPA_PROD_URL}/rest/v1/catalog_servicii?id=eq.${serviciuId}&select=id,titlu,categorie,domeniu,unitate_masura,nace,descriere,etape_lucrare,instructiuni_intretinere,imagini`, { headers }).then(r => r.ok ? r.json() : []),
       fetch(`${SUPA_PROD_URL}/rest/v1/catalog_niveluri?serviciu_id=eq.${serviciuId}&select=id,nivel,descriere`, { headers }).then(r => r.ok ? r.json() : []),
     ]);
     servRow = servRes[0]; niveluriRows = nivRes;
@@ -3822,7 +3874,9 @@ async function initPilotProdus(slug, serviciuId) {
   // afișat greșit "Cantitate (ore)"/"20 ore" pentru o lucrare de pardoseală.
   // Acum citită real din catalog_servicii.unitate_masura, cu fallback la
   // 'ore' — identic cu comportamentul vechi pentru cele 5 servicii orare.
-  S.type = 'serviciu'; S.unit = servRow.unitate_masura || 'ore';
+  // Pasul 11-C2: și închirierile și materialele din catalog au prețul de la server.
+  S.type = servRow.categorie === 'inchirieri' ? 'inchiriere' : servRow.categorie === 'materiale' ? 'material' : 'serviciu';
+  S.unit = servRow.unitate_masura || 'ore';
   // Bug real găsit (29 august 2026, testare live): S.nace nu era niciodată
   // setat în mod pilot — loadAddonCatalog() cădea mereu pe filtrul
   // "__fara_potrivire__", arătând "Niciun material" indiferent ce addon-uri
@@ -4045,6 +4099,7 @@ function recalcPilot() {
 }
 
 function afiseazaPilotFaraPret(text) {
+  if (text === PRET_EVALUARE) { arataModDeviz(false); return; }
   const contBtn = document.querySelector('#sec-1 .btn-primary');
   _pilotPretConfirmat = false;
   if (contBtn) contBtn.disabled = true;
@@ -4093,6 +4148,7 @@ async function _recalcPilotNow(qty) {
     return;
   }
   _pilotPretConfirmat = true;
+  ascundeModDeviz();
   if (contBtn) contBtn.disabled = false;
 
   S.total = data.pret_final;
@@ -4195,11 +4251,15 @@ async function loadFromURL(){
   // (PRODUCTS_DB/TIER_DB, ~26 produse + fallback-ul de categorie) rămâne pe
   // calea veche, neatinsă. Dacă eșuează (rețea, sau slug pilot fără niciun
   // nivel disponibil azi), cade pe calea veche ca înainte de acest fix.
-  const serviciuId = await serviciuCuReteta(slug);
+  // Pasul 11-C2: orice produs din catalog (nu doar cele cu rețetă) trece pe
+  // calea cu preț de la server; produsele din tabelele vechi ale paginii
+  // (PRODUCTS_DB / TIER_DB, fără preț real) rămân doar cu „Cere un deviz”.
+  const serviciuId = (await produsDinCatalog(slug)) || (await serviciuCuReteta(slug));
   if (serviciuId) {
     const ok = await initPilotProdus(slug, serviciuId);
     if (ok) return;
   }
+  S.faraPret = true;
 
   const prod = PRODUCTS_DB[slug] || buildFallbackProduct(slug, urlType);
   // Pre-fill from consultanta redirect
@@ -4378,6 +4438,8 @@ function selectTierCol(tier){
 
 // ══ RECALC ══
 function recalc(){
+  // Pasul 11-C2: nicio cifră calculată în pagină — fără preț de la server, deviz.
+  if (S.faraPret) { arataModDeviz(true); return; }
   // Mod pilot: prețul e calculat integral server-side (rețetă reală), nu
   // client-side ca mai jos — vezi recalcPilot()/_recalcPilotNow().
   if (S.pilotMode) { recalcPilot(); return; }
@@ -4701,7 +4763,7 @@ async function adaugaInCosDinConfigurare(btn) {
   const a = campuriAdresa();
   const tip = S.type === 'inchiriere' ? 'inchiriere' : S.type === 'material' ? 'material' : 'serviciu';
   const corp = tip === 'material'
-    ? { tip, slug: S.slug, titlu: config.titlu, qty: Math.max(1, parseInt(S.qty, 10) || 1), tara_cod: S.tara_cod || 'RO' }
+    ? { tip, slug: S.slug, titlu: config.titlu, qty: Math.max(1, parseInt(S.qty, 10) || 1), tara_cod: S.tara_cod || 'RO', ...(S.pilotMode && S.tier ? { nivel: S.tier } : {}) }
     : Object.assign({}, config, {
         tip, serviciu_id: S.pilotServiciuId || undefined,
         adresa_prestare: { strada: a.strada, localitate: a.localitate, judet: a.judet, tara_cod: a.tara_cod },
@@ -4887,6 +4949,7 @@ function cereAdresaInainte(){
   document.getElementById('adresa-prestare-bloc')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 function completeStep(step){
+  if(step===1 && (S.faraPret || (S.pilotMode && !_pilotPretConfirmat))){ arataModDeviz(S.faraPret); return; }
   if(step===1 && !adresaVerificata()){ cereAdresaInainte(); return; }
   S.doneSteps.add(step);
   updStep(step,'done');

@@ -53,6 +53,7 @@ const MESAJE = {
   item_lipsa: { ro: 'Produsul nu mai este în coș.', en: 'This item is no longer in the basket.' },
   preia: { ro: 'Coșul de vizitator se poate muta doar într-un cont conectat.', en: 'The guest basket can only be moved into a signed-in account.' },
   server: { ro: 'Coșul nu a putut fi salvat. Încearcă din nou.', en: 'The basket could not be saved. Please try again.' },
+  fara_pret: { ro: 'Acest serviciu nu are încă un preț fix. Cere un deviz.', en: 'This service does not have a fixed price yet. Ask for a quote.' },
 };
 
 function eroare(res, status, cod, cheie, numeCamp, mesaj) {
@@ -138,11 +139,18 @@ async function pregatesteServiciu(c, tip, user) {
     adresaPrestareId = c.adresa_prestare_id;
   }
 
+  // Pasul 11-C2: prețul din coș e cel al comenzii (lib/pret-serviciu.js), cu
+  // materialele opționale alese; fără nivel cu preț real, serviciul nu intră.
+  const addon = [...(Array.isArray(c.materiale) ? c.materiale : []), ...(Array.isArray(c.inchirieri) ? c.inchirieri : [])]
+    .filter((m) => m && m.id).map((m) => ({ id: m.id, qty: m.qty }));
   const v = await verificaDisponibilitate({
-    serviciu: { id: c.serviciu_id, slug: c.slug }, adresa, nivel_id: c.nivel_id || null, cantitate: c.cantitate || c.qty,
+    serviciu: { id: c.serviciu_id, slug: c.slug }, adresa, nivel_id: c.nivel_id || null, cantitate: c.cantitate || c.qty, addon_materiale: addon,
   });
   if (!v.ok) return { eroare: [v.status, v.cod, v.camp, null, v.mesaj] };
+  if (!v.disponibil && v.motiv === 'fara_pret') return { eroare: [409, 'FARA_PRET', 'nivel_id', 'fara_pret'] };
+  if (!v.disponibil && (v.motiv === 'addon_fara_pret' || v.motiv === 'nivel_inactiv')) return { eroare: [409, v.motiv === 'nivel_inactiv' ? 'NIVEL_INACTIV' : 'ADDON_FARA_PRET', 'nivel_id', null, v.mesaj] };
   if (!v.disponibil) return { eroare: [409, 'SERVICIU_INDISPONIBIL', 'adresa_prestare', null, v.mesaj, { motiv: v.motiv }] };
+  if (v.pret_final == null) return { eroare: [409, 'FARA_PRET', 'nivel_id', 'fara_pret'] };
 
   const z = v.zona;
   return {

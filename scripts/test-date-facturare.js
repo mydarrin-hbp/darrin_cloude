@@ -73,13 +73,24 @@ const CNP_INVALID = CNP.slice(0, 12) + ((Number(CNP[12]) + 1) % 10);
 const ADRESA_FACT = { strada: 'Str. Facturii 5', localitate: 'Cluj-Napoca', judet: 'Cluj', cod_postal: '400002', tara: 'RO' };
 const PF = (x = {}) => Object.assign({ tip: 'pf', prenume: 'Ana', nume: 'Albu' }, x);
 const PJ = (x = {}) => Object.assign({ tip: 'pj', cui: CUI, denumire: 'Firma Simulata SRL', nr_reg_com: 'J12/3456/2020', adresa: ADRESA_FACT }, x);
-const COMANDA = (x = {}) => Object.assign({ adresa: 'Str. Lucrării 1, Cluj-Napoca, Cluj', tara_cod: 'RO', regiune: 'Cluj', localitate: 'Cluj-Napoca', valoare_totala: 500 }, x);
+// Pasul 11-C2: prețul comenzii vine doar de pe server — un serviciu din catalog cu
+// prețul nivelului în catalog_preturi (fără rețetă) și un partener activ în Cluj.
+const SERV = 'd0000000-0000-4000-8000-0000000000d1';
+const NIV = 'e0000000-0000-4000-8000-0000000000e1';
+const COMANDA = (x = {}) => Object.assign({ adresa: 'Str. Lucrării 1, Cluj-Napoca, Cluj', tara_cod: 'RO', regiune: 'Cluj', localitate: 'Cluj-Napoca', nivel_id: NIV }, x);
 
 function reset() {
   DB.tabele = {
     profiles: [{ id: CLIENT, email: 'client@test', roles: ['client'] }],
     tax_configurations: [{ tara_cod: 'RO', moneda: 'RON', cota_tva: 21, prag_minim_comanda: 100, checkout_activ: true }],
     comenzi: [], invoices: [], tarife_transport: [],
+    catalog_servicii: [{ id: SERV, id_serviciu: 'serviciu-test', titlu: 'Serviciu de test', categorie: 'servicii', status_public: true }],
+    catalog_niveluri: [{ id: NIV, serviciu_id: SERV, nivel: 'Gold' }],
+    catalog_preturi: [{ nivel_id: NIV, pret: 500, tara_cod: 'RO' }],
+    devize_articole: [],
+    geo_regiuni: [{ id: 'g1', tara_cod: 'RO', cod: 'CJ', denumire: 'Cluj', ordine: 1 }],
+    partener_servicii_active: [{ partener_id: 'p1', catalog_serviciu_id: SERV, activ: true }],
+    parteneri_disponibilitate: [{ partener_id: 'p1', status_live: 'disponibil', tara_cod: 'RO', judete: ['CJ'] }],
     // Configurația de preț (aceleași valori ca în scripts/test-marketplace-public.js).
     backoffice_config: [
       { sectiune: 'pricing', cheie: 'cost_marketing_pct', valoare: '3', tara_cod: 'ALL' },
@@ -305,9 +316,11 @@ async function testePagina() {
   const CAPTURI = process.env.CAPTURI ? path.resolve(process.env.CAPTURI) : null;
   if (CAPTURI) fs.mkdirSync(CAPTURI, { recursive: true });
   const USER = { id: CLIENT, email: 'client@test', roles: ['client'] };
-  const CFG = { titlu: 'Serviciu de test', total: 500, bazaRaw: 400, tara_cod: 'RO', addr: 'Str. Lucrării 1', localitate: 'Cluj-Napoca', materiale: [], inchirieri: [] };
+  // Pasul 11-C2: configurarea are nivelul din catalog; checkout-ul recitește prețul de pe server.
+  const CFG = { titlu: 'Serviciu de test', total: 500, nivel_id: NIV, cantitate: 1, tara_cod: 'RO', regiune: 'Cluj', addr: 'Str. Lucrării 1', localitate: 'Cluj-Napoca', materiale: [], inchirieri: [] };
   const API = {
     '/api/comenzi/creeaza': apiCreeaza,
+    '/api/public/calculeaza-pret-nivel': require(path.join(RADACINA, 'api/public/calculeaza-pret-nivel.js')),
     '/api/client/date-facturare': apiDateFacturare,
     '/api/public/cui-lookup': apiCuiLookup,
     '/api/public/tari-active': async (req, res) => res.status(200).json({ ok: true, active: ['RO'], tari: [{ tara_cod: 'RO', tara_nume: 'România' }], tva: { RO: 21 } }),
@@ -478,18 +491,14 @@ async function testePagina() {
         egal([c.tip_client, c.date_facturare.prenume, c.date_facturare.adresa.strada, c.date_facturare.cnp_ultimele3], ['b2c', 'Ana', 'Str. Lucrării 1', CNP.slice(-3)]);
         adevarat(c.client_cnp_criptat && !JSON.stringify(c.date_facturare).includes(CNP), 'criptat, nu în date_facturare');
       });
-      await test('RO 390px: B2G bifat → blocul de facturare ascuns și netrimis', async () => {
+      // Pasul 11-C2: toate serviciile au acum prețul calculat pe server (nivel_id),
+      // iar checkout-ul dezactiva deja B2G pe această cale (api/comenzi/creeaza-b2g.js
+      // primește încă prețul din pagină — semnalat în raport, neschimbat).
+      // Înainte: B2G bifat pe o configurare cu preț din pagină → cerere B2G fără date_facturare.
+      await test('RO 390px: serviciu cu preț de pe server → B2G indisponibil (nu se poate bifa), nicio cerere B2G', async () => {
         await pg.evaluate(() => { document.getElementById('order-confirm-overlay')?.remove(); goToStep('payment'); });
-        await pg.check('#b2g-toggle');
-        await pg.evaluate(() => goToStep('details'));
-        egal(await vizibil(pg, '#fact-bloc'), false);
-        await pg.evaluate(() => goToStep('payment'));
-        await pg.fill('#b2g-denumire', 'Primăria Test'); await pg.fill('#b2g-cui', CUI);
-        await pg.click('#btn-finalizeaza');
-        await pg.waitForTimeout(500);
-        const b2g = pg.cereri.filter((c) => c.cale === '/api/comenzi/creeaza-b2g').pop();
-        adevarat(b2g, 'cererea B2G a plecat');
-        adevarat(!('date_facturare' in b2g.corp) && !('adresa_lucrare' in b2g.corp), 'fără date_facturare în B2G');
+        egal(await pg.$eval('#b2g-toggle', (c) => [c.disabled, c.checked]), [true, false]);
+        egal(pg.cereri.filter((c) => c.cale === '/api/comenzi/creeaza-b2g').length, 0);
       });
       await test('RO 390px: 0 erori JS', async () => { egal(pg.erori, []); });
       await ctx.close();

@@ -86,6 +86,10 @@ function cuControl(primele12) {
   const r = primele12.split('').reduce((s, c, i) => s + Number(c) * cheie[i], 0) % 11;
   return primele12 + (r === 10 ? 1 : r);
 }
+// Pasul 11-C2: comenzile au doar preț calculat pe server — un serviciu din catalog,
+// cu un nivel (rețeta simulată mai sus) și un partener activ în județele folosite aici.
+const SERV = 'c0000000-0000-4000-8000-0000000000c1';
+const NIV = 'e0000000-0000-4000-8000-0000000000e1';
 const CNP = cuControl('185031440123');
 const CNP_INVALID = CNP.slice(0, 12) + ((Number(CNP[12]) + 1) % 10);
 const ADR = (x = {}) => Object.assign({ eticheta: 'Acasă', folosire: 'ambele', strada: 'Str. Lucrării 1', localitate: 'Cluj-Napoca', judet: 'Cluj', cod_postal: '400001', tara: 'RO' }, x);
@@ -95,6 +99,10 @@ function reset() {
     profiles: [{ id: U, email: 'client@example.com', roles: ['client'] }, { id: ALT, email: 'alt@example.com', roles: ['client'] }],
     tax_configurations: [{ tara_cod: 'RO', moneda: 'RON', cota_tva: 21, prag_minim_comanda: 100, checkout_activ: true }],
     comenzi: [], invoices: [], tarife_transport: [],
+    catalog_servicii: [{ id: SERV, id_serviciu: 'serviciu-test', titlu: 'Serviciu de test', categorie: 'servicii', status_public: true }],
+    catalog_niveluri: [{ id: NIV, serviciu_id: SERV, nivel: 'Gold' }],
+    partener_servicii_active: [{ partener_id: 'p1', catalog_serviciu_id: SERV, activ: true }],
+    parteneri_disponibilitate: [{ partener_id: 'p1', status_live: 'disponibil', tara_cod: 'RO', judete: ['B', 'BV', 'CJ', 'IF', 'IS', 'SB'] }],
     backoffice_config: [
       { sectiune: 'pricing', cheie: 'cost_marketing_pct', valoare: '3', tara_cod: 'ALL' },
       { sectiune: 'pricing', cheie: 'cost_mentenanta_pct', valoare: '2', tara_cod: 'ALL' },
@@ -132,7 +140,7 @@ async function cheama(api, { token = 'tok-u', metoda = 'POST', body = null } = {
 const agenda = (body, token) => cheama(apiAgenda, { body, token });
 const citeste = (token) => cheama(apiAgenda, { metoda: 'GET', token });
 // Prețul de test (calea veche) e calculat pentru zona adreselor din ADR(): Cluj-Napoca, Cluj.
-const comanda = (body, token) => cheama(apiCreeaza, { body: Object.assign({ adresa: 'Str. X 1, Cluj-Napoca, Cluj', tara_cod: 'RO', regiune: 'Cluj', localitate: 'Cluj-Napoca', valoare_totala: 500 }, body), token });
+const comanda = (body, token) => cheama(apiCreeaza, { body: Object.assign({ adresa: 'Str. X 1, Cluj-Napoca, Cluj', tara_cod: 'RO', regiune: 'Cluj', localitate: 'Cluj-Napoca', nivel_id: NIV }, body), token });
 const adreseU = () => DB.tabele.adrese_cont.filter((a) => a.user_id === U);
 const profiluriU = () => DB.tabele.profiluri_facturare.filter((p) => p.user_id === U);
 function faraCnp(corp) {
@@ -369,7 +377,7 @@ async function testeServer() {
     reset();
     const { pf } = await agendaCompleta();
     const iasi = await adresaIasi();
-    const r = await comanda({ adresa_prestare_id: iasi, profil_facturare_id: pf, nivel_id: 'nivel-test', valoare_totala: undefined, tara_cod: 'RO', regiune: 'Cluj', localitate: 'Cluj-Napoca' });
+    const r = await comanda({ adresa_prestare_id: iasi, profil_facturare_id: pf, nivel_id: NIV, tara_cod: 'RO', regiune: 'Cluj', localitate: 'Cluj-Napoca' });
     egal(r.statusCode, 200, JSON.stringify(r.corp));
     const c = DB.tabele.comenzi[0];
     egal([c.tara_cod, c.regiune, c.localitate, c.adresa], ['RO', 'IS', 'Iași', 'Str. Iașului 3, Iași, Iași']);
@@ -379,7 +387,7 @@ async function testeServer() {
     reset();
     const { pf } = await agendaCompleta();
     const iasi = await adresaIasi();
-    const r = await comanda({ adresa_prestare_id: iasi, profil_facturare_id: pf, nivel_id: 'nivel-test', valoare_totala: undefined, tara_cod: undefined, regiune: undefined, localitate: undefined });
+    const r = await comanda({ adresa_prestare_id: iasi, profil_facturare_id: pf, nivel_id: NIV, tara_cod: undefined, regiune: undefined, localitate: undefined });
     egal(r.statusCode, 200, JSON.stringify(r.corp));
     egal([DB.tabele.comenzi[0].tara_cod, DB.tabele.comenzi[0].regiune, DB.tabele.comenzi[0].localitate], ['RO', 'IS', 'Iași']);
   });
@@ -387,33 +395,33 @@ async function testeServer() {
     reset();
     const { pf } = await agendaCompleta();
     DB.tabele.adrese_cont.push({ id: 'adr-md', user_id: U, eticheta: 'Chișinău', folosire: 'ambele', strada: 'Str. Ștefan cel Mare 1', localitate: 'Chișinău', judet: null, cod_postal: null, tara: 'MD', implicita_prestare: false, implicita_facturare: false });
-    for (const extra of [{}, { nivel_id: 'nivel-test', valoare_totala: undefined }]) {
+    for (const extra of [{}, { nivel_id: NIV }]) {
       const r = await comanda({ adresa_prestare_id: 'adr-md', profil_facturare_id: pf, tara_cod: 'RO', ...extra });
       egal([r.statusCode, r.corp.cod, r.corp.camp], [409, 'ADRESA_ALTA_TARA', 'adresa_prestare_id'], JSON.stringify(extra));
       adevarat(/altă țară/.test(r.corp.error) && /different country/.test(r.corp.error_en), 'mesaj RO + EN');
     }
     egal([DB.tabele.comenzi.length, RETETA.regiuni.length], [0, 0]);
   });
-  await test('calea veche (valoare_totala din pagină) cu altă localitate sau alt județ → 409 ADRESA_SCHIMBATA_PRET, prețul vechi nu se acceptă', async () => {
+  // Pasul 11-C2: calea cu prețul din pagină (valoare_totala) nu mai există —
+  // înainte: altă zonă → 409 ADRESA_SCHIMBATA_PRET; acum: fără nivel → 409 FARA_PRET.
+  await test('fără nivel (preț din pagină) cu adresă din agendă → 409 FARA_PRET, prețul din pagină nu se acceptă', async () => {
     reset();
     const { a, pf } = await agendaCompleta();
-    for (const zona of [{ localitate: 'Turda' }, { regiune: 'Iași' }, { regiune: null, localitate: null }]) {
-      const r = await comanda({ adresa_prestare_id: a, profil_facturare_id: pf, ...zona });
-      egal([r.statusCode, r.corp.cod], [409, 'ADRESA_SCHIMBATA_PRET'], JSON.stringify(zona));
-      adevarat(/Recalculează prețul/.test(r.corp.error) && /Recalculate the price/.test(r.corp.error_en), 'mesaj RO + EN');
+    for (const zona of [{}, { localitate: 'Turda' }, { regiune: 'Iași' }]) {
+      const r = await comanda({ adresa_prestare_id: a, profil_facturare_id: pf, nivel_id: undefined, valoare_totala: 500, ...zona });
+      egal([r.statusCode, r.corp.cod], [409, 'FARA_PRET'], JSON.stringify(zona));
     }
-    const iasi = await adresaIasi();
-    egal((await comanda({ adresa_prestare_id: iasi, profil_facturare_id: pf })).corp.cod, 'ADRESA_SCHIMBATA_PRET', 'adresa din Iași, preț pentru Cluj');
     egal(DB.tabele.comenzi.length, 0);
   });
-  await test('calea veche, aceeași zonă scrisă altfel („Județul Cluj”, „cluj-napoca”) → comanda trece, cu zona adresei salvate', async () => {
+  await test('aceeași zonă scrisă altfel („Județul Cluj”, „cluj-napoca”) → comanda trece, cu zona adresei salvate și prețul de pe server', async () => {
     reset();
     const { a, pf } = await agendaCompleta();
-    const r = await comanda({ adresa_prestare_id: a, profil_facturare_id: pf, regiune: 'Județul Cluj', localitate: 'cluj-napoca' });
+    const r = await comanda({ adresa_prestare_id: a, profil_facturare_id: pf, regiune: 'Județul Cluj', localitate: 'cluj-napoca', valoare_totala: 1 });
     egal(r.statusCode, 200, JSON.stringify(r.corp));
-    egal([DB.tabele.comenzi[0].regiune, DB.tabele.comenzi[0].localitate, DB.tabele.comenzi[0].suma_totala_platita], ['CJ', 'Cluj-Napoca', 500]);
+    egal([DB.tabele.comenzi[0].regiune, DB.tabele.comenzi[0].localitate], ['CJ', 'Cluj-Napoca']);
+    adevarat(DB.tabele.comenzi[0].suma_totala_platita > 300, 'prețul calculat pe server, nu 1');
   });
-  await test('calea veche: pagina trimite codul („CJ”), adresa are numele („Cluj”) → aceeași zonă, comanda trece', async () => {
+  await test('pagina trimite codul („CJ”), adresa are numele („Cluj”) → aceeași zonă, comanda trece', async () => {
     reset();
     const { a, pf } = await agendaCompleta();
     const r = await comanda({ adresa_prestare_id: a, profil_facturare_id: pf, regiune: 'CJ' });
@@ -447,6 +455,8 @@ async function testeServer() {
     reset();
     delete DB.tabele.geo_regiuni;
     REGIUNE._golesteCache();
+    // Pasul 11-C2: și verificarea zonei citește județul ca atare (un partener vechi, cu numele județului).
+    DB.tabele.parteneri_disponibilitate[0].judete.push('Cluj');
     const r = await comanda({ regiune: 'Cluj', date_facturare: { tip: 'pf', prenume: 'Dan', nume: 'Pop' } });
     egal([r.statusCode, DB.tabele.comenzi[0].regiune], [200, 'Cluj']);
   });
@@ -628,7 +638,7 @@ async function testePagini() {
         reset();
         rolCurent = ROLURI.client;
         await seedAgenda();
-        const CFG = { titlu: 'Serviciu de test', total: 500, bazaRaw: 400, tara_cod: 'RO', regiune: 'Cluj', addr: '', localitate: 'Cluj-Napoca', materiale: [], inchirieri: [] };
+        const CFG = { titlu: 'Serviciu de test', total: 500, nivel_id: NIV, cantitate: 1, tara_cod: 'RO', regiune: 'Cluj', addr: '', localitate: 'Cluj-Napoca', materiale: [], inchirieri: [] };
         const ctx = await context(browser, latime, lang, CFG);
         const pg = await pagina(ctx, baza + '/mydarrin-checkout.html');
         await pg.evaluate(() => goToStep('details'));
@@ -711,13 +721,13 @@ async function testePagini() {
         await ctx.close();
 
         // ── Corecția PR #36: schimbarea adresei de prestare reface prețul și disponibilitatea ──
-        for (const [caz, cfgExtra] of [['nivel_id', { nivel_id: 'nivel-test', cantitate: 1 }], ['preț din pagină', {}], ['interval programat', { nivel_id: 'nivel-test', cantitate: 1, selDateISO: '2026-11-10', selDate: '10 nov.', selOraInceput: '10:00:00', selOraSfarsit: '12:00:00' }]]) {
+        for (const [caz, cfgExtra] of [['nivel_id', { nivel_id: NIV, cantitate: 1 }], ['interval programat', { nivel_id: NIV, cantitate: 1, selDateISO: '2026-11-10', selDate: '10 nov.', selOraInceput: '10:00:00', selOraSfarsit: '12:00:00' }]]) {
           reset();
           rolCurent = ROLURI.client;
           await seedAgenda();
           const idIasi = (await agenda({ actiune: 'adresa_salveaza', ...ADR({ eticheta: 'Iași', folosire: 'prestare', strada: 'Str. Iașului 3', localitate: 'Iași', judet: 'Iași', cod_postal: '700001' }) })).corp.id;
           DB.tabele.adrese_cont.push({ id: 'adr-md', user_id: U, eticheta: 'Chișinău', folosire: 'prestare', strada: 'Str. Mare 1', localitate: 'Chișinău', judet: null, cod_postal: null, tara: 'MD', implicita_prestare: false, implicita_facturare: false, creat_la: '2026-10-26T00:00:00Z' });
-          const CFGZ = { titlu: 'Serviciu de test', total: 500, bazaRaw: 400, tara_cod: 'RO', regiune: 'Cluj', localitate: 'Cluj-Napoca', addr: '', materiale: [], inchirieri: [], ...cfgExtra };
+          const CFGZ = { titlu: 'Serviciu de test', total: 500, tara_cod: 'RO', regiune: 'Cluj', localitate: 'Cluj-Napoca', addr: '', materiale: [], inchirieri: [], ...cfgExtra };
           const ctxz = await context(browser, latime, lang, CFGZ);
           const pz = await pagina(ctxz, baza + '/mydarrin-checkout.html');
           await pz.evaluate(() => goToStep('details'));
@@ -740,11 +750,6 @@ async function testePagini() {
               await pz.evaluate(() => goToStep('details'));
               await pz.selectOption(selPz, adreseU()[0].id);
               await pz.waitForFunction(() => /500/.test(document.getElementById('total-price').textContent), null, { timeout: 5000 });
-            } else if (caz === 'preț din pagină') {
-              adevarat(lang === 'en' ? /different city/.test(t) && /Reconfigure/.test(t) : /altă localitate/.test(t) && /Reconfigurează/.test(t), t);
-              egal(ultimaPret, undefined, 'fără calcul de preț în pagină');
-              await pz.evaluate(() => goToStep('payment'));
-              egal(await pz.isVisible('#step-details'), true, 'pasul nu avansează');
             } else {
               adevarat(ctxz.cereri.some((c) => c.cale === '/api/public/sloturi-disponibile' && c.corp === null), 'sloturile cerute');
               adevarat(lang === 'en' ? /not available for Iași/.test(t) : /nu e disponibil pentru Iași/.test(t), t);
@@ -766,6 +771,25 @@ async function testePagini() {
             });
           }
           await ctxz.close();
+        }
+
+        // Pasul 11-C2: configurare fără nivel din catalog (înainte: „preț din pagină”,
+        // trimis la comandă) → checkout-ul nu afișează o cifră și nu avansează.
+        reset();
+        rolCurent = ROLURI.client;
+        {
+          const ctxd = await context(browser, latime, lang, { titlu: 'Serviciu de test', total: 500, bazaRaw: 400, tara_cod: 'RO', regiune: 'Cluj', localitate: 'Cluj-Napoca', addr: '', materiale: [], inchirieri: [] });
+          const pd = await pagina(ctxd, baza + '/mydarrin-checkout.html');
+          await test(`${et} · checkout: serviciu fără nivel (preț din pagină) → „Prețul se stabilește prin deviz”, fără cifră, comanda nu avansează`, async () => {
+            await pd.waitForFunction(() => typeof PRET_SERVER !== 'undefined' && PRET_SERVER.stare === 'fara_pret');
+            const t = await pd.textContent('#total-price');
+            adevarat(lang === 'en' ? /set by quote/.test(t) : /deviz/.test(t), t);
+            adevarat(!/[0-9]/.test(t), 'fără cifră: ' + t);
+            await pd.evaluate(() => goToStep('details'));
+            egal(await pd.isVisible('#step-details'), false, 'pasul nu avansează');
+            egal(pd.erori, []);
+          });
+          await ctxd.close();
         }
 
         // ── Sincronizare: dashboard ↔ checkout, în același cont ──
