@@ -22,7 +22,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execFileSync } = require('child_process');
 const sim = require('./supabase-simulat');
 sim.instaleaza();
 const { DB, cerere, raspuns, RADACINA } = sim;
@@ -248,11 +247,11 @@ async function testeServer() {
     adevarat(r.corp.mesaj.ro && r.corp.mesaj.en, 'mesaj RO + EN');
     egal(DB.tabele.comenzi.length, 0);
   });
-  await test('B2G neatins: api/comenzi/creeaza-b2g.js identic cu main, fără date_facturare', async () => {
-    const lucru = fs.readFileSync(path.join(RADACINA, 'api/comenzi/creeaza-b2g.js'), 'utf8').replace(/\r\n/g, '\n');
-    const main = execFileSync('git', ['show', 'main:api/comenzi/creeaza-b2g.js'], { cwd: RADACINA, encoding: 'utf8' }).replace(/\r\n/g, '\n');
-    egal(lucru === main, true, 'diferă de main');
-    adevarat(!lucru.includes('date_facturare'), 'nu citește date_facturare');
+  // Pasul 11-C3: creeaza-b2g.js s-a schimbat (prețul de pe server, lib/comanda-pret.js);
+  // înainte: „identic cu main”. Rămâne: B2G nu citește și nu validează date_facturare.
+  await test('B2G: api/comenzi/creeaza-b2g.js nu citește date_facturare (instituția are datele ei)', async () => {
+    const cod = fs.readFileSync(path.join(RADACINA, 'api/comenzi/creeaza-b2g.js'), 'utf8').replace(/\/\/.*$/gm, '');
+    adevarat(!cod.includes('date_facturare') && !cod.includes('valideazaDateFacturare'), 'nu citește date_facturare');
   });
 
   console.log('C. api/client/date-facturare.js');
@@ -491,14 +490,24 @@ async function testePagina() {
         egal([c.tip_client, c.date_facturare.prenume, c.date_facturare.adresa.strada, c.date_facturare.cnp_ultimele3], ['b2c', 'Ana', 'Str. Lucrării 1', CNP.slice(-3)]);
         adevarat(c.client_cnp_criptat && !JSON.stringify(c.date_facturare).includes(CNP), 'criptat, nu în date_facturare');
       });
-      // Pasul 11-C2: toate serviciile au acum prețul calculat pe server (nivel_id),
-      // iar checkout-ul dezactiva deja B2G pe această cale (api/comenzi/creeaza-b2g.js
-      // primește încă prețul din pagină — semnalat în raport, neschimbat).
-      // Înainte: B2G bifat pe o configurare cu preț din pagină → cerere B2G fără date_facturare.
-      await test('RO 390px: serviciu cu preț de pe server → B2G indisponibil (nu se poate bifa), nicio cerere B2G', async () => {
+      // Pasul 11-C3: B2G e din nou disponibil (prețul de pe server, ca la B2C).
+      // 11-C2: „B2G indisponibil”; acum: B2G bifat → blocul de facturare ascuns,
+      // cererea B2G fără date_facturare și fără nicio cifră de preț.
+      await test('RO 390px: B2G bifat → blocul de facturare ascuns; cererea B2G fără date_facturare și fără prețuri', async () => {
         await pg.evaluate(() => { document.getElementById('order-confirm-overlay')?.remove(); goToStep('payment'); });
-        egal(await pg.$eval('#b2g-toggle', (c) => [c.disabled, c.checked]), [true, false]);
-        egal(pg.cereri.filter((c) => c.cale === '/api/comenzi/creeaza-b2g').length, 0);
+        egal(await pg.$eval('#b2g-toggle', (c) => c.disabled), false, 'B2G disponibil');
+        await pg.check('#b2g-toggle');
+        await pg.evaluate(() => goToStep('details'));
+        egal(await vizibil(pg, '#fact-bloc'), false);
+        await pg.evaluate(() => goToStep('payment'));
+        await pg.fill('#b2g-denumire', 'Primăria Test'); await pg.fill('#b2g-cui', CUI);
+        await pg.click('#btn-finalizeaza');
+        await pg.waitForTimeout(500);
+        const b2g = pg.cereri.filter((c) => c.cale === '/api/comenzi/creeaza-b2g').pop();
+        adevarat(b2g, 'cererea B2G a plecat');
+        adevarat(!('date_facturare' in b2g.corp) && !('adresa_lucrare' in b2g.corp), 'fără date_facturare în B2G');
+        adevarat(!['valoare_totala', 'suma_asigurare', 'cost_baza_servicii', 'cost_asigurare', 'cost_materiale', 'cost_chirie_scule'].some((k) => k in b2g.corp), 'fără prețuri');
+        egal([b2g.corp.nivel_id, b2g.corp.denumire_institutie_b2g], [NIV, 'Primăria Test']);
       });
       await test('RO 390px: 0 erori JS', async () => { egal(pg.erori, []); });
       await ctx.close();

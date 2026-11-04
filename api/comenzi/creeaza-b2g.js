@@ -2,106 +2,116 @@
 // Flux SECUNDAR, dedicat clienților B2G (companii/instituții guvernamentale)
 // — audit Secțiunea 43, cerință explicită 31 Iulie 2026: "creează un flux
 // secundar dedicat... fără să afectezi ce este implementat și actualizat
-// pentru restul consumatorilor". Endpoint NOU, complet separat de
-// api/comenzi/creeaza.js (neatins, neschimbat) — clienții B2C parcurg
-// exact fluxul de azi, fără nicio modificare de comportament.
+// pentru restul consumatorilor". Endpoint separat de api/comenzi/creeaza.js.
 //
-// Diferențe reale față de fluxul B2C:
+// Diferențe reale față de fluxul B2C (rămase neschimbate):
 // 1. Cere identificarea instituției (denumire + CUI) — nu doar adresa.
-// 2. Cere metoda de plată explicit: 'card' sau 'ordin_plata' (nou — B2C nu
-//    are azi acest concept, checkout.html îl arată doar decorativ).
-// 3. NU declanșează alocarea către parteneri la creare (spre deosebire de
-//    fluxul B2C, care încearcă imediat, sincron) — comanda e creată cu
-//    status_plata='in_asteptare' și RĂMÂNE așa, fără nicio ofertă către
-//    vreun partener, până când un admin certifică plata (vezi
-//    api/admin/comenzi-b2g.js → action:'certifica_plata', care reia atunci
-//    alocarea, exact fluxul "întrerupt, apoi continuă" cerut explicit).
+// 2. Cere metoda de plată explicit: 'card' sau 'ordin_plata'.
+// 3. NU declanșează alocarea către parteneri la creare — comanda e creată cu
+//    status_plata='in_asteptare' și RĂMÂNE așa, fără nicio ofertă către vreun
+//    partener, până când un admin certifică plata (api/admin/comenzi-b2g.js →
+//    action:'certifica_plata', care reia atunci alocarea).
 // 4. Procentul de avans NU se stabilește aici, de client — se configurează
-//    ulterior, de la caz la caz, de un admin dedicat (api/admin/comenzi-b2g.js).
+//    ulterior, de la caz la caz, de un admin (api/admin/comenzi-b2g.js).
+//
+// Pasul 11-C3 (4 nov. 2026, regula LM): prețul se calculează doar pe server,
+// în același loc ca la B2C (lib/comanda-pret.js): nivel_id + cantitate +
+// materiale opționale → lib/pret-serviciu.js, cu verificarea zonei
+// (lib/disponibilitate-adresa.js → 409 SERVICIU_INDISPONIBIL); produse_marketplace
+// → lib/rezolva-addon-materiale.js. Fără nivel cu preț real → 409 FARA_PRET.
+// `valoare_totala`, `suma_asigurare` și `cost_*` din cerere se ignoră (înainte:
+// ramura areComponenteItemizate și valoare_totala luată direct). Aceleași
+// verificări ca B2C: adresa, județul, țara activă; erorile în forma comună,
+// RO + EN. Proforma primește suma calculată pe server (suma_totala_platita).
 //
 // Onest despre scop: CUI-ul e validat doar ca format (cifre, lungime
-// rezonabilă), NU verificat live la ANAF în acest pas — validarea reală
-// (api/public/cui-lookup.js, deja existent) rămâne un pas separat, pe care
-// admin-ul îl poate face manual la certificarea plății; a-l face obligatoriu
-// sincron aici ar adăuga o dependență externă blocantă pe calea de creare a
-// comenzii, neconfirmată ca cerință.
+// rezonabilă), NU verificat live la ANAF în acest pas — admin-ul îl poate
+// verifica manual la certificarea plății.
 //
-// Body: identic cu api/comenzi/creeaza.js, PLUS
+// Body: identic cu api/comenzi/creeaza.js (fără date_facturare), PLUS
 //   { denumire_institutie_b2g, cui_client_b2g, metoda_plata, cont_trezorerie? }
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
-const { calculeazaPret } = require('../../lib/calculeaza-pret');
 const { verificaIntegrare } = require('../../lib/integrare-gate');
+const { trimiteEroare, camp } = require('../../lib/raspuns-eroare');
+const { pregatesteRegiune, valideazaCorp, verificaTaraActiva, calculeazaSume, trimiteEroareComanda } = require('../../lib/comanda-pret');
 
 const METODE_VALIDE = ['card', 'ordin_plata'];
+
+const MESAJE = {
+  denumire: {
+    ro: 'Completează denumirea instituției.',
+    en: "Fill in the institution's name.",
+  },
+  cui: {
+    ro: 'CUI-ul instituției nu este valid: doar cifre, opțional cu prefixul țării (de exemplu RO12345678).',
+    en: "The institution's tax ID (CUI) is not valid: digits only, optionally with the country prefix (for example RO12345678).",
+  },
+  metoda_plata: {
+    ro: 'Alege metoda de plată: card sau ordin de plată.',
+    en: 'Choose the payment method: card or bank transfer.',
+  },
+  ordin_plata: {
+    ro: 'Comanda a fost înregistrată și așteaptă confirmarea plății prin ordin de plată. Alocarea către un partener va începe după confirmare.',
+    en: 'The order has been registered and is waiting for the bank transfer to be confirmed. A partner will be assigned after confirmation.',
+  },
+  card: {
+    ro: 'Comanda a fost înregistrată și așteaptă confirmarea plății.',
+    en: 'The order has been registered and is waiting for the payment to be confirmed.',
+  },
+  server: {
+    ro: 'Nu am putut înregistra comanda. Încearcă din nou.',
+    en: 'We could not register the order. Please try again.',
+  },
+};
+
+function refuz(res, status, cod, cheie, numeCamp) {
+  const m = MESAJE[cheie];
+  return trimiteEroare(res, status, cod, m.ro, m.en, [camp(numeCamp, m.ro, m.en)], { camp: numeCamp });
+}
 
 async function handler(req, res, user) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const {
-    valoare_totala, adresa, tara_cod = null, regiune = null, localitate = null,
-    suma_asigurare = 0, catalog_serviciu_id = null,
-    cost_baza_servicii, cost_materiale, cost_chirie_scule, cost_curier, cost_asigurare,
-    data_programata = null, ora_inceput_programata = null, ora_sfarsit_programata = null,
-    masa_totala_kg = null, nivel_transport_marfa = null,
-    denumire_institutie_b2g, cui_client_b2g, metoda_plata, cont_trezorerie = false,
-  } = req.body || {};
+  const corp = { ...(req.body || {}) };
+  const { denumire_institutie_b2g, cui_client_b2g, metoda_plata, cont_trezorerie = false } = corp;
 
-  if (!denumire_institutie_b2g || typeof denumire_institutie_b2g !== 'string') {
-    return res.status(400).json({ error: 'denumire_institutie_b2g este obligatorie' });
+  if (typeof denumire_institutie_b2g !== 'string' || !denumire_institutie_b2g.trim()) {
+    return refuz(res, 400, 'DATE_INVALIDE', 'denumire', 'denumire_institutie_b2g');
   }
   if (!cui_client_b2g || !/^[A-Za-z]{0,2}\d{2,10}$/.test(String(cui_client_b2g).trim())) {
-    return res.status(400).json({ error: 'cui_client_b2g invalid (format așteptat: cifre, opțional prefixate cu codul de țară, ex. RO12345678)' });
+    return refuz(res, 400, 'DATE_INVALIDE', 'cui', 'cui_client_b2g');
   }
   if (!METODE_VALIDE.includes(metoda_plata)) {
-    return res.status(400).json({ error: `metoda_plata trebuie să fie una din: ${METODE_VALIDE.join(', ')}` });
-  }
-  if (!adresa || typeof adresa !== 'string') {
-    return res.status(400).json({ error: 'adresa este obligatorie' });
+    return refuz(res, 400, 'METODA_PLATA_INVALIDA', 'metoda_plata', 'metoda_plata');
   }
 
-  // Plata cu cardul RĂMÂNE parte a fluxului de business (nu se elimină din
-  // metode_plata_config / checkout) — ce lipsește azi e doar procesatorul
-  // real (Secțiunea 40, TODO explicit). Poarta reutilizată aici e EXACT
-  // aceeași folosită de api/plati/proceseaza-card.js (lib/integrare-gate.js,
-  // categoria 'procesatori_carduri') — un singur loc de adevăr: în clipa în
-  // care un admin activează un furnizor real din panoul „Platforme &
-  // Integrări" (deja construit, dintr-o trecere anterioară), ambele căi se
-  // deblochează simultan, fără nicio modificare de cod aici. Până atunci,
-  // orice încercare de a plasa o comandă B2G cu card primește același mesaj
-  // clar „nu este încă activă" — comanda NU se creează într-o stare ambiguă.
+  // Plata cu cardul rămâne parte a fluxului; lipsește doar procesatorul real.
+  // Aceeași poartă ca api/plati/proceseaza-card.js (lib/integrare-gate.js,
+  // 'procesatori_carduri'): până la activarea unui furnizor, 503 clar.
   if (metoda_plata === 'card') {
-    const furnizorCard = await verificaIntegrare(res, 'procesatori_carduri', { tara_cod: tara_cod ? String(tara_cod).toUpperCase() : null });
+    const tara = typeof corp.tara_cod === 'string' && corp.tara_cod.trim() ? corp.tara_cod.trim().toUpperCase() : null;
+    const furnizorCard = await verificaIntegrare(res, 'procesatori_carduri', { tara_cod: tara });
     if (!furnizorCard) return; // răspunsul 503 a fost deja trimis de poartă
   }
 
-  // G2, partea 2 — vezi nota identică din api/comenzi/creeaza.js.
-  const areComponenteItemizate = [cost_baza_servicii, cost_materiale, cost_chirie_scule, cost_curier, cost_asigurare]
-    .some((v) => typeof v === 'number' && v > 0) || (typeof masa_totala_kg === 'number' && masa_totala_kg > 0);
+  // Aceleași verificări și același preț ca la B2C (lib/comanda-pret.js).
+  const rg = await pregatesteRegiune(corp);
+  if (!rg.ok) return trimiteEroareComanda(res, rg.eroare);
+  const valid = valideazaCorp(corp);
+  if (!valid.ok) return trimiteEroareComanda(res, valid.eroare);
+  const ta = await verificaTaraActiva(corp.tara_cod);
+  if (!ta.ok) return trimiteEroareComanda(res, ta.eroare);
 
-  if (!areComponenteItemizate) {
-    if (typeof valoare_totala !== 'number' || !(valoare_totala > 0)) {
-      return res.status(400).json({ error: 'valoare_totala (numeric, pozitiv) este obligatorie' });
-    }
-    if (typeof suma_asigurare !== 'number' || suma_asigurare < 0 || suma_asigurare > valoare_totala) {
-      return res.status(400).json({ error: 'suma_asigurare trebuie să fie un număr între 0 și valoare_totala' });
-    }
-  }
-
-  if (tara_cod) {
-    const { data: config } = await supabaseAdmin
-      .from('tax_configurations')
-      .select('checkout_activ')
-      .eq('tara_cod', String(tara_cod).toUpperCase())
-      .maybeSingle();
-    if (!config || !config.checkout_activ) {
-      return res.status(403).json({
-        error: 'Darrin inca nu este disponibil in zona ta. Imediat ce suntem live, te vom anunta cu email. Multumim pentru intelegere.',
-        code: 'ZONA_INDISPONIBILA',
-      });
-    }
-  }
+  const {
+    adresa, tara_cod = null, regiune = null, localitate = null,
+    data_programata = null, ora_inceput_programata = null, ora_sfarsit_programata = null,
+    masa_totala_kg = null, nivel_transport_marfa = null,
+  } = corp;
+  const adresaLucrare = { strada: adresa, localitate, judet: rg.regiuneDenumire, tara: tara_cod };
+  const sume = await calculeazaSume(corp, { cale: valid.cale, cantitate: valid.cantitate, adresaLucrare });
+  if (!sume.ok) return trimiteEroareComanda(res, sume.eroare);
 
   try {
     const year = new Date().getFullYear();
@@ -116,10 +126,11 @@ async function handler(req, res, user) {
       nr_comanda,
       client_id: user.id,
       status: 'in_cautare_partener',
+      adresa,
       tara_cod: tara_cod ? String(tara_cod).toUpperCase() : null,
       regiune,
       localitate,
-      catalog_serviciu_id,
+      catalog_serviciu_id: sume.catalog_serviciu_id,
       data_programata,
       ora_inceput_programata,
       ora_sfarsit_programata,
@@ -133,47 +144,26 @@ async function handler(req, res, user) {
       cont_trezorerie: !!cont_trezorerie,
     };
 
-    const insertPayload = areComponenteItemizate
-      ? await (async () => {
-          const calc = await calculeazaPret({
-            cost_baza_servicii, cost_materiale, cost_chirie_scule, cost_curier, cost_asigurare,
-            tara: insertBase.tara_cod || 'RO',
-            masa_totala_kg, nivel_transport_marfa,
-          });
-          return {
-            ...insertBase,
-            suma_totala_platita: calc.pret_final,
-            suma_manopera: calc.cost_baza_servicii,
-            suma_materiale: calc.cost_materiale,
-            suma_chirie_scule: calc.cost_chirie_scule,
-            suma_transport: calc.cost_curier,
-            suma_transport_greutate: calc.cost_transport_greutate,
-            suma_asigurare: calc.cost_asigurare,
-            suma_marketing: calc.cost_marketing,
-            suma_mentenanta: calc.cost_mentenanta,
-            suma_comision_platforma: calc.comision_platforma,
-            tva_pct: calc.tva_pct,
-            tva_suma: calc.tva_suma,
-          };
-        })()
-      : { ...insertBase, suma_totala_platita: valoare_totala, suma_asigurare };
-
+    // Coloanele de preț vin doar din calculul de pe server (pasul 11-C3).
     const { data, error } = await supabaseAdmin
       .from('comenzi')
-      .insert(insertPayload)
+      .insert({ ...insertBase, ...sume.campuri })
       .select()
       .single();
 
     if (error) throw error;
 
-    // DELIBERAT: nicio alocare către parteneri aici — spre deosebire de
-    // api/comenzi/creeaza.js. Comanda rămâne "în așteptare de plată" până
-    // un admin certifică plata (api/admin/comenzi-b2g.js), care reia atunci
-    // fluxul (apelează incearcaAlocarePartener acolo, nu aici).
+    // Separat de insert, ca la B2C: o coloană neadăugată nu blochează comanda.
+    if (sume.manopera_defalcare) {
+      const { error: defErr } = await supabaseAdmin.from('comenzi').update({ manopera_defalcare: sume.manopera_defalcare }).eq('id', data.id);
+      if (defErr) console.warn('[comenzi/creeaza-b2g] manopera_defalcare nesalvată:', defErr.message);
+    }
 
-    // Proformă — necesară indiferent de statusul plății (proforma se emite
-    // ÎNAINTE de plată, prin definiție). Aceeași logică ca la G6, izolată
-    // în propriul try/catch.
+    // DELIBERAT: nicio alocare către parteneri aici — comanda rămâne „în
+    // așteptare de plată” până un admin certifică plata (api/admin/comenzi-b2g.js).
+
+    // Proforma — emisă înainte de plată, cu suma calculată pe server
+    // (suma_totala_platita de pe comandă). Izolată în propriul try/catch.
     try {
       const anProforma = new Date().getFullYear();
       const { count: countProforma } = await supabaseAdmin
@@ -199,16 +189,11 @@ async function handler(req, res, user) {
       console.error('[comenzi/creeaza-b2g] proformă', invoiceErr);
     }
 
-    return res.status(200).json({
-      ok: true,
-      comanda: data,
-      mesaj: metoda_plata === 'ordin_plata'
-        ? 'Comanda a fost înregistrată și așteaptă confirmarea plății prin ordin de plată. Alocarea către un partener va începe după confirmare.'
-        : 'Comanda a fost înregistrată și așteaptă confirmarea plății.',
-    });
+    const m = metoda_plata === 'ordin_plata' ? MESAJE.ordin_plata : MESAJE.card;
+    return res.status(200).json({ ok: true, comanda: data, mesaj: m.ro, mesaj_en: m.en });
   } catch (err) {
     console.error('[comenzi/creeaza-b2g]', err);
-    return res.status(500).json({ error: err.message || 'Nu am putut înregistra comanda' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', MESAJE.server.ro, MESAJE.server.en);
   }
 }
 
