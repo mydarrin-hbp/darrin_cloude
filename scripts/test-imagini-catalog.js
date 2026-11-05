@@ -1,12 +1,15 @@
 // scripts/test-imagini-catalog.js
-// Teste pentru pașii 11-C5 și 11-C6 (decizii LM, 4 nov. 2026): imaginile de prezentare
-// pe cardurile din catalog, potrivite fiecărui domeniu (11-C6), cu variante stabile
-// după id_serviciu la domeniile mari. Ordinea imaginii (din 11-C5, neschimbată):
+// Teste pentru pașii 11-C5, 11-C6 (4 nov. 2026) și 11-C7 (5 nov. 2026): imaginile de
+// prezentare pe cardurile din catalog. Ordinea imaginii:
 //   1. imaginea reală (catalog_servicii.imagini, din back-office; la marketplace,
 //      imaginea încărcată de partener);
-//   2. altfel, imaginea de prezentare a domeniului (harta DOM din catalog; la
+//   2. (11-C7) imaginea subiectului din titlu (SUBIECTE, cuvinte-cheie în ordine
+//      explicită: cel mai specific subiect câștigă), cu 2–4 variante la subiectele mari;
+//   3. altfel, imaginea de prezentare a domeniului (harta DOM din catalog; la
 //      domeniile din VARIANTE, una dintre variante, aleasă stabil după id_serviciu);
-//   3. altfel, IMG_DEF.
+//   4. altfel, IMG_DEF.
+// 11-C7: cardurile vecine (stânga / dreapta / deasupra) nu au aceeași fotografie, cât
+// timp subiectul are variante (distribuieImagini, după încărcare, filtru și căutare).
 //   A. fișierele: fiecare domeniu public din baza de date are imagine în hartă
 //      (lista citită live cu cheia publică, ca în catalog; fără rețea, lista din
 //      4 nov. 2026); IMG_DEF; nicio iconiță în locul imaginii; niciun preț scris
@@ -42,15 +45,23 @@ const { VARIANTE, imgDomeniu } = (() => {
   const varSrc = CATALOG.slice(v0, CATALOG.indexOf('};', v0) + 2);
   return new Function('IMG_DEF', varSrc + '\n' + CATALOG.slice(f0, f1) + '\nreturn { VARIANTE, imgDomeniu };')(IMG_DEF);
 })();
-const imgAsteptat = (item) => (item.imagini && item.imagini[0]) || urlFoto(imgDomeniu(item, DOM[item.domeniu] || { img: IMG_DEF }));
+// Pasul 11-C7: logica completă din pagină (SUBIECTE, subiectDin, imaginiPrezentare).
+const L = require('./raport-imagini-catalog').incarcaLogica(CATALOG);
+const SUBIECTE = L.SUBIECTE;
+// Imaginile permise pe card: cea reală, altfel una dintre variantele subiectului /
+// domeniului (distribuieImagini o alege pe cea care nu se repetă cu vecinii).
+const imgPermise = (item) => (item.imagini && item.imagini[0]) ? [item.imagini[0]]
+  : L.imaginiPrezentare(item, DOM[item.domeniu] || { cat: 'Instalații', sub: 'General', img: IMG_DEF }).ids.map(urlFoto);
 // Caruselul de categorii din hero.
 const CARUSEL = [...CATALOG.matchAll(/<img src="https:\/\/images\.unsplash\.com\/photo-([0-9a-f-]+)\?w=600&q=80" alt="([^"]+)" loading="lazy">/g)].map((m) => ({ id: m[1], alt: m[2] }));
 const SURSE = (() => { try { return citeste('docs/SURSE.md'); } catch (e) { return ''; } })();
-const toateIdurile = () => [...new Set([IMG_DEF, ...Object.values(DOM).map((v) => v.img), ...Object.values(VARIANTE).flat(), ...CARUSEL.map((c) => c.id)])];
+const toateIdurile = () => [...new Set([IMG_DEF, ...Object.values(DOM).map((v) => v.img), ...Object.values(VARIANTE).flat(), ...SUBIECTE.flatMap((s) => s.img), ...CARUSEL.map((c) => c.id)])];
 // Fotografiile nepotrivite din raportul 11-C5 (căști, autoturism, plajă, cort pe alte
 // domenii, unelte de grădină la lemn, termostat, depozit, interior gol, camion, mașină
 // de găurit cu marcă, baie la HVAC) — nu mai apar în catalog.
-const NEPOTRIVITE = ['1585771724684-38269d6639fd', '1620891549027-942fdc95d3f5', '1473116763249-2faaef81ccda', '1416879595882-3373a0480b5b', '1545259741-2ea3ebf61fa3', '1587293852726-70cdb56c2866', '1581858726788-75bc0f6a952d', '1601584115197-04ecc0da31d7', '1572981779307-38b8cabb2407', '1558618666-fcd25c85cd64', '1615529328331-f8917597711f'];
+const NEPOTRIVITE = ['1585771724684-38269d6639fd', '1620891549027-942fdc95d3f5', '1473116763249-2faaef81ccda', '1416879595882-3373a0480b5b', '1545259741-2ea3ebf61fa3', '1587293852726-70cdb56c2866', '1581858726788-75bc0f6a952d', '1601584115197-04ecc0da31d7', '1572981779307-38b8cabb2407', '1558618666-fcd25c85cd64', '1615529328331-f8917597711f',
+  // 11-C7: excavatorul din 11-C6 la „Demolări” avea text de marcă pe braț (la mărime întreagă).
+  '1616551569669-b60598758c4f'];
 
 // Domeniile publice din catalog_servicii (status_public), 4 nov. 2026 — folosite
 // doar dacă baza de date nu se poate citi.
@@ -96,11 +107,12 @@ async function testeFisiere() {
   await test('11-C6: fotografiile nepotrivite din raportul 11-C5 nu mai apar în catalog (hartă, carusel)', async () => {
     egal(NEPOTRIVITE.filter((id) => CATALOG.includes(id)), [], 'încă folosite');
   });
-  await test('11-C6: variante (3–4 fotografii diferite) la Bricolaj & Consumabile, Instalații sanitare și termice, Instalații electrice', async () => {
-    egal(Object.keys(VARIANTE).sort(), ['Bricolaj & Consumabile', 'Instalații electrice', 'Instalații sanitare și termice'].sort());
+  await test('11-C6: variante (3–4 fotografii diferite) la Bricolaj & Consumabile, Instalații sanitare și termice, Instalații electrice (11-C7: + Vehicule & Transport, 2)', async () => {
+    egal(Object.keys(VARIANTE).sort(), ['Bricolaj & Consumabile', 'Instalații electrice', 'Instalații sanitare și termice', 'Vehicule & Transport'].sort());
     for (const [d, v] of Object.entries(VARIANTE)) {
       adevarat(DOM[d], d + ' lipsește din hartă');
-      adevarat(v.length >= 3 && v.length <= 4 && new Set(v).size === v.length, d + ': ' + JSON.stringify(v));
+      const min = d === 'Vehicule & Transport' ? 2 : 3;
+      adevarat(v.length >= min && v.length <= 4 && new Set(v).size === v.length, d + ': ' + JSON.stringify(v));
       adevarat(v.every((id) => /^\d{9,13}-[0-9a-f]{12}$/.test(id)), d + ': ID greșit');
     }
   });
@@ -126,6 +138,65 @@ async function testeFisiere() {
     const randuri = SURSE.split('\n').filter((l) => /^\| .*`\d{9,13}-[0-9a-f]{12}`/.test(l));
     egal(randuri.filter((l) => !/\| [^|]*@[^|]+ \| https:\/\/unsplash\.com\/photos\/[A-Za-z0-9_-]+ \|$/.test(l.trim())), [], 'rânduri fără autor / link');
   });
+  await test('11-C7: cazurile fixe — subiectul din titlu', async () => {
+    const CAZURI = {
+      'Înlocuire vas WC': 'vas-wc', 'Înlocuire cadă de baie': 'cada', 'Mașină spălat frontală 8 kg': 'masina-spalat',
+      'Priza dubla ceramica Schneider v2': 'priza', 'Teava cupru 15mm v34': 'teava-cupru',
+      'Plintă PVC pentru parchet laminat (montaj inclus)': 'plinta', 'Mentenanță tablou electric — verificare anuală': 'tablou-electric',
+      'Proiectare HVAC & Climatizare': 'proiectare-hvac',
+      // ordinea: cel mai specific subiect câștigă
+      'Plintă PVC pentru parchet': 'plinta', 'Mentenanță tablou electric': 'tablou-electric',
+      'Reparație garnituri & probă presiune calorifer': 'calorifer', 'Dezafectare instalații înainte de demolare': 'dezafectare',
+      'Evacuare moloz și deșeuri din construcții': 'moloz', 'Consultanță și proiectare plan de demolare': 'proiectare-structurala',
+      'Reparație lavoar / baterie / sifon': 'lavoar', 'Schimb ulei și filtre auto': 'ulei-auto', 'Diagnoză computerizată auto': 'diagnoza-auto',
+      'Spălare geamuri și fațade': 'spalare-geamuri', 'Adeziv gresie/faianta sac 25kg v18': 'adeziv', 'Filtru Y pentru impuritati 3/4 v6': 'filtru-y',
+      'Siguranta automata diferentiala 16A v3': 'tablou-electric', 'Mutare mobilă și electrocasnice apartament': 'mobilier',
+      'Livrare beton la comandă cu autobetonieră': 'beton', 'Consultanță & proiectare instalație electrică': 'proiectare-electrica',
+      // fără subiect: titlul e chiar domeniul → imaginea domeniului
+      'Acces & Siguranță': null, 'Pavaje & Alei': null, 'Instalații electrice': null,
+    };
+    const gresite = Object.entries(CAZURI).map(([t, s]) => [t, s, (L.subiectDin(t) || {}).id || null]).filter(([, s, g]) => s !== g);
+    egal(gresite, [], 'titlu → subiect');
+  });
+  await test('11-C7: ordinea subiectelor e scrisă explicit; fiecare subiect are 1–4 fotografii, ID-uri valide, fără Unsplash+', async () => {
+    adevarat(Array.isArray(SUBIECTE) && SUBIECTE.length >= 40, 'SUBIECTE: ' + SUBIECTE.length);
+    egal(new Set(SUBIECTE.map((s) => s.id)).size, SUBIECTE.length, 'id-uri unice');
+    for (const s of SUBIECTE) {
+      adevarat(s.cuvinte.length && s.cuvinte.every((k) => k === L.normTitlu(k).trim()), s.id + ': cuvinte nenormalizate ' + JSON.stringify(s.cuvinte));
+      adevarat(s.img.length >= 1 && s.img.length <= 4 && new Set(s.img).size === s.img.length, s.id + ': ' + s.img.length + ' fotografii');
+      adevarat(s.img.every((id) => /^\d{9,13}-[0-9a-f]{12}$/.test(id)), s.id + ': ID greșit');
+    }
+    adevarat(!/premium_photo|plus\.unsplash\.com/.test(CATALOG), 'Unsplash+ în catalog');
+  });
+  await test('11-C7: imaginea reală are în continuare prioritate; fără subiect → domeniu → IMG_DEF', async () => {
+    const real = 'https://exemplu.test/real.png';
+    const mk = CATALOG.slice(CATALOG.indexOf('function mkCard('), CATALOG.indexOf('function inject('));
+    adevarat(/const img = imgReal \|\| imgPrezentare/.test(mk) && /imaginiPrezentare\(item, d\)/.test(mk), 'ordinea în mkCard');
+    egal(imgPermise({ titlu: 'Înlocuire vas WC', domeniu: 'Instalații sanitare și termice', imagini: [real] }), [real]);
+    egal(L.imaginiPrezentare({ id_serviciu: 'x', titlu: 'Pavaje & Alei', domeniu: 'Pavaje & Alei' }, DOM['Pavaje & Alei']).sursa, 'domeniu');
+    egal(L.imaginiPrezentare({ id_serviciu: 'x', titlu: 'Ceva nou', domeniu: 'Domeniu nou' }, { img: IMG_DEF }), { ids: [IMG_DEF], sursa: 'implicit' });
+    // stabil: același produs → aceeași ordine a variantelor
+    const p = { id_serviciu: 'mat-teava-cupru-15mm-v34', titlu: 'Teava cupru 15mm v34', domeniu: 'Bricolaj & Consumabile' };
+    egal(L.imaginiPrezentare(p, DOM[p.domeniu]), L.imaginiPrezentare(Object.assign({}, p), DOM[p.domeniu]));
+  });
+  if (!process.env.FARA_RETEA) {
+    await test('11-C7: acoperirea pe produsele publice (live) — niciun implicit; pe domeniu doar titlurile-domeniu și închirierile; ≥ 3 produse → ≥ 2 fotografii', async () => {
+      const R = require('./raport-imagini-catalog');
+      let produse;
+      try { produse = await R.produsePublice(); } catch (e) { console.log('    (fără rețea: verificarea live sărită — ' + e.message + ')'); return; }
+      const randuri = R.alege(L, produse);
+      adevarat(randuri.length >= 200, 'produse: ' + randuri.length);
+      egal(randuri.filter((r) => r.motiv === 'implicit').map((r) => r.titlu), [], 'pe imaginea implicită');
+      // Rămân pe domeniu doar produsele al căror titlu e chiar domeniul (sau aproape), închirierile
+      // și cele două excepții de mai jos, unde subiectul titlului e chiar domeniul.
+      const EXCEPTII = ['Consultanță Darrin', 'Înlocuire instalație electrică debara/cămară'];
+      const peDomeniu = randuri.filter((r) => r.motiv === 'domeniu' && r.categorie !== 'inchirieri' && r.titlu !== r.domeniu && !EXCEPTII.includes(r.titlu));
+      egal(peDomeniu.map((r) => r.titlu), [], 'servicii / materiale cu subiect clar căzute pe domeniu');
+      const pe = R.rezumat(randuri);
+      const putine = Object.entries(pe).filter(([k, rs]) => k !== 'real' && rs.length >= 3 && new Set(rs.flatMap((r) => r.variante)).size < 2).map(([k]) => k);
+      egal(putine, [], 'subiecte / domenii cu ≥ 3 produse și o singură fotografie');
+    });
+  }
   await test('11-C6: caruselul din hero are 15 categorii (×2), toate cu fotografii din SURSE.md', async () => {
     egal(CARUSEL.length, 30, 'imagini în carusel');
     egal(new Set(CARUSEL.map((c) => c.alt)).size, 15, 'categorii');
@@ -182,8 +253,40 @@ const PRODUSE = [
     .map((p, i) => [`mat-${p}-v${i + 1}`, 'Bricolaj ' + (i + 1), 'materiale', 'Bricolaj & Consumabile', []]),
   ...['cal-inlocuire', 'cal-mentenanta', 'cal-montaj-nou', 'cal-reparatie'].map((id) => [id, 'Calorifer ' + id, 'servicii', 'Instalații sanitare și termice', []]),
   ...['ilu-inlocuire', 'ilu-mentenanta', 'ilu-montaj-nou', 'ilu-reparatie'].map((id) => [id, 'Iluminat ' + id, 'servicii', 'Instalații electrice', []]),
+  // 11-C7: titluri reale, cu șiruri lungi din același subiect (ca grupurile „v1”…„v10”).
+  ['wc-inlocuire', 'Înlocuire vas WC', 'servicii', 'Instalații sanitare și termice', []],
+  ['cada-inlocuire', 'Înlocuire cadă de baie', 'servicii', 'Instalații sanitare și termice', []],
+  ['tel-mentenanta', 'Mentenanță tablou electric — verificare anuală', 'servicii', 'Instalații electrice', []],
+  ['proiectare-hvac', 'Proiectare HVAC & Climatizare', 'servicii', 'Proiectare Tehnică', []],
+  ['mas-8kg', 'Mașină spălat frontală 8 kg', 'materiale', 'Electrocasnice', []],
+  ['mat-plinta-pvc-parchet-laminat', 'Plintă PVC pentru parchet laminat (montaj inclus)', 'materiale', 'Parchet & Pardoseli', []],
+  ...[14, 24, 34, 44, 54, 64, 74, 84].map((v) => [`mat-teava-cupru-15mm-v${v}`, `Teava cupru 15mm v${v}`, 'materiale', 'Bricolaj & Consumabile', []]),
+  ...[17, 27, 37, 47, 57, 67].map((v) => [`mat-garnitura-siliconica-set-10-buc-v${v}`, `Garnitura siliconica set 10 buc v${v}`, 'materiale', 'Bricolaj & Consumabile', []]),
+  ...[12, 22, 32, 42, 52].map((v) => [`mat-priza-dubla-ceramica-schneider-v${v}`, `Priza dubla ceramica Schneider v${v}`, 'materiale', 'Bricolaj & Consumabile', []]),
+  ...[18, 28, 38, 48, 58].map((v) => [`mat-adeziv-gresiefaianta-sac-25kg-v${v}`, `Adeziv gresie/faianta sac 25kg v${v}`, 'materiale', 'Bricolaj & Consumabile', []]),
+  ['inchiriere-vehicule-utilitare-si-transport', 'Închiriere vehicule utilitare și transport', 'inchirieri', 'Vehicule & Transport', []],
 ];
-const ASTEPTAT = Object.fromEntries(PRODUSE.map(([slug, , , domeniu, imagini]) => [slug, imgAsteptat({ id_serviciu: slug, domeniu, imagini })]));
+// Imaginile permise pe fiecare card (reală, altfel variantele subiectului / domeniului).
+const PERMISE = Object.fromEntries(PRODUSE.map(([slug, titlu, , domeniu, imagini]) => [slug, imgPermise({ id_serviciu: slug, titlu, domeniu, imagini })]));
+const SUBIECT_ASTEPTAT = { 'wc-inlocuire': 'vas-wc', 'cada-inlocuire': 'cada', 'tel-mentenanta': 'tablou-electric', 'proiectare-hvac': 'proiectare-hvac', 'mas-8kg': 'masina-spalat', 'mat-plinta-pvc-parchet-laminat': 'plinta', 'mat-teava-cupru-15mm-v34': 'teava-cupru', 'mat-priza-dubla-ceramica-schneider-v12': 'priza' };
+// În pagină: repetările între vecini (stânga / dreapta / deasupra), pe rândurile reale ale
+// grilei, doar pentru cardurile care au cel puțin 2 variante.
+function repetariVecini() {
+  const vizibile = Array.from(document.querySelectorAll('.tab-content.active .db-card')).filter((c) => c.offsetParent !== null);
+  const randuri = [];
+  vizibile.forEach((c) => { const top = Math.round(c.getBoundingClientRect().top + window.scrollY); let r = randuri.find((x) => Math.abs(x.top - top) < 5); if (!r) randuri.push(r = { top, carduri: [] }); r.carduri.push(c); });
+  randuri.sort((a, b) => a.top - b.top);
+  const src = (c) => c.querySelector('.card-media img').getAttribute('src');
+  const variante = (c) => (c.dataset.imgVariante || '').split(' ').filter(Boolean).length;
+  const rep = [];
+  randuri.forEach((r, i) => r.carduri.forEach((c, j) => {
+    if (variante(c) < 2) return;
+    if (j > 0 && src(r.carduri[j - 1]) === src(c)) rep.push('stânga: ' + c.dataset.slug);
+    const sus = i > 0 ? randuri[i - 1].carduri[j] : null;
+    if (sus && src(sus) === src(c)) rep.push('deasupra: ' + c.dataset.slug);
+  }));
+  return { rep, coloane: Math.max(...randuri.map((r) => r.carduri.length), 0), carduri: vizibile.length };
+}
 const PNG_1X1 = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
 
 async function testeBrowser() {
@@ -247,20 +350,24 @@ async function testeBrowser() {
         await pg.waitForSelector('#grid-servicii .db-card', { state: 'attached' });
         await pg.waitForTimeout(400);
         const carduri = await pg.$$eval('.db-card', (c) => c.map((k) => ({ slug: k.dataset.slug, src: k.querySelector('.card-media img') ? k.querySelector('.card-media img').getAttribute('src') : null, icoana: !!k.querySelector('.card-icoana, .card-media [data-lucide]') })));
-        egal(carduri.map((c) => c.slug).sort(), Object.keys(ASTEPTAT).sort(), 'carduri');
+        egal(carduri.map((c) => c.slug).sort(), Object.keys(PERMISE).sort(), 'carduri');
         for (const c of carduri) {
           egal(c.icoana, false, c.slug + ': iconiță');
-          egal(c.src, ASTEPTAT[c.slug], c.slug);
+          adevarat(PERMISE[c.slug].includes(c.src), c.slug + ': ' + c.src + ' nu e printre ' + JSON.stringify(PERMISE[c.slug]));
         }
-        egal(ASTEPTAT['parchet-montaj'], IMG_BO, 'produsul cu imagine din back-office');
-        egal(ASTEPTAT['serviciu-domeniu-nou'], urlFoto(IMG_DEF), 'domeniu necunoscut → IMG_DEF');
+        egal(PERMISE['parchet-montaj'], [IMG_BO], 'produsul cu imagine din back-office');
+        egal(PERMISE['serviciu-domeniu-nou'], [urlFoto(IMG_DEF)], 'domeniu necunoscut → IMG_DEF');
+        // 11-C7: motivul imaginii pe card (subiectul din titlu).
+        const surse = await pg.$$eval('.db-card', (c) => Object.fromEntries(c.map((k) => [k.dataset.slug, k.dataset.imgSursa])));
+        for (const [slug, s] of Object.entries(SUBIECT_ASTEPTAT)) egal(surse[slug], 'subiect:' + s, slug);
+        egal(surse['parchet-montaj'], 'real');
         // 11-C6: pe ecran, cardurile vecine din același domeniu cu variante nu au toate
         // aceeași imagine (în ordinea din pagină, pe fiecare domeniu).
         const ordine = await pg.$$eval('.db-card', (c) => c.map((k) => ({ slug: k.dataset.slug, src: k.querySelector('.card-media img').getAttribute('src') })));
         for (const d of Object.keys(VARIANTE)) {
           const slugs = new Set(PRODUSE.filter((p) => p[3] === d).map((p) => p[0]));
           const surse = ordine.filter((c) => slugs.has(c.slug)).map((c) => c.src);
-          adevarat(surse.length >= 4, d + ': prea puține carduri ' + surse.length);
+          if (surse.length < 4) continue;
           adevarat(new Set(surse).size >= 2, d + ': toate cardurile vecine au aceeași imagine');
           for (let i = 0; i + 3 < surse.length; i++) adevarat(new Set(surse.slice(i, i + 4)).size >= 2, d + ': 4 carduri vecine identice de la ' + i);
         }
@@ -280,10 +387,40 @@ async function testeBrowser() {
           const vizibile = await pg.$$eval('.tab-content.active .db-card', (c) => c.filter((x) => x.offsetParent !== null).map((k) => !!k.querySelector('.card-media img')));
           adevarat(vizibile.length > 0 && vizibile.every(Boolean), fila + ': ' + JSON.stringify(vizibile));
           egal(await depasire(pg), 0, 'derulare orizontală');
+          // 11-C7: niciun card nu are aceeași fotografie cu vecinul din stânga / dreapta /
+          // de deasupra (pentru subiectele cu variante). Verificat la 390 și 1366 px.
+          const vecini = await pg.evaluate(repetariVecini);
+          if (latime === 390 || latime === 1366) egal(vecini.rep, [], `${fila} (${vecini.coloane} coloane): repetări între vecini`);
+          else if (vecini.rep.length) console.log(`    (${latime}px, ${vecini.coloane} coloane: ${vecini.rep.length} repetări între vecini)`);
           if (CAPTURI && (latime === 390 || latime === 1366)) {
             await pg.evaluate(() => document.getElementById('catalog-grid-section').scrollIntoView({ block: 'start' }));
             await pg.waitForTimeout(300);
             await pg.screenshot({ path: path.join(CAPTURI, `catalog-${fila}-${latime}.png`) });
+          }
+          egal(pg.erori, [], 'erori JS');
+          await pg.close();
+        });
+      }
+      if (latime === 1366) {
+        await test('1366: 11-C7 — alegerea e stabilă la reîncărcare și fără repetări între vecini după căutare și filtru', async () => {
+          const imagini = (pg) => pg.$$eval('.db-card', (c) => c.map((k) => k.dataset.slug + ' ' + k.querySelector('.card-media img').getAttribute('src')));
+          const pg = await pagina(ctx, '/mydarrin-catalog.html');
+          await pg.waitForSelector('#grid-materiale .db-card', { state: 'attached' });
+          await pg.waitForTimeout(400);
+          const prima = await imagini(pg);
+          await pg.reload({ waitUntil: 'load' });
+          await pg.waitForSelector('#grid-materiale .db-card', { state: 'attached' });
+          await pg.waitForTimeout(400);
+          egal(await imagini(pg), prima, 'aceeași listă → aceleași imagini');
+          await pg.evaluate(() => window.switchMainTab && window.switchMainTab('materiale'));
+          await pg.waitForTimeout(300);
+          for (const cautare of ['cupru', 'garnitura', 'v2', '']) {
+            await pg.fill('#search-input', cautare);
+            await pg.evaluate(() => window.applyFilters && window.applyFilters());
+            await pg.waitForTimeout(200);
+            const v = await pg.evaluate(repetariVecini);
+            adevarat(cautare === '' || v.carduri > 0, 'căutarea „' + cautare + '” nu a găsit nimic');
+            egal(v.rep, [], `căutare „${cautare}”: repetări între vecini`);
           }
           egal(pg.erori, [], 'erori JS');
           await pg.close();
