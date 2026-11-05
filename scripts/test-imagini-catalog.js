@@ -152,6 +152,11 @@ async function testeFisiere() {
       'Spălare geamuri și fațade': 'spalare-geamuri', 'Adeziv gresie/faianta sac 25kg v18': 'adeziv', 'Filtru Y pentru impuritati 3/4 v6': 'filtru-y',
       'Siguranta automata diferentiala 16A v3': 'tablou-electric', 'Mutare mobilă și electrocasnice apartament': 'mobilier',
       'Livrare beton la comandă cu autobetonieră': 'beton', 'Consultanță & proiectare instalație electrică': 'proiectare-electrica',
+      // 11-C8: titlurile curate ale produselor păstrate din grupurile „v1”…„v100”
+      'Robinet de trecere sferic 1/2"': 'robinet', 'Priză dublă ceramică Schneider': 'priza', 'Siguranță automată diferențială 16 A': 'tablou-electric',
+      'Țeavă cupru 15 mm': 'teava-cupru', 'Cot cupru 90°, 15 mm': 'teava-cupru', 'Filtru Y pentru impurități 3/4"': 'filtru-y',
+      'Garnituri siliconice, set de 10 buc.': 'garnituri', 'Adeziv gresie și faianță, sac 25 kg': 'adeziv', 'Vopsea lavabilă albă 15 L': 'vopsea',
+      'Cablu electric CYY-F 3×2,5 mm²': 'cablu',
       // fără subiect: titlul e chiar domeniul → imaginea domeniului
       'Acces & Siguranță': null, 'Pavaje & Alei': null, 'Instalații electrice': null,
     };
@@ -185,7 +190,8 @@ async function testeFisiere() {
       let produse;
       try { produse = await R.produsePublice(); } catch (e) { console.log('    (fără rețea: verificarea live sărită — ' + e.message + ')'); return; }
       const randuri = R.alege(L, produse);
-      adevarat(randuri.length >= 200, 'produse: ' + randuri.length);
+      // 226 înainte de migrarea 11-C8, 136 după (90 de duplicate ascunse).
+      adevarat(randuri.length >= 130, 'produse: ' + randuri.length);
       egal(randuri.filter((r) => r.motiv === 'implicit').map((r) => r.titlu), [], 'pe imaginea implicită');
       // Rămân pe domeniu doar produsele al căror titlu e chiar domeniul (sau aproape), închirierile
       // și cele două excepții de mai jos, unde subiectul titlului e chiar domeniul.
