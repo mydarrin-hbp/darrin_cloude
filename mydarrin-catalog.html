@@ -4230,7 +4230,7 @@ const DOM = {
   "Scule & Echipamente profesionale":{"cat":"Instalații","sub":"General","img":"1564182998523-6923112e7d6b"},
   "Utilaje construcții":           {"cat":"Instalații","sub":"General","img":"1580901369227-308f6f40bdeb"},
   "Construcții — Betoane":         {"cat":"Instalații","sub":"General","img":"1784644579477-3fa2b0af8ac2"},
-  "Demolări":                      {"cat":"Instalații","sub":"General","img":"1616551569669-b60598758c4f"},
+  "Demolări":                      {"cat":"Instalații","sub":"General","img":"1550391383-bbd922a8d8cf"},
   "Proiectare Tehnică":            {"cat":"Instalații","sub":"General","img":"1762146828422-50a8bd416d3c"},
   "Livrare și Turnare Betoane":    {"cat":"Instalații","sub":"General","img":"1784644579477-3fa2b0af8ac2"},
   "Curierat & Livrări":            {"cat":"Instalații","sub":"General","img":"1620455800201-7f00aeef12ed"},
@@ -4250,6 +4250,8 @@ const VARIANTE = {
   "Bricolaj & Consumabile": ['1581783898377-1c85bf937427', '1671040690726-b78261eff126', '1613945831677-383c19ad7721', '1785484267196-3f7325819b26'],
   "Instalații sanitare și termice": ['1607472586893-edb57bdc0e39', '1650551182991-b07558247564', '1518276779712-dfdcb9daa7a1', '1542013936693-884638332954'],
   "Instalații electrice": ['1544724569-5f546fd6f2b5', '1576446470246-499c738d1c8e', '1635335874521-7987db781153', '1484024091473-858a1e7ece52'],
+  // Pasul 11-C7: două produse de închiriere pe același domeniu, adesea vecine.
+  "Vehicule & Transport": ['1641199788912-9a7385a35c82', '1620455800201-7f00aeef12ed'],
 };
 // Imaginea de prezentare a domeniului pentru un produs (FNV-1a pe id_serviciu).
 function imgDomeniu(item, d) {
@@ -4260,6 +4262,138 @@ function imgDomeniu(item, d) {
   for (let i = 0; i < cheie.length; i++) { h ^= cheie.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
   return v[h % v.length];
 }
+
+// ── Pasul 11-C7 (5 nov. 2026): imaginea după subiectul din titlul produsului ──
+// Ordinea imaginii pe card: 1. imaginea reală (back-office); 2. imaginea subiectului
+// din titlu (SUBIECTE, mai jos); 3. imaginea domeniului (DOM / VARIANTE, 11-C6);
+// 4. IMG_DEF. Cuvintele-cheie sunt fără diacritice, cu litere mici, și se compară cu
+// titlul normalizat ca *cuvinte întregi*. ORDINEA CONTEAZĂ: primul subiect care se
+// potrivește câștigă, deci subiectele specifice stau înaintea celor generale (de ex.
+// „plintă” înaintea „parchet”, „calorifer” înaintea „garnituri”, „dezafectare” și
+// „moloz” înaintea „demolare”, „ulei” / „diagnoză” înaintea „auto”, „spălare geamuri”
+// înaintea „curățenie”). Fotografiile (Unsplash, verificate vizual): docs/SURSE.md.
+const SUBIECTE = [
+  { id: "proiectare-hvac", cuvinte: ["proiectare hvac"], img: ['1574334292321-4844f63aefef', '1615309662243-70f6df917b59'] }, // proiectare HVAC
+  { id: "proiectare-electrica", cuvinte: ["proiectare instalatie electrica","proiectare electrica"], img: ['1762146828422-50a8bd416d3c', '1635335874521-7987db781153'] }, // proiectare instalație electrică
+  { id: "proiectare-sanitara", cuvinte: ["proiectare instalatie sanitara","proiectare sanitara"], img: ['1607472586893-edb57bdc0e39'] }, // proiectare instalație sanitară și termică
+  { id: "proiectare-structurala", cuvinte: ["proiectare structurala","plan de demolare"], img: ['1721244654394-36a7bc2da288'] }, // proiectare structurală / plan de demolare
+  { id: "design-interior", cuvinte: ["design interior","amenajare interioara"], img: ['1763076470404-23554ef26747', '1586023492125-27b2c045efd7'] }, // design interior
+  { id: "testare-electrica", cuvinte: ["testare","verificare instalatie electrica"], img: ['1758101755915-462eddc23f57'] }, // testare / verificare instalație electrică
+  { id: "dezafectare", cuvinte: ["dezafectare"], img: ['1768321913920-d3ac011e0683'] }, // dezafectare instalații
+  { id: "moloz", cuvinte: ["moloz","deseuri din constructii"], img: ['1773614359232-8eef10578150', '1757635964034-8b055844012d'] }, // moloz / deșeuri din construcții
+  { id: "demolare", cuvinte: ["demolare","demolari","demolarea"], img: ['1550391383-bbd922a8d8cf', '1665737847143-3080d0a12972', '1582284168532-ef7b89baa1c8'] }, // demolare
+  { id: "vas-wc", cuvinte: ["vas wc","wc","toaleta"], img: ['1589824783837-6169889fa20f', '1569597967185-cd6120712154'] }, // vas WC
+  { id: "cada", cuvinte: ["cada","cazi"], img: ['1507652313519-d4e9174996dd', '1620626011761-996317b8d101', '1631215750638-bdde5f616128'] }, // cadă de baie
+  { id: "lavoar", cuvinte: ["lavoar","lavoare","chiuveta","sifon","sifonare"], img: ['1621953884578-02a3ddb96f46', '1771681744660-d3ff70bc24a2', '1542855368-ca6ea825bca2', '1631048499052-e6d9f305d2c0'] }, // lavoar / chiuvetă / sifon
+  { id: "calorifer", cuvinte: ["calorifer","calorifere","radiator"], img: ['1669725341213-7379ff6c90d5', '1518276779712-dfdcb9daa7a1', '1599028274511-e02a767949a3', '1772066043908-0033fd15ecc4'] }, // calorifer / element calorifer
+  { id: "centrala", cuvinte: ["centrala","centrale"], img: ['1650551182991-b07558247564'] }, // centrală termică
+  { id: "teava-cupru", cuvinte: ["cupru"], img: ['1694827893591-af9b80361599', '1769376695235-d3253548a5d7', '1711571603482-6023e3721132'] }, // țeavă / cot de cupru
+  { id: "conducta-otel", cuvinte: ["conducta","teava otel"], img: ['1607472586893-edb57bdc0e39', '1639600993675-2281b2c939f0'] }, // conductă / țeavă de oțel
+  { id: "filtru-y", cuvinte: ["filtru y","filtru pentru impuritati"], img: ['1642797735471-3e90055c5ff9', '1768268959053-770212976791', '1650551182991-b07558247564'] }, // filtru Y
+  { id: "garnituri", cuvinte: ["garnitura","garnituri"], img: ['1571909941887-feb831a05338', '1719212752790-fb82dd11de88', '1642797735471-3e90055c5ff9'] }, // garnituri
+  { id: "robinet", cuvinte: ["robinet","robineti","baterie"], img: ['1707409464203-df2f21c32b9c', '1639600993675-2281b2c939f0', '1542013936693-884638332954'] }, // robinet / baterie
+  { id: "tablou-electric", cuvinte: ["tablou","tablouri","siguranta automata","sigurante automate"], img: ['1544724569-5f546fd6f2b5', '1576446470246-499c738d1c8e', '1635335874521-7987db781153'] }, // tablou electric / siguranță
+  { id: "iluminat", cuvinte: ["iluminat","led","bec","becuri","lustra","plafoniera","spot"], img: ['1765012873322-00cb5ce0f059', '1763705859079-29c5cc0576bc', '1764961576606-ffb05ace4062', '1515948725-edac7b5bb0fc'] }, // corp de iluminat / LED / bec
+  { id: "priza", cuvinte: ["priza","prize","intrerupator","intrerupatoare"], img: ['1761213949443-17464417dc8c', '1484024091473-858a1e7ece52', '1698768144235-b5dbe3043bb2'] }, // priză / întrerupător
+  { id: "cablu", cuvinte: ["cablu","cabluri"], img: ['1761507320645-b11a00bfcc34', '1764866085369-44c7ef1a18f3', '1518181835702-6eef8b4b2113'] }, // cablu electric
+  { id: "masina-spalat", cuvinte: ["masina spalat","masina de spalat","masini de spalat"], img: ['1626806787461-102c1bfaaea1', '1778731660248-044f78e8c1fb', '1622473590925-e3616c0a41bf'] }, // mașină de spălat
+  { id: "cuptor", cuvinte: ["cuptor"], img: ['1623114112815-74a4b9fe505d'] }, // cuptor
+  { id: "plinta", cuvinte: ["plinta","plinte"], img: ['1779119507174-377fd3d44785'] }, // plintă
+  { id: "profil-trecere", cuvinte: ["profil de trecere"], img: ['1624574470112-46944be68409'] }, // profil de trecere
+  { id: "folie-parchet", cuvinte: ["folie"], img: ['1624574470112-46944be68409'] }, // folie izolatoare parchet
+  { id: "parchet", cuvinte: ["parchet","laminat"], img: ['1575204015311-0fe377370780', '1761053130711-2515ef532bb5', '1761053133165-0f3acdaf1770'] }, // parchet / parchet laminat
+  { id: "adeziv", cuvinte: ["adeziv"], img: ['1523413307857-ef24c53571ae', '1747729495579-b26ab7b9c3a6', '1580398562556-d33329a0f29b'] }, // adeziv gresie / faianță
+  { id: "gresie-faianta", cuvinte: ["gresie","faianta"], img: ['1614598632980-35ee54daa5b9', '1580398562556-d33329a0f29b', '1523350165414-082d792c4bcc'] }, // gresie și faianță
+  { id: "vopsea", cuvinte: ["vopsea","vopsele","zugraveli","zugraveala","lavabila"], img: ['1562259949-e8e7689d7828', '1652829069862-87874e119527', '1688372199140-cade7ae820fe', '1773525912493-cdb088d19d64'] }, // vopsea lavabilă / zugrăveli
+  { id: "gazon", cuvinte: ["gazon"], img: ['1458245201577-fc8a130b8829', '1690068023694-053da714f95f', '1734303023491-db8037a21f09'] }, // gazon / tuns gazon
+  { id: "gard-viu", cuvinte: ["gard viu","arbusti"], img: ['1617576683096-00fc8eecb3af', '1706920925080-be07c32398e1', '1784641337536-329644723325'] }, // gard viu / arbuști
+  { id: "frunze", cuvinte: ["frunze","deseuri vegetale"], img: ['1634081727680-fa43e3237d5a', '1516700675895-b2e35cae333c'] }, // frunze / deșeuri vegetale
+  { id: "plantare", cuvinte: ["plantare","plantat"], img: ['1611843467160-25afb8df1074', '1590682680695-43b964a3ae17'] }, // plantare
+  { id: "peisagistica", cuvinte: ["peisagistica","peisagistic"], img: ['1668120089662-42642838cfef', '1784293449032-200db587788c'] }, // amenajare peisagistică
+  { id: "ulei-auto", cuvinte: ["ulei"], img: ['1747511578112-3d21e8b3d5d7'] }, // ulei și filtre auto
+  { id: "diagnoza-auto", cuvinte: ["diagnoza"], img: ['1625047509168-a7026f36de04'] }, // diagnoză auto
+  { id: "moto", cuvinte: ["moto"], img: ['1636761358757-0a616eb9e17e'] }, // service moto
+  { id: "mecanica-auto", cuvinte: ["auto","vehicul","autovehicule","mecanice"], img: ['1775590766345-c117265f0c1b', '1555140713-973b9f36cd1e', '1486262715619-67b85e0b08d3', '1645445522156-9ac06bc7a767'] }, // mecanică auto
+  { id: "mobilier", cuvinte: ["mobilier","mobila"], img: ['1769972557854-7eae6f95585b', '1641199788912-9a7385a35c82', '1773625706534-4cfa0e74f229'] }, // mobilier / transport mobilier
+  { id: "ambalare", cuvinte: ["ambalare","cutii","mutari"], img: ['1766040923580-16ad32fae8b4', '1773625706534-4cfa0e74f229'] }, // ambalare / cutii / mutări
+  { id: "paletizata", cuvinte: ["paletizata","paleti"], img: ['1573209680076-bd7ec7007616'] }, // marfă paletizată
+  { id: "colete", cuvinte: ["colete","curierat"], img: ['1620455800201-7f00aeef12ed'] }, // curierat colete
+  { id: "beton", cuvinte: ["beton","betoane"], img: ['1764856601179-dfeca7b37e4c', '1784644579477-3fa2b0af8ac2', '1774931363306-5a896cd4dd02'] }, // beton
+  { id: "spalare-geamuri", cuvinte: ["spalare geamuri","fatade"], img: ['1482449609509-eae2a7ea42b7'] }, // spălare geamuri și fațade
+  { id: "curatenie", cuvinte: ["curatenie"], img: ['1740657254989-42fe9c3b8cce', '1628177142898-93e36e4e3a50', '1580256081112-e49377338b7f'] }, // curățenie
+];
+// Titlul normalizat: litere mici, fără diacritice, doar litere și cifre, între spații.
+function normTitlu(t) {
+  return ' ' + String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ').trim() + ' ';
+}
+// Primul subiect (în ordinea din SUBIECTE) al cărui cuvânt-cheie apare în titlu.
+function subiectDin(titlu) {
+  const n = normTitlu(titlu);
+  for (const s of SUBIECTE) if (s.cuvinte.some((k) => n.includes(' ' + k + ' '))) return s;
+  return null;
+}
+function hashId(cheie) {
+  let h = 2166136261;
+  for (let i = 0; i < cheie.length; i++) { h ^= cheie.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  return h;
+}
+// Imaginile de prezentare posibile pentru un produs (fără imagine reală), în ordinea
+// de preferință stabilă după id_serviciu, și motivul: subiect / domeniu / implicit.
+function imaginiPrezentare(item, d) {
+  const s = subiectDin(item.titlu);
+  let lista, sursa;
+  if (s) { lista = s.img; sursa = 'subiect:' + s.id; }
+  else if (DOM[item.domeniu]) { lista = VARIANTE[item.domeniu] || [d.img || IMG_DEF]; sursa = 'domeniu'; }
+  else { lista = [IMG_DEF]; sursa = 'implicit'; }
+  const start = hashId(String(item.id_serviciu || item.titlu || '')) % lista.length;
+  return { ids: lista.slice(start).concat(lista.slice(0, start)), sursa };
+}
+// Fără repetări vizibile: pe cardurile vizibile, în ordinea din listă, fiecare card fără
+// imagine reală primește prima variantă diferită de vecinul din stânga și de cel de
+// deasupra. Numărul de coloane se măsoară pe grilă (dacă e afișată); altfel se evită
+// pozițiile „deasupra” posibile pentru 2–4 coloane. Determinist: aceeași listă, la
+// aceeași lățime → aceleași imagini la fiecare încărcare. Se rulează după încărcare,
+// după fiecare filtrare, căutare, sortare sau schimbare de filă și la redimensionare.
+function coloaneGrila(carduri) {
+  if (!carduri.length || carduri[0].offsetParent === null) return 0;
+  const top = carduri[0].offsetTop;
+  let n = 0;
+  while (n < carduri.length && Math.abs(carduri[n].offsetTop - top) < 5) n++;
+  return n;
+}
+function distribuieImagini(grid) {
+  if (!grid) return;
+  const url = (id) => `https://images.unsplash.com/photo-${id}?w=600&q=80`;
+  const carduri = Array.from(grid.querySelectorAll('.db-card')).filter((c) => c.style.display !== 'none');
+  const C = coloaneGrila(carduri);
+  const niveluri = C === 1 ? [[1]]
+    : C > 1 ? [[1, 2, C - 1, C, C + 1], [1, C, C - 1, C + 1], [1, C], [1]]
+    : [[1, 2, 3, 4], [1, 2, 4], [1, 4], [1]];
+  const alese = [];
+  carduri.forEach((c, i) => {
+    const img = c.querySelector('.card-media img');
+    const v = (c.dataset.imgVariante || '').split(' ').filter(Boolean);
+    if (!img || !v.length) { alese.push(img ? img.getAttribute('src') : ''); return; }
+    let ales = null;
+    for (const vecini of niveluri) {
+      const evita = vecini.map((k) => alese[i - k]).filter(Boolean);
+      const gasit = v.find((id) => !evita.includes(url(id)));
+      if (gasit) { ales = url(gasit); break; }
+    }
+    ales = ales || url(v[0]);
+    if (img.getAttribute('src') !== ales) img.setAttribute('src', ales);
+    alese.push(ales);
+  });
+}
+// applyFilters() e în alt script: îi dăm acces la distribuire.
+window.distribuieImagini = distribuieImagini;
+// La redimensionare se schimbă numărul de coloane, deci și vecinii.
+let _tDistribuie = null;
+window.addEventListener('resize', () => {
+  clearTimeout(_tDistribuie);
+  _tDistribuie = setTimeout(() => document.querySelectorAll('[id^="grid-"]').forEach((g) => distribuieImagini(g)), 200);
+});
 
 // ── Emoji per categorie ───────────────────────────────────────────────────
 const CAT_EMOJI = {
@@ -4358,7 +4492,9 @@ function descDinDomeniu(item, tab) {
 function mkCard(item, pret, tab, asoc) {
   const d   = DOM[item.domeniu] || {cat:'Instalații', sub:'General', img:IMG_DEF};
   const imgReal = Array.isArray(item.imagini) && item.imagini.length ? item.imagini[0] : null;
-  const imgPrezentare = `https://images.unsplash.com/photo-${imgDomeniu(item, d)}?w=600&q=80`;
+  // Pasul 11-C7: subiectul din titlu, apoi domeniul (imgDomeniu, 11-C6), apoi IMG_DEF.
+  const prez = imaginiPrezentare(item, d);
+  const imgPrezentare = `https://images.unsplash.com/photo-${prez.ids[0]}?w=600&q=80`;
   const img = imgReal || imgPrezentare;
   const isU = /inlocuire|electric|urgent/i.test(item.id_serviciu||'');
   const isA = tab === 'servicii';
@@ -4393,6 +4529,7 @@ function mkCard(item, pret, tab, asoc) {
     data-title="${item.titlu.toLowerCase()}"
     data-price="${p}" data-reviews="0"
     data-urgent="${isU}" data-ai="${isA}"
+    data-img-sursa="${imgReal ? 'real' : prez.sursa}" data-img-variante="${imgReal ? '' : prez.ids.join(' ')}"
     data-slug="${slug}"
     onclick="openService('${slug}','${tit}')">
   <div class="card-media">
@@ -4440,6 +4577,8 @@ function inject(gridId, items, tab, pretIdx, relIdx, svcById) {
     const card = wrap.firstElementChild;
     if (card) grid.appendChild(card);
   });
+  // Pasul 11-C7: fără aceeași fotografie pe carduri vecine.
+  distribuieImagini(grid);
 
   // Reveal observer
   if (window._revealObs) items.forEach((_,i) => {
@@ -4847,6 +4986,8 @@ function applyFilters() {
     });
     sorted.forEach(c => grid.appendChild(c));
   }
+  // Pasul 11-C7: vecinii se schimbă după filtrare / căutare / sortare.
+  if (typeof window.distribuieImagini === 'function') window.distribuieImagini(grid);
 
   // Result count
   var rc = document.getElementById('result-count');
