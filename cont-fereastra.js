@@ -44,6 +44,8 @@
      MDCont.deschide({ tab, rol, mesaj }), MDCont.inchide(), MDCont.deschisa()
      MDCont.deschidePentruRol(rol)  — doar fără sesiune (pagina partenerului)
      MDCont.deschide({ tab: 'register', partener: true })  — „Partener” ales, grila deschisă
+     MDCont.deschide({ tab: 'register', tip })  — pasul 11-R3g: tipul de partener bifat
+       (servicii, materiale, inchirieri, curier, asigurator / asigurari); se poate schimba
      MDCont.alegeTipPartener({ rol })  — pasul 11-R3b: contul conectat, fără rol de
        partener, alege tipul; alegerea se salvează (/api/cont/rol-solicitat) și
        duce în dashboard-ul tipului, în modul activare
@@ -105,7 +107,9 @@
   function rolDinTip(tip) { return TIP_ROL[String(tip || '').toLowerCase()] || null; }
   function rolValid(rol) { return ROLURI.some(function (r) { return r.rol === rol; }); }
   function definitieRol(rol) { for (var i = 0; i < ROLURI.length; i++) if (ROLURI[i].rol === rol) return ROLURI[i]; return null; }
-  function pePaginaPartener() { return /\/mydarrin-devino-partener(\.html)?$/.test(location.pathname); }
+  // Pasul 11-R3g: hub-ul „Devino partener” (vechea adresă mydarrin-devino-partener
+  // e redirecționată 301 spre el, cu ?type= păstrat) și paginile de tip.
+  function pePaginaPartener() { return /\/(mydarrin-devino-partener|cum-devii-partenerul-nostru|cum-devii-furnizor-servicii|cum-devii-furnizor-materiale|cum-devii-operator-inchirieri|cum-devii-curier-de-cartier|ghidul-asiguratorului)(\.html)?$/.test(location.pathname); }
 
   // ── Dependențele: ui-feedback.js, account-system.js, lib/supabaseClient.js ──
   function areScript(nume) { return !!document.querySelector('script[src$="' + nume + '"]'); }

@@ -28,7 +28,7 @@ const PUBLICE = ['index', 'servicii-urgente', 'despre-noi', 'afla-ce-facem', 'my
   'mydarrin-produs.html?slug=inlocuire-becuri-corpuri&type=servicii', 'mydarrin-checkout', 'mydarrin-cos',
   'mydarrin-creeaza-deviz', 'confirmare-livrare', 'reset-password', 'mydarrin-cum-functioneaza', 'cum-comanzi', 'cum-platesc',
   'cum-programez-serviciu', 'cum-prestam-livram', 'intrebari-frecvente-clienti', 'intrebari-frecvente-parteneri',
-  'garantii-si-asigurari', 'ghidul-asiguratorului', 'reclamatii', 'mydarrin-devino-partener',
+  'garantii-si-asigurari', 'ghidul-asiguratorului', 'reclamatii', 'cum-devii-furnizor-servicii',
   'cum-devii-partenerul-nostru', 'cum-devii-curier-de-cartier', 'cum-devii-furnizor-materiale', 'cum-devii-operator-inchirieri',
   'mydarrin-investitori', 'mydarrin-pitch-deck', 'acord-confidentialitate', 'acces-temporar', 'mydarrin-termeni',
   'mydarrin-politica-confidentialitate'];
@@ -176,33 +176,32 @@ const ZGOMOT_PAGINA = { 'mydarrin-pitch-deck': /^\[pitch-deck\] Error: http 503(
       }
     }
 
-    // Deschiderea din URL: mydarrin-devino-partener.html?type=<tip> alege formularul tipului;
-    // type=asigurator (linkurile „Asigurator” de pe celelalte pagini) → formularul asigurari.
-    if (!process.argv.slice(2).length || pagini.includes('mydarrin-devino-partener')) {
+    // Deschiderea din URL (pasul 11-R3g): mydarrin-devino-partener.html?type=<tip> duce la
+    // hub (cum-devii-partenerul-nostru), cu tipul păstrat: cardul tipului e marcat, iar
+    // butonul principal deschide fereastra de cont cu „Partener” și tipul deja bifat.
+    // type=asigurator (linkurile „Asigurator” de pe celelalte pagini) → asigurari.
+    if (!process.argv.slice(2).length || pagini.includes('cum-devii-partenerul-nostru')) {
       for (const latime of LATIMI) {
         for (const tip of ['servicii', 'materiale', 'inchirieri', 'curier', 'asigurari', 'asigurator']) {
-          const et = `mydarrin-devino-partener?type=${tip} ${latime}px`;
+          const et = `devino-partener?type=${tip} ${latime}px`;
           const ctx = await browser.newContext({ viewport: { width: latime, height: 900 } });
           await ctx.route(/\.supabase\.co\//, (r) => r.abort());
           await ctx.route(/ipapi\.co\//, (r) => r.abort());
           const p = await ctx.newPage();
           const erori = []; p.on('pageerror', (e) => erori.push(e.message.slice(0, 160)));
           await p.goto(`${baza}/mydarrin-devino-partener.html?type=${tip}`, { waitUntil: 'networkidle', timeout: 60000 });
-          await p.waitForFunction((t) => { try { return selectedPartnerType === t; } catch (e) { return false; } }, tipFormular(tip), { timeout: 5000 }).catch(() => {});
-          // Pasul 11-R3b: cardurile de tip (#partner-types) s-au scos; tipul ales deschide
-          // fereastra de cont cu „Partener” și tipul deja alese (vizitator).
+          await p.waitForFunction(() => { const b = document.querySelector('.rp-hero [data-rp-principal]'); return b && b.getAttribute('data-cta-stare') === 'vizitator'; }, null, { timeout: 10000 }).catch(() => {});
+          const t = tipFormular(tip);
+          const marcat = await p.evaluate((x) => { const c = document.getElementById('tip-' + x); return { cale: location.pathname, tip: new URLSearchParams(location.search).get('type'), marcat: !!c && c.classList.contains('rp-ales') }; }, t);
+          verifica(marcat.cale === '/cum-devii-partenerul-nostru' && marcat.tip === tip && marcat.marcat, `${et}: ${JSON.stringify(marcat)}`);
+          await p.click('.rp-hero [data-rp-principal]');
           await p.waitForFunction(() => { const m = document.getElementById('auth-modal'); return m && !m.classList.contains('hidden'); }, null, { timeout: 8000 }).catch(() => {});
-          const stare = await p.evaluate(() => {
-            let ales = null; try { ales = selectedPartnerType; } catch (e) {}
-            const r = document.querySelector('#auth-modal input[name="mdc-rol"]:checked');
-            return { ales, rol: r ? r.value : null };
-          });
-          verifica(stare.ales === tipFormular(tip) && stare.rol === 'partener_' + tipFormular(tip),
-            `${et}: tipul ales „${stare.ales}”, rolul din fereastra de cont „${stare.rol}” (așteptat „${tipFormular(tip)}”)`);
+          const rol = await p.evaluate(() => { const r = document.querySelector('#auth-modal input[name="mdc-rol"]:checked'); return r ? r.value : null; });
+          verifica(rol === 'partener_' + t, `${et}: rolul din fereastra de cont „${rol}” (așteptat „partener_${t}”)`);
           verifica(!erori.length, `${et}: ${erori.length} erori JS (${erori.slice(0, 3).join(' | ')})`);
           await ctx.close();
         }
-        console.log(`mydarrin-devino-partener?type=… ${latime}px: gata`);
+        console.log(`devino-partener?type=… ${latime}px: gata`);
       }
     }
   } finally {

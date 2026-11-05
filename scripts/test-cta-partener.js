@@ -13,6 +13,10 @@
 //     mai există și niciun link nu mai duce la ea;
 //   - la 360, 390, 430, 768 × 1024, 1024 × 768, 1366 și 1920 px: fără derulare
 //     orizontală și fără erori JS.
+// Pasul 11-R3g: vechea pagină „Devino partener” e redirecționată spre hub
+// (cum-devii-partenerul-nostru.html); testul rulează pe hub și pe pagina de
+// materiale. Butoanele „Creează cont” de pe cardurile hub-ului (data-cta-card,
+// texte scurte) și insigna „GRATUIT” sunt verificate în test-ruta-partener.js.
 // Cu --capturi <dosar>: secțiunea de sus, vizitator și activare, la 390 și 1366 px.
 // Rulare: node scripts/test-cta-partener.js [--capturi <dosar>]
 
@@ -96,7 +100,7 @@ async function deschide(browser, baza, pagina, stare, rol, opt) {
   return { ctx, p, erori, navigari, postari };
 }
 // Butoanele paginii; cel din meniul „Devino Partener” (pasul 11-R3f) e testat de test-meniu-devino-partener.js.
-const butoane = (p) => p.evaluate(() => [...document.querySelectorAll('[data-cta-partener]')].filter((b) => !b.closest('[data-meniu-partener]')).map((b) => ({
+const butoane = (p) => p.evaluate(() => [...document.querySelectorAll('[data-cta-partener]')].filter((b) => !b.closest('[data-meniu-partener]') && !b.hasAttribute('data-cta-card')).map((b) => ({
   text: ((b.querySelector('[data-cta-text]') || b).textContent || '').replace(/\s+/g, ' ').replace(/\s*→\s*$/, '').trim(),
   stare: b.getAttribute('data-cta-stare'), href: b.getAttribute('href'),
   badge: [...b.querySelectorAll('[data-cta-badge]')].map((x) => getComputedStyle(x).display !== 'none'),
@@ -108,19 +112,23 @@ const asteaptaStare = (p) => p.waitForFunction(() => { const l = [...document.qu
   const baza = 'http://localhost:' + srv.address().port;
   const browser = await chromium.launch();
   const PAGINI = [
-    ['mydarrin-devino-partener.html', 'partener_servicii', 3, null],
-    ['cum-devii-furnizor-materiale.html', 'partener_materiale', 1, 'partener_materiale'],
+    ['cum-devii-partenerul-nostru.html', 'partener_servicii', 3, null],
+    ['cum-devii-furnizor-materiale.html', 'partener_materiale', 3, 'partener_materiale'],
   ];
+  // Pasul 11-R3g: pe paginile de tip, vizitatorul vede „Creează-ți cont de <tip>”.
+  const textAsteptat = (pagina, stare) => (stare === 'vizitator' && pagina === 'cum-devii-furnizor-materiale.html' ? 'Creează-ți cont de furnizor de materiale' : TEXT[stare]);
   try {
     // 0. Static: #partner-types a dispărut; #cum-functioneaza există.
     {
       const html = fs.readdirSync(RADACINA).filter((f) => f.endsWith('.html')).map((f) => [f, fs.readFileSync(path.join(RADACINA, f), 'utf8')]);
       const legaturi = html.filter(([, t]) => /href="[^"]*#partner-types"|getElementById\('partner-types'\)|id="partner-types"/.test(t)).map(([f]) => f);
       verifica(!legaturi.length, `#partner-types încă apare în: ${legaturi.join(', ')}`);
-      const dp = html.find(([f]) => f === 'mydarrin-devino-partener.html')[1];
-      verifica((dp.match(/id="cum-functioneaza"/g) || []).length === 1, 'mydarrin-devino-partener.html: id="cum-functioneaza" lipsește sau e dublat');
-      verifica(!/5 pași/.test(dp), 'mydarrin-devino-partener.html: „5 pași” (fluxul vechi) a rămas');
-      for (const f of ['mydarrin-devino-partener.html', 'cum-devii-partenerul-nostru.html', 'cum-devii-furnizor-materiale.html', 'cum-devii-operator-inchirieri.html', 'cum-devii-curier-de-cartier.html', 'ghidul-asiguratorului.html']) {
+      for (const f of ['cum-devii-furnizor-servicii.html', 'cum-devii-furnizor-materiale.html', 'cum-devii-operator-inchirieri.html', 'cum-devii-curier-de-cartier.html', 'ghidul-asiguratorului.html']) {
+        const t = html.find(([x]) => x === f)[1];
+        verifica((t.match(/id="cum-functioneaza"/g) || []).length === 1, `${f}: id="cum-functioneaza" lipsește sau e dublat`);
+      }
+      verifica(!/5 pași/.test(html.find(([f]) => f === 'cum-devii-partenerul-nostru.html')[1]), 'hub: „5 pași” (fluxul vechi) a rămas');
+      for (const f of ['cum-devii-furnizor-servicii.html', 'cum-devii-partenerul-nostru.html', 'cum-devii-furnizor-materiale.html', 'cum-devii-operator-inchirieri.html', 'cum-devii-curier-de-cartier.html', 'ghidul-asiguratorului.html']) {
         const t = html.find(([x]) => x === f)[1];
         verifica(/data-cta-partener/.test(t) && /<script src="cta-partener\.js"/.test(t), `${f}: lipsește data-cta-partener sau cta-partener.js`);
       }
@@ -134,9 +142,9 @@ const asteaptaStare = (p) => p.waitForFunction(() => { const l = [...document.qu
         await asteaptaStare(p);
         const b = await butoane(p);
         verifica(b.length === nrButoane, `${et}: ${b.length} butoane (așteptat ${nrButoane})`);
-        verifica(b.every((x) => x.text === TEXT[stare] && x.stare === stare), `${et}: textele ${JSON.stringify(b.map((x) => [x.text, x.stare]))}`);
+        verifica(b.every((x) => x.text === textAsteptat(pagina, stare) && x.stare === stare), `${et}: textele ${JSON.stringify(b.map((x) => [x.text, x.stare]))}`);
         const cuBadge = stare === 'vizitator' || stare === 'client';
-        verifica(b.every((x) => x.badge.every((v) => v === cuBadge)), `${et}: „0 LEI” ${cuBadge ? 'lipsește' : 'apare'}`);
+        verifica(b.every((x) => x.badge.every((v) => v === cuBadge)), `${et}: insigna ${cuBadge ? 'lipsește' : 'apare'}`);
         if (['activare', 'verificare', 'activ'].includes(stare)) {
           verifica(b.every((x) => x.href === dashboard(rol)), `${et}: destinația ${JSON.stringify(b.map((x) => x.href))} (așteptat ${dashboard(rol)})`);
           await p.click('[data-cta-partener]:visible');
@@ -171,7 +179,7 @@ const asteaptaStare = (p) => p.waitForFunction(() => { const l = [...document.qu
     // 1b. Vizitatorul rămâne pe pagină (fosta barieră îl trimitea la „/” după 3 s).
     for (const stare of ['vizitator', 'client']) {
       const et = `fără barieră (${stare})`;
-      const { ctx, p } = await deschide(browser, baza, 'mydarrin-devino-partener.html', stare, 'partener_servicii');
+      const { ctx, p } = await deschide(browser, baza, 'cum-devii-partenerul-nostru.html', stare, 'partener_servicii');
       const url = p.url();
       await asteapta(4000);
       verifica(p.url() === url && !(await p.$('#partner-gate-banner')), `${et}: pagina a redirecționat sau arată bariera (${p.url()})`);
@@ -181,26 +189,25 @@ const asteaptaStare = (p) => p.waitForFunction(() => { const l = [...document.qu
     // 2. Cât se încarcă starea, butonul nu arată textul greșit.
     {
       const et = 'încărcarea stării';
-      const { ctx, p } = await deschide(browser, baza, 'mydarrin-devino-partener.html', 'activ', 'partener_servicii', { intarziere: 2500, fara_asteptare: true });
+      const { ctx, p } = await deschide(browser, baza, 'cum-devii-partenerul-nostru.html', 'activ', 'partener_servicii', { intarziere: 2500, fara_asteptare: true });
       await asteapta(600);
       const inainte = await p.evaluate(() => [...document.querySelectorAll('[data-cta-partener]')].map((b) => getComputedStyle(b).visibility));
       verifica(inainte.length && inainte.every((v) => v === 'hidden'), `${et}: butoanele se văd înainte de stare (${inainte.join(',')})`);
       await asteaptaStare(p);
-      const dupa = await p.evaluate(() => [...document.querySelectorAll('[data-cta-partener]')].map((b) => getComputedStyle(b).visibility));
+      const dupa = await p.evaluate(() => [...document.querySelectorAll('[data-cta-partener]')].filter((b) => !b.closest('[data-meniu-partener]')).map((b) => getComputedStyle(b).visibility));
       verifica(dupa.every((v) => v === 'visible'), `${et}: butoanele nu apar după stare (${dupa.join(',')})`);
       await ctx.close();
     }
 
     // 3. Ancora #cum-functioneaza: butonul și deschiderea directă.
-    // Pasul 11-R3f: butonul din secțiunea de sus e „Cum devii partener” (lista tipurilor);
-    // „Cum funcționează” rămâne fila deschisă implicit (11-R3c): clic pe altă filă, apoi înapoi.
-    for (const [cum, url] of [['fila „Cum funcționează”', 'mydarrin-devino-partener.html'], ['deschiderea cu #cum-functioneaza', 'mydarrin-devino-partener.html#cum-functioneaza']]) {
+    // Pasul 11-R3g: pe paginile de tip, butonul secundar „Cum funcționează ↓” din hero.
+    for (const [cum, url] of [['butonul „Cum funcționează ↓”', 'cum-devii-furnizor-materiale.html'], ['deschiderea cu #cum-functioneaza', 'cum-devii-furnizor-materiale.html#cum-functioneaza']]) {
       const et = `ancora: ${cum}`;
       const { ctx, p, erori } = await deschide(browser, baza, url, 'vizitator', 'partener_servicii');
-      if (!url.includes('#')) { await p.click('#htab-benefits'); await asteapta(200); await p.click('#htab-cumfunc'); }
+      if (!url.includes('#')) await p.click('.rp-hero .rp-btn2');
       await p.waitForFunction(() => { const s = document.getElementById('cum-functioneaza'); return s && s.getClientRects().length && s.getBoundingClientRect().top < window.innerHeight; }, null, { timeout: 6000 }).catch(() => {});
-      const r = await p.evaluate(() => { const s = document.getElementById('cum-functioneaza'); const b = s.getBoundingClientRect(); return { vizibil: s.getClientRects().length > 0, sus: Math.round(b.top), vh: window.innerHeight, tipuri: /Cele 5 tipuri de parteneriat/.test(s.innerText) }; });
-      verifica(r.vizibil && r.sus < r.vh && r.tipuri, `${et}: secțiunea nu e afișată ${JSON.stringify(r)}`);
+      const r = await p.evaluate(() => { const s = document.getElementById('cum-functioneaza'); const b = s.getBoundingClientRect(); return { vizibil: s.getClientRects().length > 0, sus: Math.round(b.top), vh: window.innerHeight, pasi: s.querySelectorAll('.rp-pas').length }; });
+      verifica(r.vizibil && r.sus < r.vh && r.pasi > 0, `${et}: secțiunea nu e afișată ${JSON.stringify(r)}`);
       verifica(!erori.length, `${et}: ${erori.length} erori JS (${erori.slice(0, 3).join(' | ')})`);
       await ctx.close();
     }
@@ -208,7 +215,7 @@ const asteaptaStare = (p) => p.waitForFunction(() => { const l = [...document.qu
     // 4. Engleză.
     {
       const et = 'EN';
-      const { ctx, p, erori } = await deschide(browser, baza, 'mydarrin-devino-partener.html', 'activare', 'partener_servicii', { limba: null });
+      const { ctx, p, erori } = await deschide(browser, baza, 'cum-devii-partenerul-nostru.html', 'activare', 'partener_servicii', { limba: null });
       await asteaptaStare(p);
       const b = await butoane(p);
       verifica(b.every((x) => x.text === 'Finish your account so you can receive orders'), `${et}: ${JSON.stringify(b.map((x) => x.text))}`);
@@ -227,7 +234,7 @@ const asteaptaStare = (p) => p.waitForFunction(() => { const l = [...document.qu
           const m = await p.evaluate(() => ({ sw: document.documentElement.scrollWidth, vw: window.innerWidth }));
           verifica(m.sw <= m.vw + 1, `${et}: derulare orizontală (${m.sw} / ${m.vw})`);
           verifica(!erori.length, `${et}: ${erori.length} erori JS (${erori.slice(0, 3).join(' | ')})`);
-          if (dosarCapturi && pagina.startsWith('mydarrin-devino') && [390, 1366].includes(w)) {
+          if (dosarCapturi && pagina.startsWith('cum-devii-partenerul') && [390, 1366].includes(w)) {
             await p.screenshot({ path: path.join(dosarCapturi, `cta-${stare}-${w}.png`) });
           }
           await ctx.close();

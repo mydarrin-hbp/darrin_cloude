@@ -159,8 +159,9 @@ const tacut = (fn) => async () => { const e = console.error; console.error = () 
   }));
 
   console.log('7. Dicționarele EN ale formularelor');
-  await test('mesajele noi au traducere în ambele pagini „Devino partener”', async () => {
-    for (const pagina of ['mydarrin-devino-partener', 'mydarrin-devino-partener-wizard']) {
+  // Pasul 11-R3g: vechea pagină „Devino partener” e doar redirecționare spre hub (fără formular).
+  await test('mesajele noi au traducere în pagina de activare (wizard)', async () => {
+    for (const pagina of ['mydarrin-devino-partener-wizard']) {
       const dict = require(path.join(RADACINA, `i18n/en/${pagina}.json`))._texte;
       for (const m of Object.values(MESAJE_ANAF)) egal(dict[m.ro], m.en, `${pagina}: ${m.ro}`);
     }

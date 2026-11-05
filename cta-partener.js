@@ -1,5 +1,5 @@
 /* ════════════════════════════════════════════════════════════════
-   MY DARRIN — cta-partener.js, pasul 11-R3b (decizia LM, 2 nov. 2026)
+   MY DARRIN — cta-partener.js, pasul 11-R3b (decizia LM, 2 nov. 2026), 11-R3g
 
    Butoanele de înscriere ca partener („Devino partener”, „Cum devii
    partener”, ghidurile) arată textul și fac acțiunea potrivite stării
@@ -20,11 +20,18 @@
    paginilor (meniu-partener.js), cu data-cta-scurt.
 
    Folosire: orice element <a> cu data-cta-partener="<tip>" (servicii,
-   materiale, inchirieri, curier, asigurari; gol = tipul din ?type= sau
-   niciunul). În element, [data-cta-text] primește textul, iar
-   [data-cta-badge] („0 LEI”) apare doar cât înscrierea e încă de făcut; fără
-   [data-cta-text], textul înlocuiește conținutul (păstrând „→”). Cât se
-   încarcă starea, butonul își păstrează locul, dar nu se vede.
+   materiale, inchirieri, curier, asigurari sau asigurator; gol = tipul din
+   ?type= sau niciunul). În element, [data-cta-text] primește textul, iar
+   [data-cta-badge] (insigna „GRATUIT”) apare doar cât înscrierea e încă de
+   făcut; fără [data-cta-text], textul înlocuiește conținutul (păstrând „→”).
+   Cât se încarcă starea, butonul își păstrează locul, dar nu se vede.
+
+   Pasul 11-R3g (3 nov. 2026): pe ruta „Devino partener” (ruta-partener.css):
+     data-cta-vizitator="Creează-ți cont de furnizor de materiale" — textul
+       pentru vizitator pe paginile de tip (celelalte stări rămân cele comune);
+     data-cta-card — butonul „Creează cont” de pe cardurile tipurilor din hub,
+       cu texte scurte (TEXT_CARD).
+   Costul se scrie doar „GRATUIT” / „FREE” (decizia LM, 3 nov. 2026).
    ════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -41,6 +48,14 @@
   // Pasul 11-R3f: butonul din meniul „Devino Partener” (meniu-partener.js) are
   // loc puțin: cu data-cta-scurt, activarea neterminată e „Finalizează-ți contul”.
   var TEXT_SCURT = { activare: 'Finalizează-ți contul' };
+  // Pasul 11-R3g: cardurile tipurilor din hub (loc puțin, câte un buton pe tip).
+  var TEXT_CARD = {
+    vizitator: 'Creează cont',
+    client: 'Alege acest tip',
+    activare: 'Finalizează-ți contul',
+    verificare: 'Contul e în verificare',
+    activ: 'Mergi la dashboard',
+  };
   var SELECTOR = '[data-cta-partener]';
 
   function tr(ro) { return typeof window.t === 'function' ? window.t(null, ro) : ro; }
@@ -107,9 +122,15 @@
     asteapta(function () { return !!window.MDCont; }, 5000).then(function (ok) { if (ok) fn(window.MDCont); });
   }
 
+  function textPentru(el, stare) {
+    if (el.hasAttribute('data-cta-card')) return TEXT_CARD[stare];
+    if (stare === 'vizitator' && el.getAttribute('data-cta-vizitator')) return el.getAttribute('data-cta-vizitator');
+    return (el.hasAttribute('data-cta-scurt') && TEXT_SCURT[stare]) || TEXT[stare];
+  }
+
   function aplica(el, r) {
     var tip = tipButon(el);
-    var text = tr((el.hasAttribute('data-cta-scurt') && TEXT_SCURT[r.stare]) || TEXT[r.stare]);
+    var text = tr(textPentru(el, r.stare));
     var tinta = el.querySelector('[data-cta-text]');
     if (tinta) tinta.textContent = text;
     else el.textContent = text + (/→\s*$/.test(el.getAttribute('data-cta-original') || '') ? ' →' : '');

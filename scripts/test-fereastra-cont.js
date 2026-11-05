@@ -30,7 +30,8 @@
 const { chromium } = require('playwright');
 const { porneste } = require('./server-test');
 
-const PAGINI = ['index', 'despre-noi', 'mydarrin-catalog', 'mydarrin-devino-partener', 'cum-platesc'];
+// Pasul 11-R3g: „Devino partener” = hub-ul cum-devii-partenerul-nostru (vechea pagină e redirecționată).
+const PAGINI = ['index', 'despre-noi', 'mydarrin-catalog', 'cum-devii-partenerul-nostru', 'cum-platesc'];
 const LATIMI = [390, 1366];
 const ECRANE = [[360, 740], [390, 844], [430, 932], [768, 1024], [1024, 768], [1366, 900], [1920, 1080]];
 const pagini = process.argv.slice(2).length ? process.argv.slice(2) : PAGINI;
@@ -180,14 +181,12 @@ async function completeazaDate(p) {
         verifica(!(await vizibila(p)), `${et}: Escape nu închide fereastra`);
 
         // 4. „Devino partener” → servicii: „Partener” și „Servicii” deja alese (fără sesiune).
-        if (pg === 'mydarrin-devino-partener') {
-          await p.evaluate(() => { window.handlePartnerNavigation('servicii'); });
+        if (pg === 'cum-devii-partenerul-nostru') {
+          await p.click('#tip-servicii [data-cta-card]');
           await deschisa(p);
           const a = await ales(p);
           verifica(a.cat === 'partener' && a.rol === 'partener_servicii' && a.grila, `${et}: din „Devino partener” → servicii: ${JSON.stringify(a)}`);
           verifica(await p.isVisible('#mdc-pas-rol'), `${et}: rolul ales nu se confirmă în primul ecran`);
-          const tip = await p.evaluate(() => { try { return selectedPartnerType; } catch (e) { return null; } });
-          verifica(tip === 'servicii', `${et}: tipul ales pe pagină nu e „servicii” (${tip})`);
           verifica(await p.evaluate(() => !document.getElementById('partner-modal') && !document.getElementById('f-firma')), `${et}: fereastra publică cu formularul de 14 câmpuri a rămas`);
         }
 
@@ -200,7 +199,7 @@ async function completeazaDate(p) {
     if (complet) {
       // 5. Ecranul rolului pe toate dispozitivele.
       // Pe index (reguli globale de 44 px pentru radio) și pe „Devino partener”.
-      for (const [w, h, pagina] of ECRANE.map((e) => e.concat('mydarrin-devino-partener')).concat(ECRANE.map((e) => e.concat('index')), [[740, 360, 'mydarrin-devino-partener']])) {
+      for (const [w, h, pagina] of ECRANE.map((e) => e.concat('cum-devii-partenerul-nostru')).concat(ECRANE.map((e) => e.concat('index')), [[740, 360, 'cum-devii-partenerul-nostru']])) {
         const et = `ecranul rolului ${pagina} ${w}×${h}`;
         const ctx = await context(browser, w, 'ro', h);
         const p = await ctx.newPage();
@@ -209,7 +208,12 @@ async function completeazaDate(p) {
         if (pagina === 'index') {
           await p.goto(`${baza}/index.html`, { waitUntil: 'networkidle', timeout: 60000 });
           await p.evaluate(() => window.MDCont.deschide({ tab: 'register', rol: 'partener_servicii' }));
-        } else await p.goto(`${baza}/mydarrin-devino-partener.html?type=servicii`, { waitUntil: 'networkidle', timeout: 60000 });
+        } else {
+          // Hub-ul cu ?type=servicii: butonul principal deschide fereastra cu tipul bifat.
+          await p.goto(`${baza}/cum-devii-partenerul-nostru.html?type=servicii`, { waitUntil: 'networkidle', timeout: 60000 });
+          await p.waitForFunction(() => { const b = document.querySelector('.rp-hero [data-rp-principal]'); return b && b.getAttribute('data-cta-stare') === 'vizitator'; }, null, { timeout: 10000 }).catch(() => {});
+          await p.click('.rp-hero [data-rp-principal]');
+        }
         await deschisa(p);
         const a = await ales(p);
         verifica(a.cat === 'partener' && a.rol === 'partener_servicii' && a.grila, `${et}: din ?type=servicii: ${JSON.stringify(a)}`);
@@ -262,6 +266,9 @@ async function completeazaDate(p) {
           const erori = [];
           urmaresteErori(p, erori);
           await p.goto(`${baza}/${cale}`, { waitUntil: 'networkidle', timeout: 60000 });
+          // Pasul 11-R3g: adresa veche duce la hub, cu ?type= păstrat; butonul principal are tipul.
+          await p.waitForFunction(() => { const b = document.querySelector('.rp-hero [data-rp-principal]'); return b && b.getAttribute('data-cta-stare') === 'vizitator'; }, null, { timeout: 10000 }).catch(() => {});
+          await p.click('.rp-hero [data-rp-principal]');
           await deschisa(p);
           const a = await ales(p);
           verifica(a.cat === 'partener' && a.rol === rol, `${et}: ${JSON.stringify(a)} (așteptat ${rol})`);

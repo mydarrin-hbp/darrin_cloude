@@ -17,7 +17,7 @@
 //     limita de coduri → mesajul spune să aștepte un minut; în engleză;
 //   - „Creare cont” cu un email neconfirmat → ecranul de cod;
 //   - indiciul „Spam sau Promoții” sub câmpul codului;
-//   - „Devino partener” se deschide pe „Cum funcționează”, fără fila goală;
+//   - „Devino partener” (11-R3g: hub-ul) se deschide cu hero, tipuri și pași, fără file goale;
 //   - 390, 768, 1024, 1366 px: fără derulare orizontală, fără erori JS.
 // Rulare: node scripts/test-emailuri-cod.js
 
@@ -340,7 +340,8 @@ async function testeBrowser() {
     }
     console.log('fereastra de cont: gata');
 
-    // 4. „Devino partener”: deschisă pe „Cum funcționează”, fără fila goală; 4 lățimi.
+    // 4. „Devino partener” (pasul 11-R3g): vechea pagină duce la hub, care se deschide
+    // cu partea de sus (hero), tipurile și pașii — fără file goale; 4 lățimi.
     for (const latime of [390, 768, 1024, 1366]) {
       for (const limba of ['ro', null]) {
         const et = `devino-partener ${latime}px ${limba || 'en'}`;
@@ -350,33 +351,16 @@ async function testeBrowser() {
         await p.goto(`${baza}/mydarrin-devino-partener.html`, { waitUntil: 'networkidle', timeout: 60000 });
         await asteapta(400);
         const s = await p.evaluate(() => {
-          const viz = (id) => { const e = document.getElementById(id); return !!e && e.getClientRects().length > 0 && getComputedStyle(e).display !== 'none'; };
-          const activ = document.getElementById('htab-cumfunc');
-          const file = [...document.querySelectorAll('#hero-tabs-bar button')].map((b) => b.textContent.trim());
-          const sectiune = document.getElementById('cum-functioneaza');
+          const viz = (sel) => { const e = document.querySelector(sel); return !!e && e.getClientRects().length > 0 && e.getBoundingClientRect().height > 100; };
           return {
-            intro: !!document.getElementById('htab-intro'),
-            file,
-            cumfunc: viz('hpanel-cumfunc'), sectiune: !!sectiune && sectiune.getBoundingClientRect().height > 200,
-            wizard: viz('hpanel-wizard'), benefits: viz('hpanel-benefits'),
-            activ: activ && getComputedStyle(activ).fontWeight === '700',
-            hero: viz('hero-intro-content'),
+            cale: location.pathname, hero: viz('.rp-hero'), tipuri: document.querySelectorAll('#tipuri .rp-tip').length, pasi: document.querySelectorAll('#pasi .rp-pas').length,
+            file: document.querySelectorAll('#hero-tabs-bar button').length,
             derulare: document.documentElement.scrollWidth - window.innerWidth,
           };
         });
-        verifica(!s.intro && s.file.length === 3, `${et}: file ${JSON.stringify(s.file)} (fără „Devino Partener”, 3 file)`);
-        verifica(s.cumfunc && s.sectiune, `${et}: „Cum funcționează” nu e deschisă la încărcare`);
-        verifica(!s.wizard && !s.benefits, `${et}: altă filă deschisă la încărcare`);
-        verifica(s.activ, `${et}: fila „Cum funcționează” nu e marcată activă`);
-        verifica(s.hero, `${et}: partea de sus a paginii a dispărut`);
+        verifica(s.cale === '/cum-devii-partenerul-nostru', `${et}: nu ajunge la hub (${s.cale})`);
+        verifica(s.hero && s.tipuri === 5 && s.pasi === 4 && !s.file, `${et}: hub incomplet ${JSON.stringify(s)}`);
         verifica(s.derulare <= 1, `${et}: derulare orizontală de ${s.derulare}px`);
-        // Celelalte file merg ca înainte.
-        await p.click('#htab-benefits');
-        await asteapta(200);
-        verifica(await p.evaluate(() => getComputedStyle(document.getElementById('hpanel-benefits')).display === 'block' && getComputedStyle(document.getElementById('hpanel-cumfunc')).display === 'none'), `${et}: fila „De ce My Darrin?” nu se deschide`);
-        await p.click('#htab-cumfunc');
-        await asteapta(200);
-        verifica(await p.evaluate(() => getComputedStyle(document.getElementById('hpanel-cumfunc')).display === 'block'), `${et}: întoarcerea la „Cum funcționează” nu merge`);
         verifica(!erori.length, `${et}: ${erori.length} erori JS (${erori.slice(0, 3).join(' | ')})`);
         await ctx.close();
       }
