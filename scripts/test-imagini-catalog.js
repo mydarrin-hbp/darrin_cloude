@@ -1,9 +1,11 @@
 // scripts/test-imagini-catalog.js
-// Teste pentru pasul 11-C5 (decizia LM, 4 nov. 2026): imaginile de prezentare
-// readuse pe cardurile din catalog, ca înainte de 11-C4. Ordinea imaginii:
+// Teste pentru pașii 11-C5 și 11-C6 (decizii LM, 4 nov. 2026): imaginile de prezentare
+// pe cardurile din catalog, potrivite fiecărui domeniu (11-C6), cu variante stabile
+// după id_serviciu la domeniile mari. Ordinea imaginii (din 11-C5, neschimbată):
 //   1. imaginea reală (catalog_servicii.imagini, din back-office; la marketplace,
 //      imaginea încărcată de partener);
-//   2. altfel, imaginea de prezentare a domeniului (harta DOM din catalog);
+//   2. altfel, imaginea de prezentare a domeniului (harta DOM din catalog; la
+//      domeniile din VARIANTE, una dintre variante, aleasă stabil după id_serviciu);
 //   3. altfel, IMG_DEF.
 //   A. fișierele: fiecare domeniu public din baza de date are imagine în hartă
 //      (lista citită live cu cheia publică, ca în catalog; fără rețea, lista din
@@ -14,7 +16,8 @@
 //      imagine din back-office o arată pe ea; marketplace-ul: imaginea
 //      partenerului, altfel IMG_DEF; 390 / 768 / 1024 / 1366 px fără derulare
 //      orizontală, fără erori JS, fără imagini lipsă.
-// Verificarea că pozele Unsplash din hartă răspund (fără 404): ONLINE=1.
+// Fiecare ID de fotografie folosit apare în docs/SURSE.md (autor, link spre Unsplash).
+// Verificarea că pozele Unsplash folosite răspund 200: ONLINE=1.
 // Rulare: node scripts/test-imagini-catalog.js   (FARA_BROWSER=1: doar A)
 
 const fs = require('fs');
@@ -30,6 +33,24 @@ const inceput = CATALOG.indexOf('const DOM = {');
 const DOM = new Function('return ' + CATALOG.slice(inceput + 12, CATALOG.indexOf('};', inceput) + 1))();
 const IMG_DEF = (CATALOG.match(/const IMG_DEF = '([0-9a-f-]+)';/) || [])[1];
 const urlFoto = (id) => `https://images.unsplash.com/photo-${id}?w=600&q=80`;
+// VARIANTE și imgDomeniu(), așa cum sunt în pagină (pasul 11-C6).
+const { VARIANTE, imgDomeniu } = (() => {
+  const v0 = CATALOG.indexOf('const VARIANTE = {');
+  const f0 = CATALOG.indexOf('function imgDomeniu(');
+  const f1 = CATALOG.indexOf('\n}', f0) + 2;
+  if (v0 < 0 || f0 < 0) return { VARIANTE: {}, imgDomeniu: (item, d) => d.img || IMG_DEF };
+  const varSrc = CATALOG.slice(v0, CATALOG.indexOf('};', v0) + 2);
+  return new Function('IMG_DEF', varSrc + '\n' + CATALOG.slice(f0, f1) + '\nreturn { VARIANTE, imgDomeniu };')(IMG_DEF);
+})();
+const imgAsteptat = (item) => (item.imagini && item.imagini[0]) || urlFoto(imgDomeniu(item, DOM[item.domeniu] || { img: IMG_DEF }));
+// Caruselul de categorii din hero.
+const CARUSEL = [...CATALOG.matchAll(/<img src="https:\/\/images\.unsplash\.com\/photo-([0-9a-f-]+)\?w=600&q=80" alt="([^"]+)" loading="lazy">/g)].map((m) => ({ id: m[1], alt: m[2] }));
+const SURSE = (() => { try { return citeste('docs/SURSE.md'); } catch (e) { return ''; } })();
+const toateIdurile = () => [...new Set([IMG_DEF, ...Object.values(DOM).map((v) => v.img), ...Object.values(VARIANTE).flat(), ...CARUSEL.map((c) => c.id)])];
+// Fotografiile nepotrivite din raportul 11-C5 (căști, autoturism, plajă, cort pe alte
+// domenii, unelte de grădină la lemn, termostat, depozit, interior gol, camion, mașină
+// de găurit cu marcă, baie la HVAC) — nu mai apar în catalog.
+const NEPOTRIVITE = ['1585771724684-38269d6639fd', '1620891549027-942fdc95d3f5', '1473116763249-2faaef81ccda', '1416879595882-3373a0480b5b', '1545259741-2ea3ebf61fa3', '1587293852726-70cdb56c2866', '1581858726788-75bc0f6a952d', '1601584115197-04ecc0da31d7', '1572981779307-38b8cabb2407', '1558618666-fcd25c85cd64', '1615529328331-f8917597711f'];
 
 // Domeniile publice din catalog_servicii (status_public), 4 nov. 2026 — folosite
 // doar dacă baza de date nu se poate citi.
@@ -66,11 +87,48 @@ async function domeniiPublice() {
 
 async function testeFisiere() {
   console.log('A. Fișierele');
-  await test('harta DOM și IMG_DEF (1562259949-e8e7689d7828), ca înainte de 11-C4', async () => {
-    egal(IMG_DEF, '1562259949-e8e7689d7828');
+  await test('harta DOM: fiecare domeniu are imagine; IMG_DEF neutru (unelte de lucru, 11-C6)', async () => {
+    egal(IMG_DEF, '1581783898377-1c85bf937427');
     adevarat(Object.keys(DOM).length >= 62, 'domenii în hartă: ' + Object.keys(DOM).length);
     const fara = Object.entries(DOM).filter(([, v]) => !/^\d{9,13}-[0-9a-f]{12}$/.test(v.img || '')).map(([k]) => k);
     egal(fara, [], 'domenii fără imagine');
+  });
+  await test('11-C6: fotografiile nepotrivite din raportul 11-C5 nu mai apar în catalog (hartă, carusel)', async () => {
+    egal(NEPOTRIVITE.filter((id) => CATALOG.includes(id)), [], 'încă folosite');
+  });
+  await test('11-C6: variante (3–4 fotografii diferite) la Bricolaj & Consumabile, Instalații sanitare și termice, Instalații electrice', async () => {
+    egal(Object.keys(VARIANTE).sort(), ['Bricolaj & Consumabile', 'Instalații electrice', 'Instalații sanitare și termice'].sort());
+    for (const [d, v] of Object.entries(VARIANTE)) {
+      adevarat(DOM[d], d + ' lipsește din hartă');
+      adevarat(v.length >= 3 && v.length <= 4 && new Set(v).size === v.length, d + ': ' + JSON.stringify(v));
+      adevarat(v.every((id) => /^\d{9,13}-[0-9a-f]{12}$/.test(id)), d + ': ID greșit');
+    }
+  });
+  await test('11-C6: varianta se alege stabil (același id_serviciu → aceeași imagine) și se folosesc toate', async () => {
+    // ID-urile reale din baza de date (4 nov. 2026).
+    const REALE = {
+      'Instalații sanitare și termice': ['cada-inlocuire', 'cal-inlocuire', 'conducta-inlocuire', 'mat-4b000a20-inlocuire', 'lav-inlocuire', 'wc-inlocuire', 'cal-mentenanta', 'mat-4b000a20-mentenanta', 'lav-mentenanta', 'cal-montaj-nou', 'conducta-montaj-nou', 'mat-4b000a20-montaj', 'lav-montaj-nou', 'cal-reparatie', 'mat-4b000a20-reparatie', 'lav-reparatie'],
+      'Instalații electrice': ['ilu-inlocuire', 'tel-inlocuire', 'instalatii-electrice', 'ilu-mentenanta', 'tel-mentenanta', 'ilu-montaj-nou', 'tel-montaj-nou', 'tel-reparatie', 'ilu-reparatie'],
+      'Bricolaj & Consumabile': ['robinet-trecere-sferic-12', 'priza-dubla-ceramica-schneider', 'siguranta-automata-diferentiala-16a', 'teava-cupru-15mm', 'cot-cupru-90-grade-15mm', 'filtru-y-pentru-impuritati-34', 'garnitura-siliconica-set-10-buc', 'adeziv-gresiefaianta-sac-25kg', 'vopsea-lavabila-alba-15l', 'cablu-electric-cyy-f-3x25-m'].flatMap((p, i) => Array.from({ length: 10 }, (_, j) => `mat-${p}-v${i + 1 + 10 * j}`)),
+    };
+    for (const [d, ids] of Object.entries(REALE)) {
+      const alese = ids.map((id) => imgDomeniu({ id_serviciu: id, domeniu: d }, DOM[d]));
+      egal(ids.map((id) => imgDomeniu({ id_serviciu: id, domeniu: d, titlu: 'alt titlu' }, DOM[d])), alese, d + ': nestabil');
+      alese.forEach((id) => adevarat(VARIANTE[d].includes(id), d + ': în afara variantelor ' + id));
+      egal([...new Set(alese)].sort(), [...VARIANTE[d]].sort(), d + ': variante nefolosite');
+    }
+    // Domeniile fără variante: imaginea din hartă.
+    egal(imgDomeniu({ id_serviciu: 'x', domeniu: 'Demolări' }, DOM['Demolări']), DOM['Demolări'].img);
+  });
+  await test('11-C6: fiecare ID de fotografie (hartă, variante, IMG_DEF, carusel) apare în docs/SURSE.md, cu autor și link', async () => {
+    adevarat(SURSE.length > 0, 'docs/SURSE.md lipsește');
+    egal(toateIdurile().filter((id) => !SURSE.includes('`' + id + '`')), [], 'lipsesc din SURSE.md');
+    const randuri = SURSE.split('\n').filter((l) => /^\| .*`\d{9,13}-[0-9a-f]{12}`/.test(l));
+    egal(randuri.filter((l) => !/\| [^|]*@[^|]+ \| https:\/\/unsplash\.com\/photos\/[A-Za-z0-9_-]+ \|$/.test(l.trim())), [], 'rânduri fără autor / link');
+  });
+  await test('11-C6: caruselul din hero are 15 categorii (×2), toate cu fotografii din SURSE.md', async () => {
+    egal(CARUSEL.length, 30, 'imagini în carusel');
+    egal(new Set(CARUSEL.map((c) => c.alt)).size, 15, 'categorii');
   });
   const { sursa, lista } = await domeniiPublice();
   await test(`fiecare domeniu public din baza de date are imagine în hartă (${lista.length} domenii, sursa: ${sursa})`, async () => {
@@ -97,8 +155,8 @@ async function testeFisiere() {
     adevarat(s.includes(`const IMG_PREZENTARE = '${urlFoto(IMG_DEF)}';`) && /p\.imagini\[0\] \|\| IMG_PREZENTARE/.test(s), 'regula');
   });
   if (process.env.ONLINE) {
-    await test('ONLINE: fiecare poză din hartă și IMG_DEF răspunde pe Unsplash (fără 404)', async () => {
-      const iduri = [...new Set([IMG_DEF, ...Object.values(DOM).map((v) => v.img)])];
+    await test('ONLINE: fiecare fotografie (hartă, variante, IMG_DEF, carusel) răspunde 200 pe Unsplash', async () => {
+      const iduri = toateIdurile();
       const rupte = [];
       for (const id of iduri) { const r = await cere(urlFoto(id), { method: 'HEAD' }); if (r.status !== 200) rupte.push(r.status + ' ' + id); }
       egal(rupte, [], 'poze rupte');
@@ -119,8 +177,13 @@ const PRODUSE = [
   ['mat-surub', 'Șuruburi', 'materiale', 'Bricolaj & Consumabile', []],
   ['inch-excavator', 'Miniexcavator', 'inchirieri', 'Utilaje construcții', []],
   ['inch-duba', 'Dubă', 'inchirieri', 'Vehicule & Transport', []],
+  // 11-C6: domeniile cu variante — carduri vecine, cu ID-uri ca în baza de date.
+  ...['robinet-trecere-sferic-12', 'priza-dubla-ceramica-schneider', 'siguranta-automata-diferentiala-16a', 'teava-cupru-15mm', 'cot-cupru-90-grade-15mm', 'filtru-y-pentru-impuritati-34', 'garnitura-siliconica-set-10-buc', 'adeziv-gresiefaianta-sac-25kg']
+    .map((p, i) => [`mat-${p}-v${i + 1}`, 'Bricolaj ' + (i + 1), 'materiale', 'Bricolaj & Consumabile', []]),
+  ...['cal-inlocuire', 'cal-mentenanta', 'cal-montaj-nou', 'cal-reparatie'].map((id) => [id, 'Calorifer ' + id, 'servicii', 'Instalații sanitare și termice', []]),
+  ...['ilu-inlocuire', 'ilu-mentenanta', 'ilu-montaj-nou', 'ilu-reparatie'].map((id) => [id, 'Iluminat ' + id, 'servicii', 'Instalații electrice', []]),
 ];
-const ASTEPTAT = Object.fromEntries(PRODUSE.map(([slug, , , dom, img]) => [slug, img[0] || urlFoto(DOM[dom] ? DOM[dom].img : IMG_DEF)]));
+const ASTEPTAT = Object.fromEntries(PRODUSE.map(([slug, , , domeniu, imagini]) => [slug, imgAsteptat({ id_serviciu: slug, domeniu, imagini })]));
 const PNG_1X1 = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
 
 async function testeBrowser() {
@@ -191,6 +254,16 @@ async function testeBrowser() {
         }
         egal(ASTEPTAT['parchet-montaj'], IMG_BO, 'produsul cu imagine din back-office');
         egal(ASTEPTAT['serviciu-domeniu-nou'], urlFoto(IMG_DEF), 'domeniu necunoscut → IMG_DEF');
+        // 11-C6: pe ecran, cardurile vecine din același domeniu cu variante nu au toate
+        // aceeași imagine (în ordinea din pagină, pe fiecare domeniu).
+        const ordine = await pg.$$eval('.db-card', (c) => c.map((k) => ({ slug: k.dataset.slug, src: k.querySelector('.card-media img').getAttribute('src') })));
+        for (const d of Object.keys(VARIANTE)) {
+          const slugs = new Set(PRODUSE.filter((p) => p[3] === d).map((p) => p[0]));
+          const surse = ordine.filter((c) => slugs.has(c.slug)).map((c) => c.src);
+          adevarat(surse.length >= 4, d + ': prea puține carduri ' + surse.length);
+          adevarat(new Set(surse).size >= 2, d + ': toate cardurile vecine au aceeași imagine');
+          for (let i = 0; i + 3 < surse.length; i++) adevarat(new Set(surse.slice(i, i + 4)).size >= 2, d + ': 4 carduri vecine identice de la ' + i);
+        }
         // Toate imaginile cardurilor se încarcă (inclusiv cele lazy, cerute explicit).
         const neincarcate = await pg.$$eval('.db-card .card-media img', (x) => Promise.all(x.map((i) => { i.loading = 'eager'; return i.decode().then(() => null).catch(() => i.getAttribute('src')); })).then((r) => r.filter(Boolean)));
         egal(neincarcate, [], 'imagini lipsă');
