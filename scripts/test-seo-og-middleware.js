@@ -123,14 +123,14 @@ function reset() {
     verifica(r instanceof Response && r.status === 200 && r.headers.get('x-myd-og'), 'robotul ' + ua.split(/[ /]/)[0] + ' primește og:');
   }
 
-  // Scurtătura /partener → fișierul mydarrin-devino-partener.html
+  // Scurtătura /partener → hub-ul cum-devii-partenerul-nostru.html (pasul 11-R3g)
   reset();
   r = await mw(cerereHttp('/partener'));
   html = r instanceof Response ? await r.text() : '';
-  verifica(r instanceof Response && meta(html, 'og:title')[0] === 'Devino partener — OG' && cereriFetch[0].url.endsWith('/mydarrin-devino-partener'), 'scurtătura /partener: HTML-ul paginii reale, og: înlocuite');
+  verifica(r instanceof Response && meta(html, 'og:title')[0] === 'Devino partener — OG' && cereriFetch[0].url.endsWith('/cum-devii-partenerul-nostru'), 'scurtătura /partener: HTML-ul paginii reale, og: înlocuite');
   reset();
-  r = await mw(cerereHttp('/mydarrin-devino-partener'));
-  verifica(r instanceof Response && r.headers.get('x-myd-og') === 'ro', 'fișierul /mydarrin-devino-partener folosește suprascrierea scurtăturii /partener');
+  r = await mw(cerereHttp('/partener'));
+  verifica(r instanceof Response && r.headers.get('x-myd-og') === 'ro', 'scurtătura /partener (hub-ul) folosește suprascrierea ei');
 
   // 2. Fără suprascriere → original
   reset();
@@ -143,7 +143,7 @@ function reset() {
   verifica(r && r.tip === 'next', 'suprascriere doar cu URL canonic (fără titlu / descriere / imagine) → HTML-ul original');
   reset();
   r = await mw(cerereHttp('/partener?lang=en'));
-  verifica(r && r.tip === 'rewrite' && r.dest.endsWith('/mydarrin-devino-partener?lang=en'), 'scurtătură fără suprascriere EN → rewrite-ul existent, neschimbat');
+  verifica(r && r.tip === 'rewrite' && r.dest.endsWith('/cum-devii-partenerul-nostru?lang=en'), 'scurtătură fără suprascriere EN → rewrite-ul existent, neschimbat');
 
   // 3. Pagină care nu e publică → bariera existentă
   reset();

@@ -53,7 +53,7 @@ const PUBLICE = ['index', 'servicii-urgente', 'despre-noi', 'afla-ce-facem', 'my
   'mydarrin-produs.html?slug=inlocuire-becuri-corpuri&type=servicii', 'mydarrin-checkout', 'mydarrin-cos',
   'mydarrin-creeaza-deviz', 'confirmare-livrare', 'reset-password', 'mydarrin-cum-functioneaza', 'cum-comanzi', 'cum-platesc',
   'cum-programez-serviciu', 'cum-prestam-livram', 'intrebari-frecvente-clienti', 'intrebari-frecvente-parteneri',
-  'garantii-si-asigurari', 'ghidul-asiguratorului', 'reclamatii', 'mydarrin-devino-partener',
+  'garantii-si-asigurari', 'ghidul-asiguratorului', 'reclamatii', 'cum-devii-furnizor-servicii',
   'cum-devii-partenerul-nostru', 'cum-devii-curier-de-cartier', 'cum-devii-furnizor-materiale', 'cum-devii-operator-inchirieri',
   'mydarrin-investitori', 'mydarrin-pitch-deck', 'acord-confidentialitate', 'acces-temporar', 'mydarrin-termeni',
   'mydarrin-politica-confidentialitate'];

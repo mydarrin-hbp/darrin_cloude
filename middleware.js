@@ -58,7 +58,8 @@ export const config = {
 const PAGINA_STATICA = {
   '/home': '/index',
   '/cos': '/mydarrin-checkout',
-  '/partener': '/mydarrin-devino-partener',
+  // Pasul 11-R3g: scurtătura duce la singura pagină „Devino partener” (hub-ul).
+  '/partener': '/cum-devii-partenerul-nostru',
   '/investitor': '/mydarrin-investitori',
   '/curier-cartier': '/cum-devii-curier-de-cartier',
   '/asigurator': '/ghidul-asiguratorului',
@@ -287,6 +288,7 @@ const PAGINI_PUBLICE = new Set([
   '/mydarrin-termeni', '/mydarrin-termeni.html',
   '/mydarrin-politica-confidentialitate', '/mydarrin-politica-confidentialitate.html',
   '/cum-devii-partenerul-nostru', '/cum-devii-partenerul-nostru.html',
+  '/cum-devii-furnizor-servicii', '/cum-devii-furnizor-servicii.html',
   '/cum-devii-furnizor-materiale', '/cum-devii-furnizor-materiale.html',
   '/cum-devii-operator-inchirieri', '/cum-devii-operator-inchirieri.html',
   '/cum-devii-curier-de-cartier', '/cum-devii-curier-de-cartier.html',

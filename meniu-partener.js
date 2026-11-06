@@ -15,6 +15,9 @@
    partener”, client „Devino partener pe contul tău”, activare „Finalizează-ți
    contul”, verificare, partener activ.
 
+   Pasul 11-R3g: „Furnizor de Servicii” duce la pagina lui
+   (cum-devii-furnizor-servicii.html); butonul de sub listă, la hub.
+
    Pe „Devino partener”, butonul „Cum devii partener” deschide lista celor 5
    tipuri (data-meniu-partener="tipuri", butonul cu aria-controls spre ea).
 
@@ -27,7 +30,7 @@
 
   var INTRARI = [
     { href: 'cum-devii-partenerul-nostru.html', ico: 'clipboard-list', titlu: 'Cum devii partener My Darrin', desc: 'Ghidul complet, pas cu pas · Gratuit', ghid: true },
-    { href: 'cum-devii-partenerul-nostru.html?type=servicii', ico: 'wrench', titlu: 'Furnizor de Servicii', desc: 'Meșteri, instalatori, tehnicieni', culoare: '#FF8C00', fundal: '#FFF0D6' },
+    { href: 'cum-devii-furnizor-servicii.html', ico: 'wrench', titlu: 'Furnizor de Servicii', desc: 'Meșteri, instalatori, tehnicieni', culoare: '#FF8C00', fundal: '#FFF0D6' },
     { href: 'cum-devii-furnizor-materiale.html', ico: 'package', titlu: 'Furnizor de Materiale', desc: 'Bricolaj, construcții, electrice, sanitare', culoare: '#003366', fundal: '#EBF4FB' },
     { href: 'cum-devii-operator-inchirieri.html', ico: 'hard-hat', titlu: 'Furnizor de Închirieri', desc: 'Utilaje, scule, transport', culoare: '#0E9E99', fundal: '#E0F5F4' },
     { href: 'cum-devii-curier-de-cartier.html', ico: 'truck', titlu: 'Curier de cartier', desc: 'Livrare locală de materiale la șantier', culoare: '#E65100', fundal: '#FFF3E0' },
@@ -79,7 +82,7 @@
   }
 
   function cta(clasa) {
-    return '<a href="mydarrin-devino-partener.html" class="' + clasa + '" data-cta-partener="" data-cta-scurt="">' +
+    return '<a href="cum-devii-partenerul-nostru.html" class="' + clasa + '" data-cta-partener="" data-cta-scurt="">' +
       '<span data-cta-text>' + esc(tr('Creează-ți contul de partener')) + '</span>' + (clasa === 'mmp-cta' ? ' ' + ico('arrow-right') : '') + '</a>';
   }
 

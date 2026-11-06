@@ -67,8 +67,8 @@ async function apel(api, { metoda = 'GET', token = null, query = {}, body = null
     reset();
     verifica(SP.limbaSeo('ro') === 'ro' && SP.limbaSeo('RO-ro') === 'ro', 'limbaSeo: ro → ro');
     ['en', 'bg', 'de', 'el', 'fr', 'tr', '', null, 'xx'].forEach((l) => verifica(SP.limbaSeo(l) === 'en', `limbaSeo: ${l} → en`));
-    verifica(SP.caleSeo('/despre-noi.html') === '/despre-noi' && SP.caleSeo('/index') === '/' && SP.caleSeo('/') === '/' && SP.caleSeo('/mydarrin-devino-partener') === '/partener',
-      'caleSeo: .html, /index și fișierul scurtăturii /partener');
+    verifica(SP.caleSeo('/despre-noi.html') === '/despre-noi' && SP.caleSeo('/index') === '/' && SP.caleSeo('/') === '/' && SP.caleSeo('/curier-cartier') === '/curier-cartier' && SP.caleSeo('/cum-devii-curier-de-cartier') === '/curier-cartier',
+      'caleSeo: .html, /index și fișierul unei scurtături (/curier-cartier)');
 
     let r = await apel(apiSeo, { metoda: 'POST', token: 'tok-sup', body: { page_path: '/despre-noi', limba: 'ro', meta_title: 'Titlu RO', meta_description: 'Descriere RO' } });
     verifica(r.statusCode === 200 && r.corp.config.limba === 'ro', 'superadmin salvează varianta RO');

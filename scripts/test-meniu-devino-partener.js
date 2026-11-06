@@ -12,8 +12,8 @@
 //     ancorele există pe pagina-țintă.
 //   - Butonul din meniu, după stare: vizitator, client, activare
 //     („Finalizează-ți contul”), verificare, partener activ.
-//   - „Devino partener”: „Creează-ți contul de partener” și „Cum devii
-//     partener”, care deschide lista celor 5 tipuri.
+//   - Hub-ul „Devino partener” (11-R3g): „Creează-ți contul de partener” și
+//     „Alege tipul de parteneriat ↓”, spre cele 5 tipuri, în ordinea din meniu.
 //   - EN: „Become a Partner” și intrările în engleză.
 //   - 360, 390, 768 × 1024, 1024 × 768, 1366 px: meniul în ecran, fără
 //     derulare orizontală, fără erori JS.
@@ -37,14 +37,14 @@ const PUBLICE = ['index', 'servicii-urgente', 'despre-noi', 'afla-ce-facem', 'my
   'mydarrin-produs.html?slug=inlocuire-becuri-corpuri&type=servicii', 'mydarrin-checkout', 'mydarrin-cos',
   'mydarrin-creeaza-deviz', 'confirmare-livrare', 'reset-password', 'mydarrin-cum-functioneaza', 'cum-comanzi', 'cum-platesc',
   'cum-programez-serviciu', 'cum-prestam-livram', 'intrebari-frecvente-clienti', 'intrebari-frecvente-parteneri',
-  'garantii-si-asigurari', 'ghidul-asiguratorului', 'reclamatii', 'mydarrin-devino-partener',
+  'garantii-si-asigurari', 'ghidul-asiguratorului', 'reclamatii', 'cum-devii-furnizor-servicii',
   'cum-devii-partenerul-nostru', 'cum-devii-curier-de-cartier', 'cum-devii-furnizor-materiale', 'cum-devii-operator-inchirieri',
   'mydarrin-investitori', 'mydarrin-pitch-deck', 'acord-confidentialitate', 'acces-temporar', 'mydarrin-termeni',
   'mydarrin-politica-confidentialitate'];
 
 const ASTEPTAT = [
   ['cum-devii-partenerul-nostru.html', 'Cum devii partener My Darrin', 'How to become a My Darrin partner'],
-  ['cum-devii-partenerul-nostru.html?type=servicii', 'Furnizor de Servicii', 'Service Provider'],
+  ['cum-devii-furnizor-servicii.html', 'Furnizor de Servicii', 'Service Provider'],
   ['cum-devii-furnizor-materiale.html', 'Furnizor de Materiale', 'Materials Supplier'],
   ['cum-devii-operator-inchirieri.html', 'Furnizor de Închirieri', 'Rental Supplier'],
   ['cum-devii-curier-de-cartier.html', 'Curier de cartier', 'Neighbourhood courier'],
@@ -244,45 +244,42 @@ function profil(stare) {
       }
     }
 
-    // 5. „Devino partener”: cele două butoane de sus și lista celor 5 tipuri.
+    // 5. Hub-ul „Devino partener” (pasul 11-R3g; vechea pagină e redirecționată aici):
+    // butonul principal, butonul secundar spre cele 5 tipuri, în ordinea din meniu.
     for (const [w, h] of [[390, 844], [1366, 900]]) {
       const et = `devino-partener ${w}px`;
-      const { ctx, p, erori } = await deschide('mydarrin-devino-partener', { w, h });
-      await p.waitForFunction(() => [...document.querySelectorAll('#hero-intro-content [data-cta-partener]')].every((b) => b.getAttribute('data-cta-stare') && b.getAttribute('data-cta-stare') !== 'incarca'), null, { timeout: 10000 }).catch(() => {});
+      const { ctx, p, erori } = await deschide('cum-devii-partenerul-nostru', { w, h });
+      await p.waitForFunction(() => [...document.querySelectorAll('.rp-hero [data-cta-partener]')].every((b) => b.getAttribute('data-cta-stare') && b.getAttribute('data-cta-stare') !== 'incarca'), null, { timeout: 10000 }).catch(() => {});
       const s = await p.evaluate(() => {
-        const prin = document.querySelector('#hero-intro-content [data-cta-partener]');
-        const sec = document.getElementById('hero-cum-devii-btn');
+        const prin = document.querySelector('.rp-hero [data-rp-principal]');
+        const sec = document.querySelector('.rp-hero .rp-btn2');
         return { prin: prin && prin.querySelector('[data-cta-text]').textContent.trim(), fundal: prin && getComputedStyle(prin).backgroundColor, sec: sec && sec.textContent.replace(/\s+/g, ' ').trim() };
       });
       verifica(s.prin === 'Creează-ți contul de partener' && /255, 140, 0/.test(s.fundal), `${et}: butonul principal ${JSON.stringify(s)}`);
-      verifica(s.sec === 'Cum devii partener', `${et}: butonul secundar e „${s.sec}”`);
-      await p.click('#hero-cum-devii-btn');
-      await asteapta(250);
+      verifica(s.sec === 'Alege tipul de parteneriat ↓', `${et}: butonul secundar e „${s.sec}”`);
+      await p.click('.rp-hero .rp-btn2');
+      await asteapta(600);
       const lista = await p.evaluate(() => {
-        const l = document.getElementById('hero-cum-devii-lista');
+        const l = document.getElementById('tipuri');
         const r = l.getBoundingClientRect();
-        return { vizibil: !l.hidden && r.height > 0, stanga: r.left, dreapta: r.right, vw: document.documentElement.clientWidth, intrari: [...l.querySelectorAll('[data-meniu-intrare]')].map((a) => a.getAttribute('href')), extins: document.getElementById('hero-cum-devii-btn').getAttribute('aria-expanded') };
+        return { vizibil: r.top < window.innerHeight && r.bottom > 0, intrari: [...l.querySelectorAll('a.rp-link')].map((a) => a.getAttribute('href')) };
       });
-      verifica(lista.vizibil && lista.extins === 'true', `${et}: lista tipurilor nu se deschide`);
-      verifica(JSON.stringify(lista.intrari) === JSON.stringify(ASTEPTAT.slice(1).map((x) => x[0])), `${et}: lista tipurilor ${JSON.stringify(lista.intrari)}`);
-      verifica(lista.stanga >= 0 && lista.dreapta <= lista.vw + 0.5, `${et}: lista tipurilor iese din ecran (${Math.round(lista.stanga)}–${Math.round(lista.dreapta)} / ${lista.vw})`);
-      await p.keyboard.press('Escape');
-      await asteapta(150);
-      verifica(await p.evaluate(() => document.getElementById('hero-cum-devii-lista').hidden), `${et}: Escape nu închide lista`);
+      verifica(lista.vizibil, `${et}: „Alege tipul de parteneriat” nu duce la tipuri`);
+      verifica(JSON.stringify(lista.intrari) === JSON.stringify(ASTEPTAT.slice(1).map((x) => x[0])), `${et}: tipurile ${JSON.stringify(lista.intrari)}`);
       verifica(!erori.length, `${et}: ${erori.length} erori JS (${erori.slice(0, 3).join(' | ')})`);
       await ctx.close();
     }
     {
-      const { ctx, p } = await deschide('mydarrin-devino-partener', { stare: 'activare' });
-      await p.waitForFunction(() => { const b = document.querySelector('#hero-intro-content [data-cta-partener]'); return b && b.getAttribute('data-cta-stare') === 'activare'; }, null, { timeout: 10000 }).catch(() => {});
-      const t = await p.evaluate(() => document.querySelector('#hero-intro-content [data-cta-partener] [data-cta-text]').textContent.trim());
+      const { ctx, p } = await deschide('cum-devii-partenerul-nostru', { stare: 'activare' });
+      await p.waitForFunction(() => { const b = document.querySelector('.rp-hero [data-rp-principal]'); return b && b.getAttribute('data-cta-stare') === 'activare'; }, null, { timeout: 10000 }).catch(() => {});
+      const t = await p.evaluate(() => document.querySelector('.rp-hero [data-rp-principal] [data-cta-text]').textContent.trim());
       verifica(t === 'Finalizează-ți contul ca să primești comenzi', `devino-partener, activare: butonul principal e „${t}”`);
       await ctx.close();
     }
 
     // 6. Dimensiuni: meniul în ecran, fără derulare orizontală, fără erori JS.
     for (const [w, h] of [[360, 740], [390, 844], [768, 1024], [1024, 768], [1366, 900]]) {
-      for (const pg of ['index', 'despre-noi', 'mydarrin-catalog', 'mydarrin-termeni', 'mydarrin-devino-partener']) {
+      for (const pg of ['index', 'despre-noi', 'mydarrin-catalog', 'mydarrin-termeni', 'cum-devii-partenerul-nostru']) {
         const et = `${pg} ${w}×${h}`;
         const { ctx, p, erori } = await deschide(pg, { w, h });
         if (await deschideAntet(p)) {

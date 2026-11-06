@@ -10,9 +10,13 @@
 // RO, AT, BG, GR, GB, MD) și deciziile LM din 17 oct. (24 h, 6 zile); nu sunt
 // citite din baza de date.
 //
+// Pasul 11-R3g: cu { redirecturi: true }, serverul aplică și redirecționările
+// din vercel.json cu sursă fixă (fără „has”): statusCode-ul lor (301) sau 308
+// pentru permanent: true, cu parametrii adresei păstrați, ca pe Vercel.
+//
 // Utilizare:
-//   node scripts/server-test.js [--port 3000]       (Ctrl+C oprește serverul)
-//   const { porneste } = require('./server-test'); const srv = await porneste(0);
+//   node scripts/server-test.js [--port 3000] [--redirecturi]   (Ctrl+C oprește serverul)
+//   const { porneste } = require('./server-test'); const srv = await porneste(0[, { redirecturi: true }]);
 
 const http = require('http');
 const fs = require('fs');
@@ -43,8 +47,26 @@ function json(res, cod, corp) {
   res.end(JSON.stringify(corp));
 }
 
-function cerere(req, res) {
+const REDIRECTURI = (() => {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(RADACINA, 'vercel.json'), 'utf8')).redirects.filter((r) => !r.has && !/[:(*]/.test(r.source));
+  } catch (e) { return []; }
+})();
+
+// Destinația păstrează parametrii adresei (cei din destinație au întâietate).
+function redirect(url, res) {
+  const r = REDIRECTURI.find((x) => x.source === url.pathname);
+  if (!r) return false;
+  const d = new URL(r.destination, 'http://x');
+  url.searchParams.forEach((v, k) => { if (!d.searchParams.has(k)) d.searchParams.append(k, v); });
+  res.writeHead(r.statusCode || (r.permanent ? 308 : 307), { location: d.pathname + d.search });
+  res.end();
+  return true;
+}
+
+function cerere(req, res, opt) {
   const url = new URL(req.url, 'http://x');
+  if (opt && opt.redirecturi && redirect(url, res)) return;
   const p = decodeURIComponent(url.pathname);
   if (p.startsWith('/api/')) {
     if (p === '/api/public/reguli-platforma') {
@@ -65,8 +87,8 @@ function cerere(req, res) {
   fs.createReadStream(f).pipe(res);
 }
 
-function porneste(port) {
-  return new Promise((ok) => { const s = http.createServer(cerere).listen(port, () => ok(s)); });
+function porneste(port, opt) {
+  return new Promise((ok) => { const s = http.createServer((req, res) => cerere(req, res, opt)).listen(port, () => ok(s)); });
 }
 
 module.exports = { porneste, REGULI_SIMULATE };
@@ -74,5 +96,5 @@ module.exports = { porneste, REGULI_SIMULATE };
 if (require.main === module) {
   const i = process.argv.indexOf('--port');
   const port = i !== -1 ? Number(process.argv[i + 1]) : 3000;
-  porneste(port).then((s) => console.log(`server de test: http://localhost:${s.address().port}`));
+  porneste(port, { redirecturi: process.argv.includes('--redirecturi') }).then((s) => console.log(`server de test: http://localhost:${s.address().port}`));
 }

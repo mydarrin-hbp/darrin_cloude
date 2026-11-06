@@ -390,7 +390,8 @@ function verificaEroare(res, status, campAsteptat) {
   await test('propoziția despre cine se poate înscrie apare pe cele trei pagini, RO + EN', () => {
     const ro = 'Înscrierea e pentru firme, PFA și întreprinderi individuale.';
     const en = 'Registration is open to companies, PFAs and sole proprietorships.';
-    for (const pagina of ['mydarrin-devino-partener', 'cum-devii-partenerul-nostru', 'intrebari-frecvente-parteneri']) {
+    // Pasul 11-R3g: vechea pagină „Devino partener” e redirecționare; propoziția e pe hub și pe paginile de tip.
+    for (const pagina of ['cum-devii-partenerul-nostru', 'cum-devii-furnizor-servicii', 'intrebari-frecvente-parteneri']) {
       const html = fs.readFileSync(path.join(RADACINA, `${pagina}.html`), 'utf8');
       adevarat(html.includes(ro), `${pagina}: lipsește propoziția RO`);
       const dict = JSON.parse(fs.readFileSync(path.join(RADACINA, `i18n/en/${pagina}.json`), 'utf8'));

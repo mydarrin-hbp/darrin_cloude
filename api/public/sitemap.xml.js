@@ -35,6 +35,7 @@ const PRIORITATE = {
   '/cum-programez-serviciu': '0.6',
   '/servicii-urgente': '0.6',
   '/curier-cartier': '0.6',
+  '/cum-devii-furnizor-servicii': '0.6',
   '/cum-devii-furnizor-materiale': '0.6',
   '/cum-devii-operator-inchirieri': '0.6',
   '/cum-devii-partenerul-nostru': '0.6',

@@ -68,7 +68,7 @@
     var d = definitie(rol);
     if (!d) return null;
     if (d.adauga) return d.adauga;
-    return d.formular ? '/mydarrin-devino-partener.html?type=' + d.formular : null;
+    return d.formular ? '/cum-devii-partenerul-nostru.html?type=' + d.formular : null;
   }
 
   // Rolul căruia îi aparține o pagină de dashboard (pagina + ?type=).
@@ -634,7 +634,7 @@
   defineste('openPartnerModal', function (tip) {
     var m = el('partner-modal');
     if (!m) {
-      window.location.href = 'mydarrin-devino-partener.html' + (tip ? '?type=' + encodeURIComponent(tip) : '');
+      window.location.href = 'cum-devii-partenerul-nostru.html' + (tip ? '?type=' + encodeURIComponent(tip) : '');
       return;
     }
     m.classList.remove('hidden');
