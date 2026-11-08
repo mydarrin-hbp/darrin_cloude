@@ -113,7 +113,8 @@ module.exports = async function handler(req, res) {
 
     const { data: taraCfg } = await supabaseAdmin.from('tax_configurations').select('moneda').eq('tara_cod', tara).maybeSingle();
     const cuPret = lista.map((p) => p.pret_de_la).filter((v) => v != null);
-    res.setHeader('Cache-Control', 'public, max-age=120');
+    // Răspunsul depinde doar de parametrii din adresă (cat, tip, tara), nu de utilizator.
+    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
     return res.status(200).json({
       ok: true, categorie, tip, produse: lista,
       pret_maxim: cuPret.length ? Math.ceil(Math.max(...cuPret)) : null,
