@@ -167,7 +167,7 @@ const parcurs = (p) => p.evaluate(() => [...document.querySelectorAll('[data-inv
     }
 
     // ── B. Meniul vertical și footer-ul ──
-    const ASTEPTAT = ['Cum devii investitor', 'Runda curentă', 'Pitch deck', 'Panoul meu', 'Contact investitori'].map((t, i) => [t, `${PAGINA}#${ANCORE[i]}`]);
+    const ASTEPTAT = ['Cum devii investitor', 'Runda curentă', 'Pitch deck', 'Panoul meu', 'Contact investitori'].map((t, i) => [t, t === 'Panoul meu' ? 'mydarrin-panou-investitor.html' : `${PAGINA}#${ANCORE[i]}`]);
     {
       const linkuri = new Set();
       for (const [pg, stare] of [['index.html', null], ['despre-noi.html', null], ['cum-comanzi.html', null], [PAGINA, null], ['index.html', 'panou']]) {
@@ -198,7 +198,7 @@ const parcurs = (p) => p.evaluate(() => [...document.querySelectorAll('[data-inv
     }
 
     // ── C. Ancorele vechi ──
-    for (const [hash, stare, tinta] of [['ghid-investitor', null, 'cum-functioneaza'], ['kpis', null, 'cum-functioneaza'], ['kpis', 'panou', 'panou'], ['panou', null, 'cum-functioneaza']]) {
+    for (const [hash, stare, tinta] of [['ghid-investitor', null, 'cum-functioneaza'], ['kpis', null, 'cum-functioneaza'], ['panou', null, 'cum-functioneaza']]) {
       const et = `#${hash}${stare ? ' (investitor)' : ''}`;
       const { ctx, p, erori } = await deschide(browser, baza, `${PAGINA}#${hash}`, { stare });
       await asteapta(900);
@@ -209,6 +209,15 @@ const parcurs = (p) => p.evaluate(() => [...document.querySelectorAll('[data-inv
       });
       verifica(r.h === tinta && r.sus !== null && r.sus >= -2 && r.sus < r.vh / 2, `${et}: ajunge la #${r.h} (sus ${r.sus}), aștept #${tinta}`);
       verifica(!erori.length, `${et}: ${erori.join(' | ')}`);
+      await ctx.close();
+    }
+
+    // Pasul 11-I1: pentru investitor, #kpis și #panou duc la panoul de pe pagina proprie.
+    for (const hash of ['kpis', 'panou']) {
+      const { ctx, p, erori } = await deschide(browser, baza, `${PAGINA}#${hash}`, { stare: 'panou', faraAsteptare: true });
+      await p.waitForURL(/mydarrin-panou-investitor/, { timeout: 15000 }).catch(() => {});
+      verifica(/mydarrin-panou-investitor/.test(p.url()), `#${hash} (investitor): ${p.url()}`);
+      verifica(!erori.length, `#${hash} (investitor): ${erori.join(' | ')}`);
       await ctx.close();
     }
 
@@ -278,7 +287,7 @@ const parcurs = (p) => p.evaluate(() => [...document.querySelectorAll('[data-inv
             respins: a.ruta && /Pasul 2 din 5/.test(a.subtitlu),
             verificare: a.hash === '#panou' && !a.ruta && !a.runda,
             runda: a.runda,
-            panou: a.hash === '#panou' && !a.ruta && !a.runda,
+            panou: /mydarrin-panou-investitor/.test(p.url()) && !a.ruta && !a.runda,
           }[stare];
           verifica(actiune, `${et}: acțiunea butonului ${JSON.stringify(a)}`);
         }

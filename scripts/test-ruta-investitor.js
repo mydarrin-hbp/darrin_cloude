@@ -324,14 +324,13 @@ async function depaseste(p) {
         verifica(server.stare.roles.includes('client') && server.stare.roles.includes('investor'), `${et} C: rolul investor e adăugat lângă client`);
         verifica(await p.isVisible('#inv-kyc-stare'), `${et} C: dashboard-ul arată banda verificării identității`);
         { const r = await romanaInEn(p, lang, '#inv-kyc-stare'); verifica(!r, `${et} C: banda fără text românesc în EN (${r})`); }
-        await p.waitForSelector('#inv-indicatori-mesaj', { timeout: 5000 }).catch(() => {});
-        verifica(/verific|verification/i.test(await p.textContent('#inv-indicatori-mesaj').catch(() => '')), `${et} C: fără KYC aprobat, indicatorii arată mesajul de verificare`);
-        verifica(!(await p.$('#inv-indicatori-grila')), `${et} C: fără KYC aprobat, nicio cifră a platformei`);
+        // Pasul 11-I1: indicatorii platformei s-au mutat în panou (test-panou-investitor.js); aici rămâne rezumatul.
+        verifica(await p.getAttribute('#inv-deschide-panou', 'href') === 'mydarrin-panou-investitor.html', `${et} C: rezumatul duce la panou`);
+        verifica(!(await p.$('#inv-indicatori-grila')), `${et} C: indicatorii nu mai sunt în pagina Investitori`);
         { const r = await romanaInEn(p, lang, '#inv-private-dashboard'); verifica(!r, `${et} C: dashboard-ul fără text românesc în EN (${r})`); }
         // C2. subscrierea, pe cont
         // Pasul 11-R3h: subscrierea din panoul investitorului („Subscriere nouă”); butonul din #runda s-a scos.
-        await p.waitForSelector('#panou button[onclick^="pornesteInvestitor"]', { state: 'visible', timeout: 10000 }).catch(() => {});
-        await deschide(p, '#panou button[onclick^="pornesteInvestitor"]');
+        await p.evaluate(() => window.pornesteInvestitor(document.getElementById('hero-intra-runda')));
         await p.waitForSelector('#modal-runda', { state: 'visible', timeout: 5000 }).catch(() => {});
         verifica(await p.isVisible('#step-2'), `${et} C2: cu rolul de investitor, „Intră în rundă” deschide achiziția`);
         await p.waitForSelector('#step-2 .ticket-opt', { timeout: 5000 }).catch(() => {});
@@ -368,8 +367,8 @@ async function depaseste(p) {
           { const r = await romanaInEn(pr, lang, 'main'); verifica(!r, `${et} D: „Rolurile mele” fără text românesc în EN (${r})`); }
           verifica(await depaseste(pr) === 0, `${et} D: nimic nu iese din ecran`);
           await pr.selectOption('#rm-comuta', 'investor');
-          await Promise.all([pr.waitForURL(/mydarrin-investitori/, { timeout: 8000 }).catch(() => {}), pr.click('#rm-comuta-mergi')]);
-          verifica(/mydarrin-investitori/.test(pr.url()), `${et} D: comutarea pe investitor → dashboard-ul investitorului`);
+          await Promise.all([pr.waitForURL(/mydarrin-panou-investitor/, { timeout: 8000 }).catch(() => {}), pr.click('#rm-comuta-mergi')]);
+          verifica(/mydarrin-panou-investitor/.test(pr.url()), `${et} D: comutarea pe investitor → dashboard-ul investitorului`);
           verifica(await pr.evaluate(() => localStorage.getItem('myd_rol_activ_v1')) === 'investor', `${et} D: rolul activ reținut`);
           verifica(erR.length === 0, `${et} D: 0 erori JS (${erR.join(' | ')})`);
           await ctxR.close();

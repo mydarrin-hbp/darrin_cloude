@@ -10,7 +10,7 @@
      <div data-meniu-investitori="footer"></div>    coloană în .ftr-r2
 
    Intrările, în ordine: Cum devii investitor (#cum-functioneaza), Runda
-   curentă (#runda), Pitch deck (#pitch-deck), Panoul meu (#panou — doar
+   curentă (#runda), Pitch deck (#pitch-deck), Panoul meu (pagina proprie, 11-I1 — doar
    pentru un cont cu rolul `investor`, citit din profilul de pe server, ca
    azi: /api/cont/profil, prin MYD_CONT din ui-comun.js), Contact investitori
    (#contact).
@@ -27,14 +27,14 @@
     { ancora: 'cum-functioneaza', ico: 'book-open', titlu: 'Cum devii investitor' },
     { ancora: 'runda', ico: 'briefcase', titlu: 'Runda curentă' },
     { ancora: 'pitch-deck', ico: 'file-text', titlu: 'Pitch deck' },
-    { ancora: 'panou', ico: 'layout-dashboard', titlu: 'Panoul meu', doarInvestitor: true },
+    { pagina: 'mydarrin-panou-investitor.html', ico: 'layout-dashboard', titlu: 'Panoul meu', doarInvestitor: true },
     { ancora: 'contact', ico: 'mail', titlu: 'Contact investitori' },
   ];
 
   function tr(ro) { return typeof window.t === 'function' ? window.t(null, ro) : ro; }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function ico(nume) { return '<i data-lucide="' + nume + '" style="width:16px;height:16px;display:inline-block;vertical-align:middle"></i>'; }
-  function href(x) { return PAGINA + '#' + x.ancora; }
+  function href(x) { return x.pagina || PAGINA + '#' + x.ancora; }
   function atributeInvestitor(x) { return x.doarInvestitor ? ' data-doar-investitor hidden' : ''; }
 
   function stil() {

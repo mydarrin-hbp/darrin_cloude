@@ -12,6 +12,10 @@
 // legat și verificarea identității aprobată (investitori_kyc.status =
 // 'aprobat'); altfel 409, cu motivul. Respingerea rămâne posibilă oricând.
 //
+// Pasul 11-I1 (8 nov. 2026): decizia completează aprobat_la și aprobat_de (lock-up-ul
+// pornește de la aprobare; la o respingere, e data afișată în istoric). O subscriere
+// deja aprobată își păstrează data, ca un al doilea clic să nu prelungească lock-up-ul.
+//
 // Pasul 11-N2 (22 oct. 2026): acces doar cu drept de scriere pe secțiunea
 // Investitori (lib/permisiuni-investitori.js): superadmin, sau admin cu rând
 // pe `investitori` și poate_scrie = true. Înainte, orice admin putea aproba.
@@ -36,9 +40,10 @@ async function handler(req, res, user) {
   if (!statusNou) return res.status(400).json({ error: `actiune trebuie să fie una din: ${Object.keys(STATUS_VALID).join(', ')}` });
 
   try {
+    const decizie = { status: statusNou, aprobat_la: new Date().toISOString(), aprobat_de: user.id };
     if (statusNou === 'aprobat') {
       const { data: sub, error: subErr } = await supabaseAdmin
-        .from('investitori_portofoliu').select('id, user_id').eq('id', id).maybeSingle();
+        .from('investitori_portofoliu').select('id, user_id, status, aprobat_la, aprobat_de').eq('id', id).maybeSingle();
       if (subErr) throw subErr;
       if (!sub) return res.status(404).json({ error: 'Subscriere inexistentă.' });
       if (!sub.user_id) {
@@ -53,11 +58,15 @@ async function handler(req, res, user) {
           cod: 'kyc_neaprobat', kyc_status: (kyc && kyc.status) || null,
         });
       }
+      if (sub.status === 'aprobat' && sub.aprobat_la) {
+        decizie.aprobat_la = sub.aprobat_la;
+        decizie.aprobat_de = sub.aprobat_de;
+      }
     }
 
     const { data, error } = await supabaseAdmin
       .from('investitori_portofoliu')
-      .update({ status: statusNou })
+      .update(decizie)
       .eq('id', id)
       .select()
       .single();

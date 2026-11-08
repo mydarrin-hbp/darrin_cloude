@@ -28,13 +28,14 @@
      respins      Corectează dosarul →                   deschideRuta(…, pasul de corectat); motivul sub buton
      verificare   Dosarul tău e în verificare            #panou
      runda        Intră în rundă →                       openRunda; cu dosarul în verificare, nota de sub buton
-     panou        Mergi la panoul tău →                  #panou
+     panou        Mergi la panoul tău →                  mydarrin-panou-investitor.html (11-I1)
    ════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
   if (window.MYD_CTA_INVESTITOR) return;
 
   var RUTA = '/mydarrin-investitori.html?ruta=investitor';
+  var PANOU = '/mydarrin-panou-investitor.html'; // pasul 11-I1
   var CHEIE_REVENIRE = 'myd_revenire_dupa_login';
   var TEXT = {
     vizitator: 'Devino investitor',
@@ -162,7 +163,8 @@
       case 'fara_dosar': case 'ciorna': cuInvestitor(function (m) { m.deschideRuta(btn); }); break;
       case 'respins': cuInvestitor(function (m) { m.deschideRuta(btn, r.pas); }); break;
       case 'runda': if (typeof window.openRunda === 'function') window.openRunda(btn); break;
-      case 'verificare': case 'panou': laPanou(); break;
+      case 'verificare': laPanou(); break;
+      case 'panou': location.href = PANOU; break;
       // provizoriu (sesiune, starea încă se citește): logica existentă alege ruta sau subscrierea
       default: cuInvestitor(function (m) { m.start(btn); });
     }
@@ -313,13 +315,15 @@
     el.scrollIntoView({ block: 'start' });
     arataReveal();
   }
-  function ancore() {
+  function ancore(laIncarcare) {
     var h = (location.hash || '').slice(1);
+    // Pasul 11-I1: un clic pe „Panoul meu” din meniul paginii duce la rezumat, fără redirecționare.
+    if (h === 'panou' && laIncarcare !== true) return;
     if (h === 'ghid-investitor') { mergiLa('cum-functioneaza'); return; }
     if (h === 'kpis' || h === 'panou') {
       // #panou există doar pentru rolul `investor`; altfel, ghidul.
       (promInvestitor || Promise.resolve(false)).then(function (da) {
-        if (da) { aplicaPanou(true); mergiLa('panou'); } else if (h === 'kpis' || document.getElementById('panou').hidden) mergiLa('cum-functioneaza');
+        if (da) { location.replace(PANOU); } else if (h === 'kpis' || document.getElementById('panou').hidden) mergiLa('cum-functioneaza');
       });
       return;
     }
@@ -337,7 +341,7 @@
     promSesiune = sesiune();
     var stare = citesteStarea(function () { aplicaButoane({ stare: 'provizoriu' }); });
     promInvestitor = stare.then(function (r) { return !!(r && r.investitor); }).catch(function () { return false; });
-    ancore();
+    ancore(true);
     promRunda.then(aplicaInsigna);
     // Fără răspuns: vizitatorul (sau, cu sesiune, butonul provizoriu) rămâne utilizabil.
     cuTermen(stare, 12000, null).then(function (r) {
