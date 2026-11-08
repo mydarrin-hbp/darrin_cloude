@@ -4,8 +4,8 @@
 //     proiecții, structura și alocarea rundei, roadmap, exit, ROI, fereastra
 //     KPIs și butoanele ei); în locul lor, mesajul rundei curente (Seed);
 //   - rămân funcționale: crearea contului de investitor și achiziția. De la
-//     pasul 11-L, fără sesiune, „Intră în rundă” cere autentificarea / crearea
-//     contului (cu revenire la ruta de investitor); ruta, KYC-ul și subscrierea
+//     pasul 11-R3h, fără sesiune, „Devino investitor” deschide fereastra de cont
+//     pe pagină (cu revenire la ruta de investitor); ruta, KYC-ul și subscrierea
 //     cu cont se testează în scripts/test-ruta-investitor.js;
 //   - 0 erori JS, în RO și EN, la 390 și 1366 px.
 // Serverul local e scripts/server-test.js (API-urile publice simulate sau 503);
@@ -67,15 +67,19 @@ function verifica(cond, mesaj) {
         const runda = await pagina.$('#runda');
         verifica(runda && await runda.isVisible(), `${eticheta}: secțiunea #runda e vizibilă`);
         const textRunda = runda ? await runda.innerText() : '';
-        verifica(/Seed/.test(textRunda), `${eticheta}: #runda spune „Seed”`);
+        // Pasul 11-R3h: fără rundă publică, un singur rând de text, fără cifre și fără „Seed”.
+        verifica(!/Seed/.test(textRunda) && !/\d/.test(textRunda), `${eticheta}: #runda fără „Seed” și fără cifre („${textRunda.replace(/\s+/g, ' ')}”)`);
 
-        // Crearea contului de investitor: fără sesiune, „Intră în rundă” duce la
-        // autentificare / creare cont, cu revenire la ruta de investitor (11-L).
+        // Crearea contului de investitor: fără sesiune, „Devino investitor” deschide
+        // fereastra de cont pe pagină (pasul 11-R3h; înainte: index.html?reason=cont),
+        // cu revenirea la ruta de investitor reținută (11-L).
         verifica(await pagina.$('#step-2 #ticket-lista') !== null, `${eticheta}: lista de tickete a achiziției există (se umple din rundă)`);
-        await pagina.focus('#runda button');
+        await pagina.waitForFunction(() => document.getElementById('hero-intra-runda').getAttribute('data-cta-stare') === 'vizitator', null, { timeout: 10000 }).catch(() => {});
+        await pagina.focus('#hero-intra-runda');
         await pagina.keyboard.press('Enter');
-        await pagina.waitForURL(/reason=cont/, { timeout: 8000 }).catch(() => {});
-        verifica(/reason=cont/.test(pagina.url()), `${eticheta}: „Intră în rundă” deschide autentificarea / crearea contului`);
+        await pagina.waitForFunction(() => { const m = document.getElementById('auth-modal'); return m && !m.classList.contains('hidden'); }, null, { timeout: 8000 }).catch(() => {});
+        verifica(!/reason=cont/.test(pagina.url()) && /mydarrin-investitori/.test(pagina.url()) && await pagina.evaluate(() => { const m = document.getElementById('auth-modal'); return !!m && !m.classList.contains('hidden'); }),
+          `${eticheta}: „Devino investitor” deschide fereastra de cont pe pagină`);
         const revenire = await pagina.evaluate(() => sessionStorage.getItem('myd_revenire_dupa_login'));
         verifica(revenire === '/mydarrin-investitori.html?ruta=investitor', `${eticheta}: revenirea la ruta de investitor e reținută`);
 

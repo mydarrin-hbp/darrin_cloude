@@ -104,7 +104,10 @@ const textImediat = (p, sel) => p.evaluate((s) => { const e = document.querySele
 
 async function deschideSubscrierea(p) {
   await p.waitForFunction(() => !!window.MYD_INVESTITOR, null, { timeout: 8000 }).catch(() => {});
-  await p.focus('#runda button');
+  // Pasul 11-R3h: butonul din #runda (a treia copie) s-a scos; subscrierea se deschide din panoul
+  // investitorului („Subscriere nouă”, același pornesteInvestitor).
+  await p.waitForSelector('#panou button[onclick^="pornesteInvestitor"]', { state: 'visible', timeout: 10000 }).catch(() => {});
+  await p.focus('#panou button[onclick^="pornesteInvestitor"]');
   await p.keyboard.press('Enter');
   await p.waitForSelector('#step-2', { state: 'visible', timeout: 6000 }).catch(() => {});
   await p.waitForSelector('#step-2 .ticket-opt', { timeout: 6000 }).catch(() => {});

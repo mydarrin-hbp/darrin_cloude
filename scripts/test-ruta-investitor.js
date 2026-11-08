@@ -1,8 +1,8 @@
 // scripts/test-ruta-investitor.js
 // Ruta de investitor și „Rolurile mele” în browser (pasul 11-L, 17 oct. 2026),
 // în RO și EN, la 390 și 1366 px:
-//   A. fără sesiune: „Devino investitor” → autentificare (index.html?reason=cont),
-//      cu revenirea reținută; după autentificare, revenirea redeschide ruta;
+//   A. fără sesiune: „Devino investitor” → fereastra de cont pe pagină (pasul
+//      11-R3h), cu revenirea reținută; după autentificare, revenirea redeschide ruta;
 //   B. fereastra rutei se închide cu X, Esc și „Înapoi” (pasul 1), iar după
 //      închidere pagina se derulează din nou și focusul revine pe buton;
 //   C. pașii 1 → 5 cu datele salvate pe server (API simulat cu stare): la pasul 2,
@@ -208,15 +208,18 @@ async function depaseste(p) {
       for (const latime of [390, 1366]) {
         const et = `${lang} ${latime}px`;
 
-        // ── A. Fără sesiune → autentificare, cu revenire la rută ─────────
+        // ── A. Fără sesiune → fereastra de cont pe pagină, cu revenire la rută ─
+        // Pasul 11-R3h: înainte, „Devino investitor” trimitea la index.html?reason=cont.
         {
           const ctx = await context(browser, baza, { lang, latime, cuSesiune: false, server: serviciuGol() });
           const p = await ctx.newPage();
           const erori = []; p.on('pageerror', (e) => erori.push(e.message));
           await p.goto(baza + '/mydarrin-investitori', { waitUntil: 'networkidle' });
-          await p.click('#ghid-investitor button.btn-p');
-          await p.waitForURL(/index\.html\?reason=cont/, { timeout: 8000 }).catch(() => {});
-          verifica(/reason=cont/.test(p.url()), `${et} A: fără sesiune, „Devino investitor” duce la autentificare`);
+          await p.waitForFunction(() => document.getElementById('hero-intra-runda').getAttribute('data-cta-stare') === 'vizitator', null, { timeout: 10000 }).catch(() => {});
+          await p.click('#hero-intra-runda');
+          await p.waitForFunction(() => { const m = document.getElementById('auth-modal'); return m && !m.classList.contains('hidden'); }, null, { timeout: 8000 }).catch(() => {});
+          verifica(!/reason=cont/.test(p.url()) && await p.evaluate(() => { const m = document.getElementById('auth-modal'); return !!m && !m.classList.contains('hidden'); }),
+            `${et} A: fără sesiune, „Devino investitor” deschide fereastra de cont pe pagină`);
           const revenire = await p.evaluate(() => sessionStorage.getItem('myd_revenire_dupa_login'));
           verifica(revenire === '/mydarrin-investitori.html?ruta=investitor', `${et} A: revenirea după login e reținută (${revenire})`);
           verifica(erori.length === 0, `${et} A: 0 erori JS (${erori.join(' | ')})`);
@@ -240,7 +243,7 @@ async function depaseste(p) {
         verifica(!(await p.$('#mi-fond')), `${et} B: X închide fereastra`);
         verifica(await p.evaluate(() => document.body.style.overflow === ''), `${et} B: după X, pagina se derulează din nou`);
         // redeschidere din buton, apoi Esc; focusul revine pe buton
-        const buton = '#ghid-investitor button.btn-p';
+        const buton = '#hero-intra-runda';
         await deschide(p, buton);
         await p.waitForSelector('#mi-fer');
         await p.keyboard.press('Escape');
@@ -326,7 +329,9 @@ async function depaseste(p) {
         verifica(!(await p.$('#inv-indicatori-grila')), `${et} C: fără KYC aprobat, nicio cifră a platformei`);
         { const r = await romanaInEn(p, lang, '#inv-private-dashboard'); verifica(!r, `${et} C: dashboard-ul fără text românesc în EN (${r})`); }
         // C2. subscrierea, pe cont
-        await deschide(p, '#runda button');
+        // Pasul 11-R3h: subscrierea din panoul investitorului („Subscriere nouă”); butonul din #runda s-a scos.
+        await p.waitForSelector('#panou button[onclick^="pornesteInvestitor"]', { state: 'visible', timeout: 10000 }).catch(() => {});
+        await deschide(p, '#panou button[onclick^="pornesteInvestitor"]');
         await p.waitForSelector('#modal-runda', { state: 'visible', timeout: 5000 }).catch(() => {});
         verifica(await p.isVisible('#step-2'), `${et} C2: cu rolul de investitor, „Intră în rundă” deschide achiziția`);
         await p.waitForSelector('#step-2 .ticket-opt', { timeout: 5000 }).catch(() => {});

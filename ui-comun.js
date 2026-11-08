@@ -157,6 +157,7 @@
           if (sursa && !el(id)) document.body.appendChild(document.importNode(sursa, true));
         });
         completeazaMeniuPartener();
+        completeazaMeniuInvestitori();
         icone();
         afiseazaLinkuriCont();
         return !!el('sidebar');
@@ -177,6 +178,17 @@
     if (document.querySelector('script[src$="meniu-partener.js"]')) return; // se încarcă; se completează singur
     var s = document.createElement('script');
     s.src = '/meniu-partener.js';
+    document.head.appendChild(s);
+  }
+
+  // Pasul 11-R3h: meniul „Investitori” (meniul ☰ și footer-ul) se generează doar
+  // din meniu-investitori.js; meniul lateral preluat din index.html are locul gol.
+  function completeazaMeniuInvestitori() {
+    if (!document.querySelector('[data-meniu-investitori]:not([data-meniu-gata])')) return;
+    if (window.MYD_MENIU_INVESTITORI) { window.MYD_MENIU_INVESTITORI.completeaza(); return; }
+    if (document.querySelector('script[src$="meniu-investitori.js"]')) return; // se încarcă; se completează singur
+    var s = document.createElement('script');
+    s.src = '/meniu-investitori.js';
     document.head.appendChild(s);
   }
 

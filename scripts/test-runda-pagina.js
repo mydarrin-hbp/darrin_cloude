@@ -124,7 +124,10 @@ async function deschidePagina(ctx, baza) {
 
 async function deschideSubscrierea(p) {
   await p.waitForFunction(() => !!window.MYD_INVESTITOR, null, { timeout: 8000 }).catch(() => {});
-  await p.focus('#runda button');
+  // Pasul 11-R3h: butonul din #runda (a treia copie) s-a scos; subscrierea se deschide din panoul
+  // investitorului („Subscriere nouă”, același pornesteInvestitor).
+  await p.waitForSelector('#panou button[onclick^="pornesteInvestitor"]', { state: 'visible', timeout: 10000 }).catch(() => {});
+  await p.focus('#panou button[onclick^="pornesteInvestitor"]');
   await p.keyboard.press('Enter');
   await p.waitForSelector('#step-2', { state: 'visible', timeout: 6000 }).catch(() => {});
   await p.waitForFunction(() => !/…|\.\.\./.test((document.getElementById('ticket-lista') || {}).textContent || ''), null, { timeout: 5000 }).catch(() => {});
