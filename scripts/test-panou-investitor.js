@@ -147,11 +147,26 @@ async function testeApi() {
     verifica((await cere(1)).statusCode === 409 && DB.tabele.investitori_exit.length === 3, 'a doua cerere depășește acțiunile rămase');
     verifica((await cheama(apiExit, { token: 'tok-a', metoda: 'PATCH', body: { id: uid(60), actiune: 'anuleaza' } })).statusCode === 200 && await limita() === 3, 'anularea nu eliberează acțiunile');
     verifica((await cere(3)).statusCode === 200 && await limita() === 0, 'acțiunile eliberate nu se pot cere din nou');
-    for (const st of ['anulat', 'respins', 'aprobat', 'platit', 'finalizat']) {
+    // Pasul 11-I1b: se scad toate cererile, mai puțin cele anulate sau respinse.
+    for (const st of ['anulat', 'respins']) {
       reset();
       DB.tabele.investitori_portofoliu.push(sub({ aprobat_la: luniInapoi(13) }));
       DB.tabele.investitori_exit.push(cerereExit({ numar_actiuni: 4, status: st }));
       verifica(await limita() === 10 && (await cere(10)).statusCode === 200, `o cerere ${st} scade din limită`);
+    }
+    for (const st of ['in_procesare', 'aprobat', 'platit', 'finalizat']) {
+      reset();
+      DB.tabele.investitori_portofoliu.push(sub({ aprobat_la: luniInapoi(13) }));
+      DB.tabele.investitori_exit.push(cerereExit({ numar_actiuni: 4, status: st }));
+      verifica(await limita() === 6, `o cerere ${st} nu scade din limita panoului: ${await limita()}`);
+      const peste = await cere(7);
+      verifica(peste.statusCode === 409 && peste.corp.cod === 'PESTE_LIMITA' && peste.corp.campuri[0].camp === 'numar_actiuni' && /cel mult 6 acțiuni/.test(peste.corp.mesaj.ro) && /at most 6 shares/.test(peste.corp.mesaj.en), `cerere ${st}, peste limită: ${JSON.stringify(peste.corp)}`);
+      verifica((await cere(6)).statusCode === 200 && await limita() === 0, `cerere ${st}: POST și panoul dau limite diferite`);
+    }
+    {
+      const sursa = (f) => fs.readFileSync(path.join(RADACINA, f), 'utf8');
+      verifica(sursa('api/investitori/exit.js').includes('P.actiuniDisponibile(') && sursa('api/investitori/portofoliu.js').includes('P.actiuniDisponibile(') && !/STARI_EXIT|numar_actiuni\) \|\| 0\), 0\)/.test(sursa('api/investitori/exit.js') + sursa('api/investitori/portofoliu.js')), 'regula nu e într-un singur loc');
+      verifica(sursa('panou-investitor.js').includes('ex.actiuni_vandabile_acum') && !/STARI_EXIT_ELIBERATE|in_procesare.*reduce/.test(sursa('panou-investitor.js')), 'panoul își calculează singur limita');
     }
     reset();
     DB.tabele.runde_finantare[0].lock_up_luni = null;

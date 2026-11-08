@@ -424,6 +424,29 @@ async function rutaCompleta(token, id) {
     egal((await cheama(apiExit, { token: 'tok-a', metoda: 'POST', body: { tip: 'buyback', numar_actiuni: 11 } })).statusCode, 409, 'în lock-up');
     egal((await cheama(apiExit, { token: 'tok-a', metoda: 'POST', body: { tip: 'buyback', numar_actiuni: 10 } })).statusCode, 200, 'după lock-up');
   });
+  await test('11-I1b: se scad toate cererile, mai puțin cele anulate sau respinse; POST și portofoliul dau aceeași limită', async () => {
+    const pregateste = (status) => {
+      reset();
+      DB.tabele.runde_finantare[0].discount_buyback_pct = 10;
+      DB.tabele.profiles.find((p) => p.id === A).roles = ['client', 'investor'];
+      DB.tabele.investitori_portofoliu.push({ id: 's1', user_id: A, runda_id: 'r-test', actiuni: 10, valoare_investita: 10000, status: 'aprobat', created_at: VECHE, aprobat_la: VECHE });
+      DB.tabele.investitori_exit.push({ id: 'e1', user_id: A, tip: 'buyback', numar_actiuni: 4, status });
+    };
+    const limita = async () => (await cheama(apiPortofoliu, { token: 'tok-a' })).corp.exit.actiuni_vandabile_acum;
+    const cere = async (n) => (await cheama(apiExit, { token: 'tok-a', metoda: 'POST', body: { tip: 'buyback', numar_actiuni: n } }));
+    for (const status of ['in_procesare', 'aprobat', 'platit', 'finalizat']) {
+      pregateste(status);
+      egal(await limita(), 6, status);
+      const peste = await cere(7);
+      egal(peste.statusCode, 409, status); egal(peste.corp.cod, 'PESTE_LIMITA', status);
+      egal((await cere(6)).statusCode, 200, status);
+    }
+    for (const status of ['anulat', 'respins']) {
+      pregateste(status);
+      egal(await limita(), 10, status);
+      egal((await cere(10)).statusCode, 200, status);
+    }
+  });
 
   console.log('H. Indicatorii platformei (11-J, 2.5)');
   // Răspunsul RPC-ului, simulat (cifre de test).

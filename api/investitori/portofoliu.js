@@ -16,7 +16,7 @@
 //
 // Pasul 11-I1 (8 nov. 2026): fiecare subscriere aprobată primește aprobat_la,
 // sfarsit_lock_up și actiuni_vandabile_acum; exit.actiuni_vandabile_acum e
-// totalul, minus acțiunile din cererile de exit active. Calculele sunt în
+// totalul, minus cererile de exit care nu sunt anulate sau respinse. Calculele sunt în
 // lib/investitori-panou.js. Se trimit doar câmpurile enumerate mai jos:
 // roi_estimat și exit_estimat_luni nu ies din server.
 
@@ -66,10 +66,8 @@ async function handler(req, res, user) {
     let buyback = null, lockUp = null;
     const acum = new Date();
     const situatii = {};
-    let vandabile = 0;
     for (const s of randuri) {
       situatii[s.id] = P.situatieSubscriere(s, s.runda_id ? runde[s.runda_id] : null, acum);
-      vandabile += situatii[s.id].actiuni_vandabile_acum;
       if (s.status === 'aprobat') {
         actiuni += Number(s.actiuni) || 0;
         valoare += Number(s.valoare_investita) || 0;
@@ -101,7 +99,7 @@ async function handler(req, res, user) {
           runda: s.runda_id && runde[s.runda_id] ? { denumire_ro: runde[s.runda_id].denumire_ro, denumire_en: runde[s.runda_id].denumire_en, moneda: runde[s.runda_id].moneda } : null,
         })),
       runda: publicRunda(deschisa),
-      exit: { buyback_disponibil: buyback != null && actiuni > 0, discount_buyback_pct: buyback, lock_up_luni: lockUp, actiuni_vandabile_acum: P.vandabileDupaCereri(vandabile, cereriExit.data) },
+      exit: { buyback_disponibil: buyback != null && actiuni > 0, discount_buyback_pct: buyback, lock_up_luni: lockUp, actiuni_vandabile_acum: P.actiuniDisponibile(randuri, runde, cereriExit.data, acum) },
     });
   } catch (err) {
     console.error('[investitori/portofoliu]', err);
