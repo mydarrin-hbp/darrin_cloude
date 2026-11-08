@@ -122,7 +122,41 @@ async function testeApi() {
     reset();
     DB.tabele.investitori_portofoliu.push(sub({ created_at: luniInapoi(30), aprobat_la: luniInapoi(13) }));
     const nou = await cheama(apiExit, { token: 'tok-a', metoda: 'POST', body: { tip: 'buyback', numar_actiuni: 4 } });
-    verifica(nou.statusCode === 200 && nou.corp.cerere.status === 'in_procesare', `POST neschimbat: ${nou.statusCode}`);
+    verifica(nou.statusCode === 200 && nou.corp.cerere.status === 'in_procesare', `POST după lock-up: ${nou.statusCode}`);
+
+    // POST folosește regula panoului.
+    const cere = (n, token) => cheama(apiExit, { token: token || 'tok-a', metoda: 'POST', body: { tip: 'buyback', numar_actiuni: n } });
+    const limita = async () => (await cheama(apiPort, { token: 'tok-a' })).corp.exit.actiuni_vandabile_acum;
+    reset();
+    DB.tabele.investitori_portofoliu.push(sub({ created_at: luniInapoi(30), aprobat_la: luniInapoi(2) }));
+    let r = await cere(1);
+    verifica(r.statusCode === 409 && r.corp.cod === 'PESTE_LIMITA' && r.corp.mesaj.ro && r.corp.mesaj.en && r.corp.mesaj.ro !== r.corp.mesaj.en && r.corp.campuri[0].camp === 'numar_actiuni' && !DB.tabele.investitori_exit.length, `lock-up din aprobat_la, nu din created_at: ${JSON.stringify(r.corp)}`);
+    reset();
+    DB.tabele.investitori_portofoliu.push(sub({ aprobat_la: null }));
+    verifica((await cere(1)).statusCode === 409 && !DB.tabele.investitori_exit.length, 'fără aprobat_la, cererea trece');
+    reset();
+    DB.tabele.investitori_portofoliu.push(sub({ status: 'in_asteptare', aprobat_la: luniInapoi(13) }), sub({ id: uid(2), status: 'respins', aprobat_la: luniInapoi(13) }));
+    verifica((await cere(1)).statusCode === 409 && !DB.tabele.investitori_exit.length, 'subscrierile neaprobate se numără');
+    reset();
+    DB.tabele.investitori_portofoliu.push(sub({ aprobat_la: luniInapoi(13) }));
+    DB.tabele.investitori_exit.push(cerereExit({ id: uid(60), numar_actiuni: 3 }), cerereExit({ id: uid(61), user_id: B, numar_actiuni: 9 }));
+    verifica(await limita() === 7, 'cererea altcuiva scade din limita utilizatorului');
+    r = await cere(8);
+    verifica(r.statusCode === 409 && /cel mult 7 acțiuni/.test(r.corp.mesaj.ro) && /at most 7 shares/.test(r.corp.mesaj.en) && DB.tabele.investitori_exit.length === 2, `peste limită: ${JSON.stringify(r.corp)}`);
+    verifica((await cere(7)).statusCode === 200 && await limita() === 0, 'exact limita nu trece sau limita panoului diferă');
+    verifica((await cere(1)).statusCode === 409 && DB.tabele.investitori_exit.length === 3, 'a doua cerere depășește acțiunile rămase');
+    verifica((await cheama(apiExit, { token: 'tok-a', metoda: 'PATCH', body: { id: uid(60), actiune: 'anuleaza' } })).statusCode === 200 && await limita() === 3, 'anularea nu eliberează acțiunile');
+    verifica((await cere(3)).statusCode === 200 && await limita() === 0, 'acțiunile eliberate nu se pot cere din nou');
+    for (const st of ['anulat', 'respins', 'aprobat', 'platit', 'finalizat']) {
+      reset();
+      DB.tabele.investitori_portofoliu.push(sub({ aprobat_la: luniInapoi(13) }));
+      DB.tabele.investitori_exit.push(cerereExit({ numar_actiuni: 4, status: st }));
+      verifica(await limita() === 10 && (await cere(10)).statusCode === 200, `o cerere ${st} scade din limită`);
+    }
+    reset();
+    DB.tabele.runde_finantare[0].lock_up_luni = null;
+    DB.tabele.investitori_portofoliu.push(sub({ aprobat_la: luniInapoi(1) }));
+    verifica(await limita() === 10 && (await cere(10)).statusCode === 200, 'rundă fără lock-up: limita diferă');
   }
 
   // Istoric

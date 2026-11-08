@@ -384,12 +384,12 @@ async function rutaCompleta(token, id) {
     DB.tabele.runde_finantare[0].discount_buyback_pct = 10;
     DB.tabele.profiles.find((p) => p.id === A).roles = ['client', 'investor'];
     DB.tabele.investitori_portofoliu.push(
-      { id: 's1', user_id: A, runda_id: 'r-test', actiuni: 10, valoare_investita: 10000, status: 'aprobat', created_at: VECHE },
+      { id: 's1', user_id: A, runda_id: 'r-test', actiuni: 10, valoare_investita: 10000, status: 'aprobat', created_at: VECHE, aprobat_la: VECHE },
       { id: 's2', user_id: A, runda_id: 'r-test', actiuni: 50, valoare_investita: 50000, status: 'in_asteptare', created_at: VECHE },
       { id: 's3', user_id: A, runda_id: 'r-test', actiuni: 40, valoare_investita: 40000, status: 'respins', created_at: VECHE },
     );
     const peste = await cheama(apiExit, { token: 'tok-a', metoda: 'POST', body: { tip: 'buyback', numar_actiuni: 11 } });
-    egal(peste.statusCode, 400, 'peste acțiunile aprobate');
+    egal(peste.statusCode, 409, 'peste acțiunile aprobate');
     adevarat(/10 acțiuni/.test(peste.corp.error), peste.corp.error);
     egal(DB.tabele.investitori_exit.length, 0);
     const ok10 = await cheama(apiExit, { token: 'tok-a', metoda: 'POST', body: { tip: 'buyback', numar_actiuni: 10 } });
@@ -418,10 +418,10 @@ async function rutaCompleta(token, id) {
     Object.assign(DB.tabele.runde_finantare[0], { discount_buyback_pct: 10, lock_up_luni: 12 });
     DB.tabele.profiles.find((p) => p.id === A).roles = ['client', 'investor'];
     DB.tabele.investitori_portofoliu.push(
-      { id: 's1', user_id: A, runda_id: 'r-test', actiuni: 10, valoare_investita: 10000, status: 'aprobat', created_at: VECHE },
-      { id: 's2', user_id: A, runda_id: 'r-test', actiuni: 5, valoare_investita: 5000, status: 'aprobat', created_at: new Date().toISOString() },
+      { id: 's1', user_id: A, runda_id: 'r-test', actiuni: 10, valoare_investita: 10000, status: 'aprobat', created_at: VECHE, aprobat_la: VECHE },
+      { id: 's2', user_id: A, runda_id: 'r-test', actiuni: 5, valoare_investita: 5000, status: 'aprobat', created_at: VECHE, aprobat_la: new Date().toISOString() },
     );
-    egal((await cheama(apiExit, { token: 'tok-a', metoda: 'POST', body: { tip: 'buyback', numar_actiuni: 11 } })).statusCode, 400, 'în lock-up');
+    egal((await cheama(apiExit, { token: 'tok-a', metoda: 'POST', body: { tip: 'buyback', numar_actiuni: 11 } })).statusCode, 409, 'în lock-up');
     egal((await cheama(apiExit, { token: 'tok-a', metoda: 'POST', body: { tip: 'buyback', numar_actiuni: 10 } })).statusCode, 200, 'după lock-up');
   });
 
