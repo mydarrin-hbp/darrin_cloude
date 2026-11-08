@@ -35,7 +35,9 @@ const CATALOG = citeste('mydarrin-catalog.html');
 const inceput = CATALOG.indexOf('const DOM = {');
 const DOM = new Function('return ' + CATALOG.slice(inceput + 12, CATALOG.indexOf('};', inceput) + 1))();
 const IMG_DEF = (CATALOG.match(/const IMG_DEF = '([0-9a-f-]+)';/) || [])[1];
-const urlFoto = (id) => `https://images.unsplash.com/photo-${id}?w=600&q=80`;
+const urlFoto = (id) => `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=600&q=70`;
+// Marketplace-ul nu face parte din pasul 11-C9 și păstrează adresa veche.
+const urlFotoMarketplace = (id) => `https://images.unsplash.com/photo-${id}?w=600&q=80`;
 // VARIANTE și imgDomeniu(), așa cum sunt în pagină (pasul 11-C6).
 const { VARIANTE, imgDomeniu } = (() => {
   const v0 = CATALOG.indexOf('const VARIANTE = {');
@@ -53,7 +55,7 @@ const SUBIECTE = L.SUBIECTE;
 const imgPermise = (item) => (item.imagini && item.imagini[0]) ? [item.imagini[0]]
   : L.imaginiPrezentare(item, DOM[item.domeniu] || { cat: 'Instalații', sub: 'General', img: IMG_DEF }).ids.map(urlFoto);
 // Caruselul de categorii din hero.
-const CARUSEL = [...CATALOG.matchAll(/<img src="https:\/\/images\.unsplash\.com\/photo-([0-9a-f-]+)\?w=600&q=80" alt="([^"]+)" loading="lazy">/g)].map((m) => ({ id: m[1], alt: m[2] }));
+const CARUSEL = [...CATALOG.matchAll(/<img src="https:\/\/images\.unsplash\.com\/photo-([0-9a-f-]+)\?auto=format&amp;fit=crop&amp;w=600&amp;q=70" [^>]*?alt="([^"]+)" loading="lazy"/g)].map((m) => ({ id: m[1], alt: m[2] }));
 const SURSE = (() => { try { return citeste('docs/SURSE.md'); } catch (e) { return ''; } })();
 const toateIdurile = () => [...new Set([IMG_DEF, ...Object.values(DOM).map((v) => v.img), ...Object.values(VARIANTE).flat(), ...SUBIECTE.flatMap((s) => s.img), ...CARUSEL.map((c) => c.id)])];
 // Fotografiile nepotrivite din raportul 11-C5 (căști, autoturism, plajă, cort pe alte
@@ -176,7 +178,7 @@ async function testeFisiere() {
   await test('11-C7: imaginea reală are în continuare prioritate; fără subiect → domeniu → IMG_DEF', async () => {
     const real = 'https://exemplu.test/real.png';
     const mk = CATALOG.slice(CATALOG.indexOf('function mkCard('), CATALOG.indexOf('function inject('));
-    adevarat(/const img = imgReal \|\| imgPrezentare/.test(mk) && /imaginiPrezentare\(item, d\)/.test(mk), 'ordinea în mkCard');
+    adevarat(mk.includes('${imgReal ? `src="${imgReal}"') && /imaginiPrezentare\(item, d\)/.test(mk), 'ordinea în mkCard');
     egal(imgPermise({ titlu: 'Înlocuire vas WC', domeniu: 'Instalații sanitare și termice', imagini: [real] }), [real]);
     egal(L.imaginiPrezentare({ id_serviciu: 'x', titlu: 'Pavaje & Alei', domeniu: 'Pavaje & Alei' }, DOM['Pavaje & Alei']).sursa, 'domeniu');
     egal(L.imaginiPrezentare({ id_serviciu: 'x', titlu: 'Ceva nou', domeniu: 'Domeniu nou' }, { img: IMG_DEF }), { ids: [IMG_DEF], sursa: 'implicit' });
@@ -215,8 +217,9 @@ async function testeFisiere() {
   await test('mkCard: imaginea reală, altfel a domeniului, altfel IMG_DEF; același <img> pe card, fără iconiță', async () => {
     const mk = CATALOG.slice(CATALOG.indexOf('function mkCard('), CATALOG.indexOf('function inject('));
     adevarat(/const d\s+= DOM\[item\.domeniu\] \|\| \{cat:'Instalații', sub:'General', img:IMG_DEF\}/.test(mk), 'domeniul necunoscut → IMG_DEF');
-    adevarat(/const img = imgReal \|\| imgPrezentare/.test(mk), 'ordinea');
-    adevarat(/<div class="card-media">\s*<img src="\$\{img\}" alt="\$\{tit\}" loading="lazy"/.test(mk), '<img> pe card');
+    // Pasul 11-C9: imaginea reală are src direct; cea de prezentare îl primește din distribuieImagini.
+    adevarat(mk.includes('${imgReal ? `src="${imgReal}"') && /const imgPrezentare = urlPrezentare\(prez\.ids\[0\], 600\)/.test(mk), 'ordinea');
+    adevarat(/<div class="card-media img-asteapta">\s*<img \$\{imgReal[\s\S]{0,260}alt="\$\{tit\}"[^>]*loading="lazy"/.test(mk), '<img> pe card');
     adevarat(!/card-icoana|data-lucide="\$\{iconita/.test(CATALOG), 'iconiță în locul imaginii');
   });
   await test('niciun preț scris în cod în catalog (regula din 11-C4)', async () => {
@@ -229,7 +232,7 @@ async function testeFisiere() {
   });
   await test('marketplace: imaginea partenerului are prioritate, altfel IMG_DEF', async () => {
     const s = citeste('mydarrin-marketplace-materiale.html');
-    adevarat(s.includes(`const IMG_PREZENTARE = '${urlFoto(IMG_DEF)}';`) && /p\.imagini\[0\] \|\| IMG_PREZENTARE/.test(s), 'regula');
+    adevarat(s.includes(`const IMG_PREZENTARE = '${urlFotoMarketplace(IMG_DEF)}';`) && /p\.imagini\[0\] \|\| IMG_PREZENTARE/.test(s), 'regula');
   });
   if (process.env.ONLINE) {
     await test('ONLINE: fiecare fotografie (hartă, variante, IMG_DEF, carusel) răspunde 200 pe Unsplash', async () => {
@@ -436,7 +439,7 @@ async function testeBrowser() {
         const pg = await pagina(ctx, '/mydarrin-marketplace-materiale.html');
         await pg.waitForSelector('.card .card-img');
         const surse = await pg.$$eval('.card', (c) => c.map((k) => (k.querySelector('.card-img') ? k.querySelector('.card-img').getAttribute('src') : null)));
-        egal(surse, [IMG_BO, urlFoto(IMG_DEF)]);
+        egal(surse, [IMG_BO, urlFotoMarketplace(IMG_DEF)]);
         egal(await depasire(pg), 0, 'derulare orizontală');
         egal(pg.erori, [], 'erori JS');
         await pg.close();

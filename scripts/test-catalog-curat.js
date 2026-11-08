@@ -111,7 +111,7 @@ async function testeFisiere() {
     // Pasul 11-C6: imaginea domeniului vine din imgDomeniu() (variante la domeniile mari).
     // Pasul 11-C7: înaintea domeniului, subiectul din titlu — imaginiPrezentare().
     const imgDom = s.slice(s.indexOf('function imgDomeniu('), s.indexOf('function mkCard('));
-    adevarat(mk.length > 100 && /const img = imgReal \|\| imgPrezentare/.test(mk) && /imaginiPrezentare\(item, d\)/.test(mk) && /d\.img \|\| IMG_DEF/.test(imgDom) && !/card-icoana/.test(mk), 'ordinea imaginilor pe cardurile de produs');
+    adevarat(mk.length > 100 && mk.includes('${imgReal ? `src="${imgReal}"') && /imaginiPrezentare\(item, d\)/.test(mk) && /d\.img \|\| IMG_DEF/.test(imgDom) && !/card-icoana/.test(mk), 'ordinea imaginilor pe cardurile de produs');
   });
   await test('vercel.json: 301 pentru cele 3 pagini (cu și fără .html) spre catalogul filtrat; rutele /servicii/<slug> spre catalog', async () => {
     const v = JSON.parse(citeste('vercel.json'));
