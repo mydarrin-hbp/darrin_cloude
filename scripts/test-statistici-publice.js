@@ -60,8 +60,9 @@ async function deschide(browser, baza, pagina, lang, cifre) {
   const baza = 'http://localhost:' + srv.address().port;
   const browser = await chromium.launch();
   try {
-    // Pasul 11-C1: mydarrin-serviciu.html (cu bloc) a devenit redirecționare spre catalog.
-    verifica(PAGINI.length >= 11, `paginile cu bloc de indicatori: ${PAGINI.length}`);
+    // Pasul 11-R3h: blocul [data-kpi-bloc] era doar în fereastra falsă „Solicită pachetul de
+    // investitor”, ștearsă de pe toate paginile; bucla de mai jos rămâne pentru un bloc viitor.
+    verifica(PAGINI.length === 0, `blocul de indicatori al ferestrei șterse încă apare în: ${PAGINI.join(', ')}`);
     // Toate paginile: aceleași chei, din statistici-homepage, și statistici-publice.js.
     for (const pagina of PAGINI) {
       const h = fs.readFileSync(path.join(RADACINA, pagina), 'utf8');
