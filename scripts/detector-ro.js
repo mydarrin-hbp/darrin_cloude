@@ -61,7 +61,10 @@ const PUBLICE = ['index', 'servicii-urgente', 'despre-noi', 'afla-ce-facem', 'my
 // Paginile cu cont. Wizard-ul de partener e „Completare profil partener”
 // (decizie LM, 14 oct. 2026): nu mai e pagină publică, se testează ca dashboard.
 const CU_CONT = ['mydarrin-dashboard-client', 'mydarrin-dashboard-partener', 'mydarrin-dashboard-furnizor',
-  'mydarrin-devino-partener-wizard', 'mydarrin-admin-catalog', 'mydarrin-rolurile-mele'];
+  'mydarrin-devino-partener-wizard', 'mydarrin-admin-catalog', 'mydarrin-rolurile-mele',
+  // Pasul 11-I1: panoul investitorului, fiecare secțiune (panourile ascunse nu se văd altfel).
+  'mydarrin-panou-investitor', 'mydarrin-panou-investitor.html#participatii', 'mydarrin-panou-investitor.html#subscrieri', 'mydarrin-panou-investitor.html#exit',
+  'mydarrin-panou-investitor.html#istoric', 'mydarrin-panou-investitor.html#indicatori', 'mydarrin-panou-investitor.html#datele-mele'];
 
 const arg = process.argv.slice(2);
 const opt = (n, d) => { const i = arg.indexOf('--' + n); if (i === -1) return d; const v = arg[i + 1]; arg.splice(i, 2); return v; };
@@ -131,6 +134,14 @@ const RASPUNSURI_SIMULATE = {
   '/api/partener/facturi': { ok: true, facturabile: [], facturi: [] },
   // profil incomplet: cardul „Profil incomplet” apare și e verificat și el
   '/api/partener/profil-status': { ok: true, complet: false, lipsa: ['nace', 'clauza_zona'], pas: 3 },
+  // Pasul 11-I1: panoul investitorului.
+  '/api/investitori/portofoliu': { ok: true, kyc_status: 'aprobat', actiuni: 10, valoare_investita: 10000, in_asteptare: 500, pct_companie: 1, runda: null,
+    subscrieri: [{ id: 's1', status: 'aprobat', actiuni: 10, valoare_investita: 10000, instrument: 'actiuni', creat_la: '2025-01-05T10:00:00Z', aprobat_la: '2025-02-10T10:00:00Z', sfarsit_lock_up: '2026-02-10T10:00:00Z', actiuni_vandabile_acum: 10, runda: { denumire_ro: 'Test', denumire_en: 'Test', moneda: 'EUR' } }],
+    exit: { buyback_disponibil: true, discount_buyback_pct: 10, lock_up_luni: 12, actiuni_vandabile_acum: 8 } },
+  '/api/investitori/kyc': { ok: true, lipsa: [], kyc: { status: 'in_verificare', pas_curent: 5, iban_mascat: '•••• 1234', rezidenta_fiscala_tara: 'RO', tip_document: 'ci', act_valabil_pana: '2026-12-01', adresa_domiciliu: { strada: 'Str. Test 1', localitate: 'Bacau', tara: 'RO' } } },
+  '/api/investitori/exit': { ok: true, cereri: [{ id: 'c1', tip: 'buyback', numar_actiuni: 2, suma_calculata: null, status: 'in_procesare', creat_la: '2026-10-01T10:00:00Z', anulat_la: null }] },
+  '/api/investitori/istoric': { ok: true, evenimente: [{ tip: 'dosar_trimis', data: '2026-10-01T10:00:00Z', titlu: { ro: 'Dosar trimis', en: 'Application submitted' }, motiv: null, runda: null, valoare_investita: null, moneda: null, numar_actiuni: null }] },
+  '/api/investitori/indicatori': { ok: true, indicatori: { comenzi_total: 1, comenzi_luna: 1, parteneri_activi: 1, gmv_total: 10, revenue_total: 1, revenue_luna: 1 }, moneda: 'EUR' },
 };
 
 // Profilul contului simulat (/api/cont/profil, pasul 10b): rolurile care
@@ -140,7 +151,7 @@ const RASPUNSURI_SIMULATE = {
 // pasul 10c: poate_vinde / motiv_nu_poate_vinde / furnizor_propriu, ca în API.
 const PROFIL_SIMULAT = {
   ok: true, email: 'partener.test@example.com', nume: 'Partener Test',
-  roles: ['client', 'partener_servicii', 'partener_materiale'], roluri_dashboard: ['partener_servicii', 'partener_materiale'],
+  roles: ['client', 'partener_servicii', 'partener_materiale', 'investor'], roluri_dashboard: ['partener_servicii', 'partener_materiale'],
   destinatie: '/mydarrin-rolurile-mele', tip_destinatie: 'alegere', furnizor_propriu: false,
   prenume: 'Partener', nume_familie: 'Test', telefon: '+40700000000', tara: 'RO',
   partener: { nume_firma: 'Test Instalatii SRL', partner_type: 'servicii_tehnice', rol: 'partener_servicii', status_verificare: 'pending_review', contract_semnat: false, cont_bancar: false, motiv_respingere: null,
@@ -207,15 +218,16 @@ function detecteaza(limba) {
   const md = document.querySelector('meta[name="description"]'); if (md && eRo(md.content || '')) gasite.push({ sel: 'meta[description]', text: md.content.slice(0, 160) });
   // butoane / linkuri de meniu al căror text iese din chenar
   const rupte = [];
+  // Caruselele și filele derulabile sunt tăiate intenționat la margine (pasul 11-A, 11-I1).
+  const derulabil = (el) => { for (let e = el.parentElement; e && e !== document.body; e = e.parentElement) { if (e.hasAttribute('data-carusel')) return true; const ox = getComputedStyle(e).overflowX; if (ox === 'auto' || ox === 'scroll') return true; } return false; };
   document.querySelectorAll('button, a.sb-item, nav a, .nav-lnk, #mobile-bottom-nav a, #mobile-bottom-nav button').forEach((b) => {
     if (!vizibil(b)) return; const r = b.getBoundingClientRect(); if (r.width < 20) return;
     if (b.scrollWidth > b.clientWidth + 2 && getComputedStyle(b).overflow !== 'visible') rupte.push(sel(b) + ' «' + b.innerText.trim().slice(0, 30) + '»');
-    if (r.right > W + 1 && r.left < W - 1 && r.left >= 0) rupte.push('iese din ecran: ' + sel(b) + ' «' + b.innerText.trim().slice(0, 30) + '»');
+    if (r.right > W + 1 && r.left < W - 1 && r.left >= 0 && !derulabil(b)) rupte.push('iese din ecran: ' + sel(b) + ' «' + b.innerText.trim().slice(0, 30) + '»');
   });
   // Elemente tăiate la dreapta ecranului (vezi antetul fișierului). Caruselele
   // animate (bandă care trece prin fereastră, marcate cu data-carusel) sunt
   // tăiate intenționat și nu se numără (pasul 11-A).
-  const derulabil = (el) => { for (let e = el.parentElement; e && e !== document.body; e = e.parentElement) { if (e.hasAttribute('data-carusel')) return true; const ox = getComputedStyle(e).overflowX; if (ox === 'auto' || ox === 'scroll') return true; } return false; };
   let dreaptaMax = 0;
   const taiate = [];
   document.querySelectorAll('body *').forEach((el) => {
@@ -253,7 +265,7 @@ function detecteaza(limba) {
           return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(RASPUNSURI_ADMIN[corp.action] || { ok: true }) });
         });
         await ctx.route(/\/api\/cont\/profil/, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(profil) }));
-        await ctx.route(/\/api\/(partener|client)\//, (r) => {
+        await ctx.route(/\/api\/(partener|client|investitori)\//, (r) => {
           const cale = new URL(r.request().url()).pathname.replace(/\.js$/, '');
           const corp = r.request().method() === 'GET' ? (RASPUNSURI_SIMULATE[cale] || { ok: true }) : { ok: true };
           return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(corp) });
@@ -264,7 +276,7 @@ function detecteaza(limba) {
       await p.route('**/api/comenzi/**', (r) => r.fulfill({ status: 599, body: '{}' }));
       // Încărcarea paginii: o eroare (server oprit, 404) nu mai trece neobservată.
       let incarcare = null;
-      const raspunsPagina = await p.goto(BASE + '/' + pg + (pg.includes('?') ? '' : '.html'), { waitUntil: 'networkidle', timeout: 60000 })
+      const raspunsPagina = await p.goto(BASE + '/' + pg + (/[?#]/.test(pg) ? '' : '.html'), { waitUntil: 'networkidle', timeout: 60000 })
         .catch((e) => { incarcare = e.message.split('\n')[0].slice(0, 120); return null; });
       if (!incarcare && raspunsPagina && raspunsPagina.status() >= 400) incarcare = 'HTTP ' + raspunsPagina.status();
       if (!incarcare && !raspunsPagina) incarcare = 'fără răspuns';

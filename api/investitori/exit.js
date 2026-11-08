@@ -11,11 +11,69 @@
 // Fără migrarea rundelor (fără coloana runda_id / tabela runde_finantare):
 // buy-back-ul nu e configurat → 409, nu eroare.
 //
-// Body: { tip: 'buyback', numar_actiuni }
+// POST { tip: 'buyback', numar_actiuni }
+//
+// Pasul 11-I1 (8 nov. 2026):
+// GET → { ok, cereri: [{ id, tip, numar_actiuni, suma_calculata, status, creat_la, anulat_la }] },
+//   doar cererile utilizatorului autentificat, cele mai noi primele.
+// PATCH { id, actiune: 'anuleaza' } → { ok, cerere }: doar propria cerere și doar cât
+//   e in_procesare; altfel 409. Cererea altcuiva sau inexistentă → 404, fără date.
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const R = require('../../lib/runda-finantare');
+const { formaComuna, trimiteEroare } = require('../../lib/raspuns-eroare');
+
+const ID_VALID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function publicCerere(c) {
+  return {
+    id: c.id, tip: c.tip, numar_actiuni: Number(c.numar_actiuni) || 0,
+    suma_calculata: c.suma_calculata == null ? null : Number(c.suma_calculata),
+    status: c.status, creat_la: c.created_at || null, anulat_la: c.anulat_la || null,
+  };
+}
+
+async function listeaza(res, user) {
+  const { data, error } = await supabaseAdmin
+    .from('investitori_exit').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
+  if (error) {
+    console.error('[investitori/exit] listă', error);
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca cererile de exit.', 'We could not load your exit requests.');
+  }
+  return res.status(200).json({ ok: true, cereri: (data || []).map(publicCerere) });
+}
+
+async function anuleaza(req, res, user) {
+  const { id, actiune } = req.body || {};
+  if (actiune !== 'anuleaza') return trimiteEroare(res, 400, 'DATE_INVALIDE', 'Acțiune necunoscută.', 'Unknown action.');
+  const inexistenta = () => trimiteEroare(res, 404, 'NU_EXISTA', 'Cererea nu există.', 'The request does not exist.');
+  const blocata = () => trimiteEroare(res, 409, 'ANULARE_IMPOSIBILA',
+    'Cererea se poate anula doar cât e în procesare.', 'The request can be cancelled only while it is in progress.');
+  if (typeof id !== 'string' || !ID_VALID.test(id)) return inexistenta();
+
+  const { data: cerere, error } = await supabaseAdmin
+    .from('investitori_exit').select('id, status').eq('id', id).eq('user_id', user.id).maybeSingle();
+  if (error) {
+    console.error('[investitori/exit] citire', error);
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut anula cererea.', 'We could not cancel the request.');
+  }
+  if (!cerere) return inexistenta();
+  if (cerere.status !== 'in_procesare') return blocata();
+
+  const acum = new Date().toISOString();
+  const { data, error: errAnulare } = await supabaseAdmin
+    .from('investitori_exit')
+    .update({ status: 'anulat', anulat_la: acum, actualizat_la: acum })
+    .eq('id', id).eq('user_id', user.id).eq('status', 'in_procesare')
+    .select().maybeSingle();
+  if (errAnulare) {
+    console.error('[investitori/exit] anulare', errAnulare);
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut anula cererea.', 'We could not cancel the request.');
+  }
+  if (!data) return blocata();
+  return res.status(200).json({ ok: true, cerere: publicCerere(data) });
+}
 
 function luniDela(data, luni) {
   const d = new Date(data);
@@ -24,6 +82,9 @@ function luniDela(data, luni) {
 }
 
 async function handler(req, res, user) {
+  res.setHeader('Cache-Control', 'private, no-store');
+  if (req.method === 'GET') return listeaza(res, user);
+  if (req.method === 'PATCH') return anuleaza(req, res, user);
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { tip, numar_actiuni } = req.body || {};
@@ -83,4 +144,4 @@ async function handler(req, res, user) {
   return res.status(200).json({ ok: true, cerere: data });
 }
 
-module.exports = requireAuth(['investor'], handler);
+module.exports = formaComuna(requireAuth(['investor'], handler));

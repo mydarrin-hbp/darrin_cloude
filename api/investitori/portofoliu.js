@@ -13,10 +13,18 @@
 //     vizibilă public;
 //   - exit: buy-back doar dacă runda unei subscrieri aprobate are discountul
 //     de buy-back configurat; lock-up-ul din aceeași rundă.
+//
+// Pasul 11-I1 (8 nov. 2026): fiecare subscriere aprobată primește aprobat_la,
+// sfarsit_lock_up și actiuni_vandabile_acum; exit.actiuni_vandabile_acum e
+// totalul, minus acțiunile din cererile de exit active. Calculele sunt în
+// lib/investitori-panou.js. Se trimit doar câmpurile enumerate mai jos:
+// roi_estimat și exit_estimat_luni nu ies din server.
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const R = require('../../lib/runda-finantare');
+const P = require('../../lib/investitori-panou');
+const { formaComuna } = require('../../lib/raspuns-eroare');
 
 function publicRunda(r) {
   if (!r) return null;
@@ -36,12 +44,14 @@ async function handler(req, res, user) {
   res.setHeader('Cache-Control', 'private, no-store');
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
   try {
-    const [subs, kyc, deschisa] = await Promise.all([
+    const [subs, kyc, deschisa, cereriExit] = await Promise.all([
       supabaseAdmin.from('investitori_portofoliu').select('*').eq('user_id', user.id),
       supabaseAdmin.from('investitori_kyc').select('status').eq('user_id', user.id).maybeSingle(),
       R.rundaDeschisa(),
+      supabaseAdmin.from('investitori_exit').select('numar_actiuni, status').eq('user_id', user.id),
     ]);
     if (subs.error) throw subs.error;
+    if (cereriExit.error) throw cereriExit.error;
     const randuri = subs.data || [];
 
     const idRunde = [...new Set(randuri.map((s) => s.runda_id).filter(Boolean))];
@@ -54,7 +64,12 @@ async function handler(req, res, user) {
 
     let actiuni = 0, valoare = 0, inAsteptare = 0, pct = 0;
     let buyback = null, lockUp = null;
+    const acum = new Date();
+    const situatii = {};
+    let vandabile = 0;
     for (const s of randuri) {
+      situatii[s.id] = P.situatieSubscriere(s, s.runda_id ? runde[s.runda_id] : null, acum);
+      vandabile += situatii[s.id].actiuni_vandabile_acum;
       if (s.status === 'aprobat') {
         actiuni += Number(s.actiuni) || 0;
         valoare += Number(s.valoare_investita) || 0;
@@ -80,10 +95,13 @@ async function handler(req, res, user) {
         .map((s) => ({
           id: s.id, status: s.status, actiuni: Number(s.actiuni) || 0, valoare_investita: Number(s.valoare_investita) || 0,
           instrument: s.instrument || null, creat_la: s.created_at || null,
+          aprobat_la: s.status === 'aprobat' ? (s.aprobat_la || null) : null,
+          sfarsit_lock_up: situatii[s.id].sfarsit_lock_up,
+          actiuni_vandabile_acum: situatii[s.id].actiuni_vandabile_acum,
           runda: s.runda_id && runde[s.runda_id] ? { denumire_ro: runde[s.runda_id].denumire_ro, denumire_en: runde[s.runda_id].denumire_en, moneda: runde[s.runda_id].moneda } : null,
         })),
       runda: publicRunda(deschisa),
-      exit: { buyback_disponibil: buyback != null && actiuni > 0, discount_buyback_pct: buyback, lock_up_luni: lockUp },
+      exit: { buyback_disponibil: buyback != null && actiuni > 0, discount_buyback_pct: buyback, lock_up_luni: lockUp, actiuni_vandabile_acum: P.vandabileDupaCereri(vandabile, cereriExit.data) },
     });
   } catch (err) {
     console.error('[investitori/portofoliu]', err);
@@ -91,4 +109,4 @@ async function handler(req, res, user) {
   }
 }
 
-module.exports = requireAuth(['investor'], handler);
+module.exports = formaComuna(requireAuth(['investor'], handler));

@@ -43,7 +43,7 @@
     { rol: 'partener_inchirieri', titlu: 'Furnizor de Închirieri', insigna: 'Furnizor de închirieri', pagina: '/mydarrin-dashboard-furnizor.html', tip: 'inchirieri', formular: 'inchirieri', culoare: '#0E9E99', fundal: 'linear-gradient(135deg,#E0F5F4,#C5EEEC)' },
     { rol: 'partener_curier', titlu: 'Curier de Cartier', insigna: 'Curier', pagina: '/mydarrin-dashboard-partener.html', tip: 'curier', formular: 'curier', culoare: '#7C3AED', fundal: 'linear-gradient(135deg,#F3EEFF,#E9D8FD)' },
     { rol: 'partener_asigurari', titlu: 'Furnizor de Asigurări', insigna: 'Asigurător', pagina: '/mydarrin-dashboard-partener.html', tip: 'asigurari', formular: 'asigurator', culoare: '#1A7A3A', fundal: 'linear-gradient(135deg,#D4EDDA,#B8DFC5)' },
-    { rol: 'investor', titlu: 'Investitor', insigna: 'Investitor', pagina: '/mydarrin-investitori.html', adauga: '/mydarrin-investitori.html?ruta=investitor', culoare: '#CC7000', fundal: 'linear-gradient(135deg,#FFF3E0,#FFE0B2)' },
+    { rol: 'investor', titlu: 'Investitor', insigna: 'Investitor', pagina: '/mydarrin-panou-investitor.html', adauga: '/mydarrin-investitori.html?ruta=investitor', culoare: '#CC7000', fundal: 'linear-gradient(135deg,#FFF3E0,#FFE0B2)' },
   ];
   var PAGINA_SUPERADMIN = '/mydarrin-superadmin';
   var PAGINA_ADMIN_CATALOG = '/mydarrin-admin-catalog';

@@ -1413,84 +1413,19 @@ function pornesteInvestitor(b) {
   <div id="myd-cont-antet" style="max-width:1200px;margin:0 auto;padding:0 16px;box-sizing:border-box"></div>
 <!-- ════ DASHBOARD PRIVAT INVESTITOR — Visible doar cu rol investitor ════ -->
 <div id="inv-private-dashboard" style="display:none">
-  <!-- Sentinel bar -->
-  <div style="background:linear-gradient(90deg,#001E3C,#003366,#0E9E99);height:4px"></div>
-
+  <!-- Pasul 11-I1: doar un rezumat; panoul complet e pe mydarrin-panou-investitor.html. -->
   <section style="background:#F0F4F8;padding:32px 0" id="investor-dashboard-section">
-    <div class="inv-max">
-
-      <!-- Header dashboard privat -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
-        <div>
-          <div style="display:inline-flex;align-items:center;gap:6px;background:#003366;color:#fff;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:4px 12px;border-radius:99px;margin-bottom:8px">
-            <span class="pulse-dot" style="width:5px;height:5px;background:#22D3A6"></span>
-            Dashboard Privat · Investitor Verificat
-          </div>
-          <h3 style="font-size:22px;font-weight:800;color:#1A2332;margin:0">Portofoliul tău My Darrin</h3>
-          <div style="font-size:12px;color:#5A6B7D;margin-top:4px" id="inv-dash-subtitle">Runda Seed · Date actualizate din Supabase</div>
-        </div>
-        <div style="display:flex;gap:8px">
-          <button onclick="showAccountModal(this)" style="padding:9px 16px;border-radius:10px;border:1.5px solid #D5DFE8;background:#fff;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;color:#1A2332">Date cont</button>
-          <button onclick="pornesteInvestitor(this)" style="padding:9px 16px;border-radius:10px;border:none;background:#FF8C00;color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">Subscriere nouă</button>
-          <button onclick="refreshPortofoliu()" style="padding:9px 16px;border-radius:10px;border:1.5px solid #0E9E99;background:#E0F5F4;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;color:#0B7A76">↻ Actualizează</button>
-        </div>
-      </div>
-
-      <!-- Pasul 11-L: starea verificării identității (api/investitori/kyc) -->
+    <div class="inv-max" style="padding:0 20px;box-sizing:border-box">
+      <h2 class="rp-h2">Portofoliul tău My Darrin</h2>
       <div id="inv-kyc-banda"></div>
-
-      <!-- Pasul 11-J: portofoliul din api/investitori/portofoliu (subscrierile aprobate, pe runda lor) -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px" id="inv-kpi-grid">
-        <div class="kpi-big kpi-bl">
-          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:8px">Investiție aprobată</div>
-          <div style="font-size:24px;font-weight:800;color:#1A5FAD;line-height:1" id="inv-kpi-suma">—</div>
-          <div style="font-size:10.5px;color:#5A6B7D;margin-top:5px">subscrieri aprobate</div>
-        </div>
-        <div class="kpi-big kpi-or">
-          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:8px">Acțiuni deținute</div>
-          <div style="font-size:24px;font-weight:800;color:#FF8C00;line-height:1" id="inv-kpi-actiuni">—</div>
-          <div style="font-size:10.5px;color:#5A6B7D;margin-top:5px"><span id="inv-kpi-pct">—</span>% din companie</div>
-        </div>
-        <div class="kpi-big kpi-te">
-          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:8px">În așteptare</div>
-          <div style="font-size:24px;font-weight:800;color:#0E9E99;line-height:1" id="inv-kpi-asteptare">—</div>
-          <div style="font-size:10.5px;color:#5A6B7D;margin-top:5px">subscrieri de aprobat</div>
-        </div>
-        <div class="kpi-big kpi-gr">
-          <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5A6B7D;margin-bottom:8px">Runda deschisă</div>
-          <div style="font-size:18px;font-weight:800;color:#1A7A3A;line-height:1.2" id="inv-kpi-runda">—</div>
-          <div style="font-size:10.5px;color:#5A6B7D;margin-top:5px" id="inv-kpi-runda-pret">—</div>
-        </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:18px" id="inv-kpi-grid">
+        <div class="kpi-big kpi-bl"><div style="font-size:12px;font-weight:700;color:#5A6B7D">Investiție aprobată</div><div style="font-size:24px;font-weight:800;margin-top:6px" id="inv-kpi-suma">—</div></div>
+        <div class="kpi-big kpi-or"><div style="font-size:12px;font-weight:700;color:#5A6B7D">Acțiuni deținute</div><div style="font-size:24px;font-weight:800;margin-top:6px" id="inv-kpi-actiuni">—</div></div>
+        <div class="kpi-big kpi-te"><div style="font-size:12px;font-weight:700;color:#5A6B7D">În așteptare</div><div style="font-size:24px;font-weight:800;margin-top:6px" id="inv-kpi-asteptare">—</div></div>
       </div>
-
-      <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:18px;margin-bottom:18px" class="inv-2col">
-        <div style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;overflow:hidden">
-          <div style="padding:14px 18px;border-bottom:1px solid #EEF2F7;background:#F8FAFC"><strong style="color:#1A2332;font-size:14px">Subscrierile mele</strong></div>
-          <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px">
-            <thead><tr style="background:#F8FAFC;color:#5A6B7D;font-size:10.5px;text-transform:uppercase;text-align:left"><th style="padding:9px 14px">Rundă</th><th style="padding:9px 14px">Sumă</th><th style="padding:9px 14px">Acțiuni</th><th style="padding:9px 14px">Stare</th></tr></thead>
-            <tbody id="inv-subscrieri-mele"><tr><td colspan="4" style="padding:14px;color:#5A6B7D">—</td></tr></tbody>
-          </table></div>
-        </div>
-        <!-- Exit: doar dacă runda are buy-back-ul configurat (runde_finantare) -->
-        <div id="inv-exit-card" hidden style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;overflow:hidden;align-self:start">
-          <div style="padding:12px 17px;border-bottom:1px solid #EEF2F7;background:#F8FAFC"><strong style="color:#1A2332">Exit</strong></div>
-          <div style="padding:13px;display:flex;flex-direction:column;gap:7px">
-            <button onclick="initiazaExitReal(this)" style="padding:10px;border-radius:10px;border:1.5px solid #D5DFE8;background:#F8FAFC;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;text-align:left">Cerere de buy-back</button>
-            <div style="font-size:11px;color:#5A6B7D;line-height:1.5" id="inv-exit-detalii"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Pasul 11-J (2.5): indicatorii platformei, doar cu verificarea identității aprobată -->
-      <div id="inv-indicatori"></div>
-
-      <!-- Avertisment legal -->
-      <div style="background:#FFF0F0;border-radius:13px;border:1px solid rgba(192,57,43,.2);padding:12px 16px;text-align:center;font-size:11px;color:#C0392B">
-        Investițiile în companii early-stage implică riscul pierderii totale a capitalului · Instrumentele nu sunt garantate de FGDB · MiFID II Art. 24
-      </div>
-
+      <a href="mydarrin-panou-investitor.html" class="btn-p" id="inv-deschide-panou" style="text-decoration:none">Deschide panoul tău →</a>
       <!-- Pasul 11-P3a: adresele și profilurile de facturare (agenda-cont.js). -->
-      <div id="agenda-cont-sectiune" style="margin-top:16px"></div>
+      <div id="agenda-cont-sectiune" style="margin-top:24px"></div>
     </div>
   </section>
 </div>
@@ -1660,72 +1595,12 @@ async function incarcaPortofoliu() {
   }
 }
 
-// ── Indicatorii platformei (2.5): doar cu verificarea identității aprobată ──
-async function incarcaIndicatori() {
-  const box = document.getElementById('inv-indicatori');
-  if (!box) return;
-  let r = null, j = {};
-  try {
-    const token = await tokenInv();
-    if (!token) return;
-    r = await fetch('/api/investitori/indicatori', { headers: { Authorization: 'Bearer ' + token }, cache: 'no-store' });
-    j = await r.json().catch(() => ({}));
-  } catch (e) { r = null; }
-  const cadru = (corp) => '<div style="background:#fff;border-radius:16px;border:1px solid #D5DFE8;overflow:hidden;margin-bottom:18px">' +
-    '<div style="padding:12px 17px;border-bottom:1px solid #EEF2F7;background:#F8FAFC"><strong style="color:#1A2332;font-size:14px">' + escInv(trInv('Indicatorii platformei')) + '</strong></div>' +
-    '<div style="padding:14px 17px">' + corp + '</div></div>';
-  if (!r || !r.ok || !j.indicatori) {
-    const mesaj = r && r.status === 403
-      ? trInv('Indicatorii financiari sunt disponibili după aprobarea verificării identității tale.')
-      : trInv('Indicatorii nu sunt disponibili acum.');
-    box.innerHTML = cadru('<p id="inv-indicatori-mesaj" style="margin:0;font-size:13px;color:#5A6B7D;line-height:1.5">' + escInv(mesaj) + '</p>');
-    return;
-  }
-  const k = j.indicatori, m = j.moneda || '';
-  const celule = [
-    ['Comenzi finalizate', sumaInv(k.comenzi_total)],
-    ['Comenzi finalizate luna aceasta', sumaInv(k.comenzi_luna)],
-    ['Parteneri cu comenzi', sumaInv(k.parteneri_activi)],
-    ['Valoarea comenzilor finalizate', sumaInv(k.gmv_total, m)],
-    ['Venitul platformei', sumaInv(k.revenue_total, m)],
-    ['Venitul platformei luna aceasta', sumaInv(k.revenue_luna, m)],
-  ];
-  if (k.take_rate_pct != null) celule.push(['Comisionul mediu', sumaInv(k.take_rate_pct) + '%']);
-  box.innerHTML = cadru('<div id="inv-indicatori-grila" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">' +
-    celule.map(([et, v]) => '<div style="background:#F8FAFC;border-radius:12px;padding:10px 12px"><div style="font-size:10.5px;color:#5A6B7D;margin-bottom:4px">' + escInv(trInv(et)) + '</div><div style="font-size:16px;font-weight:800;color:#1A2332">' + v + '</div></div>').join('') +
-    '</div>');
-}
-
-async function refreshPortofoliu() {
-  await incarcaPortofoliu();
-  await incarcaIndicatori();
-  showToastInv(trInv('Date actualizate'));
-}
-
-// ── Exit: cererea de buy-back (api/investitori/exit) ─────────
-async function initiazaExitReal(btn) {
-  const p = PORTOFOLIU_INV;
-  if (!p || !p.exit || !p.exit.buyback_disponibil) return;
-  const n = Number(window.prompt(trInv('Câte acțiuni vrei să vinzi prin buy-back? (cel mult {n})', { n: p.actiuni }), ''));
-  if (!(n > 0)) return;
-  if (btn) btn.disabled = true;
-  try {
-    const token = await tokenInv();
-    const r = await fetch('/api/investitori/exit', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify({ tip: 'buyback', numar_actiuni: n }) });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error((enInv() && j.error_en) || j.error || trInv('Cererea nu s-a putut înregistra.'));
-    showToastInv(trInv('Cererea de buy-back a fost înregistrată. Echipa te contactează.'));
-  } catch (e) { showToastInv(e.message); }
-  finally { if (btn) btn.disabled = false; }
-}
-
 // ── Pasul 11-L: dashboard-ul privat și starea verificării identității ──
 function arataDashboardInvestitor(p) {
   const dash = document.getElementById('inv-private-dashboard');
   if (dash) dash.style.display = 'block';
   if (window.MYD_AGENDA) window.MYD_AGENDA.monteaza(document.getElementById('agenda-cont-sectiune'));
   incarcaPortofoliu();
-  incarcaIndicatori();
   const c = document.getElementById('inv-kyc-banda');
   if (!c) return;
   const tr = (ro) => (typeof window.t === 'function' ? window.t(null, ro) : ro);

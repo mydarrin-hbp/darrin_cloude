@@ -80,7 +80,7 @@ async function dupaLogin(id) {
     egal(DR.dashboardPentruRol('partener_asigurari'), '/mydarrin-dashboard-partener.html?type=asigurari');
     egal(DR.dashboardPentruRol('partener_materiale'), '/mydarrin-dashboard-furnizor.html?type=materiale');
     egal(DR.dashboardPentruRol('partener_inchirieri'), '/mydarrin-dashboard-furnizor.html?type=inchirieri');
-    egal(DR.dashboardPentruRol('investor'), '/mydarrin-investitori.html');
+    egal(DR.dashboardPentruRol('investor'), '/mydarrin-panou-investitor.html');
     egal(DR.dashboardPentruRol('client'), '/mydarrin-dashboard-client.html');
     egal(DR.dashboardPentruRol('admin'), null);
   });
@@ -120,7 +120,7 @@ async function dupaLogin(id) {
     ['partener servicii', ['partener_servicii'], '/mydarrin-dashboard-partener.html?type=servicii'],
     ['curier', ['partener_curier'], '/mydarrin-dashboard-partener.html?type=curier'],
     ['asigurător', ['partener_asigurari'], '/mydarrin-dashboard-partener.html?type=asigurari'],
-    ['investitor', ['investor'], '/mydarrin-investitori.html'],
+    ['investitor', ['investor'], '/mydarrin-panou-investitor.html'],
     ['client cu o comandă', ['client'], '/mydarrin-dashboard-client.html'],
   ];
   for (const [nume, roles, asteptat] of cazuri) {

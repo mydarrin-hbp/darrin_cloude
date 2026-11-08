@@ -124,11 +124,8 @@ async function deschidePagina(ctx, baza) {
 
 async function deschideSubscrierea(p) {
   await p.waitForFunction(() => !!window.MYD_INVESTITOR, null, { timeout: 8000 }).catch(() => {});
-  // Pasul 11-R3h: butonul din #runda (a treia copie) s-a scos; subscrierea se deschide din panoul
-  // investitorului („Subscriere nouă”, același pornesteInvestitor).
-  await p.waitForSelector('#panou button[onclick^="pornesteInvestitor"]', { state: 'visible', timeout: 10000 }).catch(() => {});
-  await p.focus('#panou button[onclick^="pornesteInvestitor"]');
-  await p.keyboard.press('Enter');
+  // Pasul 11-I1: panoul complet s-a mutat pe mydarrin-panou-investitor.html; aceeași funcție, pornesteInvestitor.
+  await p.evaluate(() => { const b = document.getElementById('hero-intra-runda'); b.disabled = false; window.pornesteInvestitor(b); });
   await p.waitForSelector('#step-2', { state: 'visible', timeout: 6000 }).catch(() => {});
   await p.waitForFunction(() => !/…|\.\.\./.test((document.getElementById('ticket-lista') || {}).textContent || ''), null, { timeout: 5000 }).catch(() => {});
 }
