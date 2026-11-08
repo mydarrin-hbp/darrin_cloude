@@ -18,11 +18,14 @@
 //   doar cererile utilizatorului autentificat, cele mai noi primele.
 // PATCH { id, actiune: 'anuleaza' } → { ok, cerere }: doar propria cerere și doar cât
 //   e in_procesare; altfel 409. Cererea altcuiva sau inexistentă → 404, fără date.
+// POST folosește regula panoului: lock-up din aprobat_la, doar subscrieri aprobate,
+//   minus acțiunile din cererile in_procesare; peste limită → 409 PESTE_LIMITA.
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const R = require('../../lib/runda-finantare');
-const { formaComuna, trimiteEroare } = require('../../lib/raspuns-eroare');
+const P = require('../../lib/investitori-panou');
+const { formaComuna, trimiteEroare, camp } = require('../../lib/raspuns-eroare');
 
 const ID_VALID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -75,12 +78,6 @@ async function anuleaza(req, res, user) {
   return res.status(200).json({ ok: true, cerere: publicCerere(data) });
 }
 
-function luniDela(data, luni) {
-  const d = new Date(data);
-  d.setMonth(d.getMonth() + luni);
-  return d;
-}
-
 async function handler(req, res, user) {
   res.setHeader('Cache-Control', 'private, no-store');
   if (req.method === 'GET') return listeaza(res, user);
@@ -110,26 +107,30 @@ async function handler(req, res, user) {
     (data || []).forEach((r) => { runde[r.id] = r; });
   }
 
-  // Acțiunile vandabile: subscrieri aprobate, în runde cu buy-back configurat, după lock-up.
+  // Aceeași regulă ca în panou (lib/investitori-panou.js).
   const acum = new Date();
-  let disponibile = 0;
+  let vandabile = 0;
   let configurat = false;
   for (const p of portofoliu || []) {
     const r = p.runda_id && runde[p.runda_id];
     if (!r || R.num(r.discount_buyback_pct) == null) continue;
     configurat = true;
-    const lock = R.num(r.lock_up_luni);
-    if (lock != null && p.created_at && luniDela(p.created_at, lock) > acum) continue;
-    disponibile += Number(p.actiuni) || 0;
+    vandabile += P.situatieSubscriere(p, r, acum).actiuni_vandabile_acum;
   }
   if (!configurat) {
     return res.status(409).json({ error: 'Buy-back-ul nu e configurat pentru runda ta.', error_en: 'Buy-back is not configured for your round.', cod: 'INDISPONIBIL' });
   }
+  const { data: cereri, error: cereriErr } = await supabaseAdmin
+    .from('investitori_exit').select('numar_actiuni, status').eq('user_id', user.id);
+  if (cereriErr) {
+    console.error('[investitori/exit] cereri active', cereriErr);
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut verifica cererile de exit.', 'We could not check your exit requests.');
+  }
+  const disponibile = P.vandabileDupaCereri(vandabile, cereri);
   if (numar_actiuni > disponibile) {
-    return res.status(400).json({
-      error: `Poți cere buy-back pentru cel mult ${disponibile} acțiuni (acțiunile aprobate, după lock-up).`,
-      error_en: `You can request a buy-back for at most ${disponibile} shares (approved shares, after the lock-up).`,
-    });
+    const ro = `Poți cere buy-back pentru cel mult ${disponibile} acțiuni (acțiunile aprobate, după lock-up, minus cele din cererile în procesare).`;
+    const en = `You can request a buy-back for at most ${disponibile} shares (approved shares, after the lock-up, minus those in requests in progress).`;
+    return trimiteEroare(res, 409, 'PESTE_LIMITA', ro, en, [camp('numar_actiuni', ro, en)], { disponibile });
   }
 
   const { data, error } = await supabaseAdmin
