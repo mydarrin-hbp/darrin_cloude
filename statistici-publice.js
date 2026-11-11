@@ -47,6 +47,12 @@
   }
 
   function numaraCatalog(filtru) {
+    // Pasul 11-C10: pagina catalogului are deja lista întreagă, fără altă cerere.
+    if (window.__catalogPromis) {
+      return window.__catalogPromis.then(function (d) {
+        return filtru ? d.servicii.length : d.servicii.length + d.materiale.length + d.inchirieri.length;
+      });
+    }
     return fetch(SUPA_URL + '/rest/v1/catalog_servicii?select=id&status_public=eq.true' + filtru + '&limit=1', {
       headers: { apikey: SUPA_ANON, Authorization: 'Bearer ' + SUPA_ANON, Prefer: 'count=exact' },
     }).then(function (r) {
