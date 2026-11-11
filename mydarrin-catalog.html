@@ -340,7 +340,8 @@ window.__catalogPromis.catch(function () {});
 <meta property="og:image" content="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1200&q=80"/>
 <meta name="twitter:card" content="summary_large_image"/>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+<!-- Pasul 11-C11: defer — iconițele se desenează la DOMContentLoaded (vezi lucide.createIcons mai jos) -->
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" defer></script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script>
 if(typeof tailwind!=="undefined"){tailwind.config={theme:{extend:{colors:{
@@ -854,13 +855,15 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
   isLoggedIn:     function(){ return false; }
 };
 </script>
-<script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
-<script src="seo-meta.js"></script>
-<script src="tva-config.js"></script>
+<!-- Pasul 11-C11: defer — niciun script din pagină nu le apelează în timpul parsării
+     (MyDarrinAuth doar la clic, seo-meta doar suprascrie titlul, MDTva prin seteazaTva) -->
+<script src="account-system.js" defer onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
+<script src="seo-meta.js" defer></script>
+<script src="tva-config.js" defer></script>
 <script src="cookie-consent.js" defer></script>
 <script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="analytics-loader.js" defer></script>
   <!-- DOMPurify — sanitizare XSS (audit 2026-07-10) -->
-  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js" defer></script>
   <script>
     // Helper escapeHTML — pentru text pur (mesaje chat, nume, etc.)
     // Folosește textContent intern — niciun risc XSS
@@ -942,6 +945,17 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
   cursor: pointer;
   font-family: inherit;
 }
+/* Pasul 11-C11: fără deplasări când apar iconițele (lucide are defer) și cifrele din hero.
+   Iconița goală ocupă de la început cutia svg-ului care o înlocuiește; rândul de cifre
+   are înălțimea lui reală înainte să sosească cifrele. */
+i[data-lucide] { display:inline-block; flex-shrink:0; }
+.hero-statistici { min-height:48px; }
+/* Aceleași valori pe care le pune scriptul „Sticky search pe mobil” la DOMContentLoaded,
+   aplicate de la început: antetul nu mai crește după primul afișaj. */
+@media (max-width:768px) {
+  #hdr .search-bar { position:sticky !important; top:56px !important; z-index:90 !important; background:#fff !important; padding:8px 0 !important; }
+}
+
 /* Pasul 11-C10: numărul de filtre active și butoanele panoului de pe telefon */
 #filtre-numar { min-width:18px; height:18px; padding:0 5px; border-radius:99px; background:#FF8C00; color:#fff; font-size:11px; font-weight:800; line-height:18px; text-align:center; box-sizing:border-box; }
 #filtre-numar[hidden] { display:none; }
@@ -2586,7 +2600,9 @@ function submitNewsletter() {
 
 
 <script>
-lucide.createIcons();
+// Pasul 11-C11: lucide are defer; scripturile defer rulează înainte de DOMContentLoaded.
+if (window.lucide) lucide.createIcons();
+else document.addEventListener('DOMContentLoaded', function () { if (window.lucide) lucide.createIcons(); });
 
 // Reveal
 const obs=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('visible');}),{threshold:.1});
@@ -4503,6 +4519,21 @@ function deseneazaLot(lot, ctx) {
   if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
 }
 
+// Pasul 11-C11: fn rulează după DOMContentLoaded (imediat, dacă a trecut deja).
+function dupaDcl(fn) {
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn, { once: true });
+  else fn();
+}
+
+// Primul lot se poate desena înainte de DOMContentLoaded doar pe fila implicită și fără
+// filtre în adresă; altfel setul corect se știe abia după ce rulează codul adresei.
+function desenDevreme() {
+  const p = new URLSearchParams(location.search);
+  const TAB = { servicii: 'servicii', materiale: 'materiale', inchirieri: 'inchiriere', inchiriere: 'inchiriere' };
+  const fila = TAB[p.get('categorie')] || TAB[p.get('type')] || 'servicii';
+  return fila === 'servicii' && !['subcategorie', 'cat', 'q', 'tab', 'openAI'].some((k) => p.get(k));
+}
+
 // Fila deschisă e prima; o filă în fundal nu primește cadre, deci merge pe setTimeout.
 function deseneazaTreptat(grile, ctx, gata) {
   const coada = [];
@@ -4519,11 +4550,13 @@ function deseneazaTreptat(grile, ctx, gata) {
       coada.push({ grid, tab, total: items.length, primul: i === 0, items: items.slice(i, i + CARDURI_PE_LOT) });
     }
   });
+  const urmatorul = () => { if (document.hidden) setTimeout(pas, 16); else requestAnimationFrame(pas); };
+  // Pasul 11-C11: doar primul lot se desenează înainte de DOMContentLoaded.
   const pas = () => {
     const lot = coada.shift();
     if (lot) deseneazaLot(lot, ctx);
-    if (!coada.length) { gata(); return; }
-    if (document.hidden) setTimeout(pas, 16); else requestAnimationFrame(pas);
+    if (!coada.length) { dupaDcl(gata); return; }
+    dupaDcl(urmatorul);
   };
   pas();
 }
@@ -4566,12 +4599,25 @@ async function loadCatalog() {
     // Pasul 11-C10: promisiunea pornită din <head>; „Reîncearcă” face o cerere nouă.
     if (!window.__catalogPromis) window.__catalogPromis = window.__catalogCere();
     const { servicii, materiale, inchirieri, relatii, servicii_asociate: svcAsoc } = await window.__catalogPromis;
+    // Pasul 11-C11: cu filă sau filtru în adresă, totul se desenează după DOMContentLoaded, ca înainte.
+    if (!desenDevreme()) await new Promise((ok) => dupaDcl(() => setTimeout(ok, 0)));
 
     // Indecși
     const pretIdx = {};
     [...servicii, ...materiale, ...inchirieri].forEach((p) => { pretIdx[p.id] = { pret_de_la: p.pret_de_la, are_pret: p.are_pret }; });
-    window.PRET_MAXIM_CATALOG = Math.max(0, ...Object.values(pretIdx).map((x) => x.pret_de_la || 0));
-    seteazaFiltruPret();
+    // Filtrul de preț, contoarele și coloana: după DOMContentLoaded (pasul 11-C11), înainte de filtrare.
+    dupaDcl(() => {
+      window.PRET_MAXIM_CATALOG = Math.max(0, ...Object.values(pretIdx).map((x) => x.pret_de_la || 0));
+      seteazaFiltruPret();
+      updateSidebar('servicii',   servicii);
+      updateSidebar('materiale',  materiale);
+      updateSidebar('inchiriere', inchirieri);
+      // Pasul 11-C4: numărul real de produse (înainte: „26 produse” scris în pagină).
+      const total = servicii.length + materiale.length + inchirieri.length;
+      const bc = document.getElementById('breadcrumb-count');
+      if (bc) bc.textContent = typeof window.t === 'function' ? window.t(null, '{n} produse', { n: total }) : total + ' produse';
+      document.querySelectorAll('[data-total-catalog]').forEach(el => { el.textContent = total + '+'; });
+    });
 
     const svcById = {};
     svcAsoc.forEach(s => { svcById[s.id] = s; });
@@ -4592,18 +4638,6 @@ async function loadCatalog() {
       window.__catalogDesenat = true;
     });
 
-    // Sidebar update
-    updateSidebar('servicii',   servicii);
-    updateSidebar('materiale',  materiale);
-    updateSidebar('inchiriere', inchirieri);
-
-    // Actualizăm contoarele vizibile din pagină
-    // Pasul 11-C4: numărul real de produse (înainte: „26 produse” scris în pagină).
-    const bc = document.getElementById('breadcrumb-count');
-    if (bc) bc.textContent = typeof window.t === 'function' ? window.t(null, '{n} produse', { n: servicii.length + materiale.length + inchirieri.length }) : (servicii.length + materiale.length + inchirieri.length) + ' produse';
-    document.querySelectorAll('[data-total-catalog]').forEach(el => {
-      el.textContent = (servicii.length + materiale.length + inchirieri.length) + '+';
-    });
 
   } catch(e) {
     // Eroare tratată: grilele arată mesajul cu „Reîncearcă” (avertisment, nu eroare de pagină).
@@ -4624,18 +4658,17 @@ function mkIndicator() {
   const d = document.createElement('div');
   d.id = 'db-load-ind';
   d.style.cssText = 'display:none;position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#003366;color:#fff;padding:9px 20px;border-radius:99px;font-size:12px;font-weight:700;z-index:8990;gap:8px;align-items:center;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:inherit';
-  d.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:#0E9E99;animation:pdot 1s infinite;display:inline-block"></span> Sincronizare catalog...';
+  d.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:#0E9E99;animation:pdot 1s infinite;display:inline-block"></span> ' + (typeof window.t === 'function' ? window.t(null, 'Sincronizare catalog...') : 'Sincronizare catalog...');
   document.body.appendChild(d);
 }
 
-// ── Salvăm observer-ul de reveal ─────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  mkIndicator();
-  const ro = new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('visible');}),{threshold:.06});
-  window._revealObs = ro;
-  // După ceilalți ascultători DOMContentLoaded (fila din adresă e deja aleasă).
-  setTimeout(loadCatalog, 0);
-});
+// ── Pornirea catalogului ─────────────────────────────────────────────────
+// Pasul 11-C11: modulul e după grilă în pagină, deci grila există deja; catalogul
+// pornește acum, nu la DOMContentLoaded. Observatorul de reveal e creat aici, ca
+// primul lot să poată apărea; animația rămâne aceeași.
+mkIndicator();
+window._revealObs = window._revealObs || new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('visible');}),{threshold:.06});
+loadCatalog();
 
 })();
 </script>
@@ -5399,7 +5432,11 @@ const RATES = {RON:1, EUR:0.2, MDL:5};
 // scris direct în pagină. Setat la detectarea zonei; până atunci RO.
 let TVA = null;
 function seteazaTva(cc) {
-  if (!window.MDTva) return Promise.resolve();
+  if (!window.MDTva) {
+    // Pasul 11-C11: tva-config.js are defer — până la DOMContentLoaded e încă de încărcat.
+    if (document.readyState !== 'loading') return Promise.resolve();
+    return new Promise((ok) => document.addEventListener('DOMContentLoaded', ok, { once: true })).then(() => seteazaTva(cc));
+  }
   return window.MDTva.cota(cc || 'RO').then((c) => {
     TVA = c;
     document.querySelectorAll('.tva-pct').forEach((e) => { e.textContent = window.MDTva.procent(c); });
