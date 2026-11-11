@@ -71,6 +71,7 @@ const apiCos = require(path.join(RADACINA, 'api/client/cos-multi.js'));
 const apiCreeaza = require(path.join(RADACINA, 'api/comenzi/creeaza.js'));
 const apiMp = require(path.join(RADACINA, 'api/public/marketplace-produse.js'));
 const apiCat = require(path.join(RADACINA, 'api/public/catalog-categorie.js'));
+const apiCatalog = require(path.join(RADACINA, 'api/public/catalog.js'));
 const apiDisp = require(path.join(RADACINA, 'api/public/disponibilitate-adresa.js'));
 const apiGeo = require(path.join(RADACINA, 'api/public/geo-regiuni.js'));
 
@@ -104,6 +105,7 @@ function reset() {
       { id: CAT_SUB, slug: 'prize-intrerupatoare', title: 'Prize și întrerupătoare', title_en: 'Sockets and switches', icon_name: 'plug', parent_id: CAT },
       { id: CAT_ALTA, slug: 'alta', title: 'Altă categorie', icon_name: 'box', parent_id: null },
     ],
+    catalog_relatii: [], // pasul 11-C10: /api/public/catalog citește și relațiile
     catalog_servicii: servicii,
     catalog_niveluri: Object.values(P).flatMap((p) => p.niveluri.map(([id, nivel, pret]) => ({ id, serviciu_id: p.id, nivel, catalog_preturi: pret == null ? [] : [{ pret, tara_cod: 'RO' }] }))),
     catalog_preturi: Object.values(P).flatMap((p) => p.niveluri.filter(([, , pret]) => pret != null).map(([id, , pret]) => ({ nivel_id: id, pret, tara_cod: 'RO' }))),
@@ -259,13 +261,13 @@ async function testeServer() {
   });
   // Pasul 11-C4: paginile de categorie trimit spre catalog (înainte: citeau catalogul
   // prin categorie-catalog.js, acum șters); catalogul ia prețurile din același endpoint.
-  await test('paginile de categorie: doar redirecționare spre catalog, fără liste, prețuri sau Unsplash; catalogul citește prețurile din catalog-categorie', async () => {
+  await test('paginile de categorie: doar redirecționare spre catalog, fără liste, prețuri sau Unsplash; catalogul citește prețurile din /api/public/catalog', async () => {
     for (const f of ['mydarrin-categorie-servicii.html', 'mydarrin-categorie-materiale.html', 'mydarrin-categorie-inchirieri.html']) {
       const s = fs.readFileSync(path.join(RADACINA, f), 'utf8').replace(/<!--[\s\S]*?-->/g, '');
       adevarat(!/unsplash/i.test(s) && !/const SUBCATEGORY_DB|price\s*:\s*\d/.test(s), f + ': conținut vechi');
       adevarat(s.includes("location.replace('/mydarrin-catalog?"), f + ': redirecționarea');
     }
-    adevarat(fs.readFileSync(path.join(RADACINA, 'mydarrin-catalog.html'), 'utf8').includes('/api/public/catalog-categorie?toate=1'), 'sursa prețurilor din catalog');
+    adevarat(fs.readFileSync(path.join(RADACINA, 'mydarrin-catalog.html'), 'utf8').includes("'/api/public/catalog?tara='"), 'sursa prețurilor din catalog');
   });
 
   console.log('D. Discounturile partenerilor nu apar în răspunsurile publice');
@@ -275,6 +277,7 @@ async function testeServer() {
       await pretAfisat(P.tablou), await pretAfisat(P.reteta),
       (await cheama(apiDisp, { body: { serviciu_id: P.tablou.id, adresa: ADR, nivel_id: nivel(P.tablou) } })).corp,
       (await cheama(apiCat, { metoda: 'GET', query: { cat: 'instalatii-electrice', tip: 'servicii' } })).corp,
+      (await cheama(apiCatalog, { metoda: 'GET', query: { tara: 'RO', lang: 'ro' } })).corp,
       (await cheama(apiMp, { body: { produse: [{ id: P.parchet.id, qty: 1, nivel: 'Bronze' }] } })).corp,
       (await adaugaServiciu(P.tablou)).corp,
       (await cheama(apiCos, { metoda: 'GET', query: { sesiune_token: GUEST } })).corp,
@@ -292,7 +295,7 @@ async function testeBrowser() {
   if (CAPTURI) fs.mkdirSync(CAPTURI, { recursive: true });
   const API = {
     '/api/public/calculeaza-pret-nivel': apiPret, '/api/client/cos-multi': apiCos, '/api/comenzi/creeaza': apiCreeaza,
-    '/api/public/marketplace-produse': apiMp, '/api/public/catalog-categorie': apiCat, '/api/public/disponibilitate-adresa': apiDisp,
+    '/api/public/marketplace-produse': apiMp, '/api/public/catalog-categorie': apiCat, '/api/public/catalog': apiCatalog, '/api/public/disponibilitate-adresa': apiDisp,
     '/api/public/geo-regiuni': apiGeo,
     '/api/public/servicii-cu-reteta': async (req, res) => res.status(200).json({ ok: true, servicii: [{ id_serviciu: P.reteta.slug, serviciu_id: P.reteta.id }] }),
     '/api/public/tari-active': async (req, res) => res.status(200).json({ ok: true, active: ['RO'], tari: [{ tara_cod: 'RO', tara_nume: 'România' }], tva: { RO: 21 } }),

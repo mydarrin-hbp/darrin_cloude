@@ -23,7 +23,7 @@
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { checkRateLimit } = require('../../lib/rate-limit');
-const { incarcaConfigPret, aplicaFormulaPret } = require('../../lib/calculeaza-pret');
+const { preturiDeLa } = require('../../lib/catalog-preturi');
 
 const TIPURI = { servicii: 'servicii', materiale: 'materiale', inchirieri: 'inchirieri', inchiriere: 'inchirieri' };
 
@@ -71,34 +71,8 @@ module.exports = async function handler(req, res) {
       produse = data || [];
     }
 
-    // Prețul „de la”: doar niveluri fără rețetă, cu preț în catalog_preturi.
-    const pretMinim = {};
-    const cuPretReal = new Set();
-    if (produse.length) {
-      // Nivelurile cu prețurile lor (o singură cerere, fără liste lungi de id-uri
-      // în adresă) și nivelurile cu rețetă (puține, citite toate).
-      const [{ data: niveluri }, { data: articole }] = await Promise.all([
-        supabaseAdmin.from('catalog_niveluri').select('id, serviciu_id, catalog_preturi(pret, tara_cod)').in('serviciu_id', produse.map((p) => p.id)),
-        supabaseAdmin.from('devize_articole').select('catalog_nivel_id').not('catalog_nivel_id', 'is', null),
-      ]);
-      const cuReteta = new Set((articole || []).map((x) => x.catalog_nivel_id));
-      (niveluri || []).forEach((n) => {
-        if (cuReteta.has(n.id)) { cuPretReal.add(n.serviciu_id); return; }
-        (n.catalog_preturi || []).forEach((p) => {
-          const v = Number(p.pret);
-          if (p.tara_cod !== tara || !(v > 0)) return;
-          cuPretReal.add(n.serviciu_id);
-          if (pretMinim[n.serviciu_id] == null || v < pretMinim[n.serviciu_id]) pretMinim[n.serviciu_id] = v;
-        });
-      });
-    }
-
-    let cfg = null;
-    if (Object.keys(pretMinim).length) cfg = await incarcaConfigPret(tara);
-    const pretPublic = (baza, categ) => {
-      const input = categ === 'inchirieri' ? { cost_chirie_scule: baza } : categ === 'materiale' ? { cost_materiale: baza } : { cost_baza_servicii: baza };
-      return aplicaFormulaPret(input, cfg, undefined, { cuPragMinim: false }).pret_final;
-    };
+    // Prețul „de la” (pasul 11-C10: aceeași funcție ca /api/public/catalog).
+    const preturi = await preturiDeLa(produse, tara);
 
     const lista = produse
       .map((p) => ({
@@ -106,8 +80,8 @@ module.exports = async function handler(req, res) {
         unitate: p.unitate_masura || null,
         imagine: Array.isArray(p.imagini) && p.imagini.length ? p.imagini[0] : null,
         tip: p.categorie,
-        pret_de_la: pretMinim[p.id] != null ? pretPublic(pretMinim[p.id], p.categorie) : null,
-        are_pret: cuPretReal.has(p.id),
+        pret_de_la: preturi[p.id].pret_de_la,
+        are_pret: preturi[p.id].are_pret,
       }))
       .sort((x, y) => String(x.titlu).localeCompare(String(y.titlu), 'ro'));
 

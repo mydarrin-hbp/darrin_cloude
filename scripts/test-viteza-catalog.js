@@ -1,7 +1,7 @@
 // scripts/test-viteza-catalog.js
 // Pasul 11-C9 (8 nov. 2026): imaginile din catalog se încarcă mai repede.
 //   A. fișierele: preconnect / dns-prefetch; adresele vechi și imaginile base64 nu mai
-//      sunt în pagină; caruselul în formatul nou; svcAsoc2 în același Promise.all;
+//      sunt în pagină; caruselul în formatul nou; datele vin dintr-o singură cerere (11-C10);
 //      fișierele din assets/img au cache;
 //   B. /api/public/catalog-categorie: antetul de cache doar la succes, același
 //      răspuns indiferent de utilizator;
@@ -66,14 +66,16 @@ async function deschide(browser, baza, o) {
   await ctx.route(/\.supabase\.co\/rest\/v1\//, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(rest(r.request().url())) }));
   await ctx.route(/\.supabase\.co\/(?!rest\/v1\/|storage\/)/, (r) => r.abort());
   await ctx.route(/ipapi\.co|nominatim/, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
-  await ctx.route(/\/api\/public\/catalog-categorie/, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, produse: [], pret_maxim: null, moneda: 'RON' }) }));
+  await ctx.route(/\/api\/public\/catalog\?/, (r) => { const tip = (c) => produse().filter((x) => x.categorie === c).map((x) => ({ ...x, pret_de_la: null, are_pret: false })); return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, servicii: tip('servicii'), materiale: tip('materiale'), inchirieri: tip('inchirieri'), relatii: [], servicii_asociate: [] }) }); });
   const p = await ctx.newPage();
   p.setDefaultTimeout(12000);
   const erori = [];
   p.on('pageerror', (e) => erori.push(e.message.slice(0, 160)));
   p.on('requestfailed', (r) => { if (/images\.unsplash\.com/.test(r.url())) esuate.push(r.url()); });
-  await p.goto(`${baza}/mydarrin-catalog.html`, { waitUntil: 'load', timeout: 60000 });
+  // Cu imagini întârziate nu se așteaptă „load”: cardurile apar acum înainte de el (11-C10).
+  await p.goto(`${baza}/mydarrin-catalog.html`, { waitUntil: o.intarziere ? 'domcontentloaded' : 'load', timeout: 60000 });
   await p.waitForSelector('#grid-servicii .db-card');
+  await p.waitForFunction(() => window.__catalogDesenat);
   return { ctx, p, erori, cereri, esuate };
 }
 function repetari() {
@@ -96,7 +98,7 @@ function testeFisiere() {
   verifica((s.match(/\?w=600&q=80/g) || []).length === 0, 'adrese vechi ?w=600&q=80 în pagină');
   const carusel = [...s.matchAll(/class="hcar-card">\s*<img ([^>]*)>/g)].map((m) => m[1]);
   verifica(carusel.length === 30 && carusel.every((a) => /auto=format/.test(a) && /srcset="/.test(a) && /sizes="/.test(a) && /decoding="async"/.test(a) && /loading="lazy"/.test(a)), `caruselul: ${carusel.length} imagini`);
-  verifica(/svcAsoc, svcAsoc2\] = await Promise\.all\(\[/.test(s) && !/const \[svcAsoc2\] = await/.test(s), 'svcAsoc2 nu e în același Promise.all');
+  verifica(/await window\.__catalogPromis;/.test(s) && !/Promise\.all\(\[\s*\/\/ 31 august/.test(s), 'datele nu vin din cererea unică');
   verifica(/@media \(prefers-reduced-motion:reduce\)\{\.card-media\.img-asteapta\{animation:none\}/.test(s), 'prefers-reduced-motion');
   const v = JSON.parse(citeste('vercel.json'));
   const reg = v.headers.find((h) => h.source === '/assets/img/(.*)');

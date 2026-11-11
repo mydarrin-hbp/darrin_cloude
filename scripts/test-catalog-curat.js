@@ -32,6 +32,7 @@ function stub(fisier, exp) {
 stub('lib/rate-limit.js', { checkRateLimit: async () => true });
 
 const apiCat = require(path.join(RADACINA, 'api/public/catalog-categorie.js'));
+const apiCatalog = require(path.join(RADACINA, 'api/public/catalog.js'));
 const apiSitemap = require(path.join(RADACINA, 'api/public/sitemap.xml.js'));
 const REGIUNE = require(path.join(RADACINA, 'lib/regiune.js'));
 const citeste = (f) => fs.readFileSync(path.join(RADACINA, f), 'utf8');
@@ -204,6 +205,13 @@ async function testeBrowser() {
     await ctx.route(/ipapi\.co|nominatim/, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
     await ctx.route(/\/api\//, async (r) => {
       const u = new URL(r.request().url());
+      if (u.pathname === '/api/public/catalog') {
+        if (CONTROL.intarziere) await new Promise((ok) => setTimeout(ok, CONTROL.intarziere));
+        if (CONTROL.restCade) return r.fulfill({ status: 500, contentType: 'application/json', body: '{}' });
+        const res = raspuns();
+        await apiCatalog(cerere({ metoda: 'GET', query: Object.fromEntries(u.searchParams) }), res);
+        return r.fulfill({ status: res.statusCode, contentType: 'application/json', body: JSON.stringify(res.corp) });
+      }
       if (u.pathname === '/api/public/catalog-categorie') {
         const res = raspuns();
         await apiCat(cerere({ metoda: 'GET', query: Object.fromEntries(u.searchParams) }), res);
@@ -239,6 +247,7 @@ async function testeBrowser() {
       await test(`${latime}: ?categorie=servicii&subcategorie=instalatii-electrice → fila și filtrul aplicate la încărcare, vizibile; doar produse publice, cu prețul de pe server`, async () => {
         const pg = await pagina(ctx, '/mydarrin-catalog.html?categorie=servicii&subcategorie=instalatii-electrice');
         await pg.waitForSelector('#grid-servicii .db-card', { state: 'attached' });
+        await pg.waitForFunction(() => window.__catalogDesenat);
         await pg.waitForFunction(() => window.FILTRU_SUBCATEGORIE && !document.getElementById('filtru-subcategorie').hidden);
         await pg.waitForTimeout(300);
         egal(await carduriVizibile(pg), ['montaj-priza', 'montaj-tablou-electric', 'testare-instalatie'], 'categoria + subcategoria ei');
@@ -304,6 +313,7 @@ async function testeBrowser() {
       await pg.waitForSelector('#grid-servicii [data-schelet]');
       adevarat(!/\d/.test(await pg.textContent('#grid-servicii')), 'cifre în schelet');
       await pg.waitForSelector('#grid-servicii .db-card', { state: 'attached', timeout: 10000 });
+      await pg.waitForFunction(() => window.__catalogDesenat);
       egal(await pg.$$eval('#grid-servicii [data-schelet]', (x) => x.length), 0, 'scheletul scos');
       CONTROL.intarziere = 0;
       await pg.close();
@@ -316,12 +326,14 @@ async function testeBrowser() {
       CONTROL.restCade = false;
       await pg.click('#grid-servicii .cat-stare button');
       await pg.waitForSelector('#grid-servicii .db-card', { state: 'attached' });
+      await pg.waitForFunction(() => window.__catalogDesenat);
       egal(await pg.$$eval('.cat-stare', (x) => x.length), 0, 'mesajul scos');
       await pg.close();
     });
     await test('butoanele (11-C1): serviciu → configurarea; fără preț → „Cere un deviz”', async () => {
       const pg = await pagina(ctx, '/mydarrin-catalog.html?categorie=servicii');
       await pg.waitForSelector('#grid-servicii .db-card', { state: 'attached' });
+      await pg.waitForFunction(() => window.__catalogDesenat);
       egal(await pg.$eval('[data-slug="testare-instalatie"] .card-cta', (b) => b.textContent.trim()), 'Cere un deviz');
       egal(await pg.$eval('[data-slug="montaj-priza"] .card-cta', (b) => b.textContent.trim()), 'Adaugă în coș');
       await Promise.all([pg.waitForURL(/mydarrin-produs\.html\?slug=montaj-priza/), pg.$eval('[data-slug="montaj-priza"] .card-cta', (b) => b.click())]);

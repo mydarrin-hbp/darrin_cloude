@@ -95,6 +95,7 @@ function reset() {
     geo_regiuni: [['B', 'București'], ['CJ', 'Cluj'], ['IF', 'Ilfov'], ['IS', 'Iași'], ['SB', 'Sibiu']]
       .map(([cod, denumire], i) => ({ id: 'g' + i, tara_cod: 'RO', cod, denumire, ordine: i + 1 }))
       .concat([{ id: 'gm', tara_cod: 'MD', cod: 'CU', denumire: 'Chișinău', ordine: 1 }]),
+    catalog_relatii: [], devize_articole: [], // pasul 11-C10: /api/public/catalog citește relațiile și rețetele
     catalog_servicii: [
       { id: SVC, id_serviciu: 'montaj-tablou-electric', titlu: 'Montaj tablou electric', categorie: 'servicii', status_public: true, unitate_masura: 'buc' },
       { id: SVC_B, id_serviciu: 'reparatie-garnituri-calorifer', titlu: 'Reparație garnituri calorifer', categorie: 'servicii', status_public: true, unitate_masura: 'interv.' },
@@ -407,6 +408,7 @@ async function testeBrowser() {
     '/api/public/calculeaza-pret-nivel': require(path.join(RADACINA, 'api/public/calculeaza-pret-nivel.js')),
     // Pasul 11-C4: prețurile „de la” ale catalogului.
     '/api/public/catalog-categorie': require(path.join(RADACINA, 'api/public/catalog-categorie.js')),
+    '/api/public/catalog': require(path.join(RADACINA, 'api/public/catalog.js')),
     '/api/public/tari-active': async (req, res) => res.status(200).json({ ok: true, active: ['RO'], tari: [{ tara_cod: 'RO', tara_nume: 'România' }], tva: { RO: 21 } }),
     '/api/cont/profil': async (req, res) => res.status(200).json({ ok: true, email: 'client@example.com', nume: 'Ana Albu', roles: ['client'], roluri_dashboard: ['client'], partener: null, investitor: null }),
   };

@@ -327,7 +327,7 @@ async function testeBrowser() {
     await ctx.route(/\.supabase\.co\/rest\/v1\//, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(rest(r.request().url())) }));
     await ctx.route(/\.supabase\.co\/(?!rest\/v1\/|storage\/)/, (r) => r.abort());
     await ctx.route(/ipapi\.co|nominatim/, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
-    await ctx.route(/\/api\/public\/catalog-categorie/, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, produse: [], pret_maxim: null, moneda: 'RON' }) }));
+    await ctx.route(/\/api\/public\/catalog\?/, (r) => { const tip = (x) => rest('https://x.supabase.co/rest/v1/catalog_servicii?categorie=eq.' + x + '&status_public=eq.true').map((p) => ({ ...p, pret_de_la: null, are_pret: false })); return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, servicii: tip('servicii'), materiale: tip('materiale'), inchirieri: tip('inchirieri'), relatii: [], servicii_asociate: [] }) }); });
     await ctx.route(/\/api\/public\/marketplace-produse/, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
       ok: true, tip: 'materiale', moneda: 'RON', noduri: [{ slug: 'lemn', title: 'Lemn', title_en: 'Wood', numar: 2 }], total: 2, pagina: 1, pe_pagina: 24,
       produse: [
@@ -357,6 +357,7 @@ async function testeBrowser() {
       await test(`${latime}: fiecare card are imagine (reală, a domeniului sau IMG_DEF), fără iconiță; imaginea din back-office are prioritate`, async () => {
         const pg = await pagina(ctx, '/mydarrin-catalog.html');
         await pg.waitForSelector('#grid-servicii .db-card', { state: 'attached' });
+        await pg.waitForFunction(() => window.__catalogDesenat);
         await pg.waitForTimeout(400);
         const carduri = await pg.$$eval('.db-card', (c) => c.map((k) => ({ slug: k.dataset.slug, src: k.querySelector('.card-media img') ? k.querySelector('.card-media img').getAttribute('src') : null, icoana: !!k.querySelector('.card-icoana, .card-media [data-lucide]') })));
         egal(carduri.map((c) => c.slug).sort(), Object.keys(PERMISE).sort(), 'carduri');
@@ -415,10 +416,12 @@ async function testeBrowser() {
           const imagini = (pg) => pg.$$eval('.db-card', (c) => c.map((k) => k.dataset.slug + ' ' + k.querySelector('.card-media img').getAttribute('src')));
           const pg = await pagina(ctx, '/mydarrin-catalog.html');
           await pg.waitForSelector('#grid-materiale .db-card', { state: 'attached' });
+          await pg.waitForFunction(() => window.__catalogDesenat);
           await pg.waitForTimeout(400);
           const prima = await imagini(pg);
           await pg.reload({ waitUntil: 'load' });
           await pg.waitForSelector('#grid-materiale .db-card', { state: 'attached' });
+          await pg.waitForFunction(() => window.__catalogDesenat);
           await pg.waitForTimeout(400);
           egal(await imagini(pg), prima, 'aceeași listă → aceleași imagini');
           await pg.evaluate(() => window.switchMainTab && window.switchMainTab('materiale'));

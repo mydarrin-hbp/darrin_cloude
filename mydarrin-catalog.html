@@ -312,6 +312,21 @@ input:valid:not(:placeholder-shown):not([type="checkbox"]) {
 <meta charset="UTF-8">
 <!-- Limba (10 oct. 2026): engleza implicită, româna din selector — i18n-loader.js, sincron, primul script -->
 <script src="/i18n-loader.js" data-pagina="mydarrin-catalog"></script>
+<script>
+// Pasul 11-C10: datele catalogului se cer înaintea restului paginii;
+// loadCatalog() folosește promisiunea de aici, fără o a doua cerere.
+window.__catalogCere = function () {
+  var limba = window.MYD_I18N && window.MYD_I18N.lang === 'ro' ? 'ro' : 'en';
+  var tara = (window.MYD_GEO_LAST && window.MYD_GEO_LAST.cc) || 'RO';
+  return fetch('/api/public/catalog?tara=' + encodeURIComponent(tara) + '&lang=' + limba).then(function (r) {
+    if (!r.ok) throw new Error('catalog: HTTP ' + r.status);
+    return r.json();
+  });
+};
+window.__catalogPromis = window.__catalogCere();
+// O eroare apărută înainte de loadCatalog() e tratată acolo, cu mesajul „Reîncearcă”.
+window.__catalogPromis.catch(function () {});
+</script>
 <link rel="alternate" hreflang="en" href="https://mydarrin.homebestpal.com/mydarrin-catalog?lang=en"/>
 <link rel="alternate" hreflang="ro" href="https://mydarrin.homebestpal.com/mydarrin-catalog?lang=ro"/>
 <link rel="alternate" hreflang="x-default" href="https://mydarrin.homebestpal.com/mydarrin-catalog"/>
@@ -876,7 +891,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 .tip-btn:hover { opacity:.8; }
 
 /* Mobile: sidebar ascuns, apare ca sheet de jos */
-@media (max-width:767px) {
+@media (max-width:768px) {
   #main-grid {
     grid-template-columns: 1fr !important;
   }
@@ -901,7 +916,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
     display: flex !important;
   }
 }
-@media (min-width:768px) and (max-width:1023px) {
+@media (min-width:769px) and (max-width:1023px) {
   #main-grid {
     grid-template-columns: 200px 1fr !important;
   }
@@ -927,6 +942,61 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
   cursor: pointer;
   font-family: inherit;
 }
+/* Pasul 11-C10: numărul de filtre active și butoanele panoului de pe telefon */
+#filtre-numar { min-width:18px; height:18px; padding:0 5px; border-radius:99px; background:#FF8C00; color:#fff; font-size:11px; font-weight:800; line-height:18px; text-align:center; box-sizing:border-box; }
+#filtre-numar[hidden] { display:none; }
+#filtre-mobil-actiuni { display:none; }
+
+/* Pasul 11-C10: pe telefon, grila urcă în primul ecran */
+@media (max-width:768px) {
+  body.filtre-deschise #dai-fab { display:none !important; }
+  #cat-aside { max-height:70vh !important; }
+  #filtre-mobil-actiuni { display:flex; gap:10px; position:sticky; bottom:-16px; margin:14px -16px -16px; padding:12px 16px; background:#fff; border-top:1px solid #E8F0FB; }
+  #filtre-mobil-actiuni button { flex:1; min-height:44px; border-radius:10px; font-size:14px; font-weight:700; font-family:inherit; cursor:pointer; }
+  #filtre-reseteaza { background:#fff; color:#003366; border:1.5px solid #D5DFE8; }
+  #filtre-aplica { background:#FF8C00; color:#fff; border:none; }
+
+  #catalog-hero { min-height:0 !important; }
+  #catalog-hero > div.hero-container { padding-top:14px !important; }
+  #catalog-hero .hero-inner { flex-direction:row; flex-wrap:wrap; justify-content:center; gap:10px !important; }
+  #catalog-hero .hero-text, #cat-cta-row { flex:0 0 100%; }
+  #catalog-hero .hero-eyebrow { font-size:9.5px !important; letter-spacing:.06em !important; padding:4px 10px !important; margin-bottom:8px !important; }
+  #catalog-hero h1 { margin-bottom:6px !important; line-height:1.15 !important; }
+  #catalog-hero .hero-subtitlu { font-size:13px !important; line-height:1.4 !important; margin-bottom:8px !important; }
+  #catalog-hero .hero-statistici { margin-bottom:8px !important; gap:18px !important; }
+  #catalog-hero .hero-cautare { margin-bottom:0 !important; }
+  #cat-cta-row { flex-direction:row !important; flex-wrap:nowrap !important; gap:8px !important; }
+  .cat-cta-btn { width:auto !important; flex:1 1 0 !important; height:46px !important; min-height:46px !important; padding:0 4px !important; font-size:.8rem !important; gap:5px !important; white-space:nowrap; }
+  .cat-cta-btn span:first-child { font-size:1rem !important; }
+  #catalog-hero .hero-link { width:auto !important; }
+  #catalog-hero .hero-link a { padding:8px 12px !important; gap:6px !important; }
+  #catalog-hero .hero-link a > span:not(:first-child), #catalog-hero .hero-link a > span:only-of-type { font-size:12.5px !important; }
+  #catalog-hero .hero-link a > span:last-child:not(:only-of-type) { font-size:9.5px !important; padding:3px 7px !important; }
+  #catalog-hero .hero-sugestie { display:none !important; }
+  #catalog-hero > div.hero-container { padding-bottom:14px !important; }
+
+  /* Caruselul: un singur rând mai scund, derulat cu degetul (fără copiile buclei) */
+  .hcar-sectiune { padding:10px 0 !important; }
+  .hcar-sectiune .text-center { margin-bottom:6px !important; }
+  .hcar-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; mask-image:none; -webkit-mask-image:none; }
+  .hcar-wrap::-webkit-scrollbar { display:none; }
+  .hcar-track { animation:none !important; gap:8px; }
+  .hcar-card { width:116px !important; height:72px !important; border-radius:12px; }
+  .hcar-card:nth-child(n+16) { display:none; }
+  .hcar-icon { display:none; }
+  .hcar-badge { font-size:7.5px; padding:2px 6px; top:5px; left:5px; }
+  .hcar-overlay { padding:6px 8px; }
+
+  .fir-sectiune { padding:4px 0 !important; }
+  .fir-sectiune .myd-breadcrumb { padding:0 12px !important; }
+  #main-grid { padding-top:10px !important; }
+  #bara-cautare { margin-bottom:8px !important; gap:8px !important; }
+  #bara-cautare .search-wrap { flex:1 1 calc(100% - 120px); max-width:none; }
+}
+@media (max-width:480px) {
+  #catalog-hero h1 { font-size:1.35rem !important; }
+}
+
 /* Overlay pentru sidebar mobil */
 #sidebar-mobile-overlay {
   display: none;
@@ -1383,13 +1453,13 @@ function triggerHeaderSearch(){
   <div style="position:absolute;bottom:-10%;left:-5%;width:400px;height:400px;max-width:60%;border-radius:50%;background:radial-gradient(circle,rgba(255,140,0,.08) 0%,transparent 70%);pointer-events:none"></div>
 
   <!-- Container aliniat EXACT cu header-ul: 1200px + padding 20px (Secțiunea 1 prompt) -->
-  <div style="max-width:1200px;margin:0 auto;padding:0 20px;box-sizing:border-box;width:100%;position:relative;z-index:2;padding-top:56px">
+  <div style="max-width:1200px;margin:0 auto;padding:0 20px;box-sizing:border-box;width:100%;position:relative;z-index:2;padding-top:56px" class="hero-container">
     <div style="display:flex;flex-direction:column;align-items:stretch;width:100%;gap:24px" class="hero-inner">
 
       <!-- ── TEXT + CTA — full width, centrat ── -->
-      <div style="max-width:680px;width:100%;margin:0 auto;text-align:center;box-sizing:border-box">
+      <div class="hero-text" style="max-width:680px;width:100%;margin:0 auto;text-align:center;box-sizing:border-box">
         <!-- Eyebrow -->
-        <div class="reveal" style="display:inline-flex;align-items:center;gap:8px;background:rgba(14,158,153,.15);border:1px solid rgba(14,158,153,.3);color:#0E9E99;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:6px 16px;border-radius:99px;margin-bottom:20px">
+        <div class="reveal hero-eyebrow" style="display:inline-flex;align-items:center;gap:8px;background:rgba(14,158,153,.15);border:1px solid rgba(14,158,153,.3);color:#0E9E99;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:6px 16px;border-radius:99px;margin-bottom:20px">
           <span style="width:6px;height:6px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block"></span>
           <span data-i18n="catalog.hero.eyebrow">Catalog live · Darrin AI · Escrow securizat</span>
         </div>
@@ -1400,16 +1470,16 @@ function triggerHeaderSearch(){
           <span style="font-size:.65em;font-weight:600;color:rgba(255,255,255,.65)">într-un singur loc, alocat de AI</span>
         </h1>
         <!-- Subtitlu -->
-        <p class="reveal d2" style="font-size:16px;color:rgba(255,255,255,.6);line-height:1.625;max-width:480px;margin:0 auto 26px" data-i18n-html="catalog.hero.subtitle">
+        <p class="reveal d2 hero-subtitlu" style="font-size:16px;color:rgba(255,255,255,.6);line-height:1.625;max-width:480px;margin:0 auto 26px" data-i18n-html="catalog.hero.subtitle">
           Servicii · Materiale · Închirieri — comandate simplu, executate de parteneri verificați, coordonate automat de <strong style="color:#fff">Darrin AI</strong>. Plată Escrow. Garanție digitală.
         </p>
         <!-- Stats discreti: cifre reale (statistici-publice.js), ascunse cât sunt 0 -->
-        <div class="reveal d2" style="display:flex;gap:24px;margin-bottom:30px;flex-wrap:wrap;justify-content:center">
+        <div class="reveal d2 hero-statistici" style="display:flex;gap:24px;margin-bottom:30px;flex-wrap:wrap;justify-content:center">
           <div data-stat-celula="catalog" style="display:none"><div style="font-size:21px;font-weight:800;color:#FF8C00" data-stat="catalog-public"></div><div style="font-size:11px;color:rgba(255,255,255,.65)">Servicii &amp; produse</div></div>
           <div data-stat-celula="tari" style="display:none"><div style="font-size:21px;font-weight:800;color:#fff" data-stat="tari-active"></div><div style="font-size:11px;color:rgba(255,255,255,.65)">Țări active</div></div>
         </div>
         <!-- SEARCH BAR + AI — funcțional -->
-        <div class="reveal d3" style="margin-bottom:16px;text-align:left;max-width:100%">
+        <div class="reveal d3 hero-cautare" style="margin-bottom:16px;text-align:left;max-width:100%">
           <div style="background:#fff;border-radius:18px;padding:6px;box-shadow:0 14px 36px rgba(0,0,0,.25);display:flex;align-items:center;gap:6px;max-width:100%;box-sizing:border-box">
             <img src="assets/img/darrin-ai.webp" decoding="async" alt="Darrin AI" style="width:34px;height:34px;border-radius:10px;object-fit:cover;flex-shrink:0;margin-left:6px"/>
             <input
@@ -1458,7 +1528,7 @@ function triggerHeaderSearch(){
       </div>
 
       <!-- ════ CTA CE FACEM — vizibil în hero ════ -->
-      <div style="display:flex;justify-content:center;width:100%;box-sizing:border-box">
+      <div class="hero-link" style="display:flex;justify-content:center;width:100%;box-sizing:border-box">
         <a href="cum-comanzi.html"
            style="display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:13px 28px;background:rgba(255,255,255,.13);border:2px solid rgba(255,255,255,.4);border-radius:14px;text-decoration:none;transition:all .2s;cursor:pointer;font-family:inherit"
            onmouseover="this.style.background='rgba(255,255,255,.22)';this.style.transform='translateY(-2px)'"
@@ -1469,7 +1539,7 @@ function triggerHeaderSearch(){
       </div>
 
       <!-- ════ CTA SECUNDAR — Devino Partener — buton real, robust ════ -->
-      <div style="display:flex;justify-content:center;width:100%;box-sizing:border-box">
+      <div class="hero-link" style="display:flex;justify-content:center;width:100%;box-sizing:border-box">
         <a href="cum-devii-partenerul-nostru.html" id="devino-partener-cta"
            style="display:inline-flex !important;flex-wrap:nowrap !important;white-space:nowrap;align-items:center;justify-content:center;gap:10px;padding:14px 24px;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.45);border-radius:14px;text-decoration:none !important;transition:background-color .2s,border-color .2s,transform .2s;box-sizing:border-box;cursor:pointer;max-width:100%">
           <span style="font-size:18px;line-height:1"><i data-lucide="heart-handshake" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>
@@ -1485,7 +1555,7 @@ function triggerHeaderSearch(){
     </div><!-- /hero-inner -->
 
     <!-- Scroll hint — selector monedă manual ELIMINAT (Secțiunea 2 prompt: monedă automată din IP) -->
-    <div class="reveal" style="display:flex;align-items:center;justify-content:center;margin-top:36px;padding-bottom:40px">
+    <div class="reveal hero-sugestie" style="display:flex;align-items:center;justify-content:center;margin-top:36px;padding-bottom:40px">
       <div style="display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.65);font-size:12px;cursor:pointer" onclick="document.getElementById('catalog-grid-section').scrollIntoView({behavior:'smooth'})">
         <span>Derulează pentru catalog complet</span>
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="animation:bounce .6s ease infinite alternate"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
@@ -1496,7 +1566,7 @@ function triggerHeaderSearch(){
 
 
 <!-- ════ CARUSEL CATEGORII — identic homepage, 15 carduri ════ -->
-<div style="background:linear-gradient(135deg,#001E3C,#003366);padding:28px 0">
+<div class="hcar-sectiune" style="background:linear-gradient(135deg,#001E3C,#003366);padding:28px 0">
   <div style="max-width:1200px;margin:0 auto;padding:0 20px;box-sizing:border-box">
     <div class="text-center mb-3">
       <span style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.65)">Explorează pe categorii</span>
@@ -1749,7 +1819,7 @@ function triggerHeaderSearch(){
 </div>
 
 <!-- BREADCRUMB (discret, sub hero) -->
-<div style="background:#fff;border-bottom:1px solid #D5DFE8;padding:8px 24px">
+<div class="fir-sectiune" style="background:#fff;border-bottom:1px solid #D5DFE8;padding:8px 24px">
   <div class="myd-breadcrumb" style="max-width:1200px;margin:0 auto;padding:0 20px;box-sizing:border-box;display:flex;align-items:center;gap:6px;font-size:12px;color:#8C9BAD;flex-wrap:wrap">
     <a href="/" style="color:#6B7A8D;text-decoration:none">Acasă</a>
     <span style="color:#D5DFE8">/</span>
@@ -2110,6 +2180,12 @@ function triggerHeaderSearch(){
     <div style="font-size:11.5px;color:#6B7A8D;line-height:1.7" data-regula="prag-minim"></div>
   </div>
 
+  <!-- Pasul 11-C10: doar în panoul de pe telefon -->
+  <div id="filtre-mobil-actiuni">
+    <button type="button" id="filtre-reseteaza" onclick="reseteazaFiltreMobil()">Resetează</button>
+    <button type="button" id="filtre-aplica" onclick="aplicaFiltreMobil()">Aplică</button>
+  </div>
+
 </aside>
 
 
@@ -2117,11 +2193,12 @@ function triggerHeaderSearch(){
   <!-- CENTER: CATALOG GRID -->
   <main>
     <!-- SEARCH + SORT BAR -->
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+    <div id="bara-cautare" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
       <!-- Buton Filtre pe mobil -->
-      <button id="mobile-filter-btn" onclick="openMobileFilter()">
+      <button id="mobile-filter-btn" type="button" aria-expanded="false" aria-controls="cat-aside" onclick="openMobileFilter()">
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
-        Filtre & Categorii
+        Filtre
+        <span id="filtre-numar" hidden></span>
       </button>
       <!-- Overlay mobil -->
       <div id="sidebar-mobile-overlay" onclick="closeMobileFilter()"></div>
@@ -3999,10 +4076,6 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&consOpen) closeCon
 (function(){
 'use strict';
 
-// Cheia e deja în window.__ENV__ (injectat în <head>)
-const SUPA_URL  = window.__ENV__.SUPABASE_URL;
-const SUPA_ANON = window.__ENV__.SUPABASE_ANON_KEY;
-
 // ── Mapare domeniu → {cat, sub, img} (toate domeniile din DB) ─────────────
 const DOM = {
   "Instalații sanitare și termice":{"cat":"Instalații","sub":"Sanitare & Termo","img":"1607472586893-edb57bdc0e39"},
@@ -4265,28 +4338,6 @@ const CAT_EMOJI = {
   Acces:'', Vacanță:'', Electrocasnice:'', Sanatare:'',
 };
 
-// ── Fetch Supabase ────────────────────────────────────────────────────────
-async function sg(table, qs) {
-  const r = await fetch(`${SUPA_URL}/rest/v1/${table}?${qs}`, {
-    headers:{apikey:SUPA_ANON, Authorization:`Bearer ${SUPA_ANON}`, Range:'0-999'}
-  });
-  // Pasul 11-C4: o eroare nu mai arată un catalog gol fără explicație.
-  if (!r.ok) throw new Error(table + ': HTTP ' + r.status);
-  return r.json();
-}
-
-// Pasul 11-C4: { [catalog_servicii.id]: { pret_de_la, are_pret } } pentru toate cele trei tipuri.
-async function preturiCatalog() {
-  const tara = (window.MYD_GEO_LAST && window.MYD_GEO_LAST.cc) || 'RO';
-  const rezultat = {};
-  await Promise.all(['servicii', 'materiale', 'inchirieri'].map(async (tip) => {
-    const r = await fetch('/api/public/catalog-categorie?toate=1&tip=' + tip + '&tara=' + encodeURIComponent(tara));
-    if (!r.ok) throw new Error('catalog-categorie: HTTP ' + r.status);
-    const d = await r.json();
-    (d.produse || []).forEach((p) => { rezultat[p.id] = { pret_de_la: p.pret_de_la, are_pret: p.are_pret }; });
-  }));
-  return rezultat;
-}
 
 // Mesajul unei grile: 'gol' (fără produse) sau 'eroare' (cu „Reîncearcă”).
 function stareGrila(grid, tip) {
@@ -4344,7 +4395,7 @@ function descDinDomeniu(item, tab) {
 }
 
 // ── Build card HTML ───────────────────────────────────────────────────────
-// Pasul 11-C4: `pret` = { pret_de_la, are_pret } de la /api/public/catalog-categorie
+// Pasul 11-C4: `pret` = { pret_de_la, are_pret } de la /api/public/catalog
 // (catalog_preturi, cu formula de pe server). Fără preț: „Preț prin deviz”, fără cifră;
 // cu rețetă (preț real, calculat la configurare): fără cifră „de la”.
 // Pasul 11-C5 (decizia LM, 4 nov. 2026): imaginea, ca înainte de 11-C4 — întâi cea
@@ -4394,7 +4445,7 @@ function mkCard(item, pret, tab, asoc) {
     data-slug="${slug}"
     onclick="openService('${slug}','${tit}')">
   <div class="card-media img-asteapta">
-    <img ${imgReal ? `src="${imgReal}" onerror="this.onerror=null;this.src='${imgPrezentare}'"` : 'sizes="(min-width:1280px) 211px, (min-width:1024px) 23vw, (min-width:768px) 38vw, 46vw"'} alt="${tit}" width="600" height="400" loading="lazy" decoding="async"/>
+    <img ${imgReal ? `src="${imgReal}" onerror="this.onerror=null;this.src='${imgPrezentare}'"` : 'sizes="(min-width:1280px) 211px, (min-width:1024px) 23vw, (min-width:769px) 38vw, 46vw"'} alt="${tit}" width="600" height="400" loading="lazy" decoding="async"/>
     <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
     ${isU?'<span style="position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;background:rgba(220,38,38,.85);color:#fff;padding:2px 8px;border-radius:99px">Urgent</span>':''}
     ${isA?'<div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>':''}
@@ -4414,38 +4465,67 @@ function mkCard(item, pret, tab, asoc) {
 }
 
 // ── Injectează carduri în grid ────────────────────────────────────────────
-function inject(gridId, items, tab, pretIdx, relIdx, svcById) {
-  const grid = document.getElementById(gridId);
-  if (!grid) return;
-  grid.querySelectorAll('[data-schelet], .cat-stare').forEach((e) => e.remove());
-  if (!items.length) { stareGrila(grid, 'gol'); return; }
+// Pasul 11-C10: primele carduri se desenează imediat, restul în loturi mici.
+const CARDURI_PE_LOT = 12;
 
-  // Separator
+// Scheletele dispar și separatorul apare odată cu primul lot al grilei.
+function pregatesteGrila(grid, numar, tab) {
+  grid.querySelectorAll('[data-schelet], .cat-stare').forEach((e) => e.remove());
   const sep = document.createElement('div');
   sep.style.cssText = 'width:100%;grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:14px 0 2px';
   sep.innerHTML = `<div style="flex:1;height:1px;background:#E8F0FB"></div>
     <span style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#1A5FAD;white-space:nowrap">
-      ${items.length} ${tab==='servicii'?'servicii':tab==='materiale'?'produse':'oferte'}
+      ${numar} ${tab==='servicii'?'servicii':tab==='materiale'?'produse':'oferte'}
     </span>
     <div style="flex:1;height:1px;background:#E8F0FB"></div>`;
   grid.appendChild(sep);
+}
 
-  items.forEach(item => {
-    const pret = pretIdx[item.id] || null;
-    const asoc = tab === 'materiale' ? (relIdx[item.id]||[]).map(id=>svcById[id]).filter(Boolean) : [];
+function deseneazaLot(lot, ctx) {
+  const { grid, items, tab, total } = lot;
+  if (lot.primul) pregatesteGrila(grid, total, tab);
+  const fragment = document.createDocumentFragment();
+  const carduri = [];
+  items.forEach((item) => {
+    const pret = ctx.pretIdx[item.id] || null;
+    const asoc = tab === 'materiale' ? (ctx.relIdx[item.id]||[]).map(id=>ctx.svcById[id]).filter(Boolean) : [];
     const wrap = document.createElement('div');
     wrap.innerHTML = mkCard(item, pret, tab, asoc);
     const card = wrap.firstElementChild;
-    if (card) grid.appendChild(card);
+    if (card) { fragment.appendChild(card); carduri.push(card); }
   });
-  // Pasul 11-C7: fără aceeași fotografie pe carduri vecine.
+  grid.appendChild(fragment);
+  // Pasul 11-C7: fără aceeași fotografie pe carduri vecine. Alegerea merge de la
+  // primul card spre ultimul, deci loturile noi nu le schimbă pe cele desenate.
   distribuieImagini(grid);
+  if (window._revealObs) carduri.forEach((c) => window._revealObs.observe(c));
+  // Iconițele cardurilor fără imagine (Lucide).
+  if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
+}
 
-  // Reveal observer
-  if (window._revealObs) items.forEach((_,i) => {
-    const cards = grid.querySelectorAll('.db-card');
-    if (cards[cards.length - items.length + i]) window._revealObs.observe(cards[cards.length - items.length + i]);
+// Fila deschisă e prima; o filă în fundal nu primește cadre, deci merge pe setTimeout.
+function deseneazaTreptat(grile, ctx, gata) {
+  const coada = [];
+  const activa = typeof activeTab !== 'undefined' ? activeTab : 'servicii';
+  grile.slice().sort((a, b) => (b.tab === activa) - (a.tab === activa)).forEach(({ id, items, tab }) => {
+    const grid = document.getElementById(id);
+    if (!grid) return;
+    if (!items.length) {
+      grid.querySelectorAll('[data-schelet], .cat-stare').forEach((e) => e.remove());
+      stareGrila(grid, 'gol');
+      return;
+    }
+    for (let i = 0; i < items.length; i += CARDURI_PE_LOT) {
+      coada.push({ grid, tab, total: items.length, primul: i === 0, items: items.slice(i, i + CARDURI_PE_LOT) });
+    }
   });
+  const pas = () => {
+    const lot = coada.shift();
+    if (lot) deseneazaLot(lot, ctx);
+    if (!coada.length) { gata(); return; }
+    if (document.hidden) setTimeout(pas, 16); else requestAnimationFrame(pas);
+  };
+  pas();
 }
 
 // ── Actualizează sidebar cu numere reale ──────────────────────────────────
@@ -4483,32 +4563,18 @@ async function loadCatalog() {
   if (ind) ind.style.display = 'flex';
 
   try {
-    const [servicii, materiale, inchirieri, niveluri, relatii, svcAsoc, svcAsoc2] = await Promise.all([
-      // 31 august 2026, cerere fondator: "descrierea, imaginile trebuie să
-      // fie vizibile și în catalogul de servicii... aliniat cu" pagina de
-      // configurare — descriere/imagini adăugate la select; mkCard() le
-      // folosește dacă există, cu fallback la textul/poza generică deja
-      // existentă pentru restul catalogului, nepopulat încă.
-      sg('catalog_servicii', 'categorie=eq.servicii&status_public=eq.true&select=id,id_serviciu,titlu,domeniu,unitate_masura,descriere,imagini,categorie_id,subcategorie_id&order=domeniu,titlu'),
-      sg('catalog_servicii', 'categorie=eq.materiale&status_public=eq.true&select=id,id_serviciu,titlu,domeniu,unitate_masura,descriere,imagini,categorie_id,subcategorie_id&order=domeniu,titlu'),
-      sg('catalog_servicii', 'categorie=eq.inchirieri&status_public=eq.true&select=id,id_serviciu,titlu,domeniu,unitate_masura,descriere,imagini,categorie_id,subcategorie_id&order=domeniu,titlu'),
-      // Pasul 11-C4: prețurile „de la” din catalog_preturi, calculate pe server
-      // (înainte: o estimare a materialelor din catalog_niveluri, nu un preț).
-      preturiCatalog(),
-      sg('catalog_relatii',  'tip_relatie=eq.obiect_asociat&select=catalog_serviciu_id,catalog_relatie_id'),
-      sg('catalog_servicii', 'categorie=eq.servicii&id_serviciu=like.cal-*&select=id,id_serviciu,titlu'),
-      sg('catalog_servicii', 'categorie=eq.servicii&id_serviciu=like.ilu-*,id_serviciu=like.tel-*,id_serviciu=like.lav-*,id_serviciu=like.mas-*&select=id,id_serviciu,titlu'),
-    ]);
+    // Pasul 11-C10: promisiunea pornită din <head>; „Reîncearcă” face o cerere nouă.
+    if (!window.__catalogPromis) window.__catalogPromis = window.__catalogCere();
+    const { servicii, materiale, inchirieri, relatii, servicii_asociate: svcAsoc } = await window.__catalogPromis;
 
     // Indecși
-    const pretIdx = niveluri;
+    const pretIdx = {};
+    [...servicii, ...materiale, ...inchirieri].forEach((p) => { pretIdx[p.id] = { pret_de_la: p.pret_de_la, are_pret: p.are_pret }; });
     window.PRET_MAXIM_CATALOG = Math.max(0, ...Object.values(pretIdx).map((x) => x.pret_de_la || 0));
     seteazaFiltruPret();
 
     const svcById = {};
     svcAsoc.forEach(s => { svcById[s.id] = s; });
-
-    svcAsoc2.forEach(s => { svcById[s.id] = s; });
 
     const relIdx = {};
     relatii.forEach(r => {
@@ -4516,13 +4582,15 @@ async function loadCatalog() {
       relIdx[r.catalog_serviciu_id].push(r.catalog_relatie_id);
     });
 
-    // Injectare
-    inject('grid-servicii',   servicii,   'servicii',   pretIdx, relIdx, svcById);
-    inject('grid-materiale',  materiale,  'materiale',  pretIdx, relIdx, svcById);
-    inject('grid-inchiriere', inchirieri, 'inchiriere', pretIdx, relIdx, svcById);
-
-    // Iconițele cardurilor fără imagine (Lucide), după injectare.
-    if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
+    // Injectare (filtrele se aplică după ultimul lot, pe toate cardurile)
+    deseneazaTreptat([
+      { id: 'grid-servicii',   items: servicii,   tab: 'servicii' },
+      { id: 'grid-materiale',  items: materiale,  tab: 'materiale' },
+      { id: 'grid-inchiriere', items: inchirieri, tab: 'inchiriere' },
+    ], { pretIdx, relIdx, svcById }, () => {
+      if (typeof applyFilters === 'function') applyFilters();
+      window.__catalogDesenat = true;
+    });
 
     // Sidebar update
     updateSidebar('servicii',   servicii);
@@ -4537,12 +4605,10 @@ async function loadCatalog() {
       el.textContent = (servicii.length + materiale.length + inchirieri.length) + '+';
     });
 
-    // Re-aplică filtrele
-    setTimeout(() => { if (typeof applyFilters === 'function') applyFilters(); }, 150);
-
   } catch(e) {
     // Eroare tratată: grilele arată mesajul cu „Reîncearcă” (avertisment, nu eroare de pagină).
     console.warn('[CatalogDB]', e);
+    window.__catalogPromis = null;
     ['grid-servicii', 'grid-materiale', 'grid-inchiriere'].forEach((id) => {
       const g = document.getElementById(id);
       if (g && !g.querySelector('.db-card')) { g.querySelectorAll('[data-schelet], .cat-stare').forEach((x) => x.remove()); stareGrila(g, 'eroare'); }
@@ -4567,8 +4633,8 @@ document.addEventListener('DOMContentLoaded', () => {
   mkIndicator();
   const ro = new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('visible');}),{threshold:.06});
   window._revealObs = ro;
-  // Mică întârziere: lăsăm cardurile statice să se randeze mai întâi
-  setTimeout(loadCatalog, 300);
+  // După ceilalți ascultători DOMContentLoaded (fila din adresă e deja aleasă).
+  setTimeout(loadCatalog, 0);
 });
 
 })();
@@ -4738,12 +4804,46 @@ function toggleNaceGroup(id) {
 function openMobileFilter() {
   document.getElementById('cat-aside').classList.add('mobile-open');
   document.getElementById('sidebar-mobile-overlay').classList.add('show');
+  document.getElementById('mobile-filter-btn').setAttribute('aria-expanded', 'true');
+  document.body.classList.add('filtre-deschise');
   document.body.style.overflow = 'hidden';
 }
 function closeMobileFilter() {
   document.getElementById('cat-aside').classList.remove('mobile-open');
   document.getElementById('sidebar-mobile-overlay').classList.remove('show');
+  document.getElementById('mobile-filter-btn').setAttribute('aria-expanded', 'false');
+  document.body.classList.remove('filtre-deschise');
   document.body.style.overflow = '';
+}
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape' && document.body.classList.contains('filtre-deschise')) closeMobileFilter();
+});
+// Pasul 11-C10: butoanele panoului. Prețul maxim se aplică doar la „Aplică”,
+// ca în coloana de pe desktop.
+function aplicaFiltreMobil() {
+  applyFilters();
+  closeMobileFilter();
+}
+function reseteazaFiltreMobil() {
+  filterTipSvc('all', document.getElementById('tip-all'));
+  resetFilters();
+}
+// Câte filtre din panou sunt active (căutarea are câmpul ei, în afara panoului).
+function actualizeazaNumarFiltre() {
+  var el = document.getElementById('filtre-numar');
+  if (!el) return;
+  var pretMaxim = window.PRET_MAXIM_CATALOG > 0 ? parseFloat(document.getElementById('price-range').value) : Infinity;
+  var n = [
+    (activeCat[activeTab] || 'all') !== 'all',
+    (activeSubCat[activeTab] || 'all') !== 'all',
+    activeTip !== 'all',
+    document.getElementById('filter-urgent').checked,
+    document.getElementById('filter-ai').checked,
+    pretMaxim < window.PRET_MAXIM_CATALOG,
+  ].filter(Boolean).length;
+  el.hidden = n === 0;
+  el.textContent = n || '';
+  el.setAttribute('aria-label', window.t(null, '{n} filtre active', { n: n }));
 }
 
 // ── Extinde applyFilters cu logica NACE + tip intervenție ─────────
@@ -4846,6 +4946,8 @@ function applyFilters() {
   }
   // Pasul 11-C7: vecinii se schimbă după filtrare / căutare / sortare.
   if (typeof window.distribuieImagini === 'function') window.distribuieImagini(grid);
+
+  actualizeazaNumarFiltre();
 
   // Result count
   var rc = document.getElementById('result-count');
