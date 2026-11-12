@@ -411,7 +411,10 @@ window.tailwindConfig = {
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- Pasul 11-C12: scos stylesheet-ul Google Fonts (Syne, Inter). Regula universală
+     *{font-family:'Helvetica World',…!important} face ca fonturile să nu fie folosite niciodată
+     (măsurat: 0 elemente, 0 fișiere de font descărcate), dar CSS-ul bloca scripturile inline
+     de după el și, cu ele, parsarea hero-ului (conexiune nouă spre fonts.googleapis.com). -->
 <style>
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
 html { scroll-behavior:smooth; }
@@ -571,6 +574,13 @@ body { font-family:'Helvetica World','Helvetica Neue',Arial,system-ui,sans-serif
 .reveal.d1{transition-delay:.1s} .reveal.d2{transition-delay:.2s}
 .reveal.d3{transition-delay:.3s} .reveal.d4{transition-delay:.45s}
 .reveal.visible { opacity:1; transform:none; }
+/* Pasul 11-C12: elementele .reveal din hero (primul ecran) pornesc animația imediat după
+   parsare (scriptul de după hero), nu la IntersectionObserver. Pornesc de la opacitatea 0,01
+   (nu 0): diferența nu se vede, dar titlul e desenat și contează pentru LCP de la început.
+   Cât pagina e ascunsă de i18n-loader.js (myd-i18n-pending), starea de start se păstrează,
+   ca animația să ruleze întreagă când pagina devine vizibilă, nu pe ascuns. */
+[data-erou] .reveal:not(.visible){opacity:.01}
+html.myd-i18n-pending [data-erou] .reveal.visible{opacity:.01;transform:translateY(32px)}
 
 /* ── PULSE ── */
 .pulse-dot { width:7px; height:7px; border-radius:50%; background:#0E9E99; animation:pulse 2s infinite; display:inline-block; }
@@ -1186,7 +1196,7 @@ function triggerHeaderSearch(){
 <!-- ════════════════════════════════════════════
      HERO
 ════════════════════════════════════════════ -->
-<section class="hero-bg min-h-[72vh] flex items-center relative" style="overflow:hidden;max-width:100vw;box-sizing:border-box">
+<section class="hero-bg min-h-[72vh] flex items-center relative" data-erou style="overflow:hidden;max-width:100vw;box-sizing:border-box">
   <div class="hero-grid"></div>
   <div style="max-width:1200px;margin:0 auto;padding:0 20px;padding-top:64px;padding-bottom:64px;position:relative;z-index:10;width:100%;box-sizing:border-box">
 
@@ -1532,6 +1542,21 @@ function triggerHeaderSearch(){
 
   </div>
 </section>
+<script>
+// Pasul 11-C12: elementele .reveal din hero aflate în primul ecran primesc clasa visible
+// imediat ce sunt parsate (aceeași animație, aceeași durată). Cele de sub primul ecran
+// rămân cu IntersectionObserver-ul de mai jos. getBoundingClientRect calculează stilul de
+// start înainte de schimbarea clasei, deci tranziția rulează.
+(function () {
+  var erou = document.querySelector('[data-erou]');
+  if (!erou) return;
+  var h = window.innerHeight || document.documentElement.clientHeight;
+  Array.prototype.forEach.call(erou.querySelectorAll('.reveal'), function (el) {
+    var r = el.getBoundingClientRect();
+    if (r.height > 0 && r.top < h && r.bottom > 0) el.classList.add('visible');
+  });
+})();
+</script>
 
 
 

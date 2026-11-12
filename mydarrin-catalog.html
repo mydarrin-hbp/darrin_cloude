@@ -344,7 +344,10 @@ window.__catalogPromis.catch(function () {});
 <script src="https://cdn.tailwindcss.com"></script>
 <!-- Pasul 11-C11: defer — iconițele se desenează la DOMContentLoaded (vezi lucide.createIcons mai jos) -->
 <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" defer></script>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- Pasul 11-C12: scos stylesheet-ul Google Fonts (Syne, Inter). Regula universală
+     *{font-family:'Helvetica World',…!important} face ca fonturile să nu fie folosite niciodată
+     (măsurat: 0 elemente, 0 fișiere de font descărcate), dar CSS-ul bloca scripturile inline
+     de după el și, cu ele, parsarea hero-ului (conexiune nouă spre fonts.googleapis.com). -->
 <script>
 if(typeof tailwind!=="undefined"){tailwind.config={theme:{extend:{colors:{
   primary:{DEFAULT:"#003366"},accent:{DEFAULT:"#FF8C00"},ai:{DEFAULT:"#0E9E99"},
@@ -650,6 +653,13 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 .reveal{opacity:0;transform:translateY(22px);transition:opacity .55s cubic-bezier(.22,1,.36,1),transform .55s cubic-bezier(.22,1,.36,1)}
 .reveal.d1{transition-delay:.07s}.reveal.d2{transition-delay:.14s}.reveal.d3{transition-delay:.21s}
 .reveal.visible{opacity:1;transform:none}
+/* Pasul 11-C12: elementele .reveal din hero (primul ecran) pornesc animația imediat după
+   parsare (scriptul de după hero), nu la IntersectionObserver. Pornesc de la opacitatea 0,01
+   (nu 0): diferența nu se vede, dar titlul e desenat și contează pentru LCP de la început.
+   Cât pagina e ascunsă de i18n-loader.js (myd-i18n-pending), starea de start se păstrează,
+   ca animația să ruleze întreagă când pagina devine vizibilă, nu pe ascuns. */
+[data-erou] .reveal:not(.visible){opacity:.01}
+html.myd-i18n-pending [data-erou] .reveal.visible{opacity:.01;transform:translateY(22px)}
 
 /* ── PULSE DOT ── */
 .pulse-dot{width:7px;height:7px;border-radius:50%;background:#0E9E99;animation:pdot 2s infinite;display:inline-block;flex-shrink:0}
@@ -1465,7 +1475,7 @@ function triggerHeaderSearch(){
 <!-- ════════════════════════════════════════════════
      HERO — Primul ecran vizibil (above the fold)
 ════════════════════════════════════════════════ -->
-<section id="catalog-hero" style="margin:0;background:linear-gradient(145deg,#001629 0%,#002855 50%,#003D7A 100%);min-height:calc(100vh - 64px);display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;max-width:100%;box-sizing:border-box">
+<section id="catalog-hero" data-erou style="margin:0;background:linear-gradient(145deg,#001629 0%,#002855 50%,#003D7A 100%);min-height:calc(100vh - 64px);display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;max-width:100%;box-sizing:border-box">
 
   <!-- Grilă de fundal subtilă -->
   <div style="position:absolute;inset:0;max-width:100%;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:52px 52px;pointer-events:none"></div>
@@ -1585,6 +1595,21 @@ function triggerHeaderSearch(){
     </div>
   </div>
 </section>
+<script>
+// Pasul 11-C12: elementele .reveal din hero aflate în primul ecran primesc clasa visible
+// imediat ce sunt parsate (aceeași animație, aceeași durată). Cele de sub primul ecran
+// rămân cu IntersectionObserver-ul de mai jos. getBoundingClientRect calculează stilul de
+// start înainte de schimbarea clasei, deci tranziția rulează.
+(function () {
+  var erou = document.querySelector('#catalog-hero');
+  if (!erou) return;
+  var h = window.innerHeight || document.documentElement.clientHeight;
+  Array.prototype.forEach.call(erou.querySelectorAll('.reveal'), function (el) {
+    var r = el.getBoundingClientRect();
+    if (r.height > 0 && r.top < h && r.bottom > 0) el.classList.add('visible');
+  });
+})();
+</script>
 
 
 <!-- ════ CARUSEL CATEGORII — identic homepage, 15 carduri ════ -->
