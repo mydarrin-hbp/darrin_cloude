@@ -15,7 +15,18 @@
 // Body: { email, gdpr_accepted, sursa }
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
-const { checkRateLimit } = require('../../lib/rate-limit');
+const { limiteazaCererea } = require('../../lib/rate-limit');
+const v = require('../../lib/valideaza');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
+
+// Pasul 11-S1: câmpurile acceptate; orice alt câmp e refuzat.
+const SCHEMA = {
+  email: v.email({ obligatoriu: true, eticheta: ['Email', 'Email'] }),
+  gdpr_accepted: v.boolean({ obligatoriu: true, adevarat: true, eticheta: ['Acordul GDPR', 'GDPR consent'] }),
+  sursa: v.text({ max: 50, eticheta: ['Sursa', 'Source'] }),
+  tara: v.text({ max: 8, eticheta: ['Țară', 'Country'] }),
+  limba: v.text({ max: 5, model: /^[a-z]{2}$/, eticheta: ['Limbă', 'Language'] }),
+};
 const { renderEmailNewsletterConfirmare, limbaDinTara } = require('../../lib/i18n');
 const { incarcaContactPlatformaSigur } = require('../../lib/contact-platforma');
 const { fromHeader } = require('../../lib/email-sender');
@@ -42,16 +53,12 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const allowed = await checkRateLimit(req, { key: 'newsletter', limit: 5, windowSeconds: 600 });
-  if (!allowed) return res.status(429).json({ error: 'Prea multe cereri. Încearcă din nou mai târziu.' });
+  const date = v.valideazaSauTrimite(req, res, SCHEMA);
+  if (!date) return;
+  const { email, sursa, tara, limba } = date;
 
-  const { email, gdpr_accepted, sursa, tara, limba } = req.body || {};
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return res.status(400).json({ error: 'Adresă de email validă, obligatorie.' });
-  }
-  if (!gdpr_accepted) {
-    return res.status(400).json({ error: 'Acordul GDPR este obligatoriu.' });
-  }
+  // Cel mult 5 cereri în 10 minute, pe IP și pe email (pasul 11-S1: și pe email).
+  if (!(await limiteazaCererea(req, res, { key: 'newsletter', limit: 5, windowSeconds: 600, email }))) return;
 
   // Limbă: formularul de newsletter (footer, toate paginile publice) nu
   // transportă azi nicio limbă/țară detectată — spre deosebire de fluxurile
@@ -62,7 +69,7 @@ module.exports = async function handler(req, res) {
   const limbaEfectiva = limba || (tara ? limbaDinTara(tara) : 'ro');
 
   try {
-    const emailNormalizat = email.trim().toLowerCase();
+    const emailNormalizat = email;
     const { data, error } = await supabaseAdmin
       .from('newsletter_subscribers')
       .insert({ email: emailNormalizat, gdpr_accepted: true, sursa: sursa || null, status: 'in_asteptare_confirmare', limba: limbaEfectiva })
@@ -78,6 +85,6 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true, necesita_confirmare: true });
   } catch (err) {
     console.error('[newsletter]', err);
-    return res.status(500).json({ error: 'Nu am putut înregistra abonarea. Încearcă din nou.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut înregistra abonarea. Încercați din nou.', 'We could not register your subscription. Please try again.');
   }
 };

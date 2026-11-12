@@ -12,6 +12,15 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  comanda_id: v.id({ eticheta: ['Comanda', 'Order'] }),
+  tip: v.text({ max: 40, eticheta: ['Tipul daunei', 'Damage type'] }),
+  descriere: v.text({ max: 2000, eticheta: ['Descriere', 'Description'] }),
+  valoare_estimata: v.numar({ min: 0, max: 1000000000, eticheta: ['Valoarea estimată', 'Estimated value'] }),
+};
 
 const TIPURI = ['EXE', 'MAT', 'TRN'];
 const STATUSURI_COMANDA_CU_DAUNA = ['finalizata', 'confirmata_client'];
@@ -47,6 +56,7 @@ async function handler(req, res, user) {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { comanda_id, tip, descriere, valoare_estimata } = req.body || {};
   if (!comanda_id || typeof comanda_id !== 'string') return res.status(400).json({ error: 'comanda_id este obligatoriu.' });
   if (!TIPURI.includes(tip)) return res.status(400).json({ error: `tip trebuie să fie unul din: ${TIPURI.join(', ')}.` });

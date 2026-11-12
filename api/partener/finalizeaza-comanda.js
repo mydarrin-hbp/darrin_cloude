@@ -11,6 +11,12 @@
 const crypto = require('crypto');
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  comanda_id: v.id({ eticheta: ['Comanda', 'Order'] }),
+};
 
 const TOKEN_VALABIL_ZILE = 7;
 
@@ -68,6 +74,7 @@ async function creeazaGarantieDacaEConfigurata(comanda, imaginiAfterIds) {
 
 async function handler(req, res, user) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { comanda_id } = req.body || {};
   if (!comanda_id) return res.status(400).json({ error: 'comanda_id este obligatoriu' });
 

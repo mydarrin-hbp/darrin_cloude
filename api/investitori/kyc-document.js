@@ -19,6 +19,14 @@ const crypto = require('crypto');
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const K = require('../../lib/investitori-kyc');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  latura: v.text({ max: 10, eticheta: ['Fața documentului', 'Document side'] }),
+  mime: v.text({ max: 100, eticheta: ['Tipul fișierului', 'File type'] }),
+  marime: v.numar({ min: 0, max: 1000000000, eticheta: ['Mărimea fișierului', 'File size'] }),
+};
 
 const DURATA_URL_SECUNDE = 120;
 
@@ -40,6 +48,7 @@ async function handler(req, res, user) {
   const stocare = supabaseAdmin.storage.from(K.BUCKET);
   try {
     if (req.method === 'POST') {
+      if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
       const { latura, mime, marime } = req.body || {};
       if (latura !== 'fata' && latura !== 'verso') return eroare(res, 400, 'latura');
       const ext = K.TIPURI_FISIER[mime];

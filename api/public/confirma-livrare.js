@@ -18,6 +18,13 @@
 const crypto = require('crypto');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { checkRateLimit } = require('../../lib/rate-limit');
+const v = require('../../lib/valideaza');
+
+const SCHEMA = {
+  token: v.text({ obligatoriu: true, max: 200, eticheta: ['Codul din link', 'Link code'] }),
+  actiune: v.dinLista(['confirma', 'contesta'], { obligatoriu: true, eticheta: ['Acțiune', 'Action'] }),
+  motiv: v.text({ max: 2000, eticheta: ['Motivul contestației', 'Reason for the dispute'] }),
+};
 const { elibereazaEscrow } = require('../../lib/elibereaza-escrow');
 
 module.exports = async function handler(req, res) {
@@ -29,6 +36,9 @@ module.exports = async function handler(req, res) {
 
   const allowed = await checkRateLimit(req, { key: 'confirma-livrare', limit: 10, windowSeconds: 600 });
   if (!allowed) return res.status(429).json({ error: 'Prea multe cereri. Încearcă din nou mai târziu.' });
+
+  // Pasul 11-S1: tipuri, lungimi și câmpurile acceptate.
+  if (!v.valideazaSauTrimite(req, res, SCHEMA)) return;
 
   const { token, actiune, motiv } = req.body || {};
   if (!token || !['confirma', 'contesta'].includes(actiune)) {

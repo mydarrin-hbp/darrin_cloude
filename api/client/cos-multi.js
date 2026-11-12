@@ -34,6 +34,14 @@ const { trimiteEroare, camp } = require('../../lib/raspuns-eroare');
 const { verificaDisponibilitate } = require('../../lib/disponibilitate-adresa');
 const { adresaPrestareDinAgenda } = require('../../lib/agenda-cont');
 const { parseazaIdMarketplace } = require('../../lib/rezolva-addon-materiale');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  sesiune_token: v.text({ max: 100, eticheta: ['Sesiunea coșului', 'Cart session'] }),
+  preia_sesiune: v.text({ max: 100, eticheta: ['Sesiunea coșului', 'Cart session'] }),
+  configurare: v.oricare({ maxOcteti: 50000, eticheta: ['Configurarea produsului', 'Product configuration'] }),
+};
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_ITEMI = 50;
@@ -172,6 +180,7 @@ module.exports = async function handler(req, res) {
     // vizitator — continuă fără user, identitatea vine din sesiune_token
   }
 
+  if (req.body && typeof req.body === 'object' && !v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const sesiuneToken = String(req.query?.sesiune_token || req.body?.sesiune_token || '').trim().slice(0, 100) || null;
 
   // Coșul vizitatorului trece pe contul conectat (după login sau creare de cont).

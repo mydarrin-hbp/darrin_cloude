@@ -13,6 +13,15 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  id: v.id({ eticheta: ['Dosar', 'Claim'] }),
+  actiune: v.text({ max: 30, eticheta: ['Acțiune', 'Action'] }),
+  motiv: v.text({ max: 2000, eticheta: ['Motiv', 'Reason'] }),
+  valoare_aprobata: v.numar({ min: 0, max: 1000000000, eticheta: ['Valoarea aprobată', 'Approved amount'] }),
+};
 
 async function asiguratorAprobat(userId) {
   const { data } = await supabaseAdmin
@@ -60,6 +69,7 @@ async function handler(req, res, user) {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { id, actiune, motiv, valoare_aprobata } = req.body || {};
   if (!id || typeof id !== 'string') return res.status(400).json({ error: 'id este obligatoriu.' });
 

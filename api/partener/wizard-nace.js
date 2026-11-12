@@ -9,6 +9,13 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { limbaNomenclator, eColoanaLipsa } = require('../../lib/limba-nomenclator');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  principal: v.text({ max: 20, eticheta: ['Codul NACE principal', 'Main NACE code'] }),
+  secundare: v.lista(v.text({ max: 20, eticheta: ['Cod NACE', 'NACE code'] }), { max: 15, eticheta: ['Coduri NACE secundare', 'Secondary NACE codes'] }),
+};
 
 // GET ?lang= (15 oct. 2026): fiecare cod primește `denumire` în limba cerută
 // (denumire_en, cu rezervă pe denumire_ro, și înainte de migrare).
@@ -37,6 +44,7 @@ async function handler(req, res, user) {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { principal, secundare = [] } = req.body || {};
   if (!principal || typeof principal !== 'string') {
     return res.status(400).json({ error: 'Un cod NACE principal este obligatoriu' });

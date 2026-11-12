@@ -14,6 +14,7 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { esteFurnizorPropriu, EROARE_FACTURA_FURNIZOR_PROPRIU } = require('../../lib/furnizor-propriu');
+const v = require('../../lib/valideaza');
 
 const ROLURI_PARTENER = [
   'partener_curier', 'partener_servicii', 'partener_materiale',
@@ -22,6 +23,13 @@ const ROLURI_PARTENER = [
 
 const ALLOWED_MIME = new Set(['application/pdf', 'image/jpeg', 'image/png']);
 const MAX_BYTES = 5 * 1024 * 1024;
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  comanda_subcontractor_id: v.id({ eticheta: ['Lucrarea', 'Job'] }),
+  numar_factura_partener: v.text({ max: 60, eticheta: ['Numărul facturii', 'Invoice number'] }),
+  fisier_base64: v.text({ max: Math.ceil(MAX_BYTES * 4 / 3) + 4, faraTrim: true, eticheta: ['Fișierul facturii', 'Invoice file'] }),
+  mime_type: v.text({ max: 100, eticheta: ['Tipul fișierului', 'File type'] }),
+};
 const EXT_FOR_MIME = { 'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/png': 'png' };
 
 function base64Bytes(b64) {
@@ -94,6 +102,7 @@ async function handleGet(req, res, user) {
 }
 
 async function handlePost(req, res, user) {
+  if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora', limite: { exceptii: ['fisier_base64'] } })) return;
   const { comanda_subcontractor_id, numar_factura_partener, fisier_base64, mime_type } = req.body || {};
 
   if (!comanda_subcontractor_id || !numar_factura_partener) {

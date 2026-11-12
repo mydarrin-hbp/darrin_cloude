@@ -3617,8 +3617,8 @@ async function incarcaMetodePlataB2G(){
     const metode = (data.metode_acceptate && data.metode_acceptate.length) ? data.metode_acceptate : ['card'];
     el.innerHTML = metode.map((m, i) => `
       <label class="flex items-center gap-2.5 cursor-pointer">
-        <input type="radio" name="b2g-metoda" value="${m}" ${i === 0 ? 'checked' : ''} class="w-4 h-4 accent-[#003366]">
-        <span class="text-sm text-[#003366]">${METODA_PLATA_LABEL[m] || m}</span>
+        <input type="radio" name="b2g-metoda" value="${escapeHTML(m).replace(/"/g, '&quot;')}" ${i === 0 ? 'checked' : ''} class="w-4 h-4 accent-[#003366]">
+        <span class="text-sm text-[#003366]">${escapeHTML(METODA_PLATA_LABEL[m] || m)}</span>
       </label>
     `).join('');
   } catch (e) {

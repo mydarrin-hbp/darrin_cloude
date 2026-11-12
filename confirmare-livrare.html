@@ -166,11 +166,17 @@ function formatSuma(val, moneda) {
   return Number(val).toLocaleString('ro-RO') + ' ' + (moneda || 'RON');
 }
 
+// Pasul 11-S1: textele pot conține date de la server (număr comandă, status,
+// mesaj de eroare) — se escapează, inclusiv ghilimelele (folosit și în atribute).
+function escStare(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 function afiseazaStareFinala(icon, titlu, text) {
   document.getElementById('loading').classList.add('hidden');
   document.getElementById('continut').classList.add('hidden');
   const el = document.getElementById('stare-finala');
-  el.innerHTML = `<div class="icon">${icon}</div><h2 style="margin:0 0 8px">${titlu}</h2><p style="color:var(--ink-soft)">${text}</p>`;
+  el.innerHTML = `<div class="icon">${icon}</div><h2 style="margin:0 0 8px">${escStare(titlu)}</h2><p style="color:var(--ink-soft)">${escStare(text)}</p>`;
   el.classList.remove('hidden');
 }
 
@@ -223,8 +229,8 @@ async function incarcaComanda() {
     const LABEL = { before: 'Înainte', after: 'După' };
     photoCompare.innerHTML = (data.imagini || []).map((img) => `
       <div class="photo-box">
-        ${img.url ? `<img src="${img.url}" alt="Fotografie ${LABEL[img.tip] || img.tip}"/>` : ''}
-        <div class="photo-tag">${LABEL[img.tip] || img.tip}</div>
+        ${img.url ? `<img src="${escStare(img.url)}" alt="Fotografie ${escStare(LABEL[img.tip] || img.tip)}"/>` : ''}
+        <div class="photo-tag">${escStare(LABEL[img.tip] || img.tip)}</div>
         <div class="photo-meta">${new Date(img.creat_la).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}</div>
       </div>
     `).join('') || '<p style="color:var(--ink-soft);font-size:13px">Nicio fotografie încărcată încă.</p>';

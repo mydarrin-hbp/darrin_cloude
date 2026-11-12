@@ -11,6 +11,13 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  alocari: v.lista(null, { max: 500, eticheta: ['Alocări', 'Assignments'] }),
+  zona_livrare_acceptata: v.boolean({ eticheta: ['Clauza de livrare în zonă', 'Local delivery clause'] }),
+};
 
 function getClientIp(req) {
   const fwd = req.headers['x-forwarded-for'];
@@ -30,6 +37,7 @@ async function handler(req, res, user) {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { alocari, zona_livrare_acceptata } = req.body || {};
   if (!Array.isArray(alocari) || !alocari.length) {
     return res.status(400).json({ error: 'Alocă cel puțin un angajat pe o competență' });

@@ -19,6 +19,15 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { normalizeazaRegiune } = require('../../lib/regiune');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  tara_cod: v.text({ max: 8, eticheta: ['Țara', 'Country'] }),
+  regiune_cod: v.text({ max: 20, eticheta: ['Regiunea', 'Region'] }),
+  localitate: v.text({ max: 120, eticheta: ['Localitatea', 'City'] }),
+  raza_livrare_km: v.numar({ min: 0, max: 10000, eticheta: ['Raza de livrare (km)', 'Delivery radius (km)'] }),
+};
 
 async function handler(req, res, user) {
   if (req.method === 'GET') {
@@ -54,6 +63,7 @@ async function handler(req, res, user) {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { tara_cod, regiune_cod, localitate, raza_livrare_km } = req.body || {};
   if (!tara_cod || typeof tara_cod !== 'string') {
     return res.status(400).json({ error: 'tara_cod este obligatoriu' });

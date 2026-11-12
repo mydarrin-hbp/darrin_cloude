@@ -24,6 +24,18 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA_POST = {
+  angajati: v.lista(null, { max: 500, eticheta: ['Angajați', 'Employees'] }),
+};
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA_PATCH = {
+  id: v.id({ eticheta: ['Angajat', 'Employee'] }),
+  disponibil: v.boolean({ eticheta: ['Disponibil', 'Available'] }),
+};
 
 async function handler(req, res, user) {
   if (req.method === 'GET') {
@@ -47,6 +59,7 @@ async function handler(req, res, user) {
   }
 
   if (req.method === 'PATCH') {
+    if (!v.valideazaSauTrimite(req, res, SCHEMA_PATCH, { necunoscute: 'ignora' })) return;
     const { id, disponibil } = req.body || {};
     if (!id || typeof disponibil !== 'boolean') {
       return res.status(400).json({ error: 'id și disponibil (boolean) sunt obligatorii' });
@@ -81,6 +94,7 @@ async function handler(req, res, user) {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  if (!v.valideazaSauTrimite(req, res, SCHEMA_POST, { necunoscute: 'ignora' })) return;
   const { angajati } = req.body || {};
   if (!Array.isArray(angajati) || !angajati.length) {
     return res.status(400).json({ error: 'Adaugă cel puțin un angajat' });

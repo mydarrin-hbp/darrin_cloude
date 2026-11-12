@@ -19,6 +19,14 @@ const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { checkRateLimit } = require('../../lib/rate-limit');
 const { citesteKyc } = require('../../lib/investitori-kyc');
 const R = require('../../lib/runda-finantare');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  suma: v.numar({ min: 0, max: 10000000000, eticheta: ['Suma', 'Amount'] }),
+  suma_eur: v.numar({ min: 0, max: 10000000000, eticheta: ['Suma (EUR)', 'Amount (EUR)'] }),
+  instrument: v.text({ max: 50, eticheta: ['Instrument', 'Instrument'] }),
+};
 
 async function handler(req, res, user) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -26,6 +34,7 @@ async function handler(req, res, user) {
   const permis = await checkRateLimit(req, { key: 'investitori-subscrie', limit: 10, windowSeconds: 600 });
   if (!permis) return res.status(429).json({ error: 'Prea multe cereri. Încearcă din nou mai târziu.', error_en: 'Too many requests. Please try again later.' });
 
+  if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const corp = req.body || {};
   const suma = R.num(corp.suma != null ? corp.suma : corp.suma_eur);
   const instrument = corp.instrument == null || corp.instrument === '' ? null : String(corp.instrument);

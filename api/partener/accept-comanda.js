@@ -11,6 +11,12 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { eligibilitatePartener, poatePrimiComenzi, motivNuPoateVinde, MOTIV } = require('../../lib/eligibilitate-partener');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  comanda_id: v.id({ eticheta: ['Comanda', 'Order'] }),
+};
 
 const ROLURI_PARTENER = [
   'partener_curier', 'partener_servicii', 'partener_materiale',
@@ -45,6 +51,7 @@ async function handler(req, res, user) {
   const gate = await verificaHardStop(user);
   if (!gate.ok) return res.status(403).json({ error: gate.error, code: gate.code });
 
+  if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { comanda_id } = req.body || {};
   if (!comanda_id) return res.status(400).json({ error: 'comanda_id este obligatoriu' });
 

@@ -11,6 +11,13 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  tip_document: v.text({ max: 60, eticheta: ['Tipul documentului', 'Document type'] }),
+  document_path: v.text({ max: 300, eticheta: ['Fișierul', 'File'] }),
+};
 
 const BUCKET = 'partner-certificari';
 const ROLURI_PARTENER = [
@@ -40,6 +47,7 @@ async function handler(req, res, user) {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { tip_document, document_path } = req.body || {};
   if (!TIPURI.includes(tip_document)) {
     return res.status(400).json({ error: `tip_document trebuie să fie unul din: ${TIPURI.join(', ')}.` });
