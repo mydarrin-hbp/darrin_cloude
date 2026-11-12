@@ -785,6 +785,12 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
 @media(max-width:767px){
   #tier-section .tier-table-wrap{display:none}
   #tier-cards{display:flex;flex-direction:column;gap:10px}
+  /* Pasul 11-C12: cât se încarcă nivelurile (cereri Supabase + prețul fiecărui nivel, ~3–4 s pe
+     Fast 4G), locul cardurilor e rezervat: la 390 px, cantitatea și adresa erau împinse în jos
+     cu ~640 px după ce pagina era deja vizibilă (CLS 0,20). 270 px = două carduri scurte, cel
+     mai mic caz real cu tabel (un singur nivel ascunde secțiunea); ce e dedesubt iese din primul
+     ecran, iar creșterea de după se face sub ecran. Clasa se scoate după loadFromURL(). */
+  #tier-section.niveluri-se-incarca #tier-cards{min-height:270px}
 }
 .tier-card{background:#1E2A3B;border:1.5px solid #2D3F55;border-radius:14px;padding:14px 16px;color:#CBD5E0}
 .tier-card.tier-ales{border-color:#FF8C00;box-shadow:0 0 0 3px rgba(255,140,0,.15)}
@@ -1477,7 +1483,7 @@ function triggerHeaderSearch(){
         </div>
 
         <!-- ── TIER TABLE (dark, ca în screenshot) ── -->
-        <div style="margin-bottom:22px" id="tier-section">
+        <div style="margin-bottom:22px" id="tier-section" class="niveluri-se-incarca">
           <label class="f-label" style="margin-bottom:12px">Selectează nivelul</label>
 
           <!-- TABLE dark theme -->
@@ -1493,7 +1499,8 @@ function triggerHeaderSearch(){
                 </tr>
               </thead>
               <tbody id="tier-tbody">
-                <!-- generat JS -->
+                <!-- generat JS; rândul gol rezervă locul descrierilor până sosesc nivelurile (pasul 11-C12) -->
+                <tr class="tier-rezerva" aria-hidden="true"><td colspan="5" style="height:96px;padding:0;border:0"></td></tr>
               </tbody>
               <!-- Prices row -->
               <tfoot>
@@ -4028,8 +4035,15 @@ async function _recalcPilotNow(qty) {
 
 // ══ INIT ══
 document.addEventListener('DOMContentLoaded',async ()=>{
-  await actualizeazaTva();
-  await loadFromURL();
+  // Pasul 11-C12: rezervarea locului pentru niveluri se scoate în același cadru în care
+  // apar nivelurile (sau secțiunea se ascunde), oricum s-ar termina încărcarea.
+  try {
+    await actualizeazaTva();
+    await loadFromURL();
+  } finally {
+    document.getElementById('tier-section')?.classList.remove('niveluri-se-incarca');
+    document.querySelectorAll('#tier-tbody .tier-rezerva').forEach((r) => r.remove());
+  }
   initCal();
   initReveal();
   selIns('none');
