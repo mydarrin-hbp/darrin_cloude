@@ -13,12 +13,30 @@
 const { checkRateLimit } = require('../../lib/rate-limit');
 const { verificaDisponibilitate } = require('../../lib/disponibilitate-adresa');
 const { trimiteEroare, camp } = require('../../lib/raspuns-eroare');
+const v = require('../../lib/valideaza');
+
+const SCHEMA = {
+  slug: v.text({ max: 200, eticheta: ['Serviciu', 'Service'] }),
+  serviciu_id: v.id({ eticheta: ['Serviciu', 'Service'] }),
+  adresa: v.obiect({
+    strada: v.text({ max: 200, eticheta: ['Strada', 'Street'] }),
+    localitate: v.text({ max: 120, eticheta: ['Localitatea', 'City'] }),
+    judet: v.text({ max: 120, eticheta: ['Județul', 'County'] }),
+    tara_cod: v.text({ max: 8, eticheta: ['Țara', 'Country'] }),
+  }, { eticheta: ['Adresa', 'Address'] }),
+  nivel_id: v.id({ eticheta: ['Nivelul serviciului', 'Service level'] }),
+  cantitate: v.numar({ min: 0, max: 100000, eticheta: ['Cantitate', 'Quantity'] }),
+};
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const allowed = await checkRateLimit(req, { key: 'disponibilitate-adresa', limit: 60, windowSeconds: 60 });
   if (!allowed) return trimiteEroare(res, 429, 'PREA_MULTE_CERERI', 'Prea multe cereri. Încearcă din nou peste un minut.', 'Too many requests. Try again in a minute.');
+
+  // Pasul 11-S1: tipuri, lungimi și câmpurile acceptate. Câmpurile obligatorii
+  // ale adresei le verifică verificaDisponibilitate, cu mesajul pe câmp.
+  if (!v.valideazaSauTrimite(req, res, SCHEMA)) return;
 
   const corp = req.body || {};
   try {

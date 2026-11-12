@@ -10,6 +10,13 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  cod_esco: v.text({ max: 100, eticheta: ['Cod ESCO', 'ESCO code'] }),
+  bifat: v.boolean({ eticheta: ['Bifat', 'Ticked'] }),
+};
 
 const ROLURI = ['partener_servicii'];
 
@@ -62,6 +69,7 @@ async function handler(req, res, user) {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { cod_esco, bifat } = req.body || {};
   if (!cod_esco || typeof cod_esco !== 'string' || typeof bifat !== 'boolean') {
     return res.status(400).json({ error: 'Trimite cod_esco (text) și bifat (true/false).' });

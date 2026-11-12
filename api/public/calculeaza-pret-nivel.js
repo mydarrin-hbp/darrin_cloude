@@ -21,11 +21,23 @@ const { calculeazaPretServiciu } = require('../../lib/pret-serviciu');
 
 const CANTITATE_MAX = 100000;
 
+const v = require('../../lib/valideaza');
+const SCHEMA = {
+  nivel_id: v.id({ obligatoriu: true, eticheta: ['Nivelul serviciului', 'Service level'] }),
+  cantitate: v.numar({ min: 0, max: CANTITATE_MAX, eticheta: ['Cantitate', 'Quantity'] }),
+  tara_cod: v.text({ max: 8, eticheta: ['Țară', 'Country'] }),
+  regiune: v.text({ max: 80, eticheta: ['Regiune', 'Region'] }),
+  addon_materiale: v.lista(v.ITEM_PRODUS, { max: 50, eticheta: ['Materiale și închirieri', 'Materials and rentals'] }),
+};
+
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const allowed = await checkRateLimit(req, { key: 'calculeaza-pret-nivel', limit: 60, windowSeconds: 60 });
   if (!allowed) return res.status(429).json({ error: 'Prea multe cereri. Încearcă din nou mai târziu.' });
+
+  // Pasul 11-S1: tipuri, lungimi și câmpurile acceptate.
+  if (!v.valideazaSauTrimite(req, res, SCHEMA)) return;
 
   const { nivel_id, cantitate = 1, tara_cod = 'RO', regiune = null, addon_materiale = [] } = req.body || {};
 

@@ -27,6 +27,19 @@ const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const R = require('../../lib/runda-finantare');
 const P = require('../../lib/investitori-panou');
 const { formaComuna, trimiteEroare, camp } = require('../../lib/raspuns-eroare');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA_CERERE = {
+  tip: v.text({ max: 30, eticheta: ['Tipul ieșirii', 'Exit type'] }),
+  numar_actiuni: v.numar({ min: 0, max: 1000000000, eticheta: ['Numărul de acțiuni', 'Number of shares'] }),
+};
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA_ANULARE = {
+  id: v.text({ max: 64, eticheta: ['Cererea', 'Request'] }),
+  actiune: v.text({ max: 30, eticheta: ['Acțiune', 'Action'] }),
+};
 
 const ID_VALID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -49,6 +62,7 @@ async function listeaza(res, user) {
 }
 
 async function anuleaza(req, res, user) {
+  if (!v.valideazaSauTrimite(req, res, SCHEMA_ANULARE, { necunoscute: 'ignora' })) return;
   const { id, actiune } = req.body || {};
   if (actiune !== 'anuleaza') return trimiteEroare(res, 400, 'DATE_INVALIDE', 'Acțiune necunoscută.', 'Unknown action.');
   const inexistenta = () => trimiteEroare(res, 404, 'NU_EXISTA', 'Cererea nu există.', 'The request does not exist.');
@@ -85,6 +99,7 @@ async function handler(req, res, user) {
   if (req.method === 'PATCH') return anuleaza(req, res, user);
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  if (!v.valideazaSauTrimite(req, res, SCHEMA_CERERE, { necunoscute: 'ignora' })) return;
   const { tip, numar_actiuni } = req.body || {};
   if (tip === 'piata_secundara') {
     return res.status(409).json({ error: 'Piața secundară nu e disponibilă.', error_en: 'The secondary market is not available.', cod: 'INDISPONIBIL' });

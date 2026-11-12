@@ -8,6 +8,13 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const v = require('../../lib/valideaza');
+const { limiteazaCererea } = require('../../lib/rate-limit');
+
+// Pasul 11-S1: singurul câmp acceptat.
+const SCHEMA = {
+  accept: v.boolean({ obligatoriu: true, adevarat: true, eticheta: ['Acordul de confidențialitate', 'Confidentiality agreement'] }),
+};
 
 const NDA_VERSIUNE = 'v1-2026-07-23';
 
@@ -21,10 +28,11 @@ async function handler(req, res, user) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   if (!user.email) return res.status(400).json({ error: 'Cont fără email.' });
 
-  const { accept } = req.body || {};
-  if (accept !== true) {
-    return res.status(400).json({ error: 'Trebuie să bifezi acordul înainte de a continua.' });
-  }
+  const date = v.valideazaSauTrimite(req, res, SCHEMA);
+  if (!date) return;
+
+  // Pasul 11-S1: cel mult 5 cereri în 10 minute, pe IP și pe emailul contului.
+  if (!(await limiteazaCererea(req, res, { key: 'accepta-nda', limit: 5, windowSeconds: 600, email: user.email }))) return;
 
   const { data: acces } = await supabaseAdmin
     .from('accese_temporare')

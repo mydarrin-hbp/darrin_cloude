@@ -9,6 +9,12 @@ const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 const { genereazaContractPartener, sha256 } = require('../../lib/contract-partener-date');
 const { CONTRACT_VERSIUNE } = require('../../lib/contract-partener');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  cod: v.text({ max: 10, eticheta: ['Cod', 'Code'] }),
+};
 
 const ROLURI_PARTENER = [
   'partener_curier', 'partener_servicii', 'partener_materiale',
@@ -28,6 +34,7 @@ function getClientIp(req) {
 async function handler(req, res, user) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { cod } = req.body || {};
   if (!cod || !/^\d{6}$/.test(String(cod))) {
     return res.status(400).json({ error: 'Cod invalid — introdu cele 6 cifre primite pe email.' });

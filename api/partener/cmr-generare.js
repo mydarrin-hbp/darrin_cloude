@@ -12,10 +12,19 @@
 const crypto = require('crypto');
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  comanda_id: v.id({ eticheta: ['Comanda', 'Order'] }),
+  furnizor_id: v.id({ eticheta: ['Furnizor', 'Supplier'] }),
+  continut_document: v.oricare({ maxOcteti: 300000, eticheta: ['Conținutul documentului', 'Document content'] }),
+};
 
 async function handler(req, res, user) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora', limite: { maxOcteti: 300000, maxText: 100000 } })) return;
   const { comanda_id, furnizor_id, continut_document } = req.body || {};
   if (!comanda_id || !furnizor_id || !continut_document) {
     return res.status(400).json({ error: 'comanda_id, furnizor_id și continut_document sunt obligatorii' });

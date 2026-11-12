@@ -12,6 +12,12 @@
 //                          completare manuală, cerută explicit de spec.
 
 const { checkRateLimit } = require('../../lib/rate-limit');
+const v = require('../../lib/valideaza');
+
+const SCHEMA = {
+  tara: v.text({ obligatoriu: true, max: 8, eticheta: ['Țară', 'Country'] }),
+  cui: v.text({ obligatoriu: true, max: 40, eticheta: ['CUI / cod fiscal', 'Tax ID'] }),
+};
 
 const { curataCUI, cautaANAF, cautaVIES, TARI_VIES, MESAJE_ANAF } = require('../../lib/cauta-firma');
 
@@ -24,6 +30,9 @@ module.exports = async function handler(req, res) {
 
   const allowed = await checkRateLimit(req, { key: 'cui-lookup', limit: 20, windowSeconds: 600 });
   if (!allowed) return res.status(429).json({ error: 'Prea multe cereri. Încearcă din nou mai târziu.' });
+
+  // Pasul 11-S1: tipuri, lungimi și câmpurile acceptate.
+  if (!v.valideazaSauTrimite(req, res, SCHEMA)) return;
 
   const { tara, cui } = req.body || {};
   if (!tara || typeof tara !== 'string') return res.status(400).json({ error: 'tara este obligatorie' });

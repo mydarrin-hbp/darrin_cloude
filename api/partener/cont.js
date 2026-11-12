@@ -11,6 +11,14 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  telefon: v.text({ max: 30, eticheta: ['Telefon', 'Phone'] }),
+  nr_reg_com: v.text({ max: 40, eticheta: ['Nr. Registrul Comerțului', 'Trade Register no.'] }),
+  adresa_sediu_social: v.text({ max: 300, eticheta: ['Adresa sediului social', 'Registered office address'] }),
+};
 
 const ROLURI_PARTENER = [
   'partener_curier', 'partener_servicii', 'partener_materiale',
@@ -169,6 +177,7 @@ async function handleGet(req, res, user) {
 }
 
 async function handlePatch(req, res, user) {
+  if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { telefon, nr_reg_com, adresa_sediu_social } = req.body || {};
   const partnerUpdate = {};
   const profileUpdate = {};

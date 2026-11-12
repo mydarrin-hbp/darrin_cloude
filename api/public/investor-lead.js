@@ -7,6 +7,27 @@ const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { renderEmailInvestitorBunVenit, limbaDinTara } = require('../../lib/i18n');
 const { incarcaContactPlatformaSigur } = require('../../lib/contact-platforma');
 const { fromHeader } = require('../../lib/email-sender');
+const v = require('../../lib/valideaza');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
+const { limiteazaCererea } = require('../../lib/rate-limit');
+
+// Pasul 11-S1: câmpurile acceptate, cu lungimi maxime; orice alt câmp e refuzat.
+const SCHEMA = {
+  prenume: v.text({ max: 100, eticheta: ['Prenume', 'First name'] }),
+  nume: v.text({ max: 100, eticheta: ['Nume', 'Last name'] }),
+  email: v.email({ obligatoriu: true, eticheta: ['Email', 'Email'] }),
+  telefon: v.text({ max: 30, eticheta: ['Telefon', 'Phone'] }),
+  ticket_size: v.text({ max: 50, eticheta: ['Suma estimată', 'Estimated amount'] }),
+  instrument: v.text({ max: 50, eticheta: ['Instrument', 'Instrument'] }),
+  nda_acceptat: v.boolean({ eticheta: ['Acord de confidențialitate', 'Confidentiality agreement'] }),
+  tara: v.text({ max: 8, eticheta: ['Țară', 'Country'] }),
+  limba: v.text({ max: 5, model: /^[a-z]{2}$/, eticheta: ['Limbă', 'Language'] }),
+};
+
+// Datele din formular ajung în emailul intern ca HTML: se escapează.
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
 
 // Email de bun venit (24 august 2026) — gap real: acest endpoint trimitea
 // doar o notificare INTERNĂ către admin; investitorul care completa
@@ -36,11 +57,12 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { prenume, nume, email, telefon, ticket_size, instrument, nda_acceptat, tara, limba } = req.body || {};
+  const date = v.valideazaSauTrimite(req, res, SCHEMA);
+  if (!date) return;
+  const { prenume, nume, email, telefon, ticket_size, instrument, nda_acceptat, tara, limba } = date;
 
-  if (!email || typeof email !== 'string' || !email.includes('@')) {
-    return res.status(400).json({ error: 'Adresă de email validă, obligatorie.' });
-  }
+  // Pasul 11-S1: cel mult 5 cereri în 10 minute, pe IP și pe email.
+  if (!(await limiteazaCererea(req, res, { key: 'investor-lead', limit: 5, windowSeconds: 600, email }))) return;
 
   try {
     const { data, error } = await supabaseAdmin
@@ -85,14 +107,14 @@ module.exports = async function handler(req, res) {
           body: JSON.stringify({
             from: 'noreply@homebestpal.com',
             to: process.env.INVESTOR_LEAD_NOTIFY_EMAIL,
-            subject: `🚀 Cerere nouă investitor: ${prenume || ''} ${nume || ''}`.trim(),
+            subject: `🚀 Cerere nouă investitor: ${prenume || ''} ${nume || ''}`.replace(/[\r\n]+/g, ' ').trim(),
             html: `
               <h3>Cerere nouă de investiție — My Darrin</h3>
-              <p><strong>Nume:</strong> ${prenume || '-'} ${nume || ''}</p>
-              <p><strong>Email:</strong> ${email}</p>
-              <p><strong>Telefon:</strong> ${telefon || '-'}</p>
-              <p><strong>Ticket estimat:</strong> ${ticket_size || '-'}</p>
-              <p><strong>Instrument:</strong> ${instrument || '-'}</p>
+              <p><strong>Nume:</strong> ${esc(prenume || '-')} ${esc(nume || '')}</p>
+              <p><strong>Email:</strong> ${esc(email)}</p>
+              <p><strong>Telefon:</strong> ${esc(telefon || '-')}</p>
+              <p><strong>Ticket estimat:</strong> ${esc(ticket_size || '-')}</p>
+              <p><strong>Instrument:</strong> ${esc(instrument || '-')}</p>
               <p><strong>NDA acceptat:</strong> ${nda_acceptat ? 'Da' : 'Nu'}</p>
             `,
           }),
@@ -105,6 +127,6 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true, lead_id: data.id });
   } catch (err) {
     console.error('[investor-lead]', err);
-    return res.status(500).json({ error: 'Nu am putut salva cererea. Încearcă din nou.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut salva cererea. Încercați din nou.', 'We could not save your request. Please try again.');
   }
 };

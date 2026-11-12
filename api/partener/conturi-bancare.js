@@ -25,6 +25,16 @@ const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { validateIBAN } = require('../../lib/iban');
 const { verificaSiNotificaProfilComplet } = require('../../lib/verifica-profil-complet-partener');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  nume_titular: v.text({ max: 200, eticheta: ['Titularul contului', 'Account holder'] }),
+  iban: v.text({ max: 42, eticheta: ['IBAN', 'IBAN'] }),
+  swift: v.text({ max: 15, eticheta: ['SWIFT', 'SWIFT'] }),
+  banca: v.text({ max: 200, eticheta: ['Banca', 'Bank'] }),
+  moneda: v.text({ max: 5, eticheta: ['Moneda', 'Currency'] }),
+};
 
 async function handler(req, res, user) {
   if (req.method === 'GET') {
@@ -64,6 +74,7 @@ async function handler(req, res, user) {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { nume_titular, iban, swift, banca, moneda } = req.body || {};
   if (!nume_titular || !iban || !banca || !moneda) {
     return res.status(400).json({ error: 'nume_titular, iban, banca și moneda sunt obligatorii' });

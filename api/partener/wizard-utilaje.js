@@ -22,6 +22,12 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  utilaje: v.lista(null, { max: 100, eticheta: ['Utilaje', 'Equipment'] }),
+};
 
 const TIPURI_SUPRASTRUCTURA = [
   'bena_deschisa', 'bena_inchisa_carosata', 'prelata',
@@ -64,6 +70,7 @@ async function handler(req, res, user) {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { utilaje } = req.body || {};
   if (!Array.isArray(utilaje) || !utilaje.length) {
     return res.status(400).json({ error: 'Declară cel puțin un utilaj/echipament' });

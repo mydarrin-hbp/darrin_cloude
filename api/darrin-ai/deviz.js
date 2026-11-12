@@ -34,6 +34,8 @@
 const { getAuthenticatedUser } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const crypto = require('crypto');
+const v = require('../../lib/valideaza');
+const { limiteazaCererea } = require('../../lib/rate-limit');
 
 const ANTHROPIC_MODEL = 'claude-sonnet-5';
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
@@ -44,6 +46,20 @@ const MAX_FILES = 3;
 const MAX_FILE_BYTES = 2 * 1024 * 1024; // 2MB decodat/fișier — vezi nota de limită de mai sus
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf']);
 const MODURI = new Set(['servicii', 'proiect']);
+
+// Pasul 11-S1: câmpurile acceptate; orice alt câmp e refuzat. Regulile de
+// conținut (ce e obligatoriu pentru fiecare mod, mărimea fișierelor) rămân mai jos.
+const SCHEMA = {
+  mod: v.dinLista([...MODURI], { implicit: 'servicii', eticheta: ['Tipul estimării', 'Estimate type'] }),
+  text: v.text({ max: MAX_TEXT_LEN, eticheta: ['Descriere', 'Description'] }),
+  files: v.lista(v.obiect({
+    mime: v.dinLista([...ALLOWED_MIME], { obligatoriu: true, eticheta: ['Tipul fișierului', 'File type'] }),
+    data_base64: v.text({ obligatoriu: true, max: Math.ceil(MAX_FILE_BYTES * 4 / 3) + 4, faraTrim: true, eticheta: ['Conținutul fișierului', 'File content'] }),
+  }, { eticheta: ['Fișier', 'File'] }), { max: MAX_FILES, eticheta: ['Fișiere', 'Files'] }),
+  tip_constructie: v.text({ max: 200, eticheta: ['Tip construcție', 'Construction type'] }),
+  suprafata_mp: v.numar({ min: 0, max: 1000000, eticheta: ['Suprafață (m²)', 'Area (m²)'] }),
+  locatie: v.text({ max: 200, eticheta: ['Locație', 'Location'] }),
+};
 
 function base64Bytes(b64) {
   // lungime base64 → octeți decodați, fără să decodăm efectiv (evită alocare inutilă)
@@ -155,14 +171,13 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: 'Serviciul Darrin AI nu este configurat (cheie API lipsă). Contactează suportul.' });
   }
 
-  const {
-    mod = 'servicii',
-    text,
-    files,
-    tip_constructie,
-    suprafata_mp,
-    locatie,
-  } = req.body || {};
+  const date = v.valideazaSauTrimite(req, res, SCHEMA);
+  if (!date) return;
+  const { mod = 'servicii', text, files, tip_constructie, suprafata_mp, locatie } = date;
+
+  // Pasul 11-S1: fiecare cerere apelează un model AI plătit — cel mult 10
+  // estimări în 10 minute de pe același IP.
+  if (!(await limiteazaCererea(req, res, { key: 'darrin-ai-deviz', limit: 10, windowSeconds: 600 }))) return;
 
   if (!MODURI.has(mod)) {
     return res.status(400).json({ error: `mod invalid. Valori acceptate: ${[...MODURI].join(', ')}` });

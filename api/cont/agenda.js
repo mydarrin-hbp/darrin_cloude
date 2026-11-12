@@ -23,6 +23,13 @@ const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { trimiteEroare, camp } = require('../../lib/raspuns-eroare');
 const A = require('../../lib/agenda-cont');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  actiune: v.text({ max: 40, eticheta: ['Acțiune', 'Action'] }),
+  id: v.id({ eticheta: ['Înregistrarea', 'Entry'] }),
+};
 
 const ACTIUNI = {
   adresa_salveaza: (u, b) => A.salveazaAdresa(u, b),
@@ -61,6 +68,7 @@ async function handler(req, res, user) {
     if (req.method !== 'POST') {
       return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
     }
+    if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
     const corp = req.body && typeof req.body === 'object' ? req.body : {};
     const fn = ACTIUNI[corp.actiune];
     if (!fn) {

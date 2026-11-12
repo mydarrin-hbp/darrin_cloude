@@ -9,10 +9,17 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { limbaValida, LIMBI_DISPONIBILE } = require('../../lib/i18n');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  limba: v.text({ max: 5, eticheta: ['Limba', 'Language'] }),
+};
 
 async function handler(req, res, user) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { limba } = req.body || {};
   if (!LIMBI_DISPONIBILE.includes(limba)) {
     return res.status(400).json({ error: `limba trebuie să fie una din: ${LIMBI_DISPONIBILE.join(', ')}` });

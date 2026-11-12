@@ -21,6 +21,14 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  tip_polita: v.text({ max: 100, eticheta: ['Tipul poliței', 'Policy type'] }),
+  limita_acoperire_eur: v.numar({ min: 0, max: 10000000000, eticheta: ['Limita de acoperire (EUR)', 'Coverage limit (EUR)'] }),
+  comision_pct: v.numar({ min: 0, max: 100, eticheta: ['Comision (%)', 'Commission (%)'] }),
+};
 
 async function handler(req, res, user) {
   if (req.method === 'GET') {
@@ -51,6 +59,7 @@ async function handler(req, res, user) {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { tip_polita, limita_acoperire_eur, comision_pct } = req.body || {};
   if (!tip_polita || typeof tip_polita !== 'string' || !tip_polita.trim()) {
     return res.status(400).json({ error: 'tip_polita este obligatoriu' });

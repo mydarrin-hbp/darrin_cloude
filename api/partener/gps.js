@@ -7,8 +7,18 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  comanda_id: v.id({ eticheta: ['Comanda', 'Order'] }),
+  lat: v.numar({ min: -90, max: 90, eticheta: ['Latitudine', 'Latitude'] }),
+  lng: v.numar({ min: -180, max: 180, eticheta: ['Longitudine', 'Longitude'] }),
+  eta_minute: v.numar({ min: 0, max: 10000, eticheta: ['Sosire estimată (minute)', 'Estimated arrival (minutes)'] }),
+};
 
 async function handlePost(req, res, user) {
+  if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { comanda_id, lat, lng, eta_minute } = req.body || {};
   if (typeof lat !== 'number' || typeof lng !== 'number') {
     return res.status(400).json({ error: 'lat și lng (numerice) sunt obligatorii' });

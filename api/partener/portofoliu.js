@@ -16,6 +16,13 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { verificaSiNotificaProfilComplet } = require('../../lib/verifica-profil-complet-partener');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  catalog_serviciu_id: v.id({ eticheta: ['Serviciu', 'Service'] }),
+  activ: v.boolean({ eticheta: ['Activ', 'Active'] }),
+};
 
 const ROLURI_PARTENER = [
   'partener_curier', 'partener_servicii', 'partener_materiale',
@@ -68,6 +75,7 @@ async function actionList(req, res, user) {
 }
 
 async function actionToggle(req, res, user) {
+  if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { catalog_serviciu_id, activ } = req.body || {};
   if (!catalog_serviciu_id || typeof activ !== 'boolean') {
     return res.status(400).json({ error: 'catalog_serviciu_id și activ (boolean) sunt obligatorii.' });

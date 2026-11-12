@@ -3406,6 +3406,12 @@ function escapeAddonHTML(str) {
   d.textContent = str == null ? '' : String(str);
   return d.innerHTML;
 }
+// Pasul 11-S1: escapare pentru atribute (și ghilimele) și id-uri sigure în
+// apelurile onclick (doar litere, cifre, - _ : .).
+function escAtribut(str) {
+  return String(str == null ? '' : str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function idSigur(x) { return String(x == null ? '' : x).replace(/[^A-Za-z0-9_:.-]/g, ''); }
 
 function addAddonItem(tip, id) {
   const item = ADDON_DB[tip].find((x) => x.id === id);
@@ -3467,15 +3473,15 @@ function renderAddonSelected() {
       // reală (parchet/folie): cantitate blocată, fără +/-, cu notă explicită
       // de unde vine numărul — nu se poate confunda cu o estimare a clientului.
       const cantitateUI = it.blocatCantitate
-        ? `<span title="Calculat automat din rețeta tehnică (cantitate × consum specific) — needitabil" style="font-size:12.5px;font-weight:700;color:#003366;min-width:34px;text-align:center">${it.qty}<span style="display:block;font-size:9px;font-weight:600;color:#8C9BAD;text-transform:uppercase;letter-spacing:.02em">din rețetă</span></span>`
-        : `<button type="button" onclick="changeAddonQty('${it.tip}','${it.id}',-1)" style="width:22px;height:22px;border-radius:6px;border:1px solid #D5DFE8;background:#fff;cursor:pointer;font-size:13px;line-height:1">−</button>
-          <span style="font-size:12.5px;font-weight:700;color:#003366;min-width:16px;text-align:center">${it.qty}</span>
-          <button type="button" onclick="changeAddonQty('${it.tip}','${it.id}',1)" style="width:22px;height:22px;border-radius:6px;border:1px solid #D5DFE8;background:#fff;cursor:pointer;font-size:13px;line-height:1">+</button>`;
+        ? `<span title="Calculat automat din rețeta tehnică (cantitate × consum specific) — needitabil" style="font-size:12.5px;font-weight:700;color:#003366;min-width:34px;text-align:center">${escapeAddonHTML(it.qty)}<span style="display:block;font-size:9px;font-weight:600;color:#8C9BAD;text-transform:uppercase;letter-spacing:.02em">din rețetă</span></span>`
+        : `<button type="button" onclick="changeAddonQty('${idSigur(it.tip)}','${idSigur(it.id)}',-1)" style="width:22px;height:22px;border-radius:6px;border:1px solid #D5DFE8;background:#fff;cursor:pointer;font-size:13px;line-height:1">−</button>
+          <span style="font-size:12.5px;font-weight:700;color:#003366;min-width:16px;text-align:center">${escapeAddonHTML(it.qty)}</span>
+          <button type="button" onclick="changeAddonQty('${idSigur(it.tip)}','${idSigur(it.id)}',1)" style="width:22px;height:22px;border-radius:6px;border:1px solid #D5DFE8;background:#fff;cursor:pointer;font-size:13px;line-height:1">+</button>`;
       // Faza 4 marketplace (31 august 2026, cerere fondator: "se vor adăuga
       // la descriere doar detaliile preluate... pentru produsul selectat") —
       // descrierea reală a produsului ALES apare aici, în configurator.
       const thumbSelectat = it.imagini?.[0]
-        ? `<img src="${it.imagini[0]}" style="width:40px;height:40px;object-fit:cover;border-radius:8px;flex-shrink:0"/>`
+        ? `<img src="${escAtribut(it.imagini[0])}" style="width:40px;height:40px;object-fit:cover;border-radius:8px;flex-shrink:0"/>`
         : '';
       return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#F4F7F9;border-radius:10px;margin-bottom:6px">
         ${thumbSelectat}
@@ -3485,7 +3491,7 @@ function renderAddonSelected() {
         </div>
         <div style="display:flex;align-items:center;gap:6px">${cantitateUI}</div>
         <div style="font-size:12.5px;font-weight:700;color:#0E9E99;min-width:70px;text-align:right">${fmtCurrency(pret * it.qty)}</div>
-        <button type="button" onclick="removeAddonItem('${it.tip}','${it.id}')" title="Elimină" style="width:22px;height:22px;border-radius:6px;border:1px solid rgba(220,38,38,.25);background:#FDECEA;color:#C0392B;cursor:pointer;font-size:14px;line-height:1;flex-shrink:0">×</button>
+        <button type="button" onclick="removeAddonItem('${idSigur(it.tip)}','${idSigur(it.id)}')" title="Elimină" style="width:22px;height:22px;border-radius:6px;border:1px solid rgba(220,38,38,.25);background:#FDECEA;color:#C0392B;cursor:pointer;font-size:14px;line-height:1;flex-shrink:0">×</button>
       </div>`;
     }).join('');
 }
@@ -3870,7 +3876,7 @@ function renderTierCards() {
     <div class="tier-card-nume" style="color:${c.culoare}">${esc(c.nume)}</div>
     ${c.desc ? `<p class="tier-card-desc">${esc(c.desc)}</p>` : ''}
     ${c.include.length ? `<ul class="tier-card-incl">${c.include.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>` : ''}
-    ${c.garantie > 0 ? `<div class="tier-card-gar">Garanție digitală ${c.garantie} luni</div>` : ''}
+    ${c.garantie > 0 ? `<div class="tier-card-gar">Garanție digitală ${Number(c.garantie) || 0} luni</div>` : ''}
     <div class="tier-card-jos"><span class="tier-card-pret" style="color:${c.culoare}">${esc(c.pret)}</span>
       <button type="button" class="tier-card-btn" data-card="${i}" aria-pressed="${c.selectat}">${c.selectat ? '✓ Ales' : 'Alege'}</button></div>
   </div>`).join('');
@@ -4738,8 +4744,8 @@ async function incarcaSloturiDisponibile(date){
     cont.innerHTML=data.sloturi.map(s=>{
       const label=s.inceput+' – '+s.sfarsit;
       return s.disponibil
-        ? `<div class="time-slot" onclick="selTime('${s.inceput}','${s.sfarsit}',this)">${label}</div>`
-        : `<div class="time-slot" style="opacity:.4;cursor:not-allowed;pointer-events:none">${label} · ocupat</div>`;
+        ? `<div class="time-slot" onclick="selTime('${idSigur(s.inceput)}','${idSigur(s.sfarsit)}',this)">${escapeAddonHTML(label)}</div>`
+        : `<div class="time-slot" style="opacity:.4;cursor:not-allowed;pointer-events:none">${escapeAddonHTML(label)} · ocupat</div>`;
     }).join('');
   }catch(e){
     cont.innerHTML='<div style="grid-column:1/-1;color:#C0392B;font-size:12.5px;padding:8px 0">Nu am putut încărca sloturile disponibile. Încearcă din nou.</div>';

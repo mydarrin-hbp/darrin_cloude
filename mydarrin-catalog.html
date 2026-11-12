@@ -875,6 +875,12 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
       d.textContent = String(str);
       return d.innerHTML;
     }
+    // Pasul 11-S1: escapare și pentru atribute (escapeHTML nu escapează ghilimelele).
+    function escAtribut(str) {
+      return String(str == null ? '' : str).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
     // Alias scurt pentru DOMPurify.sanitize — pentru HTML mixt din API
     function safeHTML(html) {
       return typeof DOMPurify !== 'undefined'
@@ -3207,7 +3213,7 @@ async function sendToAI(){
   if(uploadedFiles.length>0){
     const fileMsg=document.createElement('div');
     fileMsg.style.cssText='display:flex;justify-content:flex-end';
-    fileMsg.innerHTML=`<div style="font-size:11px;color:#8C9BAD;margin-top:4px">${uploadedFiles.length} fișier(e) atașat(e) · ${uploadedFiles.map(f=>f.name).join(', ').substring(0,50)}...</div>`;
+    fileMsg.innerHTML=`<div style="font-size:11px;color:#8C9BAD;margin-top:4px">${uploadedFiles.length} fișier(e) atașat(e) · ${escapeHTML(uploadedFiles.map(f=>f.name).join(', ').substring(0,50))}...</div>`;
     msgs.appendChild(fileMsg);
   }
 
@@ -3337,7 +3343,7 @@ async function confirmaEstimareAI(){
       div.innerHTML=`
         <div style="font-size:11px;font-weight:700;color:#0E9E99;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Deviz oficial</div>
         <div style="font-weight:800;font-size:20px;color:#003366;margin-bottom:8px">${Number(data.deviz.pret_final).toLocaleString('ro-RO')} Lei</div>
-        <button onclick="goToService('${ultimulRezultatAI.categorie_slug}')" style="width:100%;background:#FF8C00;color:#fff;border:none;border-radius:9px;padding:10px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">Comandă serviciul →</button>
+        <button onclick="goToService('${String(ultimulRezultatAI.categorie_slug || '').replace(/[^a-z0-9_-]/gi, '')}')" style="width:100%;background:#FF8C00;color:#fff;border:none;border-radius:9px;padding:10px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">Comandă serviciul →</button>
       `;
       recSvc.appendChild(div);
     }
@@ -4435,7 +4441,7 @@ function mkCard(item, pret, tab, asoc) {
   const pretHtml = p
     ? `<span class="price-from">${tr('De la')}</span>
       <span class="price-val">${fmtPret(p)}</span>
-      <span class="price-unit">/ ${item.unitate_masura||'buc'}</span>`
+      <span class="price-unit">/ ${escAtribut(item.unitate_masura||'buc')}</span>`
     : arePret ? `<span class="price-from">${tr('Preț calculat la configurare')}</span>`
     : `<span class="price-from">${tr('Preț prin deviz')}</span>`;
   const eticheta = arePret ? tr('Adaugă în coș') : tr('Cere un deviz');
@@ -4444,33 +4450,33 @@ function mkCard(item, pret, tab, asoc) {
   function tipDin(id){ return id.includes('mentenanta')?'mentenanta':id.includes('inlocuire')?'inlocuire':id.includes('reparatie')?'reparatie':id.includes('montaj')?'montaj_nou':null; }
 
   const aHtml = asoc.length ? `<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:6px">
-    ${asoc.slice(0,4).map(s=>`<button onclick="event.stopPropagation();openService('${s.id_serviciu}','${s.titlu.replace(/'/g,"\'")}');return false"
+    ${asoc.slice(0,4).map(s=>`<button data-slug="${escAtribut(s.id_serviciu)}" data-titlu="${escAtribut(s.titlu)}" onclick="event.stopPropagation();openService(this.dataset.slug,this.dataset.titlu);return false"
       style="font-size:8px;padding:2px 6px;border-radius:99px;border:1px solid #D5DFE8;background:#fff;cursor:pointer;font-family:inherit;color:#003366;font-weight:600"
     >${TI[tipDin(s.id_serviciu)]||''}</button>`).join('')}
     </div>` : '';
 
-  // Escapăm pentru atribute HTML
-  const tit = item.titlu.replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  const slug = (item.id_serviciu||'').replace(/"/g,'&quot;');
+  // Escapăm pentru atribute HTML (pasul 11-S1: & < > " ' — titlul și descrierea vin din baza de date)
+  const tit = escAtribut(item.titlu);
+  const slug = escAtribut(item.id_serviciu||'');
 
   return `<div class="rich-card reveal db-card"
-    data-tab="${tab}" data-cat="${d.cat}" data-subcat="${d.sub}"
-    data-categorie-id="${item.categorie_id||''}" data-subcategorie-id="${item.subcategorie_id||''}"
-    data-title="${item.titlu.toLowerCase()}"
+    data-tab="${escAtribut(tab)}" data-cat="${escAtribut(d.cat)}" data-subcat="${escAtribut(d.sub)}"
+    data-categorie-id="${escAtribut(item.categorie_id||'')}" data-subcategorie-id="${escAtribut(item.subcategorie_id||'')}"
+    data-title="${escAtribut(item.titlu.toLowerCase())}" data-titlu="${tit}"
     data-price="${p}" data-reviews="0"
     data-urgent="${isU}" data-ai="${isA}"
     data-img-sursa="${imgReal ? 'real' : prez.sursa}" data-img-variante="${imgReal ? '' : prez.ids.join(' ')}"
     data-slug="${slug}"
-    onclick="openService('${slug}','${tit}')">
+    onclick="openService(this.dataset.slug,this.dataset.titlu)">
   <div class="card-media img-asteapta">
-    <img ${imgReal ? `src="${imgReal}" onerror="this.onerror=null;this.src='${imgPrezentare}'"` : 'sizes="(min-width:1280px) 211px, (min-width:1024px) 23vw, (min-width:769px) 38vw, 46vw"'} alt="${tit}" width="600" height="400" loading="lazy" decoding="async"/>
+    <img ${imgReal ? `src="${escAtribut(imgReal)}" onerror="this.onerror=null;this.src='${imgPrezentare}'"` : 'sizes="(min-width:1280px) 211px, (min-width:1024px) 23vw, (min-width:769px) 38vw, 46vw"'} alt="${tit}" width="600" height="400" loading="lazy" decoding="async"/>
     <div class="vid-overlay"><div class="play-btn"><svg width="16" height="16" fill="#2D2D2D" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
     ${isU?'<span style="position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;background:rgba(220,38,38,.85);color:#fff;padding:2px 8px;border-radius:99px">Urgent</span>':''}
     ${isA?'<div style="position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:99px;padding:3px 10px;border:1px solid rgba(14,158,153,.3)"><span style="width:5px;height:5px;border-radius:50%;background:#0E9E99;display:inline-block"></span><span style="font-size:9.5px;font-weight:700;color:#0E9E99">AI alocă</span></div>':''}
   </div>
   <div class="card-body">
-    <div class="card-title">${item.titlu}</div>
-    <div class="card-desc">${item.descriere || descDinDomeniu(item, tab)}</div>
+    <div class="card-title">${escAtribut(item.titlu)}</div>
+    <div class="card-desc">${escAtribut(item.descriere || descDinDomeniu(item, tab))}</div>
     ${aHtml}
     <!-- Codurile NACE/ESCO nu se afișează public — vizibile doar în back-office -->
     <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">

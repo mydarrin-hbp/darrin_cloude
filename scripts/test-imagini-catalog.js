@@ -178,7 +178,7 @@ async function testeFisiere() {
   await test('11-C7: imaginea reală are în continuare prioritate; fără subiect → domeniu → IMG_DEF', async () => {
     const real = 'https://exemplu.test/real.png';
     const mk = CATALOG.slice(CATALOG.indexOf('function mkCard('), CATALOG.indexOf('function inject('));
-    adevarat(mk.includes('${imgReal ? `src="${imgReal}"') && /imaginiPrezentare\(item, d\)/.test(mk), 'ordinea în mkCard');
+    adevarat(mk.includes('${imgReal ? `src="${escAtribut(imgReal)}"') && /imaginiPrezentare\(item, d\)/.test(mk), 'ordinea în mkCard');
     egal(imgPermise({ titlu: 'Înlocuire vas WC', domeniu: 'Instalații sanitare și termice', imagini: [real] }), [real]);
     egal(L.imaginiPrezentare({ id_serviciu: 'x', titlu: 'Pavaje & Alei', domeniu: 'Pavaje & Alei' }, DOM['Pavaje & Alei']).sursa, 'domeniu');
     egal(L.imaginiPrezentare({ id_serviciu: 'x', titlu: 'Ceva nou', domeniu: 'Domeniu nou' }, { img: IMG_DEF }), { ids: [IMG_DEF], sursa: 'implicit' });
@@ -218,7 +218,7 @@ async function testeFisiere() {
     const mk = CATALOG.slice(CATALOG.indexOf('function mkCard('), CATALOG.indexOf('function inject('));
     adevarat(/const d\s+= DOM\[item\.domeniu\] \|\| \{cat:'Instalații', sub:'General', img:IMG_DEF\}/.test(mk), 'domeniul necunoscut → IMG_DEF');
     // Pasul 11-C9: imaginea reală are src direct; cea de prezentare îl primește din distribuieImagini.
-    adevarat(mk.includes('${imgReal ? `src="${imgReal}"') && /const imgPrezentare = urlPrezentare\(prez\.ids\[0\], 600\)/.test(mk), 'ordinea');
+    adevarat(mk.includes('${imgReal ? `src="${escAtribut(imgReal)}"') && /const imgPrezentare = urlPrezentare\(prez\.ids\[0\], 600\)/.test(mk), 'ordinea');
     adevarat(/<div class="card-media img-asteapta">\s*<img \$\{imgReal[\s\S]{0,260}alt="\$\{tit\}"[^>]*loading="lazy"/.test(mk), '<img> pe card');
     adevarat(!/card-icoana|data-lucide="\$\{iconita/.test(CATALOG), 'iconiță în locul imaginii');
   });

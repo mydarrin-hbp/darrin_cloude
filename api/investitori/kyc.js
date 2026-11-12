@@ -40,6 +40,13 @@ const { validateIBAN } = require('../../lib/iban');
 const { asiguraRolInvestitor } = require('../../lib/roluri-cont');
 const K = require('../../lib/investitori-kyc');
 const I = require('../../lib/identitate-pf');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  pas: v.numar({ min: 0, max: 100, eticheta: ['Pasul', 'Step'] }),
+  date: v.oricare({ maxOcteti: 200000, eticheta: ['Datele pasului', 'Step data'] }),
+};
 
 // Mesajele de eroare, RO + EN.
 const E = {
@@ -273,6 +280,7 @@ async function handler(req, res, user) {
     }
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+    if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora', limite: { maxOcteti: 200000 } })) return;
     const { pas, date = {} } = req.body || {};
     const nrPas = Number(pas);
     if (!Number.isInteger(nrPas) || nrPas < 1 || nrPas > K.PASI) return eroare(res, 400, 'pas');

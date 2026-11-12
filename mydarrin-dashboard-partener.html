@@ -1302,10 +1302,10 @@ function renderCursaActiva() {
   <div class="dp-card" style="background:linear-gradient(135deg,#4B0082,#7C3AED);color:#fff;margin-bottom:18px">
     <div style="padding:18px 20px">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.7;margin-bottom:6px">🚴 Cursă activă</div>
-      <div style="font-size:18px;font-weight:800;margin-bottom:10px">${c.title} · #${id}</div>
+      <div style="font-size:18px;font-weight:800;margin-bottom:10px">${_escD(c.title)} · #${_escD(id)}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
-        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px;text-align:center"><div style="font-size:9px;opacity:.7">Distanță</div><div style="font-size:16px;font-weight:800">${c.km}</div></div>
-        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px;text-align:center"><div style="font-size:9px;opacity:.7">Câștig</div><div style="font-size:16px;font-weight:800">${c.price}</div><div style="font-size:9px;opacity:.7">la livrare</div></div>
+        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px;text-align:center"><div style="font-size:9px;opacity:.7">Distanță</div><div style="font-size:16px;font-weight:800">${_escD(c.km)}</div></div>
+        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px;text-align:center"><div style="font-size:9px;opacity:.7">Câștig</div><div style="font-size:16px;font-weight:800">${_escD(c.price)}</div><div style="font-size:9px;opacity:.7">la livrare</div></div>
         <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px;text-align:center"><div style="font-size:9px;opacity:.7">În coadă</div><div style="font-size:16px;font-weight:800">${CURIER_STARE.coada_curse.length}</div><div style="font-size:9px;opacity:.7">curse</div></div>
       </div>
     </div>
@@ -1314,8 +1314,8 @@ function renderCursaActiva() {
     <div class="dp-card">
       <div class="dp-card-hdr"><strong style="color:#1A2332">📍 Detalii cursă</strong></div>
       <div class="dp-card-body" style="font-size:12.5px;display:flex;flex-direction:column;gap:10px">
-        <div style="padding:10px;background:#F0F4F8;border-radius:10px;border-left:3px solid #7C3AED"><div style="font-weight:700;color:#1A2332">Pickup</div><div style="color:#5A6B7D">${c.pickup}</div></div>
-        <div style="padding:10px;background:#F0F4F8;border-radius:10px;border-left:3px solid #0E9E99"><div style="font-weight:700;color:#1A2332">Destinație</div><div style="color:#5A6B7D">${c.dest}</div></div>
+        <div style="padding:10px;background:#F0F4F8;border-radius:10px;border-left:3px solid #7C3AED"><div style="font-weight:700;color:#1A2332">Pickup</div><div style="color:#5A6B7D">${_escD(c.pickup)}</div></div>
+        <div style="padding:10px;background:#F0F4F8;border-radius:10px;border-left:3px solid #0E9E99"><div style="font-weight:700;color:#1A2332">Destinație</div><div style="color:#5A6B7D">${_escD(c.dest)}</div></div>
       </div>
     </div>
     <div class="dp-card">
@@ -1531,9 +1531,9 @@ async function loadEscrowReal(){
       </tr></thead>
       <tbody>${data.alocari.map(a => `
         <tr style="border-top:1px solid #EEF2F7">
-          <td style="padding:7px 8px;color:#1A2332;font-weight:600">${a.nr_comanda || a.comanda_id.slice(0,8)}</td>
-          <td style="padding:7px 8px;color:#5A6B7D">${rolLabel[a.rol_tip] || a.rol_tip}</td>
-          <td style="padding:7px 8px;font-weight:700;color:#FF8C00">${a.suma} ${data.moneda}</td>
+          <td style="padding:7px 8px;color:#1A2332;font-weight:600">${_escD(a.nr_comanda || a.comanda_id.slice(0,8))}</td>
+          <td style="padding:7px 8px;color:#5A6B7D">${_escD(rolLabel[a.rol_tip] || a.rol_tip)}</td>
+          <td style="padding:7px 8px;font-weight:700;color:#FF8C00">${_escD(a.suma)} ${_escD(data.moneda)}</td>
           <td style="padding:7px 8px"><span class="chip ${a.escrow_eliberat ? 'ch-g' : 'ch-t'}">${a.escrow_eliberat ? '✅ Eliberat' : '🔒 Păstrat în escrow'}</span></td>
         </tr>
       `).join('')}</tbody>
@@ -1602,7 +1602,7 @@ function deschideModalEmiteFactura(comandaSubcontractorId){
   const alocare = (_facturareCache?.facturabile || []).find(f => f.comanda_subcontractor_id === comandaSubcontractorId);
   if (!alocare) return;
   const fmt = window.formatCurrency ? (v, m) => window.formatCurrency(v, m) : (v, m) => `${v} ${m}`;
-  document.getElementById('mef-detalii').innerHTML = `Comandă <b>${alocare.nr_comanda || alocare.comanda_id.slice(0,8)}</b> · Sumă <b>${fmt(alocare.suma, alocare.moneda)}</b><br>Către: <b>${alocare.entitate_beneficiara?.denumire || '—'}</b>`;
+  document.getElementById('mef-detalii').innerHTML = `Comandă <b>${_escD(alocare.nr_comanda || alocare.comanda_id.slice(0,8))}</b> · Sumă <b>${fmt(alocare.suma, alocare.moneda)}</b><br>Către: <b>${_escD(alocare.entitate_beneficiara?.denumire || '—')}</b>`;
   document.getElementById('mef-numar').value = '';
   document.getElementById('mef-fisier').value = '';
   document.getElementById('mef-eroare').textContent = '';
@@ -1791,7 +1791,7 @@ async function loadPortofoliuReal(){
     el.innerHTML = data.servicii.map((s) => `
       <label style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid #EEF2F7;cursor:pointer">
         <input type="checkbox" ${s.bifat ? 'checked' : ''} onchange="togglePortofoliuItem('${s.id}', this.checked, this)" style="width:16px;height:16px;accent-color:#FF8C00">
-        <span style="flex:1"><strong style="color:#1A2332;font-size:13px">${s.titlu}</strong><br><span style="font-size:11px;color:#5A6B7D">${s.domeniu}</span></span>
+        <span style="flex:1"><strong style="color:#1A2332;font-size:13px">${_escD(s.titlu)}</strong><br><span style="font-size:11px;color:#5A6B7D">${_escD(s.domeniu)}</span></span>
       </label>
     `).join('');
   } catch (e) {
@@ -1855,7 +1855,7 @@ async function _incarcaEscoSelect(elId){
     const res = await fetch('/api/public/esco-lista' + '?lang=' + encodeURIComponent(window.MYD_I18N?.lang || 'en'));
     const data = await res.json();
     if (res.ok && data.ocupatii) {
-      sel.innerHTML = '<option value="">—</option>' + data.ocupatii.map(o => `<option value="${o.cod_esco}">${o.denumire}</option>`).join('');
+      sel.innerHTML = '<option value="">—</option>' + data.ocupatii.map(o => `<option value="${_escD(o.cod_esco)}">${_escD(o.denumire)}</option>`).join('');
     }
   } catch (e) { /* rămâne doar "—", neblocant */ }
 }
@@ -1998,7 +1998,7 @@ async function loadUtilajeReal(){
     if (!data.utilaje.length) { el.innerHTML = '<div style="color:#5A6B7D">Niciun utilaj declarat încă.</div>'; return; }
     el.innerHTML = data.utilaje.map((u) => `
       <div style="display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid #EEF2F7">
-        <span style="flex:1"><strong style="color:#1A2332;font-size:13px">${u.denumire}</strong><br><span style="font-size:11px;color:#5A6B7D">${[u.marca, u.model].filter(Boolean).join(' ') || u.tip || '—'}${u.capacitate_kg ? ' · ' + u.capacitate_kg + ' kg' : ''}${u.tip_suprastructura ? ' · ' + (TIPURI_SUPRASTRUCTURA_LABEL[u.tip_suprastructura] || u.tip_suprastructura) : ''}</span></span>
+        <span style="flex:1"><strong style="color:#1A2332;font-size:13px">${_escD(u.denumire)}</strong><br><span style="font-size:11px;color:#5A6B7D">${_escD([u.marca, u.model].filter(Boolean).join(' ') || u.tip || '—')}${u.capacitate_kg ? ' · ' + _escD(u.capacitate_kg) + ' kg' : ''}${u.tip_suprastructura ? ' · ' + _escD(TIPURI_SUPRASTRUCTURA_LABEL[u.tip_suprastructura] || u.tip_suprastructura) : ''}</span></span>
         <button class="btn-ghost" style="padding:5px 10px;font-size:11px;color:#C0392B" onclick="stergeUtilaj('${u.id}')">Șterge</button>
       </div>
     `).join('');
@@ -2083,14 +2083,14 @@ async function loadCertificariReal(){
 
     if (selTip) {
       selTip.innerHTML = data.cerinte.length
-        ? data.cerinte.map(c => `<option value="${c.nume_certificare}">${c.nume_certificare}${c.obligatorie ? ' (obligatorie)' : ''}</option>`).join('')
+        ? data.cerinte.map(c => `<option value="${_escD(c.nume_certificare)}">${_escD(c.nume_certificare)}${c.obligatorie ? ' (obligatorie)' : ''}</option>`).join('')
         : '<option value="">Nicio cerință configurată pentru țara ta</option>';
     }
 
     if (!data.certificari.length) { el.innerHTML = '<div style="color:#5A6B7D">Nicio certificare încărcată încă.</div>'; return; }
     el.innerHTML = data.certificari.map((c) => `
       <div style="display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid #EEF2F7">
-        <span style="flex:1"><strong style="color:#1A2332;font-size:13px">${c.tip_certificare}</strong>${c.data_expirare ? `<br><span style="font-size:11px;color:#5A6B7D">Expiră: ${c.data_expirare}</span>` : ''}</span>
+        <span style="flex:1"><strong style="color:#1A2332;font-size:13px">${_escD(c.tip_certificare)}</strong>${c.data_expirare ? `<br><span style="font-size:11px;color:#5A6B7D">Expiră: ${_escD(c.data_expirare)}</span>` : ''}</span>
         <button class="btn-ghost" style="padding:5px 10px;font-size:11px;color:#C0392B" onclick="stergeCertificare('${c.id}')">Șterge</button>
       </div>
     `).join('');
@@ -2182,7 +2182,7 @@ async function loadContBancarReal(){
     if (!data.conturi.length) { el.innerHTML = '<div style="color:#5A6B7D">Niciun cont bancar adăugat încă.</div>'; return; }
     el.innerHTML = data.conturi.map((c) => `
       <div style="display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid #EEF2F7">
-        <span style="flex:1"><strong style="color:#1A2332;font-size:13px">${c.nume_titular}</strong><br><span style="font-size:11px;color:#5A6B7D;font-family:monospace">${c.iban_mascat || '—'}</span> <span style="font-size:11px;color:#5A6B7D"> · ${c.banca} · ${c.moneda}</span></span>
+        <span style="flex:1"><strong style="color:#1A2332;font-size:13px">${_escD(c.nume_titular)}</strong><br><span style="font-size:11px;color:#5A6B7D;font-family:monospace">${_escD(c.iban_mascat || '—')}</span> <span style="font-size:11px;color:#5A6B7D"> · ${_escD(c.banca)} · ${_escD(c.moneda)}</span></span>
         <button class="btn-ghost" style="padding:5px 10px;font-size:11px;color:#C0392B" onclick="stergeContBancar('${c.id}')">Șterge</button>
       </div>
     `).join('');
@@ -2271,7 +2271,7 @@ async function loadZonaCurierReal(){
     if (!data.zone.length) { el.innerHTML = '<div style="color:#5A6B7D">Nicio zonă de acoperire adăugată încă.</div>'; return; }
     el.innerHTML = data.zone.map((z) => `
       <div style="display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid #EEF2F7">
-        <span style="flex:1"><strong style="color:#1A2332;font-size:13px">${z.tara_cod}${z.regiune_cod ? ' · ' + z.regiune_cod : ''}${z.localitate ? ' · ' + z.localitate : ''}</strong>${z.raza_livrare_km ? `<br><span style="font-size:11px;color:#5A6B7D">Rază: ${z.raza_livrare_km} km</span>` : ''}</span>
+        <span style="flex:1"><strong style="color:#1A2332;font-size:13px">${_escD(z.tara_cod)}${z.regiune_cod ? ' · ' + _escD(z.regiune_cod) : ''}${z.localitate ? ' · ' + _escD(z.localitate) : ''}</strong>${z.raza_livrare_km ? `<br><span style="font-size:11px;color:#5A6B7D">Rază: ${_escD(z.raza_livrare_km)} km</span>` : ''}</span>
         <button class="btn-ghost" style="padding:5px 10px;font-size:11px;color:#C0392B" onclick="stergeZonaCurier('${z.id}')">Șterge</button>
       </div>
     `).join('');
@@ -2459,7 +2459,7 @@ async function loadStatusAplicareReal(){
     if (data.darrin_ai_activ && data.darrin_ai_raport) {
       html += `<div style="margin-top:14px;padding-top:14px;border-top:1px solid #EEF2F7">
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#8C9BAD;margin-bottom:8px">Raport Darrin AI</div>
-        <div style="font-size:12.5px;color:#3D4656">${data.darrin_ai_raport}</div>
+        <div style="font-size:12.5px;color:#3D4656">${_escD(data.darrin_ai_raport)}</div>
       </div>`;
     }
 
@@ -3112,7 +3112,7 @@ function showAlertVehicul(motiv, cursaId, kg, volL) {
     <div style="background:#fff;border-radius:18px;max-width:360px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
       <div style="font-size:40px;text-align:center;margin-bottom:12px">🚫</div>
       <h3 style="font-size:16px;font-weight:800;color:#C0392B;text-align:center;margin-bottom:10px">Vehicul incompatibil</h3>
-      <p style="font-size:12.5px;color:#5A6B7D;text-align:center;line-height:1.6;margin-bottom:16px">${motiv}</p>
+      <p style="font-size:12.5px;color:#5A6B7D;text-align:center;line-height:1.6;margin-bottom:16px">${_escD(motiv)}</p>
       <div style="display:flex;flex-direction:column;gap:8px">
         <button onclick="setCurierVehicul('utilitara');this.closest('[style*=fixed]').remove();preiaComanda('${cursaId}',${kg||0},${volL||0})"
                 style="padding:11px;border-radius:11px;border:none;background:#7C3AED;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
@@ -3177,9 +3177,9 @@ function showCursaDinCoada(cursa) {
     <div style="background:#fff;border-radius:18px;max-width:360px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
       <div style="font-size:32px;text-align:center;margin-bottom:10px">📨</div>
       <h3 style="font-size:16px;font-weight:800;color:#1A2332;text-align:center;margin-bottom:6px">Următoarea cursă din coadă</h3>
-      <p style="font-size:12.5px;color:#5A6B7D;text-align:center;line-height:1.6;margin-bottom:16px"><strong>#${cursa.id}</strong>${c.title ? ' · ' + c.title : ''}${c.price ? '<br>' + c.km + ' · ' + c.price : ''}</p>
+      <p style="font-size:12.5px;color:#5A6B7D;text-align:center;line-height:1.6;margin-bottom:16px"><strong>#${_escD(cursa.id)}</strong>${c.title ? ' · ' + _escD(c.title) : ''}${c.price ? '<br>' + _escD(c.km) + ' · ' + _escD(c.price) : ''}</p>
       <div style="display:flex;flex-direction:column;gap:8px">
-        <button onclick="this.closest('[style*=fixed]').remove();preiaComanda('${cursa.id}',${cursa.greutate_kg||0},${cursa.volum_L||0})"
+        <button onclick="this.closest('[style*=fixed]').remove();preiaComanda('${_escD(String(cursa.id).replace(/[^A-Za-z0-9_-]/g, ''))}',${Number(cursa.greutate_kg)||0},${Number(cursa.volum_L)||0})"
                 style="padding:11px;border-radius:11px;border:none;background:#7C3AED;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Preia cursa</button>
         <button onclick="this.closest('[style*=fixed]').remove();refuzaCursa('${cursa.id}')"
                 style="padding:10px;border-radius:11px;border:1.5px solid #D5DFE8;background:#fff;color:#5A6B7D;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Refuz</button>
@@ -3242,7 +3242,7 @@ function generareCMR(cursaId, furnizor, destinatar, produs, greutate_kg, dimensi
         <div style="background:#EBF4FB;border-radius:10px;padding:10px 12px;margin-bottom:14px;border:1px solid #D5DFE8">
           <div style="display:flex;align-items:center;justify-content:space-between;font-size:11.5px">
             <div><div style="color:#5A6B7D;margin-bottom:2px">Timestamp confirmare</div><div style="font-weight:700">${ts}</div></div>
-            <div style="text-align:right"><div style="color:#5A6B7D;margin-bottom:2px">Hash verificare</div><div style="font-family:monospace;font-weight:700;color:#1A5FAD">${cmrData.hash}</div></div>
+            <div style="text-align:right"><div style="color:#5A6B7D;margin-bottom:2px">Hash verificare</div><div style="font-family:monospace;font-weight:700;color:#1A5FAD">${_escD(cmrData.hash)}</div></div>
           </div>
         </div>
         <div style="background:#D4EDDA;border-radius:10px;padding:9px 12px;margin-bottom:14px;border:1px solid rgba(26,122,58,.2);font-size:11.5px;color:#1A7A3A;font-weight:600">

@@ -19,6 +19,15 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  tip_certificare: v.text({ max: 200, eticheta: ['Certificarea', 'Certification'] }),
+  document_path: v.text({ max: 300, eticheta: ['Fișierul', 'File'] }),
+  angajat_id: v.id({ eticheta: ['Angajat', 'Employee'] }),
+  data_expirare: v.data({ eticheta: ['Data expirării', 'Expiry date'] }),
+};
 
 async function incarcaCerinteTara(tara) {
   const { data, error } = await supabaseAdmin
@@ -62,6 +71,7 @@ async function handler(req, res, user) {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { tip_certificare, document_path, angajat_id = null, data_expirare = null } = req.body || {};
   const cerinte = await incarcaCerinteTara(tara);
   const numeValide = cerinte.map((c) => c.nume_certificare);

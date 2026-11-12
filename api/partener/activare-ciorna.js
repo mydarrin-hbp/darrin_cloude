@@ -20,6 +20,13 @@ const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { trimiteEroare, formaComuna } = require('../../lib/raspuns-eroare');
 const { esteRolPartener } = require('../../lib/activare-partener');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  pas_curent: v.numar({ min: 1, max: 6, intreg: true, eticheta: ['Pasul curent', 'Current step'] }),
+  date: v.oricare({ maxOcteti: Infinity, eticheta: ['Datele ciornei', 'Draft data'] }),
+};
 
 const TABEL = 'partener_activare_ciorna';
 const MAX_OCTETI = 50 * 1024;
@@ -90,6 +97,7 @@ async function handler(req, res, user) {
 
     if (req.method !== 'PUT') return trimiteEroare(res, 405, 'METODA', 'Metodă nepermisă.', 'Method not allowed.');
 
+    if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora', limite: { maxOcteti: Infinity, maxText: Infinity } })) return;
     const corp = req.body || {};
     if (Buffer.byteLength(JSON.stringify(corp), 'utf8') > MAX_OCTETI) {
       return trimiteEroare(res, 413, 'CIORNA_PREA_MARE', MESAJ.prea_mare.ro, MESAJ.prea_mare.en);

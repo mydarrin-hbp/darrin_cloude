@@ -19,6 +19,12 @@ const { trimiteEroare, camp, formaComuna } = require('../../lib/raspuns-eroare')
 const { dashboardPentruRol } = require('../../lib/destinatie-rol');
 const { esteRolPartener } = require('../../lib/activare-partener');
 const { ROL_DUPA_TIP_PARTENER } = require('../../lib/roluri-partener');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  rol: v.text({ max: 40, eticheta: ['Rolul', 'Role'] }),
+};
 
 const MESAJ = {
   rol: {
@@ -37,6 +43,7 @@ const MESAJ = {
 
 async function handler(req, res, user) {
   if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA', 'Metodă nepermisă.', 'Method not allowed.');
+  if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const rol = req.body && req.body.rol;
   if (!esteRolPartener(rol)) return trimiteEroare(res, 400, 'ROL_INVALID', MESAJ.rol.ro, MESAJ.rol.en, [camp('rol', MESAJ.rol.ro, MESAJ.rol.en)]);
 

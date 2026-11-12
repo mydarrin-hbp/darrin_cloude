@@ -47,6 +47,15 @@ const { trimiteEroare, camp, formaComuna } = require('../../lib/raspuns-eroare')
 const { verificaFirmaPartener, marcheazaVerificareManuala } = require('../../lib/verifica-firma-partener');
 const { TIP_DUPA_ROL, esteRolPartener } = require('../../lib/activare-partener');
 const { normalizeazaCui } = require('../../lib/forme-juridice');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  partner_type: v.text({ max: 40, eticheta: ['Tipul de partener', 'Partner type'] }),
+  regiune_cod: v.text({ max: 20, eticheta: ['Regiunea', 'Region'] }),
+  nr_reg_com: v.text({ max: 40, eticheta: ['Nr. Registrul Comerțului', 'Trade Register no.'] }),
+  adresa_sediu_social: v.text({ max: 300, eticheta: ['Adresa sediului social', 'Registered office address'] }),
+};
 
 const FARA_ROL_ALES = {
   ro: 'Alege întâi tipul de partener („Devino partener” sau „Rolurile mele”), apoi completează datele firmei.',
@@ -116,6 +125,7 @@ async function handler(req, res, user) {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { is_treasury_account, regiune_cod, cont_bancar, nr_reg_com, adresa_sediu_social } = req.body || {};
   let { partner_type } = req.body || {};
 

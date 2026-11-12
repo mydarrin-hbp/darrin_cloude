@@ -11,6 +11,12 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {
+  program: v.lista(null, { max: 7, eticheta: ['Programul de lucru', 'Working hours'] }),
+};
 
 const FALLBACK = { ora_inceput: '08:00:00', ora_sfarsit: '20:00:00', activ: true };
 
@@ -28,6 +34,7 @@ async function handler(req, res, user) {
   }
 
   if (req.method === 'POST') {
+    if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
     const { program } = req.body || {};
     if (!Array.isArray(program) || program.length !== 7) {
       return res.status(400).json({ error: 'program trebuie să fie un array cu exact 7 zile' });

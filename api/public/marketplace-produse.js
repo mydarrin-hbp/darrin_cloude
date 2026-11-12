@@ -25,6 +25,7 @@
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { checkRateLimit } = require('../../lib/rate-limit');
+const v = require('../../lib/valideaza');
 const { incarcaConfigPret, aplicaFormulaPret, calculeazaPret } = require('../../lib/calculeaza-pret');
 const { rezolvaAddonMateriale, parseazaIdMarketplace } = require('../../lib/rezolva-addon-materiale');
 const { furnizoriProprii } = require('../../lib/furnizor-propriu');
@@ -177,7 +178,14 @@ async function handleLista(req, res) {
   return res.status(200).json({ ok: true, tip, moneda, noduri: noduriCuProduse, produse, total: count ?? produse.length, pagina, pe_pagina: peP });
 }
 
+// Pasul 11-S1: tipuri, lungimi și câmpurile acceptate la calculul prețului.
+const SCHEMA_PRET = {
+  produse: v.lista(v.ITEM_PRODUS, { max: 50, eticheta: ['Produse', 'Products'] }),
+  tara_cod: v.text({ max: 8, eticheta: ['Țară', 'Country'] }),
+};
+
 async function handlePret(req, res) {
+  if (!v.valideazaSauTrimite(req, res, SCHEMA_PRET)) return;
   const { produse } = req.body || {};
   if (!Array.isArray(produse) || !produse.length || produse.length > 50) {
     return res.status(400).json({ error: 'produse trebuie să fie o listă de 1–50 de produse {id, qty}.' });

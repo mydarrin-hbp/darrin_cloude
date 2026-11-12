@@ -25,6 +25,10 @@ const {
   raspunsEroareDiscount,
 } = require('../../lib/discount-partener');
 const { esteFurnizorPropriu, EROARE_DISCOUNT_FURNIZOR_PROPRIU } = require('../../lib/furnizor-propriu');
+const v = require('../../lib/valideaza');
+
+// Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
+const SCHEMA = {};
 
 const ROLURI = ['partener_materiale', 'partener_inchirieri', 'partener_asigurari', 'partener_curier'];
 
@@ -82,6 +86,7 @@ async function handler(req, res, user) {
     return res.status(400).json({ error: EROARE_DISCOUNT_FURNIZOR_PROPRIU });
   }
 
+  if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const validare = await valideazaDiscountNou(req.body);
   if (validare.eroare) return res.status(400).json({ error: validare.eroare });
 
