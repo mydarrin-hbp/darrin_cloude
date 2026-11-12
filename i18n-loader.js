@@ -23,9 +23,27 @@
    conținutul generat din JavaScript (MutationObserver), fără chei puse pe
    fiecare element. `_modele` acoperă textele cu numere sau nume variabile.
 
-   Fără flash de română: <html class="myd-i18n-pending"> e ascuns vizual
-   până se aplică traducerea, cel mult 800 ms (după aceea se afișează
-   oricum, ca pagina să nu rămână goală la o eroare).
+   Traducerea timpurie (pasul 11-T0, 11 nov. 2026): nu se mai așteaptă
+   DOMContentLoaded. Observatorul (MutationObserver pe <html>) pornește
+   imediat; când sosesc dicționarele, se traduce tot ce e deja în DOM, iar
+   nodurile adăugate apoi de parser sau de JavaScript se traduc în callback-ul
+   observatorului, care rulează înaintea desenării. <title>, meta description
+   și OG se traduc tot atunci (și când apar mai jos în pagină).
+
+   Fără română în modul EN: <html class="myd-i18n-pending"> ține <body>
+   ascuns (opacity 0) până se aplică dicționarele pe DOM-ul existent; pagina
+   se afișează imediat după aceea, fără să aștepte DOMContentLoaded.
+   Pragul de siguranță: MAX_ASTEPTARE = 3000 ms. Dacă dicționarele întârzie
+   peste prag sau nu se pot încărca deloc (eroare de rețea, dicționarul
+   general lipsă), pagina se afișează la 3000 ms — ca să nu rămână goală —
+   și se scrie un avertisment în consolă ([MYD i18n]). Dacă dicționarele
+   sosesc după prag, traducerea se aplică atunci.
+   În modul RO pagina nu se ascunde și nu se traduce nimic.
+
+   Evenimentul `myd:lang` se trimite o singură dată, după DOMContentLoaded
+   și după traducere (ca înainte): ascultătorii (catalog, marketplace-
+   materiale, reguli-platforma.js, seo-meta.js) sunt înregistrați de
+   scripturi din <body> sau cu defer și redesenează conținut din pagină.
 
    Paginile interne (superadmin, back-office, documentație tehnică) rămân
    în română: aici nu se traduce nimic.
@@ -47,7 +65,8 @@
   var LOCALE = { ro: 'ro-RO', en: 'en-GB', de: 'de-DE', fr: 'fr-FR', tr: 'tr-TR', bg: 'bg-BG', el: 'el-GR' };
   var INTERNE = /\/(mydarrin-(superadmin|backoffice-serviciu|deviz-engine|auth-schema|sync-architecture|business-model|design-system))(\.html)?$/;
   var ATRIBUTE = ['placeholder', 'title', 'aria-label', 'alt'];
-  var MAX_ASTEPTARE = 800;
+  // Prag de siguranță: pagina nu rămâne ascunsă mai mult (vezi antetul).
+  var MAX_ASTEPTARE = 3000;
 
   var root = document.documentElement;
   var intern = INTERNE.test(location.pathname) || root.hasAttribute('data-i18n-off');
@@ -220,16 +239,24 @@
     });
   }
 
+  // Pornit imediat (înaintea dicționarelor): până la `gata` nu face nimic —
+  // nodurile de până atunci se traduc dintr-o trecere completă, la sosire.
   var observator = null;
   function porneste() {
-    if (observator || !document.body) return;
+    if (observator) return;
     observator = new MutationObserver(function (lista) {
       if (!gata) return;
       for (var i = 0; i < lista.length; i++) {
         var m = lista[i];
         if (m.type === 'childList') {
-          for (var j = 0; j < m.addedNodes.length; j++) traduArbore(m.addedNodes[j]);
-          if (m.target && m.target.nodeName === 'TITLE') traduHead();
+          var head = m.target && m.target.nodeName === 'TITLE';
+          for (var j = 0; j < m.addedNodes.length; j++) {
+            var an = m.addedNodes[j];
+            traduArbore(an);
+            // <title> / <meta> parsate după sosirea dicționarelor
+            if (an.nodeName === 'META' || an.nodeName === 'TITLE') head = true;
+          }
+          if (head) traduHead();
         } else if (m.type === 'characterData') {
           if (m.target.parentNode && m.target.parentNode.nodeName === 'TITLE') traduHead();
           else traduNodText(m.target);
@@ -311,13 +338,18 @@
     setLanguage: setLanguage,
     t: t,
     traduce: function (s) { var r = limba === 'ro' ? null : traduce(s); return r == null ? s : r; },
-    aplica: function (rad) { if (limba !== 'ro' && gata) traduArbore(rad || document.body); },
+    aplica: function (rad) { if (limba !== 'ro' && gata) traduArbore(rad || document.body || root); },
   };
   window.t = t;
 
+  // După DOMContentLoaded, nu după readyState: readyState devine „interactive”
+  // înaintea scripturilor defer, deci un ascultător înregistrat de ele (ex.
+  // seo-meta.js) ar fi pierdut evenimentul dacă dicționarele soseau atunci.
+  var domGata = document.readyState !== 'loading';
+  if (!domGata) document.addEventListener('DOMContentLoaded', function () { domGata = true; });
   function dupaDom(fn) {
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
-    else fn();
+    if (domGata) fn();
+    else document.addEventListener('DOMContentLoaded', fn);
   }
   dupaDom(_actualizeazaSelectoare);
 
@@ -334,7 +366,8 @@
     return;
   }
 
-  // Ascuns vizual până se aplică traducerea (max. 800 ms).
+  // Ascuns vizual până se aplică dicționarele (prag: MAX_ASTEPTARE).
+  var aplicat = false, esuat = false; // dicționarele aplicate pe DOM / dicționarul general lipsă
   try {
     var st = document.createElement('style');
     // opacity pe <body>, nu visibility pe <html>: unele stiluri ale paginilor pun
@@ -344,8 +377,14 @@
     (document.head || root).appendChild(st);
     root.classList.add('myd-i18n-pending');
     ascuns = true;
-    setTimeout(arata, MAX_ASTEPTARE);
+    setTimeout(function () {
+      if (aplicat) return;
+      if (!esuat) try { console.warn('[MYD i18n] Dicționarele (' + limba + ') nu au sosit în ' + MAX_ASTEPTARE + ' ms; pagina se afișează fără traducere.'); } catch (e) {}
+      arata();
+    }, MAX_ASTEPTARE);
   } catch (e) {}
+
+  porneste();
 
   // + /i18n/ro.json: cheile cu nume (ex. meniu.*) au textul român acolo și
   // traducerea în fișierul limbii — un text egal cu valoarea românească a unei
@@ -353,7 +392,7 @@
   // fără data-i18n pe fiecare element, care i-ar șterge iconițele).
   var dictionare = Promise.all([json('/i18n/' + limba + '.json'), json('/i18n/' + limba + '/' + pagina + '.json'), json('/i18n/ro.json')]);
   // Conținutul din baza de date (titluri de servicii, niveluri, categorii) —
-  // nu ține pagina ascunsă; se aplică imediat ce sosește.
+  // nu ține pagina ascunsă; se aplică imediat ce sosește (după dicționare).
   var catalog = json('/api/public/traduceri-catalog?lang=' + limba);
 
   dictionare.then(function (d) {
@@ -365,16 +404,24 @@
       var n = norm(ro[k]);
       if (n) texte[n] = chei[k];
     }
-    dupaDom(function () {
-      gata = true;
-      traduHead();
-      traduArbore(document.body);
-      porneste();
+    // Tot ce a parsat deja browserul (inclusiv <head>); restul trece prin observator.
+    gata = true;
+    traduHead();
+    traduArbore(root);
+    if (d[0]) {
+      aplicat = true;
       arata();
+    } else {
+      // Dicționarul general lipsește: pagina rămâne ascunsă până la prag.
+      esuat = true;
+      try { console.warn('[MYD i18n] Dicționarul /i18n/' + limba + '.json nu s-a putut încărca; pagina se afișează după ' + MAX_ASTEPTARE + ' ms.'); } catch (e) {}
+    }
+    dupaDom(function () {
+      traduHead();
       try { window.dispatchEvent(new CustomEvent('myd:lang', { detail: { lang: limba } })); } catch (e) {}
-      catalog.then(function (c) {
-        if (c && c._texte && Object.keys(c._texte).length) { adaugaDictionar(c); traduArbore(document.body); traduHead(); }
-      });
     });
+    return catalog;
+  }).then(function (c) {
+    if (c && c._texte && Object.keys(c._texte).length) { adaugaDictionar(c); traduArbore(root); traduHead(); }
   });
 })();
