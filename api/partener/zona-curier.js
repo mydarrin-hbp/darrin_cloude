@@ -20,6 +20,7 @@ const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { normalizeazaRegiune } = require('../../lib/regiune');
 const v = require('../../lib/valideaza');
+const { trimiteEroare, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
 
 // Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
 const SCHEMA = {
@@ -37,7 +38,7 @@ async function handler(req, res, user) {
       .eq('partner_id', user.id)
       .eq('activ', true)
       .order('created_at', { ascending: false });
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
     // Pasul 11-P3b: regiunea (text liber) citită tolerant prin lib/regiune.js:
     // `regiune` = { cod, denumire } din geo_regiuni, sau null; regiune_cod rămâne cum e salvat.
     const zone = await Promise.all((data || []).map(async (z) => ({
@@ -48,7 +49,7 @@ async function handler(req, res, user) {
 
   if (req.method === 'DELETE') {
     const { id } = req.body || {};
-    if (!id) return res.status(400).json({ error: 'id este obligatoriu' });
+    if (!id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id este obligatoriu', 'id is required.', ['id']);
     const { data, error } = await supabaseAdmin
       .from('partner_zona_curier')
       .update({ activ: false })
@@ -56,20 +57,20 @@ async function handler(req, res, user) {
       .eq('partner_id', user.id)
       .select('id')
       .maybeSingle();
-    if (error) return res.status(500).json({ error: error.message });
-    if (!data) return res.status(404).json({ error: 'Zona nu există sau nu-ți aparține' });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
+    if (!data) return trimiteEroare(res, 404, 'NU_EXISTA', 'Zona nu există sau nu-ți aparține', 'The area does not exist or does not belong to you.');
     return res.status(200).json({ ok: true });
   }
 
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { tara_cod, regiune_cod, localitate, raza_livrare_km } = req.body || {};
   if (!tara_cod || typeof tara_cod !== 'string') {
-    return res.status(400).json({ error: 'tara_cod este obligatoriu' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'tara_cod este obligatoriu', 'tara_cod is required.', ['tara_cod']);
   }
   if (raza_livrare_km != null && !(typeof raza_livrare_km === 'number' && raza_livrare_km > 0)) {
-    return res.status(400).json({ error: 'raza_livrare_km trebuie să fie un număr pozitiv' });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', 'raza_livrare_km trebuie să fie un număr pozitiv', 'raza_livrare_km must be a positive number.', ['raza_livrare_km']);
   }
 
   try {
@@ -84,7 +85,7 @@ async function handler(req, res, user) {
     return res.status(200).json({ ok: true, zona });
   } catch (err) {
     console.error('[zona-curier]', err);
-    return res.status(500).json({ error: err.message || 'Nu am putut salva zona de acoperire' });
+    return trimiteEroareInterna(res, 500, 'EROARE_SERVER', 'Nu am putut salva zona de acoperire', 'We could not save the coverage area. Please try again.', err);
   }
 }
 

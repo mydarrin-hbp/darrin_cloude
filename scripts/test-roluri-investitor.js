@@ -216,7 +216,7 @@ async function rutaCompleta(token, id) {
     reset();
     DB.tabele.partners.push({ id: A, partner_type: 'furnizor_materiale', nume_firma: 'X', cui: 'RO46577229', tip_entitate_legala: 'srl', status_verificare: 'pending_review' });
     const r = await cheama(apiWizard, { token: 'tok-a', metoda: 'POST', body: { nume_firma: 'X', cui: 'RO46577229', partner_type: 'curier', tip_entitate_legala: 'srl' } });
-    egal(r.statusCode, 409); egal(r.corp.cod, 'alt_tip_partener');
+    egal(r.statusCode, 409); egal(r.corp.cod, 'ALT_TIP_PARTENER');
   });
   await test('partner-register nu mai creează conturi (410, pasul 11-R3), nici pentru un utilizator autentificat', async () => {
     reset();
@@ -273,7 +273,7 @@ async function rutaCompleta(token, id) {
     egal(sub.user_id, A); egal(sub.status, 'in_asteptare'); egal(sub.email, 'a@test');
     egal(sub.runda_id, 'r-test'); egal(sub.actiuni, 25); egal(sub.instrument, 'safe');
     const ap = await cheama(apiAprobare, { token: 'tok-super', metoda: 'POST', body: { id: sub.id, actiune: 'aproba' } });
-    egal(ap.statusCode, 409); egal(ap.corp.cod, 'kyc_neaprobat');
+    egal(ap.statusCode, 409); egal(ap.corp.cod, 'KYC_NEAPROBAT');
     egal(DB.tabele.investitori_portofoliu[0].status, 'in_asteptare');
   });
   await test('după aprobarea KYC, subscrierea se aprobă', async () => {
@@ -297,7 +297,7 @@ async function rutaCompleta(token, id) {
     reset();
     DB.tabele.investitori_portofoliu.push({ id: 'vechi', email: 'x@test', actiuni: 1, valoare_investita: 1000, status: 'in_asteptare' });
     const ap = await cheama(apiAprobare, { token: 'tok-super', metoda: 'POST', body: { id: 'vechi', actiune: 'aproba' } });
-    egal(ap.statusCode, 409); egal(ap.corp.cod, 'fara_cont');
+    egal(ap.statusCode, 409); egal(ap.corp.cod, 'FARA_CONT');
   });
   await test('sumă sau instrument invalid → 400', async () => {
     reset();

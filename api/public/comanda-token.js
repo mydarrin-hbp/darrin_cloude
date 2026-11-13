@@ -9,6 +9,7 @@
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { checkRateLimit } = require('../../lib/rate-limit');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const SEMNATURA_URL_VALABILA_SECUNDE = 600; // 10 min — suficient cât userul se uită la pagină
 
@@ -16,13 +17,13 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const allowed = await checkRateLimit(req, { key: 'comanda-token', limit: 20, windowSeconds: 600 });
-  if (!allowed) return res.status(429).json({ error: 'Prea multe cereri. Încearcă din nou mai târziu.', error_en: 'Too many requests. Please try again later.' });
+  if (!allowed) return trimiteEroare(res, 429, 'PREA_MULTE_CERERI', 'Prea multe cereri. Încearcă din nou mai târziu.', 'Too many requests. Please try again later.');
 
   const token = String(req.query?.token || '');
-  if (!token) return res.status(400).json({ error: 'token este obligatoriu', error_en: 'token is required' });
+  if (!token) return trimiteEroare(res, 400, 'DATE_INVALIDE', 'token este obligatoriu', 'token is required');
 
   const { data: comanda, error: comErr } = await supabaseAdmin
     .from('comenzi')
@@ -31,12 +32,12 @@ module.exports = async function handler(req, res) {
     .maybeSingle();
   if (comErr) {
     console.error('[public/comanda-token]', comErr);
-    return res.status(500).json({ error: 'Eroare la căutarea comenzii', error_en: 'Error while looking up the order' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Eroare la căutarea comenzii', 'Error while looking up the order');
   }
-  if (!comanda) return res.status(404).json({ error: 'Link invalid sau expirat', error_en: 'Invalid or expired link' });
+  if (!comanda) return trimiteEroare(res, 404, 'NU_EXISTA', 'Link invalid sau expirat', 'Invalid or expired link');
 
   if (comanda.token_expira_la && new Date(comanda.token_expira_la) < new Date()) {
-    return res.status(410).json({ error: 'Linkul a expirat', error_en: 'The link has expired', expirat: true });
+    return trimiteEroare(res, 410, 'EXPIRAT', 'Linkul a expirat', 'The link has expired', null, { expirat: true });
   }
 
   let partenerNume = null;

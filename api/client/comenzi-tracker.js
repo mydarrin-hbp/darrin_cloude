@@ -35,6 +35,7 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 function numarSauZero(v) {
   const n = Number(v);
@@ -68,7 +69,7 @@ function construiesteBreakdown(c) {
 
 async function handler(req, res, user) {
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   }
 
   const { data: comenzi, error } = await supabaseAdmin
@@ -78,7 +79,7 @@ async function handler(req, res, user) {
     .order('creat_la', { ascending: false });
   if (error) {
     console.error('[client/comenzi-tracker]', error);
-    return res.status(500).json({ error: 'Nu am putut încărca comenzile' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca comenzile', 'We could not load your orders. Please try again.');
   }
 
   const ids = (comenzi || []).map((c) => c.id);

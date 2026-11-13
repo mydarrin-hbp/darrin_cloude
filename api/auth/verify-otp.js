@@ -26,14 +26,15 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 async function handler(req, res, user) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   // La acest punct, dacă requireAuth a trecut, JWT-ul e valid — iar dacă
   // pasul 3 (verifyOtp client-side) a reușit, user.phone_confirmed_at va fi setat.
   if (!user.phone_confirmed_at) {
-    return res.status(400).json({ error: 'Telefonul nu a fost încă verificat prin OTP (pas anterior lipsă)' });
+    return trimiteEroare(res, 400, 'TELEFON_NEVERIFICAT', 'Telefonul nu a fost încă verificat prin OTP (pas anterior lipsă)', 'The phone number has not been verified by code yet. Go back to the previous step.');
   }
 
   const { error } = await supabaseAdmin
@@ -43,7 +44,7 @@ async function handler(req, res, user) {
 
   if (error) {
     console.error('[verify-otp]', error);
-    return res.status(500).json({ error: 'Nu am putut actualiza profilul' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut actualiza profilul', 'We could not update the profile.');
   }
 
   return res.status(200).json({ ok: true, phone_verificat: true });

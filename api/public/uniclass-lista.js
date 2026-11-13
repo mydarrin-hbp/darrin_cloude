@@ -15,6 +15,7 @@
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { citesteTot } = require('../../lib/citeste-tot');
 const { limbaNomenclator } = require('../../lib/limba-nomenclator');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const TABELE = ['Ac', 'Co', 'EF', 'En', 'FI', 'Ma', 'PC', 'PM', 'Pr', 'Ro', 'RK', 'SL', 'Ss', 'TE', 'Zz'];
 
@@ -22,7 +23,7 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const lang = limbaNomenclator(req);
   const prefixe = String(req.query?.prefix || '').split(',').map((p) => p.trim()).filter((p) => TABELE.includes(p));
@@ -47,6 +48,6 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true, coduri });
   } catch (err) {
     console.error('[uniclass-lista]', err);
-    return res.status(500).json({ error: 'Nu am putut încărca lista Uniclass', error_en: 'Could not load the Uniclass list' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca lista Uniclass', 'Could not load the Uniclass list');
   }
 };

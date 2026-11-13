@@ -27,15 +27,16 @@
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { checkRateLimit } = require('../../lib/rate-limit');
 const { preturiDeLa } = require('../../lib/catalog-preturi');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const TIPURI = { servicii: 'servicii', materiale: 'materiale', inchirieri: 'inchirieri', inchiriere: 'inchirieri' };
 
 function text(v, max) { return typeof v === 'string' ? v.trim().slice(0, max) : ''; }
 
 module.exports = async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   const allowed = await checkRateLimit(req, { key: 'catalog-categorie', limit: 120, windowSeconds: 60 });
-  if (!allowed) return res.status(429).json({ error: 'Prea multe cereri. Încearcă din nou mai târziu.', error_en: 'Too many requests. Please try again later.' });
+  if (!allowed) return trimiteEroare(res, 429, 'PREA_MULTE_CERERI', 'Prea multe cereri. Încearcă din nou mai târziu.', 'Too many requests. Please try again later.');
 
   const slug = text(req.query?.cat, 120);
   const tip = TIPURI[text(req.query?.tip, 20)] || 'servicii';
@@ -105,6 +106,6 @@ module.exports = async function handler(req, res) {
     });
   } catch (err) {
     console.error('[public/catalog-categorie]', err);
-    return res.status(500).json({ error: 'Nu am putut încărca produsele categoriei.', error_en: 'We could not load the products of this category.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca produsele categoriei.', 'We could not load the products of this category.');
   }
 };

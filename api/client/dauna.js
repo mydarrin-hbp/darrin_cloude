@@ -13,6 +13,7 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const v = require('../../lib/valideaza');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 // Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
 const SCHEMA = {
@@ -49,25 +50,25 @@ async function handler(req, res, user) {
     const { data, error } = await q;
     if (error) {
       console.error('[client/dauna] GET', error);
-      return res.status(500).json({ error: 'Nu am putut încărca dosarele.' });
+      return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca dosarele.', 'We could not load the claims. Please try again.');
     }
     return res.status(200).json({ ok: true, dosare: (data || []).map(publica) });
   }
 
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { comanda_id, tip, descriere, valoare_estimata } = req.body || {};
-  if (!comanda_id || typeof comanda_id !== 'string') return res.status(400).json({ error: 'comanda_id este obligatoriu.' });
-  if (!TIPURI.includes(tip)) return res.status(400).json({ error: `tip trebuie să fie unul din: ${TIPURI.join(', ')}.` });
+  if (!comanda_id || typeof comanda_id !== 'string') return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'comanda_id este obligatoriu.', 'comanda_id is required.', ['comanda_id']);
+  if (!TIPURI.includes(tip)) return trimiteEroare(res, 400, 'DATE_INVALIDE', `tip trebuie să fie unul din: ${TIPURI.join(', ')}.`, `tip must be one of: ${TIPURI.join(', ')}.`, ['tip']);
   const text = typeof descriere === 'string' ? descriere.trim() : '';
   if (text.length < 10 || text.length > 2000) {
-    return res.status(400).json({ error: 'Descrierea trebuie să aibă între 10 și 2000 de caractere.' });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', 'Descrierea trebuie să aibă între 10 și 2000 de caractere.', 'The description must have between 10 and 2000 characters.', ['descriere']);
   }
   let valoare = null;
   if (valoare_estimata !== undefined && valoare_estimata !== null && valoare_estimata !== '') {
     valoare = Number(valoare_estimata);
-    if (!Number.isFinite(valoare) || valoare < 0) return res.status(400).json({ error: 'valoare_estimata trebuie să fie un număr pozitiv.' });
+    if (!Number.isFinite(valoare) || valoare < 0) return trimiteEroare(res, 400, 'DATE_INVALIDE', 'valoare_estimata trebuie să fie un număr pozitiv.', 'valoare_estimata must be a positive number.', ['valoare_estimata']);
   }
 
   const { data: comanda, error: errCom } = await supabaseAdmin
@@ -77,16 +78,16 @@ async function handler(req, res, user) {
     .maybeSingle();
   if (errCom) {
     console.error('[client/dauna] comanda', errCom);
-    return res.status(500).json({ error: 'Nu am putut verifica comanda.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut verifica comanda.', 'We could not check the order. Please try again.');
   }
-  if (!comanda || comanda.client_id !== user.id) return res.status(404).json({ error: 'Comanda nu există.' });
+  if (!comanda || comanda.client_id !== user.id) return trimiteEroare(res, 404, 'COMANDA_NU_EXISTA', 'Comanda nu există.', 'The order does not exist.');
   if (!STATUSURI_COMANDA_CU_DAUNA.includes(comanda.status)) {
-    return res.status(409).json({ error: 'Poți deschide un dosar de daună abia după ce lucrarea a fost finalizată.' });
+    return trimiteEroare(res, 409, 'STARE_GRESITA', 'Poți deschide un dosar de daună abia după ce lucrarea a fost finalizată.', 'You can open a claim only after the work has been completed.');
   }
 
   const claimId = claimIdPentru(comanda, tip);
   const { data: existent } = await supabaseAdmin.from('dosare_dauna').select('claim_id').eq('claim_id', claimId).maybeSingle();
-  if (existent) return res.status(409).json({ error: `Există deja un dosar ${claimId} pentru această comandă și acest tip.`, claim_id: claimId });
+  if (existent) return trimiteEroare(res, 409, 'EXISTA_DEJA', `Există deja un dosar ${claimId} pentru această comandă și acest tip.`, `There is already a claim ${claimId} for this order and this type.`, null, { claim_id: claimId });
 
   const { data, error } = await supabaseAdmin
     .from('dosare_dauna')
@@ -98,7 +99,7 @@ async function handler(req, res, user) {
     .single();
   if (error) {
     console.error('[client/dauna] insert', error);
-    return res.status(500).json({ error: 'Nu am putut deschide dosarul.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut deschide dosarul.', 'We could not open the claim. Please try again.');
   }
   return res.status(200).json({ ok: true, dosar: publica(data) });
 }

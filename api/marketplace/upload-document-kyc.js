@@ -12,6 +12,7 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { trimiteEroare, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
 
 // FIX (testat live, 2 August 2026): valorile inventate inițial
 // ('certificat_inregistrare'/'cui_cif'/'act_identitate_administrator') nu
@@ -31,24 +32,24 @@ async function handler(req, res, user) {
       .select('id, tip_document, storage_path, status, observatii, uploaded_at, verificat_la')
       .eq('partener_id', user.id)
       .order('uploaded_at', { ascending: false });
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
     return res.status(200).json({ ok: true, documente: data || [] });
   }
 
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const { tip_document, storage_path } = req.body || {};
   if (!TIPURI_VALIDE.includes(tip_document)) {
-    return res.status(400).json({ error: `tip_document trebuie să fie una din: ${TIPURI_VALIDE.join(', ')}` });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', `tip_document trebuie să fie una din: ${TIPURI_VALIDE.join(', ')}`, `tip_document must be one of: ${TIPURI_VALIDE.join(', ')}`, ['tip_document']);
   }
   if (!storage_path || typeof storage_path !== 'string') {
-    return res.status(400).json({ error: 'storage_path (calea fișierului deja urcat) este obligatoriu' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'storage_path (calea fișierului deja urcat) este obligatoriu', 'storage_path (the path of the uploaded file) is required.', ['storage_path']);
   }
   // Fișierul trebuie să fie chiar în folderul acestui furnizor — exact
   // verificarea din wizard-certificari.js, altfel oricine ar putea
   // înregistra calea către documentul altcuiva.
   if (!storage_path.startsWith(`${user.id}/`)) {
-    return res.status(403).json({ error: 'Calea fișierului nu aparține contului tău' });
+    return trimiteEroare(res, 403, 'FARA_DREPT', 'Calea fișierului nu aparține contului tău', 'The file path does not belong to your account.');
   }
 
   try {
@@ -61,7 +62,7 @@ async function handler(req, res, user) {
     return res.status(200).json({ ok: true, document: data });
   } catch (err) {
     console.error('[marketplace/upload-document-kyc]', err);
-    return res.status(500).json({ error: err.message || 'Nu am putut înregistra documentul' });
+    return trimiteEroareInterna(res, 500, 'EROARE_SERVER', 'Nu am putut înregistra documentul', 'We could not record the document. Please try again.', err);
   }
 }
 

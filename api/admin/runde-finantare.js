@@ -96,7 +96,7 @@ async function handler(req, res, user) {
     const nivel = await nivelInvestitori(user);
     if (!nivel) return refuzaFaraDrept(res);
     if (req.method === 'GET') return lista(res, nivel === 'scriere');
-    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+    if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
     const { actiune, runda, id } = req.body || {};
 
@@ -159,7 +159,7 @@ async function handler(req, res, user) {
       return res.status(200).json({ ok: true, runda: cuCalcul(data) });
     }
 
-    return trimiteEroare(res, 400, 'DATE_INVALIDE', 'actiune: calcul | salveaza | deschide | inchide', 'actiune: calcul | salveaza | deschide | inchide');
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', 'actiune: calcul | salveaza | deschide | inchide', 'actiune must be one of: calcul | salveaza | deschide | inchide');
   } catch (err) {
     console.error('[admin/runde-finantare]', err);
     if (R.tabelaLipsa(err)) return trimiteEroare(res, 503, 'MIGRARE_LIPSA', 'Tabela runde_finantare lipsește: aplică migrarea 2026-10-21_runde_finantare.sql.', 'The runde_finantare table is missing: apply the 2026-10-21_runde_finantare.sql migration.');

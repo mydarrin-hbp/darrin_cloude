@@ -22,6 +22,7 @@ const { calculeazaPretServiciu } = require('../../lib/pret-serviciu');
 const CANTITATE_MAX = 100000;
 
 const v = require('../../lib/valideaza');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 const SCHEMA = {
   nivel_id: v.id({ obligatoriu: true, eticheta: ['Nivelul serviciului', 'Service level'] }),
   cantitate: v.numar({ min: 0, max: CANTITATE_MAX, eticheta: ['Cantitate', 'Quantity'] }),
@@ -31,10 +32,10 @@ const SCHEMA = {
 };
 
 module.exports = async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const allowed = await checkRateLimit(req, { key: 'calculeaza-pret-nivel', limit: 60, windowSeconds: 60 });
-  if (!allowed) return res.status(429).json({ error: 'Prea multe cereri. Încearcă din nou mai târziu.' });
+  if (!allowed) return trimiteEroare(res, 429, 'PREA_MULTE_CERERI', 'Prea multe cereri. Încearcă din nou mai târziu.', 'Too many requests. Please try again later.');
 
   // Pasul 11-S1: tipuri, lungimi și câmpurile acceptate.
   if (!v.valideazaSauTrimite(req, res, SCHEMA)) return;
@@ -42,11 +43,11 @@ module.exports = async function handler(req, res) {
   const { nivel_id, cantitate = 1, tara_cod = 'RO', regiune = null, addon_materiale = [] } = req.body || {};
 
   if (!nivel_id || typeof nivel_id !== 'string') {
-    return res.status(400).json({ error: 'nivel_id (uuid) este obligatoriu.' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'nivel_id (uuid) este obligatoriu.', 'nivel_id (uuid) is required.', ['nivel_id']);
   }
   const cantitateNum = Number(cantitate);
   if (!Number.isFinite(cantitateNum) || cantitateNum <= 0 || cantitateNum > CANTITATE_MAX) {
-    return res.status(400).json({ error: `cantitate trebuie să fie un număr pozitiv, sub ${CANTITATE_MAX}.` });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', `cantitate trebuie să fie un număr pozitiv, sub ${CANTITATE_MAX}.`, `cantitate must be a positive number below ${CANTITATE_MAX}.`, ['cantitate']);
   }
   const taraCod = String(tara_cod || 'RO').toUpperCase();
 
@@ -80,6 +81,6 @@ module.exports = async function handler(req, res) {
     });
   } catch (err) {
     console.error('[public/calculeaza-pret-nivel]', err);
-    return res.status(500).json({ error: 'Nu am putut calcula prețul.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut calcula prețul.', 'We could not calculate the price. Please try again.');
   }
 };

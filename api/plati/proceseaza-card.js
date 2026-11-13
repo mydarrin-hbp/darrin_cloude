@@ -19,12 +19,13 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { verificaIntegrare } = require('../../lib/integrare-gate');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 async function handler(req, res, user) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const { comanda_id } = req.body || {};
-  if (!comanda_id) return res.status(400).json({ error: 'comanda_id este obligatoriu' });
+  if (!comanda_id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'comanda_id este obligatoriu', 'comanda_id is required.', ['comanda_id']);
 
   const { data: comanda, error: comErr } = await supabaseAdmin
     .from('comenzi')
@@ -33,10 +34,10 @@ async function handler(req, res, user) {
     .maybeSingle();
   if (comErr) {
     console.error('[plati/proceseaza-card]', comErr);
-    return res.status(500).json({ error: 'Eroare la căutarea comenzii' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Eroare la căutarea comenzii', 'Error while looking up the order. Please try again.');
   }
-  if (!comanda) return res.status(404).json({ error: 'Comanda nu există' });
-  if (comanda.client_id !== user.id) return res.status(403).json({ error: 'Nu ai acces la această comandă' });
+  if (!comanda) return trimiteEroare(res, 404, 'COMANDA_NU_EXISTA', 'Comanda nu există', 'The order does not exist.');
+  if (comanda.client_id !== user.id) return trimiteEroare(res, 403, 'FARA_DREPT', 'Nu ai acces la această comandă', 'You do not have access to this order.');
 
   const furnizor = await verificaIntegrare(res, 'procesatori_carduri', { tara_cod: comanda.tara_cod });
   if (!furnizor) return; // răspunsul 503 „integrare în așteptare" a fost deja trimis de poartă
@@ -46,10 +47,7 @@ async function handler(req, res, user) {
   // furnizor.api_endpoint și cheia din furnizor.api_key_criptat (decriptată
   // server-side, niciodată expusă către client). Nescris încă — poarta de
   // mai sus doar permite să se ajungă până aici, nu simulează plata.
-  return res.status(501).json({
-    error: 'Furnizor de plăți configurat ca activ, dar apelul real către procesator nu e încă implementat',
-    code: 'PROCESATOR_NEIMPLEMENTAT',
-  });
+  return trimiteEroare(res, 501, 'NEIMPLEMENTAT', 'Furnizor de plăți configurat ca activ, dar apelul real către procesator nu e încă implementat', 'A payment provider is set as active, but the real call to the processor is not implemented yet.', null, { code: 'PROCESATOR_NEIMPLEMENTAT' });
 }
 
 module.exports = requireAuth([], handler);

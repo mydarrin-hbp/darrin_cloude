@@ -9,7 +9,7 @@
 //         partener_id?, api_endpoint?, api_key?, api_config?, observatii? }
 
 const { requireAuth } = require('../../../lib/auth-middleware');
-const { trimiteEroare, camp: campEroare, formaComuna } = require('../../../lib/raspuns-eroare');
+const { trimiteEroare, camp: campEroare, formaComuna, trimiteEroareInterna } = require('../../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../../lib/supabaseAdmin');
 
 const CATEGORII_VALIDE = [
@@ -21,7 +21,7 @@ const TIPURI_CONFIGURARE = ['api', 'csv', 'ambele'];
 const STATUSURI = ['activ', 'inactiv', 'in_asteptare_test'];
 
 async function handler(req, res, user) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const {
     id, categorie, nume_furnizor, tip_configurare, status = 'inactiv',
@@ -51,7 +51,7 @@ async function handler(req, res, user) {
     const { data: cripted, error: cryptErr } = await supabaseAdmin.rpc('cripteaza_camp', { valoare: api_key.trim() });
     if (cryptErr) {
       console.error('[admin/integrari/salveaza] criptare', cryptErr);
-      return res.status(500).json({ error: 'Nu am putut cripta cheia API' });
+      return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut cripta cheia API', 'We could not encrypt the API key.');
     }
     camp.api_key_criptat = cripted;
   }
@@ -67,7 +67,7 @@ async function handler(req, res, user) {
     return res.status(200).json({ ok: true, id: result.data.id });
   } catch (err) {
     console.error('[admin/integrari/salveaza]', err);
-    return res.status(500).json({ error: err.message || 'Nu am putut salva integrarea' });
+    return trimiteEroareInterna(res, 500, 'EROARE_SERVER', 'Nu am putut salva integrarea', 'We could not save the integration.', err);
   }
 }
 

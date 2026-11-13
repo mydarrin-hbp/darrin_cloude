@@ -612,7 +612,7 @@ async function salveazaPasul2() {
     });
     const data = await res.json();
     const en = window.MYD_I18N && window.MYD_I18N.lang && window.MYD_I18N.lang !== 'ro';
-    if (!res.ok) throw new Error((en && data.error_en) || data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error((en && data.error_en) || MYD_I18N.eroare(data, 'Eroare necunoscută'));
     msgEl.className = 'msg ok'; msgEl.textContent = 'Salvat.';
     marcheazaFacut(2);
     PASI_DEBLOCATI = Math.max(PASI_DEBLOCATI, 3);
@@ -628,7 +628,7 @@ async function incarcaNace() {
   try {
     const res = await fetch('/api/public/nace-lista' + '?lang=' + encodeURIComponent(window.MYD_I18N?.lang || 'en'));
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     naceToate = data.clase || [];
     randerNaceList(naceToate);
   } catch (e) {
@@ -694,7 +694,7 @@ async function salveazaPasul3() {
       body: JSON.stringify({ principal: naceSelectate.principal, secundare: naceSelectate.secundare }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     msgEl.className = 'msg ok'; msgEl.textContent = 'Salvat.';
     marcheazaFacut(3);
     PASI_DEBLOCATI = Math.max(PASI_DEBLOCATI, 4);
@@ -782,7 +782,7 @@ async function salveazaPasul4() {
       body: JSON.stringify({ utilaje }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     msgEl.className = 'msg ok'; msgEl.textContent = 'Salvat.';
     utilajeExistente = utilajeExistente.concat(utilaje);
     document.getElementById('s4-rows').innerHTML = '';
@@ -801,7 +801,7 @@ async function incarcaEsco() {
   try {
     const res = await fetch('/api/public/esco-lista' + '?lang=' + encodeURIComponent(window.MYD_I18N?.lang || 'en'));
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     escoToate = data.ocupatii || [];
     document.querySelectorAll('.emp-esco').forEach(populeazaSelectEsco);
   } catch (e) { console.error('[esco]', e); }
@@ -847,7 +847,7 @@ async function salveazaPasul5() {
       body: JSON.stringify({ angajati }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     // POST adaugă la echipă: cei noi se alătură celor existenți.
     angajatiSalvati = angajatiSalvati.concat((data.angajati || []).map((a, i) => ({ id: a.id, nume: angajati[i].nume, cod_esco: angajati[i].cod_esco })));
     msgEl.className = 'msg ok'; msgEl.textContent = 'Salvat.';
@@ -915,7 +915,7 @@ async function incarcaCertificare(certId, numeCertificare) {
       body: JSON.stringify({ tip_certificare: numeCertificare, document_path: path }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     statusEl.className = 'msg ok'; statusEl.textContent = 'Încărcat.';
     marcheazaFacut(6);
   } catch (e) {
@@ -965,7 +965,7 @@ async function salveazaPasul7() {
       body: JSON.stringify({ alocari, zona_livrare_acceptata: true }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     msgEl.className = 'msg ok'; msgEl.textContent = 'Salvat.';
     PASI_FACUTI.add(7); PASI_FACUTI.add(8);
     PASI_DEBLOCATI = Math.max(PASI_DEBLOCATI, 8);

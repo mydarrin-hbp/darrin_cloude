@@ -97,15 +97,15 @@ async function handler(req, res, user) {
   res.setHeader('Cache-Control', 'private, no-store');
   if (req.method === 'GET') return listeaza(res, user);
   if (req.method === 'PATCH') return anuleaza(req, res, user);
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   if (!v.valideazaSauTrimite(req, res, SCHEMA_CERERE, { necunoscute: 'ignora' })) return;
   const { tip, numar_actiuni } = req.body || {};
   if (tip === 'piata_secundara') {
-    return res.status(409).json({ error: 'Piața secundară nu e disponibilă.', error_en: 'The secondary market is not available.', cod: 'INDISPONIBIL' });
+    return trimiteEroare(res, 409, 'INDISPONIBIL', 'Piața secundară nu e disponibilă.', 'The secondary market is not available.');
   }
   if (tip !== 'buyback' || !(numar_actiuni > 0)) {
-    return res.status(400).json({ error: 'tip (buyback) și numar_actiuni (>0) sunt obligatorii' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'tip (buyback) și numar_actiuni (>0) sunt obligatorii', 'tip (buyback) and numar_actiuni (>0) are required.');
   }
 
   const { data: portofoliu, error: portErr } = await supabaseAdmin
@@ -113,19 +113,19 @@ async function handler(req, res, user) {
     .select('*')
     .eq('user_id', user.id)
     .eq('status', 'aprobat');
-  if (portErr) return res.status(500).json({ error: 'Eroare la citirea portofoliului' });
+  if (portErr) return trimiteEroare(res, 500, 'EROARE_SERVER', 'Eroare la citirea portofoliului', 'We could not read your portfolio. Please try again.');
 
   const idRunde = [...new Set((portofoliu || []).map((p) => p.runda_id).filter(Boolean))];
   const runde = {};
   if (idRunde.length) {
     const { data, error } = await supabaseAdmin.from('runde_finantare').select('id, discount_buyback_pct, lock_up_luni').in('id', idRunde);
-    if (error && !R.tabelaLipsa(error)) return res.status(500).json({ error: 'Eroare la citirea rundelor' });
+    if (error && !R.tabelaLipsa(error)) return trimiteEroare(res, 500, 'EROARE_SERVER', 'Eroare la citirea rundelor', 'We could not read the funding rounds. Please try again.');
     (data || []).forEach((r) => { runde[r.id] = r; });
   }
 
   const configurat = (portofoliu || []).some((p) => p.runda_id && runde[p.runda_id] && R.num(runde[p.runda_id].discount_buyback_pct) != null);
   if (!configurat) {
-    return res.status(409).json({ error: 'Buy-back-ul nu e configurat pentru runda ta.', error_en: 'Buy-back is not configured for your round.', cod: 'INDISPONIBIL' });
+    return trimiteEroare(res, 409, 'INDISPONIBIL', 'Buy-back-ul nu e configurat pentru runda ta.', 'Buy-back is not configured for your round.');
   }
   const { data: cereri, error: cereriErr } = await supabaseAdmin
     .from('investitori_exit').select('numar_actiuni, status').eq('user_id', user.id);
@@ -148,7 +148,7 @@ async function handler(req, res, user) {
     .single();
   if (error) {
     console.error('[investitori/exit]', error);
-    return res.status(500).json({ error: 'Nu am putut înregistra cererea de exit' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut înregistra cererea de exit', 'We could not record the exit request. Please try again.');
   }
   return res.status(200).json({ ok: true, cerere: data });
 }

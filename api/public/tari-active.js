@@ -6,12 +6,13 @@
 // toate greșite față de realitatea comercială curentă.
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   try {
     const { data, error } = await supabaseAdmin
@@ -40,6 +41,6 @@ module.exports = async function handler(req, res) {
     });
   } catch (err) {
     console.error('[tari-active]', err);
-    return res.status(500).json({ error: 'Nu am putut încărca lista de țări active' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca lista de țări active', 'We could not load the list of active countries.');
   }
 };

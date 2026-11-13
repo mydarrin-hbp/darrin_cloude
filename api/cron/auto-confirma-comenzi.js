@@ -20,12 +20,13 @@ const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { elibereazaEscrow } = require('../../lib/elibereaza-escrow');
 // Aceeași constantă afișează termenul pe paginile publice (api/public/reguli-platforma.js).
 const { FEREASTRA_TACITA_ORE } = require('../../lib/reguli-comenzi');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 module.exports = async function handler(req, res) {
   const secretAsteptat = process.env.CRON_SECRET;
   const primit = (req.headers['authorization'] || '').replace(/^Bearer\s+/i, '');
   if (!secretAsteptat || primit !== secretAsteptat) {
-    return res.status(401).json({ error: 'Neautorizat' });
+    return trimiteEroare(res, 401, 'NEAUTORIZAT', 'Neautorizat', 'Not authorised.');
   }
 
   const limita = new Date(Date.now() - FEREASTRA_TACITA_ORE * 60 * 60 * 1000).toISOString();
@@ -37,7 +38,7 @@ module.exports = async function handler(req, res) {
     .lte('finalizat_la', limita);
   if (candErr) {
     console.error('[cron/auto-confirma-comenzi]', candErr);
-    return res.status(500).json({ error: 'Eroare la căutarea comenzilor eligibile' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Eroare la căutarea comenzilor eligibile', 'Error while looking up eligible orders.');
   }
   if (!candidati?.length) return res.status(200).json({ ok: true, procesate: 0, sarite: 0 });
 

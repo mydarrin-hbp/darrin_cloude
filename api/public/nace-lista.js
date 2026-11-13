@@ -10,6 +10,7 @@
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { limbaNomenclator, eColoanaLipsa } = require('../../lib/limba-nomenclator');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 async function clase(lang) {
   if (lang === 'en') {
@@ -28,7 +29,7 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   try {
     // Doar cod+denumire (cod = valoare de formular, niciodată afișat vizual
@@ -39,6 +40,6 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true, clase: lista });
   } catch (err) {
     console.error('[nace-lista]', err);
-    return res.status(500).json({ error: 'Nu am putut încărca lista NACE' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca lista NACE', 'We could not load the NACE list.');
   }
 };

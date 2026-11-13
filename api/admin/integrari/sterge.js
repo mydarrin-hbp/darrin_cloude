@@ -6,19 +6,19 @@
 // Body: { id }
 
 const { requireAuth } = require('../../../lib/auth-middleware');
-const { formaComuna } = require('../../../lib/raspuns-eroare');
+const { formaComuna, trimiteEroare } = require('../../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../../lib/supabaseAdmin');
 
 async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const { id } = req.body || {};
-  if (!id) return res.status(400).json({ error: 'id este obligatoriu' });
+  if (!id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id este obligatoriu', 'id is required.', ['id']);
 
   const { error } = await supabaseAdmin.from('integrari_furnizori').delete().eq('id', id);
   if (error) {
     console.error('[admin/integrari/sterge]', error);
-    return res.status(500).json({ error: 'Nu am putut șterge integrarea' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut șterge integrarea', 'We could not delete the integration.');
   }
 
   return res.status(200).json({ ok: true });

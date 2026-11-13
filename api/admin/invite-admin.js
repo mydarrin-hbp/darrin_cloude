@@ -6,14 +6,14 @@
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { requireAuth } = require('../../lib/auth-middleware');
-const { formaComuna } = require('../../lib/raspuns-eroare');
+const { formaComuna, trimiteEroare, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
 
 async function handler(req, res, superadmin) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const { email, permisiuni } = req.body || {};
   if (!email || typeof email !== 'string') {
-    return res.status(400).json({ error: 'email este obligatoriu' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'email este obligatoriu', 'email is required.', ['email']);
   }
 
   try {
@@ -49,7 +49,7 @@ async function handler(req, res, superadmin) {
     return res.status(200).json({ ok: true, admin_id: invited.user.id, email });
   } catch (err) {
     console.error('[invite-admin]', err);
-    return res.status(500).json({ error: err.message || 'Eroare la invitarea adminului' });
+    return trimiteEroareInterna(res, 500, 'EROARE_SERVER', 'Eroare la invitarea adminului', 'Error while inviting the admin.', err);
   }
 }
 

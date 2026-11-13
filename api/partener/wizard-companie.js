@@ -123,7 +123,7 @@ async function handler(req, res, user) {
     return res.status(200).json({ ok: true, partner: partner || null, conturi: conturiSigure });
   }
 
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { is_treasury_account, regiune_cod, cont_bancar, nr_reg_com, adresa_sediu_social } = req.body || {};
@@ -155,11 +155,7 @@ async function handler(req, res, user) {
     const { data: existent } = await supabaseAdmin.from('partners').select('id, partner_type, cui').eq('id', user.id).maybeSingle();
     const tipCerut = partner_type ? TIP_PARTENER_DUPA_FORMULAR[partner_type] : null;
     if (existent && tipCerut && existent.partner_type && tipCerut !== existent.partner_type) {
-      return res.status(409).json({
-        error: 'Contul tău are deja un rol de partener. Un cont poate avea un singur tip de partener; pentru alt tip, scrie-ne din pagina Contact.',
-        error_en: 'Your account already has a partner role. An account can have only one partner type; for another type, write to us from the Contact page.',
-        cod: 'alt_tip_partener',
-      });
+      return trimiteEroare(res, 409, 'ALT_TIP_PARTENER', 'Contul tău are deja un rol de partener. Un cont poate avea un singur tip de partener; pentru alt tip, scrie-ne din pagina Contact.', 'Your account already has a partner role. An account can have only one partner type; for another type, write to us from the Contact page.');
     }
 
     const campuriEntitate = {

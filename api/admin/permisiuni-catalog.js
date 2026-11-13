@@ -12,7 +12,7 @@
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { requireAuth } = require('../../lib/auth-middleware');
-const { formaComuna } = require('../../lib/raspuns-eroare');
+const { formaComuna, trimiteEroare } = require('../../lib/raspuns-eroare');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 
 const SECTIUNE = 'catalog_servicii';
@@ -49,25 +49,25 @@ async function actionLista(req, res) {
 
 async function actionAcorda(req, res, superadmin) {
   const { admin_id, capitole: cerute, tara_cod } = req.body || {};
-  if (!admin_id) return res.status(400).json({ error: 'admin_id obligatoriu.', error_en: 'admin_id is required.' });
+  if (!admin_id) return trimiteEroare(res, 400, 'DATE_INVALIDE', 'admin_id obligatoriu.', 'admin_id is required.');
   const caps = await capitole();
-  if (caps === null) return res.status(409).json(MIGRARE);
+  if (caps === null) return trimiteEroare(res, 409, MIGRARE.cod, MIGRARE.error, MIGRARE.error_en);
   const coduri = caps.map((c) => c.cod);
   let valoare;
   if (cerute === '*') valoare = '*';
   else {
     const lista = [...new Set((Array.isArray(cerute) ? cerute : String(cerute || '').split(',')).map((c) => String(c).trim()).filter(Boolean))];
-    if (!lista.length) return res.status(400).json({ error: 'Alege cel puțin un capitol sau * (toate).', error_en: 'Choose at least one chapter or * (all).' });
+    if (!lista.length) return trimiteEroare(res, 400, 'DATE_INVALIDE', 'Alege cel puțin un capitol sau * (toate).', 'Choose at least one chapter or * (all).');
     const necunoscute = lista.filter((c) => !coduri.includes(c));
-    if (necunoscute.length) return res.status(400).json({ error: `Capitole necunoscute: ${necunoscute.join(', ')}.`, error_en: `Unknown chapters: ${necunoscute.join(', ')}.` });
+    if (necunoscute.length) return trimiteEroare(res, 400, 'DATE_INVALIDE', `Capitole necunoscute: ${necunoscute.join(', ')}.`, `Unknown chapters: ${necunoscute.join(', ')}.`);
     valoare = coduri.filter((c) => lista.includes(c)).join(',');
   }
   const tara = tara_cod ? String(tara_cod).trim().toUpperCase() : null;
-  if (tara && !/^[A-Z]{2}$/.test(tara)) return res.status(400).json({ error: 'Țara: cod de 2 litere (ex. RO).', error_en: 'Country: a 2-letter code (e.g. RO).' });
+  if (tara && !/^[A-Z]{2}$/.test(tara)) return trimiteEroare(res, 400, 'DATE_INVALIDE', 'Țara: cod de 2 litere (ex. RO).', 'Country: a 2-letter code (e.g. RO).');
 
   const { data: profil } = await supabaseAdmin.from('profiles').select('roles').eq('id', admin_id).maybeSingle();
   if (!profil || !(profil.roles || []).includes('admin')) {
-    return res.status(400).json({ error: 'Contul nu are rolul admin.', error_en: 'The account does not have the admin role.' });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', 'Contul nu are rolul admin.', 'The account does not have the admin role.');
   }
   const { error } = await supabaseAdmin.from('admin_permissions').upsert({
     admin_id, sectiune: SECTIUNE, poate_scrie: true, sectiune_specializata: valoare, tara_cod: tara, acordat_de: superadmin.id,
@@ -79,7 +79,7 @@ async function actionAcorda(req, res, superadmin) {
 
 async function actionRevoca(req, res, superadmin) {
   const { admin_id } = req.body || {};
-  if (!admin_id) return res.status(400).json({ error: 'admin_id obligatoriu.', error_en: 'admin_id is required.' });
+  if (!admin_id) return trimiteEroare(res, 400, 'DATE_INVALIDE', 'admin_id obligatoriu.', 'admin_id is required.');
   const { error } = await supabaseAdmin.from('admin_permissions').delete().eq('admin_id', admin_id).eq('sectiune', SECTIUNE);
   if (error) throw error;
   await inregistreazaAudit({ admin: superadmin, req, actiune: 'catalog_revoca_admin', entitate: 'admin_permissions', entitate_id: admin_id, detalii: null });
@@ -89,16 +89,16 @@ async function actionRevoca(req, res, superadmin) {
 const ACTIUNI = { lista: actionLista, acorda: actionAcorda, revoca: actionRevoca };
 
 async function handler(req, res, superadmin) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   const fn = ACTIUNI[(req.body || {}).action];
-  if (!fn) return res.status(400).json({ error: `action invalidă: ${Object.keys(ACTIUNI).join(', ')}` });
+  if (!fn) return trimiteEroare(res, 400, 'ACTIUNE_NECUNOSCUTA', `action invalidă: ${Object.keys(ACTIUNI).join(', ')}`, `Invalid action: ${Object.keys(ACTIUNI).join(', ')}`, ['action']);
   try {
     return await fn(req, res, superadmin);
   } catch (e) {
     console.error('[admin/permisiuni-catalog]', e);
     // Constrângerea veche pe sectiune_specializata (înainte de migrarea ruta_incadrare)
-    if (e && e.code === '23514') return res.status(409).json(MIGRARE);
-    return res.status(500).json({ error: 'Nu am putut salva dreptul de catalog.', error_en: 'Could not save the catalogue right.' });
+    if (e && e.code === '23514') return trimiteEroare(res, 409, MIGRARE.cod, MIGRARE.error, MIGRARE.error_en);
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut salva dreptul de catalog.', 'Could not save the catalogue right.');
   }
 }
 

@@ -10,6 +10,7 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const v = require('../../lib/valideaza');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 // Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
 const SCHEMA = {
@@ -18,7 +19,7 @@ const SCHEMA = {
 };
 
 async function handler(req, res, user) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { lat, lng } = req.body || {};
@@ -26,7 +27,7 @@ async function handler(req, res, user) {
 
   if (lat !== undefined || lng !== undefined) {
     if (typeof lat !== 'number' || typeof lng !== 'number') {
-      return res.status(400).json({ error: 'lat și lng, dacă sunt trimise, trebuie să fie numerice' });
+      return trimiteEroare(res, 400, 'DATE_INVALIDE', 'lat și lng, dacă sunt trimise, trebuie să fie numerice', 'lat and lng, if sent, must be numbers.');
     }
     // POINT(lng lat) — PostGIS folosește ordinea longitudine/latitudine.
     update.locatie = `POINT(${lng} ${lat})`;
@@ -35,7 +36,7 @@ async function handler(req, res, user) {
   const { error } = await supabaseAdmin.from('profiles').update(update).eq('id', user.id);
   if (error) {
     console.error('[heartbeat]', error);
-    return res.status(500).json({ error: 'Nu am putut actualiza statusul' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut actualiza statusul', 'We could not update the status.');
   }
 
   return res.status(200).json({ ok: true, last_seen_at: update.last_seen_at });

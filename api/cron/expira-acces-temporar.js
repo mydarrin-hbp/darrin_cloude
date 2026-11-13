@@ -24,12 +24,13 @@
 
 const crypto = require('crypto');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 module.exports = async function handler(req, res) {
   const secretAsteptat = process.env.CRON_SECRET;
   const primit = (req.headers['authorization'] || '').replace(/^Bearer\s+/i, '');
   if (!secretAsteptat || primit !== secretAsteptat) {
-    return res.status(401).json({ error: 'Neautorizat' });
+    return trimiteEroare(res, 401, 'NEAUTORIZAT', 'Neautorizat', 'Not authorised.');
   }
 
   const { data: expirate, error: selErr } = await supabaseAdmin
@@ -39,7 +40,7 @@ module.exports = async function handler(req, res) {
     .lt('expira_la', new Date().toISOString());
   if (selErr) {
     console.error('[cron/expira-acces-temporar]', selErr);
-    return res.status(500).json({ error: 'Eroare la căutarea acceselor expirate' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Eroare la căutarea acceselor expirate', 'Error while looking up expired access.');
   }
   if (!expirate?.length) return res.status(200).json({ ok: true, procesate: 0 });
 

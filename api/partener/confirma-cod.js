@@ -11,6 +11,7 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const v = require('../../lib/valideaza');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 // Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
 const SCHEMA = {
@@ -19,12 +20,12 @@ const SCHEMA = {
 };
 
 async function handler(req, res, user) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { comanda_id, cod } = req.body || {};
   if (!comanda_id || !cod) {
-    return res.status(400).json({ error: 'comanda_id și cod sunt obligatorii' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'comanda_id și cod sunt obligatorii', 'comanda_id and cod are required.');
   }
 
   const { data: comanda, error: comErr } = await supabaseAdmin
@@ -32,19 +33,19 @@ async function handler(req, res, user) {
     .select('id, partener_id, status, cod_verificare, cod_verificare_confirmat_la')
     .eq('id', comanda_id)
     .single();
-  if (comErr || !comanda) return res.status(404).json({ error: 'Comanda nu există' });
+  if (comErr || !comanda) return trimiteEroare(res, 404, 'COMANDA_NU_EXISTA', 'Comanda nu există', 'The order does not exist.');
 
   if (comanda.partener_id !== user.id) {
-    return res.status(403).json({ error: 'Comanda nu îți este alocată' });
+    return trimiteEroare(res, 403, 'COMANDA_NEALOCATA', 'Comanda nu îți este alocată', 'This order is not assigned to you.');
   }
   if (comanda.cod_verificare_confirmat_la) {
-    return res.status(409).json({ error: 'Codul a fost deja confirmat pentru această comandă' });
+    return trimiteEroare(res, 409, 'DEJA_CONFIRMAT', 'Codul a fost deja confirmat pentru această comandă', 'The code has already been confirmed for this order.');
   }
   if (comanda.status !== 'acceptata') {
-    return res.status(409).json({ error: `Comanda nu este în starea potrivită pentru confirmare (status curent: ${comanda.status})` });
+    return trimiteEroare(res, 409, 'STARE_GRESITA', `Comanda nu este în starea potrivită pentru confirmare (status curent: ${comanda.status})`, `The order is not in the right state for confirmation (current status: ${comanda.status}).`);
   }
   if (String(cod).trim() !== comanda.cod_verificare) {
-    return res.status(400).json({ error: 'Cod de verificare incorect' });
+    return trimiteEroare(res, 400, 'COD_INCORECT', 'Cod de verificare incorect', 'Incorrect verification code.', ['cod']);
   }
 
   const { data, error } = await supabaseAdmin
@@ -55,7 +56,7 @@ async function handler(req, res, user) {
     .single();
   if (error) {
     console.error('[partener/confirma-cod]', error);
-    return res.status(500).json({ error: 'Nu am putut confirma codul' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut confirma codul', 'We could not confirm the code. Please try again.');
   }
 
   return res.status(200).json({ ok: true, comanda: data });

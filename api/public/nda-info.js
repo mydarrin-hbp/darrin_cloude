@@ -10,10 +10,11 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 async function handler(req, res, user) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
-  if (!user.email) return res.status(400).json({ error: 'Cont fără email.' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
+  if (!user.email) return trimiteEroare(res, 400, 'FARA_EMAIL', 'Cont fără email.', 'The account has no email.');
 
   const { data: acces } = await supabaseAdmin
     .from('accese_temporare')
@@ -23,7 +24,7 @@ async function handler(req, res, user) {
     .maybeSingle();
 
   if (!acces || new Date(acces.expira_la) < new Date()) {
-    return res.status(404).json({ error: 'Nu există niciun acces temporar activ pentru acest cont.' });
+    return trimiteEroare(res, 404, 'NU_EXISTA', 'Nu există niciun acces temporar activ pentru acest cont.', 'There is no active temporary access for this account.');
   }
 
   const destinatie = acces.ruta_url === '*' ? '/home' : acces.ruta_url;

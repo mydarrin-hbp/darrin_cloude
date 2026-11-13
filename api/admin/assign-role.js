@@ -9,6 +9,7 @@
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { requireAuth } = require('../../lib/auth-middleware');
+const { trimiteEroare, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
 
 const ROLURI_VALIDE = [
   'client', 'partener_servicii', 'partener_materiale', 'partener_inchirieri',
@@ -16,11 +17,11 @@ const ROLURI_VALIDE = [
 ];
 
 async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const { user_id, role } = req.body || {};
   if (!user_id || !ROLURI_VALIDE.includes(role)) {
-    return res.status(400).json({ error: 'user_id și role (valid) sunt obligatorii' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'user_id și role (valid) sunt obligatorii', 'user_id and a valid role are required.');
   }
 
   try {
@@ -47,7 +48,7 @@ async function handler(req, res) {
     return res.status(200).json({ ok: true, user_id, roles });
   } catch (err) {
     console.error('[assign-role]', err);
-    return res.status(500).json({ error: err.message || 'Eroare la alocarea rolului' });
+    return trimiteEroareInterna(res, 500, 'EROARE_SERVER', 'Eroare la alocarea rolului', 'Error while assigning the role.', err);
   }
 }
 

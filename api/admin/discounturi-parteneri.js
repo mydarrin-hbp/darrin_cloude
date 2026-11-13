@@ -14,8 +14,9 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
-const { valideazaDiscountNou, valideazaDiscountPct, raspunsEroareDiscount } = require('../../lib/discount-partener');
-const { esteFurnizorPropriu, EROARE_DISCOUNT_FURNIZOR_PROPRIU } = require('../../lib/furnizor-propriu');
+const { valideazaDiscountNou, valideazaDiscountPctBilingv, raspunsEroareDiscount } = require('../../lib/discount-partener');
+const { esteFurnizorPropriu, EROARE_DISCOUNT_FURNIZOR_PROPRIU, EROARE_DISCOUNT_FURNIZOR_PROPRIU_EN } = require('../../lib/furnizor-propriu');
+const { trimiteEroare, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
 
 async function handler(req, res, admin) {
   if (req.method === 'GET') {
@@ -26,16 +27,16 @@ async function handler(req, res, admin) {
     if (req.query?.partener_id) query = query.eq('partener_id', req.query.partener_id);
     if (req.query?.doar_neaprobate) query = query.is('aprobat_de', null).eq('activ', true);
     const { data, error } = await query;
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
     return res.status(200).json({ ok: true, discounturi: data || [] });
   }
 
   if (req.method === 'POST') {
     const { partener_id } = req.body || {};
-    if (!partener_id) return res.status(400).json({ error: 'partener_id este obligatoriu' });
-    if (await esteFurnizorPropriu(partener_id)) return res.status(400).json({ error: EROARE_DISCOUNT_FURNIZOR_PROPRIU });
+    if (!partener_id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'partener_id este obligatoriu', 'partener_id is required.', ['partener_id']);
+    if (await esteFurnizorPropriu(partener_id)) return trimiteEroare(res, 400, 'FURNIZOR_PROPRIU', EROARE_DISCOUNT_FURNIZOR_PROPRIU, EROARE_DISCOUNT_FURNIZOR_PROPRIU_EN);
     const validare = await valideazaDiscountNou(req.body);
-    if (validare.eroare) return res.status(400).json({ error: validare.eroare });
+    if (validare.eroare) return trimiteEroare(res, 400, 'DATE_INVALIDE', validare.eroare, validare.eroare_en, [validare.camp]);
 
     const { data, error } = await supabaseAdmin
       .from('parteneri_discounturi')
@@ -55,7 +56,7 @@ async function handler(req, res, admin) {
 
   if (req.method === 'PATCH') {
     const { id, aproba, activ } = req.body || {};
-    if (!id) return res.status(400).json({ error: 'id este obligatoriu' });
+    if (!id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id este obligatoriu', 'id is required.', ['id']);
     let modificare;
     let actiune;
     if (aproba === true) {
@@ -65,16 +66,16 @@ async function handler(req, res, admin) {
         .select('discount_pct')
         .eq('id', id)
         .maybeSingle();
-      if (!existent) return res.status(404).json({ error: 'Discountul nu există' });
-      const eroarePct = await valideazaDiscountPct(existent.discount_pct);
-      if (eroarePct) return res.status(400).json({ error: eroarePct });
+      if (!existent) return trimiteEroare(res, 404, 'DISCOUNT_NU_EXISTA', 'Discountul nu există', 'The discount does not exist.');
+      const eroarePct = await valideazaDiscountPctBilingv(existent.discount_pct);
+      if (eroarePct) return trimiteEroare(res, 400, 'DATE_INVALIDE', eroarePct.ro, eroarePct.en, ['discount_pct']);
       modificare = { aprobat_de: admin.id };
       actiune = 'aprobare_discount_partener';
     } else if (activ === false) {
       modificare = { activ: false };
       actiune = 'dezactivare_discount_partener';
     } else {
-      return res.status(400).json({ error: 'Trimite aproba: true sau activ: false' });
+      return trimiteEroare(res, 400, 'DATE_INVALIDE', 'Trimite aproba: true sau activ: false', 'Send aproba: true or activ: false.');
     }
 
     const { data, error } = await supabaseAdmin
@@ -84,7 +85,7 @@ async function handler(req, res, admin) {
       .select()
       .maybeSingle();
     if (error) return raspunsEroareDiscount(res, error, 'admin/discounturi-parteneri');
-    if (!data) return res.status(404).json({ error: 'Discountul nu există' });
+    if (!data) return trimiteEroare(res, 404, 'DISCOUNT_NU_EXISTA', 'Discountul nu există', 'The discount does not exist.');
     await inregistreazaAudit({
       admin, req, actiune, entitate: 'parteneri_discounturi', entitate_id: id,
       detalii: {
@@ -95,7 +96,7 @@ async function handler(req, res, admin) {
     return res.status(200).json({ ok: true, discount: data });
   }
 
-  return res.status(405).json({ error: 'Method not allowed' });
+  return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 }
 
 module.exports = requireAuth(['admin', 'superadmin'], handler);

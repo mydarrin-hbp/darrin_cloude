@@ -16,16 +16,17 @@ const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { eticheta } = require('../../lib/forme-juridice');
 const { ACTIUNE_VERIFICARE_MANUALA } = require('../../lib/verifica-firma-partener');
+const { trimiteEroare, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
 
 async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const { data, error } = await supabaseAdmin
     .from('partners')
     .select('id, partner_type, nume_firma, cui, status_verificare, contract_semnat, tip_entitate_legala, forma_juridica_locala, regiune_cod, creata_la')
     .order('creata_la', { ascending: false });
 
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
 
   const ids = (data || []).map((p) => String(p.id));
   const deVerificat = new Set();

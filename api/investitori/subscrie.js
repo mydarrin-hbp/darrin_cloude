@@ -20,6 +20,7 @@ const { checkRateLimit } = require('../../lib/rate-limit');
 const { citesteKyc } = require('../../lib/investitori-kyc');
 const R = require('../../lib/runda-finantare');
 const v = require('../../lib/valideaza');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 // Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
 const SCHEMA = {
@@ -29,10 +30,10 @@ const SCHEMA = {
 };
 
 async function handler(req, res, user) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const permis = await checkRateLimit(req, { key: 'investitori-subscrie', limit: 10, windowSeconds: 600 });
-  if (!permis) return res.status(429).json({ error: 'Prea multe cereri. Încearcă din nou mai târziu.', error_en: 'Too many requests. Please try again later.' });
+  if (!permis) return trimiteEroare(res, 429, 'PREA_MULTE_CERERI', 'Prea multe cereri. Încearcă din nou mai târziu.', 'Too many requests. Please try again later.');
 
   if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const corp = req.body || {};
@@ -70,7 +71,7 @@ async function handler(req, res, user) {
   } catch (err) {
     if (err instanceof R.EroareRunda) return R.raspunsEroare(res, err);
     console.error('[investitori/subscrie]', err);
-    return res.status(500).json({ error: 'Nu am putut înregistra subscrierea.', error_en: 'We could not record the subscription.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut înregistra subscrierea.', 'We could not record the subscription.');
   }
 }
 

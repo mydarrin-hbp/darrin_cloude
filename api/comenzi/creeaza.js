@@ -110,7 +110,7 @@ const { notificaAdminFaraPartener } = require('../../lib/notificari-comanda');
 const { fromHeader } = require('../../lib/email-sender');
 const { valideazaDateFacturare } = require('../../lib/date-facturare');
 const { verificaFirmaRoLaAnaf, MESAJE_ANAF } = require('../../lib/cauta-firma');
-const { trimiteEroare, camp } = require('../../lib/raspuns-eroare');
+const { trimiteEroare, camp, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
 const { adresaPrestareDinAgenda, dateFacturareDinAgenda, salveazaDinComanda, MESAJE: MESAJE_AGENDA } = require('../../lib/agenda-cont');
 
 // Pasul 11-C1: mesajele verificărilor de checkout, RO + EN.
@@ -127,7 +127,7 @@ function refuzAgenda(res, r) {
 }
 
 async function handler(req, res, user) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   // Adresa de prestare din agendă (pasul 11-P3a) înlocuiește adresa trimisă.
   // Corecția PR #36: țara, județul (`regiune`) și localitatea vin DOAR din
@@ -454,7 +454,7 @@ async function handler(req, res, user) {
     return res.status(200).json({ ok: true, comanda: comandaPublica, alocare, ...(agendaNesalvata ? { agenda_nesalvata: true } : {}) });
   } catch (err) {
     console.error('[comenzi/creeaza]', err);
-    return res.status(500).json({ error: err.message || 'Nu am putut înregistra comanda' });
+    return trimiteEroareInterna(res, 500, 'EROARE_SERVER', 'Nu am putut înregistra comanda', 'We could not record the order. Please try again.', err);
   }
 }
 

@@ -20,29 +20,26 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const CAMPURI = ['comenzi_total', 'comenzi_luna', 'parteneri_activi', 'gmv_total', 'revenue_total', 'revenue_luna'];
 
 async function handler(req, res, user) {
   res.setHeader('Cache-Control', 'private, no-store');
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const { data: kyc, error: kycErr } = await supabaseAdmin
     .from('investitori_kyc').select('status').eq('user_id', user.id).maybeSingle();
-  if (kycErr) return res.status(500).json({ error: 'Nu am putut verifica starea verificării identității.', error_en: 'We could not check your identity verification status.' });
+  if (kycErr) return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut verifica starea verificării identității.', 'We could not check your identity verification status.');
   if (!kyc || kyc.status !== 'aprobat') {
-    return res.status(403).json({
-      cod: 'KYC_NEAPROBAT',
-      error: 'Indicatorii financiari sunt disponibili după aprobarea verificării identității tale.',
-      error_en: 'The financial indicators are available after your identity verification is approved.',
-    });
+    return trimiteEroare(res, 403, 'KYC_NEAPROBAT', 'Indicatorii financiari sunt disponibili după aprobarea verificării identității tale.', 'The financial indicators are available after your identity verification is approved.');
   }
 
   const { data, error } = await supabaseAdmin.rpc('get_live_investor_kpis', {});
   const k = data && data.kpis;
   if (error || !k || data.error) {
     if (error) console.error('[investitori/indicatori]', error);
-    return res.status(503).json({ error: 'Indicatorii nu sunt disponibili acum.', error_en: 'The indicators are not available right now.' });
+    return trimiteEroare(res, 503, 'INDISPONIBIL', 'Indicatorii nu sunt disponibili acum.', 'The indicators are not available right now.');
   }
 
   const indicatori = {};

@@ -9,11 +9,12 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const CAMPURI = 'id, nr_comanda, status, creat_la, catalog_serviciu_id, localitate, regiune, tara_cod, data_programata, ora_inceput_programata, ora_sfarsit_programata, suma_totala_platita, moneda, partener_id';
 
 async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   try {
     const [{ data: faraPartener, error: e1 }, { data: recente, error: e2 }] = await Promise.all([
       supabaseAdmin.from('comenzi').select(CAMPURI).eq('status', 'in_cautare_partener').order('creat_la', { ascending: true }).limit(200),
@@ -44,7 +45,7 @@ async function handler(req, res) {
     });
   } catch (e) {
     console.error('[admin/comenzi-globale]', e);
-    return res.status(500).json({ error: 'Nu am putut încărca comenzile.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca comenzile.', 'We could not load the orders.');
   }
 }
 

@@ -8,7 +8,7 @@
 // POST { id, action:'confirma_plata' } → marchează plătită prin transfer bancar
 
 const { requireAuth } = require('../../lib/auth-middleware');
-const { formaComuna } = require('../../lib/raspuns-eroare');
+const { formaComuna, trimiteEroare, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 
@@ -17,7 +17,7 @@ async function handler(req, res, admin) {
     let query = supabaseAdmin.from('facturi_parteneri').select('*').order('creat_la', { ascending: false });
     if (req.query.status) query = query.eq('status', req.query.status);
     const { data, error } = await query;
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
 
     const idParteneri = [...new Set((data || []).map((f) => f.partener_id))];
     let emailIdx = {};
@@ -33,7 +33,7 @@ async function handler(req, res, admin) {
   if (req.method === 'POST') {
     const { id, action } = req.body || {};
     if (!id || action !== 'confirma_plata') {
-      return res.status(400).json({ error: 'id și action="confirma_plata" sunt obligatorii' });
+      return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id și action="confirma_plata" sunt obligatorii', 'id and action="confirma_plata" are required.');
     }
 
     const { data: factura, error: selErr } = await supabaseAdmin
@@ -41,9 +41,9 @@ async function handler(req, res, admin) {
       .select('id, status, comanda_subcontractor_id')
       .eq('id', id)
       .maybeSingle();
-    if (selErr) return res.status(500).json({ error: selErr.message });
-    if (!factura) return res.status(404).json({ error: 'Factura nu există' });
-    if (factura.status === 'platita') return res.status(409).json({ error: 'Factura e deja marcată ca plătită' });
+    if (selErr) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, selErr);
+    if (!factura) return trimiteEroare(res, 404, 'FACTURA_NU_EXISTA', 'Factura nu există', 'The invoice does not exist.');
+    if (factura.status === 'platita') return trimiteEroare(res, 409, 'DEJA_PLATITA', 'Factura e deja marcată ca plătită', 'The invoice is already marked as paid.');
 
     const { data, error } = await supabaseAdmin
       .from('facturi_parteneri')
@@ -51,7 +51,7 @@ async function handler(req, res, admin) {
       .eq('id', id)
       .select()
       .single();
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
 
     // D2c (24 august 2026): status-ul LIVE pe comanda_subcontractori trebuie
     // să reflecte plata reală — rămânea blocat la 'alocat' chiar și după ce
@@ -68,7 +68,7 @@ async function handler(req, res, admin) {
     return res.status(200).json({ ok: true, factura: data });
   }
 
-  return res.status(405).json({ error: 'Method not allowed' });
+  return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 }
 
 module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));

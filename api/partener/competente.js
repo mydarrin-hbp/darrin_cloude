@@ -11,6 +11,7 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const v = require('../../lib/valideaza');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 // Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
 const SCHEMA = {
@@ -63,21 +64,21 @@ async function handler(req, res, user) {
       });
     } catch (e) {
       console.error('[partener/competente] GET', e);
-      return res.status(500).json({ error: 'Nu am putut încărca lista de competențe.' });
+      return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca lista de competențe.', 'We could not load the list of skills.');
     }
   }
 
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { cod_esco, bifat } = req.body || {};
   if (!cod_esco || typeof cod_esco !== 'string' || typeof bifat !== 'boolean') {
-    return res.status(400).json({ error: 'Trimite cod_esco (text) și bifat (true/false).' });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', 'Trimite cod_esco (text) și bifat (true/false).', 'Send cod_esco (text) and bifat (true/false).');
   }
   try {
     const servicii = await serviciiLive();
     if (!servicii.some((s) => s.cod_esco === cod_esco)) {
-      return res.status(400).json({ error: 'Codul ESCO nu corespunde niciunui serviciu activ din catalog.' });
+      return trimiteEroare(res, 400, 'COD_NECUNOSCUT', 'Codul ESCO nu corespunde niciunui serviciu activ din catalog.', 'The ESCO code does not match any active service in the catalogue.', ['cod_esco']);
     }
     if (bifat) {
       const { data: exista } = await supabaseAdmin
@@ -93,7 +94,7 @@ async function handler(req, res, user) {
     return res.status(200).json({ ok: true, cod_esco, bifat });
   } catch (e) {
     console.error('[partener/competente] POST', e);
-    return res.status(500).json({ error: 'Nu am putut salva competența. Încearcă din nou.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut salva competența. Încearcă din nou.', 'We could not save the skill. Please try again.');
   }
 }
 

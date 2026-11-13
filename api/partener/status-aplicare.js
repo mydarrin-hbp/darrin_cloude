@@ -17,9 +17,10 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { trimiteEroare, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
 
 async function handler(req, res, user) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   try {
     const { data: partener, error: perr } = await supabaseAdmin
@@ -28,7 +29,7 @@ async function handler(req, res, user) {
       .eq('id', user.id)
       .maybeSingle();
     if (perr) throw perr;
-    if (!partener) return res.status(404).json({ error: 'Contul de partener nu a fost găsit' });
+    if (!partener) return trimiteEroare(res, 404, 'PARTENER_NU_EXISTA', 'Contul de partener nu a fost găsit', 'The partner account was not found.');
 
     let status = partener.status_verificare || 'pending_review';
     let documente_respinse = [];
@@ -65,7 +66,7 @@ async function handler(req, res, user) {
     });
   } catch (err) {
     console.error('[status-aplicare]', err);
-    return res.status(500).json({ error: err.message || 'Nu am putut încărca statusul aplicării' });
+    return trimiteEroareInterna(res, 500, 'EROARE_SERVER', 'Nu am putut încărca statusul aplicării', 'We could not load the application status.', err);
   }
 }
 

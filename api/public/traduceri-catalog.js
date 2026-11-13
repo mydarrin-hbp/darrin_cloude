@@ -14,6 +14,7 @@
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { citesteTot } = require('../../lib/citeste-tot');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const LIMBI = ['en', 'de', 'fr', 'tr', 'bg', 'el'];
 // tabel → [coloane text afișate public, filtru public]. Pasul 8b (15 oct.
@@ -42,10 +43,10 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const lang = String((req.query && req.query.lang) || '').toLowerCase().slice(0, 2);
-  if (LIMBI.indexOf(lang) === -1) return res.status(400).json({ error: 'Parametrul lang lipsește sau nu e suportat' });
+  if (LIMBI.indexOf(lang) === -1) return trimiteEroare(res, 400, 'DATE_INVALIDE', 'Parametrul lang lipsește sau nu e suportat', 'The lang parameter is missing or not supported.', ['lang']);
 
   const texte = {};
   for (const s of SURSE) {

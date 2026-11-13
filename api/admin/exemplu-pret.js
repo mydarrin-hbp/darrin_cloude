@@ -16,6 +16,7 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { aplicaFormulaPret, citesteTva, CHEI_PRICING, EroareConfigPret } = require('../../lib/calculeaza-pret');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 function procent(v) {
   if (v === '' || v === null || v === undefined) return null;
@@ -24,18 +25,18 @@ function procent(v) {
 }
 
 async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   const b = req.body || {};
   const tara = /^[A-Z]{2}$/.test(String(b.tara || '')) ? String(b.tara) : 'RO';
   const costBaza = Number(b.cost_baza);
-  if (!Number.isFinite(costBaza) || costBaza < 0 || costBaza > 1e7) return res.status(400).json({ error: 'cost_baza invalid.' });
+  if (!Number.isFinite(costBaza) || costBaza < 0 || costBaza > 1e7) return trimiteEroare(res, 400, 'DATE_INVALIDE', 'cost_baza invalid.', 'cost_baza is not valid.', ['cost_baza']);
 
   const pricing = {};
   const lipsa = [];
   CHEI_PRICING.forEach((cheie) => { const p = procent(b[cheie]); if (p === null) lipsa.push(cheie); else pricing[cheie] = p; });
   const asigurare = procent(b.cost_asigurare_pct);
   if (asigurare === null) lipsa.push('cost_asigurare_pct');
-  if (lipsa.length) return res.status(400).json({ error: `Completează procentele (0–100): ${lipsa.join(', ')}.` });
+  if (lipsa.length) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', `Completează procentele (0–100): ${lipsa.join(', ')}.`, `Fill in the percentages (0–100): ${lipsa.join(', ')}.`);
 
   try {
     const [tva_decimal, { data: tx }] = await Promise.all([
@@ -50,9 +51,9 @@ async function handler(req, res) {
     );
     return res.status(200).json({ ok: true, tara_tva: tara, moneda: tx?.moneda || null, calc });
   } catch (e) {
-    if (e instanceof EroareConfigPret) return res.status(409).json({ error: e.message });
+    if (e instanceof EroareConfigPret) return trimiteEroare(res, 409, e.code, e.message, e.mesaj_en);
     console.error('[exemplu-pret]', e);
-    return res.status(500).json({ error: 'Nu am putut calcula exemplul.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut calcula exemplul.', 'We could not calculate the example.');
   }
 }
 

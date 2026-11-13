@@ -12,12 +12,13 @@
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { checkRateLimit } = require('../../lib/rate-limit');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 module.exports = async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const allowed = await checkRateLimit(req, { key: 'servicii-cu-reteta', limit: 30, windowSeconds: 60 });
-  if (!allowed) return res.status(429).json({ error: 'Prea multe cereri. Încearcă din nou mai târziu.' });
+  if (!allowed) return trimiteEroare(res, 429, 'PREA_MULTE_CERERI', 'Prea multe cereri. Încearcă din nou mai târziu.', 'Too many requests. Please try again later.');
 
   try {
     const { data: articole, error: artErr } = await supabaseAdmin
@@ -59,6 +60,6 @@ module.exports = async function handler(req, res) {
     });
   } catch (err) {
     console.error('[public/servicii-cu-reteta]', err);
-    return res.status(500).json({ error: 'Nu am putut încărca lista serviciilor.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca lista serviciilor.', 'We could not load the list of services.');
   }
 };

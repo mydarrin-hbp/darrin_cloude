@@ -32,7 +32,7 @@
     var r = await fetch('/api/admin/catalog', { method: 'POST', headers: await antet(), body: JSON.stringify(corp) });
     var j = await r.json().catch(function () { return {}; });
     if (!r.ok) {
-      var e = new Error((window.MYD_I18N && window.MYD_I18N.lang !== 'ro' && j.error_en) || j.error || t('Eroare necunoscută'));
+      var e = new Error((window.MYD_I18N && window.MYD_I18N.lang !== 'ro' && j.error_en) || MYD_I18N.eroare(j, t('Eroare necunoscută')));
       e.status = r.status; e.date = j;
       throw e;
     }

@@ -22,6 +22,7 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const v = require('../../lib/valideaza');
+const { trimiteEroare, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
 
 // Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
 const SCHEMA = {
@@ -38,13 +39,13 @@ async function handler(req, res, user) {
       .eq('partner_id', user.id)
       .eq('activ', true)
       .order('created_at', { ascending: false });
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
     return res.status(200).json({ ok: true, tipuri: data || [] });
   }
 
   if (req.method === 'DELETE') {
     const { id } = req.body || {};
-    if (!id) return res.status(400).json({ error: 'id este obligatoriu' });
+    if (!id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id este obligatoriu', 'id is required.', ['id']);
     const { data, error } = await supabaseAdmin
       .from('partner_tipuri_polita')
       .update({ activ: false })
@@ -52,23 +53,23 @@ async function handler(req, res, user) {
       .eq('partner_id', user.id)
       .select('id')
       .maybeSingle();
-    if (error) return res.status(500).json({ error: error.message });
-    if (!data) return res.status(404).json({ error: 'Tipul de poliță nu există sau nu-ți aparține' });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
+    if (!data) return trimiteEroare(res, 404, 'NU_EXISTA', 'Tipul de poliță nu există sau nu-ți aparține', 'The policy type does not exist or does not belong to you.');
     return res.status(200).json({ ok: true });
   }
 
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { tip_polita, limita_acoperire_eur, comision_pct } = req.body || {};
   if (!tip_polita || typeof tip_polita !== 'string' || !tip_polita.trim()) {
-    return res.status(400).json({ error: 'tip_polita este obligatoriu' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'tip_polita este obligatoriu', 'tip_polita is required.', ['tip_polita']);
   }
   if (limita_acoperire_eur != null && !(typeof limita_acoperire_eur === 'number' && limita_acoperire_eur > 0)) {
-    return res.status(400).json({ error: 'limita_acoperire_eur trebuie să fie un număr pozitiv' });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', 'limita_acoperire_eur trebuie să fie un număr pozitiv', 'limita_acoperire_eur must be a positive number.', ['limita_acoperire_eur']);
   }
   if (comision_pct != null && !(typeof comision_pct === 'number' && comision_pct >= 0 && comision_pct <= 100)) {
-    return res.status(400).json({ error: 'comision_pct trebuie să fie între 0 și 100' });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', 'comision_pct trebuie să fie între 0 și 100', 'comision_pct must be between 0 and 100.', ['comision_pct']);
   }
 
   try {
@@ -82,7 +83,7 @@ async function handler(req, res, user) {
     return res.status(200).json({ ok: true, tip });
   } catch (err) {
     console.error('[tipuri-polita]', err);
-    return res.status(500).json({ error: err.message || 'Nu am putut salva tipul de poliță' });
+    return trimiteEroareInterna(res, 500, 'EROARE_SERVER', 'Nu am putut salva tipul de poliță', 'We could not save the policy type. Please try again.', err);
   }
 }
 

@@ -851,7 +851,7 @@ async function _fetchProduseLive(){
   const tip = currentType === 'inchirieri' ? 'echipamente' : 'materiale';
   const res = await fetch('/api/marketplace/produse?tip=' + tip, { headers: { Authorization: 'Bearer ' + session.access_token } });
   const json = await res.json();
-  if (!res.ok) throw new Error(json.error || 'eroare necunoscută');
+  if (!res.ok) throw new Error(MYD_I18N.eroare(json, 'eroare necunoscută'));
   return { tip, produse: json.produse || [], token: session.access_token };
 }
 
@@ -945,7 +945,7 @@ async function toggleActivProdus(tip, id, activ){
     if (!session) throw new Error('Sesiune expirată.');
     const res = await fetch('/api/marketplace/produse', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token }, body: JSON.stringify({ action: 'toggle_activ', tip, id, activ }) });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(json, 'eroare necunoscută'));
     showToast(activ ? '✓ Produs live pentru clienți' : 'Produs oprit — nu mai apare la clienți');
   } catch (e) {
     showToast('Eroare: ' + e.message);
@@ -954,14 +954,14 @@ async function toggleActivProdus(tip, id, activ){
 }
 
 async function stergeProdus(tip, id, denumire){
-  if (!confirm(`Ștergi „${denumire}"? Nu poate fi anulat.`)) return;
+  if (!(await MDFeedback.confirma(MYD_I18N.traduce(`Ștergi „${denumire}"? Nu poate fi anulat.`), { periculos: true }))) return;
   try {
     const { data: sessionData } = await window.supabaseClient.auth.getSession();
     const session = sessionData?.session;
     if (!session) throw new Error('Sesiune expirată.');
     const res = await fetch('/api/marketplace/produse', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token }, body: JSON.stringify({ action: 'sterge', tip, id }) });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(json, 'eroare necunoscută'));
     showToast('Produs șters');
     loadProduseLive();
   } catch (e) {
@@ -1107,7 +1107,7 @@ async function incarcaTaxonomieMp(){
   try {
     const r = await fetch('/api/public/nace-lista' + '?lang=' + encodeURIComponent(window.MYD_I18N?.lang || 'en'));
     const j = await r.json();
-    if (!r.ok) throw new Error(j.error || 'eroare necunoscută');
+    if (!r.ok) throw new Error(MYD_I18N.eroare(j, 'eroare necunoscută'));
     const optiuni = '<option value="">Selectează...</option>' + (j.clase || []).map((c) => `<option value="${escapeHTML(c.cod)}">${escapeHTML(c.cod)} — ${escapeHTML(c.denumire || c.denumire_ro)}</option>`).join('');
     selectoareNace.forEach((el) => { if (el) el.innerHTML = optiuni; });
   } catch (e) {
@@ -1117,7 +1117,7 @@ async function incarcaTaxonomieMp(){
   try {
     const r = await fetch('/api/public/uniclass-lista?prefix=Pr&lang=' + encodeURIComponent(window.MYD_I18N?.lang || 'en'));
     const j = await r.json();
-    if (!r.ok) throw new Error(j.error || 'eroare necunoscută');
+    if (!r.ok) throw new Error(MYD_I18N.eroare(j, 'eroare necunoscută'));
     const optiuni = '<option value="">— fără —</option>' + (j.coduri || []).map((c) => `<option value="${escapeHTML(c.code)}">${escapeHTML(c.code)} — ${escapeHTML(c.titlu || c.title_ro || '')}</option>`).join('');
     selectoareUniclass.forEach((el) => { if (el) el.innerHTML = optiuni; });
   } catch (e) {
@@ -1211,7 +1211,7 @@ async function saveMaterial(){
     const json = await res.json();
     if (!res.ok) {
       const detalii = (json.erori || []).map((e) => `• ${e.mesaj}`).join('\n');
-      showToast(`Nu s-a salvat: ${json.error || 'eroare necunoscută'}${detalii ? '\n' + detalii : ''}`);
+      showToast(`Nu s-a salvat: ${MYD_I18N.eroare(json, 'eroare necunoscută')}${detalii ? '\n' + detalii : ''}`);
       return;
     }
     showToast('Produs adăugat · în aprobare (max. 24h)');
@@ -1260,7 +1260,7 @@ async function saveEchipament(){
     const json = await res.json();
     if (!res.ok) {
       const detalii = (json.erori || []).map((e) => `• ${e.mesaj}`).join('\n');
-      showToast(`Nu s-a salvat: ${json.error || 'eroare necunoscută'}${detalii ? '\n' + detalii : ''}`);
+      showToast(`Nu s-a salvat: ${MYD_I18N.eroare(json, 'eroare necunoscută')}${detalii ? '\n' + detalii : ''}`);
       return;
     }
     showToast('Echipament adăugat · în aprobare (max. 24h)');
@@ -1382,7 +1382,7 @@ async function importaCsvMpAcum(buton){
     while (true) {
       const res = await fetch('/api/marketplace/importa-csv', { method: 'POST', headers, body: JSON.stringify({ tip: mpCsvTip, randuri: mpCsvRanduri, job_id: jobId }) });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || _trMp('Eroare necunoscută la import'));
+      if (!res.ok) throw new Error(MYD_I18N.eroare(json, _trMp('Eroare necunoscută la import')));
       jobId = json.job_id;
       ultim = json;
       erori.push(...(json.erori || []));
@@ -1416,14 +1416,14 @@ function renderImport(){
         </select>
         <div style="background:#F0F4F8;border-radius:12px;padding:14px;margin-bottom:14px;font-family:monospace;font-size:11.5px;line-height:1.9;color:#1A2332;border:1px solid #D5DFE8;overflow-wrap:anywhere">
           <div style="color:#5A6B7D;margin-bottom:5px">// Schema CSV My Darrin</div>
-          <div><span style="color:#0E9E99">cod_produs_furnizor</span> · codul tău · obligatoriu</div>
-          <div><span style="color:#0E9E99">denumire_produs</span> · 3–200 caractere · obligatoriu</div>
-          <div><span style="color:#0E9E99">descriere</span> · 100–1.000 caractere · obligatoriu</div>
-          <div><span style="color:#FF8C00">pret_fara_tva</span> / <span style="color:#FF8C00">tarif_zi</span> · număr · obligatoriu</div>
-          <div><span style="color:#FF8C00">nod_menu</span> · slug-ul nodului de meniu · obligatoriu</div>
-          <div><span style="color:#FF8C00">nace_cod</span> · materiale: capitolul G (47.52…) · închirieri: O77 (77.32…)</div>
-          <div><span style="color:#FF8C00">cod_uniclass</span> · Pr_ activ · obligatoriu la materiale</div>
-          <div><span style="color:#1A5FAD">imagine_url_1..6</span> · urcate individual în prealabil</div>
+          <div><span translate="no" style="color:#0E9E99">cod_produs_furnizor</span> · codul tău · obligatoriu</div>
+          <div><span translate="no" style="color:#0E9E99">denumire_produs</span> · 3–200 caractere · obligatoriu</div>
+          <div><span translate="no" style="color:#0E9E99">descriere</span> · 100–1.000 caractere · obligatoriu</div>
+          <div><span translate="no" style="color:#FF8C00">pret_fara_tva</span> / <span translate="no" style="color:#FF8C00">tarif_zi</span> · număr · obligatoriu</div>
+          <div><span translate="no" style="color:#FF8C00">nod_menu</span> · slug-ul nodului de meniu · obligatoriu</div>
+          <div><span translate="no" style="color:#FF8C00">nace_cod</span> · materiale: capitolul G (47.52…) · închirieri: O77 (77.32…)</div>
+          <div><span translate="no" style="color:#FF8C00">cod_uniclass</span> · Pr_ activ · obligatoriu la materiale</div>
+          <div><span translate="no" style="color:#1A5FAD">imagine_url_1..6</span> · urcate individual în prealabil</div>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:12px">
           <button class="btn-s" style="flex:1" onclick="dlTemplateMp()">⬇ Descarcă template</button>

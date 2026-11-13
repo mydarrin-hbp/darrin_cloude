@@ -10,6 +10,7 @@
 
 const { kv } = require('@vercel/kv');
 const { requireAuth } = require('../../lib/auth-middleware');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const VALID_SLOTS = ['header_logo', 'footer_logo', 'robot_mascot'];
 const MAX_SIZE_BYTES = 2 * 1024 * 1024; // 2MB
@@ -20,13 +21,13 @@ async function handler(req, res, user) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   }
 
   const { slot, dataUrl } = req.body || {};
 
   if (!slot || !VALID_SLOTS.includes(slot)) {
-    return res.status(400).json({ error: `slot invalid. Trebuie să fie unul din: ${VALID_SLOTS.join(', ')}` });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', `slot invalid. Trebuie să fie unul din: ${VALID_SLOTS.join(', ')}`, `Invalid slot. It must be one of: ${VALID_SLOTS.join(', ')}`, ['slot']);
   }
 
   try {
@@ -36,14 +37,12 @@ async function handler(req, res, user) {
     }
 
     if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
-      return res.status(400).json({ error: 'dataUrl trebuie să fie un data:image/... base64 valid' });
+      return trimiteEroare(res, 400, 'DATE_INVALIDE', 'dataUrl trebuie să fie un data:image/... base64 valid', 'dataUrl must be a valid base64 data:image/... value.', ['dataUrl']);
     }
 
     const approxBytes = Math.ceil((dataUrl.length * 3) / 4);
     if (approxBytes > MAX_SIZE_BYTES) {
-      return res.status(413).json({
-        error: `Imagine prea mare (${(approxBytes / 1024 / 1024).toFixed(2)}MB). Limită: 2MB.`,
-      });
+      return trimiteEroare(res, 413, 'PREA_MARE', `Imagine prea mare (${(approxBytes / 1024 / 1024).toFixed(2)}MB). Limită: 2MB.`, `The image is too large (${(approxBytes / 1024 / 1024).toFixed(2)}MB). Limit: 2MB.`);
     }
 
     const record = { dataUrl, updatedAt: new Date().toISOString(), updatedBy: user.email };
@@ -52,7 +51,7 @@ async function handler(req, res, user) {
     return res.status(200).json({ ok: true, action: 'saved', slot, updatedAt: record.updatedAt });
   } catch (err) {
     console.error('branding/upload error:', err);
-    return res.status(500).json({ error: 'Failed to save branding' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut salva setările de branding.', 'We could not save the branding settings.');
   }
 }
 

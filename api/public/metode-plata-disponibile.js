@@ -14,11 +14,12 @@
 // comportamentul implicit de azi, neschimbat.
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const FALLBACK = { metode_acceptate: ['card'], permite_avans: false };
 
 module.exports = async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const tara_cod = req.query.tara_cod ? String(req.query.tara_cod).toUpperCase() : null;
   const regiune = req.query.regiune || null;

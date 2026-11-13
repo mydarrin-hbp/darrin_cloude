@@ -1708,7 +1708,7 @@ function submitNewsletter() {
     btnEl.disabled = false;
     btnEl.textContent = 'Abonează-te ›';
     if (!res.httpOk) {
-      msgEl.textContent = res.status === 429 ? '⚠ Prea multe încercări. Încearcă mai târziu.' : '❌ ' + (res.data.error || 'Eroare. Încearcă din nou.');
+      msgEl.textContent = res.status === 429 ? '⚠ Prea multe încercări. Încearcă mai târziu.' : '❌ ' + (MYD_I18N.eroare(res.data, 'Eroare. Încearcă din nou.'));
       msgEl.className = 'ftr-nl-msg error';
     } else if (res.data.deja_abonat) {
       msgEl.textContent = '✓ Ești deja abonat!';
@@ -2722,7 +2722,7 @@ async function trimiteDauna(comandaId) {
   try {
     const res = await fetch('/api/client/dauna', { method: 'POST', headers: await _clientAuthHeader(), body: JSON.stringify(body) });
     const j = await res.json();
-    if (!res.ok) throw new Error(j.error || 'Nu am putut deschide dosarul.');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(j, 'Nu am putut deschide dosarul.'));
     const c = COMENZI_REALE.find((x) => x.id === comandaId);
     if (c) renderDrawerDauna(c);
   } catch (e) {
@@ -2773,7 +2773,7 @@ async function confirmaExecutieReal(id) {
       body: JSON.stringify({ token: c.token_confirmare, actiune: 'confirma' }),
     });
     const data = await res.json();
-    if (!res.ok) { alert(data.error || 'Nu am putut confirma comanda.'); return; }
+    if (!res.ok) { MDFeedback.toast('eroare', MYD_I18N.eroare(data, 'Nu am putut confirma comanda.')); return; }
     closeDrawer();
     await loadComenziReale();
   } catch (e) { alert('Eroare de conexiune — încearcă din nou.'); }
@@ -2790,7 +2790,7 @@ async function deschideDisputaReal(id) {
       body: JSON.stringify({ token: c.token_confirmare, actiune: 'contesta', motiv: motiv.trim() }),
     });
     const data = await res.json();
-    if (!res.ok) { alert(data.error || 'Nu am putut înregistra contestația.'); return; }
+    if (!res.ok) { MDFeedback.toast('eroare', MYD_I18N.eroare(data, 'Nu am putut înregistra contestația.')); return; }
     alert('Contestație înregistrată — echipa noastră o analizează.');
     closeDrawer();
   } catch (e) { alert('Eroare de conexiune — încearcă din nou.'); }

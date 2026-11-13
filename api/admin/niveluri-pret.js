@@ -13,7 +13,7 @@
 // POST { action:'sterge_pret', id }
 
 const { requireAuth } = require('../../lib/auth-middleware');
-const { trimiteEroare, camp, formaComuna } = require('../../lib/raspuns-eroare');
+const { trimiteEroare, camp, formaComuna, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 
@@ -23,13 +23,13 @@ async function handleGet(req, res) {
     supabaseAdmin.from('preturi_niveluri').select('*'),
     supabaseAdmin.from('tax_configurations').select('tara_cod, tara_nume, moneda').order('tara_cod', { ascending: true }),
   ]);
-  if (e1 || e2 || e3) return res.status(500).json({ error: (e1 || e2 || e3).message });
+  if (e1 || e2 || e3) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', 'Nu am putut încărca nivelurile de preț.', 'We could not load the price tiers.', e1 || e2 || e3);
   return res.status(200).json({ ok: true, niveluri, preturi, tari_reale: tariReale });
 }
 
 async function handler(req, res, admin) {
   if (req.method === 'GET') return handleGet(req, res);
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const { action } = req.body || {};
 
@@ -48,7 +48,7 @@ async function handler(req, res, admin) {
       .single();
     if (error) {
       if (error.code === '23505') return trimiteEroare(res, 409, 'CHEIE_EXISTENTA', `Există deja un nivel cu cheia "${cheie}". Alegeți altă «Cheie».`, `A level with the key "${cheie}" already exists. Choose another «Key».`, [camp('cheie', 'Există deja un nivel cu această cheie.', 'A level with this key already exists.')]);
-      return res.status(500).json({ error: error.message });
+      return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
     }
     await inregistreazaAudit({ admin, req, actiune: 'creare_nivel_pret', entitate: 'niveluri_pret', entitate_id: data.id, detalii: { cheie, nume } });
     return res.status(200).json({ ok: true, nivel: data });
@@ -56,30 +56,30 @@ async function handler(req, res, admin) {
 
   if (action === 'editeaza_nivel') {
     const { id, nume, descriere, ordine, activ } = req.body;
-    if (!id) return res.status(400).json({ error: 'id este obligatoriu' });
+    if (!id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id este obligatoriu', 'id is required.', ['id']);
     const update = {};
     if (nume !== undefined) update.nume = nume;
     if (descriere !== undefined) update.descriere = descriere;
     if (ordine !== undefined) update.ordine = Number(ordine) || 0;
     if (activ !== undefined) update.activ = !!activ;
     const { data, error } = await supabaseAdmin.from('niveluri_pret').update(update).eq('id', id).select().single();
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
     await inregistreazaAudit({ admin, req, actiune: 'editare_nivel_pret', entitate: 'niveluri_pret', entitate_id: id, detalii: update });
     return res.status(200).json({ ok: true, nivel: data });
   }
 
   if (action === 'sterge_nivel') {
     const { id } = req.body;
-    if (!id) return res.status(400).json({ error: 'id este obligatoriu' });
+    if (!id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id este obligatoriu', 'id is required.', ['id']);
     const { error } = await supabaseAdmin.from('niveluri_pret').delete().eq('id', id);
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
     await inregistreazaAudit({ admin, req, actiune: 'stergere_nivel_pret', entitate: 'niveluri_pret', entitate_id: id });
     return res.status(200).json({ ok: true });
   }
 
   if (action === 'salveaza_pret') {
     const { nivel_id, tara_cod, moneda, pret, activ } = req.body;
-    if (!nivel_id || !tara_cod || !moneda) return res.status(400).json({ error: 'nivel_id, tara_cod și moneda sunt obligatorii' });
+    if (!nivel_id || !tara_cod || !moneda) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'nivel_id, tara_cod și moneda sunt obligatorii', 'nivel_id, tara_cod and moneda are required.');
     if (pret !== null && pret !== undefined && (typeof pret !== 'number' || pret < 0)) {
       return trimiteEroare(res, 400, 'DATE_INVALIDE', 'Prețul trebuie să fie un număr pozitiv sau gol (neconfigurat).', 'The price must be a positive number or empty (not configured).', [camp('pret', 'Prețul trebuie să fie un număr pozitiv sau gol.', 'The price must be a positive number or empty.')]);
     }
@@ -91,21 +91,21 @@ async function handler(req, res, admin) {
       }, { onConflict: 'nivel_id,tara_cod' })
       .select()
       .single();
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
     await inregistreazaAudit({ admin, req, actiune: 'salvare_pret_nivel', entitate: 'preturi_niveluri', entitate_id: data.id, detalii: { nivel_id, tara_cod, pret } });
     return res.status(200).json({ ok: true, pret: data });
   }
 
   if (action === 'sterge_pret') {
     const { id } = req.body;
-    if (!id) return res.status(400).json({ error: 'id este obligatoriu' });
+    if (!id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id este obligatoriu', 'id is required.', ['id']);
     const { error } = await supabaseAdmin.from('preturi_niveluri').delete().eq('id', id);
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
     await inregistreazaAudit({ admin, req, actiune: 'stergere_pret_nivel', entitate: 'preturi_niveluri', entitate_id: id });
     return res.status(200).json({ ok: true });
   }
 
-  return res.status(400).json({ error: `action necunoscută: ${action}` });
+  return trimiteEroare(res, 400, 'ACTIUNE_NECUNOSCUTA', `action necunoscută: ${action}`, `Unknown action: ${action}`, ['action']);
 }
 
 module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));

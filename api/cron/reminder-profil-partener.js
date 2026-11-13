@@ -30,6 +30,7 @@ const { stareActivare, ROLURI_PARTENER } = require('../../lib/activare-partener'
 const { rolPentruTipPartener } = require('../../lib/roluri-partener');
 const { dashboardPentruRol } = require('../../lib/destinatie-rol');
 const { emailConfirmat } = require('../../lib/email-confirmat');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const SITE_URL = process.env.SITE_URL || 'https://mydarrin.homebestpal.com';
 
@@ -56,7 +57,7 @@ module.exports = async function handler(req, res) {
   const secretAsteptat = process.env.CRON_SECRET;
   const primit = (req.headers['authorization'] || '').replace(/^Bearer\s+/i, '');
   if (!secretAsteptat || primit !== secretAsteptat) {
-    return res.status(401).json({ error: 'Neautorizat' });
+    return trimiteEroare(res, 401, 'NEAUTORIZAT', 'Neautorizat', 'Not authorised.');
   }
 
   const { data: parteneri, error: selErr } = await supabaseAdmin
@@ -65,7 +66,7 @@ module.exports = async function handler(req, res) {
     .neq('status_verificare', 'rejected');
   if (selErr) {
     console.error('[reminder-profil-partener]', selErr);
-    return res.status(500).json({ error: 'Eroare la căutarea candidaților' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Eroare la căutarea candidaților', 'Error while looking up candidates.');
   }
   const candidati = (parteneri || []).map((p) => ({ ...p, rol: rolPentruTipPartener(p.partner_type) }));
 

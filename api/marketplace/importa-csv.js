@@ -30,6 +30,7 @@ const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { valideazaMaterial, valideazaEchipament, incarcaContextValidare } = require('../../lib/valideaza-produs-marketplace');
 const { valideazaRutaProdus, normalizeazaNace } = require('../../lib/ruta-incadrare');
+const { trimiteEroare, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
 
 const ROLURI = ['partener_materiale', 'partener_inchirieri', 'admin', 'superadmin'];
 const TABEL = { materiale: 'marketplace_materiale', echipamente: 'marketplace_echipamente' };
@@ -85,25 +86,25 @@ async function incarcaContextRuta() {
 const faraDenumire = (rand) => rand.denumire || rand.denumire_produs || '(fără denumire)';
 
 async function handler(req, res, user) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   const admin = await esteAdmin(user.id);
 
   const { tip, randuri, job_id } = req.body || {};
-  if (!TABEL[tip]) return res.status(400).json({ error: "tip trebuie să fie 'materiale' sau 'echipamente'" });
-  if (!Array.isArray(randuri) || !randuri.length) return res.status(400).json({ error: 'randuri (array, ne-gol) este obligatoriu' });
+  if (!TABEL[tip]) return trimiteEroare(res, 400, 'DATE_INVALIDE', "tip trebuie să fie 'materiale' sau 'echipamente'", 'tip must be \'materiale\' or \'echipamente\'.', ['tip']);
+  if (!Array.isArray(randuri) || !randuri.length) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'randuri (array, ne-gol) este obligatoriu', 'randuri (a non-empty array) is required.', ['randuri']);
 
   let job;
   if (job_id) {
     const { data } = await supabaseAdmin.from('marketplace_importuri_csv').select('*').eq('id', job_id).maybeSingle();
-    if (!data) return res.status(404).json({ error: 'Job de import inexistent.' });
-    if (!admin && data.creat_de !== user.id) return res.status(403).json({ error: 'Acest job nu îți aparține.' });
+    if (!data) return trimiteEroare(res, 404, 'NU_EXISTA', 'Job de import inexistent.', 'The import job does not exist.');
+    if (!admin && data.creat_de !== user.id) return trimiteEroare(res, 403, 'FARA_DREPT', 'Acest job nu îți aparține.', 'This job does not belong to you.');
     job = data;
   } else {
     const { data, error } = await supabaseAdmin.from('marketplace_importuri_csv').insert({
       furnizor_id: admin ? null : user.id,
       tip, creat_de: user.id, randuri_totale: randuri.length,
     }).select().single();
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
     job = data;
   }
 
@@ -225,7 +226,7 @@ async function handler(req, res, user) {
     .eq('id', job.id)
     .select()
     .single();
-  if (updateErr) return res.status(500).json({ error: updateErr.message });
+  if (updateErr) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, updateErr);
 
   return res.status(200).json({
     ok: true,

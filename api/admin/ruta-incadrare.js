@@ -25,6 +25,7 @@ const { calculeazaCostNivel } = require('../../lib/calculeaza-cost-recipe');
 const { citesteTot } = require('../../lib/citeste-tot');
 const R = require('../../lib/ruta-incadrare');
 const { propuneReteta, verificaAprobare, planAprobare, temePentruTitlu, INDICATORI_PE_ACTIVITATE, RESURSE_NOI_PE_TEMA } = require('../../lib/propune-reteta');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 // ── Migrarea lipsă ────────────────────────────────────────────────────────
 class MigrareLipsa extends Error {}
@@ -348,10 +349,10 @@ async function actionPublica(req, res, user, perm) {
   const rezultat = await contextValidare(s, perm, req.body || {});
   date(await supabaseAdmin.from('catalog_servicii').update({ ruta_rezultat: rezultat, ruta_validata_la: new Date().toISOString() }).eq('id', serviciu_id));
   if (!rezultat.ok) {
-    return res.status(422).json({ ok: false, cod: 'RUTA_INVALIDA', error: 'Ruta are erori: serviciul nu se poate publica.', error_en: 'The route has errors: the service cannot be published.', rezultat });
+    return trimiteEroare(res, 422, 'RUTA_INVALIDA', 'Ruta are erori: serviciul nu se poate publica.', 'The route has errors: the service cannot be published.', null, { rezultat });
   }
   if (rezultat.avertismente.length && confirm_avertismente !== true) {
-    return res.status(409).json({ ok: false, cod: 'CONFIRMARE_NECESARA', error: 'Ruta are avertismente: confirmă-le (confirm_avertismente: true) ca să publici.', error_en: 'The route has warnings: confirm them (confirm_avertismente: true) to publish.', rezultat });
+    return trimiteEroare(res, 409, 'CONFIRMARE_NECESARA', 'Ruta are avertismente: confirmă-le (confirm_avertismente: true) ca să publici.', 'The route has warnings: confirm them (confirm_avertismente: true) to publish.', null, { rezultat });
   }
   date(await supabaseAdmin.from('catalog_servicii').update({ stare: 'publicat', status_public: true }).eq('id', serviciu_id));
   await inregistreazaAudit({ admin: user, req, actiune: 'ruta_publica', entitate: 'catalog_servicii', entitate_id: serviciu_id, detalii: { avertismente_confirmate: rezultat.avertismente.map((a) => a.cod) } });
@@ -482,7 +483,7 @@ async function actionAprobaReteta(req, res, user, perm) {
   const linii = date(await supabaseAdmin.from('retete_propuse_linii').select('*').eq('reteta_id', reteta_id));
   const verificare = verificaAprobare(linii);
   if (!verificare.ok) {
-    return res.status(422).json({ ok: false, cod: 'APROBARE_REFUZATA', error: verificare.erori.map((e) => e.mesaj_ro).join(' '), error_en: verificare.erori.map((e) => e.mesaj_en).join(' '), erori: verificare.erori });
+    return trimiteEroare(res, 422, 'APROBARE_REFUZATA', verificare.erori.map((e) => e.mesaj_ro).join(' '), verificare.erori.map((e) => e.mesaj_en).join(' '), null, { erori: verificare.erori });
   }
 
   const idArticole = linii.filter((l) => l.tip === 'articol_existent' && l.decizie !== 'respinsa').map((l) => l.articol_id);
@@ -764,21 +765,21 @@ const ACTIUNI = {
 };
 
 async function handler(req, res, user) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   const perm = await permisiune(user);
   if (!perm) {
-    return res.status(403).json({ ok: false, error: 'Nu ai drept pe catalogul de servicii (admin_permissions: catalog_servicii, poate_scrie).', error_en: 'You have no rights on the service catalogue (admin_permissions: catalog_servicii, poate_scrie).' });
+    return trimiteEroare(res, 403, 'FARA_DREPT', 'Nu ai drept pe catalogul de servicii (admin_permissions: catalog_servicii, poate_scrie).', 'You have no rights on the service catalogue (admin_permissions: catalog_servicii, poate_scrie).');
   }
   const { action } = req.body || {};
   const fn = ACTIUNI[action];
-  if (!fn) return res.status(400).json({ error: `action invalidă. Trebuie una din: ${Object.keys(ACTIUNI).join(', ')}`, error_en: `Invalid action. Must be one of: ${Object.keys(ACTIUNI).join(', ')}` });
+  if (!fn) return trimiteEroare(res, 400, 'ACTIUNE_NECUNOSCUTA', `action invalidă. Trebuie una din: ${Object.keys(ACTIUNI).join(', ')}`, `Invalid action. Must be one of: ${Object.keys(ACTIUNI).join(', ')}`, ['action']);
   try {
     return await fn(req, res, user, perm);
   } catch (e) {
-    if (e instanceof MigrareLipsa) return res.status(409).json(MESAJ_MIGRARE);
-    if (e instanceof EroareCerere) return res.status(e.status).json({ ok: false, error: e.error, error_en: e.error_en, ...(e.extra || {}) });
+    if (e instanceof MigrareLipsa) return trimiteEroare(res, 409, MESAJ_MIGRARE.cod, MESAJ_MIGRARE.error, MESAJ_MIGRARE.error_en);
+    if (e instanceof EroareCerere) return trimiteEroare(res, e.status, (e.extra && e.extra.cod) || 'EROARE', e.error, e.error_en, null, e.extra || null);
     console.error(`[admin/ruta-incadrare] ${action}`, e);
-    return res.status(500).json({ ok: false, error: 'Eroare internă.', error_en: 'Internal error.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Eroare internă.', 'Internal error.');
   }
 }
 

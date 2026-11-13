@@ -20,6 +20,7 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const v = require('../../lib/valideaza');
+const { trimiteEroare, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
 
 // Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
 const SCHEMA = {
@@ -48,7 +49,7 @@ async function handler(req, res, user) {
       .select('id, angajat_id, tip_certificare, document_url, data_expirare, creat_la')
       .eq('partner_id', user.id)
       .order('creat_la', { ascending: false });
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
 
     const cerinte = await incarcaCerinteTara(tara);
     return res.status(200).json({ ok: true, certificari: data || [], cerinte, tara });
@@ -56,7 +57,7 @@ async function handler(req, res, user) {
 
   if (req.method === 'DELETE') {
     const { id } = req.body || {};
-    if (!id) return res.status(400).json({ error: 'id este obligatoriu' });
+    if (!id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id este obligatoriu', 'id is required.', ['id']);
     const { data, error } = await supabaseAdmin
       .from('partner_certificari')
       .delete()
@@ -64,32 +65,32 @@ async function handler(req, res, user) {
       .eq('partner_id', user.id)
       .select('id')
       .maybeSingle();
-    if (error) return res.status(500).json({ error: error.message });
-    if (!data) return res.status(404).json({ error: 'Certificarea nu există sau nu-ți aparține' });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
+    if (!data) return trimiteEroare(res, 404, 'NU_EXISTA', 'Certificarea nu există sau nu-ți aparține', 'The certification does not exist or does not belong to you.');
     return res.status(200).json({ ok: true });
   }
 
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { tip_certificare, document_path, angajat_id = null, data_expirare = null } = req.body || {};
   const cerinte = await incarcaCerinteTara(tara);
   const numeValide = cerinte.map((c) => c.nume_certificare);
   if (!numeValide.includes(tip_certificare)) {
-    return res.status(400).json({ error: `tip_certificare trebuie să fie una din cerințele configurate pentru ${tara}: ${numeValide.join(', ') || '(nicio cerință configurată)'}` });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', `tip_certificare trebuie să fie una din cerințele configurate pentru ${tara}: ${numeValide.join(', ') || '(nicio cerință configurată)'}`, `tip_certificare must be one of the requirements set for ${tara}: ${numeValide.join(', ') || '(no requirement set)'}`, ['tip_certificare']);
   }
   if (!document_path || typeof document_path !== 'string') {
-    return res.status(400).json({ error: 'document_path (calea fișierului încărcat în Storage) este obligatoriu' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'document_path (calea fișierului încărcat în Storage) este obligatoriu', 'document_path (the path of the file uploaded to storage) is required.', ['document_path']);
   }
   // Fișierul trebuie să fie chiar în folderul acestui partener — altfel
   // oricine ar putea înregistra calea către fișierul altcuiva.
   if (!document_path.startsWith(`${user.id}/`)) {
-    return res.status(403).json({ error: 'Calea fișierului nu aparține contului tău' });
+    return trimiteEroare(res, 403, 'FARA_DREPT', 'Calea fișierului nu aparține contului tău', 'The file path does not belong to your account.');
   }
 
   if (angajat_id) {
     const { data: angajat } = await supabaseAdmin.from('partner_angajati').select('id').eq('id', angajat_id).eq('partner_id', user.id).maybeSingle();
-    if (!angajat) return res.status(400).json({ error: 'Angajatul indicat nu există pentru acest partener' });
+    if (!angajat) return trimiteEroare(res, 400, 'DATE_INVALIDE', 'Angajatul indicat nu există pentru acest partener', 'The selected employee does not exist for this partner.', ['angajat_id']);
   }
 
   try {
@@ -100,7 +101,7 @@ async function handler(req, res, user) {
     return res.status(200).json({ ok: true, certificare: data });
   } catch (err) {
     console.error('[wizard-certificari]', err);
-    return res.status(500).json({ error: err.message || 'Nu am putut salva certificarea' });
+    return trimiteEroareInterna(res, 500, 'EROARE_SERVER', 'Nu am putut salva certificarea', 'We could not save the certification. Please try again.', err);
   }
 }
 

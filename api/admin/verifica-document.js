@@ -9,7 +9,7 @@
 // îl vede partenerul în banda de stare a contului (api/cont/profil.js).
 
 const { requireAuth } = require('../../lib/auth-middleware');
-const { formaComuna, trimiteEroare, camp } = require('../../lib/raspuns-eroare');
+const { formaComuna, trimiteEroare, camp, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
 const { esteFormaValida } = require('../../lib/forme-juridice');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
@@ -23,12 +23,12 @@ const DECIZII_VALIDE = ['aprobat', 'respins'];
 const DECIZIE_LA_STATUS_PARTNERS = { aprobat: 'approved', respins: 'rejected' };
 
 async function handler(req, res, admin) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const { tip, id, decizie } = req.body || {};
   const motiv = typeof req.body?.motiv === 'string' ? req.body.motiv.trim().slice(0, 500) : '';
   if (!['document', 'partener'].includes(tip) || !id || !DECIZII_VALIDE.includes(decizie)) {
-    return res.status(400).json({ error: "tip ('document'|'partener'), id și decizie ('aprobat'|'respins') sunt obligatorii" });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', "tip ('document'|'partener'), id și decizie ('aprobat'|'respins') sunt obligatorii", 'tip (\'document\'|\'partener\'), id and decizie (\'aprobat\'|\'respins\') are required.');
   }
 
   try {
@@ -39,7 +39,7 @@ async function handler(req, res, admin) {
         .eq('id', id)
         .select()
         .single();
-      if (error || !data) return res.status(404).json({ error: 'Documentul nu există' });
+      if (error || !data) return trimiteEroare(res, 404, 'DOCUMENT_NU_EXISTA', 'Documentul nu există', 'The document does not exist.');
       await inregistreazaAudit({
         admin, req, actiune: `document_${decizie}`, entitate: 'documente_partener', entitate_id: id, detalii: { decizie },
       });
@@ -50,7 +50,7 @@ async function handler(req, res, admin) {
     // din lib/forme-juridice.js; pentru firma_straina, cu forma locală scrisă).
     if (decizie === 'aprobat') {
       const { data: actual } = await supabaseAdmin.from('partners').select('*').eq('id', id).maybeSingle();
-      if (!actual) return res.status(404).json({ error: 'Partenerul nu există' });
+      if (!actual) return trimiteEroare(res, 404, 'PARTENER_NU_EXISTA', 'Partenerul nu există', 'The partner does not exist.');
       const forma = actual.tip_entitate_legala;
       const formaLocalaLipsa = forma === 'firma_straina' && !String(actual.forma_juridica_locala || '').trim();
       if (!esteFormaValida(forma) || formaLocalaLipsa) {
@@ -71,7 +71,7 @@ async function handler(req, res, admin) {
       .eq('id', id)
       .select()
       .single();
-    if (error || !data) return res.status(404).json({ error: 'Partenerul nu există' });
+    if (error || !data) return trimiteEroare(res, 404, 'PARTENER_NU_EXISTA', 'Partenerul nu există', 'The partner does not exist.');
     await inregistreazaAudit({
       admin, req, actiune: `partener_${decizie}`, entitate: 'partners', entitate_id: id,
       detalii: { decizie, ...(decizie === 'respins' && motiv ? { motiv } : {}) },
@@ -103,7 +103,7 @@ async function handler(req, res, admin) {
     return res.status(200).json({ ok: true, partener: data, rol_adaugat: rolAdaugat, rol_eroare: rolEroare });
   } catch (err) {
     console.error('[verifica-document]', err);
-    return res.status(500).json({ error: err.message || 'Eroare la verificarea documentului' });
+    return trimiteEroareInterna(res, 500, 'EROARE_SERVER', 'Eroare la verificarea documentului', 'Error while checking the document.', err);
   }
 }
 

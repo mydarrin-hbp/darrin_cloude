@@ -21,6 +21,7 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const CONFIG_PER_ROL = {
   partener_curier: {
@@ -46,7 +47,7 @@ const CONFIG_PER_ROL = {
 };
 
 async function handler(req, res, user) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   let roles;
   try {
@@ -55,13 +56,13 @@ async function handler(req, res, user) {
     roles = new Set(Array.isArray(data?.roles) ? data.roles : []);
   } catch (e) {
     console.error('[login-config] eroare la citirea profiles.roles:', e);
-    return res.status(500).json({ error: 'Eroare internă de autentificare' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Eroare internă de autentificare', 'Internal authentication error');
   }
 
   const rolPartener = [...roles].find(r => CONFIG_PER_ROL[r]);
 
   if (!rolPartener) {
-    return res.status(403).json({ error: 'Contul nu are niciun rol de partener activ' });
+    return trimiteEroare(res, 403, 'FARA_ROL_PARTENER', 'Contul nu are niciun rol de partener activ', 'The account has no active partner role.');
   }
 
   return res.status(200).json({

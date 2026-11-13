@@ -39,7 +39,7 @@
 // Utilizare:
 //   node scripts/detector-ro.js [--base http://localhost:3000] [--latimi 390,1366]
 //                               [--out ./detector-out] [--cu-cont]
-//                               [--profil extern|propriu|inchirieri] [pagina ...]
+//                               [--profil extern|propriu|inchirieri|curier|materiale|asigurari] [pagina ...]
 // --profil (doar cu --cu-cont): contul simulat — furnizor extern în verificare
 // (implicit), furnizorul propriu al platformei sau furnizor de închirieri.
 const { chromium, devices } = require('playwright');
@@ -74,7 +74,7 @@ const latimi = opt('latimi', '390,1366').split(',').map(Number);
 const OUT = opt('out', path.join(process.cwd(), 'detector-out'));
 const CU_CONT_MOD = flag('cu-cont');
 const PROFIL = opt('profil', 'extern');
-const pagini = arg.length ? arg : (CU_CONT_MOD ? CU_CONT : PUBLICE);
+let pagini = arg.length ? arg : (CU_CONT_MOD ? CU_CONT : PUBLICE);
 const LIMBA = process.env.LIMBA || 'en';
 fs.mkdirSync(OUT, { recursive: true });
 
@@ -176,8 +176,69 @@ const PROFILURI_SIMULATE = {
     partener: { nume_firma: 'Test Utilaje SRL', partner_type: 'inchirieri_utilaje', rol: 'partener_inchirieri', status_verificare: 'approved', contract_semnat: true, cont_bancar: true, motiv_respingere: null,
       poate_vinde: true, motiv_nu_poate_vinde: null },
   },
+  // Pasul 11-T2: curierul de cartier, furnizorul de materiale (extern) și
+  // asigurătorul / brokerul, aprobați. `api` înlocuiește răspunsurile implicite
+  // de mai sus; `pagini` sunt paginile pe care le deschide acest cont.
+  curier: {
+    ok: true, email: 'curier.test@example.com', nume: 'Curier Test', roles: ['partener_curier'], roluri_dashboard: ['partener_curier'],
+    destinatie: '/mydarrin-dashboard-partener.html', tip_destinatie: 'rol', furnizor_propriu: false,
+    partener: { nume_firma: 'Test Curier SRL', partner_type: 'curier_utilitara', rol: 'partener_curier', status_verificare: 'approved', contract_semnat: true, cont_bancar: true, motiv_respingere: null,
+      poate_vinde: true, motiv_nu_poate_vinde: null },
+    pagini: ['mydarrin-dashboard-partener', 'mydarrin-rolurile-mele', 'mydarrin-devino-partener-wizard'],
+    panouri: ['curse', 'activ', 'zona-acoperire', 'venituri', 'documente', 'profil'],
+    api: {
+      '/api/partener/status-aplicare': { ok: true, status: 'approved', partner_type: 'curier_utilitara', documente_respinse: [], darrin_ai_activ: false, darrin_ai_raport: null },
+      '/api/partener/wizard-companie': { ok: true, partner: { nume_firma: 'Test Curier SRL', cui: 'RO23456789', partner_type: 'curier_utilitara', status_verificare: 'approved', tip_entitate_legala: 'srl', is_treasury_account: false, regiune_cod: 'BC' }, conturi: [] },
+      '/api/partener/cont': { ok: true, partner: { nume_firma: 'Test Curier SRL', partner_type: 'curier_utilitara', status_verificare: 'approved', regiune_cod: 'BC', contract_semnat: true }, profil: { email: 'curier.test@example.com', tara: 'RO', limba: 'en' }, are_cont_bancar: true, kpi: { moneda: 'RON', comenzi_active: 1, comenzi_luna: 3, total_activ: 120, total_eliberat: 340, castig_luna: 340, castig_azi: 40 }, documente: [], facturi: [], garantii: [], polite: [] },
+      '/api/partener/zona-curier': { ok: true, zone: [{ id: 'z1', tara_cod: 'RO', regiune_cod: 'BC', localitate: 'Bacău', raza_livrare_km: 15 }] },
+      '/api/partener/sarcini': { ok: true, primite: [], active: [], finalizate: [] },
+      '/api/partener/profil-status': { ok: true, complet: true, lipsa: [], pas: null },
+    },
+  },
+  materiale: {
+    ok: true, email: 'vanzari.test@example.com', nume: 'Furnizor Test', roles: ['partener_materiale'], roluri_dashboard: ['partener_materiale'],
+    destinatie: '/mydarrin-dashboard-furnizor.html?type=materiale', tip_destinatie: 'rol', furnizor_propriu: false,
+    partener: { nume_firma: 'Test Materiale SRL', partner_type: 'furnizor_materiale', rol: 'partener_materiale', status_verificare: 'approved', contract_semnat: true, cont_bancar: true, motiv_respingere: null,
+      poate_vinde: true, motiv_nu_poate_vinde: null },
+    pagini: ['mydarrin-dashboard-furnizor.html?type=materiale', 'mydarrin-rolurile-mele', 'mydarrin-devino-partener-wizard'],
+    panouri: ['comenzi', 'stocuri', 'produse', 'import', 'venituri', 'garantii', 'documente', 'adrese'],
+    api: {
+      '/api/partener/status-aplicare': { ok: true, status: 'approved', partner_type: 'furnizor_materiale', documente_respinse: [], darrin_ai_activ: false, darrin_ai_raport: null },
+      '/api/partener/wizard-companie': { ok: true, partner: { nume_firma: 'Test Materiale SRL', cui: 'RO34567890', partner_type: 'furnizor_materiale', status_verificare: 'approved', tip_entitate_legala: 'srl', is_treasury_account: false, regiune_cod: 'BC' }, conturi: [] },
+      '/api/partener/cont': { ok: true, partner: { nume_firma: 'Test Materiale SRL', partner_type: 'furnizor_materiale', status_verificare: 'approved', regiune_cod: 'BC', contract_semnat: true }, profil: { email: 'vanzari.test@example.com', tara: 'RO', limba: 'en' }, are_cont_bancar: true, kpi: { moneda: 'RON', comenzi_active: 0, comenzi_luna: 2, total_activ: 0, total_eliberat: 900, castig_luna: 900, castig_azi: 0 }, documente: [], facturi: [], garantii: [], polite: [] },
+      '/api/partener/discounturi': { ok: true, discounturi: [], limite: { min: 5, max: 15 } },
+      '/api/partener/profil-status': { ok: true, complet: false, lipsa: ['clauza_zona'], pas: 7 },
+    },
+  },
+  asigurari: {
+    ok: true, email: 'broker.test@example.com', nume: 'Broker Test', roles: ['partener_asigurari'], roluri_dashboard: ['partener_asigurari'],
+    destinatie: '/mydarrin-dashboard-partener.html', tip_destinatie: 'rol', furnizor_propriu: false,
+    partener: { nume_firma: 'Test Broker SRL', partner_type: 'asigurari', rol: 'partener_asigurari', status_verificare: 'approved', contract_semnat: true, cont_bancar: true, motiv_respingere: null,
+      poate_vinde: true, motiv_nu_poate_vinde: null },
+    pagini: ['mydarrin-dashboard-partener', 'mydarrin-rolurile-mele', 'mydarrin-devino-partener-wizard'],
+    panouri: ['polite', 'daune', 'tipuri-polita', 'venituri', 'documente', 'profil'],
+    api: {
+      '/api/partener/status-aplicare': { ok: true, status: 'approved', partner_type: 'asigurari', documente_respinse: [], darrin_ai_activ: false, darrin_ai_raport: null },
+      '/api/partener/wizard-companie': { ok: true, partner: { nume_firma: 'Test Broker SRL', cui: 'RO45678901', partner_type: 'asigurari', status_verificare: 'approved', tip_entitate_legala: 'srl', is_treasury_account: false, regiune_cod: 'BC' }, conturi: [] },
+      '/api/partener/cont': { ok: true, partner: { nume_firma: 'Test Broker SRL', partner_type: 'asigurari', status_verificare: 'approved', regiune_cod: 'BC', contract_semnat: true }, profil: { email: 'broker.test@example.com', tara: 'RO', limba: 'en' }, are_cont_bancar: true, kpi: { moneda: 'RON', comenzi_active: 0, comenzi_luna: 4, total_activ: 0, total_eliberat: 260, castig_luna: 260, castig_azi: 0 }, documente: [], facturi: [], garantii: [], polite: [] },
+      '/api/partener/tipuri-polita': { ok: true, tipuri: [{ id: 't1', tip_polita: 'CAR', limita_acoperire_eur: 50000, comision_pct: 8 }] },
+      '/api/partener/dosare-dauna': { ok: true, dosare: [
+        { id: 'd1', claim_id: 'CLAIM-2026-CMD0001-EXE', tip: 'EXE', descriere: 'Water leak after the installation.', valoare_estimata: 1200, valoare_aprobata: null, moneda: 'RON', status: 'deschis', decizie_motiv: null, creat_la: '2026-11-02T10:00:00Z', actualizat_la: '2026-11-02T10:00:00Z', nr_comanda: 1, ale_mele: false },
+        { id: 'd2', claim_id: 'CLAIM-2026-CMD0002-MAT', tip: 'MAT', descriere: 'Damaged tiles on delivery.', valoare_estimata: 300, valoare_aprobata: 250, moneda: 'RON', status: 'aprobat', decizie_motiv: null, creat_la: '2026-10-20T10:00:00Z', actualizat_la: '2026-10-22T10:00:00Z', nr_comanda: 1, ale_mele: true },
+      ] },
+      '/api/partener/profil-status': { ok: true, complet: true, lipsa: [], pas: null },
+    },
+  },
 };
-if (!PROFILURI_SIMULATE[PROFIL]) { console.error(`--profil necunoscut: ${PROFIL} (extern | propriu | inchirieri)`); process.exit(2); }
+if (!PROFILURI_SIMULATE[PROFIL]) { console.error(`--profil necunoscut: ${PROFIL} (${Object.keys(PROFILURI_SIMULATE).join(' | ')})`); process.exit(2); }
+// Paginile implicite ale profilului (pasul 11-T2).
+if (CU_CONT_MOD && !arg.length && PROFILURI_SIMULATE[PROFIL].pagini) pagini = PROFILURI_SIMULATE[PROFIL].pagini;
+
+// Faza „eroare” (pasul 11-T2): răspunsul API în forma comună (lib/raspuns-eroare.js).
+// Rămân valide doar căile care aleg tipul de dashboard și profilul contului.
+const EROARE_SIMULATA = require('../lib/raspuns-eroare').corpEroare('EROARE_SERVER',
+  'Nu am putut încărca datele. Încearcă din nou.', 'We could not load the data. Please try again.');
+const CAI_FARA_EROARE = ['/api/partener/status-aplicare', '/api/partener/cont', '/api/partener/profil-status'];
 
 // Pagina adminului de catalog (pasul 9): răspunsuri POST pe acțiune.
 // Antetul cu drepturi; listele încep goale (prima vizită).
@@ -253,6 +314,7 @@ function detecteaza(limba) {
     for (const pg of pagini) {
       const cfg = w < 800 ? { ...devices['iPhone 13'], viewport: { width: w, height: 844 } } : { viewport: { width: w, height: 900 } };
       const ctx = await b.newContext({ ...cfg, locale: 'en-GB' });
+      const stare = { eroare: false };
       await ctx.addInitScript((l) => { try { if (!sessionStorage.getItem('__init')) { localStorage.clear(); if (l !== 'en') localStorage.setItem('myd_lang_v1', l); sessionStorage.setItem('__init', '1'); } } catch (e) {} }, LIMBA);
       if (CU_CONT_MOD) {
         const profil = PROFILURI_SIMULATE[PROFIL];
@@ -264,10 +326,16 @@ function detecteaza(limba) {
           try { corp = JSON.parse(r.request().postData() || '{}'); } catch (e) { corp = {}; }
           return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(RASPUNSURI_ADMIN[corp.action] || { ok: true }) });
         });
-        await ctx.route(/\/api\/cont\/profil/, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(profil) }));
-        await ctx.route(/\/api\/(partener|client|investitori)\//, (r) => {
+        await ctx.route(/\/api\/cont\/profil/, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(Object.assign({}, profil, { api: undefined, pagini: undefined, panouri: undefined })) }));
+        await ctx.route(/\/api\/(partener|client|investitori|marketplace)\//, (r) => {
           const cale = new URL(r.request().url()).pathname.replace(/\.js$/, '');
-          const corp = r.request().method() === 'GET' ? (RASPUNSURI_SIMULATE[cale] || { ok: true }) : { ok: true };
+          // Faza „eroare” (pasul 11-T2): API-urile panourilor răspund cu eroarea în forma comună.
+          if (stare.eroare && !CAI_FARA_EROARE.includes(cale)) {
+            return r.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify(EROARE_SIMULATA) });
+          }
+          if (/\/api\/marketplace\//.test(cale)) return r.fallback();
+          const raspunsuri = Object.assign({}, RASPUNSURI_SIMULATE, profil.api || {});
+          const corp = r.request().method() === 'GET' ? (raspunsuri[cale] || { ok: true }) : { ok: true };
           return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(corp) });
         });
       }
@@ -304,6 +372,27 @@ function detecteaza(limba) {
         if (s && r.gasite) s.gasite.forEach((g) => r.gasite.push({ sel: '[' + nume + '] ' + g.sel, text: g.text }));
         if (inchide) await p.evaluate(inchide).catch(() => {});
         await p.waitForTimeout(300);
+      }
+      // Pasul 11-T2: panourile profilului (meniu, carduri, formulare), apoi
+      // aceleași panouri cu API-urile în eroare — mesajul afișat e verificat și el.
+      const panouri = CU_CONT_MOD ? PROFILURI_SIMULATE[PROFIL].panouri : null;
+      if (panouri && await p.evaluate('typeof showPanel === "function"').catch(() => false)) {
+        for (const faza of ['panou', 'eroare']) {
+          if (faza === 'eroare') {
+            stare.eroare = true;
+            await p.reload({ waitUntil: 'networkidle' }).catch(() => {});
+            await p.waitForTimeout(2500);
+          }
+          for (const id of panouri) {
+            const ok = await p.evaluate((x) => { try { showPanel(x); return true; } catch (e) { return false; } }, id).catch(() => false);
+            if (!ok) { r.gasite = (r.gasite || []).concat([{ sel: '[' + faza + ' ' + id + ']', text: 'PANOUL NU S-A DESCHIS' }]); continue; }
+            await p.waitForTimeout(1200);
+            const s = await p.evaluate(detecteaza, LIMBA).catch(() => null);
+            if (s && r.gasite) s.gasite.forEach((g) => r.gasite.push({ sel: '[' + faza + ' ' + id + '] ' + g.sel, text: g.text }));
+            if (faza === 'eroare' && s) r.mesajEroareVazut = r.mesajEroareVazut || await p.evaluate((t) => document.body.innerText.includes(t), EROARE_SIMULATA.mesaj.en).catch(() => false);
+          }
+        }
+        if (!r.mesajEroareVazut) r.gasite.push({ sel: '[eroare]', text: 'MESAJUL EN DIN FORMA COMUNĂ NU APARE: ' + EROARE_SIMULATA.mesaj.en });
       }
       total.push({ pg, w, ...r, erori });
       await ctx.close();

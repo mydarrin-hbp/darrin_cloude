@@ -72,7 +72,7 @@ function refuz(res, status, cod, cheie, numeCamp) {
 }
 
 async function handler(req, res, user) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const corp = { ...(req.body || {}) };
   const { denumire_institutie_b2g, cui_client_b2g, metoda_plata, cont_trezorerie = false } = corp;

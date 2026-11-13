@@ -21,7 +21,7 @@
 // pe `investitori` și poate_scrie = true. Înainte, orice admin putea aproba.
 
 const { requireAuth } = require('../../lib/auth-middleware');
-const { formaComuna } = require('../../lib/raspuns-eroare');
+const { formaComuna, trimiteEroare, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 const { nivelInvestitori, refuzaFaraDrept, refuzaFaraScriere } = require('../../lib/permisiuni-investitori');
@@ -29,15 +29,15 @@ const { nivelInvestitori, refuzaFaraDrept, refuzaFaraScriere } = require('../../
 const STATUS_VALID = { aproba: 'aprobat', respinge: 'respins' };
 
 async function handler(req, res, user) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   const nivel = await nivelInvestitori(user);
   if (!nivel) return refuzaFaraDrept(res);
   if (nivel !== 'scriere') return refuzaFaraScriere(res);
 
   const { id, actiune } = req.body || {};
-  if (!id) return res.status(400).json({ error: 'id obligatoriu.' });
+  if (!id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id obligatoriu.', 'id is required.', ['id']);
   const statusNou = STATUS_VALID[actiune];
-  if (!statusNou) return res.status(400).json({ error: `actiune trebuie să fie una din: ${Object.keys(STATUS_VALID).join(', ')}` });
+  if (!statusNou) return trimiteEroare(res, 400, 'ACTIUNE_NECUNOSCUTA', `actiune trebuie să fie una din: ${Object.keys(STATUS_VALID).join(', ')}`, `actiune must be one of: ${Object.keys(STATUS_VALID).join(', ')}`, ['actiune']);
 
   try {
     const decizie = { status: statusNou, aprobat_la: new Date().toISOString(), aprobat_de: user.id };
@@ -45,18 +45,15 @@ async function handler(req, res, user) {
       const { data: sub, error: subErr } = await supabaseAdmin
         .from('investitori_portofoliu').select('id, user_id, status, aprobat_la, aprobat_de').eq('id', id).maybeSingle();
       if (subErr) throw subErr;
-      if (!sub) return res.status(404).json({ error: 'Subscriere inexistentă.' });
+      if (!sub) return trimiteEroare(res, 404, 'NU_EXISTA', 'Subscriere inexistentă.', 'The subscription does not exist.');
       if (!sub.user_id) {
-        return res.status(409).json({ error: 'Subscrierea nu e legată de un cont de investitor; nu se poate aproba.', cod: 'fara_cont' });
+        return trimiteEroare(res, 409, 'FARA_CONT', 'Subscrierea nu e legată de un cont de investitor; nu se poate aproba.', 'The subscription is not linked to an investor account, so it cannot be approved.');
       }
       const { data: kyc, error: kycErr } = await supabaseAdmin
         .from('investitori_kyc').select('status').eq('user_id', sub.user_id).maybeSingle();
       if (kycErr) throw kycErr;
       if (!kyc || kyc.status !== 'aprobat') {
-        return res.status(409).json({
-          error: 'Verificarea identității investitorului nu e aprobată; subscrierea nu se poate aproba încă.',
-          cod: 'kyc_neaprobat', kyc_status: (kyc && kyc.status) || null,
-        });
+        return trimiteEroare(res, 409, 'KYC_NEAPROBAT', 'Verificarea identității investitorului nu e aprobată; subscrierea nu se poate aproba încă.', 'The investor identity check is not approved; the subscription cannot be approved yet.', null, { kyc_status: (kyc && kyc.status) || null });
       }
       if (sub.status === 'aprobat' && sub.aprobat_la) {
         decizie.aprobat_la = sub.aprobat_la;
@@ -71,7 +68,7 @@ async function handler(req, res, user) {
       .select()
       .single();
     if (error) throw error;
-    if (!data) return res.status(404).json({ error: 'Subscriere inexistentă.' });
+    if (!data) return trimiteEroare(res, 404, 'NU_EXISTA', 'Subscriere inexistentă.', 'The subscription does not exist.');
 
     await inregistreazaAudit({
       admin: user,
@@ -85,7 +82,7 @@ async function handler(req, res, user) {
     return res.status(200).json({ ok: true, portofoliu: data });
   } catch (err) {
     console.error('[investitori-aprobare]', err);
-    return res.status(500).json({ error: err.message || 'Nu am putut actualiza subscrierea.' });
+    return trimiteEroareInterna(res, 500, 'EROARE_SERVER', 'Nu am putut actualiza subscrierea.', 'We could not update the subscription.', err);
   }
 }
 

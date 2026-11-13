@@ -355,7 +355,7 @@
           return fetch('/api/partener/conturi-bancare', { method: 'POST', headers: h, body: JSON.stringify(corp) });
         }).then(function (r) {
           return r.json().catch(function () { return {}; }).then(function (j) {
-            if (!r.ok) throw new Error(tr(j.error || 'Nu s-a salvat.'));
+            if (!r.ok) throw new Error(MYD_I18N.eroare(j, 'Nu s-a salvat.'));
             if (typeof dupa === 'function') setTimeout(dupa, 1200);
             return tr('Contul bancar a fost salvat.');
           });
@@ -377,7 +377,7 @@
     var msg = f.querySelector('#myd-ct-msg');
     f.querySelector('#myd-ct-inchide').onclick = function () { f.remove(); };
     antetAuth().then(function (h) { return fetch('/api/partener/contract', { headers: h }); })
-      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status); return j; }); })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(MYD_I18N.eroare(j, 'HTTP ' + r.status)); return j; }); })
       .then(function (j) {
         var box = f.querySelector('#myd-ct-text');
         // HTML-ul contractului e generat de server (lib/contract-partener.js), din datele contului.
@@ -392,7 +392,7 @@
           return fetch(url, { method: 'POST', headers: h, body: JSON.stringify(corp || {}) });
         }).then(function (r) {
           return r.json().catch(function () { return {}; }).then(function (j) {
-            if (!r.ok) throw new Error(tr(j.error || 'Nu s-a salvat.'));
+            if (!r.ok) throw new Error(MYD_I18N.eroare(j, 'Nu s-a salvat.'));
             return ok(j);
           });
         });

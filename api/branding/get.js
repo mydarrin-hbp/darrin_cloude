@@ -1,13 +1,14 @@
 // /api/branding/get.js
 // Citește logo-urile curente din Vercel KV. Endpoint public (read-only).
 const { kv } = require('@vercel/kv');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   }
 
   try {
@@ -25,6 +26,6 @@ module.exports = async function handler(req, res) {
     });
   } catch (err) {
     console.error('branding/get error:', err);
-    return res.status(500).json({ error: 'Failed to read branding' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut citi setările de branding.', 'We could not read the branding settings.');
   }
 };

@@ -8,9 +8,10 @@
 // GET ?tara_cod=RO (opțional) → { ok, entitati: [...] }
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 module.exports = async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   let query = supabaseAdmin
     .from('entitati_juridice_platforma')
     .select('tara_cod, denumire, cui, nr_reg_com, adresa')
@@ -19,7 +20,7 @@ module.exports = async function handler(req, res) {
   const tara = String(req.query?.tara_cod || '').trim().toUpperCase();
   if (tara) query = query.eq('tara_cod', tara);
   const { data, error } = await query;
-  if (error) return res.status(500).json({ error: 'Nu am putut încărca entitățile juridice' });
+  if (error) return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca entitățile juridice', 'We could not load the legal entities.');
   res.setHeader('Cache-Control', 'public, max-age=300');
   return res.status(200).json({ ok: true, entitati: data || [] });
 };

@@ -102,11 +102,11 @@ async function lista(res, poateScrie) {
 }
 
 async function document(req, res, user, cale) {
-  if (typeof cale !== 'string' || !cale || cale.includes('..')) return res.status(400).json({ error: 'Cale invalidă.' });
+  if (typeof cale !== 'string' || !cale || cale.includes('..')) return trimiteEroare(res, 400, 'DATE_INVALIDE', 'Cale invalidă.', 'The path is not valid.', ['path']);
   const userId = cale.split('/')[0];
   const kyc = await K.citesteKyc(userId);
   if (!kyc || (kyc.document_fata_path !== cale && kyc.document_verso_path !== cale)) {
-    return res.status(404).json({ error: 'Documentul nu aparține niciunui dosar KYC.' });
+    return trimiteEroare(res, 404, 'NU_EXISTA', 'Documentul nu aparține niciunui dosar KYC.', 'The document does not belong to any KYC file.');
   }
   const { data, error } = await supabaseAdmin.storage.from(K.BUCKET).createSignedUrl(cale, DURATA_URL_SECUNDE);
   if (error || !data) throw error || new Error('createSignedUrl fără date');
@@ -159,8 +159,8 @@ async function trimiteEmail(userId, aprobat, motivRo, motivEn) {
 
 async function decizie(req, res, user) {
   const { user_id, actiune, motiv_ro, motiv_en } = req.body || {};
-  if (!user_id) return res.status(400).json({ error: 'user_id obligatoriu.' });
-  if (actiune !== 'aproba' && actiune !== 'respinge') return res.status(400).json({ error: 'actiune: aproba | respinge.' });
+  if (!user_id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'user_id obligatoriu.', 'user_id is required.', ['user_id']);
+  if (actiune !== 'aproba' && actiune !== 'respinge') return trimiteEroare(res, 400, 'ACTIUNE_NECUNOSCUTA', 'actiune: aproba | respinge.', 'actiune must be: aproba | respinge.', ['actiune']);
   const mRo = K.text(motiv_ro, 500);
   const mEn = K.text(motiv_en, 500);
   if (actiune === 'respinge' && (!mRo || !mEn)) {
@@ -171,8 +171,8 @@ async function decizie(req, res, user) {
   }
 
   const kyc = await K.citesteKyc(user_id);
-  if (!kyc) return res.status(404).json({ error: 'Dosar KYC inexistent.' });
-  if (kyc.status !== 'in_verificare') return res.status(409).json({ error: 'Doar un dosar în verificare primește o decizie.', status: kyc.status });
+  if (!kyc) return trimiteEroare(res, 404, 'NU_EXISTA', 'Dosar KYC inexistent.', 'The KYC file does not exist.');
+  if (kyc.status !== 'in_verificare') return trimiteEroare(res, 409, 'STARE_GRESITA', 'Doar un dosar în verificare primește o decizie.', 'Only a file under review can receive a decision.', null, { status: kyc.status });
 
   const aprobat = actiune === 'aproba';
   const { data, error } = await supabaseAdmin.from('investitori_kyc').update({
@@ -213,7 +213,7 @@ async function handler(req, res, user) {
       if (nivel !== 'scriere') return refuzaFaraScriere(res);
       return await decizie(req, res, user);
     }
-    return res.status(405).json({ error: 'Method not allowed' });
+    return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   } catch (err) {
     // Mesajul comun (RO + EN); detaliul erorii rămâne doar în log.
     console.error('[admin/investitori-kyc]', err);

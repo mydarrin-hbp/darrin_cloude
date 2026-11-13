@@ -4,7 +4,7 @@
 // POST { id, status } → actualizează statusul unui mesaj (nou|citit|raspuns)
 
 const { requireAuth } = require('../../lib/auth-middleware');
-const { formaComuna } = require('../../lib/raspuns-eroare');
+const { formaComuna, trimiteEroare, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 
@@ -15,14 +15,14 @@ async function handler(req, res, admin) {
     let query = supabaseAdmin.from('mesaje_contact').select('*').order('created_at', { ascending: false }).limit(200);
     if (req.query.status) query = query.eq('status', req.query.status);
     const { data, error } = await query;
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
     return res.status(200).json({ ok: true, mesaje: data });
   }
 
   if (req.method === 'POST') {
     const { id, status } = req.body || {};
     if (!id || !STATUSURI_VALIDE.includes(status)) {
-      return res.status(400).json({ error: `id și status (${STATUSURI_VALIDE.join('|')}) sunt obligatorii` });
+      return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', `id și status (${STATUSURI_VALIDE.join('|')}) sunt obligatorii`, `id and status (${STATUSURI_VALIDE.join('|')}) are required.`);
     }
     const { data, error } = await supabaseAdmin
       .from('mesaje_contact')
@@ -30,12 +30,12 @@ async function handler(req, res, admin) {
       .eq('id', id)
       .select()
       .single();
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
     await inregistreazaAudit({ admin, req, actiune: 'actualizare_status_mesaj', entitate: 'mesaje_contact', entitate_id: id, detalii: { status } });
     return res.status(200).json({ ok: true, mesaj: data });
   }
 
-  return res.status(405).json({ error: 'Method not allowed' });
+  return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 }
 
 module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));

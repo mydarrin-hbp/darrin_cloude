@@ -18,7 +18,7 @@
 // POST { action:'sterge', tip, id }
 
 const { requireAuth } = require('../../lib/auth-middleware');
-const { trimiteEroare, camp, formaComuna } = require('../../lib/raspuns-eroare');
+const { trimiteEroare, camp, formaComuna, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 
@@ -31,7 +31,7 @@ function tabelaPentru(tip) {
 async function handler(req, res, admin) {
   if (req.method === 'GET') {
     const tabela = tabelaPentru(req.query.tip);
-    if (!tabela) return res.status(400).json({ error: 'tip trebuie să fie M sau U' });
+    if (!tabela) return trimiteEroare(res, 400, 'DATE_INVALIDE', 'tip trebuie să fie M sau U', 'tip must be M or U.', ['tip']);
     const tipResursa = req.query.tip.toUpperCase();
 
     if (req.query.cauta) {
@@ -43,7 +43,7 @@ async function handler(req, res, admin) {
         .eq('tip_resursa', tipResursa)
         .or(`denumire_resursa.ilike.%${q}%,cod_resursa.ilike.%${q}%`)
         .limit(30);
-      if (error) return res.status(500).json({ error: error.message });
+      if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
       return res.status(200).json({ ok: true, resurse: data || [] });
     }
 
@@ -59,7 +59,7 @@ async function handler(req, res, admin) {
       .eq('tara_cod', tara)
       .not('pret_unitar', 'is', null)
       .order('updated_at', { ascending: false });
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
 
     const ids = [...new Set((tarife || []).map(t => t.resursa_id).filter(Boolean))];
     let denumiri = {};
@@ -77,13 +77,13 @@ async function handler(req, res, admin) {
   if (req.method === 'POST') {
     const { action } = req.body || {};
     const tabela = tabelaPentru(req.body?.tip);
-    if (!tabela) return res.status(400).json({ error: 'tip trebuie să fie M sau U' });
+    if (!tabela) return trimiteEroare(res, 400, 'DATE_INVALIDE', 'tip trebuie să fie M sau U', 'tip must be M or U.', ['tip']);
 
     if (action === 'sterge') {
       const { id } = req.body;
-      if (!id) return res.status(400).json({ error: 'id este obligatoriu' });
+      if (!id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id este obligatoriu', 'id is required.', ['id']);
       const { error } = await supabaseAdmin.from(tabela).delete().eq('id', id);
-      if (error) return res.status(500).json({ error: error.message });
+      if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
       await inregistreazaAudit({ admin, req, actiune: 'stergere_tarif_resursa_fizica', entitate: tabela, entitate_id: id });
       return res.status(200).json({ ok: true });
     }
@@ -121,7 +121,7 @@ async function handler(req, res, admin) {
           .eq('resursa_id', resursa_id)
           .eq('tara_cod', taraNormalizata)
           .maybeSingle();
-        if (cautaErr) return res.status(500).json({ error: cautaErr.message });
+        if (cautaErr) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, cautaErr);
         if (existent) targetId = existent.id;
       }
 
@@ -129,16 +129,16 @@ async function handler(req, res, admin) {
         ? supabaseAdmin.from(tabela).update(rand).eq('id', targetId)
         : supabaseAdmin.from(tabela).insert(rand);
       const { data, error } = await query.select().single();
-      if (error) return res.status(500).json({ error: error.message });
+      if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
 
       await inregistreazaAudit({ admin, req, actiune: 'salvare_tarif_resursa_fizica', entitate: tabela, entitate_id: data.id, detalii: rand });
       return res.status(200).json({ ok: true, tarif: data });
     }
 
-    return res.status(400).json({ error: `action necunoscută: ${action}` });
+    return trimiteEroare(res, 400, 'ACTIUNE_NECUNOSCUTA', `action necunoscută: ${action}`, `Unknown action: ${action}`, ['action']);
   }
 
-  return res.status(405).json({ error: 'Method not allowed' });
+  return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 }
 
 module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));

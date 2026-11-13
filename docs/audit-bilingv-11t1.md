@@ -66,6 +66,8 @@ Pe ecran, catalogul arată deja în engleză, prin dicționarul paginii. Lipsa d
 
 ## Ce rămâne pentru 11-T2
 
+> Rezolvat în pasul 11-T2 (13 nov. 2026): erorile API (inclusiv `api/admin`) și profilurile curier, materiale și asigurări. Vezi `docs/audit-erori-api-11t2.md`.
+
 1. **Erorile API în afara `api/admin` (267 de mesaje, 72 de fișiere).** Se trec pe forma comună `trimiteEroare(...)` din `lib/raspuns-eroare.js` (`mesaj:{ro,en}`), iar paginile le afișează prin MDFeedback. Prioritate: `partener/*` (dashboard-ul partenerului), `marketplace/*`, `darrin-ai/deviz.js`, `public/*`.
 2. **Profilurile de partener curier, materiale și asigurări:** profil simulat în `detector-ro.js --cu-cont`.
 3. **Fluxurile cu trimitere, în EN, pe producție, cu un cont de test** (dacă LM creează unul): comandă, plată, contract, subscriere, exit.

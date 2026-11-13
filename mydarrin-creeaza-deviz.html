@@ -1151,7 +1151,7 @@ async function genereazaEstimareDeviz() {
     });
     const data = await res.json();
     if (!res.ok || !data.ok) {
-      status.textContent = data.error || 'Nu am putut genera o estimare. Încearcă din nou.';
+      status.textContent = MYD_I18N.eroare(data, 'Nu am putut genera o estimare. Încearcă din nou.');
       status.style.color = '#DC2626';
       btn.disabled = false; btn.textContent = 'Generează estimare';
       return;
@@ -1550,7 +1550,7 @@ function submitNewsletter() {
     btnEl.disabled = false;
     btnEl.textContent = 'Abonează-te ›';
     if (!res.httpOk) {
-      msgEl.textContent = res.status === 429 ? '⚠ Prea multe încercări. Încearcă mai târziu.' : '❌ ' + (res.data.error || 'Eroare. Încearcă din nou.');
+      msgEl.textContent = res.status === 429 ? '⚠ Prea multe încercări. Încearcă mai târziu.' : '❌ ' + (MYD_I18N.eroare(res.data, 'Eroare. Încearcă din nou.'));
       msgEl.className = 'ftr-nl-msg error';
     } else if (res.data.deja_abonat) {
       msgEl.textContent = '✓ Ești deja abonat!';

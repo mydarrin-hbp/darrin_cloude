@@ -31,6 +31,7 @@ const { rezolvaAddonMateriale, parseazaIdMarketplace } = require('../../lib/rezo
 const { furnizoriProprii } = require('../../lib/furnizor-propriu');
 const { citesteTot } = require('../../lib/citeste-tot');
 const { parteneriCarePotVinde } = require('../../lib/eligibilitate-partener');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const NUME_FURNIZOR_PROPRIU = 'Home Best Pal';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -107,7 +108,7 @@ async function numeFurnizori(randuri) {
 
 async function handleProdus(req, res) {
   const parsat = parseazaIdMarketplace(req.query.id);
-  if (!parsat) return res.status(400).json({ error: 'Id de produs invalid.' });
+  if (!parsat) return trimiteEroare(res, 400, 'DATE_INVALIDE', 'Id de produs invalid.', 'Invalid product id.', ['id']);
   const cfg = TIPURI[parsat.tip];
   const taraCod = tara(req);
   const lang = req.query.lang === 'ro' ? 'ro' : 'en';
@@ -116,8 +117,8 @@ async function handleProdus(req, res) {
     monedaTarii(taraCod),
     incarcaConfigPret(taraCod),
   ]);
-  if (!r || (moneda && r.moneda !== moneda)) return res.status(404).json({ error: 'Produsul nu mai este disponibil.' });
-  if (!(await parteneriCarePotVinde([r.furnizor_id])).has(r.furnizor_id)) return res.status(404).json({ error: 'Produsul nu mai este disponibil.' });
+  if (!r || (moneda && r.moneda !== moneda)) return trimiteEroare(res, 404, 'PRODUS_NU_EXISTA', 'Produsul nu mai este disponibil.', 'The product is no longer available.');
+  if (!(await parteneriCarePotVinde([r.furnizor_id])).has(r.furnizor_id)) return trimiteEroare(res, 404, 'PRODUS_NU_EXISTA', 'Produsul nu mai este disponibil.', 'The product is no longer available.');
   const noduri = await noduriCapitol(cfg);
   const nume = await numeFurnizori([r]);
   const produs = produsPublic(r, parsat.tip, { cfgPret, numeFurnizor: nume[r.furnizor_id] || null, nod: noduri.find((n) => n.id === r.categorie_id), lang });
@@ -140,7 +141,7 @@ async function handleLista(req, res) {
   // doar ale furnizorilor care pot vinde.
   const { data: toateLive, error: eroareToate } = await citesteTot(() => supabaseAdmin
     .from(cfg.tabel).select('id, categorie_id, furnizor_id').eq('status', 'live').eq('activ', true).eq('moneda', moneda).order('id'));
-  if (eroareToate) return res.status(500).json({ error: 'Nu am putut încărca produsele.' });
+  if (eroareToate) return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca produsele.', 'We could not load the products.');
   const furnizoriActivi = await parteneriCarePotVinde((toateLive || []).map((p) => p.furnizor_id));
   if (!furnizoriActivi.size) return res.status(200).json(goala);
   const toate = (toateLive || []).filter((p) => furnizoriActivi.has(p.furnizor_id));
@@ -170,7 +171,7 @@ async function handleLista(req, res) {
   if (q) query = query.ilike('denumire', `%${q}%`);
   const deLa = (pagina - 1) * peP;
   const { data: randuri, count, error } = await query.range(deLa, deLa + peP - 1);
-  if (error) return res.status(500).json({ error: 'Nu am putut încărca produsele.' });
+  if (error) return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca produsele.', 'We could not load the products.');
 
   const nume = await numeFurnizori(randuri || []);
   const produse = (randuri || []).map((r) => produsPublic(r, tip, { cfgPret, numeFurnizor: nume[r.furnizor_id] || null, nod: nodPeId.get(r.categorie_id), lang }));
@@ -188,11 +189,11 @@ async function handlePret(req, res) {
   if (!v.valideazaSauTrimite(req, res, SCHEMA_PRET)) return;
   const { produse } = req.body || {};
   if (!Array.isArray(produse) || !produse.length || produse.length > 50) {
-    return res.status(400).json({ error: 'produse trebuie să fie o listă de 1–50 de produse {id, qty}.' });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', 'produse trebuie să fie o listă de 1–50 de produse {id, qty}.', 'produse must be a list of 1–50 products {id, qty}.', ['produse']);
   }
   // Pasul 11-C1: și materialele din catalog, din coș — {id: catalog_servicii.id, qty, nivel}.
   const esteValid = (p) => !!p && (!!parseazaIdMarketplace(p.id) || (typeof p.id === 'string' && UUID.test(p.id) && typeof p.nivel === 'string' && p.nivel.length > 0));
-  if (!produse.every(esteValid)) return res.status(400).json({ error: 'Id de produs invalid.' });
+  if (!produse.every(esteValid)) return trimiteEroare(res, 400, 'DATE_INVALIDE', 'Id de produs invalid.', 'Invalid product id.', ['id']);
   const taraCod = tara(req);
   let rez;
   try {
@@ -211,13 +212,13 @@ async function handlePret(req, res) {
 
 module.exports = async function handler(req, res) {
   const allowed = await checkRateLimit(req, { key: 'marketplace-produse', limit: 120, windowSeconds: 60 });
-  if (!allowed) return res.status(429).json({ error: 'Prea multe cereri. Încearcă din nou mai târziu.' });
+  if (!allowed) return trimiteEroare(res, 429, 'PREA_MULTE_CERERI', 'Prea multe cereri. Încearcă din nou mai târziu.', 'Too many requests. Please try again later.');
   try {
     if (req.method === 'GET') return req.query?.id ? await handleProdus(req, res) : await handleLista(req, res);
     if (req.method === 'POST') return await handlePret(req, res);
-    return res.status(405).json({ error: 'Method not allowed' });
+    return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   } catch (e) {
     console.error('[public/marketplace-produse]', e);
-    return res.status(500).json({ error: 'Nu am putut încărca produsele.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca produsele.', 'We could not load the products.');
   }
 };

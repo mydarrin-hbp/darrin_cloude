@@ -10,15 +10,16 @@
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { checkRateLimit } = require('../../lib/rate-limit');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const allowed = await checkRateLimit(req, { key: 'statistici-homepage', limit: 60, windowSeconds: 60 });
-  if (!allowed) return res.status(429).json({ error: 'Prea multe cereri.' });
+  if (!allowed) return trimiteEroare(res, 429, 'PREA_MULTE_CERERI', 'Prea multe cereri.', 'Too many requests.');
 
   try {
     const inceputLuna = new Date();
@@ -39,6 +40,6 @@ module.exports = async function handler(req, res) {
     });
   } catch (err) {
     console.error('[statistici-homepage]', err);
-    return res.status(500).json({ error: 'Nu am putut calcula statisticile' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut calcula statisticile', 'We could not calculate the statistics.');
   }
 };

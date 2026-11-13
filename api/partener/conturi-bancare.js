@@ -26,6 +26,7 @@ const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { validateIBAN } = require('../../lib/iban');
 const { verificaSiNotificaProfilComplet } = require('../../lib/verifica-profil-complet-partener');
 const v = require('../../lib/valideaza');
+const { trimiteEroare, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
 
 // Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
 const SCHEMA = {
@@ -44,7 +45,7 @@ async function handler(req, res, user) {
       .eq('partner_id', user.id)
       .eq('activ', true)
       .order('creat_la', { ascending: false });
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
 
     const conturi = await Promise.all((data || []).map(async (c) => {
       const { data: iban } = await supabaseAdmin.rpc('decripteaza_camp', { valoare_criptata: c.iban_criptat });
@@ -59,7 +60,7 @@ async function handler(req, res, user) {
 
   if (req.method === 'DELETE') {
     const { id } = req.body || {};
-    if (!id) return res.status(400).json({ error: 'id este obligatoriu' });
+    if (!id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id este obligatoriu', 'id is required.', ['id']);
     const { data, error } = await supabaseAdmin
       .from('partner_conturi_bancare')
       .update({ activ: false })
@@ -67,20 +68,20 @@ async function handler(req, res, user) {
       .eq('partner_id', user.id)
       .select('id')
       .maybeSingle();
-    if (error) return res.status(500).json({ error: error.message });
-    if (!data) return res.status(404).json({ error: 'Contul nu există sau nu-ți aparține' });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
+    if (!data) return trimiteEroare(res, 404, 'NU_EXISTA', 'Contul nu există sau nu-ți aparține', 'The account does not exist or does not belong to you.');
     return res.status(200).json({ ok: true });
   }
 
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { nume_titular, iban, swift, banca, moneda } = req.body || {};
   if (!nume_titular || !iban || !banca || !moneda) {
-    return res.status(400).json({ error: 'nume_titular, iban, banca și moneda sunt obligatorii' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'nume_titular, iban, banca și moneda sunt obligatorii', 'nume_titular, iban, banca and moneda are required.');
   }
   if (!validateIBAN(iban)) {
-    return res.status(400).json({ error: 'IBAN invalid (checksum incorect)' });
+    return trimiteEroare(res, 400, 'IBAN_INVALID', 'IBAN invalid (checksum incorect)', 'Invalid IBAN (the check digits are wrong).', ['iban']);
   }
 
   try {
@@ -98,7 +99,7 @@ async function handler(req, res, user) {
     return res.status(200).json({ ok: true, cont });
   } catch (err) {
     console.error('[conturi-bancare]', err);
-    return res.status(500).json({ error: err.message || 'Nu am putut salva contul bancar' });
+    return trimiteEroareInterna(res, 500, 'EROARE_SERVER', 'Nu am putut salva contul bancar', 'We could not save the bank account. Please try again.', err);
   }
 }
 

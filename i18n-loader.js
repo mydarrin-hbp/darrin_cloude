@@ -339,7 +339,29 @@
     t: t,
     traduce: function (s) { var r = limba === 'ro' ? null : traduce(s); return r == null ? s : r; },
     aplica: function (rad) { if (limba !== 'ro' && gata) traduArbore(rad || document.body || root); },
+    eroare: mesajEroare,
   };
+
+  // Mesajul de eroare al unui răspuns API, în limba paginii (pasul 11-T2):
+  // forma comună { mesaj: { ro, en } }, apoi error_en / error (răspunsurile
+  // vechi), apoi textul de rezervă (scris în română, tradus din dicționar)
+  // când serverul nu răspunde sau nu trimite niciun mesaj.
+  function mesajEroare(corp, rezerva) {
+    var en = limba !== 'ro';
+    var tr = function (s) { var r = en ? traduce(s) : null; return r == null ? s : r; };
+    if (corp && typeof corp === 'object') {
+      var m = corp.mesaj;
+      if (m && typeof m === 'object') {
+        var x = en ? (m.en || m.ro) : (m.ro || m.en);
+        if (x) return String(x);
+      }
+      var vechi = (en && corp.error_en) || corp.error || (typeof m === 'string' ? m : '') || corp.message;
+      if (vechi && typeof vechi === 'string') return tr(vechi);
+    } else if (typeof corp === 'string' && corp.trim() && !/^\s*</.test(corp)) {
+      return tr(corp.trim());
+    }
+    return rezerva == null ? '' : tr(String(rezerva));
+  }
   window.t = t;
 
   // După DOMContentLoaded, nu după readyState: readyState devine „interactive”

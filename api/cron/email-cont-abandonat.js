@@ -44,6 +44,7 @@ const { esteSuprimat } = require('../../lib/email-suppression');
 
 const { esteRolPartener } = require('../../lib/activare-partener');
 const { emailConfirmat } = require('../../lib/email-confirmat');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const PRAG_ZILE = 3;
 const TIP_EMAIL_CLIENT = 'cont_abandonat_3zile';
@@ -74,7 +75,7 @@ module.exports = async function handler(req, res) {
   const secretAsteptat = process.env.CRON_SECRET;
   const primit = (req.headers['authorization'] || '').replace(/^Bearer\s+/i, '');
   if (!secretAsteptat || primit !== secretAsteptat) {
-    return res.status(401).json({ error: 'Neautorizat' });
+    return trimiteEroare(res, 401, 'NEAUTORIZAT', 'Neautorizat', 'Not authorised.');
   }
 
   const pragData = new Date(Date.now() - PRAG_ZILE * 86400000).toISOString();
@@ -94,7 +95,7 @@ module.exports = async function handler(req, res) {
   }
   if (selErrC) {
     console.error('[email-cont-abandonat]', selErrC);
-    return res.status(500).json({ error: 'Eroare la căutarea clienților candidați' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Eroare la căutarea clienților candidați', 'Error while looking up candidate clients.');
   }
 
   for (const profil of clienti || []) {

@@ -25,6 +25,7 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const v = require('../../lib/valideaza');
+const { trimiteEroare, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
 
 // Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
 const SCHEMA_POST = {
@@ -44,7 +45,7 @@ async function handler(req, res, user) {
       .select('id, nume, cod_esco, cnp_criptat, disponibil, activ, creat_la')
       .eq('partner_id', user.id)
       .eq('activ', true);
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
 
     const angajati = await Promise.all((data || []).map(async (a) => {
       let cnp_mascat = null;
@@ -62,7 +63,7 @@ async function handler(req, res, user) {
     if (!v.valideazaSauTrimite(req, res, SCHEMA_PATCH, { necunoscute: 'ignora' })) return;
     const { id, disponibil } = req.body || {};
     if (!id || typeof disponibil !== 'boolean') {
-      return res.status(400).json({ error: 'id și disponibil (boolean) sunt obligatorii' });
+      return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id și disponibil (boolean) sunt obligatorii', 'id and disponibil (boolean) are required.');
     }
     const { data, error } = await supabaseAdmin
       .from('partner_angajati')
@@ -72,14 +73,14 @@ async function handler(req, res, user) {
       .eq('activ', true)
       .select('id, nume, disponibil')
       .maybeSingle();
-    if (error) return res.status(500).json({ error: error.message });
-    if (!data) return res.status(404).json({ error: 'Angajatul nu există sau nu-ți aparține' });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
+    if (!data) return trimiteEroare(res, 404, 'NU_EXISTA', 'Angajatul nu există sau nu-ți aparține', 'The employee does not exist or does not belong to you.');
     return res.status(200).json({ ok: true, angajat: data });
   }
 
   if (req.method === 'DELETE') {
     const { id } = req.body || {};
-    if (!id) return res.status(400).json({ error: 'id este obligatoriu' });
+    if (!id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id este obligatoriu', 'id is required.', ['id']);
     const { data, error } = await supabaseAdmin
       .from('partner_angajati')
       .update({ activ: false })
@@ -87,21 +88,21 @@ async function handler(req, res, user) {
       .eq('partner_id', user.id)
       .select('id')
       .maybeSingle();
-    if (error) return res.status(500).json({ error: error.message });
-    if (!data) return res.status(404).json({ error: 'Angajatul nu există sau nu-ți aparține' });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
+    if (!data) return trimiteEroare(res, 404, 'NU_EXISTA', 'Angajatul nu există sau nu-ți aparține', 'The employee does not exist or does not belong to you.');
     return res.status(200).json({ ok: true });
   }
 
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   if (!v.valideazaSauTrimite(req, res, SCHEMA_POST, { necunoscute: 'ignora' })) return;
   const { angajati } = req.body || {};
   if (!Array.isArray(angajati) || !angajati.length) {
-    return res.status(400).json({ error: 'Adaugă cel puțin un angajat' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'Adaugă cel puțin un angajat', 'Add at least one employee.');
   }
   for (const a of angajati) {
-    if (!a.nume || typeof a.nume !== 'string') return res.status(400).json({ error: 'Fiecare angajat trebuie să aibă un nume' });
-    if (!a.cnp || !/^\d{13}$/.test(String(a.cnp))) return res.status(400).json({ error: `CNP invalid pentru ${a.nume} (trebuie 13 cifre)` });
+    if (!a.nume || typeof a.nume !== 'string') return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'Fiecare angajat trebuie să aibă un nume', 'Each employee must have a name.', ['nume']);
+    if (!a.cnp || !/^\d{13}$/.test(String(a.cnp))) return trimiteEroare(res, 400, 'CNP_INVALID', `CNP invalid pentru ${a.nume} (trebuie 13 cifre)`, `Invalid CNP for ${a.nume} (it must have 13 digits).`, ['cnp']);
   }
 
   try {
@@ -111,7 +112,7 @@ async function handler(req, res, user) {
       if (refErr) throw refErr;
       const codValidSet = new Set((valide || []).map((r) => r.cod_esco));
       const invalide = coduri.filter((c) => !codValidSet.has(c));
-      if (invalide.length) return res.status(400).json({ error: `Coduri ESCO necunoscute: ${invalide.join(', ')}` });
+      if (invalide.length) return trimiteEroare(res, 400, 'COD_NECUNOSCUT', `Coduri ESCO necunoscute: ${invalide.join(', ')}`, `Unknown ESCO codes: ${invalide.join(', ')}`);
     }
 
     const randuri = [];
@@ -126,7 +127,7 @@ async function handler(req, res, user) {
     return res.status(200).json({ ok: true, angajati: inserati });
   } catch (err) {
     console.error('[wizard-angajati]', err);
-    return res.status(500).json({ error: err.message || 'Nu am putut salva angajații' });
+    return trimiteEroareInterna(res, 500, 'EROARE_SERVER', 'Nu am putut salva angajații', 'We could not save the employees. Please try again.', err);
   }
 }
 

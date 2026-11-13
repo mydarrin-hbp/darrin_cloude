@@ -8,9 +8,10 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   try {
     let q = supabaseAdmin.from('partener_competente').select('partener_id, cod_esco, bifat_la').order('bifat_la', { ascending: false });
     if (req.query?.cod_esco) q = q.eq('cod_esco', String(req.query.cod_esco));
@@ -37,7 +38,7 @@ async function handler(req, res) {
     return res.status(200).json({ ok: true, parteneri: [...grupat.values()], pe_cod: peCod });
   } catch (e) {
     console.error('[admin/competente-parteneri]', e);
-    return res.status(500).json({ error: 'Nu am putut încărca competențele partenerilor.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca competențele partenerilor.', 'We could not load the partner skills.');
   }
 }
 

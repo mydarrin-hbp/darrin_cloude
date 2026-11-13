@@ -10,6 +10,7 @@ const { inregistreazaAudit } = require('../../lib/audit-log');
 const { genereazaContractPartener, sha256 } = require('../../lib/contract-partener-date');
 const { CONTRACT_VERSIUNE } = require('../../lib/contract-partener');
 const v = require('../../lib/valideaza');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 // Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
 const SCHEMA = {
@@ -32,12 +33,12 @@ function getClientIp(req) {
 }
 
 async function handler(req, res, user) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { cod } = req.body || {};
   if (!cod || !/^\d{6}$/.test(String(cod))) {
-    return res.status(400).json({ error: 'Cod invalid — introdu cele 6 cifre primite pe email.' });
+    return trimiteEroare(res, 400, 'COD_INVALID', 'Cod invalid — introdu cele 6 cifre primite pe email.', 'Invalid code: enter the 6 digits you received by email.', ['cod']);
   }
 
   const { data: otpRow } = await supabaseAdmin
@@ -50,31 +51,31 @@ async function handler(req, res, user) {
     .maybeSingle();
 
   if (!otpRow) {
-    return res.status(404).json({ error: 'Nu există niciun cod activ — cere unul nou.' });
+    return trimiteEroare(res, 404, 'FARA_COD_ACTIV', 'Nu există niciun cod activ — cere unul nou.', 'There is no active code. Ask for a new one.');
   }
   if (new Date(otpRow.expira_la) < new Date()) {
-    return res.status(410).json({ error: 'Codul a expirat — cere unul nou.' });
+    return trimiteEroare(res, 410, 'COD_EXPIRAT', 'Codul a expirat — cere unul nou.', 'The code has expired. Ask for a new one.');
   }
   if (otpRow.incercari >= MAX_INCERCARI) {
-    return res.status(429).json({ error: 'Prea multe încercări greșite — cere un cod nou.' });
+    return trimiteEroare(res, 429, 'PREA_MULTE_INCERCARI', 'Prea multe încercări greșite — cere un cod nou.', 'Too many wrong attempts. Ask for a new code.');
   }
 
   if (hashCod(String(cod)) !== otpRow.cod_hash) {
     await supabaseAdmin.from('partner_contract_otp').update({ incercari: otpRow.incercari + 1 }).eq('id', otpRow.id);
-    return res.status(400).json({ error: 'Cod incorect.' });
+    return trimiteEroare(res, 400, 'COD_INCORECT', 'Cod incorect.', 'Incorrect code.', ['cod']);
   }
 
   // Instantaneul contractului exact cum l-a văzut și acceptat partenerul (portofoliu, CAEN, procente).
   const semnatLa = new Date().toISOString();
   const contract = await genereazaContractPartener(user.id, { semnatLa });
-  if (!contract) return res.status(500).json({ error: 'Codul a fost validat, dar nu am putut genera contractul. Încearcă din nou.' });
+  if (!contract) return trimiteEroare(res, 500, 'EROARE_SERVER', 'Codul a fost validat, dar nu am putut genera contractul. Încearcă din nou.', 'The code was validated, but we could not generate the contract. Please try again.');
   const { error: snapErr } = await supabaseAdmin.from('partner_contracte_semnate').upsert({
     partner_id: user.id, versiune: contract.versiune, numar: contract.numar, html: contract.html,
     sha256: sha256(contract.html), semnat_la: semnatLa, ip: getClientIp(req),
   }, { onConflict: 'partner_id,versiune' });
   if (snapErr) {
     console.error('[contract-confirma-otp] snapshot', snapErr);
-    return res.status(500).json({ error: 'Codul a fost validat, dar nu am putut păstra contractul. Încearcă din nou.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Codul a fost validat, dar nu am putut păstra contractul. Încearcă din nou.', 'The code was validated, but we could not store the contract. Please try again.');
   }
 
   const { error: updErr } = await supabaseAdmin
@@ -88,7 +89,7 @@ async function handler(req, res, user) {
     .eq('id', user.id);
   if (updErr) {
     console.error('[contract-confirma-otp] update partners', updErr);
-    return res.status(500).json({ error: 'Codul a fost validat, dar nu am putut înregistra semnătura. Încearcă din nou.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Codul a fost validat, dar nu am putut înregistra semnătura. Încearcă din nou.', 'The code was validated, but we could not record the signature. Please try again.');
   }
 
   // Codul se consumă doar după ce instantaneul și semnătura sunt salvate, ca un eșec să poată fi reîncercat cu același cod.

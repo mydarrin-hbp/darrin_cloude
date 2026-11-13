@@ -28,6 +28,7 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { calculeazaPret } = require('../../lib/calculeaza-pret');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 function numarPozitiv(v) {
   const n = Number(v);
@@ -36,7 +37,7 @@ function numarPozitiv(v) {
 
 async function handler(req, res, user) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   }
 
   const body = req.body || {};
@@ -49,18 +50,16 @@ async function handler(req, res, user) {
   ];
   const campInterzisGasit = CAMPURI_INTERZISE.find((c) => c in body);
   if (campInterzisGasit) {
-    return res.status(400).json({
-      error: `Câmpul '${campInterzisGasit}' nu este acceptat din client. Parametrii de preț sunt calculați server-side.`,
-    });
+    return trimiteEroare(res, 400, 'CAMP_INTERZIS', `Câmpul '${campInterzisGasit}' nu este acceptat din client. Parametrii de preț sunt calculați server-side.`, `The field '${campInterzisGasit}' is not accepted from the client. Price parameters are calculated on the server.`);
   }
 
   const { serviciu_id, tara = 'RO', nivel = null, cost_brut } = body;
 
   if (!serviciu_id || typeof serviciu_id !== 'string' || serviciu_id.length > 200) {
-    return res.status(400).json({ error: 'serviciu_id (string, max 200 chars) este obligatoriu' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'serviciu_id (string, max 200 chars) este obligatoriu', 'serviciu_id (string, at most 200 characters) is required.', ['serviciu_id']);
   }
   if (!['RO', 'MD', 'DE', 'FR', 'BG'].includes(tara)) {
-    return res.status(400).json({ error: 'tara invalid. Valori acceptate: RO, MD, DE, FR, BG' });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', 'tara invalid. Valori acceptate: RO, MD, DE, FR, BG', 'Invalid country. Accepted values: RO, MD, DE, FR, BG', ['tara']);
   }
 
   const costBazaServicii = numarPozitiv(body.cost_baza_servicii ?? cost_brut ?? 0);
@@ -75,10 +74,10 @@ async function handler(req, res, user) {
 
   const subtotalCerut = costBazaServicii + costMateriale + costChirieScule + costCurier + (costAsigurare || 0);
   if (subtotalCerut <= 0) {
-    return res.status(400).json({ error: 'Cel puțin o componentă de cost (servicii/materiale/scule/curier/asigurare) trebuie să fie pozitivă' });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', 'Cel puțin o componentă de cost (servicii/materiale/scule/curier/asigurare) trebuie să fie pozitivă', 'At least one cost component (services/materials/tools/courier/insurance) must be positive.');
   }
   if (subtotalCerut > 1_000_000) {
-    return res.status(400).json({ error: 'Suma componentelor depășește limita acceptată (1.000.000)' });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', 'Suma componentelor depășește limita acceptată (1.000.000)', 'The total of the components is above the accepted limit (1,000,000).');
   }
 
   const calc = await calculeazaPret({
@@ -114,7 +113,7 @@ async function handler(req, res, user) {
 
   if (error) {
     console.error('[deviz/calculate]', error);
-    return res.status(500).json({ error: 'Nu am putut salva devizul' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut salva devizul', 'We could not save the estimate. Please try again.');
   }
 
   return res.status(200).json({ ok: true, deviz: data, _debug: calc });

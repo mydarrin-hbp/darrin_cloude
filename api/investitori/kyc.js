@@ -41,6 +41,7 @@ const { asiguraRolInvestitor } = require('../../lib/roluri-cont');
 const K = require('../../lib/investitori-kyc');
 const I = require('../../lib/identitate-pf');
 const v = require('../../lib/valideaza');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 // Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
 const SCHEMA = {
@@ -83,7 +84,7 @@ const E = {
   intern: ['Nu am putut salva. Încearcă din nou.', 'We could not save. Please try again.'],
 };
 function eroare(res, cod, cheie, extra = {}) {
-  return res.status(cod).json({ error: E[cheie][0], error_en: E[cheie][1], cod: cheie, ...extra });
+  return trimiteEroare(res, cod, cheie, E[cheie][0], E[cheie][1], null, extra);
 }
 // Câmpul vizat de fiecare eroare a datelor de identificare (pagina îl marchează).
 const CAMP = {
@@ -278,7 +279,7 @@ async function handler(req, res, user) {
       const kyc = await K.citesteKyc(user.id);
       return res.status(200).json({ ok: true, kyc: pentruProprietar(kyc), lipsa: K.cerinteLipsa(kyc), cont: await datePrecompletare(user) });
     }
-    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+    if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
     if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora', limite: { maxOcteti: 200000 } })) return;
     const { pas, date = {} } = req.body || {};

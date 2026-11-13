@@ -17,6 +17,7 @@ const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { verificaSiNotificaProfilComplet } = require('../../lib/verifica-profil-complet-partener');
 const v = require('../../lib/valideaza');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 // Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
 const SCHEMA = {
@@ -42,7 +43,7 @@ async function actionList(req, res, user) {
     .select('partner_type')
     .eq('id', user.id)
     .maybeSingle();
-  if (!partner) return res.status(404).json({ error: 'Cont de partener inexistent.' });
+  if (!partner) return trimiteEroare(res, 404, 'PARTENER_NU_EXISTA', 'Cont de partener inexistent.', 'The partner account does not exist.');
 
   const categorie = TIP_LA_CATEGORIE[partner.partner_type];
   if (!categorie) {
@@ -61,7 +62,7 @@ async function actionList(req, res, user) {
     .order('titlu', { ascending: true });
   if (error) {
     console.error('[portofoliu] list catalog', error);
-    return res.status(500).json({ error: 'Nu am putut încărca catalogul.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca catalogul.', 'We could not load the catalogue.');
   }
 
   const { data: active } = await supabaseAdmin
@@ -78,7 +79,7 @@ async function actionToggle(req, res, user) {
   if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { catalog_serviciu_id, activ } = req.body || {};
   if (!catalog_serviciu_id || typeof activ !== 'boolean') {
-    return res.status(400).json({ error: 'catalog_serviciu_id și activ (boolean) sunt obligatorii.' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'catalog_serviciu_id și activ (boolean) sunt obligatorii.', 'catalog_serviciu_id and activ (boolean) are required.');
   }
 
   const { data: existent } = await supabaseAdmin
@@ -93,12 +94,12 @@ async function actionToggle(req, res, user) {
       .from('partener_servicii_active')
       .update({ activ })
       .eq('id', existent.id);
-    if (error) { console.error('[portofoliu] update', error); return res.status(500).json({ error: 'Nu am putut actualiza.' }); }
+    if (error) { console.error('[portofoliu] update', error); return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut actualiza.', 'We could not save the update. Please try again.'); }
   } else {
     const { error } = await supabaseAdmin
       .from('partener_servicii_active')
       .insert({ partener_id: user.id, catalog_serviciu_id, activ });
-    if (error) { console.error('[portofoliu] insert', error); return res.status(500).json({ error: 'Nu am putut salva.' }); }
+    if (error) { console.error('[portofoliu] insert', error); return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut salva.', 'We could not save. Please try again.'); }
   }
 
   // Doar la activare (nu la dezactivare) — vezi lib/verifica-profil-complet-partener.js.
@@ -113,9 +114,9 @@ async function handler(req, res, user) {
   if (req.method === 'POST') {
     const { action } = req.body || {};
     if (action === 'toggle') return actionToggle(req, res, user);
-    return res.status(400).json({ error: 'action invalidă.' });
+    return trimiteEroare(res, 400, 'ACTIUNE_NECUNOSCUTA', 'action invalidă.', 'Invalid action.', ['action']);
   }
-  return res.status(405).json({ error: 'Method not allowed' });
+  return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 }
 
 module.exports = requireAuth(ROLURI_PARTENER, handler);

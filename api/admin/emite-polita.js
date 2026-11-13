@@ -16,13 +16,14 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const { comanda_id, numar_polita, polita_url } = req.body || {};
   if (!comanda_id || !numar_polita || !polita_url) {
-    return res.status(400).json({ error: 'comanda_id, numar_polita și polita_url sunt obligatorii' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'comanda_id, numar_polita și polita_url sunt obligatorii', 'comanda_id, numar_polita and polita_url are required.');
   }
 
   const { data: comanda, error: comErr } = await supabaseAdmin
@@ -30,13 +31,13 @@ async function handler(req, res) {
     .select('id, suma_asigurare, numar_polita')
     .eq('id', comanda_id)
     .maybeSingle();
-  if (comErr || !comanda) return res.status(404).json({ error: 'Comanda nu există' });
+  if (comErr || !comanda) return trimiteEroare(res, 404, 'COMANDA_NU_EXISTA', 'Comanda nu există', 'The order does not exist.');
 
   if (!(Number(comanda.suma_asigurare) > 0)) {
-    return res.status(400).json({ error: 'Comanda nu are o primă de asigurare selectată' });
+    return trimiteEroare(res, 400, 'FARA_PRIMA', 'Comanda nu are o primă de asigurare selectată', 'The order has no insurance premium selected.');
   }
   if (comanda.numar_polita) {
-    return res.status(400).json({ error: `Comanda are deja înregistrată polița ${comanda.numar_polita}` });
+    return trimiteEroare(res, 400, 'POLITA_EXISTENTA', `Comanda are deja înregistrată polița ${comanda.numar_polita}`, `The order already has the policy ${comanda.numar_polita} recorded.`);
   }
 
   const { data, error } = await supabaseAdmin
@@ -47,7 +48,7 @@ async function handler(req, res) {
     .single();
   if (error) {
     console.error('[admin/emite-polita]', error);
-    return res.status(500).json({ error: 'Nu am putut înregistra polița' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut înregistra polița', 'We could not record the policy.');
   }
 
   return res.status(200).json({ ok: true, comanda: data });

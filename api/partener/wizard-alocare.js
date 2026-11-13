@@ -12,6 +12,7 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const v = require('../../lib/valideaza');
+const { trimiteEroare, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
 
 // Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
 const SCHEMA = {
@@ -31,22 +32,22 @@ async function handler(req, res, user) {
       .from('partner_alocari_sarcini')
       .select('id, angajat_id, cod_esco, zona_livrare_acceptata, clauza_acceptata_la')
       .eq('partner_id', user.id);
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
     return res.status(200).json({ ok: true, alocari: data || [] });
   }
 
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { alocari, zona_livrare_acceptata } = req.body || {};
   if (!Array.isArray(alocari) || !alocari.length) {
-    return res.status(400).json({ error: 'Alocă cel puțin un angajat pe o competență' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'Alocă cel puțin un angajat pe o competență', 'Assign at least one employee to a skill.');
   }
   if (zona_livrare_acceptata !== true) {
-    return res.status(400).json({ error: 'Trebuie să accepți clauza de livrare a comenzilor în zonă pentru a continua' });
+    return trimiteEroare(res, 400, 'CLAUZA_NEACCEPTATA', 'Trebuie să accepți clauza de livrare a comenzilor în zonă pentru a continua', 'You must accept the clause on delivering orders in your area to continue.');
   }
   for (const a of alocari) {
-    if (!a.angajat_id) return res.status(400).json({ error: 'angajat_id este obligatoriu pentru fiecare alocare' });
+    if (!a.angajat_id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'angajat_id este obligatoriu pentru fiecare alocare', 'angajat_id is required for each allocation.', ['angajat_id']);
   }
 
   try {
@@ -56,7 +57,7 @@ async function handler(req, res, user) {
     if (angErr) throw angErr;
     const idValidSet = new Set((angajatiValizi || []).map((a) => a.id));
     const invalizi = angajatIds.filter((id) => !idValidSet.has(id));
-    if (invalizi.length) return res.status(400).json({ error: 'Unul sau mai mulți angajați nu aparțin acestui partener' });
+    if (invalizi.length) return trimiteEroare(res, 400, 'FARA_DREPT', 'Unul sau mai mulți angajați nu aparțin acestui partener', 'One or more employees do not belong to this partner.');
 
     const { error: delErr } = await supabaseAdmin.from('partner_alocari_sarcini').delete().eq('partner_id', user.id);
     if (delErr) throw delErr;
@@ -81,7 +82,7 @@ async function handler(req, res, user) {
     return res.status(200).json({ ok: true });
   } catch (err) {
     console.error('[wizard-alocare]', err);
-    return res.status(500).json({ error: err.message || 'Nu am putut salva alocările' });
+    return trimiteEroareInterna(res, 500, 'EROARE_SERVER', 'Nu am putut salva alocările', 'We could not save the allocations. Please try again.', err);
   }
 }
 

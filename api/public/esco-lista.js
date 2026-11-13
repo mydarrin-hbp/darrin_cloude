@@ -10,6 +10,7 @@
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { limbaNomenclator, eColoanaLipsa } = require('../../lib/limba-nomenclator');
 const { citesteTot } = require('../../lib/citeste-tot');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 // Toate cele ~3.062 de ocupații (15 oct. 2026): fără paginare, Supabase
 // întorcea doar primele 1.000. Ordonare stabilă: domeniu, denumire, cod_esco.
@@ -38,7 +39,7 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   try {
     // Doar câmpurile folosite de wizard (cod_esco = valoare de formular,
@@ -51,6 +52,6 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true, ocupatii: lista });
   } catch (err) {
     console.error('[esco-lista]', err);
-    return res.status(500).json({ error: 'Nu am putut încărca lista de ocupații ESCO' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca lista de ocupații ESCO', 'We could not load the list of ESCO occupations.');
   }
 };
