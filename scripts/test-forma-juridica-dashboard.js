@@ -44,7 +44,7 @@ function verifica(c, m) { if (c) ok++; else { esec++; console.log('  ✗ ' + m);
           await ctx.addInitScript((l) => {
             try {
               localStorage.setItem('myd_lang_v1', l);
-              localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), versiune: 1 }));
+              localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), marketing: false, versiune: 2 }));
             } catch (e) {}
           }, lang);
           await ctx.addInitScript(sesiune, { id: U, email: 'partener@example.com', roles: ['partener_servicii'], user_metadata: {} });

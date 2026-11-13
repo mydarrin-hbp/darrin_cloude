@@ -286,6 +286,8 @@ function server() {
         for (const latime of [1366, 390]) {
           const ctx = await browser.newContext({ viewport: { width: latime, height: 900 } });
           if (limba === 'ro') await ctx.addInitScript(() => { try { localStorage.setItem('myd_lang_v1', 'ro'); } catch (e) {} });
+          // Bannerul de cookie-uri (pe telefon, butoanele pe verticală, pasul 11-A3) ar acoperi cardurile.
+          await ctx.addInitScript(() => { try { localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, marketing: false, data: '2026-11-13T08:00:00Z', versiune: 2 })); } catch (e) {} });
           await ctx.route(/marketplace-media/, (route) => route.fulfill({ status: 200, contentType: 'image/png', body: PIXEL }));
           const page = await ctx.newPage();
           const erori = [];

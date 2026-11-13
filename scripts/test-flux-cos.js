@@ -447,7 +447,7 @@ async function testeBrowser() {
     await ctx.addInitScript((l) => {
       try {
         localStorage.setItem('myd_lang_v1', l);
-        localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), versiune: 1 }));
+        localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), marketing: false, versiune: 2 }));
       } catch (e) {}
     }, lang);
     await ctx.addInitScript(sesiune, user);

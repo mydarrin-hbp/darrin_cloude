@@ -62,7 +62,7 @@ const ZGOMOT_PAGINA = { 'mydarrin-pitch-deck': /^\[pitch-deck\] Error: http 503(
         const et = `${numePagina} ${latime}px`;
         const ctx = await browser.newContext({ viewport: { width: latime, height: 900 } });
         await ctx.addInitScript(() => {
-          try { localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), versiune: 1 })); } catch (e) {}
+          try { localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), marketing: false, versiune: 2 })); } catch (e) {}
         });
         await ctx.route(/\.supabase\.co\//, (r) => r.abort());
         // Detecția locației prin IP (serviciu extern): oprită, ca rezultatul să nu depindă de rețea.

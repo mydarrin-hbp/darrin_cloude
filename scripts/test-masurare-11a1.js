@@ -15,14 +15,17 @@
 //      deschide fereastra „nu suntem încă în zona ta”;
 //   C. evenimentele nu conțin email, telefon, nume sau CUI, nici când codul
 //      paginii le-ar trimite din greșeală;
-//   D. pixelii: fără acord de marketing nu se cere nimic; cu acord, dar fără ID,
-//      nu se încarcă niciun pixel; cu un ID, se încarcă doar pixelul acela;
+//   D. pixelii (pasul 11-A3: acordul real de marketing, versiune 2): fără acord
+//      de marketing nu se cere nimic; cu acord, dar fără ID, nu se încarcă niciun
+//      pixel; cu un ID, se încarcă doar pixelul acela; doar marketing (fără
+//      analitice): pixelul primește evenimentele, GA4 nu; acordul vechi
+//      (versiune 1) nu pornește pixelii;
 //   E. serverul: /api/public/config-masurare citește doar variabilele de mediu,
 //      cu format verificat; niciun ID în cod; pașii pâlniei (lib/palnie.js) și
 //      agregarea raportului intern (api/admin/palnie-parteneri.js);
 //   F. paginile: scriptul de măsurare și Vercel Web Analytics pe paginile publice
-//      și cu cont, nu pe cele interne; CSP-ul are domeniile GA4, nu și pe ale
-//      pixelilor (opriți); catalogul și produsul cer fișierele cu cale absolută
+//      și cu cont, nu pe cele interne; CSP-ul are domeniile GA4 și exact domeniile
+//      pixelilor din docs/audit-masurare-11a1.md (pasul 11-A3); catalogul și produsul cer fișierele cu cale absolută
 //      (rutele /servicii/:slug și /catalog/... nu mai pierd scripturile).
 //
 // Rulare: node scripts/test-masurare-11a1.js
@@ -169,7 +172,12 @@ function testePagini() {
   const dir = (n) => (csp.split(';').map((x) => x.trim()).find((x) => x.startsWith(n + ' ')) || '');
   verifica(/https:\/\/www\.googletagmanager\.com/.test(dir('script-src')), 'CSP: script-src fără googletagmanager (GA4 blocat)');
   verifica(/google-analytics\.com/.test(dir('connect-src')) && /analytics\.google\.com/.test(dir('connect-src')), 'CSP: connect-src fără domeniile de colectare GA4');
-  verifica(!/facebook|tiktok|licdn|linkedin/.test(csp), 'CSP: domeniile pixelilor sunt permise deși pixelii sunt opriți');
+  // Pasul 11-A3: doar domeniile din docs/audit-masurare-11a1.md, nimic în plus.
+  const pixeliIn = (d) => dir(d).split(/\s+/).filter((x) => /facebook|tiktok|licdn|linkedin/.test(x)).sort().join(' ');
+  verifica(pixeliIn('script-src') === 'https://analytics.tiktok.com https://connect.facebook.net https://snap.licdn.com', `CSP script-src, pixelii: ${pixeliIn('script-src')}`);
+  verifica(pixeliIn('connect-src') === 'https://analytics.tiktok.com https://connect.facebook.net https://px.ads.linkedin.com https://www.facebook.com', `CSP connect-src, pixelii: ${pixeliIn('connect-src')}`);
+  const altele = csp.split(';').map((x) => x.trim()).filter((x) => !/^(script-src|connect-src|img-src) /.test(x));
+  verifica(!altele.some((x) => /facebook|tiktok|licdn|linkedin/.test(x)), 'CSP: domeniile pixelilor apar și în alte directive');
 
   for (const f of ['mydarrin-catalog.html', 'mydarrin-produs.html']) {
     const s = fs.readFileSync(path.join(R, f), 'utf8');
@@ -187,7 +195,7 @@ async function testeBrowser() {
   const B = 'http://localhost:' + srv.address().port;
   const br = await chromium.launch();
 
-  async function deschide(cale, { acord, marketing, pixeli } = {}) {
+  async function deschide(cale, { acord, marketing, pixeli, versiune } = {}) {
     const ctx = await br.newContext();
     const cereri = [];
     await ctx.route(/googletagmanager\.com|google-analytics\.com|connect\.facebook\.net|analytics\.tiktok\.com|snap\.licdn\.com/, (rt) => {
@@ -200,14 +208,10 @@ async function testeBrowser() {
     });
     await ctx.route('**/_vercel/insights/**', (rt) => rt.fulfill({ status: 200, contentType: 'application/javascript', body: '' }));
     if (acord !== undefined) {
-      await ctx.addInitScript((a) => { try { localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: a, data: new Date().toISOString(), versiune: 1 })); } catch (e) {} }, acord);
-    }
-    if (marketing) {
-      // Bannerul nu are încă categoria „marketing”: o simulăm pe MYD_CONSENT.
-      await ctx.addInitScript(() => {
-        let c;
-        Object.defineProperty(window, 'MYD_CONSENT', { configurable: true, get() { return c; }, set(v) { if (v) v.marketingAllowed = () => true; c = v; } });
-      });
+      // Acordul real din cookie-consent.js (pasul 11-A3: versiune 2, cu „marketing”).
+      const d = { analitice: acord, marketing: !!marketing, data: new Date().toISOString(), versiune: versiune || 2 };
+      if (d.versiune === 1) delete d.marketing;
+      await ctx.addInitScript((x) => { try { localStorage.setItem('myd_cookie_consent_v1', x); } catch (e) {} }, JSON.stringify(d));
     }
     const page = await ctx.newPage();
     const erori = [];
@@ -346,6 +350,25 @@ async function testeBrowser() {
     s = await stare(faraMarketing.page);
     verifica(!faraMarketing.cereri.some((u) => /config-masurare|facebook/.test(u)) && s.fbq === 'undefined', 'fără acord de marketing (doar analitice), pixelul Meta se încarcă');
     await faraMarketing.ctx.close();
+
+    // Acordul vechi (versiune 1, cu analitice): analiticele rămân, pixelii nu pornesc.
+    const vechi = await deschide(PAGINA, { acord: true, versiune: 1, pixeli: { meta: ID_META } });
+    s = await stare(vechi.page);
+    verifica(vechi.cereri.some((u) => /googletagmanager/.test(u)), 'acordul vechi (versiune 1): GA4 nu mai pornește');
+    verifica(!vechi.cereri.some((u) => /config-masurare|facebook/.test(u)) && s.fbq === 'undefined', 'acordul vechi (versiune 1): pixelul Meta se încarcă');
+    await vechi.ctx.close();
+
+    // Doar marketing: pixelul primește evenimentele (cu categoria), GA4 nu se încarcă.
+    const doarMk = await deschide(PAGINA, { acord: false, marketing: true, pixeli: { meta: ID_META } });
+    await doarMk.page.waitForTimeout(300);
+    const apeluri = await doarMk.page.evaluate(() => (window.fbq && window.fbq.queue ? window.fbq.queue.map((a) => Array.from(a)) : []));
+    verifica(!doarMk.cereri.some((u) => /googletagmanager|google-analytics/.test(u)), 'doar marketing: GA4 se încarcă');
+    verifica(apeluri.some((a) => a[0] === 'track' && a[1] === 'PageView'), `doar marketing: fără PageView: ${JSON.stringify(apeluri)}`);
+    const vc = apeluri.find((a) => a[0] === 'track' && a[1] === 'ViewContent');
+    verifica(vc && JSON.stringify(vc[2]) === '{"content_category":"courier"}', `doar marketing: ViewContent (partner_landing_view) lipsă sau cu alte date: ${JSON.stringify(vc)}`);
+    verifica(!apeluri.some((a) => RE_PERSONAL.test(JSON.stringify(a.slice(2)))), `pixelul primește date personale: ${JSON.stringify(apeluri)}`);
+    verifica(JSON.stringify(await doarMk.page.evaluate(() => window.MYD_MASURARE.sursaPentruCont())) === 'null', 'doar marketing: sursa ar ajunge pe cont fără acord analitic');
+    await doarMk.ctx.close();
   }
 
   await br.close();

@@ -54,7 +54,7 @@ function urmareste() {
   new MutationObserver((l) => l.forEach((m) => {
     if (m.type === 'attributes' && m.target.matches && m.target.matches('.card-media img')) window.__src.set(m.target, (window.__src.get(m.target) || 0) + 1);
   })).observe(document, { subtree: true, attributes: true, attributeFilter: ['src'] });
-  try { localStorage.setItem('myd_lang_v1', 'ro'); localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), versiune: 1 })); } catch (e) {}
+  try { localStorage.setItem('myd_lang_v1', 'ro'); localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), marketing: false, versiune: 2 })); } catch (e) {}
 }
 async function deschide(browser, baza, o) {
   o = o || {};

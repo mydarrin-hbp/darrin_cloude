@@ -270,7 +270,7 @@ async function paginaPublica(browser, baza, { lang, latime, reducere = false, ha
   await ctx.addInitScript((l) => {
     try {
       localStorage.setItem('myd_lang_v1', l);
-      localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), versiune: 1 }));
+      localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), marketing: false, versiune: 2 }));
     } catch (e) {}
   }, lang);
   await ctx.route(/\.supabase\.co\//, (r) => r.abort());
@@ -516,7 +516,7 @@ function sesiuneInvestitor(user) {
 
 async function paginaLive(browser, baza, { lang, latime, user, stat = STAT }) {
   const ctx = await browser.newContext({ viewport: { width: latime, height: 860 } });
-  await ctx.addInitScript((l) => { try { localStorage.setItem('myd_lang_v1', l); localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), versiune: 1 })); } catch (e) {} }, lang);
+  await ctx.addInitScript((l) => { try { localStorage.setItem('myd_lang_v1', l); localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), marketing: false, versiune: 2 })); } catch (e) {} }, lang);
   if (user) await ctx.addInitScript(sesiuneInvestitor, user);
   await ctx.route(/\.supabase\.co\//, (r) => r.abort());
   const real = async (r, api) => {
@@ -641,7 +641,7 @@ async function testInvestitori(browser, baza) {
         const X = E_TEXTE[lang];
         resetPublic(opt);
         const ctx = await browser.newContext({ viewport: { width: latime, height: 860 } });
-        await ctx.addInitScript((l) => { try { localStorage.setItem('myd_lang_v1', l); localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), versiune: 1 })); } catch (e) {} }, lang);
+        await ctx.addInitScript((l) => { try { localStorage.setItem('myd_lang_v1', l); localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), marketing: false, versiune: 2 })); } catch (e) {} }, lang);
         await ctx.route(/\.supabase\.co\//, (r) => r.abort());
         const cereri = [];
         await ctx.route(/\/api\/public\/pitch-deck/, async (r) => {

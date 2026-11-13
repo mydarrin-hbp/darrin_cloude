@@ -321,7 +321,7 @@ async function testeBrowser() {
     const ctx = await browser.newContext({ viewport: { width: latime, height: latime < 720 ? 844 : 900 }, hasTouch: latime < 720 });
     ctx.imaginiCerute = [];
     ctx.imaginiRupte = [];
-    await ctx.addInitScript(() => { try { localStorage.setItem('myd_lang_v1', 'ro'); localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), versiune: 1 })); } catch (e) {} });
+    await ctx.addInitScript(() => { try { localStorage.setItem('myd_lang_v1', 'ro'); localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), marketing: false, versiune: 2 })); } catch (e) {} });
     // Pozele (Unsplash, back-office) servite local: testul nu depinde de rețea.
     await ctx.route(/images\.unsplash\.com|\.supabase\.co\/storage\/v1\/object\/public\//, (r) => { ctx.imaginiCerute.push(r.request().url()); return r.fulfill({ status: 200, contentType: 'image/png', body: PNG_1X1 }); });
     await ctx.route(/\.supabase\.co\/rest\/v1\//, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(rest(r.request().url())) }));

@@ -223,7 +223,7 @@ async function testeBrowser() {
         await ctx.addInitScript(([l, cfg]) => {
           try {
             localStorage.setItem('myd_lang_v1', l);
-            localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), versiune: 1 }));
+            localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), marketing: false, versiune: 2 }));
             if (!sessionStorage.getItem('_init')) { sessionStorage.setItem('myd_checkout_config', JSON.stringify(cfg)); sessionStorage.setItem('_init', '1'); }
           } catch (e) {}
         }, [lang, CFG]);

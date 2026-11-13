@@ -206,7 +206,7 @@ async function testeBrowser() {
           await ctx.addInitScript((l) => {
             localStorage.clear();
             if (l === 'ro') localStorage.setItem('myd_lang_v1', 'ro');
-            localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: '2026-10-16T08:00:00Z', versiune: 1 }));
+            localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: '2026-10-16T08:00:00Z', marketing: false, versiune: 2 }));
           }, limba);
           await ctx.route(/supabase\.co|nominatim|googletagmanager|google-analytics|ipapi/, (r) => r.abort());
           await ctx.route(/\/api\//, (r) => {

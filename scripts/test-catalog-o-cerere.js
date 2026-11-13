@@ -234,7 +234,7 @@ async function deschide(browser, baza, o) {
   o = o || {};
   const ctx = await browser.newContext({ viewport: { width: o.w || 1366, height: o.h || 900 }, hasTouch: (o.w || 1366) < 720 });
   await ctx.addInitScript((lang) => {
-    try { localStorage.setItem('myd_lang_v1', lang); localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), versiune: 1 })); } catch (e) {}
+    try { localStorage.setItem('myd_lang_v1', lang); localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), marketing: false, versiune: 2 })); } catch (e) {}
     window.__loturi = [];
     new MutationObserver((l) => {
       const n = l.reduce((s, m) => s + [...m.addedNodes].filter((x) => x.classList && x.classList.contains('db-card')).length, 0);

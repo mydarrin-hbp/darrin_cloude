@@ -255,7 +255,7 @@ async function deschide(browser, baza, cale, o) {
   const f = FIX(o.date);
   const cuSesiune = o.sesiune !== false;
   const ctx = await browser.newContext({ viewport: { width: o.w || 1366, height: o.h || 900 } });
-  await ctx.addInitScript((l) => { try { if (l) localStorage.setItem('myd_lang_v1', l); localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), versiune: 1 })); } catch (e) {} }, o.limba === undefined ? 'ro' : o.limba);
+  await ctx.addInitScript((l) => { try { if (l) localStorage.setItem('myd_lang_v1', l); localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), marketing: false, versiune: 2 })); } catch (e) {} }, o.limba === undefined ? 'ro' : o.limba);
   await ctx.addInitScript(sesiuneSimulata, cuSesiune);
   await ctx.route(/\.supabase\.co\/|ipapi\.co\/|esm\.sh\//, (r) => r.abort());
   const json = (r, c, s) => r.fulfill({ status: s || 200, contentType: 'application/json', body: JSON.stringify(c) });

@@ -125,7 +125,7 @@ function sesiune(user) {
 
 async function context(browser, latime, { user = null, lang = 'ro' } = {}) {
   const ctx = await browser.newContext({ viewport: { width: latime, height: latime < 720 ? 844 : 900 }, hasTouch: latime < 720 });
-  await ctx.addInitScript((l) => { try { localStorage.setItem('myd_lang_v1', l); localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), versiune: 1 })); } catch (e) {} }, lang);
+  await ctx.addInitScript((l) => { try { localStorage.setItem('myd_lang_v1', l); localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), marketing: false, versiune: 2 })); } catch (e) {} }, lang);
   await ctx.addInitScript(sesiune, user);
   await ctx.route(/\.supabase\.co\//, (r) => r.abort());
   const cereri = [];
