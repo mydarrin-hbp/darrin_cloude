@@ -42,6 +42,7 @@ const { rolPentruTipPartener } = require('../../lib/roluri-partener');
 const { eligibilitatePartener } = require('../../lib/eligibilitate-partener');
 const { citesteKyc, starePublica } = require('../../lib/investitori-kyc');
 const { stareActivare } = require('../../lib/activare-partener');
+const { inregistreazaActivare, inregistreazaEmailConfirmat } = require('../../lib/palnie');
 const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 function numeAfisat(user) {
@@ -97,6 +98,8 @@ async function handler(req, res, user) {
     // Lista de activare: o eroare de citire nu oprește profilul.
     let activare = null;
     try { activare = await stareActivare(user.id, ctx); } catch (e) { console.warn('[cont/profil] activare:', e.message || e); }
+    // Pasul 11-A1: momentele pâlniei, pentru raportul intern (fără date personale).
+    await Promise.all([inregistreazaEmailConfirmat(user), inregistreazaActivare(user.id, activare)]);
     return res.status(200).json({
       ok: true,
       email: user.email || null,

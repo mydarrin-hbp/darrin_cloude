@@ -723,8 +723,8 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 <script src="format-currency.js"></script>
 <script src="tva-config.js"></script>
 <script src="seo-meta.js"></script>
-<script src="cookie-consent.js" defer></script>
-<script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="analytics-loader.js" defer></script>
+<script src="/cookie-consent.js" defer></script>
+<script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="/analytics-loader.js" defer></script><script src="/masurare.js" defer></script><script src="/_vercel/insights/script.js" defer></script>
 <script>
 // G24b — înregistrează, o singură dată pe încărcare de pagină, că un
 // utilizator autentificat a ajuns pe checkout. Singurul semnal real
@@ -2207,6 +2207,8 @@ document.addEventListener('DOMContentLoaded', function() {
           throw new Error((enEroare && data.error_en) || MYD_I18N.eroare(data, 'Eroare la plasarea comenzii'));
         }
         scoateDinCosDupaComanda(MYD_CFG);
+        // Pasul 11-A1: comanda creată, fără sumă și fără date personale.
+        window.MYD_MASURARE?.eveniment('order_created', { order_type: esteB2G ? 'b2g' : 'standard' });
         if (esteB2G) {
           const enB2g = window.MYD_I18N && window.MYD_I18N.lang && window.MYD_I18N.lang !== 'ro';
           showComandaInregistrataScreen(data.comanda.nr_comanda, (enB2g && data.mesaj_en) || data.mesaj);

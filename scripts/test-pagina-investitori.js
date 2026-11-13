@@ -152,7 +152,7 @@ const parcurs = (p) => p.evaluate(() => [...document.querySelectorAll('[data-inv
       const copii = html.filter((f) => /id="sb-inv"|toggleSbSection\('sb-inv'\)|href="mydarrin-investitori\.html#kpis"/.test(citeste(f)));
       verifica(!copii.length, `copii ale meniului „Investitori” în: ${copii.join(', ')}`);
       const cuLoc = html.filter((f) => /data-meniu-investitori=/.test(citeste(f)));
-      const faraScript = cuLoc.filter((f) => !/src="meniu-investitori\.js"/.test(citeste(f)));
+      const faraScript = cuLoc.filter((f) => !/src="\/?meniu-investitori\.js"/.test(citeste(f)));
       verifica(!faraScript.length, `pagini cu meniul fără meniu-investitori.js: ${faraScript.join(', ')}`);
       const inv = citeste(PAGINA);
       // Panoul privat (#inv-private-dashboard) rămâne neschimbat ca logică și conținut (pasul 11-I1 îl mută pe pagină proprie).

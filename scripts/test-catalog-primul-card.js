@@ -112,9 +112,9 @@ function fisiere() {
   for (const [nume, re] of [
     ['lucide', /<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/lucide@[^"]+" defer><\/script>/],
     ['dompurify', /<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/dompurify@[^"]+" defer><\/script>/],
-    ['account-system', /<script src="account-system\.js" defer /],
-    ['seo-meta', /<script src="seo-meta\.js" defer><\/script>/],
-    ['tva-config', /<script src="tva-config\.js" defer><\/script>/],
+    ['account-system', /<script src="\/?account-system\.js" defer /],
+    ['seo-meta', /<script src="\/?seo-meta\.js" defer><\/script>/],
+    ['tva-config', /<script src="\/?tva-config\.js" defer><\/script>/],
   ]) verifica(re.test(s), `${nume}: fără defer`);
   verifica(/<script src="https:\/\/cdn\.tailwindcss\.com"><\/script>/.test(s), 'Tailwind trebuie să rămână neschimbat');
   verifica(!/^\s*lucide\.createIcons\(\);/m.test(s), 'lucide.createIcons() fără verificare, în timpul parsării');

@@ -165,6 +165,8 @@ function server() {
       }
       // Traducerile catalogului (i18n-loader.js, în EN): fără conținut de catalog în acest test.
       if (url.pathname === '/api/public/traduceri-catalog') { res.writeHead(200, { 'content-type': 'application/json' }); return res.end('{"_texte":{}}'); }
+      // Pasul 11-A1: Vercel Web Analytics, servit de Vercel în producție; aici un script gol.
+      if (url.pathname === '/_vercel/insights/script.js') { res.writeHead(200, { 'content-type': MIME['.js'] }); return res.end(''); }
       if (url.pathname.startsWith('/api/')) { res.writeHead(404, { 'content-type': 'application/json' }); return res.end('{}'); }
       let f = path.join(RADACINA, decodeURIComponent(url.pathname === '/' ? '/index.html' : url.pathname));
       if (!fs.existsSync(f) && fs.existsSync(f + '.html')) f += '.html';
