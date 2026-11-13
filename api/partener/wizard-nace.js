@@ -10,6 +10,7 @@ const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { limbaNomenclator, eColoanaLipsa } = require('../../lib/limba-nomenclator');
 const v = require('../../lib/valideaza');
+const { trimiteEroare, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
 
 // Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
 const SCHEMA = {
@@ -38,19 +39,19 @@ async function handler(req, res, user) {
     try {
       return res.status(200).json({ ok: true, coduri: await coduriPartener(user.id, limbaNomenclator(req)) });
     } catch (error) {
-      return res.status(500).json({ error: error.message });
+      return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
     }
   }
 
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { principal, secundare = [] } = req.body || {};
   if (!principal || typeof principal !== 'string') {
-    return res.status(400).json({ error: 'Un cod NACE principal este obligatoriu' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'Un cod NACE principal este obligatoriu', 'A main NACE code is required.', ['nace_principal']);
   }
   if (!Array.isArray(secundare) || secundare.length > 15) {
-    return res.status(400).json({ error: 'Maximum 15 coduri NACE secundare' });
+    return trimiteEroare(res, 400, 'LIMITA_ATINSA', 'Maximum 15 coduri NACE secundare', 'At most 15 secondary NACE codes.');
   }
   const toateCodurile = [principal, ...secundare.filter((c) => c !== principal)];
 
@@ -63,7 +64,7 @@ async function handler(req, res, user) {
     const codValidSet = new Set((valide || []).map((r) => r.cod));
     const invalide = toateCodurile.filter((c) => !codValidSet.has(c));
     if (invalide.length) {
-      return res.status(400).json({ error: `Coduri NACE necunoscute: ${invalide.join(', ')}` });
+      return trimiteEroare(res, 400, 'COD_NECUNOSCUT', `Coduri NACE necunoscute: ${invalide.join(', ')}`, `Unknown NACE codes: ${invalide.join(', ')}`);
     }
 
     // Înlocuire completă — mai simplu și mai puțin predispus la erori decât
@@ -80,7 +81,7 @@ async function handler(req, res, user) {
     return res.status(200).json({ ok: true });
   } catch (err) {
     console.error('[wizard-nace]', err);
-    return res.status(500).json({ error: err.message || 'Nu am putut salva codurile NACE' });
+    return trimiteEroareInterna(res, 500, 'EROARE_SERVER', 'Nu am putut salva codurile NACE', 'We could not save the NACE codes. Please try again.', err);
   }
 }
 

@@ -27,6 +27,7 @@
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { FEREASTRA_TACITA_ORE } = require('../../lib/reguli-comenzi');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const CACHE_SECUNDE = 300;
 let cache = null; // { la: ms, corp }
@@ -115,7 +116,7 @@ async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const acum = Date.now();
   if (cache && acum - cache.la < CACHE_SECUNDE * 1000) {

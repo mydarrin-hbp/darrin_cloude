@@ -32,6 +32,7 @@ const { Resend } = require('resend');
 const { adaugaSuprimare } = require('../../lib/email-suppression');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { fromHeader } = require('../../lib/email-sender');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const EVENIMENTE_LIVRARE = new Set([
   'email.sent', 'email.delivered', 'email.delivery_delayed', 'email.complained',
@@ -118,11 +119,11 @@ async function logheazaEvenimentLivrare(tip, data) {
 }
 
 module.exports = async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Metodă nepermisă' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă', 'Method not allowed');
 
   if (!process.env.RESEND_WEBHOOK_SECRET) {
     console.error('[webhook-primire] RESEND_WEBHOOK_SECRET lipsă — refuz orice request (fail-closed)');
-    return res.status(500).json({ error: 'Webhook neconfigurat' });
+    return trimiteEroare(res, 500, 'INDISPONIBIL', 'Webhook neconfigurat', 'Webhook not configured');
   }
 
   const payload = await citesteBodyRaw(req);
@@ -141,7 +142,7 @@ module.exports = async function handler(req, res) {
     });
   } catch (err) {
     console.error('[webhook-primire] semnătură invalidă', err.message);
-    return res.status(401).json({ error: 'Semnătură invalidă' });
+    return trimiteEroare(res, 401, 'SEMNATURA_INVALIDA', 'Semnătură invalidă', 'Invalid signature');
   }
 
   if (event.type === 'email.received') {

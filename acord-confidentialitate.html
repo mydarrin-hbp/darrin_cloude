@@ -282,7 +282,7 @@ async function init() {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Nu am putut încărca datele accesului tău.');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Nu am putut încărca datele accesului tău.'));
 
     destinatieFinala = data.destinatie || '/home';
 
@@ -328,7 +328,7 @@ async function acceptaNda() {
       body: JSON.stringify({ accept: true }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Nu am putut înregistra acceptarea.');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Nu am putut înregistra acceptarea.'));
 
     msgEl.className = 'ok';
     msgEl.textContent = '✓ Acord înregistrat. Te redirecționăm...';

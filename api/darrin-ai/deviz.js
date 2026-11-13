@@ -36,6 +36,7 @@ const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const crypto = require('crypto');
 const v = require('../../lib/valideaza');
 const { limiteazaCererea } = require('../../lib/rate-limit');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const ANTHROPIC_MODEL = 'claude-sonnet-5';
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
@@ -162,13 +163,13 @@ async function apeleazaAnthropic({ apiKey, promptSistem, contentBlocks, sluguri 
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     console.error('[darrin-ai/deviz] ANTHROPIC_API_KEY lipsește din mediu');
-    return res.status(500).json({ error: 'Serviciul Darrin AI nu este configurat (cheie API lipsă). Contactează suportul.' });
+    return trimiteEroare(res, 500, 'INDISPONIBIL', 'Serviciul Darrin AI nu este configurat încă. Contactează suportul.', 'The Darrin AI service is not set up yet. Please contact support.');
   }
 
   const date = v.valideazaSauTrimite(req, res, SCHEMA);
@@ -180,36 +181,36 @@ module.exports = async function handler(req, res) {
   if (!(await limiteazaCererea(req, res, { key: 'darrin-ai-deviz', limit: 10, windowSeconds: 600 }))) return;
 
   if (!MODURI.has(mod)) {
-    return res.status(400).json({ error: `mod invalid. Valori acceptate: ${[...MODURI].join(', ')}` });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', `mod invalid. Valori acceptate: ${[...MODURI].join(', ')}`, `Invalid mode. Accepted values: ${[...MODURI].join(', ')}`, ['mod']);
   }
   if (text !== undefined && (typeof text !== 'string' || text.length > MAX_TEXT_LEN)) {
-    return res.status(400).json({ error: `text trebuie să fie string, max ${MAX_TEXT_LEN} caractere` });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', `text trebuie să fie string, max ${MAX_TEXT_LEN} caractere`, `text must be a string of at most ${MAX_TEXT_LEN} characters.`, ['text']);
   }
   if (files !== undefined) {
     if (!Array.isArray(files) || files.length > MAX_FILES) {
-      return res.status(400).json({ error: `files trebuie să fie un array de max ${MAX_FILES} elemente` });
+      return trimiteEroare(res, 400, 'DATE_INVALIDE', `files trebuie să fie un array de max ${MAX_FILES} elemente`, `files must be an array of at most ${MAX_FILES} items.`, ['files']);
     }
     for (const f of files) {
       if (!f || typeof f.mime !== 'string' || typeof f.data_base64 !== 'string') {
-        return res.status(400).json({ error: 'fiecare fișier necesită { mime, data_base64 }' });
+        return trimiteEroare(res, 400, 'DATE_INVALIDE', 'fiecare fișier necesită { mime, data_base64 }', 'Each file needs { mime, data_base64 }.', ['files']);
       }
       if (!ALLOWED_MIME.has(f.mime)) {
-        return res.status(400).json({ error: `mime tip nepermis: ${f.mime}. Acceptate: ${[...ALLOWED_MIME].join(', ')}` });
+        return trimiteEroare(res, 400, 'TIP_FISIER', `mime tip nepermis: ${f.mime}. Acceptate: ${[...ALLOWED_MIME].join(', ')}`, `File type not allowed: ${f.mime}. Accepted: ${[...ALLOWED_MIME].join(', ')}`, ['files']);
       }
       if (base64Bytes(f.data_base64) > MAX_FILE_BYTES) {
-        return res.status(400).json({ error: `fișier prea mare — max ${MAX_FILE_BYTES / (1024 * 1024)}MB per fișier` });
+        return trimiteEroare(res, 400, 'PREA_MARE', `fișier prea mare — max ${MAX_FILE_BYTES / (1024 * 1024)}MB per fișier`, `The file is too large: at most ${MAX_FILE_BYTES / (1024 * 1024)}MB per file.`, ['files']);
       }
     }
   }
 
   if (mod === 'servicii' && !text && (!files || files.length === 0)) {
-    return res.status(400).json({ error: 'text sau files (cel puțin unul) este obligatoriu pentru mod=servicii' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'text sau files (cel puțin unul) este obligatoriu pentru mod=servicii', 'Send a text or at least one file for mod=servicii.');
   }
   if (mod === 'proiect' && !tip_constructie && !text) {
-    return res.status(400).json({ error: 'tip_constructie sau text este obligatoriu pentru mod=proiect' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'tip_constructie sau text este obligatoriu pentru mod=proiect', 'tip_constructie or text is required for mod=proiect.');
   }
   if (suprafata_mp !== undefined && (typeof suprafata_mp !== 'number' || suprafata_mp < 0 || suprafata_mp > 1_000_000)) {
-    return res.status(400).json({ error: 'suprafata_mp trebuie să fie un număr valid' });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', 'suprafata_mp trebuie să fie un număr valid', 'suprafata_mp must be a valid number.', ['suprafata_mp']);
   }
 
   let user = null;
@@ -224,7 +225,7 @@ module.exports = async function handler(req, res) {
     sluguri = await incarcaSluguriServicii();
   } catch (e) {
     console.error('[darrin-ai/deviz]', e);
-    return res.status(500).json({ error: 'Nu am putut încărca lista de categorii din catalog' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca lista de categorii din catalog', 'We could not load the catalogue categories. Please try again.');
   }
 
   const contentBlocks = [];
@@ -247,7 +248,7 @@ module.exports = async function handler(req, res) {
     rezultatAI = await apeleazaAnthropic({ apiKey, promptSistem, contentBlocks, sluguri });
   } catch (e) {
     console.error('[darrin-ai/deviz]', e);
-    return res.status(502).json({ error: 'Darrin AI nu a putut procesa cererea momentan. Încearcă din nou sau vorbește cu un specialist.' });
+    return trimiteEroare(res, 502, 'SERVICIU_EXTERN', 'Darrin AI nu a putut procesa cererea momentan. Încearcă din nou sau vorbește cu un specialist.', 'Darrin AI could not process the request right now. Please try again or talk to a specialist.');
   }
 
   const { categorie_slug, cost_brut_estimat_lei, incredere, explicatie } = rezultatAI.input;
@@ -255,7 +256,7 @@ module.exports = async function handler(req, res) {
   if (!categorieValida) {
     // apărare suplimentară, deși enum-ul din tool_schema ar trebui să prevină asta deja
     console.error('[darrin-ai/deviz] categorie_slug în afara catalogului real:', categorie_slug);
-    return res.status(502).json({ error: 'Darrin AI a răspuns cu o categorie neașteptată. Încearcă din nou sau vorbește cu un specialist.' });
+    return trimiteEroare(res, 502, 'SERVICIU_EXTERN', 'Darrin AI a răspuns cu o categorie neașteptată. Încearcă din nou sau vorbește cu un specialist.', 'Darrin AI answered with an unexpected category. Please try again or talk to a specialist.');
   }
 
   // Copie în Storage pentru audit trail — best-effort, nu blochează răspunsul

@@ -990,14 +990,14 @@ async function acceptaSarcinaReal(comandaId) {
     const headers = await _partenerHeaderReal();
     const res = await fetch('/api/partener/accept-comanda', { method: 'POST', headers, body: JSON.stringify({ comanda_id: comandaId }) });
     const data = await res.json();
-    if (!res.ok) { showToast(data.error || 'Nu am putut accepta comanda'); return; }
+    if (!res.ok) { showToast(MYD_I18N.eroare(data, 'Nu am putut accepta comanda')); return; }
     showToast('Comandă acceptată');
     await loadSarcini();
   } catch (e) { showToast('Eroare de conexiune'); }
 }
 
 async function confirmaCodReal(comandaId) {
-  const cod = prompt('Introdu codul de verificare primit de client la sosire:');
+  const cod = prompt(MYD_I18N.traduce('Introdu codul de verificare primit de client la sosire:'));
   if (!cod) return;
   await trimiteConfirmareCod(comandaId, cod);
 }
@@ -1010,7 +1010,7 @@ async function trimiteConfirmareCod(comandaId, cod) {
     const headers = await _partenerHeaderReal();
     const res = await fetch('/api/partener/confirma-cod', { method: 'POST', headers, body: JSON.stringify({ comanda_id: comandaId, cod }) });
     const data = await res.json();
-    if (!res.ok) { showToast(data.error || 'Cod incorect'); return false; }
+    if (!res.ok) { showToast(MYD_I18N.eroare(data, 'Cod incorect')); return false; }
     showToast('Cod confirmat — lucrarea a început');
     await loadSarcini();
     return true;
@@ -1112,7 +1112,7 @@ function incarcaPozaReal(comandaId, tip) {
         body: JSON.stringify({ comanda_id: comandaId, tip, imagine_base64: base64, mime_type: mime, ...gps }),
       });
       const data = await res.json();
-      if (!res.ok) { showToast(data.error || 'Nu am putut încărca poza'); return; }
+      if (!res.ok) { showToast(MYD_I18N.eroare(data, 'Nu am putut încărca poza')); return; }
       showToast('Poză încărcată');
       await loadSarcini();
     } catch (err) { showToast('Eroare de conexiune'); }
@@ -1121,12 +1121,12 @@ function incarcaPozaReal(comandaId, tip) {
 }
 
 async function finalizeazaSarcinaReal(comandaId) {
-  if (!confirm('Confirmi finalizarea lucrării? Clientul va primi un link de confirmare pe email.')) return;
+  if (!(await MDFeedback.confirma(MYD_I18N.traduce('Confirmi finalizarea lucrării? Clientul va primi un link de confirmare pe email.')))) return;
   try {
     const headers = await _partenerHeaderReal();
     const res = await fetch('/api/partener/finalizeaza-comanda', { method: 'POST', headers, body: JSON.stringify({ comanda_id: comandaId }) });
     const data = await res.json();
-    if (!res.ok) { showToast(data.error || 'Nu am putut finaliza comanda'); return; }
+    if (!res.ok) { showToast(MYD_I18N.eroare(data, 'Nu am putut finaliza comanda')); return; }
     showToast('Lucrare finalizată — clientul a fost notificat');
     await loadSarcini();
   } catch (e) { showToast('Eroare de conexiune'); }
@@ -1185,7 +1185,7 @@ async function loadProgramLucruReal(){
     const headers = await _partenerAuthHeader();
     const res = await fetch('/api/partener/program-lucru', { headers });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
 
     const nota = data.esteImplicit
       ? `<div style="margin-bottom:10px;padding:8px 10px;background:#F0F4F8;border-radius:8px;font-size:11.5px;color:#5A6B7D">Nu ai declarat încă un program — mai jos e afișat implicitul (08:00–20:00, toate zilele).</div>`
@@ -1221,10 +1221,10 @@ async function salveazaProgramLucru(){
       body: JSON.stringify({ program }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     showToast('✅ Program de lucru salvat');
   } catch (e) {
-    alert('Eroare: ' + e.message);
+    MDFeedback.toast('eroare', e.message);
   }
 }
 
@@ -1404,7 +1404,7 @@ function _dauneCard(d) {
 async function _incarcaDosareDauna() {
   const res = await fetch('/api/partener/dosare-dauna', { headers: await _partenerAuthHeader() });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+  if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
   return data.dosare || [];
 }
 
@@ -1442,18 +1442,18 @@ async function loadDauneOverviewReal() {
 async function actiuneDauna(id, actiune) {
   const body = { id, actiune };
   if (actiune === 'aproba') {
-    const v = window.prompt('Valoarea aprobată a daunei (număr):');
+    const v = window.prompt(MYD_I18N.traduce('Valoarea aprobată a daunei (număr):'));
     if (v === null) return;
     body.valoare_aprobata = v.replace(',', '.');
   } else if (actiune === 'respinge') {
-    const m = window.prompt('Motivul respingerii (minimum 5 caractere):');
+    const m = window.prompt(MYD_I18N.traduce('Motivul respingerii (minimum 5 caractere):'));
     if (m === null) return;
     body.motiv = m;
   }
   try {
     const res = await fetch('/api/partener/dosare-dauna', { method: 'POST', headers: { ...(await _partenerAuthHeader()), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const j = await res.json();
-    if (!res.ok) throw new Error(j.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(j, 'Eroare necunoscută'));
     showToast('Dosar actualizat');
   } catch (e) { showToast('⚠ ' + e.message); }
   loadDosareDaunaReal();
@@ -1507,7 +1507,7 @@ async function loadEscrowReal(){
     const headers = await _partenerAuthHeader();
     const res = await fetch('/api/partener/escrow-tracker', { headers });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
 
     // G38 (29 Iulie 2026) — folosea interpolare brută (fără separator de mii)
     // + moneda deja dinamică (data.moneda, corect, nu hardcodată) — acum
@@ -1556,7 +1556,7 @@ async function loadFacturareParteneri(){
     const headers = await _partenerAuthHeader();
     const res = await fetch('/api/partener/facturi', { headers });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     _facturareCache = data;
 
     const fmt = window.formatCurrency ? (v, m) => window.formatCurrency(v, m) : (v, m) => `${v} ${m}`;
@@ -1647,7 +1647,7 @@ async function submitEmiteFactura(){
       body: JSON.stringify({ comanda_subcontractor_id: comandaSubcontractorId, numar_factura_partener: numar, fisier_base64, mime_type: fisier.type }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     inchideModalEmiteFactura();
     loadFacturareParteneri();
   } catch (e) {
@@ -1672,7 +1672,7 @@ async function loadHardStopStatus(){
     const headers = await _partenerAuthHeader();
     const res = await fetch('/api/partener/contract-status', { headers });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
 
     if (data.poate_prelua_comenzi) { el.style.display = 'none'; el.innerHTML = ''; return; }
 
@@ -1722,7 +1722,7 @@ async function deschideContractPartener(){
     const headers = await _partenerAuthHeader();
     const res = await fetch('/api/partener/contract', { headers });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     document.getElementById('ctr-modal-titlu').textContent = (data.semnat ? 'Contract acceptat · ' : 'Contract de acceptat · ') + data.numar;
     corp.style.color = '';
     corp.innerHTML = data.html;
@@ -1740,7 +1740,7 @@ async function trimiteOtpContract(){
     const headers = await _partenerAuthHeader();
     const res = await fetch('/api/partener/contract-trimite-otp', { method: 'POST', headers });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     if (msgEl) { msgEl.style.color = '#1A7A3A'; msgEl.textContent = 'Cod trimis pe ' + (data.trimis_la || 'email') + '.'; }
   } catch (e) {
     if (msgEl) { msgEl.style.color = '#C0392B'; msgEl.textContent = e.message; }
@@ -1759,7 +1759,7 @@ async function confirmaOtpContract(){
       method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ cod }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     if (msgEl) { msgEl.style.color = '#1A7A3A'; msgEl.textContent = '✓ Contract semnat — poți prelua comenzi.'; }
     loadHardStopStatus();
   } catch (e) {
@@ -1777,7 +1777,7 @@ async function loadPortofoliuReal(){
     const headers = await _partenerAuthHeader();
     const res = await fetch('/api/partener/portofoliu', { headers });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
 
     if (!data.categorie) {
       el.innerHTML = '<div style="color:#5A6B7D">Tipul tău de partener nu folosește un catalog de bifat — alocarea comenzilor se face pe zonă/disponibilitate.</div>';
@@ -1807,9 +1807,9 @@ async function togglePortofoliuItem(catalogServiciuId, activ, checkboxEl){
       body: JSON.stringify({ action: 'toggle', catalog_serviciu_id: catalogServiciuId, activ }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
   } catch (e) {
-    alert('Eroare: ' + e.message);
+    MDFeedback.toast('eroare', e.message);
     if (checkboxEl) checkboxEl.checked = !activ; // revert vizual la eroare
   }
 }
@@ -1870,7 +1870,7 @@ async function loadEchipaReal(){
     const headers = await _partenerAuthHeader();
     const res = await fetch('/api/partener/wizard-angajati', { headers });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
 
     if (sumar) sumar.textContent = data.total
       ? `${data.total_disponibili} din ${data.total} membri disponibili acum`
@@ -1904,10 +1904,10 @@ async function toggleDisponibilitateAngajat(angajatId, disponibilNou, toggleEl){
       body: JSON.stringify({ id: angajatId, disponibil: disponibilNou }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     loadEchipaReal(); // resincronizează sumarul "X din Y disponibili"
   } catch (e) {
-    alert('Eroare: ' + e.message);
+    MDFeedback.toast('eroare', e.message);
     if (toggleEl) { toggleEl.classList.toggle('on'); toggleEl.classList.toggle('off'); } // revert
   }
 }
@@ -1928,7 +1928,7 @@ async function adaugaAngajat(){
       body: JSON.stringify({ angajati: [{ nume, cnp, cod_esco }] }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     document.getElementById('ang-nume').value = '';
     document.getElementById('ang-cnp').value = '';
     if (msgEl) { msgEl.textContent = 'Adăugat.'; msgEl.style.color = '#1A7A3A'; }
@@ -1939,7 +1939,7 @@ async function adaugaAngajat(){
 }
 
 async function stergeAngajat(id){
-  if (!confirm('Ștergi acest membru din echipă?')) return;
+  if (!(await MDFeedback.confirma(MYD_I18N.traduce('Ștergi acest membru din echipă?'), { periculos: true }))) return;
   try {
     const headers = await _partenerAuthHeader();
     const res = await fetch('/api/partener/wizard-angajati', {
@@ -1947,9 +1947,9 @@ async function stergeAngajat(id){
       body: JSON.stringify({ id }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     loadEchipaReal();
-  } catch (e) { alert('Eroare: ' + e.message); }
+  } catch (e) { MDFeedback.toast('eroare', e.message); }
 }
 
 // ── Utilajele mele ──
@@ -1994,7 +1994,7 @@ async function loadUtilajeReal(){
     const headers = await _partenerAuthHeader();
     const res = await fetch('/api/partener/wizard-utilaje', { headers });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     if (!data.utilaje.length) { el.innerHTML = '<div style="color:#5A6B7D">Niciun utilaj declarat încă.</div>'; return; }
     el.innerHTML = data.utilaje.map((u) => `
       <div style="display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid #EEF2F7">
@@ -2026,7 +2026,7 @@ async function adaugaUtilaj(){
       body: JSON.stringify({ utilaje: [utilaj] }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     ['ut-denumire','ut-tip','ut-marca','ut-model','ut-capacitate'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
     if (msgEl) { msgEl.textContent = 'Adăugat.'; msgEl.style.color = '#1A7A3A'; }
     loadUtilajeReal();
@@ -2036,7 +2036,7 @@ async function adaugaUtilaj(){
 }
 
 async function stergeUtilaj(id){
-  if (!confirm('Ștergi acest utilaj?')) return;
+  if (!(await MDFeedback.confirma(MYD_I18N.traduce('Ștergi acest utilaj?'), { periculos: true }))) return;
   try {
     const headers = await _partenerAuthHeader();
     const res = await fetch('/api/partener/wizard-utilaje', {
@@ -2044,9 +2044,9 @@ async function stergeUtilaj(id){
       body: JSON.stringify({ id }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     loadUtilajeReal();
-  } catch (e) { alert('Eroare: ' + e.message); }
+  } catch (e) { MDFeedback.toast('eroare', e.message); }
 }
 
 // ── Certificările mele ──
@@ -2079,7 +2079,7 @@ async function loadCertificariReal(){
     const headers = await _partenerAuthHeader();
     const res = await fetch('/api/partener/wizard-certificari', { headers });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
 
     if (selTip) {
       selTip.innerHTML = data.cerinte.length
@@ -2117,7 +2117,7 @@ async function adaugaCertificare(){
       body: JSON.stringify({ tip_certificare: tip, document_path: path }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     document.getElementById('cert-fisier').value = '';
     if (msgEl) { msgEl.textContent = 'Adăugată.'; msgEl.style.color = '#1A7A3A'; }
     loadCertificariReal();
@@ -2127,7 +2127,7 @@ async function adaugaCertificare(){
 }
 
 async function stergeCertificare(id){
-  if (!confirm('Ștergi această certificare?')) return;
+  if (!(await MDFeedback.confirma(MYD_I18N.traduce('Ștergi această certificare?'), { periculos: true }))) return;
   try {
     const headers = await _partenerAuthHeader();
     const res = await fetch('/api/partener/wizard-certificari', {
@@ -2135,9 +2135,9 @@ async function stergeCertificare(id){
       body: JSON.stringify({ id }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     loadCertificariReal();
-  } catch (e) { alert('Eroare: ' + e.message); }
+  } catch (e) { MDFeedback.toast('eroare', e.message); }
 }
 
 // ── Cont bancar (27 august 2026) — descoperit la pregătirea reminder-ului
@@ -2178,7 +2178,7 @@ async function loadContBancarReal(){
     const headers = await _partenerAuthHeader();
     const res = await fetch('/api/partener/conturi-bancare', { headers });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     if (!data.conturi.length) { el.innerHTML = '<div style="color:#5A6B7D">Niciun cont bancar adăugat încă.</div>'; return; }
     el.innerHTML = data.conturi.map((c) => `
       <div style="display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid #EEF2F7">
@@ -2209,7 +2209,7 @@ async function adaugaContBancar(){
       body: JSON.stringify({ nume_titular, iban, banca, moneda, swift: swift || null }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     ['cb-titular','cb-iban','cb-banca','cb-swift'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
     if (msgEl) { msgEl.textContent = 'Adăugat.'; msgEl.style.color = '#1A7A3A'; }
     loadContBancarReal();
@@ -2219,7 +2219,7 @@ async function adaugaContBancar(){
 }
 
 async function stergeContBancar(id){
-  if (!confirm('Ștergi acest cont bancar?')) return;
+  if (!(await MDFeedback.confirma(MYD_I18N.traduce('Ștergi acest cont bancar?'), { periculos: true }))) return;
   try {
     const headers = await _partenerAuthHeader();
     const res = await fetch('/api/partener/conturi-bancare', {
@@ -2227,9 +2227,9 @@ async function stergeContBancar(id){
       body: JSON.stringify({ id }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     loadContBancarReal();
-  } catch (e) { alert('Eroare: ' + e.message); }
+  } catch (e) { MDFeedback.toast('eroare', e.message); }
 }
 
 // ── Zona de acoperire — curier (Etapa CAT-3b, 28 august 2026) ──
@@ -2267,7 +2267,7 @@ async function loadZonaCurierReal(){
     const headers = await _partenerAuthHeader();
     const res = await fetch('/api/partener/zona-curier', { headers });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     if (!data.zone.length) { el.innerHTML = '<div style="color:#5A6B7D">Nicio zonă de acoperire adăugată încă.</div>'; return; }
     el.innerHTML = data.zone.map((z) => `
       <div style="display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid #EEF2F7">
@@ -2294,7 +2294,7 @@ async function adaugaZonaCurier(){
       body: JSON.stringify({ tara_cod, regiune_cod: regiune_cod || null, localitate: localitate || null, raza_livrare_km }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     ['zc-regiune','zc-localitate','zc-raza'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
     if (msgEl) { msgEl.textContent = 'Adăugată.'; msgEl.style.color = '#1A7A3A'; }
     loadZonaCurierReal();
@@ -2304,7 +2304,7 @@ async function adaugaZonaCurier(){
 }
 
 async function stergeZonaCurier(id){
-  if (!confirm('Ștergi această zonă de acoperire?')) return;
+  if (!(await MDFeedback.confirma(MYD_I18N.traduce('Ștergi această zonă de acoperire?'), { periculos: true }))) return;
   try {
     const headers = await _partenerAuthHeader();
     const res = await fetch('/api/partener/zona-curier', {
@@ -2312,9 +2312,9 @@ async function stergeZonaCurier(id){
       body: JSON.stringify({ id }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     loadZonaCurierReal();
-  } catch (e) { alert('Eroare: ' + e.message); }
+  } catch (e) { MDFeedback.toast('eroare', e.message); }
 }
 
 // ── Tipuri de poliță — asigurări (Etapa CAT-3b, 28 august 2026) ──
@@ -2351,7 +2351,7 @@ async function loadTipuriPolitaReal(){
     const headers = await _partenerAuthHeader();
     const res = await fetch('/api/partener/tipuri-polita', { headers });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     if (!data.tipuri.length) { el.innerHTML = '<div style="color:#5A6B7D">Niciun tip de poliță adăugat încă.</div>'; return; }
     el.innerHTML = data.tipuri.map((t) => `
       <div style="display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid #EEF2F7">
@@ -2384,7 +2384,7 @@ async function adaugaTipPolita(){
       }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     ['tp-tip','tp-limita','tp-comision'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
     if (msgEl) { msgEl.textContent = 'Adăugat.'; msgEl.style.color = '#1A7A3A'; }
     loadTipuriPolitaReal();
@@ -2394,7 +2394,7 @@ async function adaugaTipPolita(){
 }
 
 async function stergeTipPolita(id){
-  if (!confirm('Ștergi acest tip de poliță?')) return;
+  if (!(await MDFeedback.confirma(MYD_I18N.traduce('Ștergi acest tip de poliță?'), { periculos: true }))) return;
   try {
     const headers = await _partenerAuthHeader();
     const res = await fetch('/api/partener/tipuri-polita', {
@@ -2402,9 +2402,9 @@ async function stergeTipPolita(id){
       body: JSON.stringify({ id }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     loadTipuriPolitaReal();
-  } catch (e) { alert('Eroare: ' + e.message); }
+  } catch (e) { MDFeedback.toast('eroare', e.message); }
 }
 
 // ── Status aplicare partener (Etapa 2/2i, 26 august 2026) ──
@@ -2437,7 +2437,7 @@ async function loadStatusAplicareReal(){
     const headers = await _partenerAuthHeader();
     const res = await fetch('/api/partener/status-aplicare', { headers });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
 
     const meta = STATUS_APLICARE_META[data.status] || STATUS_APLICARE_META.pending_review;
     let html = `
@@ -2538,7 +2538,7 @@ async function loadPartenerCont() {
   try {
     const res = await fetch('/api/partener/cont', { headers: await _partenerAuthHeader() });
     const j = await res.json();
-    if (!res.ok) throw new Error(j.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(j, 'Eroare necunoscută'));
     PARTENER_CONT = j;
     PARTENER_CONT_ERR = null;
   } catch (e) {
@@ -2734,7 +2734,7 @@ async function incarcaDocumentPartener() {
       body: JSON.stringify({ tip_document: tip, document_path: cale }),
     });
     const j = await res.json();
-    if (!res.ok) throw new Error(j.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(j, 'Eroare necunoscută'));
     showToast('Document încărcat. Îl verifică echipa My Darrin.');
     await loadPartenerCont();
   } catch (e) {
@@ -2744,13 +2744,13 @@ async function incarcaDocumentPartener() {
 }
 
 async function stergeDocumentPartener(id) {
-  if (!window.confirm('Ștergi acest document?')) return;
+  if (!(await MDFeedback.confirma(MYD_I18N.traduce('Ștergi acest document?'), { periculos: true }))) return;
   try {
     const res = await fetch('/api/partener/documente', {
       method: 'DELETE', headers: { ...(await _partenerAuthHeader()), 'Content-Type': 'application/json' }, body: JSON.stringify({ id }),
     });
     const j = await res.json();
-    if (!res.ok) throw new Error(j.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(j, 'Eroare necunoscută'));
     await loadPartenerCont();
   } catch (e) { showToast('⚠ ' + e.message); }
 }
@@ -2804,7 +2804,7 @@ async function salveazaProfilPartener() {
       }),
     });
     const j = await res.json();
-    if (!res.ok) throw new Error(j.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(j, 'Eroare necunoscută'));
     set('Salvat.', true);
     await loadPartenerCont();
   } catch (e) { set(e.message, false); }

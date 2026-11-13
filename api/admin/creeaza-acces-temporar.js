@@ -20,7 +20,7 @@
 // îl generează.
 
 const { requireAuth } = require('../../lib/auth-middleware');
-const { formaComuna } = require('../../lib/raspuns-eroare');
+const { formaComuna, trimiteEroare } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 
 // Marcaj special pentru "acces complet" — toate paginile PUBLICE ale
@@ -55,32 +55,32 @@ function genParola() {
 }
 
 async function handler(req, res, user) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const { email, ore_valabilitate = 24, ruta_url, descriere, parola_custom, nume, prenume } = req.body || {};
 
   if (!email || typeof email !== 'string' || !email.includes('@')) {
-    return res.status(400).json({ error: 'Email valid obligatoriu.' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'Email valid obligatoriu.', 'A valid email is required.', ['email']);
   }
   // Nume + prenume identifică real persoana care semnează acordul de
   // confidențialitate (NDA) — vezi acord-confidentialitate.html. Fără ele,
   // NDA-ul nu poate identifica cine a acceptat.
   if (!nume || typeof nume !== 'string' || !nume.trim() || !prenume || typeof prenume !== 'string' || !prenume.trim()) {
-    return res.status(400).json({ error: 'Nume și prenume obligatorii — sunt folosite în acordul de confidențialitate.' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'Nume și prenume obligatorii — sunt folosite în acordul de confidențialitate.', 'First and last name are required: they are used in the confidentiality agreement.');
   }
   const numeNorm = nume.trim().slice(0, 100);
   const prenumeNorm = prenume.trim().slice(0, 100);
   const emailNorm = email.toLowerCase().trim();
   if (!RUTE_PERMISE.includes(ruta_url)) {
-    return res.status(400).json({ error: 'Ruta nu este permisă.' });
+    return trimiteEroare(res, 400, 'RUTA_NEPERMISA', 'Ruta nu este permisă.', 'This route is not allowed.', ['ruta']);
   }
   if (!ORE_PERMISE.includes(Number(ore_valabilitate))) {
-    return res.status(400).json({ error: `Ore valabile: ${ORE_PERMISE.join(', ')}` });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', `Ore valabile: ${ORE_PERMISE.join(', ')}`, `Allowed hours: ${ORE_PERMISE.join(', ')}`, ['ore']);
   }
 
   const parola = parola_custom ? String(parola_custom).trim().slice(0, 50) : genParola();
   if (parola.length < 6) {
-    return res.status(400).json({ error: 'Parola trebuie să aibă cel puțin 6 caractere.' });
+    return trimiteEroare(res, 400, 'PAROLA_SCURTA', 'Parola trebuie să aibă cel puțin 6 caractere.', 'The password must have at least 6 characters.', ['parola']);
   }
 
   const expira_la = new Date(Date.now() + Number(ore_valabilitate) * 3600 * 1000).toISOString();
@@ -105,9 +105,7 @@ async function handler(req, res, user) {
         .limit(1)
         .maybeSingle();
       if (!istoricAcces) {
-        return res.status(409).json({
-          error: 'Acest email aparține unui cont existent, negenerat de acest instrument. Alege alt email pentru acces temporar — nu se resetează parola conturilor reale.',
-        });
+        return trimiteEroare(res, 409, 'CONT_EXISTENT', 'Acest email aparține unui cont existent, negenerat de acest instrument. Alege alt email pentru acces temporar — nu se resetează parola conturilor reale.', 'This email belongs to an existing account that was not created by this tool. Choose another email for temporary access: real account passwords are not reset.', ['email']);
       }
 
       const { error: updErr } = await supabaseAdmin.auth.admin.updateUserById(profileExistent.id, {
@@ -116,7 +114,7 @@ async function handler(req, res, user) {
       });
       if (updErr) {
         console.error('[creeaza-acces-temporar] updateUserById', updErr);
-        return res.status(500).json({ error: 'Nu am putut actualiza parola.' });
+        return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut actualiza parola.', 'We could not update the password.');
       }
       userId = profileExistent.id;
     } else {
@@ -128,7 +126,7 @@ async function handler(req, res, user) {
       });
       if (createErr) {
         console.error('[creeaza-acces-temporar] createUser', createErr);
-        return res.status(500).json({ error: 'Nu am putut crea utilizatorul.' });
+        return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut crea utilizatorul.', 'We could not create the user.');
       }
       userId = created.user.id;
 
@@ -161,7 +159,7 @@ async function handler(req, res, user) {
       });
     if (accesErr) {
       console.error('[creeaza-acces-temporar] insert accese_temporare', accesErr);
-      return res.status(500).json({ error: 'Nu am putut înregistra accesul.' });
+      return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut înregistra accesul.', 'We could not record the access.');
     }
 
     return res.status(200).json({
@@ -173,7 +171,7 @@ async function handler(req, res, user) {
     });
   } catch (err) {
     console.error('[creeaza-acces-temporar]', err);
-    return res.status(500).json({ error: 'Eroare neașteptată la crearea accesului.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Eroare neașteptată la crearea accesului.', 'Unexpected error while creating the access.');
   }
 }
 

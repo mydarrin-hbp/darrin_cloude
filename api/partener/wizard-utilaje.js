@@ -23,6 +23,7 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const v = require('../../lib/valideaza');
+const { trimiteEroare, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
 
 // Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
 const SCHEMA = {
@@ -49,13 +50,13 @@ async function handler(req, res, user) {
       .select('*')
       .eq('partner_id', user.id)
       .order('creat_la', { ascending: false });
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
     return res.status(200).json({ ok: true, utilaje: data || [] });
   }
 
   if (req.method === 'DELETE') {
     const { id } = req.body || {};
-    if (!id) return res.status(400).json({ error: 'id este obligatoriu' });
+    if (!id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id este obligatoriu', 'id is required.', ['id']);
     const { data, error } = await supabaseAdmin
       .from('partner_utilaje')
       .delete()
@@ -63,28 +64,28 @@ async function handler(req, res, user) {
       .eq('partner_id', user.id)
       .select('id')
       .maybeSingle();
-    if (error) return res.status(500).json({ error: error.message });
-    if (!data) return res.status(404).json({ error: 'Utilajul nu există sau nu-ți aparține' });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
+    if (!data) return trimiteEroare(res, 404, 'NU_EXISTA', 'Utilajul nu există sau nu-ți aparține', 'The machine does not exist or does not belong to you.');
     return res.status(200).json({ ok: true });
   }
 
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { utilaje } = req.body || {};
   if (!Array.isArray(utilaje) || !utilaje.length) {
-    return res.status(400).json({ error: 'Declară cel puțin un utilaj/echipament' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'Declară cel puțin un utilaj/echipament', 'Declare at least one machine or piece of equipment.');
   }
   for (const u of utilaje) {
     if (!u.denumire || typeof u.denumire !== 'string') {
-      return res.status(400).json({ error: 'Fiecare utilaj trebuie să aibă o denumire' });
+      return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'Fiecare utilaj trebuie să aibă o denumire', 'Each machine must have a name.', ['denumire']);
     }
     if (u.tip_suprastructura && !TIPURI_SUPRASTRUCTURA.includes(u.tip_suprastructura)) {
-      return res.status(400).json({ error: `Tip suprastructură necunoscut pentru „${u.denumire}": ${u.tip_suprastructura}` });
+      return trimiteEroare(res, 400, 'DATE_INVALIDE', `Tip suprastructură necunoscut pentru „${u.denumire}": ${u.tip_suprastructura}`, `Unknown body type for “${u.denumire}”: ${u.tip_suprastructura}`, ['tip_suprastructura']);
     }
     for (const camp of ['capacitate_kg', 'lungime_utila_cm', 'latime_utila_cm', 'inaltime_utila_cm']) {
       if (u[camp] !== undefined && u[camp] !== null && u[camp] !== '' && numarPozitivSauNull(u[camp]) === undefined) {
-        return res.status(400).json({ error: `${camp} trebuie să fie un număr pozitiv pentru „${u.denumire}"` });
+        return trimiteEroare(res, 400, 'DATE_INVALIDE', `${camp} trebuie să fie un număr pozitiv pentru „${u.denumire}"`, `${camp} must be a positive number for “${u.denumire}”`);
       }
     }
   }
@@ -110,7 +111,7 @@ async function handler(req, res, user) {
     return res.status(200).json({ ok: true, count: randuri.length });
   } catch (err) {
     console.error('[wizard-utilaje]', err);
-    return res.status(500).json({ error: err.message || 'Nu am putut salva utilajele' });
+    return trimiteEroareInterna(res, 500, 'EROARE_SERVER', 'Nu am putut salva utilajele', 'We could not save the machines. Please try again.', err);
   }
 }
 

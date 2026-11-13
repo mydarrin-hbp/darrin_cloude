@@ -10,7 +10,7 @@
 // Body: { id }
 
 const { requireAuth } = require('../../../lib/auth-middleware');
-const { formaComuna } = require('../../../lib/raspuns-eroare');
+const { formaComuna, trimiteEroare } = require('../../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../../lib/supabaseAdmin');
 const { ANAF_URL, MESAJE_ANAF, cautaANAF } = require('../../../lib/cauta-firma');
 
@@ -63,17 +63,17 @@ const TESTE_REALE = {
 };
 
 async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const { id } = req.body || {};
-  if (!id) return res.status(400).json({ error: 'id este obligatoriu' });
+  if (!id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id este obligatoriu', 'id is required.', ['id']);
 
   const { data: integrare, error: getErr } = await supabaseAdmin
     .from('integrari_furnizori')
     .select('id, categorie, api_key_criptat')
     .eq('id', id)
     .maybeSingle();
-  if (getErr || !integrare) return res.status(404).json({ error: 'Integrarea nu există' });
+  if (getErr || !integrare) return trimiteEroare(res, 404, 'NU_EXISTA', 'Integrarea nu există', 'The integration does not exist.');
 
   const testFn = TESTE_REALE[integrare.categorie];
   let rezultat;

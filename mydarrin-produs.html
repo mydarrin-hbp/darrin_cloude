@@ -2220,7 +2220,7 @@ function submitNewsletter() {
     btnEl.disabled = false;
     btnEl.textContent = 'Abonează-te ›';
     if (!res.httpOk) {
-      msgEl.textContent = res.status === 429 ? '⚠ Prea multe încercări. Încearcă mai târziu.' : '❌ ' + (res.data.error || 'Eroare. Încearcă din nou.');
+      msgEl.textContent = res.status === 429 ? '⚠ Prea multe încercări. Încearcă mai târziu.' : '❌ ' + (MYD_I18N.eroare(res.data, 'Eroare. Încearcă din nou.'));
       msgEl.className = 'ftr-nl-msg error';
     } else if (res.data.deja_abonat) {
       msgEl.textContent = '✓ Ești deja abonat!';
@@ -2756,7 +2756,7 @@ async function submitUnavailProdus() {
       body: JSON.stringify({ email: email, tara_nume: zoneName, mesaj: mesaj || undefined }),
     });
     var data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     var body = document.getElementById('zone-unavailable-body');
     if (body) {
       body.innerHTML = '<div class="text-center"><div style="font-size:38px;margin-bottom:10px">✅</div>'
@@ -3373,7 +3373,7 @@ function renderAddonList() {
 async function loadRecomandari() {
   if (!S.pilotMode || !S.pilotServiciuId || !SUPA_PROD_ANON) return;
   const headers = { apikey: SUPA_PROD_ANON, Authorization: `Bearer ${SUPA_PROD_ANON}` };
-  const selectServiciu = 'id,id_serviciu,titlu,categorie,unitate_masura,catalog_niveluri(nivel,catalog_preturi(pret))';
+  const selectServiciu = 'id,id_serviciu,titlu,traduceri,categorie,unitate_masura,catalog_niveluri(nivel,catalog_preturi(pret))';
   let rezultate = [];
   try {
     const [dinspre, spre] = await Promise.all([
@@ -3406,7 +3406,7 @@ async function loadRecomandari() {
     const pretAfisat = preturi.length ? (typeof window.t === 'function' ? window.t(null, 'de la {pret} Lei', { pret: Math.min(...preturi) }) : `de la ${Math.min(...preturi)} Lei`) : '';
     const tip = r.categorie === 'servicii' ? 'serviciu' : r.categorie === 'materiale' ? 'materiale' : r.categorie === 'inchirieri' ? 'inchirieri' : 'serviciu';
     return `<a href="mydarrin-produs.html?slug=${encodeURIComponent(r.id_serviciu)}&type=${tip}" style="flex:0 0 auto;width:140px;padding:12px;border:1px solid #EEF2F7;border-radius:12px;text-decoration:none;background:#fff">
-      <div style="font-size:12px;font-weight:700;color:#003366;line-height:1.3;margin-bottom:6px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${escapeAddonHTML(r.titlu)}</div>
+      <div style="font-size:12px;font-weight:700;color:#003366;line-height:1.3;margin-bottom:6px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${escapeAddonHTML(trDb(r, 'titlu'))}</div>
       <div style="font-size:11px;color:#8C9BAD">${escapeAddonHTML(pretAfisat)}</div>
     </a>`;
   }).join('');
@@ -4541,7 +4541,7 @@ async function verificaDisponibilitateAdresa() {
     S.disponibilitate = { ok: false, mesaj: trAdr('nu am putut verifica adresa (conexiune). Încearcă din nou.') };
     arataDisponibilitate('eroare', trAdr('Nu am putut verifica disponibilitatea: conexiunea a eșuat. Verifică internetul; verificarea se reia la următoarea modificare a adresei.'));
   } else if (!r.ok || !d.ok) {
-    const mesaj = textMesajServer(d.mesaj) || d.error || trAdr('adresa nu a putut fi verificată.');
+    const mesaj = textMesajServer(d.mesaj) || MYD_I18N.eroare(d, trAdr('adresa nu a putut fi verificată.'));
     S.disponibilitate = { ok: false, mesaj };
     arataDisponibilitate('eroare', mesaj);
     const camp = { strada: 'addr-input', localitate: 'adr-localitate', judet: 'adr-judet' }[d.camp];
@@ -4772,7 +4772,7 @@ async function incarcaSloturiDisponibile(date){
     if(S.regiune) params.set('regiune',S.regiune);
     const res=await fetch('/api/public/sloturi-disponibile?'+params.toString());
     const data=await res.json();
-    if(!res.ok) throw new Error(data.error||'Eroare necunoscută');
+    if(!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
     if(!data.sloturi||!data.sloturi.length){
       cont.innerHTML='<div style="grid-column:1/-1;color:#8C9BAD;font-size:12.5px;padding:8px 0">Niciun slot disponibil în ziua selectată.</div>';
       return;

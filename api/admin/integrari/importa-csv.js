@@ -17,7 +17,7 @@
 // Body: { integrare_id, storage_path, mapare_coloane? }
 
 const { requireAuth } = require('../../../lib/auth-middleware');
-const { formaComuna } = require('../../../lib/raspuns-eroare');
+const { formaComuna, trimiteEroare } = require('../../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../../lib/supabaseAdmin');
 
 const MAX_RANDURI_STAGATE = 5000;
@@ -36,11 +36,11 @@ function parseCSV(text) {
 }
 
 async function handler(req, res, user) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const { integrare_id, storage_path, mapare_coloane = {} } = req.body || {};
   if (!integrare_id || !storage_path) {
-    return res.status(400).json({ error: 'integrare_id și storage_path sunt obligatorii' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'integrare_id și storage_path sunt obligatorii', 'integrare_id and storage_path are required.');
   }
 
   const { data: integrare, error: getErr } = await supabaseAdmin
@@ -48,21 +48,21 @@ async function handler(req, res, user) {
     .select('id, tip_configurare')
     .eq('id', integrare_id)
     .maybeSingle();
-  if (getErr || !integrare) return res.status(404).json({ error: 'Integrarea nu există' });
+  if (getErr || !integrare) return trimiteEroare(res, 404, 'NU_EXISTA', 'Integrarea nu există', 'The integration does not exist.');
   if (!['csv', 'ambele'].includes(integrare.tip_configurare)) {
-    return res.status(400).json({ error: 'Această integrare nu este configurată pentru import CSV' });
+    return trimiteEroare(res, 400, 'NU_SE_APLICA', 'Această integrare nu este configurată pentru import CSV', 'This integration is not set up for CSV import.');
   }
 
   const { data: fisier, error: dlErr } = await supabaseAdmin.storage.from('integrari-csv').download(storage_path);
   if (dlErr || !fisier) {
-    return res.status(400).json({ error: 'Nu am putut citi fișierul din storage — verifică storage_path' });
+    return trimiteEroare(res, 400, 'FISIER_NECITIT', 'Nu am putut citi fișierul din storage — verifică storage_path', 'We could not read the file from storage. Check storage_path.', ['storage_path']);
   }
 
   let text;
   try {
     text = await fisier.text();
   } catch (e) {
-    return res.status(400).json({ error: 'Fișierul nu a putut fi citit ca text (CSV valid?)' });
+    return trimiteEroare(res, 400, 'FISIER_NECITIT', 'Fișierul nu a putut fi citit ca text (CSV valid?)', 'The file could not be read as text. Is it a valid CSV?');
   }
 
   const { randuri } = parseCSV(text);
@@ -89,7 +89,7 @@ async function handler(req, res, user) {
     .single();
   if (insErr) {
     console.error('[admin/integrari/importa-csv]', insErr);
-    return res.status(500).json({ error: 'Nu am putut înregistra importul' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut înregistra importul', 'We could not record the import.');
   }
 
   return res.status(200).json({ ok: true, import: importRow });

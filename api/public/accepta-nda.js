@@ -10,6 +10,7 @@ const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const v = require('../../lib/valideaza');
 const { limiteazaCererea } = require('../../lib/rate-limit');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 // Pasul 11-S1: singurul câmp acceptat.
 const SCHEMA = {
@@ -25,8 +26,8 @@ function getClientIp(req) {
 }
 
 async function handler(req, res, user) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  if (!user.email) return res.status(400).json({ error: 'Cont fără email.' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
+  if (!user.email) return trimiteEroare(res, 400, 'FARA_EMAIL', 'Cont fără email.', 'The account has no email.');
 
   const date = v.valideazaSauTrimite(req, res, SCHEMA);
   if (!date) return;
@@ -42,7 +43,7 @@ async function handler(req, res, user) {
     .maybeSingle();
 
   if (!acces || new Date(acces.expira_la) < new Date()) {
-    return res.status(404).json({ error: 'Nu există niciun acces temporar activ pentru acest cont.' });
+    return trimiteEroare(res, 404, 'NU_EXISTA', 'Nu există niciun acces temporar activ pentru acest cont.', 'There is no active temporary access for this account.');
   }
 
   const { error: updErr } = await supabaseAdmin
@@ -57,7 +58,7 @@ async function handler(req, res, user) {
 
   if (updErr) {
     console.error('[accepta-nda]', updErr);
-    return res.status(500).json({ error: 'Nu am putut înregistra acceptarea.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut înregistra acceptarea.', 'We could not record the acceptance. Please try again.');
   }
 
   const destinatie = acces.ruta_url === '*' ? '/home' : acces.ruta_url;

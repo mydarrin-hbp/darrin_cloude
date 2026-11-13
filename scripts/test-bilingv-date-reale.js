@@ -67,10 +67,13 @@ async function json(url, headers) {
 
   console.log('B. Nivelurile și categoriile (dicționarul public)');
   const dict = (await json(`${BASE}/api/public/traduceri-catalog?lang=en`))._texte || {};
-  const niveluri = await json(`${url}/rest/v1/catalog_niveluri?select=id,label,descriere,catalog_servicii!inner(status_public)&catalog_servicii.status_public=eq.true`, H);
+  const niveluri = await json(`${url}/rest/v1/catalog_niveluri?select=id,label,descriere,traduceri,catalog_servicii!inner(status_public)&catalog_servicii.status_public=eq.true`, H);
   for (const n of niveluri) {
     const lipsa = [];
-    for (const c of ['label', 'descriere']) if (!gol(n[c]) && !dict[norm(n[c])]) lipsa.push(c);
+    // Dicționarul public omite textele identice în cele două limbi (ex. „Standard”):
+    // acestea sunt acoperite de traduceri.en, completat cu același text (pasul 11-T2).
+    const enN = (n.traduceri && n.traduceri.en) || {};
+    for (const c of ['label', 'descriere']) if (!gol(n[c]) && !dict[norm(n[c])] && gol(enN[c])) lipsa.push(c);
     if (lipsa.length) lipsuri.niveluri.push(`${n.id} (${lipsa.join(', ')}): ${String(n.descriere || n.label).slice(0, 60)}`);
   }
   verifica(!lipsuri.niveluri.length, `${lipsuri.niveluri.length} din ${niveluri.length} niveluri fără engleză (ex.: ${lipsuri.niveluri.slice(0, 2).join(' | ')})`);

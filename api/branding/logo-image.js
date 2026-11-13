@@ -15,6 +15,7 @@
 //     (același base64 din index.html) — NICIODATĂ o imagine placeholder/ruptă.
 
 const { kv } = require('@vercel/kv');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const VALID_SLOTS = ['header_logo', 'footer_logo', 'robot_mascot'];
 
@@ -29,7 +30,7 @@ module.exports = async function handler(req, res) {
   // "imagine coruptă/invalidă", și Facebook cădea pe fallback (prima
   // imagine găsită în pagină, o poză de stoc cu metadată proprie străină —
   // exact tiparul reparat mai devreme la og:image însuși).
-  if (req.method !== 'GET' && req.method !== 'HEAD') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET' && req.method !== 'HEAD') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const slotParam = req.query?.slot;
   const slot = VALID_SLOTS.includes(slotParam) ? slotParam : 'header_logo';

@@ -18,11 +18,11 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const { tara, regiune, data } = req.query || {};
   if (!data || !/^\d{4}-\d{2}-\d{2}$/.test(data)) {
-    return res.status(400).json({ error: 'data este obligatorie, format YYYY-MM-DD' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'data este obligatorie, format YYYY-MM-DD', 'data is required, in YYYY-MM-DD format.', ['data']);
   }
 
   try {
@@ -41,6 +41,6 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true, ...rezultat });
   } catch (err) {
     console.error('[sloturi-disponibile]', err);
-    return res.status(500).json({ error: 'Nu am putut calcula sloturile disponibile' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut calcula sloturile disponibile', 'We could not calculate the available slots.');
   }
 };

@@ -8,18 +8,19 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const BUCKETS = ['partner-certificari', 'marketplace-media'];
 const VALABIL_SECUNDE = 120;
 
 async function handler(req, res, admin) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   const id = req.query?.id;
-  if (!id) return res.status(400).json({ error: 'id este obligatoriu.' });
+  if (!id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id este obligatoriu.', 'id is required.', ['id']);
 
   const { data: doc } = await supabaseAdmin
     .from('documente_partener').select('id, partener_id, tip_document, storage_path').eq('id', String(id)).maybeSingle();
-  if (!doc) return res.status(404).json({ error: 'Documentul nu există.' });
+  if (!doc) return trimiteEroare(res, 404, 'DOCUMENT_NU_EXISTA', 'Documentul nu există.', 'The document does not exist.');
 
   for (const bucket of BUCKETS) {
     const { data, error } = await supabaseAdmin.storage.from(bucket).createSignedUrl(doc.storage_path, VALABIL_SECUNDE);
@@ -31,7 +32,7 @@ async function handler(req, res, admin) {
       return res.status(200).json({ ok: true, url: data.signedUrl, expira_in_secunde: VALABIL_SECUNDE });
     }
   }
-  return res.status(404).json({ error: 'Fișierul nu a fost găsit în Storage.' });
+  return trimiteEroare(res, 404, 'FISIER_NU_EXISTA', 'Fișierul nu a fost găsit în Storage.', 'The file was not found in storage.');
 }
 
 module.exports = requireAuth(['admin', 'superadmin'], handler);

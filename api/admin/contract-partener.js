@@ -5,16 +5,16 @@
 // GET ?partener_id=<uuid> -> { ok, semnat, versiune, numar, html, sha256?, semnat_la? }
 
 const { requireAuth } = require('../../lib/auth-middleware');
-const { formaComuna } = require('../../lib/raspuns-eroare');
+const { formaComuna, trimiteEroare } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { genereazaContractPartener } = require('../../lib/contract-partener-date');
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   const id = String(req.query?.partener_id || '');
-  if (!UUID.test(id)) return res.status(400).json({ error: 'partener_id invalid.' });
+  if (!UUID.test(id)) return trimiteEroare(res, 400, 'DATE_INVALIDE', 'partener_id invalid.', 'partener_id is not valid.', ['partener_id']);
 
   const { data: snap } = await supabaseAdmin
     .from('partner_contracte_semnate')
@@ -26,7 +26,7 @@ async function handler(req, res) {
   if (snap) return res.status(200).json({ ok: true, semnat: true, ...snap });
 
   const c = await genereazaContractPartener(id);
-  if (!c) return res.status(404).json({ error: 'Partener inexistent.' });
+  if (!c) return trimiteEroare(res, 404, 'PARTENER_NU_EXISTA', 'Partener inexistent.', 'The partner does not exist.');
   return res.status(200).json({ ok: true, semnat: false, versiune: c.versiune, numar: c.numar, html: c.html });
 }
 

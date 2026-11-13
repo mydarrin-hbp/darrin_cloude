@@ -12,6 +12,7 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const v = require('../../lib/valideaza');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 // Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
 const SCHEMA = {
@@ -113,9 +114,9 @@ async function handleGet(req, res, user) {
     .maybeSingle();
   if (perr) {
     console.error('[partener/cont] partner', perr);
-    return res.status(500).json({ error: 'Nu am putut încărca contul de partener.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca contul de partener.', 'We could not load the partner account.');
   }
-  if (!partner) return res.status(404).json({ error: 'Contul de partener nu a fost găsit.' });
+  if (!partner) return trimiteEroare(res, 404, 'PARTENER_NU_EXISTA', 'Contul de partener nu a fost găsit.', 'The partner account was not found.');
 
   const [{ data: profil }, { data: cont }, kpi, { data: documente }, { data: facturi }, { data: garantii }] = await Promise.all([
     supabaseAdmin.from('profiles').select('email, phone, phone_verificat, tara, limba').eq('id', user.id).maybeSingle(),
@@ -183,16 +184,16 @@ async function handlePatch(req, res, user) {
   const profileUpdate = {};
 
   if (nr_reg_com !== undefined) {
-    if (typeof nr_reg_com !== 'string' || nr_reg_com.trim().length > 40) return res.status(400).json({ error: 'nr_reg_com: maximum 40 de caractere.' });
+    if (typeof nr_reg_com !== 'string' || nr_reg_com.trim().length > 40) return trimiteEroare(res, 400, 'DATE_INVALIDE', 'nr_reg_com: maximum 40 de caractere.', 'nr_reg_com: at most 40 characters.', ['nr_reg_com']);
     partnerUpdate.nr_reg_com = nr_reg_com.trim() || null;
   }
   if (adresa_sediu_social !== undefined) {
-    if (typeof adresa_sediu_social !== 'string' || adresa_sediu_social.trim().length > 300) return res.status(400).json({ error: 'adresa_sediu_social: maximum 300 de caractere.' });
+    if (typeof adresa_sediu_social !== 'string' || adresa_sediu_social.trim().length > 300) return trimiteEroare(res, 400, 'DATE_INVALIDE', 'adresa_sediu_social: maximum 300 de caractere.', 'adresa_sediu_social: at most 300 characters.', ['adresa_sediu_social']);
     partnerUpdate.adresa_sediu_social = adresa_sediu_social.trim() || null;
   }
   if (telefon !== undefined) {
     const t = typeof telefon === 'string' ? telefon.trim() : '';
-    if (t && !/^\+?[0-9 ()\-]{6,20}$/.test(t)) return res.status(400).json({ error: 'Telefon invalid (6-20 de cifre, poate începe cu +).' });
+    if (t && !/^\+?[0-9 ()\-]{6,20}$/.test(t)) return trimiteEroare(res, 400, 'TELEFON_INVALID', 'Telefon invalid (6-20 de cifre, poate începe cu +).', 'Invalid phone number (6–20 digits, may start with +).', ['telefon']);
     const { data: existent } = await supabaseAdmin.from('profiles').select('phone').eq('id', user.id).maybeSingle();
     if ((existent?.phone || '') !== t) {
       profileUpdate.phone = t || null;
@@ -200,21 +201,21 @@ async function handlePatch(req, res, user) {
     }
   }
   if (telefon === undefined && nr_reg_com === undefined && adresa_sediu_social === undefined) {
-    return res.status(400).json({ error: 'Nu ai trimis niciun câmp de actualizat.' });
+    return trimiteEroare(res, 400, 'NIMIC_DE_ACTUALIZAT', 'Nu ai trimis niciun câmp de actualizat.', 'You did not send any field to update.');
   }
 
   if (Object.keys(partnerUpdate).length) {
     const { error } = await supabaseAdmin.from('partners').update(partnerUpdate).eq('id', user.id);
     if (error) {
       console.error('[partener/cont] update partners', error);
-      return res.status(500).json({ error: 'Nu am putut salva datele firmei.' });
+      return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut salva datele firmei.', 'We could not save the company details. Please try again.');
     }
   }
   if (Object.keys(profileUpdate).length) {
     const { error } = await supabaseAdmin.from('profiles').update(profileUpdate).eq('id', user.id);
     if (error) {
       console.error('[partener/cont] update profiles', error);
-      return res.status(500).json({ error: 'Nu am putut salva telefonul.' });
+      return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut salva telefonul.', 'We could not save the phone number. Please try again.');
     }
   }
   return res.status(200).json({ ok: true });
@@ -223,7 +224,7 @@ async function handlePatch(req, res, user) {
 async function handler(req, res, user) {
   if (req.method === 'GET') return handleGet(req, res, user);
   if (req.method === 'PATCH') return handlePatch(req, res, user);
-  return res.status(405).json({ error: 'Method not allowed' });
+  return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 }
 
 module.exports = requireAuth(ROLURI_PARTENER, handler);

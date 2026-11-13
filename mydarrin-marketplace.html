@@ -1758,7 +1758,7 @@ function submitNewsletter() {
     btnEl.disabled = false;
     btnEl.textContent = 'Abonează-te ›';
     if (!res.httpOk) {
-      msgEl.textContent = res.status === 429 ? '⚠ Prea multe încercări. Încearcă mai târziu.' : '❌ ' + (res.data.error || 'Eroare. Încearcă din nou.');
+      msgEl.textContent = res.status === 429 ? '⚠ Prea multe încercări. Încearcă mai târziu.' : '❌ ' + (MYD_I18N.eroare(res.data, 'Eroare. Încearcă din nou.'));
       msgEl.className = 'ftr-nl-msg error';
     } else if (res.data.deja_abonat) {
       msgEl.textContent = '✓ Ești deja abonat!';
@@ -2425,7 +2425,7 @@ async function incarcaTaxonomieMp() {
   try {
     const r = await fetch('/api/public/nace-lista' + '?lang=' + encodeURIComponent(window.MYD_I18N?.lang || 'en'));
     const j = await r.json();
-    if (!r.ok) throw new Error(j.error || 'eroare necunoscută');
+    if (!r.ok) throw new Error(MYD_I18N.eroare(j, 'eroare necunoscută'));
     const optiuni = '<option value="">Selectează...</option>' + (j.clase || []).map((c) => `<option value="${escapeHTML(c.cod)}">${escapeHTML(c.cod)} — ${escapeHTML(c.denumire || c.denumire_ro)}</option>`).join('');
     selectoareNace.forEach((el) => { if (el) el.innerHTML = optiuni; });
   } catch (e) {
@@ -2435,7 +2435,7 @@ async function incarcaTaxonomieMp() {
   try {
     const r = await fetch('/api/public/uniclass-lista?prefix=Pr&lang=' + encodeURIComponent(window.MYD_I18N?.lang || 'en'));
     const j = await r.json();
-    if (!r.ok) throw new Error(j.error || 'eroare necunoscută');
+    if (!r.ok) throw new Error(MYD_I18N.eroare(j, 'eroare necunoscută'));
     const optiuni = '<option value="">— fără —</option>' + (j.coduri || []).map((c) => `<option value="${escapeHTML(c.code)}">${escapeHTML(c.code)} — ${escapeHTML(c.titlu || c.title_ro || '')}</option>`).join('');
     selectoareUniclass.forEach((el) => { if (el) el.innerHTML = optiuni; });
   } catch (e) {
@@ -2528,7 +2528,7 @@ async function saveMaterial() {
     const json = await res.json();
     if (!res.ok) {
       const detalii = (json.erori || []).map((e) => `• ${e.mesaj}`).join('\n');
-      showToast(`Nu s-a salvat: ${json.error || 'eroare necunoscută'}${detalii ? '\n' + detalii : ''}`, 'warn');
+      showToast(`Nu s-a salvat: ${MYD_I18N.eroare(json, 'eroare necunoscută')}${detalii ? '\n' + detalii : ''}`, 'warn');
       return;
     }
     showToast('Produs adăugat în marketplace · În aprobare (max. 24h)', 'success');
@@ -2577,7 +2577,7 @@ async function saveEchipament() {
     const json = await res.json();
     if (!res.ok) {
       const detalii = (json.erori || []).map((e) => `• ${e.mesaj}`).join('\n');
-      showToast(`Nu s-a salvat: ${json.error || 'eroare necunoscută'}${detalii ? '\n' + detalii : ''}`, 'warn');
+      showToast(`Nu s-a salvat: ${MYD_I18N.eroare(json, 'eroare necunoscută')}${detalii ? '\n' + detalii : ''}`, 'warn');
       return;
     }
     showToast('Echipament adăugat · În aprobare (max. 24h)', 'success');
@@ -2664,7 +2664,7 @@ async function importCSV() {
         body: JSON.stringify({ tip: 'materiale', randuri: mpCsvRanduri, job_id: jobId }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Eroare necunoscută la import');
+      if (!res.ok) throw new Error(MYD_I18N.eroare(json, 'Eroare necunoscută la import'));
 
       jobId = json.job_id;
       totalProcesate = json.randuri_procesate;
@@ -2716,7 +2716,7 @@ async function registerFurnizor() {
       body: JSON.stringify({ nume, email, tip, nume_firma, cui, tara, iban: iban || undefined, banca: banca || undefined }),
     });
     const json = await res.json();
-    if (!res.ok) { showToast('Nu am putut înregistra: ' + (json.error || 'eroare necunoscută'), 'warn'); return; }
+    if (!res.ok) { showToast('Nu am putut înregistra: ' + (MYD_I18N.eroare(json, 'eroare necunoscută')), 'warn'); return; }
     showToast('Cont creat! Verifică-ți emailul pentru link-ul de setare a parolei.', 'success');
     if (status) status.textContent = 'Cont creat — verifică emailul pentru a seta parola, apoi revino aici pentru documentele KYC.';
     ['cf-nume', 'cf-firma', 'cf-cui', 'cf-telefon', 'cf-email', 'cf-iban', 'cf-banca'].forEach((id) => { const el = document.getElementById(id); if (el) el.value = ''; });
@@ -2762,7 +2762,7 @@ async function incarcaDocumenteKyc(input) {
         method: 'POST', headers, body: JSON.stringify({ tip_document: tipDoc, storage_path: path }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'eroare la înregistrare');
+      if (!res.ok) throw new Error(MYD_I18N.eroare(json, 'eroare la înregistrare'));
 
       item.textContent = `✓ ${nume}`;
       item.style.color = '#1A7A3A';

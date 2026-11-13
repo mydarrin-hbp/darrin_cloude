@@ -20,28 +20,29 @@ const SCHEMA = {
 };
 
 const { curataCUI, cautaANAF, cautaVIES, TARI_VIES, MESAJE_ANAF } = require('../../lib/cauta-firma');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const allowed = await checkRateLimit(req, { key: 'cui-lookup', limit: 20, windowSeconds: 600 });
-  if (!allowed) return res.status(429).json({ error: 'Prea multe cereri. Încearcă din nou mai târziu.' });
+  if (!allowed) return trimiteEroare(res, 429, 'PREA_MULTE_CERERI', 'Prea multe cereri. Încearcă din nou mai târziu.', 'Too many requests. Please try again later.');
 
   // Pasul 11-S1: tipuri, lungimi și câmpurile acceptate.
   if (!v.valideazaSauTrimite(req, res, SCHEMA)) return;
 
   const { tara, cui } = req.body || {};
-  if (!tara || typeof tara !== 'string') return res.status(400).json({ error: 'tara este obligatorie' });
-  if (!cui || typeof cui !== 'string') return res.status(400).json({ error: 'cui este obligatoriu' });
+  if (!tara || typeof tara !== 'string') return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'tara este obligatorie', 'tara is required.', ['tara']);
+  if (!cui || typeof cui !== 'string') return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'cui este obligatoriu', 'cui is required.', ['cui']);
 
   try {
     if (tara === 'RO') {
       const cuiNumeric = curataCUI(cui);
-      if (!cuiNumeric) return res.status(400).json({ error: 'CUI invalid' });
+      if (!cuiNumeric) return trimiteEroare(res, 400, 'CUI_INVALID', 'CUI invalid', 'The CUI is not valid.', ['cui']);
       const rezultat = await cautaANAF(cuiNumeric);
       if (!rezultat) return res.status(200).json({ ok: false, manual: true, motiv: 'CUI negăsit în registrul ANAF' });
       // Pasul 11-P1: firma inactivă sau radiată nu se poate înscrie ca partener;
@@ -55,7 +56,7 @@ module.exports = async function handler(req, res) {
 
     if (TARI_VIES.has(tara)) {
       const vat = curataCUI(cui);
-      if (!vat) return res.status(400).json({ error: 'VAT ID invalid' });
+      if (!vat) return trimiteEroare(res, 400, 'CUI_INVALID', 'VAT ID invalid', 'Invalid VAT ID.', ['cui']);
       const rezultat = await cautaVIES(tara, vat);
       if (!rezultat) return res.status(200).json({ ok: false, manual: true, motiv: 'VAT ID negăsit/invalid în VIES' });
       return res.status(200).json({ ok: true, ...rezultat });

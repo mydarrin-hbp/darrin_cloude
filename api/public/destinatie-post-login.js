@@ -20,6 +20,7 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { destinatiePentru } = require('../../lib/destinatie-cont');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const FARA_ACCES = {
   error: 'Acest cont nu are încă acces alocat pe platformă. Contactează administratorul.',
@@ -31,15 +32,15 @@ const ACCES_EXPIRAT = {
 };
 
 async function handler(req, res, user) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   try {
     const d = await destinatiePentru(user);
-    if (d && d.tip === 'acces_expirat') return res.status(403).json(ACCES_EXPIRAT);
-    if (!d || !d.destinatie) return res.status(403).json(FARA_ACCES);
+    if (d && d.tip === 'acces_expirat') return trimiteEroare(res, 403, 'ACCES_EXPIRAT', ACCES_EXPIRAT.error, ACCES_EXPIRAT.error_en);
+    if (!d || !d.destinatie) return trimiteEroare(res, 403, 'FARA_ACCES', FARA_ACCES.error, FARA_ACCES.error_en);
     return res.status(200).json({ ok: true, ...d });
   } catch (err) {
     console.error('[destinatie-post-login]', err);
-    return res.status(500).json({ error: 'Nu am putut stabili destinația.', error_en: 'Could not determine where to take you.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut stabili destinația.', 'Could not determine where to take you.');
   }
 }
 

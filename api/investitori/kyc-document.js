@@ -20,6 +20,7 @@ const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const K = require('../../lib/investitori-kyc');
 const v = require('../../lib/valideaza');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 // Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
 const SCHEMA = {
@@ -40,7 +41,7 @@ const E = {
   intern: ['Încărcarea nu a putut fi pregătită. Încearcă din nou.', 'The upload could not be prepared. Please try again.'],
 };
 function eroare(res, cod, cheie) {
-  return res.status(cod).json({ error: E[cheie][0], error_en: E[cheie][1], cod: cheie });
+  return trimiteEroare(res, cod, cheie, E[cheie][0], E[cheie][1]);
 }
 
 async function handler(req, res, user) {
@@ -91,7 +92,7 @@ async function handler(req, res, user) {
       return res.status(200).json({ ok: true });
     }
 
-    return res.status(405).json({ error: 'Method not allowed' });
+    return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   } catch (err) {
     console.error('[investitori/kyc-document]', err);
     return eroare(res, 500, 'intern');

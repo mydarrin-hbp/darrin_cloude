@@ -13,6 +13,7 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { dateFacturareDinAgenda } = require('../../lib/agenda-cont');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const CHEI_ADRESA = ['strada', 'localitate', 'judet', 'cod_postal', 'tara'];
 const CHEI = {
@@ -50,7 +51,7 @@ async function dinAgenda(userId) {
 }
 
 async function handler(req, res, user) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   try {
     const dinProfil = curata(await dinAgenda(user.id));
     if (dinProfil) return res.status(200).json({ ok: true, date_facturare: dinProfil, sursa: 'agenda' });
@@ -66,10 +67,7 @@ async function handler(req, res, user) {
     return res.status(200).json({ ok: true, date_facturare: dinComanda, sursa: dinComanda ? 'comanda' : null });
   } catch (err) {
     console.error('[client/date-facturare]', err);
-    return res.status(500).json({
-      error: 'Nu am putut citi datele de facturare.',
-      error_en: 'We could not read the billing details.',
-    });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut citi datele de facturare.', 'We could not read the billing details.');
   }
 }
 

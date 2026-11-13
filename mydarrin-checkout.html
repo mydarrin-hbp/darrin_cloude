@@ -1751,7 +1751,7 @@ function submitNewsletter() {
     btnEl.disabled = false;
     btnEl.textContent = 'Abonează-te ›';
     if (!res.httpOk) {
-      msgEl.textContent = res.status === 429 ? '⚠ Prea multe încercări. Încearcă mai târziu.' : '❌ ' + (res.data.error || 'Eroare. Încearcă din nou.');
+      msgEl.textContent = res.status === 429 ? '⚠ Prea multe încercări. Încearcă mai târziu.' : '❌ ' + (MYD_I18N.eroare(res.data, 'Eroare. Încearcă din nou.'));
       msgEl.className = 'ftr-nl-msg error';
     } else if (res.data.deja_abonat) {
       msgEl.textContent = '✓ Ești deja abonat!';
@@ -1919,7 +1919,7 @@ async function submitUnavail() {
       body: JSON.stringify({ email, tara_cod: cc, tara_nume: zoneName, mesaj: mesaj || undefined }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Eroare necunoscută');
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, 'Eroare necunoscută'));
 
     const body = document.getElementById('zone-unavailable-body');
     if (body) {
@@ -2204,7 +2204,7 @@ document.addEventListener('DOMContentLoaded', function() {
           }
           if (!esteB2G && arataEroareFacturareServer(data)) return;
           const enEroare = window.MYD_I18N && window.MYD_I18N.lang && window.MYD_I18N.lang !== 'ro';
-          throw new Error((enEroare && data.error_en) || data.error || 'Eroare la plasarea comenzii');
+          throw new Error((enEroare && data.error_en) || MYD_I18N.eroare(data, 'Eroare la plasarea comenzii'));
         }
         scoateDinCosDupaComanda(MYD_CFG);
         if (esteB2G) {

@@ -15,7 +15,7 @@
 // fiecare produs vine cu starea furnizorului (furnizor_stare).
 
 const { requireAuth } = require('../../lib/auth-middleware');
-const { formaComuna } = require('../../lib/raspuns-eroare');
+const { formaComuna, trimiteEroare } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 const { incarcaEligibilitate, MESAJ_FURNIZOR, MOTIV, TIPURI_FURNIZOR } = require('../../lib/eligibilitate-partener');
@@ -75,26 +75,21 @@ async function handleGet(req, res) {
 async function handlePost(req, res, admin) {
   const { tip, produs_tip, id, decizie, motiv } = req.body || {};
   if (tip !== 'produs') {
-    return res.status(400).json({ error: "Pentru documente/parteneri, folosește /api/admin/verifica-document.js. Aici doar tip:'produs'." });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', "Pentru documente/parteneri, folosește /api/admin/verifica-document.js. Aici doar tip:'produs'.", 'For documents and partners, use /api/admin/verifica-document.js. This endpoint is only for tip:\'produs\'.');
   }
   if (!TABEL_PRODUS[produs_tip] || !id || !DECIZII_VALIDE.includes(decizie)) {
-    return res.status(400).json({ error: "produs_tip ('materiale'|'echipamente'), id și decizie ('aprobat'|'respins') sunt obligatorii" });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', "produs_tip ('materiale'|'echipamente'), id și decizie ('aprobat'|'respins') sunt obligatorii", 'produs_tip (\'materiale\'|\'echipamente\'), id and decizie (\'aprobat\'|\'respins\') are required.');
   }
 
   const tabel = TABEL_PRODUS[produs_tip];
   const { data: produs } = await supabaseAdmin.from(tabel).select('id, furnizor_id').eq('id', id).maybeSingle();
-  if (!produs) return res.status(404).json({ error: 'Produsul nu există', error_en: 'The product does not exist.' });
+  if (!produs) return trimiteEroare(res, 404, 'NU_EXISTA', 'Produsul nu există', 'The product does not exist.');
 
   if (decizie === 'aprobat') {
     const e = (await incarcaEligibilitate([produs.furnizor_id])).get(produs.furnizor_id);
     const motivFurnizor = e ? e.motiv : MOTIV.INEXISTENT;
     if (motivFurnizor) {
-      return res.status(409).json({
-        error: `Produsul nu poate fi aprobat: ${MESAJ_FURNIZOR[motivFurnizor].ro} Rămâne în așteptare.`,
-        error_en: `The product cannot be approved: ${MESAJ_FURNIZOR[motivFurnizor].en} It stays pending.`,
-        code: 'FURNIZOR_NU_POATE_VINDE',
-        motiv: motivFurnizor,
-      });
+      return trimiteEroare(res, 409, 'CONFLICT', `Produsul nu poate fi aprobat: ${MESAJ_FURNIZOR[motivFurnizor].ro} Rămâne în așteptare.`, `The product cannot be approved: ${MESAJ_FURNIZOR[motivFurnizor].en} It stays pending.`, null, { code: 'FURNIZOR_NU_POATE_VINDE', motiv: motivFurnizor });
     }
   }
 
@@ -108,7 +103,7 @@ async function handlePost(req, res, admin) {
     .eq('id', id)
     .select()
     .single();
-  if (error || !data) return res.status(404).json({ error: 'Produsul nu există', error_en: 'The product does not exist.' });
+  if (error || !data) return trimiteEroare(res, 404, 'NU_EXISTA', 'Produsul nu există', 'The product does not exist.');
 
   await inregistreazaAudit({
     admin, req, actiune: `marketplace_produs_${decizie}`, entitate: TABEL_PRODUS[produs_tip], entitate_id: id, detalii: { decizie, motiv },
@@ -119,7 +114,7 @@ async function handlePost(req, res, admin) {
 async function handler(req, res, admin) {
   if (req.method === 'GET') return handleGet(req, res);
   if (req.method === 'POST') return handlePost(req, res, admin);
-  return res.status(405).json({ error: 'Method not allowed' });
+  return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 }
 
 module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));

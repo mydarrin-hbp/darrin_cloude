@@ -137,7 +137,7 @@ async function incarca() {
   try {
     const res = await fetch(`/api/public/marketplace-produse?${qs}`);
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || t('Nu am putut încărca produsele.'));
+    if (!res.ok) throw new Error(MYD_I18N.eroare(data, t('Nu am putut încărca produsele.')));
     stare.date = data;
   } catch (e) {
     stare.date = null;

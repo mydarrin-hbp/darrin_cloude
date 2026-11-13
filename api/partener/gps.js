@@ -8,6 +8,7 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const v = require('../../lib/valideaza');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 // Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
 const SCHEMA = {
@@ -21,7 +22,7 @@ async function handlePost(req, res, user) {
   if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { comanda_id, lat, lng, eta_minute } = req.body || {};
   if (typeof lat !== 'number' || typeof lng !== 'number') {
-    return res.status(400).json({ error: 'lat și lng (numerice) sunt obligatorii' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'lat și lng (numerice) sunt obligatorii', 'lat and lng (numbers) are required.');
   }
 
   // FIX SECURITATE (audit 2026-07-10): verifică că comanda aparține acestui partener
@@ -32,17 +33,17 @@ async function handlePost(req, res, user) {
       .eq('id', comanda_id)
       .single();
     if (cmdErr || !comanda) {
-      return res.status(404).json({ error: 'Comanda nu există' });
+      return trimiteEroare(res, 404, 'COMANDA_NU_EXISTA', 'Comanda nu există', 'The order does not exist.');
     }
     if (comanda.partener_id !== user.id) {
-      return res.status(403).json({ error: 'Comanda nu îți este alocată' });
+      return trimiteEroare(res, 403, 'COMANDA_NEALOCATA', 'Comanda nu îți este alocată', 'This order is not assigned to you.');
     }
     // FIX (audit Secțiunea 24/36, 28 Iulie 2026): 'in_desfasurare' nu există
     // în comenzi_status_check (valorile reale: in_cautare_partener,
     // acceptata, in_executie, finalizata, confirmata_client, anulata) —
     // gate-ul respingea cu 409 exact comenzile aflate efectiv în execuție.
     if (!['acceptata', 'in_executie'].includes(comanda.status)) {
-      return res.status(409).json({ error: 'Comanda nu e activă' });
+      return trimiteEroare(res, 409, 'STARE_GRESITA', 'Comanda nu e activă', 'The order is not active.');
     }
   }
 
@@ -55,24 +56,24 @@ async function handlePost(req, res, user) {
 
   if (error) {
     console.error('[gps POST]', error);
-    return res.status(500).json({ error: 'Nu am putut salva poziția' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut salva poziția', 'We could not save the position.');
   }
   return res.status(200).json({ ok: true });
 }
 
 async function handleGet(req, res, user) {
   const { comanda_id } = req.query;
-  if (!comanda_id) return res.status(400).json({ error: 'comanda_id este obligatoriu (query param)' });
+  if (!comanda_id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'comanda_id este obligatoriu (query param)', 'comanda_id is required (query parameter).', ['comanda_id']);
 
   const { data: comanda, error: comErr } = await supabaseAdmin
     .from('comenzi')
     .select('client_id, partener_id')
     .eq('id', comanda_id)
     .single();
-  if (comErr || !comanda) return res.status(404).json({ error: 'Comanda nu există' });
+  if (comErr || !comanda) return trimiteEroare(res, 404, 'COMANDA_NU_EXISTA', 'Comanda nu există', 'The order does not exist.');
 
   if (comanda.client_id !== user.id && comanda.partener_id !== user.id) {
-    return res.status(403).json({ error: 'Nu ai acces la această comandă' });
+    return trimiteEroare(res, 403, 'FARA_DREPT', 'Nu ai acces la această comandă', 'You do not have access to this order.');
   }
 
   const { data, error } = await supabaseAdmin
@@ -81,14 +82,14 @@ async function handleGet(req, res, user) {
     .eq('comanda_id', comanda_id)
     .maybeSingle();
 
-  if (error) return res.status(500).json({ error: 'Eroare la citirea poziției' });
+  if (error) return trimiteEroare(res, 500, 'EROARE_SERVER', 'Eroare la citirea poziției', 'Error while reading the position.');
   return res.status(200).json({ ok: true, pozitie: data || null });
 }
 
 async function handler(req, res, user) {
   if (req.method === 'POST') return handlePost(req, res, user);
   if (req.method === 'GET') return handleGet(req, res, user);
-  return res.status(405).json({ error: 'Method not allowed' });
+  return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 }
 
 module.exports = requireAuth([], handler);

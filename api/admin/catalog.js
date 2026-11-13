@@ -14,7 +14,7 @@
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { requireAuth } = require('../../lib/auth-middleware');
-const { formaComuna } = require('../../lib/raspuns-eroare');
+const { formaComuna, trimiteEroare } = require('../../lib/raspuns-eroare');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 const { notificaParteneriEligibili } = require('../../lib/notifica-servicii-noi');
 const { calculeazaCostNivel } = require('../../lib/calculeaza-cost-recipe');
@@ -44,7 +44,7 @@ const MESAJ_CIORNA_EN = 'Created as a draft: it is published from the classifica
 async function actionList(req, res) {
   const { categorie } = req.body || {};
   if (categorie && !CATEGORII_VALIDE.includes(categorie)) {
-    return res.status(400).json({ error: `categorie invalidă. Trebuie: ${CATEGORII_VALIDE.join(', ')}` });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', `categorie invalidă. Trebuie: ${CATEGORII_VALIDE.join(', ')}`, `Invalid category. It must be one of: ${CATEGORII_VALIDE.join(', ')}`, ['categorie']);
   }
 
   let q = supabaseAdmin
@@ -55,7 +55,7 @@ async function actionList(req, res) {
   if (categorie) q = q.eq('categorie', categorie);
 
   const { data: servicii, error } = await q;
-  if (error) return res.status(500).json({ error: 'Nu am putut încărca catalogul.' });
+  if (error) return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca catalogul.', 'We could not load the catalogue.');
   if (!servicii.length) return res.status(200).json({ ok: true, servicii: [] });
 
   const idsServicii = servicii.map((s) => s.id);
@@ -92,10 +92,10 @@ async function actionList(req, res) {
 async function actionCreeazaServiciu(req, res, user) {
   const { id_serviciu, categorie, domeniu, titlu, icon, nace, cod_esco, cod_uniclass, unitate_masura, sectoare_client } = req.body || {};
   if (!id_serviciu || !categorie || !domeniu || !titlu) {
-    return res.status(400).json({ error: 'id_serviciu, categorie, domeniu și titlu sunt obligatorii.' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id_serviciu, categorie, domeniu și titlu sunt obligatorii.', 'id_serviciu, categorie, domeniu and titlu are required.');
   }
   if (!CATEGORII_VALIDE.includes(categorie)) {
-    return res.status(400).json({ error: `categorie invalidă. Trebuie: ${CATEGORII_VALIDE.join(', ')}` });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', `categorie invalidă. Trebuie: ${CATEGORII_VALIDE.join(', ')}`, `Invalid category. It must be one of: ${CATEGORII_VALIDE.join(', ')}`, ['categorie']);
   }
 
   const { data, error, ciorna } = await insereazaServiciu({
@@ -106,9 +106,9 @@ async function actionCreeazaServiciu(req, res, user) {
     creat_de_tip: 'admin', creat_de: user.id,
   });
   if (error) {
-    if (error.code === '23505') return res.status(409).json({ error: `id_serviciu "${id_serviciu}" există deja.` });
+    if (error.code === '23505') return trimiteEroare(res, 409, 'EXISTA_DEJA', `id_serviciu "${id_serviciu}" există deja.`, `id_serviciu "${id_serviciu}" already exists.`, ['id_serviciu']);
     console.error('[admin/catalog] creeaza_serviciu', error);
-    return res.status(500).json({ error: 'Nu am putut crea serviciul.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut crea serviciul.', 'We could not create the service.');
   }
 
   await inregistreazaAudit({ admin: user, req, actiune: 'catalog_creeaza_serviciu', entitate: 'catalog_servicii', entitate_id: data.id, detalii: { id_serviciu, categorie, titlu, ciorna } });
@@ -132,14 +132,14 @@ async function actionCreeazaServiciu(req, res, user) {
 
 async function actionActualizeazaServiciu(req, res, user) {
   const { id, ...campuri } = req.body || {};
-  if (!id) return res.status(400).json({ error: 'id obligatoriu.' });
+  if (!id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id obligatoriu.', 'id is required.', ['id']);
   // 31 august 2026: 'descriere' lipsea din lista de câmpuri editabile —
   // fondatorul n-avea cum să salveze/editeze descrierea unui material din
   // panou (descrierile de azi au fost scrise direct în DB, prin SQL).
   const permise = ['domeniu', 'titlu', 'icon', 'nace', 'cod_esco', 'cod_uniclass', 'unitate_masura', 'sectoare_client', 'status_public', 'descriere'];
   const update = {};
   permise.forEach((c) => { if (campuri[c] !== undefined) update[c] = campuri[c]; });
-  if (!Object.keys(update).length) return res.status(400).json({ error: 'Niciun câmp de actualizat.' });
+  if (!Object.keys(update).length) return trimiteEroare(res, 400, 'NIMIC_DE_ACTUALIZAT', 'Niciun câmp de actualizat.', 'There is no field to update.');
 
   // După migrarea ruta_incadrare, publicarea trece doar prin ruta de încadrare;
   // ascunderea unui serviciu publicat îl retrage (stare = 'retras').
@@ -147,14 +147,14 @@ async function actionActualizeazaServiciu(req, res, user) {
     const { data: actual, error: errStare } = await supabaseAdmin.from('catalog_servicii').select('stare').eq('id', id).maybeSingle();
     if (!lipsesteColoanaStare(errStare) && actual) {
       if (update.status_public === true && actual.stare !== 'publicat') {
-        return res.status(409).json({ error: 'Serviciul e ciornă: se publică din ruta de încadrare, după validare.', error_en: 'The service is a draft: it is published from the classification route, after validation.' });
+        return trimiteEroare(res, 409, 'CONFLICT', 'Serviciul e ciornă: se publică din ruta de încadrare, după validare.', 'The service is a draft: it is published from the classification route, after validation.');
       }
       if (update.status_public === false) update.stare = 'retras';
     }
   }
 
   const { error } = await supabaseAdmin.from('catalog_servicii').update(update).eq('id', id);
-  if (error) { console.error('[admin/catalog] actualizeaza_serviciu', error); return res.status(500).json({ error: 'Nu am putut actualiza serviciul.' }); }
+  if (error) { console.error('[admin/catalog] actualizeaza_serviciu', error); return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut actualiza serviciul.', 'We could not update the service.'); }
 
   await inregistreazaAudit({ admin: user, req, actiune: 'catalog_actualizeaza_serviciu', entitate: 'catalog_servicii', entitate_id: id, detalii: update });
   return res.status(200).json({ ok: true });
@@ -165,7 +165,7 @@ async function actionActualizeazaServiciu(req, res, user) {
 // CASCADE configurat sau nu, ca să nu pice pe constraint violation.
 async function actionStergeServiciu(req, res, user) {
   const { id } = req.body || {};
-  if (!id) return res.status(400).json({ error: 'id obligatoriu.' });
+  if (!id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id obligatoriu.', 'id is required.', ['id']);
 
   const { data: niveluri } = await supabaseAdmin.from('catalog_niveluri').select('id').eq('serviciu_id', id);
   const idsNiveluri = (niveluri || []).map((n) => n.id);
@@ -176,7 +176,7 @@ async function actionStergeServiciu(req, res, user) {
   await supabaseAdmin.from('catalog_relatii').delete().or(`catalog_serviciu_id.eq.${id},catalog_relatie_id.eq.${id}`);
 
   const { error } = await supabaseAdmin.from('catalog_servicii').delete().eq('id', id);
-  if (error) { console.error('[admin/catalog] sterge_serviciu', error); return res.status(500).json({ error: 'Nu am putut șterge serviciul.' }); }
+  if (error) { console.error('[admin/catalog] sterge_serviciu', error); return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut șterge serviciul.', 'We could not delete the service.'); }
 
   await inregistreazaAudit({ admin: user, req, actiune: 'catalog_sterge_serviciu', entitate: 'catalog_servicii', entitate_id: id });
   return res.status(200).json({ ok: true });
@@ -185,7 +185,7 @@ async function actionStergeServiciu(req, res, user) {
 async function actionCreeazaNivel(req, res, user) {
   const { serviciu_id, nivel, nivel_complexitate, norma_timp, materiale_baza_estimat, label, descriere, garantie_luni } = req.body || {};
   if (!serviciu_id || !nivel || nivel_complexitate == null || norma_timp == null) {
-    return res.status(400).json({ error: 'serviciu_id, nivel, nivel_complexitate și norma_timp sunt obligatorii.' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'serviciu_id, nivel, nivel_complexitate și norma_timp sunt obligatorii.', 'serviciu_id, the tier, nivel_complexitate and norma_timp are required.');
   }
   const { data, error } = await supabaseAdmin
     .from('catalog_niveluri')
@@ -196,7 +196,7 @@ async function actionCreeazaNivel(req, res, user) {
     })
     .select('id')
     .single();
-  if (error) { console.error('[admin/catalog] creeaza_nivel', error); return res.status(500).json({ error: 'Nu am putut crea nivelul.' }); }
+  if (error) { console.error('[admin/catalog] creeaza_nivel', error); return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut crea nivelul.', 'We could not create the tier.'); }
 
   await inregistreazaAudit({ admin: user, req, actiune: 'catalog_creeaza_nivel', entitate: 'catalog_niveluri', entitate_id: data.id, detalii: { serviciu_id, nivel } });
   return res.status(200).json({ ok: true, id: data.id });
@@ -204,14 +204,14 @@ async function actionCreeazaNivel(req, res, user) {
 
 async function actionActualizeazaNivel(req, res, user) {
   const { id, ...campuri } = req.body || {};
-  if (!id) return res.status(400).json({ error: 'id obligatoriu.' });
+  if (!id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id obligatoriu.', 'id is required.', ['id']);
   const permise = ['nivel', 'nivel_complexitate', 'norma_timp', 'materiale_baza_estimat', 'label', 'descriere', 'garantie_luni'];
   const update = {};
   permise.forEach((c) => { if (campuri[c] !== undefined) update[c] = campuri[c]; });
-  if (!Object.keys(update).length) return res.status(400).json({ error: 'Niciun câmp de actualizat.' });
+  if (!Object.keys(update).length) return trimiteEroare(res, 400, 'NIMIC_DE_ACTUALIZAT', 'Niciun câmp de actualizat.', 'There is no field to update.');
 
   const { error } = await supabaseAdmin.from('catalog_niveluri').update(update).eq('id', id);
-  if (error) { console.error('[admin/catalog] actualizeaza_nivel', error); return res.status(500).json({ error: 'Nu am putut actualiza nivelul.' }); }
+  if (error) { console.error('[admin/catalog] actualizeaza_nivel', error); return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut actualiza nivelul.', 'We could not update the tier.'); }
 
   await inregistreazaAudit({ admin: user, req, actiune: 'catalog_actualizeaza_nivel', entitate: 'catalog_niveluri', entitate_id: id, detalii: update });
   return res.status(200).json({ ok: true });
@@ -219,10 +219,10 @@ async function actionActualizeazaNivel(req, res, user) {
 
 async function actionStergeNivel(req, res, user) {
   const { id } = req.body || {};
-  if (!id) return res.status(400).json({ error: 'id obligatoriu.' });
+  if (!id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id obligatoriu.', 'id is required.', ['id']);
   await supabaseAdmin.from('catalog_preturi').delete().eq('nivel_id', id);
   const { error } = await supabaseAdmin.from('catalog_niveluri').delete().eq('id', id);
-  if (error) { console.error('[admin/catalog] sterge_nivel', error); return res.status(500).json({ error: 'Nu am putut șterge nivelul.' }); }
+  if (error) { console.error('[admin/catalog] sterge_nivel', error); return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut șterge nivelul.', 'We could not delete the tier.'); }
 
   await inregistreazaAudit({ admin: user, req, actiune: 'catalog_sterge_nivel', entitate: 'catalog_niveluri', entitate_id: id });
   return res.status(200).json({ ok: true });
@@ -231,7 +231,7 @@ async function actionStergeNivel(req, res, user) {
 async function actionCreeazaPret(req, res, user) {
   const { nivel_id, tara_cod, regiune, localitate, moneda, pret, pret_urgenta, pret_noapte, pret_sarbatori, comanda_minima } = req.body || {};
   if (!nivel_id || !tara_cod || !moneda || pret == null) {
-    return res.status(400).json({ error: 'nivel_id, tara_cod, moneda și pret sunt obligatorii.' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'nivel_id, tara_cod, moneda și pret sunt obligatorii.', 'nivel_id, tara_cod, moneda and pret are required.');
   }
   const { data, error } = await supabaseAdmin
     .from('catalog_preturi')
@@ -242,7 +242,7 @@ async function actionCreeazaPret(req, res, user) {
     })
     .select('id')
     .single();
-  if (error) { console.error('[admin/catalog] creeaza_pret', error); return res.status(500).json({ error: 'Nu am putut crea prețul.' }); }
+  if (error) { console.error('[admin/catalog] creeaza_pret', error); return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut crea prețul.', 'We could not create the price.'); }
 
   await inregistreazaAudit({ admin: user, req, actiune: 'catalog_creeaza_pret', entitate: 'catalog_preturi', entitate_id: data.id, detalii: { nivel_id, tara_cod, pret } });
   return res.status(200).json({ ok: true, id: data.id });
@@ -250,16 +250,16 @@ async function actionCreeazaPret(req, res, user) {
 
 async function actionActualizeazaPret(req, res, user) {
   const { id, ...campuri } = req.body || {};
-  if (!id) return res.status(400).json({ error: 'id obligatoriu.' });
+  if (!id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id obligatoriu.', 'id is required.', ['id']);
   const permise = ['tara_cod', 'regiune', 'localitate', 'moneda', 'pret', 'pret_urgenta', 'pret_noapte', 'pret_sarbatori', 'comanda_minima', 'activ'];
   const update = {};
   permise.forEach((c) => { if (campuri[c] !== undefined) update[c] = campuri[c]; });
-  if (!Object.keys(update).length) return res.status(400).json({ error: 'Niciun câmp de actualizat.' });
+  if (!Object.keys(update).length) return trimiteEroare(res, 400, 'NIMIC_DE_ACTUALIZAT', 'Niciun câmp de actualizat.', 'There is no field to update.');
   update.updated_at = new Date().toISOString();
   update.updated_by = user.id;
 
   const { error } = await supabaseAdmin.from('catalog_preturi').update(update).eq('id', id);
-  if (error) { console.error('[admin/catalog] actualizeaza_pret', error); return res.status(500).json({ error: 'Nu am putut actualiza prețul.' }); }
+  if (error) { console.error('[admin/catalog] actualizeaza_pret', error); return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut actualiza prețul.', 'We could not update the price.'); }
 
   await inregistreazaAudit({ admin: user, req, actiune: 'catalog_actualizeaza_pret', entitate: 'catalog_preturi', entitate_id: id, detalii: update });
   return res.status(200).json({ ok: true });
@@ -267,9 +267,9 @@ async function actionActualizeazaPret(req, res, user) {
 
 async function actionStergePret(req, res, user) {
   const { id } = req.body || {};
-  if (!id) return res.status(400).json({ error: 'id obligatoriu.' });
+  if (!id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id obligatoriu.', 'id is required.', ['id']);
   const { error } = await supabaseAdmin.from('catalog_preturi').delete().eq('id', id);
-  if (error) { console.error('[admin/catalog] sterge_pret', error); return res.status(500).json({ error: 'Nu am putut șterge prețul.' }); }
+  if (error) { console.error('[admin/catalog] sterge_pret', error); return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut șterge prețul.', 'We could not delete the price.'); }
 
   await inregistreazaAudit({ admin: user, req, actiune: 'catalog_sterge_pret', entitate: 'catalog_preturi', entitate_id: id });
   return res.status(200).json({ ok: true });
@@ -286,7 +286,7 @@ async function actionStergePret(req, res, user) {
 async function actionRecalculeazaPret(req, res, user) {
   const { nivel_id, tara_cod, forteaza = false } = req.body || {};
   if (!nivel_id || !tara_cod) {
-    return res.status(400).json({ error: 'nivel_id și tara_cod sunt obligatorii.' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'nivel_id și tara_cod sunt obligatorii.', 'nivel_id and tara_cod are required.');
   }
 
   let cost;
@@ -294,7 +294,7 @@ async function actionRecalculeazaPret(req, res, user) {
     cost = await calculeazaCostNivel({ nivelId: nivel_id, taraCod: tara_cod });
   } catch (err) {
     console.error('[admin/catalog] recalculeaza_pret cost', err);
-    return res.status(500).json({ error: 'Nu am putut calcula costul din rețeta tehnică.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut calcula costul din rețeta tehnică.', 'We could not calculate the cost from the technical recipe.');
   }
 
   if (cost.resurse_fara_pret.length && !forteaza) {
@@ -326,14 +326,14 @@ async function actionRecalculeazaPret(req, res, user) {
       .from('catalog_preturi')
       .update({ moneda, pret: calc.pret_final, activ: true, updated_at: new Date().toISOString(), updated_by: user.id })
       .eq('id', existing.id);
-    if (error) { console.error('[admin/catalog] recalculeaza_pret update', error); return res.status(500).json({ error: 'Nu am putut actualiza prețul.' }); }
+    if (error) { console.error('[admin/catalog] recalculeaza_pret update', error); return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut actualiza prețul.', 'We could not update the price.'); }
     id = existing.id;
   } else {
     const { data, error } = await supabaseAdmin
       .from('catalog_preturi')
       .insert({ nivel_id, tara_cod, regiune: null, localitate: null, moneda, pret: calc.pret_final, activ: true, updated_by: user.id })
       .select('id').single();
-    if (error) { console.error('[admin/catalog] recalculeaza_pret insert', error); return res.status(500).json({ error: 'Nu am putut crea prețul.' }); }
+    if (error) { console.error('[admin/catalog] recalculeaza_pret insert', error); return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut crea prețul.', 'We could not create the price.'); }
     id = data.id;
   }
 
@@ -359,24 +359,24 @@ const NIVELURI_STANDARD = [
 
 async function actionGenereazaServiciiDinMaterial(req, res, user) {
   const { material_id } = req.body || {};
-  if (!material_id) return res.status(400).json({ error: 'material_id obligatoriu.' });
+  if (!material_id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'material_id obligatoriu.', 'material_id is required.', ['material_id']);
 
   const { data: material, error: errMaterial } = await supabaseAdmin
     .from('materiale_referinta_ai')
     .select('id, categorie, denumire')
     .eq('id', material_id)
     .maybeSingle();
-  if (errMaterial) { console.error('[admin/catalog] genereaza_servicii_din_material', errMaterial); return res.status(500).json({ error: 'Nu am putut încărca materialul.' }); }
-  if (!material) return res.status(404).json({ error: 'Materialul nu există.' });
+  if (errMaterial) { console.error('[admin/catalog] genereaza_servicii_din_material', errMaterial); return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca materialul.', 'We could not load the material.'); }
+  if (!material) return trimiteEroare(res, 404, 'NU_EXISTA', 'Materialul nu există.', 'The material does not exist.');
 
   const { data: sabloane, error: errSabloane } = await supabaseAdmin
     .from('catalog_servicii_template')
     .select('id, categorie, tip_serviciu, titlu_pattern, domeniu, cod_esco, nace, cod_uniclass, indicator_id, activ')
     .eq('categorie', material.categorie)
     .eq('activ', true);
-  if (errSabloane) { console.error('[admin/catalog] genereaza_servicii_din_material', errSabloane); return res.status(500).json({ error: 'Nu am putut încărca șabloanele.' }); }
+  if (errSabloane) { console.error('[admin/catalog] genereaza_servicii_din_material', errSabloane); return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca șabloanele.', 'We could not load the templates.'); }
   if (!sabloane || !sabloane.length) {
-    return res.status(400).json({ error: `Nu există șabloane active pentru categoria "${material.categorie}".` });
+    return trimiteEroare(res, 400, 'FARA_SABLOANE', `Nu există șabloane active pentru categoria "${material.categorie}".`, `There are no active templates for the category "${material.categorie}".`);
   }
 
   const { data: existente } = await supabaseAdmin
@@ -457,7 +457,7 @@ async function actionGenereazaServiciiDinMaterial(req, res, user) {
 async function actionLeagaArticolNivel(req, res, user) {
   const { articol_id, catalog_nivel_id, forteaza = false } = req.body || {};
   if (!articol_id || !catalog_nivel_id) {
-    return res.status(400).json({ error: 'articol_id și catalog_nivel_id sunt obligatorii.' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'articol_id și catalog_nivel_id sunt obligatorii.', 'articol_id and catalog_nivel_id are required.');
   }
 
   const { data: articol, error: errArticol } = await supabaseAdmin
@@ -465,13 +465,10 @@ async function actionLeagaArticolNivel(req, res, user) {
     .select('articol_id, indicator_id, catalog_nivel_id')
     .eq('articol_id', articol_id)
     .maybeSingle();
-  if (errArticol) { console.error('[admin/catalog] leaga_articol_nivel articol', errArticol); return res.status(500).json({ error: 'Nu am putut încărca articolul.' }); }
-  if (!articol) return res.status(404).json({ error: 'Articolul nu există.' });
+  if (errArticol) { console.error('[admin/catalog] leaga_articol_nivel articol', errArticol); return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca articolul.', 'We could not load the item.'); }
+  if (!articol) return trimiteEroare(res, 404, 'NU_EXISTA', 'Articolul nu există.', 'The item does not exist.');
   if (articol.catalog_nivel_id && articol.catalog_nivel_id !== catalog_nivel_id && !forteaza) {
-    return res.status(409).json({
-      error: 'Articolul e deja legat de alt nivel — retrimite cu forteaza:true ca să-l muți.',
-      catalog_nivel_id_curent: articol.catalog_nivel_id,
-    });
+    return trimiteEroare(res, 409, 'LEGAT_DEJA', 'Articolul e deja legat de alt nivel — retrimite cu forteaza:true ca să-l muți.', 'The item is already linked to another tier. Send it again with forteaza:true to move it.', null, { catalog_nivel_id_curent: articol.catalog_nivel_id });
   }
 
   const { data: nivel, error: errNivel } = await supabaseAdmin
@@ -479,8 +476,8 @@ async function actionLeagaArticolNivel(req, res, user) {
     .select('id, nivel, serviciu_id')
     .eq('id', catalog_nivel_id)
     .maybeSingle();
-  if (errNivel) { console.error('[admin/catalog] leaga_articol_nivel nivel', errNivel); return res.status(500).json({ error: 'Nu am putut încărca nivelul.' }); }
-  if (!nivel) return res.status(404).json({ error: 'Nivelul nu există.' });
+  if (errNivel) { console.error('[admin/catalog] leaga_articol_nivel nivel', errNivel); return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca nivelul.', 'We could not load the tier.'); }
+  if (!nivel) return trimiteEroare(res, 404, 'NU_EXISTA', 'Nivelul nu există.', 'The tier does not exist.');
 
   // Avertisment neblocant — nicio regulă DB reală de potrivire domeniu azi,
   // doar un tipar semantic observat (cod NACE indicator vs. cod NACE
@@ -501,7 +498,7 @@ async function actionLeagaArticolNivel(req, res, user) {
     .from('devize_articole')
     .update({ catalog_nivel_id })
     .eq('articol_id', articol_id);
-  if (errUpdate) { console.error('[admin/catalog] leaga_articol_nivel update', errUpdate); return res.status(500).json({ error: 'Nu am putut lega articolul.' }); }
+  if (errUpdate) { console.error('[admin/catalog] leaga_articol_nivel update', errUpdate); return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut lega articolul.', 'We could not link the item.'); }
 
   await inregistreazaAudit({
     admin: user, req, actiune: 'catalog_leaga_articol_nivel', entitate: 'devize_articole', entitate_id: String(articol_id),
@@ -513,13 +510,13 @@ async function actionLeagaArticolNivel(req, res, user) {
 
 async function actionDezleagaArticolNivel(req, res, user) {
   const { articol_id } = req.body || {};
-  if (!articol_id) return res.status(400).json({ error: 'articol_id obligatoriu.' });
+  if (!articol_id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'articol_id obligatoriu.', 'articol_id is required.', ['articol_id']);
 
   const { error } = await supabaseAdmin
     .from('devize_articole')
     .update({ catalog_nivel_id: null })
     .eq('articol_id', articol_id);
-  if (error) { console.error('[admin/catalog] dezleaga_articol_nivel', error); return res.status(500).json({ error: 'Nu am putut dezlega articolul.' }); }
+  if (error) { console.error('[admin/catalog] dezleaga_articol_nivel', error); return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut dezlega articolul.', 'We could not unlink the item.'); }
 
   await inregistreazaAudit({ admin: user, req, actiune: 'catalog_dezleaga_articol_nivel', entitate: 'devize_articole', entitate_id: String(articol_id) });
   return res.status(200).json({ ok: true });
@@ -527,13 +524,13 @@ async function actionDezleagaArticolNivel(req, res, user) {
 
 async function actionListeazaArticoleNivel(req, res) {
   const { catalog_nivel_id } = req.body || {};
-  if (!catalog_nivel_id) return res.status(400).json({ error: 'catalog_nivel_id obligatoriu.' });
+  if (!catalog_nivel_id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'catalog_nivel_id obligatoriu.', 'catalog_nivel_id is required.', ['catalog_nivel_id']);
   const { data, error } = await supabaseAdmin
     .from('devize_articole')
     .select('articol_id, indicator_id, denumire_articol, unitate_masura')
     .eq('catalog_nivel_id', catalog_nivel_id)
     .order('articol_id');
-  if (error) { console.error('[admin/catalog] listeaza_articole_nivel', error); return res.status(500).json({ error: 'Nu am putut încărca articolele legate.' }); }
+  if (error) { console.error('[admin/catalog] listeaza_articole_nivel', error); return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca articolele legate.', 'We could not load the linked items.'); }
   return res.status(200).json({ ok: true, articole: data || [] });
 }
 
@@ -546,7 +543,7 @@ async function actionCautaArticole(req, res) {
     .order('articol_id');
   if (termen) q = q.or(`denumire_articol.ilike.%${termen}%,indicator_id.ilike.%${termen}%`);
   const { data, error } = await q;
-  if (error) { console.error('[admin/catalog] cauta_articole', error); return res.status(500).json({ error: 'Nu am putut căuta articolele.' }); }
+  if (error) { console.error('[admin/catalog] cauta_articole', error); return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut căuta articolele.', 'We could not search the items.'); }
   return res.status(200).json({ ok: true, articole: data || [] });
 }
 
@@ -555,11 +552,11 @@ async function actionCautaArticole(req, res) {
 // catalog-niveluri.js, folosit și de pagina adminului de catalog).
 async function actionServiciuCuNiveluri(req, res) {
   const { id } = req.body || {};
-  if (!id) return res.status(400).json({ error: 'id obligatoriu.', error_en: 'id is required.' });
+  if (!id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id obligatoriu.', 'id is required.', ['id']);
   const { data: s, error } = await supabaseAdmin.from('catalog_servicii')
     .select('id, id_serviciu, categorie, domeniu, titlu, nace, cod_esco, cod_uniclass, status_public').eq('id', id).maybeSingle();
-  if (error) return res.status(500).json({ error: 'Nu am putut încărca serviciul.', error_en: 'Could not load the service.' });
-  if (!s) return res.status(404).json({ error: 'Serviciul nu există.', error_en: 'The service does not exist.' });
+  if (error) return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca serviciul.', 'Could not load the service.');
+  if (!s) return trimiteEroare(res, 404, 'NU_EXISTA', 'Serviciul nu există.', 'The service does not exist.');
   const { data: niveluri } = await supabaseAdmin.from('catalog_niveluri')
     .select('id, serviciu_id, nivel, nivel_complexitate, norma_timp, materiale_baza_estimat, label, descriere, garantie_luni')
     .eq('serviciu_id', id).order('nivel_complexitate', { ascending: true });
@@ -627,7 +624,7 @@ async function serviciuAtins(action, b) {
 async function cereDreptAdmin(req, res, user, action) {
   const ruta = require('./ruta-incadrare')._intern;
   const perm = await ruta.permisiune(user);
-  const refuz = (status, error, error_en) => { res.status(status).json({ error, error_en }); return false; };
+  const refuz = (status, error, error_en) => { trimiteEroare(res, status, ({ 403: 'FARA_DREPT', 404: 'NU_EXISTA', 409: 'MIGRARE_NEAPLICATA' })[status] || 'EROARE', error, error_en); return false; };
   if (!perm) return refuz(403, 'Nu ai drept pe catalogul de servicii.', 'You have no rights on the service catalogue.');
   if (perm.superadmin) return true;
   if (!ACTIUNI_ADMIN_CATALOG.has(action)) return refuz(403, 'Acțiune rezervată superadminului.', 'Action reserved for the superadmin.');
@@ -647,10 +644,10 @@ async function cereDreptAdmin(req, res, user, action) {
 }
 
 async function handler(req, res, user) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   const { action } = req.body || {};
   const fn = ACTIUNI[action];
-  if (!fn) return res.status(400).json({ error: `action invalidă. Trebuie una din: ${Object.keys(ACTIUNI).join(', ')}` });
+  if (!fn) return trimiteEroare(res, 400, 'ACTIUNE_NECUNOSCUTA', `action invalidă. Trebuie una din: ${Object.keys(ACTIUNI).join(', ')}`, `Invalid action. It must be one of: ${Object.keys(ACTIUNI).join(', ')}`, ['action']);
   if (!(await cereDreptAdmin(req, res, user, action))) return undefined;
   return fn(req, res, user);
 }

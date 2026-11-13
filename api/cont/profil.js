@@ -42,6 +42,7 @@ const { rolPentruTipPartener } = require('../../lib/roluri-partener');
 const { eligibilitatePartener } = require('../../lib/eligibilitate-partener');
 const { citesteKyc, starePublica } = require('../../lib/investitori-kyc');
 const { stareActivare } = require('../../lib/activare-partener');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 function numeAfisat(user) {
   const m = user.user_metadata || {};
@@ -62,7 +63,7 @@ async function motivRespingere(partnerId) {
 }
 
 async function handler(req, res, user) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   res.setHeader('Cache-Control', 'private, no-store');
   try {
     // select('*'): coloana telefonului diferă între medii (phone / telefon).
@@ -117,7 +118,7 @@ async function handler(req, res, user) {
     });
   } catch (err) {
     console.error('[cont/profil]', err);
-    return res.status(500).json({ error: 'Nu am putut încărca profilul.', error_en: 'Could not load your profile.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca profilul.', 'Could not load your profile.');
   }
 }
 

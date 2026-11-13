@@ -12,6 +12,7 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const v = require('../../lib/valideaza');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 // Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
 const SCHEMA = {
@@ -26,7 +27,7 @@ async function handler(req, res, user) {
       .from('parteneri_program_lucru')
       .select('zi_saptamana, ora_inceput, ora_sfarsit, activ')
       .eq('partener_id', user.id);
-    if (error) return res.status(500).json({ error: 'Nu am putut încărca programul de lucru' });
+    if (error) return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca programul de lucru', 'We could not load the working hours.');
 
     const perZi = new Map((data || []).map((r) => [r.zi_saptamana, r]));
     const program = [0, 1, 2, 3, 4, 5, 6].map((zi) => perZi.get(zi) || { zi_saptamana: zi, ...FALLBACK });
@@ -37,14 +38,14 @@ async function handler(req, res, user) {
     if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
     const { program } = req.body || {};
     if (!Array.isArray(program) || program.length !== 7) {
-      return res.status(400).json({ error: 'program trebuie să fie un array cu exact 7 zile' });
+      return trimiteEroare(res, 400, 'DATE_INVALIDE', 'program trebuie să fie un array cu exact 7 zile', 'program must be an array with exactly 7 days.', ['program']);
     }
     for (const zi of program) {
       if (typeof zi.zi_saptamana !== 'number' || zi.zi_saptamana < 0 || zi.zi_saptamana > 6) {
-        return res.status(400).json({ error: 'zi_saptamana invalidă' });
+        return trimiteEroare(res, 400, 'DATE_INVALIDE', 'zi_saptamana invalidă', 'zi_saptamana is not valid.', ['zi_saptamana']);
       }
       if (!/^\d{2}:\d{2}(:\d{2})?$/.test(zi.ora_inceput || '') || !/^\d{2}:\d{2}(:\d{2})?$/.test(zi.ora_sfarsit || '')) {
-        return res.status(400).json({ error: 'ora_inceput/ora_sfarsit trebuie în format HH:MM' });
+        return trimiteEroare(res, 400, 'DATE_INVALIDE', 'ora_inceput/ora_sfarsit trebuie în format HH:MM', 'ora_inceput/ora_sfarsit must be in HH:MM format.');
       }
     }
 
@@ -61,12 +62,12 @@ async function handler(req, res, user) {
       .upsert(randuri, { onConflict: 'partener_id,zi_saptamana' });
     if (error) {
       console.error('[program-lucru]', error);
-      return res.status(500).json({ error: 'Nu am putut salva programul de lucru' });
+      return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut salva programul de lucru', 'We could not save the working hours. Please try again.');
     }
     return res.status(200).json({ ok: true });
   }
 
-  return res.status(405).json({ error: 'Method not allowed' });
+  return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 }
 
 module.exports = requireAuth([], handler);

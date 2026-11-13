@@ -13,8 +13,9 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
-const { esteFurnizorPropriu, EROARE_FACTURA_FURNIZOR_PROPRIU } = require('../../lib/furnizor-propriu');
+const { esteFurnizorPropriu, EROARE_FACTURA_FURNIZOR_PROPRIU, EROARE_FACTURA_FURNIZOR_PROPRIU_EN } = require('../../lib/furnizor-propriu');
 const v = require('../../lib/valideaza');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const ROLURI_PARTENER = [
   'partener_curier', 'partener_servicii', 'partener_materiale',
@@ -48,7 +49,7 @@ async function handleGet(req, res, user) {
     .eq('status', 'alocat');
   if (alocariErr) {
     console.error('[partener/facturi] alocari', alocariErr);
-    return res.status(500).json({ error: 'Nu am putut încărca alocările' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca alocările', 'We could not load the allocations.');
   }
 
   const { data: facturiExistente, error: facturiErr } = await supabaseAdmin
@@ -58,7 +59,7 @@ async function handleGet(req, res, user) {
     .order('creat_la', { ascending: false });
   if (facturiErr) {
     console.error('[partener/facturi] facturi existente', facturiErr);
-    return res.status(500).json({ error: 'Nu am putut încărca facturile' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca facturile', 'We could not load the invoices.');
   }
 
   const idAlocariFacturate = new Set(facturiExistente.map((f) => f.comanda_subcontractor_id));
@@ -106,16 +107,16 @@ async function handlePost(req, res, user) {
   const { comanda_subcontractor_id, numar_factura_partener, fisier_base64, mime_type } = req.body || {};
 
   if (!comanda_subcontractor_id || !numar_factura_partener) {
-    return res.status(400).json({ error: 'comanda_subcontractor_id și numar_factura_partener sunt obligatorii' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'comanda_subcontractor_id și numar_factura_partener sunt obligatorii', 'comanda_subcontractor_id and numar_factura_partener are required.');
   }
   if (!fisier_base64 || !ALLOWED_MIME.has(mime_type)) {
-    return res.status(400).json({ error: `mime_type acceptat: ${[...ALLOWED_MIME].join(', ')}` });
+    return trimiteEroare(res, 400, 'TIP_FISIER', `mime_type acceptat: ${[...ALLOWED_MIME].join(', ')}`, `Accepted mime_type: ${[...ALLOWED_MIME].join(', ')}`, ['mime_type']);
   }
   if (base64Bytes(fisier_base64) > MAX_BYTES) {
-    return res.status(400).json({ error: 'Fișierul depășește 5MB' });
+    return trimiteEroare(res, 400, 'PREA_MARE', 'Fișierul depășește 5MB', 'The file is larger than 5MB.');
   }
   if (await esteFurnizorPropriu(user.id)) {
-    return res.status(409).json({ error: EROARE_FACTURA_FURNIZOR_PROPRIU, code: 'FURNIZOR_PROPRIU' });
+    return trimiteEroare(res, 409, 'FURNIZOR_PROPRIU', EROARE_FACTURA_FURNIZOR_PROPRIU, EROARE_FACTURA_FURNIZOR_PROPRIU_EN, null, { code: 'FURNIZOR_PROPRIU' });
   }
 
   const { data: alocare, error: alocareErr } = await supabaseAdmin
@@ -125,12 +126,12 @@ async function handlePost(req, res, user) {
     .maybeSingle();
   if (alocareErr) {
     console.error('[partener/facturi] alocare', alocareErr);
-    return res.status(500).json({ error: 'Eroare la verificarea alocării' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Eroare la verificarea alocării', 'Error while checking the allocation. Please try again.');
   }
-  if (!alocare) return res.status(404).json({ error: 'Alocarea nu există' });
-  if (alocare.actor_id !== user.id) return res.status(403).json({ error: 'Această alocare nu îți aparține' });
+  if (!alocare) return trimiteEroare(res, 404, 'NU_EXISTA', 'Alocarea nu există', 'The allocation does not exist.');
+  if (alocare.actor_id !== user.id) return trimiteEroare(res, 403, 'FARA_DREPT', 'Această alocare nu îți aparține', 'This allocation does not belong to you.');
   if (alocare.status !== 'alocat') {
-    return res.status(409).json({ error: `Alocarea nu e într-o stare facturabilă (status curent: ${alocare.status})` });
+    return trimiteEroare(res, 409, 'STARE_GRESITA', `Alocarea nu e într-o stare facturabilă (status curent: ${alocare.status})`, `The allocation is not in a billable state (current status: ${alocare.status}).`);
   }
 
   const { data: comanda } = await supabaseAdmin
@@ -150,7 +151,7 @@ async function handlePost(req, res, user) {
   try {
     buffer = Buffer.from(fisier_base64, 'base64');
   } catch (e) {
-    return res.status(400).json({ error: 'fisier_base64 invalid' });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', 'fisier_base64 invalid', 'fisier_base64 is not valid.', ['fisier_base64']);
   }
 
   const ext = EXT_FOR_MIME[mime_type];
@@ -161,7 +162,7 @@ async function handlePost(req, res, user) {
     .upload(path, buffer, { contentType: mime_type });
   if (uploadErr) {
     console.error('[partener/facturi] storage', uploadErr);
-    return res.status(500).json({ error: 'Nu am putut încărca fișierul facturii' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca fișierul facturii', 'We could not upload the invoice file. Please try again.');
   }
 
   const { data: inserted, error: insertErr } = await supabaseAdmin
@@ -179,9 +180,9 @@ async function handlePost(req, res, user) {
     .select()
     .single();
   if (insertErr) {
-    if (insertErr.code === '23505') return res.status(409).json({ error: 'Există deja o factură emisă pentru această alocare' });
+    if (insertErr.code === '23505') return trimiteEroare(res, 409, 'EXISTA_DEJA', 'Există deja o factură emisă pentru această alocare', 'An invoice has already been issued for this allocation.');
     console.error('[partener/facturi] insert', insertErr);
-    return res.status(500).json({ error: 'Nu am putut înregistra factura' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut înregistra factura', 'We could not record the invoice. Please try again.');
   }
 
   // D2c (24 august 2026): status-ul de pe comanda_subcontractori trebuie să
@@ -204,7 +205,7 @@ async function handlePost(req, res, user) {
 async function handler(req, res, user) {
   if (req.method === 'GET') return handleGet(req, res, user);
   if (req.method === 'POST') return handlePost(req, res, user);
-  return res.status(405).json({ error: 'Method not allowed' });
+  return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 }
 
 module.exports = requireAuth(ROLURI_PARTENER, handler);

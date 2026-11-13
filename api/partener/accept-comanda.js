@@ -12,6 +12,7 @@ const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { eligibilitatePartener, poatePrimiComenzi, motivNuPoateVinde, MOTIV } = require('../../lib/eligibilitate-partener');
 const v = require('../../lib/valideaza');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 // Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
 const SCHEMA = {
@@ -31,12 +32,12 @@ const ROLURI_PARTENER = [
 // (poatePrimiComenzi); furnizorul propriu al platformei, aprobat, nu are
 // nevoie de contract și nici de cont bancar de partener.
 const MESAJ_HARD_STOP = {
-  [MOTIV.INEXISTENT]: { code: 'PARTENER_INEXISTENT', error: 'Cont de partener inexistent.' },
-  [MOTIV.SUSPENDAT]: { code: 'CONT_SUSPENDAT', error: 'Contul tău este suspendat — nu poți prelua comenzi.' },
-  [MOTIV.RESPINS]: { code: 'PROFIL_NEAPROBAT', error: 'Profilul tău nu a fost încă aprobat de echipa My Darrin — nu poți prelua comenzi.' },
-  [MOTIV.IN_VERIFICARE]: { code: 'PROFIL_NEAPROBAT', error: 'Profilul tău nu a fost încă aprobat de echipa My Darrin — nu poți prelua comenzi.' },
-  [MOTIV.FARA_CONT_BANCAR]: { code: 'FARA_CONT_BANCAR', error: 'Adaugă mai întâi un cont bancar activ — nu poți prelua comenzi fără date de încasare.' },
-  [MOTIV.FARA_CONTRACT]: { code: 'CONTRACT_NESEMNAT', error: 'Trebuie să semnezi electronic contractul de parteneriat (cod OTP) înainte de a prelua comenzi.' },
+  [MOTIV.INEXISTENT]: { code: 'PARTENER_INEXISTENT', error: 'Cont de partener inexistent.', error_en: 'The partner account does not exist.' },
+  [MOTIV.SUSPENDAT]: { code: 'CONT_SUSPENDAT', error: 'Contul tău este suspendat — nu poți prelua comenzi.', error_en: 'Your account is suspended, so you cannot take orders.' },
+  [MOTIV.RESPINS]: { code: 'PROFIL_NEAPROBAT', error: 'Profilul tău nu a fost încă aprobat de echipa My Darrin — nu poți prelua comenzi.', error_en: 'Your profile has not been approved by the My Darrin team yet, so you cannot take orders.' },
+  [MOTIV.IN_VERIFICARE]: { code: 'PROFIL_NEAPROBAT', error: 'Profilul tău nu a fost încă aprobat de echipa My Darrin — nu poți prelua comenzi.', error_en: 'Your profile has not been approved by the My Darrin team yet, so you cannot take orders.' },
+  [MOTIV.FARA_CONT_BANCAR]: { code: 'FARA_CONT_BANCAR', error: 'Adaugă mai întâi un cont bancar activ — nu poți prelua comenzi fără date de încasare.', error_en: 'First add an active bank account: you cannot take orders without payment details.' },
+  [MOTIV.FARA_CONTRACT]: { code: 'CONTRACT_NESEMNAT', error: 'Trebuie să semnezi electronic contractul de parteneriat (cod OTP) înainte de a prelua comenzi.', error_en: 'You must sign the partnership contract electronically (with the code) before taking orders.' },
 };
 
 async function verificaHardStop(user) {
@@ -46,14 +47,14 @@ async function verificaHardStop(user) {
 }
 
 async function handler(req, res, user) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const gate = await verificaHardStop(user);
-  if (!gate.ok) return res.status(403).json({ error: gate.error, code: gate.code });
+  if (!gate.ok) return trimiteEroare(res, 403, gate.code, gate.error, gate.error_en, null, { code: gate.code });
 
   if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { comanda_id } = req.body || {};
-  if (!comanda_id) return res.status(400).json({ error: 'comanda_id este obligatoriu' });
+  if (!comanda_id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'comanda_id este obligatoriu', 'comanda_id is required.', ['comanda_id']);
 
   // 1. Încearcă să câștige alocarea FIFO — condiție atomică pe status
   const { data: allocated, error: allocErr } = await supabaseAdmin
@@ -66,13 +67,13 @@ async function handler(req, res, user) {
 
   if (allocErr) {
     console.error('[accept-comanda]', allocErr);
-    return res.status(500).json({ error: 'Eroare la procesarea acceptării' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Eroare la procesarea acceptării', 'Error while processing the acceptance. Please try again.');
   }
 
   if (!allocated || allocated.length === 0) {
     // Fie comanda a fost deja preluată de altcineva, fie nu a fost niciodată
     // notificată acestui partener — în ambele cazuri respingem.
-    return res.status(409).json({ error: 'Comanda a fost deja preluată de alt partener sau nu îți este alocată' });
+    return trimiteEroare(res, 409, 'COMANDA_PRELUATA', 'Comanda a fost deja preluată de alt partener sau nu îți este alocată', 'The order has already been taken by another partner or is not assigned to you.');
   }
 
   // 2. Blochează comanda pe acest partener + marchează restul alocărilor ca expirate
@@ -89,7 +90,7 @@ async function handler(req, res, user) {
 
   if (updComandaErr) {
     console.error('[accept-comanda] update comanda', updComandaErr);
-    return res.status(500).json({ error: 'Comanda a fost preluată dar nu am putut actualiza statusul' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Comanda a fost preluată dar nu am putut actualiza statusul', 'The order was taken, but we could not update its status. Please refresh the page.');
   }
 
   await supabaseAdmin

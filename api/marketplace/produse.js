@@ -16,6 +16,7 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { valideazaMaterial, valideazaEchipament, incarcaContextValidare } = require('../../lib/valideaza-produs-marketplace');
+const { trimiteEroare, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
 
 const ROLURI = ['partener_materiale', 'partener_inchirieri', 'admin', 'superadmin'];
 const TABEL = { materiale: 'marketplace_materiale', echipamente: 'marketplace_echipamente' };
@@ -46,13 +47,13 @@ async function handleGet(req, res, user, admin) {
   // admin fără furnizor_id => vede tot (folosit de panoul de aprobări/corecție)
 
   const { data, error } = await query;
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
   return res.status(200).json({ ok: true, produse: data, tip });
 }
 
 async function handleSalveaza(req, res, user, admin) {
   const { tip, id } = req.body || {};
-  if (!TABEL[tip]) return res.status(400).json({ error: "tip trebuie să fie 'materiale' sau 'echipamente'" });
+  if (!TABEL[tip]) return trimiteEroare(res, 400, 'DATE_INVALIDE', "tip trebuie să fie 'materiale' sau 'echipamente'", 'tip must be \'materiale\' or \'echipamente\'.', ['tip']);
   const tabel = TABEL[tip];
 
   // Rând existent — necesar pentru izolare (furnizorul nu poate corecta
@@ -62,9 +63,9 @@ async function handleSalveaza(req, res, user, admin) {
   if (id) {
     const { data } = await supabaseAdmin.from(tabel).select('furnizor_id, status').eq('id', id).maybeSingle();
     randExistent = data;
-    if (!randExistent) return res.status(404).json({ error: 'Produsul nu există.' });
+    if (!randExistent) return trimiteEroare(res, 404, 'PRODUS_NU_EXISTA', 'Produsul nu există.', 'The product does not exist.');
     if (!admin && randExistent.furnizor_id !== user.id) {
-      return res.status(403).json({ error: 'Nu poți edita un produs care nu îți aparține.' });
+      return trimiteEroare(res, 403, 'FARA_DREPT', 'Nu poți edita un produs care nu îți aparține.', 'You cannot edit a product that does not belong to you.');
     }
   }
 
@@ -77,14 +78,14 @@ async function handleSalveaza(req, res, user, admin) {
     ? ((admin && (req.body.furnizor_id || req.query.furnizor_id)) || randExistent.furnizor_id)
     : rezolvaFurnizorId(req, user, admin);
   const { data: furnizor } = await supabaseAdmin.from('partners').select('id').eq('id', furnizorId).maybeSingle();
-  if (!furnizor) return res.status(404).json({ error: 'Furnizorul specificat nu există.' });
+  if (!furnizor) return trimiteEroare(res, 404, 'NU_EXISTA', 'Furnizorul specificat nu există.', 'The specified supplier does not exist.');
 
   const { data: profilFurnizor } = await supabaseAdmin.from('profiles').select('tara').eq('id', furnizorId).maybeSingle();
   const ctx = await incarcaContextValidare(profilFurnizor?.tara || 'RO');
 
   const rezultat = tip === 'materiale' ? valideazaMaterial(req.body, ctx) : valideazaEchipament(req.body, ctx);
   if (!rezultat.valid) {
-    return res.status(400).json({ error: 'Produsul nu îndeplinește condițiile de validare — nu a fost salvat.', erori: rezultat.erori });
+    return trimiteEroare(res, 400, 'VALIDARE_ESUATA', 'Produsul nu îndeplinește condițiile de validare — nu a fost salvat.', 'The product does not meet the validation rules, so it was not saved.', null, { erori: rezultat.erori });
   }
 
   const payload = { ...rezultat.normalizat, furnizor_id: furnizorId, creat_de: user.id, actualizat_la: new Date().toISOString() };
@@ -109,23 +110,23 @@ async function handleSalveaza(req, res, user, admin) {
 
   if (error) {
     if (error.code === '23505') {
-      return res.status(409).json({ error: `Există deja un produs cu codul „${payload.cod_produs_furnizor}" pentru acest furnizor.` });
+      return trimiteEroare(res, 409, 'EXISTA_DEJA', `Există deja un produs cu codul „${payload.cod_produs_furnizor}" pentru acest furnizor.`, `There is already a product with the code “${payload.cod_produs_furnizor}” for this supplier.`, ['cod_produs_furnizor']);
     }
     console.error('[marketplace/produse] salveaza', error);
-    return res.status(500).json({ error: error.message });
+    return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
   }
   return res.status(200).json({ ok: true, produs: data });
 }
 
 async function handleSterge(req, res, user, admin) {
   const { tip, id } = req.body || {};
-  if (!TABEL[tip] || !id) return res.status(400).json({ error: 'tip și id sunt obligatorii.' });
+  if (!TABEL[tip] || !id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'tip și id sunt obligatorii.', 'tip and id are required.');
 
   let query = supabaseAdmin.from(TABEL[tip]).delete().eq('id', id);
   if (!admin) query = query.eq('furnizor_id', user.id);
   const { data, error } = await query.select();
-  if (error) return res.status(500).json({ error: error.message });
-  if (!data || !data.length) return res.status(404).json({ error: 'Produsul nu există sau nu îți aparține.' });
+  if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
+  if (!data || !data.length) return trimiteEroare(res, 404, 'PRODUS_NU_EXISTA', 'Produsul nu există sau nu îți aparține.', 'The product does not exist or does not belong to you.');
   return res.status(200).json({ ok: true });
 }
 
@@ -137,13 +138,13 @@ async function handleSterge(req, res, user, admin) {
 async function handleToggleActiv(req, res, user, admin) {
   const { tip, id, activ } = req.body || {};
   if (!TABEL[tip] || !id || typeof activ !== 'boolean') {
-    return res.status(400).json({ error: "tip, id și activ (boolean) sunt obligatorii." });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', "tip, id și activ (boolean) sunt obligatorii.", 'tip, id and activ (boolean) are required.');
   }
   let query = supabaseAdmin.from(TABEL[tip]).update({ activ, actualizat_la: new Date().toISOString() }).eq('id', id);
   if (!admin) query = query.eq('furnizor_id', user.id);
   const { data, error } = await query.select();
-  if (error) return res.status(500).json({ error: error.message });
-  if (!data || !data.length) return res.status(404).json({ error: 'Produsul nu există sau nu îți aparține.' });
+  if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
+  if (!data || !data.length) return trimiteEroare(res, 404, 'PRODUS_NU_EXISTA', 'Produsul nu există sau nu îți aparține.', 'The product does not exist or does not belong to you.');
   return res.status(200).json({ ok: true, produs: data[0] });
 }
 
@@ -151,13 +152,13 @@ async function handler(req, res, user) {
   const admin = await esteAdmin(user.id);
 
   if (req.method === 'GET') return handleGet(req, res, user, admin);
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const { action } = req.body || {};
   if (action === 'salveaza') return handleSalveaza(req, res, user, admin);
   if (action === 'sterge') return handleSterge(req, res, user, admin);
   if (action === 'toggle_activ') return handleToggleActiv(req, res, user, admin);
-  return res.status(400).json({ error: `action necunoscută: ${action}` });
+  return trimiteEroare(res, 400, 'ACTIUNE_NECUNOSCUTA', `action necunoscută: ${action}`, `Unknown action: ${action}`, ['action']);
 }
 
 module.exports = requireAuth(ROLURI, handler);

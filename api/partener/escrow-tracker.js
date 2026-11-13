@@ -12,6 +12,7 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const ROLURI_PARTENER = [
   'partener_curier', 'partener_servicii', 'partener_materiale',
@@ -19,7 +20,7 @@ const ROLURI_PARTENER = [
 ];
 
 async function handler(req, res, user) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const { data: alocari, error } = await supabaseAdmin
     .from('comanda_subcontractori')
@@ -28,7 +29,7 @@ async function handler(req, res, user) {
     .order('creat_la', { ascending: false });
   if (error) {
     console.error('[escrow-tracker] comanda_subcontractori', error);
-    return res.status(500).json({ error: 'Nu am putut încărca alocările.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca alocările.', 'We could not load the allocations.');
   }
   if (!alocari.length) {
     return res.status(200).json({ ok: true, total_activ: 0, total_eliberat: 0, moneda: 'Lei', alocari: [] });

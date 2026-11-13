@@ -13,15 +13,16 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { elibereazaEscrow } = require('../../lib/elibereaza-escrow');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 async function handler(req, res, user) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const { comanda_id } = req.body || {};
-  if (!comanda_id) return res.status(400).json({ error: 'comanda_id este obligatoriu' });
+  if (!comanda_id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'comanda_id este obligatoriu', 'comanda_id is required.', ['comanda_id']);
 
   const rezultat = await elibereazaEscrow(comanda_id, user.id);
-  if (!rezultat.ok) return res.status(rezultat.status || 500).json({ error: rezultat.error });
+  if (!rezultat.ok) return trimiteEroare(res, rezultat.status || 500, rezultat.cod || 'EROARE', rezultat.error, rezultat.error_en);
 
   return res.status(200).json({ ok: true, comision: rezultat.comision, subcontractori: rezultat.subcontractori });
 }

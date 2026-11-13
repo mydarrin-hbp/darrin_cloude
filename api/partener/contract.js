@@ -10,6 +10,7 @@ const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { genereazaContractPartener } = require('../../lib/contract-partener-date');
 const { CONTRACT_VERSIUNE } = require('../../lib/contract-partener');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const ROLURI_PARTENER = [
   'partener_curier', 'partener_servicii', 'partener_materiale',
@@ -17,7 +18,7 @@ const ROLURI_PARTENER = [
 ];
 
 async function handler(req, res, user) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const { data: snap } = await supabaseAdmin
     .from('partner_contracte_semnate')
@@ -35,7 +36,7 @@ async function handler(req, res, user) {
   }
 
   const c = await genereazaContractPartener(user.id);
-  if (!c) return res.status(404).json({ error: 'Cont de partener inexistent.' });
+  if (!c) return trimiteEroare(res, 404, 'PARTENER_NU_EXISTA', 'Cont de partener inexistent.', 'The partner account does not exist.');
   return res.status(200).json({
     ok: true, semnat: false, versiune: c.versiune, versiune_curenta: CONTRACT_VERSIUNE,
     numar: c.numar, titlu: c.titlu, html: c.html,

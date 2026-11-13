@@ -14,6 +14,7 @@
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { PAGINI: PAGINI_BAZA } = require('../../lib/seo-pagini');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const BASE_URL = 'https://mydarrin.homebestpal.com';
 
@@ -59,7 +60,7 @@ function escapeXml(s) {
 }
 
 module.exports = async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).send('Method not allowed');
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   let overrideuri = {};
   try {

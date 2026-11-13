@@ -24,6 +24,7 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { citesteTot } = require('../../lib/citeste-tot');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const STARI_FINALIZATE = ['finalizata', 'confirmata_client'];
 const LUNI = 12;
@@ -49,17 +50,13 @@ function ultimeleLuni(acum = new Date()) {
 
 async function handler(req, res, user) {
   res.setHeader('Cache-Control', 'private, no-store');
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const { data: kyc, error: kycErr } = await supabaseAdmin
     .from('investitori_kyc').select('status').eq('user_id', user.id).maybeSingle();
-  if (kycErr) return res.status(500).json({ error: 'Nu am putut verifica starea verificării identității.', error_en: 'We could not check your identity verification status.' });
+  if (kycErr) return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut verifica starea verificării identității.', 'We could not check your identity verification status.');
   if (!kyc || kyc.status !== 'aprobat') {
-    return res.status(403).json({
-      cod: 'KYC_NEAPROBAT',
-      error: 'Evoluția lunară e disponibilă după aprobarea verificării identității tale.',
-      error_en: 'The monthly trend is available after your identity verification is approved.',
-    });
+    return trimiteEroare(res, 403, 'KYC_NEAPROBAT', 'Evoluția lunară e disponibilă după aprobarea verificării identității tale.', 'The monthly trend is available after your identity verification is approved.');
   }
 
   const luni = ultimeleLuni();
@@ -68,7 +65,7 @@ async function handler(req, res, user) {
     .in('status', STARI_FINALIZATE).gte('creat_la', luni[0] + '-01T00:00:00Z').order('creat_la').order('id'));
   if (error) {
     console.error('[investitori/evolutie-lunara]', error);
-    return res.status(503).json({ error: 'Evoluția lunară nu e disponibilă acum.', error_en: 'The monthly trend is not available right now.' });
+    return trimiteEroare(res, 503, 'INDISPONIBIL', 'Evoluția lunară nu e disponibilă acum.', 'The monthly trend is not available right now.');
   }
 
   const comenzi = data || [];

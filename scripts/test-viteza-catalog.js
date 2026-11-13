@@ -117,7 +117,7 @@ async function testeApi() {
   verifica(!/discount|comision/i.test(JSON.stringify(cu.corp)), 'răspunsul conține discounturi sau comisioane');
   const sursa = citeste('api/public/catalog-categorie.js');
   verifica(!/req\.headers|cookie|authorization/i.test(sursa.replace(/^\s*\/\/.*$/gm, '')), 'endpoint-ul citește antete de utilizator');
-  const rez = sursa.indexOf("res.setHeader('Cache-Control'"), er = sursa.indexOf('res.status(500)');
+  const rez = sursa.indexOf("res.setHeader('Cache-Control'"), er = sursa.search(/res\.status\(500\)|trimiteEroare(?:Interna)?\(res, 500/); // pasul 11-T2: eroarea trece prin forma comună
   verifica(rez > 0 && rez < er && (sursa.match(/Cache-Control/g) || []).length === 1, 'antetul de cache se pune și pe erori');
 }
 

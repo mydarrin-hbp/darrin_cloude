@@ -10,7 +10,7 @@
 // POST { action:'status', id, status }
 
 const { requireAuth } = require('../../lib/auth-middleware');
-const { formaComuna } = require('../../lib/raspuns-eroare');
+const { formaComuna, trimiteEroare, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 
@@ -21,7 +21,7 @@ async function handler(req, res, admin) {
     let query = supabaseAdmin.from('parteneri_prospecti').select('*').order('created_at', { ascending: false }).limit(500);
     if (req.query.status) query = query.eq('status', req.query.status);
     const { data, error } = await query;
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
     return res.status(200).json({ ok: true, prospecti: data });
   }
 
@@ -31,14 +31,14 @@ async function handler(req, res, admin) {
     if (action === 'adauga') {
       const { nume_firma, email, tara, tip_partener, nota } = req.body || {};
       if (!nume_firma || !email || !email.includes('@')) {
-        return res.status(400).json({ error: 'nume_firma și email (valid) sunt obligatorii' });
+        return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'nume_firma și email (valid) sunt obligatorii', 'nume_firma and a valid email are required.');
       }
       const { data, error } = await supabaseAdmin
         .from('parteneri_prospecti')
         .insert({ nume_firma, email, tara: tara || null, tip_partener: tip_partener || null, nota: nota || null, adaugat_de: admin.id })
         .select()
         .single();
-      if (error) return res.status(500).json({ error: error.message });
+      if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
       await inregistreazaAudit({ admin, req, actiune: 'adaugare_prospect', entitate: 'parteneri_prospecti', entitate_id: data.id, detalii: { nume_firma, email, tara } });
       return res.status(200).json({ ok: true, prospect: data });
     }
@@ -46,7 +46,7 @@ async function handler(req, res, admin) {
     if (action === 'status') {
       const { id, status } = req.body || {};
       if (!id || !STATUSURI_VALIDE.includes(status)) {
-        return res.status(400).json({ error: `id și status (${STATUSURI_VALIDE.join('|')}) sunt obligatorii` });
+        return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', `id și status (${STATUSURI_VALIDE.join('|')}) sunt obligatorii`, `id and status (${STATUSURI_VALIDE.join('|')}) are required.`);
       }
       const { data, error } = await supabaseAdmin
         .from('parteneri_prospecti')
@@ -54,15 +54,15 @@ async function handler(req, res, admin) {
         .eq('id', id)
         .select()
         .single();
-      if (error) return res.status(500).json({ error: error.message });
+      if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
       await inregistreazaAudit({ admin, req, actiune: 'actualizare_status_prospect', entitate: 'parteneri_prospecti', entitate_id: id, detalii: { status } });
       return res.status(200).json({ ok: true, prospect: data });
     }
 
-    return res.status(400).json({ error: "action trebuie să fie 'adauga' sau 'status'" });
+    return trimiteEroare(res, 400, 'ACTIUNE_NECUNOSCUTA', "action trebuie să fie 'adauga' sau 'status'", 'action must be \'adauga\' or \'status\'.', ['action']);
   }
 
-  return res.status(405).json({ error: 'Method not allowed' });
+  return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 }
 
 module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));

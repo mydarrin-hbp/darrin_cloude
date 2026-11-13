@@ -17,14 +17,14 @@
 //   lor) și starea KYC. Fără dividende sau profit: nu există o sursă configurată.
 
 const { requireAuth } = require('../../lib/auth-middleware');
-const { formaComuna } = require('../../lib/raspuns-eroare');
+const { formaComuna, trimiteEroare, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { nivelInvestitori, refuzaFaraDrept } = require('../../lib/permisiuni-investitori');
 const R = require('../../lib/runda-finantare');
 
 async function handler(req, res, user) {
   res.setHeader('Cache-Control', 'private, no-store');
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   try {
     const nivel = await nivelInvestitori(user);
     if (!nivel) return refuzaFaraDrept(res);
@@ -95,7 +95,7 @@ async function handler(req, res, user) {
     });
   } catch (err) {
     console.error('[admin/investitori-dashboard]', err);
-    return res.status(500).json({ error: err.message || 'Eroare internă.' });
+    return trimiteEroareInterna(res, 500, 'EROARE_SERVER', 'Eroare internă.', 'Internal error.', err);
   }
 }
 

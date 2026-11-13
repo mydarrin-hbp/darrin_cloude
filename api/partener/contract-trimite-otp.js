@@ -16,6 +16,7 @@ const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { eligibilitatePartener, MOTIV } = require('../../lib/eligibilitate-partener');
 const { renderEmailCodContract, limbaProfilEmailComportamental } = require('../../lib/i18n');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const ROLURI_PARTENER = [
   'partener_curier', 'partener_servicii', 'partener_materiale',
@@ -24,6 +25,7 @@ const ROLURI_PARTENER = [
 
 // Textul român e sursa; traducerea EN e în i18n/en.json (_texte).
 const EROARE_CONTRACT_FURNIZOR_PROPRIU = 'Contul acesta este furnizorul propriu al platformei: nu are nevoie de contract de parteneriat.';
+const EROARE_CONTRACT_FURNIZOR_PROPRIU_EN = "This account is the platform's own supplier: it does not need a partnership contract.";
 
 const COD_TTL_MS = 10 * 60 * 1000; // 10 minute
 const RETRIMITE_MIN_MS = 60 * 1000; // 1 minut între cereri
@@ -33,10 +35,10 @@ function hashCod(cod) {
 }
 
 async function handler(req, res, user) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const partner = await eligibilitatePartener(user.id);
-  if (!partner) return res.status(404).json({ error: 'Cont de partener inexistent.' });
+  if (!partner) return trimiteEroare(res, 404, 'PARTENER_NU_EXISTA', 'Cont de partener inexistent.', 'The partner account does not exist.');
 
   if (partner.contract_semnat) {
     return res.status(200).json({ ok: true, deja_semnat: true });
@@ -44,22 +46,16 @@ async function handler(req, res, user) {
   // Pasul 10c: furnizorul propriu e chiar entitatea platformei — nu semnează
   // contract cu sine (lib/eligibilitate-partener.js).
   if (partner.furnizor_propriu) {
-    return res.status(400).json({ error: EROARE_CONTRACT_FURNIZOR_PROPRIU, code: 'FURNIZOR_PROPRIU' });
+    return trimiteEroare(res, 400, 'FURNIZOR_PROPRIU', EROARE_CONTRACT_FURNIZOR_PROPRIU, EROARE_CONTRACT_FURNIZOR_PROPRIU_EN, null, { code: 'FURNIZOR_PROPRIU' });
   }
   if (partner.motiv === MOTIV.SUSPENDAT) {
-    return res.status(403).json({ error: 'Contul tău este suspendat — contractul nu poate fi semnat.', code: 'CONT_SUSPENDAT' });
+    return trimiteEroare(res, 403, 'CONT_SUSPENDAT', 'Contul tău este suspendat — contractul nu poate fi semnat.', 'Your account is suspended, so the contract cannot be signed.', null, { code: 'CONT_SUSPENDAT' });
   }
   if (partner.status_verificare !== 'approved') {
-    return res.status(403).json({
-      error: 'Profilul tău nu a fost încă aprobat de echipa My Darrin. Semnarea contractului devine disponibilă după aprobare.',
-      code: 'PROFIL_NEAPROBAT',
-    });
+    return trimiteEroare(res, 403, 'PROFIL_NEAPROBAT', 'Profilul tău nu a fost încă aprobat de echipa My Darrin. Semnarea contractului devine disponibilă după aprobare.', 'Your profile has not been approved by the My Darrin team yet. Contract signing becomes available after approval.', null, { code: 'PROFIL_NEAPROBAT' });
   }
   if (!partner.cont_bancar) {
-    return res.status(403).json({
-      error: 'Adaugă mai întâi un cont bancar activ — contractul nu poate fi semnat fără date de încasare.',
-      code: 'FARA_CONT_BANCAR',
-    });
+    return trimiteEroare(res, 403, 'FARA_CONT_BANCAR', 'Adaugă mai întâi un cont bancar activ — contractul nu poate fi semnat fără date de încasare.', 'First add an active bank account: the contract cannot be signed without payment details.', null, { code: 'FARA_CONT_BANCAR' });
   }
 
   // Anti-spam: refuză o cerere nouă dacă există deja un cod netrimis-de-mult.
@@ -72,7 +68,7 @@ async function handler(req, res, user) {
     .limit(1)
     .maybeSingle();
   if (recent && Date.now() - new Date(recent.creat_la).getTime() < RETRIMITE_MIN_MS) {
-    return res.status(429).json({ error: 'Ai primit deja un cod recent — verifică emailul sau așteaptă un minut înainte de a cere altul.' });
+    return trimiteEroare(res, 429, 'COD_RECENT', 'Ai primit deja un cod recent — verifică emailul sau așteaptă un minut înainte de a cere altul.', 'You have already received a recent code. Check your email or wait a minute before asking for another.');
   }
 
   const cod = String(Math.floor(100000 + Math.random() * 900000));
@@ -83,12 +79,12 @@ async function handler(req, res, user) {
   });
   if (insErr) {
     console.error('[contract-trimite-otp] insert', insErr);
-    return res.status(500).json({ error: 'Nu am putut genera codul de confirmare.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut genera codul de confirmare.', 'We could not generate the confirmation code. Please try again.');
   }
 
   if (!process.env.RESEND_API_KEY) {
     console.error('[contract-trimite-otp] RESEND_API_KEY lipsă — codul nu poate fi trimis');
-    return res.status(500).json({ error: 'Trimiterea emailului nu este configurată. Contactează administratorul.' });
+    return trimiteEroare(res, 500, 'EMAIL_NECONFIGURAT', 'Trimiterea emailului nu este configurată. Contactează administratorul.', 'Email sending is not set up. Please contact the administrator.');
   }
 
   // Pasul 11-T1: emailul în limba din profil (ro / en), din lib/i18n.js.
@@ -108,7 +104,7 @@ async function handler(req, res, user) {
     if (!emailRes.ok) throw new Error('resend status ' + emailRes.status);
   } catch (emailErr) {
     console.error('[contract-trimite-otp] email eșuat:', emailErr);
-    return res.status(502).json({ error: 'Nu am putut trimite emailul cu codul. Încearcă din nou.' });
+    return trimiteEroare(res, 502, 'EMAIL_NETRIMIS', 'Nu am putut trimite emailul cu codul. Încearcă din nou.', 'We could not send the email with the code. Please try again.');
   }
 
   return res.status(200).json({ ok: true, trimis_la: user.email });

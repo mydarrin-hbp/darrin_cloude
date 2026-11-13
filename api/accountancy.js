@@ -6,6 +6,7 @@
 const { supabaseAdmin } = require('../lib/supabaseAdmin');
 const { getAuthenticatedUser, hasRole } = require('../lib/auth-middleware');
 const { inregistreazaAudit } = require('../lib/audit-log');
+const { trimiteEroare, trimiteEroareInterna } = require('../lib/raspuns-eroare');
 
 async function checkAccountancyAccess(user, tara_cod) {
   // Rolul doar din profiles.roles, prin hasRole — fără user_metadata (14 oct. 2026).
@@ -24,7 +25,7 @@ async function checkAccountancyAccess(user, tara_cod) {
 async function actionConfirmIncasare(req, res, user) {
   const { invoice_id } = req.body;
   const { data: inv, error } = await supabaseAdmin.from('invoices').select('*').eq('id', invoice_id).single();
-  if (error || !inv) return res.status(404).json({ error: 'Factura nu există' });
+  if (error || !inv) return trimiteEroare(res, 404, 'FACTURA_NU_EXISTA', 'Factura nu există', 'The invoice does not exist.');
 
   await supabaseAdmin.from('invoices').update({ incasare_confirmata: true }).eq('id', invoice_id);
   await inregistreazaAudit({ admin: user, req, actiune: 'confirmare_incasare', entitate: 'invoices', entitate_id: invoice_id });
@@ -34,7 +35,7 @@ async function actionConfirmIncasare(req, res, user) {
 async function actionConfirmLivrare(req, res, user) {
   const { invoice_id } = req.body;
   const { data: inv, error } = await supabaseAdmin.from('invoices').select('*').eq('id', invoice_id).single();
-  if (error || !inv) return res.status(404).json({ error: 'Factura nu există' });
+  if (error || !inv) return trimiteEroare(res, 404, 'FACTURA_NU_EXISTA', 'Factura nu există', 'The invoice does not exist.');
 
   await supabaseAdmin.from('invoices').update({ livrare_confirmata: true }).eq('id', invoice_id);
   await inregistreazaAudit({ admin: user, req, actiune: 'confirmare_livrare', entitate: 'invoices', entitate_id: invoice_id });
@@ -61,7 +62,7 @@ async function maybeConvert(res, invoice_id) {
       .select()
       .single();
 
-    if (error) return res.status(500).json({ error: 'Eroare la conversia facturii' });
+    if (error) return trimiteEroare(res, 500, 'EROARE_CONVERSIE', 'Eroare la conversia facturii', 'We could not convert the invoice. Please try again.');
 
     await supabaseAdmin.from('financial_records').insert({
       tip: 'venit',
@@ -124,7 +125,7 @@ async function actionUpdateTaxConfig(req, res, user) {
     // Țară nouă (29 august 2026 — RS/ME/UA, cerute explicit de fondator, lipseau
     // complet din tax_configurations). tara_nume/moneda obligatorii doar la creare.
     if (!tara_nume || !moneda) {
-      return res.status(400).json({ error: 'tara_nume și moneda sunt obligatorii la crearea unei țări noi' });
+      return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'tara_nume și moneda sunt obligatorii la crearea unei țări noi', 'tara_nume and moneda are required when creating a new country.');
     }
     ({ data, error } = await supabaseAdmin
       .from('tax_configurations')
@@ -132,7 +133,7 @@ async function actionUpdateTaxConfig(req, res, user) {
       .select()
       .single());
   }
-  if (error) return res.status(500).json({ error: 'Eroare la actualizare' });
+  if (error) return trimiteEroare(res, 500, 'EROARE_SERVER', 'Eroare la actualizare', 'We could not save the update. Please try again.');
   await inregistreazaAudit({
     admin: user, req, actiune: existenta ? 'actualizare_cote_fiscale' : 'creare_tara_fiscala', entitate: 'tax_configurations', entitate_id: tara_cod,
     detalii: { tara_cod, tara_nume, moneda, cota_tva, cota_impozit_venit, cota_impozit_salarii, prag_minim_comanda: update.prag_minim_comanda, checkout_activ: update.checkout_activ },
@@ -142,13 +143,13 @@ async function actionUpdateTaxConfig(req, res, user) {
 
 async function actionAddBankAccount(req, res, user) {
   const { nume_afisat, banca, iban, swift, moneda, tara_cod, tip } = req.body;
-  if (!nume_afisat || !iban || !moneda) return res.status(400).json({ error: 'Câmpuri obligatorii lipsă' });
+  if (!nume_afisat || !iban || !moneda) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'Câmpuri obligatorii lipsă', 'Required fields are missing.');
   const { data, error } = await supabaseAdmin
     .from('bank_accounts')
     .insert({ nume_afisat, banca, iban, swift, moneda, tara_cod, tip: tip || 'incasari' })
     .select()
     .single();
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
   await inregistreazaAudit({
     admin: user, req, actiune: 'adaugare_cont_bancar', entitate: 'bank_accounts', entitate_id: data.id,
     detalii: { nume_afisat, banca, moneda, tara_cod },
@@ -166,7 +167,7 @@ async function actionAddBankAccount(req, res, user) {
 async function actionGetSummary(req, res) {
   const tara_cod = req.query.tara_cod || null;
   const { data, error } = await supabaseAdmin.rpc('accountancy_totals', { p_tara_cod: tara_cod });
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
   const r = (data && data[0]) || {};
   const summary = {
     venituri: Number(r.venituri || 0),
@@ -190,7 +191,7 @@ async function actionGeoBreakdown(req, res) {
   const tara_cod = req.query.tara_cod || null;
   const regiune = req.query.regiune || null;
   const { data, error } = await supabaseAdmin.rpc('accountancy_geo_breakdown', { p_tara_cod: tara_cod, p_regiune: regiune });
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
   return res.status(200).json({ ok: true, breakdown: data || [] });
 }
 
@@ -200,28 +201,28 @@ async function actionGeoBreakdown(req, res) {
 async function actionVerticalBreakdown(req, res) {
   const tara_cod = req.query.tara_cod || null;
   const { data, error } = await supabaseAdmin.rpc('accountancy_vertical_breakdown', { p_tara_cod: tara_cod });
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
   return res.status(200).json({ ok: true, breakdown: data || [] });
 }
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST' && req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   }
 
   const user = await getAuthenticatedUser(req);
-  if (!user) return res.status(401).json({ error: 'Neautentificat' });
+  if (!user) return trimiteEroare(res, 401, 'NEAUTENTIFICAT', 'Neautentificat', 'Not authenticated');
 
   const tara_cod = req.body?.tara_cod || req.query?.tara_cod || null;
   const hasAccess = await checkAccountancyAccess(user, tara_cod);
-  if (!hasAccess) return res.status(403).json({ error: 'Nu ai acces la modulul Accountancy' });
+  if (!hasAccess) return trimiteEroare(res, 403, 'FARA_DREPT', 'Nu ai acces la modulul Accountancy', 'You do not have access to the Accountancy module.');
 
   if (req.method === 'GET') {
     const action = req.query.action;
     if (action === 'summary') return actionGetSummary(req, res);
     if (action === 'geo_breakdown') return actionGeoBreakdown(req, res);
     if (action === 'vertical_breakdown') return actionVerticalBreakdown(req, res);
-    return res.status(400).json({ error: 'Acțiune GET necunoscută' });
+    return trimiteEroare(res, 400, 'ACTIUNE_NECUNOSCUTA', 'Acțiune GET necunoscută', 'Unknown GET action.');
   }
 
   const action = req.body?.action;
@@ -230,5 +231,5 @@ module.exports = async function handler(req, res) {
   if (action === 'update_tax_config') return actionUpdateTaxConfig(req, res, user);
   if (action === 'add_bank_account') return actionAddBankAccount(req, res, user);
 
-  return res.status(400).json({ error: 'Acțiune necunoscută' });
+  return trimiteEroare(res, 400, 'ACTIUNE_NECUNOSCUTA', 'Acțiune necunoscută', 'Unknown action.');
 };

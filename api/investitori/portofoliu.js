@@ -24,7 +24,7 @@ const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const R = require('../../lib/runda-finantare');
 const P = require('../../lib/investitori-panou');
-const { formaComuna } = require('../../lib/raspuns-eroare');
+const { formaComuna, trimiteEroare } = require('../../lib/raspuns-eroare');
 
 function publicRunda(r) {
   if (!r) return null;
@@ -42,7 +42,7 @@ function publicRunda(r) {
 
 async function handler(req, res, user) {
   res.setHeader('Cache-Control', 'private, no-store');
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   try {
     const [subs, kyc, deschisa, cereriExit] = await Promise.all([
       supabaseAdmin.from('investitori_portofoliu').select('*').eq('user_id', user.id),
@@ -103,7 +103,7 @@ async function handler(req, res, user) {
     });
   } catch (err) {
     console.error('[investitori/portofoliu]', err);
-    return res.status(500).json({ error: 'Nu am putut încărca portofoliul.', error_en: 'We could not load your portfolio.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca portofoliul.', 'We could not load your portfolio.');
   }
 }
 

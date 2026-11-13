@@ -305,7 +305,7 @@ async function submitAccesTemporar(e) {
       destinatie = ndaData.destinatie;
     } else if (ndaRes.status !== 404) {
       const ndaErr = await ndaRes.json().catch(() => ({}));
-      throw new Error(ndaErr.error || 'Nu am putut înregistra acceptarea acordului.');
+      throw new Error(MYD_I18N.eroare(ndaErr, 'Nu am putut înregistra acceptarea acordului.'));
     }
 
     if (!destinatie) {
@@ -313,7 +313,7 @@ async function submitAccesTemporar(e) {
       const destData = await destRes.json();
       if (!destRes.ok) {
         await sb.auth.signOut();
-        throw new Error(destData.error || 'Acest cont nu are încă acces alocat pe platformă.');
+        throw new Error(MYD_I18N.eroare(destData, 'Acest cont nu are încă acces alocat pe platformă.'));
       }
       destinatie = destData.destinatie;
     }

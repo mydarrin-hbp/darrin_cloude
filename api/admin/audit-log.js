@@ -5,9 +5,10 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200);
 
@@ -21,7 +22,7 @@ async function handler(req, res) {
     return res.status(200).json({ ok: true, evenimente: data || [] });
   } catch (err) {
     console.error('[audit-log]', err);
-    return res.status(500).json({ error: 'Nu am putut încărca jurnalul de audit' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca jurnalul de audit', 'We could not load the audit log.');
   }
 }
 

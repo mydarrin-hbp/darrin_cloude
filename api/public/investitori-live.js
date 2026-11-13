@@ -13,12 +13,13 @@
 // autentificată reală, investitorii sunt gestionați ca leads pe email.
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   try {
     const { data, error } = await supabaseAdmin
@@ -51,6 +52,6 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true, investitii: feed });
   } catch (err) {
     console.error('[investitori-live]', err);
-    return res.status(500).json({ error: 'Nu am putut încărca fluxul de investiții' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca fluxul de investiții', 'We could not load the investment feed.');
   }
 };

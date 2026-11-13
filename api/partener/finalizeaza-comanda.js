@@ -13,6 +13,7 @@ const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const v = require('../../lib/valideaza');
 const { renderEmailLucrareFinalizata, limbaProfilEmailComportamental } = require('../../lib/i18n');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 // Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
 const SCHEMA = {
@@ -72,32 +73,32 @@ async function creeazaGarantieDacaEConfigurata(comanda, imaginiAfterIds) {
 }
 
 async function handler(req, res, user) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { comanda_id } = req.body || {};
-  if (!comanda_id) return res.status(400).json({ error: 'comanda_id este obligatoriu' });
+  if (!comanda_id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'comanda_id este obligatoriu', 'comanda_id is required.', ['comanda_id']);
 
   const { data: comanda, error: comErr } = await supabaseAdmin
     .from('comenzi')
     .select('id, nr_comanda, client_id, partener_id, status, nivel_id')
     .eq('id', comanda_id)
     .single();
-  if (comErr || !comanda) return res.status(404).json({ error: 'Comanda nu există' });
-  if (comanda.partener_id !== user.id) return res.status(403).json({ error: 'Comanda nu îți este alocată' });
+  if (comErr || !comanda) return trimiteEroare(res, 404, 'COMANDA_NU_EXISTA', 'Comanda nu există', 'The order does not exist.');
+  if (comanda.partener_id !== user.id) return trimiteEroare(res, 403, 'COMANDA_NEALOCATA', 'Comanda nu îți este alocată', 'This order is not assigned to you.');
   if (comanda.status !== 'in_executie') {
-    return res.status(409).json({ error: `Comanda trebuie să fie în execuție pentru a fi finalizată (status curent: ${comanda.status})` });
+    return trimiteEroare(res, 409, 'STARE_GRESITA', `Comanda trebuie să fie în execuție pentru a fi finalizată (status curent: ${comanda.status})`, `The order must be in progress to be completed (current status: ${comanda.status}).`);
   }
 
   const { data: imagini, error: imgErr } = await supabaseAdmin
     .from('comenzi_imagini')
     .select('id, tip')
     .eq('comanda_id', comanda_id);
-  if (imgErr) return res.status(500).json({ error: 'Eroare la verificarea fotografiilor' });
+  if (imgErr) return trimiteEroare(res, 500, 'EROARE_SERVER', 'Eroare la verificarea fotografiilor', 'Error while checking the photos. Please try again.');
 
   const areBefore = (imagini || []).some((i) => i.tip === 'before');
   const areAfter = (imagini || []).some((i) => i.tip === 'after');
   if (!areBefore || !areAfter) {
-    return res.status(400).json({ error: 'Sunt necesare cel puțin o fotografie "înainte" și una "după" pentru a finaliza' });
+    return trimiteEroare(res, 400, 'FOTOGRAFII_LIPSA', 'Sunt necesare cel puțin o fotografie "înainte" și una "după" pentru a finaliza', 'At least one "before" photo and one "after" photo are needed to complete the order.');
   }
 
   const token = crypto.randomUUID();
@@ -116,7 +117,7 @@ async function handler(req, res, user) {
     .single();
   if (error) {
     console.error('[finalizeaza-comanda]', error);
-    return res.status(500).json({ error: 'Nu am putut finaliza comanda' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut finaliza comanda', 'We could not complete the order. Please try again.');
   }
 
   try {

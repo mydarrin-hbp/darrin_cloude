@@ -29,14 +29,14 @@
 
 const crypto = require('crypto');
 const { requireAuth } = require('../../lib/auth-middleware');
-const { formaComuna } = require('../../lib/raspuns-eroare');
+const { formaComuna, trimiteEroare } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 
 async function handler(req, res, user) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const { email, motiv } = req.body || {};
-  if (!email || typeof email !== 'string') return res.status(400).json({ error: 'Email obligatoriu.' });
+  if (!email || typeof email !== 'string') return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'Email obligatoriu.', 'Email is required.', ['email']);
   const emailNorm = email.toLowerCase().trim();
 
   const { data: acces, error: accesErr } = await supabaseAdmin
@@ -47,14 +47,14 @@ async function handler(req, res, user) {
     .maybeSingle();
   if (accesErr) {
     console.error('[revoca-acces-temporar]', accesErr);
-    return res.status(500).json({ error: 'Eroare la căutarea accesului.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Eroare la căutarea accesului.', 'We could not look up the access.');
   }
-  if (!acces) return res.status(404).json({ error: 'Nu există acces activ pentru acest email.' });
+  if (!acces) return trimiteEroare(res, 404, 'NU_EXISTA', 'Nu există acces activ pentru acest email.', 'There is no active access for this email.');
 
   const { data: profile } = await supabaseAdmin.from('profiles').select('roles').eq('id', user.id).single();
   const esteSuperadmin = Array.isArray(profile?.roles) && profile.roles.includes('superadmin');
   if (!esteSuperadmin && acces.creat_de !== user.id) {
-    return res.status(403).json({ error: 'Nu poți revoca accese create de alți admini.' });
+    return trimiteEroare(res, 403, 'FARA_DREPT', 'Nu poți revoca accese create de alți admini.', 'You cannot revoke access created by other admins.');
   }
 
   const { error: updErr } = await supabaseAdmin
@@ -68,7 +68,7 @@ async function handler(req, res, user) {
     .eq('id', acces.id);
   if (updErr) {
     console.error('[revoca-acces-temporar] update', updErr);
-    return res.status(500).json({ error: 'Nu am putut revoca accesul.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut revoca accesul.', 'We could not revoke the access.');
   }
 
   if (acces.user_id) {

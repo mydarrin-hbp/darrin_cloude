@@ -18,6 +18,7 @@
 const crypto = require('crypto');
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic']);
 const MAX_BYTES = 5 * 1024 * 1024; // acoperă limita bucket-ului comenzi-imagini
@@ -29,18 +30,18 @@ function base64Bytes(b64) {
 }
 
 async function handler(req, res, user) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const { comanda_id, tip, imagine_base64, mime_type, gps_lat = null, gps_lng = null, gps_accuracy = null } = req.body || {};
 
   if (!comanda_id || !['before', 'after'].includes(tip)) {
-    return res.status(400).json({ error: 'comanda_id și tip (before|after) sunt obligatorii' });
+    return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'comanda_id și tip (before|after) sunt obligatorii', 'comanda_id and tip (before|after) are required.');
   }
   if (!imagine_base64 || !ALLOWED_MIME.has(mime_type)) {
-    return res.status(400).json({ error: `mime_type acceptat: ${[...ALLOWED_MIME].join(', ')}` });
+    return trimiteEroare(res, 400, 'TIP_FISIER', `mime_type acceptat: ${[...ALLOWED_MIME].join(', ')}`, `Accepted mime_type: ${[...ALLOWED_MIME].join(', ')}`, ['mime_type']);
   }
   if (base64Bytes(imagine_base64) > MAX_BYTES) {
-    return res.status(400).json({ error: 'Imaginea depășește 5MB' });
+    return trimiteEroare(res, 400, 'PREA_MARE', 'Imaginea depășește 5MB', 'The image is larger than 5MB.');
   }
 
   const { data: comanda, error: comErr } = await supabaseAdmin
@@ -48,17 +49,17 @@ async function handler(req, res, user) {
     .select('id, partener_id, status')
     .eq('id', comanda_id)
     .single();
-  if (comErr || !comanda) return res.status(404).json({ error: 'Comanda nu există' });
-  if (comanda.partener_id !== user.id) return res.status(403).json({ error: 'Comanda nu îți este alocată' });
+  if (comErr || !comanda) return trimiteEroare(res, 404, 'COMANDA_NU_EXISTA', 'Comanda nu există', 'The order does not exist.');
+  if (comanda.partener_id !== user.id) return trimiteEroare(res, 403, 'COMANDA_NEALOCATA', 'Comanda nu îți este alocată', 'This order is not assigned to you.');
   if (!['acceptata', 'in_executie'].includes(comanda.status)) {
-    return res.status(409).json({ error: `Comanda nu e într-o stare care permite încărcare foto (status curent: ${comanda.status})` });
+    return trimiteEroare(res, 409, 'STARE_GRESITA', `Comanda nu e într-o stare care permite încărcare foto (status curent: ${comanda.status})`, `The order is not in a state that allows photo uploads (current status: ${comanda.status}).`);
   }
 
   let buffer;
   try {
     buffer = Buffer.from(imagine_base64, 'base64');
   } catch (e) {
-    return res.status(400).json({ error: 'imagine_base64 invalid' });
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', 'imagine_base64 invalid', 'imagine_base64 is not valid.', ['imagine_base64']);
   }
 
   const hash = crypto.createHash('sha256').update(buffer).digest('hex');
@@ -70,7 +71,7 @@ async function handler(req, res, user) {
     .upload(path, buffer, { contentType: mime_type });
   if (uploadErr) {
     console.error('[comenzi/upload-imagine] storage', uploadErr);
-    return res.status(500).json({ error: 'Nu am putut încărca imaginea' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca imaginea', 'We could not upload the image. Please try again.');
   }
 
   const { data, error } = await supabaseAdmin
@@ -89,7 +90,7 @@ async function handler(req, res, user) {
     .single();
   if (error) {
     console.error('[comenzi/upload-imagine] db', error);
-    return res.status(500).json({ error: 'Nu am putut înregistra imaginea' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut înregistra imaginea', 'We could not save the image. Please try again.');
   }
 
   return res.status(200).json({ ok: true, imagine: data });

@@ -12,10 +12,11 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 async function handler(req, res, user) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   }
 
   const { error } = await supabaseAdmin
@@ -23,7 +24,7 @@ async function handler(req, res, user) {
     .insert({ user_id: user.id });
   if (error) {
     console.error('[client/checkout-inceput]', error);
-    return res.status(500).json({ error: 'Nu am putut înregistra vizita' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut înregistra vizita', 'We could not record the visit.');
   }
 
   return res.status(200).json({ ok: true });

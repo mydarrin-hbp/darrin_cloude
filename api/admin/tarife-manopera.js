@@ -16,7 +16,7 @@
 // POST { action:'sterge', id }
 
 const { requireAuth } = require('../../lib/auth-middleware');
-const { trimiteEroare, camp, formaComuna } = require('../../lib/raspuns-eroare');
+const { trimiteEroare, camp, formaComuna, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { inregistreazaAudit } = require('../../lib/audit-log');
 
@@ -28,7 +28,7 @@ async function handler(req, res, admin) {
       .select('*')
       .eq('tara_cod', tara)
       .order('cod_esco');
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
 
     const coduri = [...new Set((tarife || []).map(t => t.cod_esco).filter(Boolean))];
     let denumiri = {};
@@ -48,9 +48,9 @@ async function handler(req, res, admin) {
 
     if (action === 'sterge') {
       const { id } = req.body;
-      if (!id) return res.status(400).json({ error: 'id este obligatoriu' });
+      if (!id) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id este obligatoriu', 'id is required.', ['id']);
       const { error } = await supabaseAdmin.from('manopera_costuri').delete().eq('id', id);
-      if (error) return res.status(500).json({ error: error.message });
+      if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
       await inregistreazaAudit({ admin, req, actiune: 'stergere_tarif_manopera', entitate: 'manopera_costuri', entitate_id: id });
       return res.status(200).json({ ok: true });
     }
@@ -95,7 +95,7 @@ async function handler(req, res, admin) {
           .eq('cod_esco', codNormalizat)
           .eq('tara_cod', taraNormalizata)
           .maybeSingle();
-        if (cautaErr) return res.status(500).json({ error: cautaErr.message });
+        if (cautaErr) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, cautaErr);
         if (existent) targetId = existent.id;
       }
 
@@ -103,16 +103,16 @@ async function handler(req, res, admin) {
         ? supabaseAdmin.from('manopera_costuri').update(rand).eq('id', targetId)
         : supabaseAdmin.from('manopera_costuri').insert(rand);
       const { data, error } = await query.select().single();
-      if (error) return res.status(500).json({ error: error.message });
+      if (error) return trimiteEroareInterna(res, 500, 'EROARE_SERVER', null, null, error);
 
       await inregistreazaAudit({ admin, req, actiune: 'salvare_tarif_manopera', entitate: 'manopera_costuri', entitate_id: data.id, detalii: rand });
       return res.status(200).json({ ok: true, tarif: data });
     }
 
-    return res.status(400).json({ error: `action necunoscută: ${action}` });
+    return trimiteEroare(res, 400, 'ACTIUNE_NECUNOSCUTA', `action necunoscută: ${action}`, `Unknown action: ${action}`, ['action']);
   }
 
-  return res.status(405).json({ error: 'Method not allowed' });
+  return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 }
 
 module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));

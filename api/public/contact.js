@@ -11,12 +11,13 @@
 // GET ?tara=RO -> { ok, contact: { contact_whatsapp, contact_telefon, ... } }
 
 const { incarcaContactPlatforma } = require('../../lib/contact-platforma');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const tara = /^[A-Z]{2}$/.test(String(req.query?.tara || '').toUpperCase()) ? String(req.query.tara).toUpperCase() : null;
 
@@ -28,6 +29,6 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true, contact });
   } catch (err) {
     console.error('[public/contact]', err);
-    return res.status(500).json({ error: 'Nu am putut încărca datele de contact' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca datele de contact', 'We could not load the contact details.');
   }
 };

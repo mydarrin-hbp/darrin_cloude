@@ -4,9 +4,10 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const { data, error } = await supabaseAdmin
     .from('accese_temporare')
@@ -15,7 +16,7 @@ async function handler(req, res) {
     .limit(200);
   if (error) {
     console.error('[listeaza-acces-temporar]', error);
-    return res.status(500).json({ error: 'Nu am putut încărca accesele.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca accesele.', 'We could not load the access list.');
   }
 
   return res.status(200).json({ ok: true, accese: data || [] });

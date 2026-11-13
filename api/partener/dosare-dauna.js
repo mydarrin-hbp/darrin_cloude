@@ -14,6 +14,7 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const v = require('../../lib/valideaza');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 // Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
 const SCHEMA = {
@@ -44,7 +45,7 @@ function pentruAsigurator(d, userId, nrComanda) {
 
 async function handler(req, res, user) {
   if (!(await asiguratorAprobat(user.id))) {
-    return res.status(403).json({ error: 'Doar asiguratorii aprobați au acces la dosarele de daună.' });
+    return trimiteEroare(res, 403, 'FARA_DREPT', 'Doar asiguratorii aprobați au acces la dosarele de daună.', 'Only approved insurers have access to claim files.');
   }
 
   if (req.method === 'GET') {
@@ -56,7 +57,7 @@ async function handler(req, res, user) {
       .limit(200);
     if (error) {
       console.error('[partener/dosare-dauna] GET', error);
-      return res.status(500).json({ error: 'Nu am putut încărca dosarele.' });
+      return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca dosarele.', 'We could not load the claims. Please try again.');
     }
     const comandaIds = [...new Set((data || []).map((d) => d.comanda_id))];
     const nrPeComanda = new Map();
@@ -67,11 +68,11 @@ async function handler(req, res, user) {
     return res.status(200).json({ ok: true, dosare: (data || []).map((d) => pentruAsigurator(d, user.id, nrPeComanda.get(d.comanda_id))) });
   }
 
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   if (!v.valideazaSauTrimite(req, res, SCHEMA, { necunoscute: 'ignora' })) return;
   const { id, actiune, motiv, valoare_aprobata } = req.body || {};
-  if (!id || typeof id !== 'string') return res.status(400).json({ error: 'id este obligatoriu.' });
+  if (!id || typeof id !== 'string') return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'id este obligatoriu.', 'id is required.', ['id']);
 
   const acum = new Date().toISOString();
   let q;
@@ -82,14 +83,14 @@ async function handler(req, res, user) {
   } else if (actiune === 'aproba') {
     const val = Number(valoare_aprobata);
     if (valoare_aprobata === undefined || valoare_aprobata === null || valoare_aprobata === '' || !Number.isFinite(val) || val < 0) {
-      return res.status(400).json({ error: 'valoare_aprobata este obligatorie și trebuie să fie un număr pozitiv.' });
+      return trimiteEroare(res, 400, 'DATE_INVALIDE', 'valoare_aprobata este obligatorie și trebuie să fie un număr pozitiv.', 'valoare_aprobata is required and must be a positive number.', ['valoare_aprobata']);
     }
     q = supabaseAdmin.from('dosare_dauna')
       .update({ status: 'aprobat', valoare_aprobata: val, decizie_motiv: typeof motiv === 'string' && motiv.trim() ? motiv.trim().slice(0, 1000) : null, actualizat_la: acum })
       .eq('id', id).eq('asigurator_id', user.id).eq('status', 'in_analiza');
   } else if (actiune === 'respinge') {
     const m = typeof motiv === 'string' ? motiv.trim() : '';
-    if (m.length < 5) return res.status(400).json({ error: 'Motivul respingerii este obligatoriu (minimum 5 caractere).' });
+    if (m.length < 5) return trimiteEroare(res, 400, 'CAMP_OBLIGATORIU', 'Motivul respingerii este obligatoriu (minimum 5 caractere).', 'The reason for rejection is required (at least 5 characters).', ['motiv']);
     q = supabaseAdmin.from('dosare_dauna')
       .update({ status: 'respins', decizie_motiv: m.slice(0, 1000), actualizat_la: acum })
       .eq('id', id).eq('asigurator_id', user.id).eq('status', 'in_analiza');
@@ -98,16 +99,16 @@ async function handler(req, res, user) {
       .update({ status: 'inchis', actualizat_la: acum })
       .eq('id', id).eq('asigurator_id', user.id).in('status', ['aprobat', 'respins']);
   } else {
-    return res.status(400).json({ error: 'actiune trebuie să fie: preia, aproba, respinge sau inchide.' });
+    return trimiteEroare(res, 400, 'ACTIUNE_NECUNOSCUTA', 'actiune trebuie să fie: preia, aproba, respinge sau inchide.', 'actiune must be: preia, aproba, respinge or inchide.', ['actiune']);
   }
 
   const { data, error } = await q.select();
   if (error) {
     console.error('[partener/dosare-dauna] POST', error);
-    return res.status(500).json({ error: 'Nu am putut actualiza dosarul.' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut actualiza dosarul.', 'We could not update the claim. Please try again.');
   }
   if (!data || !data.length) {
-    return res.status(409).json({ error: 'Acțiunea nu se poate aplica: dosarul nu există, e al altui asigurator sau nu e în starea potrivită.' });
+    return trimiteEroare(res, 409, 'STARE_GRESITA', 'Acțiunea nu se poate aplica: dosarul nu există, e al altui asigurator sau nu e în starea potrivită.', 'The action cannot be applied: the claim does not exist, belongs to another insurer or is not in the right state.');
   }
   return res.status(200).json({ ok: true, dosar: pentruAsigurator(data[0], user.id, null) });
 }

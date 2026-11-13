@@ -18,6 +18,7 @@
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { esteSuprimat } = require('../../lib/email-suppression');
 const { renderEmailCosAbandonat, limbaProfilEmailComportamental } = require('../../lib/i18n');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const PRAG_ORE = 4;
 const TIP_EMAIL = 'cos_abandonat';
@@ -55,7 +56,7 @@ module.exports = async function handler(req, res) {
   const secretAsteptat = process.env.CRON_SECRET;
   const primit = (req.headers['authorization'] || '').replace(/^Bearer\s+/i, '');
   if (!secretAsteptat || primit !== secretAsteptat) {
-    return res.status(401).json({ error: 'Neautorizat' });
+    return trimiteEroare(res, 401, 'NEAUTORIZAT', 'Neautorizat', 'Not authorised.');
   }
 
   const pragData = new Date(Date.now() - PRAG_ORE * 3600000).toISOString();
@@ -67,7 +68,7 @@ module.exports = async function handler(req, res) {
     .order('creat_la', { ascending: false });
   if (selErr) {
     console.error('[email-cos-abandonat]', selErr);
-    return res.status(500).json({ error: 'Eroare la căutarea vizitelor de checkout' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Eroare la căutarea vizitelor de checkout', 'Error while looking up checkout visits.');
   }
   if (!vizite?.length) return res.status(200).json({ ok: true, trimise: 0 });
 

@@ -1560,7 +1560,7 @@ async function incarcaPortofoliu() {
     if (!token) return null;
     const r = await fetch('/api/investitori/portofoliu', { headers: { Authorization: 'Bearer ' + token }, cache: 'no-store' });
     const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error((enInv() && j.error_en) || j.error || 'Portofoliul nu s-a putut încărca.');
+    if (!r.ok) throw new Error((enInv() && j.error_en) || MYD_I18N.eroare(j, 'Portofoliul nu s-a putut încărca.'));
     PORTOFOLIU_INV = j;
     const pune = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
     const moneda = j.runda ? j.runda.moneda : '';
@@ -1902,7 +1902,7 @@ async function submitInvestmentRequest(){
       body: JSON.stringify({ suma, instrument: selectedInstrument }),
     });
     const j = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error((enInv() && j.error_en) || j.error || trInv('Nu am putut înregistra subscrierea.'));
+    if (!res.ok) throw new Error((enInv() && j.error_en) || MYD_I18N.eroare(j, trInv('Nu am putut înregistra subscrierea.')));
     selectedTicket = sumaInv(suma, j.moneda || RUNDA_SUBSCRIERE.moneda);
     const ca = document.getElementById('confirm-actiuni');
     if (ca) ca.textContent = sumaInv(j.actiuni);
@@ -2278,7 +2278,7 @@ function submitNewsletter() {
     btnEl.disabled = false;
     btnEl.textContent = 'Abonează-te ›';
     if (!res.httpOk) {
-      msgEl.textContent = res.status === 429 ? '⚠ Prea multe încercări. Încearcă mai târziu.' : '❌ ' + (res.data.error || 'Eroare. Încearcă din nou.');
+      msgEl.textContent = res.status === 429 ? '⚠ Prea multe încercări. Încearcă mai târziu.' : '❌ ' + (MYD_I18N.eroare(res.data, 'Eroare. Încearcă din nou.'));
       msgEl.className = 'ftr-nl-msg error';
     } else if (res.data.deja_abonat) {
       msgEl.textContent = '✓ Ești deja abonat!';

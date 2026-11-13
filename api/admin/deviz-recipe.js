@@ -11,10 +11,11 @@
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { calculeazaCostRecipeArticol } = require('../../lib/calculeaza-cost-recipe');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 async function handler(req, res) {
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   }
 
   const taraCod = ['RO', 'MD', 'DE', 'FR', 'BG'].includes(req.query.tara) ? req.query.tara : 'RO';
@@ -24,7 +25,7 @@ async function handler(req, res) {
     .select('articol_id, denumire_articol, unitate_masura, uniclass_system_code, catalog_nivel_id')
     .order('articol_id');
   if (error) {
-    return res.status(500).json({ error: 'Eroare la citirea articolelor de rețetă' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Eroare la citirea articolelor de rețetă', 'We could not read the recipe items.');
   }
 
   const rezultate = [];

@@ -13,11 +13,12 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const STATUS_ACTIVE = ['in_cautare_partener', 'acceptata', 'in_executie'];
 
 async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   try {
     const inceputLuna = new Date();
@@ -67,7 +68,7 @@ async function handler(req, res) {
     });
   } catch (err) {
     console.error('[admin/dashboard-stats]', err);
-    return res.status(500).json({ error: 'Nu am putut calcula statisticile' });
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut calcula statisticile', 'We could not calculate the statistics.');
   }
 }
 

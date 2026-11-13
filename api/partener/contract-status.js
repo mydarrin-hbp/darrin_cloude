@@ -7,6 +7,7 @@
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
 const ROLURI_PARTENER = [
   'partener_curier', 'partener_servicii', 'partener_materiale',
@@ -14,14 +15,14 @@ const ROLURI_PARTENER = [
 ];
 
 async function handler(req, res, user) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 
   const { data: partner } = await supabaseAdmin
     .from('partners')
     .select('status_verificare, contract_semnat, contract_semnat_la')
     .eq('id', user.id)
     .maybeSingle();
-  if (!partner) return res.status(404).json({ error: 'Cont de partener inexistent.' });
+  if (!partner) return trimiteEroare(res, 404, 'PARTENER_NU_EXISTA', 'Cont de partener inexistent.', 'The partner account does not exist.');
 
   const { data: cont } = await supabaseAdmin
     .from('partner_conturi_bancare')
