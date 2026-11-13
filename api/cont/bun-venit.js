@@ -20,6 +20,7 @@ const { fromHeader } = require('../../lib/email-sender');
 const { esteSuprimat } = require('../../lib/email-suppression');
 const { esteRolPartener } = require('../../lib/activare-partener');
 const { dashboardPentruRol } = require('../../lib/destinatie-rol');
+const { inregistreazaEmailConfirmat } = require('../../lib/palnie');
 
 const SITE_URL = process.env.SITE_URL || 'https://mydarrin.homebestpal.com';
 const TIP_EMAIL = 'bun_venit_cont_confirmat';
@@ -29,6 +30,8 @@ const TIPURI_VECHI = ['bun_venit_client'];
 async function handler(req, res, user) {
   if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA', 'Metodă nepermisă.', 'Method not allowed.');
   if (!user.email_confirmed_at) return res.status(200).json({ ok: true, trimis: false, motiv: 'neconfirmat' });
+  // Pasul 11-A1: emailul confirmat, în pâlnia pentru raportul intern.
+  await inregistreazaEmailConfirmat(user);
 
   try {
     const { data: profil, error: prErr } = await supabaseAdmin

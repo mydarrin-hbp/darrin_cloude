@@ -191,6 +191,10 @@
           if (timp) clearTimeout(timp);
           var reusit = x.status === 200 && x.d && x.d.ok;
           if (reusit) actualizeaza();
+          // Pasul 11-A1: doar tipul și slug-ul articolului, fără date personale.
+          if (reusit && window.MYD_MASURARE) {
+            window.MYD_MASURARE.eveniment('add_to_cart', { item_type: { serviciu: 'service', material: 'material', inchiriere: 'rental' }[configurare && configurare.tip] || 'other', item_slug: configurare && configurare.slug });
+          }
           if (optiuni.tacut) return reusit ? { ok: true, item: x.d.item } : { ok: false, raspuns: x.d, status: x.status };
           return incarcaFeedback().then(function (F) {
             if (F) {

@@ -655,8 +655,8 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 </script>
 <script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
 <script src="seo-meta.js"></script>
-<script src="cookie-consent.js" defer></script>
-<script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="analytics-loader.js" defer></script>
+<script src="/cookie-consent.js" defer></script>
+<script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="/analytics-loader.js" defer></script><script src="/masurare.js" defer></script><script src="/_vercel/insights/script.js" defer></script>
 <script src="myd-geo.js"></script>
   <!-- DOMPurify — sanitizare XSS (audit 2026-07-10) -->
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
@@ -1156,6 +1156,8 @@ async function genereazaEstimareDeviz() {
       btn.disabled = false; btn.textContent = 'Generează estimare';
       return;
     }
+    // Pasul 11-A1: Darrin AI folosit (fără textul cererii).
+    window.MYD_MASURARE?.eveniment('darrin_ai_used', { page: 'creeaza-deviz' });
     document.getElementById('dv-rez-categorie').textContent = data.titlu_categorie;
     document.getElementById('dv-rez-cost').textContent = Math.round(data.cost_brut_estimat).toLocaleString('ro-RO') + ' Lei';
     document.getElementById('dv-rez-explicatie').textContent = data.explicatie;

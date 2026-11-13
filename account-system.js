@@ -104,11 +104,17 @@ async function performRegister(email, parola, nume, gdprAcceptat, extra) {
   if (x.prenume) date.prenume = x.prenume;
   if (x.telefon) date.telefon = x.telefon;
   if (x.rolSolicitat) date.rol_solicitat = x.rolSolicitat;
+  // Pasul 11-A1: sursa campaniei (UTM), doar cu acordul pentru cookie-uri
+  // analitice (masurare.js); ajunge în profiles.sursa_utm, pentru raportul intern.
+  const M = window.MYD_MASURARE;
+  const sursa = M && M.sursaPentruCont ? M.sursaPentruCont() : null;
+  if (sursa) date.sursa = sursa;
   const { data, error } = await sb().auth.signUp({
     email, password: parola,
     options: { data: date },
   });
   if (error) throw error;
+  if (M) M.eveniment('account_created', { role: M.rol(x.rolSolicitat) });
   // Pasul 11-R3c: emailul de bun venit nu mai pleacă aici, ci după cod
   // (confirmaCodEmail → trimiteBunVenit).
   return data.user; // fără sesiune până la codul din email (confirmaCodEmail)
@@ -145,6 +151,10 @@ async function confirmaCodEmail(email, cod) {
   const { data, error } = await sb().auth.verifyOtp({ email, token: cod, type: 'signup' });
   if (error) throw error;
   trimiteBunVenit(data.session);
+  // Pasul 11-A1: emailul confirmat, primul pas al înscrierii de partener.
+  const M = window.MYD_MASURARE;
+  const rol = data.user && data.user.user_metadata && data.user.user_metadata.rol_solicitat;
+  if (M && rol && /^partener_/.test(rol)) M.eveniment('partner_step_completed', { step: 'email_confirmed', role: M.rol(rol) });
   return data.user;
 }
 

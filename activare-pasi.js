@@ -727,9 +727,23 @@
       }).then(function () { return tr('Pasul a fost salvat.'); });
     }, { form: $('mya-corp'), textSalveaza: tr('Se salvează…'), textOk: tr('✓ Salvat') }).then(function (r) {
       if (!r || !r.ok) return;
+      masoaraPas(cheie);
       if (cheie === 'contract') { termina(); return; }
       setTimeout(function () { st.pas = Math.min(6, st.pas + 1); randeaza(); salveazaCiorna(true); }, 500);
     });
+  }
+
+  // Pasul 11-A1: pasul salvat (și activarea completă), în pâlnia de măsurare.
+  // Fără date personale: doar numele pasului și tipul de partener.
+  function masoaraPas(cheie) {
+    var M = window.MYD_MASURARE;
+    if (!M) return;
+    var tip = M.tip(st.act && st.act.tip) || undefined;
+    M.eveniment('partner_step_completed', { step: M.pas(cheie), partner_type: tip });
+    if (st.act && st.act.complet && !st.activareMasurata) {
+      st.activareMasurata = true;
+      M.eveniment('partner_activation_completed', { partner_type: tip });
+    }
   }
 
   // Activarea s-a încheiat (sau așteaptă verificarea): dashboard-ul.

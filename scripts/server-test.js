@@ -6,6 +6,7 @@
 //   /api/public/reguli-platforma  → REGULI_SIMULATE (sau 503 cu REGULI=off)
 //   /api/public/tari-active       → aceleași țări
 //   orice alt /api/...            → 503 (paginile trebuie să se randeze și așa)
+//   /_vercel/insights/script.js   → script gol (Web Analytics, pasul 11-A1)
 // Datele simulate urmează auditul live din 16 oct. 2026 (checkout activ în
 // RO, AT, BG, GR, GB, MD) și deciziile LM din 17 oct. (24 h, 6 zile); nu sunt
 // citite din baza de date.
@@ -68,6 +69,12 @@ function cerere(req, res, opt) {
   const url = new URL(req.url, 'http://x');
   if (opt && opt.redirecturi && redirect(url, res)) return;
   const p = decodeURIComponent(url.pathname);
+  // Pasul 11-A1: scriptul Vercel Web Analytics (servit de Vercel în producție):
+  // aici un script gol, fără trimitere de date.
+  if (p === '/_vercel/insights/script.js') {
+    res.writeHead(200, { 'Content-Type': MIME['.js'] });
+    return res.end('/* Vercel Web Analytics: simulat local */');
+  }
   if (p.startsWith('/api/')) {
     if (p === '/api/public/reguli-platforma') {
       return process.env.REGULI === 'off' ? json(res, 503, { error: 'indisponibil' }) : json(res, 200, REGULI_SIMULATE);

@@ -371,7 +371,7 @@ async function testeServer() {
   // (înainte: verificate ca pagini cu coșul din antet).
   await test('niciun coș local rămas: cartItems / sertarul vechi lipsesc din catalog; paginile de categorie doar redirecționează', async () => {
     const s = fs.readFileSync(path.join(RADACINA, 'mydarrin-catalog.html'), 'utf8');
-    adevarat(!/cartItems|id="cart-drawer"|PLATFORM_PCT/.test(s) && s.includes('src="cos-indicator.js"'), 'catalogul');
+    adevarat(!/cartItems|id="cart-drawer"|PLATFORM_PCT/.test(s) && /src="\/?cos-indicator\.js"/.test(s), 'catalogul');
     for (const f of ['mydarrin-categorie-servicii.html', 'mydarrin-categorie-materiale.html', 'mydarrin-categorie-inchirieri.html']) {
       const p = fs.readFileSync(path.join(RADACINA, f), 'utf8');
       adevarat(!/cartItems|cart-drawer/.test(p) && p.includes("location.replace('/mydarrin-catalog?"), f);
