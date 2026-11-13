@@ -15,7 +15,10 @@
 // nu afișează nicio cifră). Imaginile: doar cele din catalog. Fără discounturi
 // de partener sau costuri interne.
 //
-// GET ?cat=<slug din categorii> | toate=1, &tip=servicii|materiale|inchirieri&tara=RO
+// GET ?cat=<slug din categorii> | toate=1, &tip=servicii|materiale|inchirieri&tara=RO&lang=en|ro
+// Pasul 11-T1: la lang=en (implicit, ca /api/public/catalog) fiecare produs are și
+// traduceri: { en } (titlu, descriere, unitate_masura...), iar categoria title_en /
+// description_en; pagina folosește engleza și cade pe română doar unde lipsește.
 // -> { ok, categorie: { slug, title, title_en, description, icon_name } | null,
 //      produse: [{ id, slug, titlu, descriere, unitate, imagine, tip, pret_de_la, are_pret }],
 //      are_pret: produsul are un preț real (rețetă sau catalog_preturi) — fără el, „Cere un deviz”.
@@ -32,12 +35,13 @@ function text(v, max) { return typeof v === 'string' ? v.trim().slice(0, max) : 
 module.exports = async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
   const allowed = await checkRateLimit(req, { key: 'catalog-categorie', limit: 120, windowSeconds: 60 });
-  if (!allowed) return res.status(429).json({ error: 'Prea multe cereri. Încearcă din nou mai târziu.' });
+  if (!allowed) return res.status(429).json({ error: 'Prea multe cereri. Încearcă din nou mai târziu.', error_en: 'Too many requests. Please try again later.' });
 
   const slug = text(req.query?.cat, 120);
   const tip = TIPURI[text(req.query?.tip, 20)] || 'servicii';
   const tara = (text(req.query?.tara, 2) || 'RO').toUpperCase();
   const toate = String(req.query?.toate || '') === '1';
+  const lang = req.query?.lang === 'ro' ? 'ro' : 'en';
 
   try {
     // Categoria și subcategoriile ei.
@@ -57,7 +61,7 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    const coloane = 'id, id_serviciu, titlu, descriere, unitate_masura, imagini, categorie, categorie_id, subcategorie_id';
+    const coloane = 'id, id_serviciu, titlu, descriere, unitate_masura, imagini, categorie, categorie_id, subcategorie_id' + (lang === 'en' ? ', traduceri' : '');
     let produse = [];
     if (iduri.length) {
       const [a, b] = await Promise.all([
@@ -75,14 +79,19 @@ module.exports = async function handler(req, res) {
     const preturi = await preturiDeLa(produse, tara);
 
     const lista = produse
-      .map((p) => ({
-        id: p.id, slug: p.id_serviciu, titlu: p.titlu, descriere: p.descriere || null,
-        unitate: p.unitate_masura || null,
-        imagine: Array.isArray(p.imagini) && p.imagini.length ? p.imagini[0] : null,
-        tip: p.categorie,
-        pret_de_la: preturi[p.id].pret_de_la,
-        are_pret: preturi[p.id].are_pret,
-      }))
+      .map((p) => {
+        const produs = {
+          id: p.id, slug: p.id_serviciu, titlu: p.titlu, descriere: p.descriere || null,
+          unitate: p.unitate_masura || null,
+          imagine: Array.isArray(p.imagini) && p.imagini.length ? p.imagini[0] : null,
+          tip: p.categorie,
+          pret_de_la: preturi[p.id].pret_de_la,
+          are_pret: preturi[p.id].are_pret,
+        };
+        const en = lang === 'en' && p.traduceri && p.traduceri.en;
+        if (en && Object.keys(en).length) produs.traduceri = { en };
+        return produs;
+      })
       .sort((x, y) => String(x.titlu).localeCompare(String(y.titlu), 'ro'));
 
     const { data: taraCfg } = await supabaseAdmin.from('tax_configurations').select('moneda').eq('tara_cod', tara).maybeSingle();
@@ -90,7 +99,7 @@ module.exports = async function handler(req, res) {
     // Răspunsul depinde doar de parametrii din adresă (cat, tip, tara), nu de utilizator.
     res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
     return res.status(200).json({
-      ok: true, categorie, tip, produse: lista,
+      ok: true, lang, categorie, tip, produse: lista,
       pret_maxim: cuPret.length ? Math.ceil(Math.max(...cuPret)) : null,
       moneda: taraCfg?.moneda || 'RON',
     });

@@ -15,6 +15,7 @@ const crypto = require('crypto');
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { eligibilitatePartener, MOTIV } = require('../../lib/eligibilitate-partener');
+const { renderEmailCodContract, limbaProfilEmailComportamental } = require('../../lib/i18n');
 
 const ROLURI_PARTENER = [
   'partener_curier', 'partener_servicii', 'partener_materiale',
@@ -90,6 +91,9 @@ async function handler(req, res, user) {
     return res.status(500).json({ error: 'Trimiterea emailului nu este configurată. Contactează administratorul.' });
   }
 
+  // Pasul 11-T1: emailul în limba din profil (ro / en), din lib/i18n.js.
+  const { data: profil } = await supabaseAdmin.from('profiles').select('limba, tara').eq('id', user.id).maybeSingle();
+  const emailCod = renderEmailCodContract(limbaProfilEmailComportamental(profil), { cod });
   try {
     const emailRes = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -97,10 +101,8 @@ async function handler(req, res, user) {
       body: JSON.stringify({
         from: 'noreply@homebestpal.com',
         to: user.email,
-        subject: 'Codul tău pentru semnarea contractului My Darrin',
-        html: `<p>Codul tău de confirmare pentru semnarea electronică a contractului de parteneriat My Darrin este:</p>
-               <p style="font-size:28px;font-weight:800;letter-spacing:.1em">${cod}</p>
-               <p>Codul expiră în 10 minute. Dacă nu ai solicitat această acțiune, ignoră acest email.</p>`,
+        subject: emailCod.subiect,
+        html: emailCod.html,
       }),
     });
     if (!emailRes.ok) throw new Error('resend status ' + emailRes.status);

@@ -180,6 +180,12 @@ function afiseazaStareFinala(icon, titlu, text) {
   el.classList.remove('hidden');
 }
 
+// Pasul 11-T1: mesajul de eroare de la server în limba paginii (error_en în modul EN).
+function textEroare(data) {
+  const ro = (window.MYD_I18N && window.MYD_I18N.lang) === 'ro';
+  return (!ro && data && data.error_en) || (data && data.error) || '';
+}
+
 function afiseazaMesaj(tip, text) {
   const el = document.getElementById('mesaj');
   el.className = 'msg-box msg-' + tip;
@@ -201,7 +207,7 @@ async function incarcaComanda() {
       } else if (res.status === 404) {
         afiseazaStareFinala('❓', 'Link invalid', 'Nu am găsit nicio comandă asociată acestui link.');
       } else {
-        afiseazaStareFinala('⚠️', 'Eroare', data.error || 'Nu am putut încărca detaliile comenzii.');
+        afiseazaStareFinala('⚠️', 'Eroare', textEroare(data) || 'Nu am putut încărca detaliile comenzii.');
       }
       return;
     }
@@ -254,7 +260,7 @@ async function confirmaLivrarea() {
     });
     const data = await res.json();
     if (!res.ok) {
-      afiseazaMesaj('err', data.error || 'Nu am putut confirma.');
+      afiseazaMesaj('err', textEroare(data) || 'Nu am putut confirma.');
       btn.disabled = false;
       btn.innerHTML = 'Confirmă primirea și eliberează plata';
       return;
@@ -282,7 +288,7 @@ async function trimiteProblema() {
     });
     const data = await res.json();
     if (!res.ok) {
-      afiseazaMesaj('err', data.error || 'Nu am putut trimite contestația.');
+      afiseazaMesaj('err', textEroare(data) || 'Nu am putut trimite contestația.');
       return;
     }
     afiseazaStareFinala('📨', 'Contestație înregistrată', `Ticket ${data.reclamatie.ticket_nr}. Echipa My Darrin va evalua lucrarea — plata rămâne păstrată în escrow până la răspuns.`);

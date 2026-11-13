@@ -12,6 +12,7 @@ const crypto = require('crypto');
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const v = require('../../lib/valideaza');
+const { renderEmailLucrareFinalizata, limbaProfilEmailComportamental } = require('../../lib/i18n');
 
 // Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
 const SCHEMA = {
@@ -20,12 +21,14 @@ const SCHEMA = {
 
 const TOKEN_VALABIL_ZILE = 7;
 
-async function trimiteEmailFinalizare(email, comanda, token) {
+async function trimiteEmailFinalizare(email, comanda, token, limba = 'ro') {
   if (!process.env.RESEND_API_KEY) {
     console.warn('[finalizeaza-comanda] RESEND_API_KEY lipsă — link netrimis, token:', token);
     return;
   }
   const link = `https://mydarrin.homebestpal.com/confirmare-livrare?token=${token}`;
+  // Pasul 11-T1: emailul în limba clientului (ro / en), din lib/i18n.js.
+  const emailFin = renderEmailLucrareFinalizata(limba, { numarComanda: comanda.nr_comanda, link });
   try {
     await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -33,12 +36,8 @@ async function trimiteEmailFinalizare(email, comanda, token) {
       body: JSON.stringify({
         from: 'noreply@homebestpal.com',
         to: email,
-        subject: `Lucrarea ta a fost finalizată — comanda ${comanda.nr_comanda}`,
-        html: `
-          <p>Partenerul a declarat finalizată lucrarea pentru comanda <strong>${comanda.nr_comanda}</strong>.</p>
-          <p><a href="${link}">Vezi fotografiile și confirmă primirea</a></p>
-          <p>Dacă nu confirmi sau nu semnalezi o problemă în 24 de ore, comanda va fi considerată automat confirmată.</p>
-        `,
+        subject: emailFin.subiect,
+        html: emailFin.html,
       }),
     });
   } catch (err) {
@@ -128,7 +127,8 @@ async function handler(req, res, user) {
 
   const { data: clientAuth } = await supabaseAdmin.auth.admin.getUserById(comanda.client_id);
   if (clientAuth?.user?.email) {
-    await trimiteEmailFinalizare(clientAuth.user.email, comanda, token);
+    const { data: profilClient } = await supabaseAdmin.from('profiles').select('limba, tara').eq('id', comanda.client_id).maybeSingle();
+    await trimiteEmailFinalizare(clientAuth.user.email, comanda, token, limbaProfilEmailComportamental(profilClient));
   }
 
   return res.status(200).json({ ok: true, comanda: data });

@@ -20,7 +20,8 @@ const LIMBI = ['en', 'de', 'fr', 'tr', 'bg', 'el'];
 // 2026): nivelurile doar ale serviciilor publice — altfel traducerile
 // nivelurilor din ciorne ar intra în dicționarul public.
 const SURSE = [
-  { tabel: 'catalog_servicii', campuri: ['titlu', 'domeniu', 'descriere', 'etape_lucrare', 'instructiuni_intretinere'], public: (q) => q.eq('status_public', true) },
+  // Pasul 11-T1: și unitatea de măsură (ex. „buc” → „pcs”), afișată pe card și pe pagina de produs.
+  { tabel: 'catalog_servicii', campuri: ['titlu', 'domeniu', 'descriere', 'etape_lucrare', 'instructiuni_intretinere', 'unitate_masura'], public: (q) => q.eq('status_public', true) },
   { tabel: 'catalog_niveluri', campuri: ['label', 'descriere'], legatura: 'catalog_servicii!inner(status_public)', public: (q) => q.eq('catalog_servicii.status_public', true) },
   { tabel: 'categorii', campuri: ['title', 'description'] },
 ];

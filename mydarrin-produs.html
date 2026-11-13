@@ -3126,7 +3126,7 @@ async function loadAddonCatalog() {
   // NACE (sau n-are deloc cod NACE — produse de fallback), lista rămâne
   // goală cu un mesaj clar, NU cade înapoi pe tot catalogul nefiltrat.
   const naceFilter = S.nace ? `&nace=eq.${encodeURIComponent(S.nace)}` : '&nace=eq.__fara_potrivire__';
-  const qs = `status_public=eq.true${naceFilter}&select=id,id_serviciu,titlu,descriere,imagini,unitate_masura,catalog_niveluri(nivel,catalog_preturi(pret))&order=titlu`;
+  const qs = `status_public=eq.true${naceFilter}&select=id,id_serviciu,titlu,descriere,imagini,unitate_masura,traduceri,catalog_niveluri(nivel,catalog_preturi(pret))&order=titlu`;
   // Faza 4 marketplace (31 august 2026) — link vizibil doar dacă serviciul
   // curent are un cod NACE real (aceeași condiție ca filtrarea de mai jos).
   const marketplaceLink = document.getElementById('marketplace-link');
@@ -3153,7 +3153,9 @@ async function loadAddonCatalog() {
     const normalizeaza = (rows) => rows.filter((r) => !excluse.includes(r.id_serviciu)).map((r) => {
       const preturi = {};
       (r.catalog_niveluri || []).forEach((n) => { preturi[n.nivel] = n.catalog_preturi?.[0]?.pret ?? null; });
-      return { id: r.id, titlu: r.titlu, descriere: r.descriere || '', imagini: Array.isArray(r.imagini) ? r.imagini : [], unitate: r.unitate_masura || 'buc', preturi };
+      // Pasul 11-T1: datele (coș, comandă) rămân în română; afis = textele afișate în limba paginii.
+      const afis = { titlu: trDb(r, 'titlu'), descriere: trDb(r, 'descriere') || '', unitate: trDb(r, 'unitate_masura') || 'buc' };
+      return { id: r.id, titlu: r.titlu, descriere: r.descriere || '', imagini: Array.isArray(r.imagini) ? r.imagini : [], unitate: r.unitate_masura || 'buc', preturi, afis };
     });
     ADDON_DB.materiale = normalizeaza(mat);
     ADDON_DB.inchirieri = normalizeaza(inch);
@@ -3345,16 +3347,18 @@ function renderAddonList() {
     // Faza 4 marketplace (31 august 2026) — descriere reală, dacă produsul
     // are una (catalog_servicii.descriere) — trunchiată, fișa completă e pe
     // pagina de marketplace dedicată (link mai sus).
-    const descTrunchiata = item.descriere ? (item.descriere.length > 70 ? item.descriere.slice(0, 70) + '…' : item.descriere) : '';
+    // Pasul 11-T1: traducerea se alege înainte de trunchiere (un text trunchiat nu se mai potrivește în dicționar).
+    const afis = item.afis || { titlu: item.titlu, descriere: item.descriere, unitate: item.unitate };
+    const descTrunchiata = afis.descriere ? (afis.descriere.length > 70 ? afis.descriere.slice(0, 70) + '…' : afis.descriere) : '';
     const thumb = item.imagini?.[0]
       ? `<img src="${item.imagini[0]}" style="width:36px;height:36px;object-fit:cover;border-radius:8px;flex-shrink:0" loading="lazy"/>`
       : `<div style="width:36px;height:36px;border-radius:8px;background:#F4F7F9;flex-shrink:0"></div>`;
     return `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #F4F7F9">
       ${thumb}
       <div style="flex:1;min-width:0">
-        <div class="addon-titlu" title="${escapeAddonHTML(item.titlu)}" onclick="this.classList.toggle('extins')">${escapeAddonHTML(item.titlu)}</div>
+        <div class="addon-titlu" title="${escapeAddonHTML(afis.titlu)}" onclick="this.classList.toggle('extins')">${escapeAddonHTML(afis.titlu)}</div>
         ${descTrunchiata ? `<div style="font-size:10.5px;color:#8C9BAD;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeAddonHTML(descTrunchiata)}</div>` : ''}
-        <div style="font-size:11px;color:#8C9BAD">${pret} Lei / ${escapeAddonHTML(item.unitate)}</div>
+        <div style="font-size:11px;color:#8C9BAD">${pret} Lei / ${escapeAddonHTML(afis.unitate)}</div>
       </div>
       <button type="button" onclick="addAddonItem('${addonActiveTab}','${item.id}')" ${dejaAdaugat ? 'disabled' : ''} style="padding:6px 12px;border-radius:8px;border:1px solid #D5DFE8;background:${dejaAdaugat ? '#F4F7F9' : '#EBF4FB'};color:${dejaAdaugat ? '#B8C4CE' : '#003366'};font-size:11.5px;font-weight:700;cursor:${dejaAdaugat ? 'default' : 'pointer'};font-family:inherit;flex-shrink:0">${dejaAdaugat ? 'Adăugat' : '+ Adaugă'}</button>
     </div>`;
@@ -3646,6 +3650,20 @@ async function produsDinCatalog(slug) {
   } catch (e) { return null; }
 }
 
+// Pasul 11-T1: textul din baza de date în limba paginii — traduceri.en în modul EN,
+// româna doar dacă traducerea lipsește (ca lib/traducere-continut.js pe server).
+function trDb(rand, camp) {
+  if (!rand) return null;
+  const limba = (window.MYD_I18N && window.MYD_I18N.lang) || 'ro';
+  const tr = limba !== 'ro' && rand.traduceri && typeof rand.traduceri === 'object' ? (rand.traduceri[limba] || rand.traduceri.en || {}) : {};
+  const v = tr[camp];
+  if (!(v == null || v === '' || (Array.isArray(v) && !v.length))) return v;
+  // fără traducere în rând: dicționarul paginii (i18n/en.json), apoi româna
+  const ro = rand[camp];
+  if (limba !== 'ro' && typeof ro === 'string' && window.MYD_I18N && typeof window.MYD_I18N.traduce === 'function') return window.MYD_I18N.traduce(ro);
+  return ro;
+}
+
 async function initPilotProdus(slug, serviciuId) {
   if (!serviciuId || !SUPA_PROD_ANON) return false;
 
@@ -3653,8 +3671,8 @@ async function initPilotProdus(slug, serviciuId) {
   try {
     const headers = { apikey: SUPA_PROD_ANON, Authorization: `Bearer ${SUPA_PROD_ANON}` };
     const [servRes, nivRes] = await Promise.all([
-      fetch(`${SUPA_PROD_URL}/rest/v1/catalog_servicii?id=eq.${serviciuId}&select=id,titlu,categorie,domeniu,unitate_masura,nace,descriere,etape_lucrare,instructiuni_intretinere,imagini`, { headers }).then(r => r.ok ? r.json() : []),
-      fetch(`${SUPA_PROD_URL}/rest/v1/catalog_niveluri?serviciu_id=eq.${serviciuId}&select=id,nivel,descriere`, { headers }).then(r => r.ok ? r.json() : []),
+      fetch(`${SUPA_PROD_URL}/rest/v1/catalog_servicii?id=eq.${serviciuId}&select=id,titlu,categorie,domeniu,unitate_masura,nace,descriere,etape_lucrare,instructiuni_intretinere,imagini,traduceri`, { headers }).then(r => r.ok ? r.json() : []),
+      fetch(`${SUPA_PROD_URL}/rest/v1/catalog_niveluri?serviciu_id=eq.${serviciuId}&select=id,nivel,descriere,traduceri`, { headers }).then(r => r.ok ? r.json() : []),
     ]);
     servRow = servRes[0]; niveluriRows = nivRes;
   } catch (e) {
@@ -3670,7 +3688,7 @@ async function initPilotProdus(slug, serviciuId) {
   // Un serviciu cu rețetă nu mai cade niciodată pe prețurile statice din TIER_DB.
   const taraCod = S.tara_cod || 'RO';
   const niveluri = await Promise.all(niveluriRows.map(async (n) => {
-    const nivel = { nivel_id: n.id, nivel: n.nivel, descriere: n.descriere, stare: 'eroare', pret_final: null };
+    const nivel = { nivel_id: n.id, nivel: n.nivel, descriere: trDb(n, 'descriere'), stare: 'eroare', pret_final: null };
     try {
       const res = await fetch('/api/public/calculeaza-pret-nivel', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -3714,6 +3732,8 @@ async function initPilotProdus(slug, serviciuId) {
   // Pasul 11-C2: și închirierile și materialele din catalog au prețul de la server.
   S.type = servRow.categorie === 'inchirieri' ? 'inchiriere' : servRow.categorie === 'materiale' ? 'material' : 'serviciu';
   S.unit = servRow.unitate_masura || 'ore';
+  // unitatea afișată (ex. „buc” → „pcs” în engleză); S.unit rămâne valoarea din catalog
+  S.unitAfisat = trDb(servRow, 'unitate_masura') || S.unit;
   // Bug real găsit (29 august 2026, testare live): S.nace nu era niciodată
   // setat în mod pilot — loadAddonCatalog() cădea mereu pe filtrul
   // "__fara_potrivire__", arătând "Niciun material" indiferent ce addon-uri
@@ -3724,29 +3744,31 @@ async function initPilotProdus(slug, serviciuId) {
   // intrări curatoriate pentru acest serviciu.
   S.domeniu = servRow.domeniu || '';
 
-  document.title = servRow.titlu + ' | My Darrin';
-  setEl('bc-title', servRow.titlu);
+  const titluAfisat = trDb(servRow, 'titlu');
+  document.title = titluAfisat + ' | My Darrin';
+  setEl('bc-title', titluAfisat);
   setEl('bc-cat', 'Servicii');
-  setEl('prod-title', servRow.titlu);
+  setEl('prod-title', titluAfisat);
   // Bug real găsit 31 august 2026 (fondator, testare live): descrierea reală
   // a serviciului (catalog_servicii.descriere, populată explicit — vezi
   // Faza 4) nu era niciodată citită — text generic hardcodat pentru toate
   // cele 6 servicii pilot. Fallback la textul vechi doar dacă serviciul n-are
   // încă o descriere reală populată.
-  setEl('prod-desc', servRow.descriere || 'Serviciu furnizat de parteneri verificați · Preț calculat live din rețeta tehnică reală');
+  setEl('prod-desc', trDb(servRow, 'descriere') || 'Serviciu furnizat de parteneri verificați · Preț calculat live din rețeta tehnică reală');
   setEl('prod-type-chip', 'Serviciu');
 
   const etapeWrap = document.getElementById('etape-wrap');
   const etapeLista = document.getElementById('etape-lista');
-  if (etapeWrap && etapeLista && Array.isArray(servRow.etape_lucrare) && servRow.etape_lucrare.length) {
-    etapeLista.innerHTML = servRow.etape_lucrare.map((e) => `<li>${escapeAddonHTML(e)}</li>`).join('');
+  const etape = trDb(servRow, 'etape_lucrare');
+  if (etapeWrap && etapeLista && Array.isArray(etape) && etape.length) {
+    etapeLista.innerHTML = etape.map((e) => `<li>${escapeAddonHTML(e)}</li>`).join('');
     etapeWrap.style.display = '';
   } else if (etapeWrap) { etapeWrap.style.display = 'none'; }
 
   const intretinereWrap = document.getElementById('intretinere-wrap');
   const intretinereText = document.getElementById('intretinere-text');
   if (intretinereWrap && intretinereText && servRow.instructiuni_intretinere) {
-    intretinereText.textContent = servRow.instructiuni_intretinere;
+    intretinereText.textContent = trDb(servRow, 'instructiuni_intretinere');
     intretinereWrap.style.display = '';
   } else if (intretinereWrap) { intretinereWrap.style.display = 'none'; }
   // Bug real găsit 31 august 2026 (fondator: "am încărcat imagini... se
@@ -3777,10 +3799,10 @@ async function initPilotProdus(slug, serviciuId) {
     }
   }
   const sumIcon = document.getElementById('sum-icon'); if (sumIcon) sumIcon.textContent = '';
-  setEl('sum-title', servRow.titlu);
+  setEl('sum-title', titluAfisat);
   setEl('sum-sub', 'Serviciu');
-  setEl('qty-label-lbl', 'Cantitate (' + S.unit + ')');
-  setEl('unit-lbl', S.unit);
+  setEl('qty-label-lbl', 'Cantitate (' + S.unitAfisat + ')');
+  setEl('unit-lbl', S.unitAfisat);
   setEl('sec1-ttl', 'Configurare serviciu');
   const reqBox = document.getElementById('req-box'); if (reqBox) reqBox.style.display = 'none';
 
@@ -3953,7 +3975,7 @@ async function _recalcPilotNow(qty) {
   const contBtn = document.querySelector('#sec-1 .btn-primary');
   const nivelCurent = S.pilotNiveluri.find((n) => n.nivel_id === nivelId);
   setEl('s-nivel', nivelCurent ? (NIVEL_LABEL[nivelCurent.nivel] || nivelCurent.nivel) : 'Standard');
-  setEl('s-qty', qty + ' ' + S.unit);
+  setEl('s-qty', qty + ' ' + (S.unitAfisat || S.unit));
   // Nivel fără preț real: nu se poate comanda direct și nu cerem serverului
   // un preț pe care știm că nu-l are (răspunsul ar fi tot resurse_fara_pret).
   if (nivelCurent && nivelCurent.stare === 'evaluare') {
@@ -4030,7 +4052,7 @@ async function _recalcPilotNow(qty) {
   setEl('esc-amount', fmtCurrency(data.pret_final));
   setEl('launch-amt', fmtCurrency(data.pret_final));
   setEl('fin-svc', (document.getElementById('prod-title')?.textContent || S.slug));
-  setEl('fin-qty', qty + ' ' + S.unit);
+  setEl('fin-qty', qty + ' ' + (S.unitAfisat || S.unit));
 }
 
 // ══ INIT ══
