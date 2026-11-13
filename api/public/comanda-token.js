@@ -19,10 +19,10 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const allowed = await checkRateLimit(req, { key: 'comanda-token', limit: 20, windowSeconds: 600 });
-  if (!allowed) return res.status(429).json({ error: 'Prea multe cereri. Încearcă din nou mai târziu.' });
+  if (!allowed) return res.status(429).json({ error: 'Prea multe cereri. Încearcă din nou mai târziu.', error_en: 'Too many requests. Please try again later.' });
 
   const token = String(req.query?.token || '');
-  if (!token) return res.status(400).json({ error: 'token este obligatoriu' });
+  if (!token) return res.status(400).json({ error: 'token este obligatoriu', error_en: 'token is required' });
 
   const { data: comanda, error: comErr } = await supabaseAdmin
     .from('comenzi')
@@ -31,12 +31,12 @@ module.exports = async function handler(req, res) {
     .maybeSingle();
   if (comErr) {
     console.error('[public/comanda-token]', comErr);
-    return res.status(500).json({ error: 'Eroare la căutarea comenzii' });
+    return res.status(500).json({ error: 'Eroare la căutarea comenzii', error_en: 'Error while looking up the order' });
   }
-  if (!comanda) return res.status(404).json({ error: 'Link invalid sau expirat' });
+  if (!comanda) return res.status(404).json({ error: 'Link invalid sau expirat', error_en: 'Invalid or expired link' });
 
   if (comanda.token_expira_la && new Date(comanda.token_expira_la) < new Date()) {
-    return res.status(410).json({ error: 'Linkul a expirat', expirat: true });
+    return res.status(410).json({ error: 'Linkul a expirat', error_en: 'The link has expired', expirat: true });
   }
 
   let partenerNume = null;

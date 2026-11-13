@@ -17,11 +17,12 @@
 
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { esteSuprimat } = require('../../lib/email-suppression');
+const { renderEmailCosAbandonat, limbaProfilEmailComportamental } = require('../../lib/i18n');
 
 const PRAG_ORE = 4;
 const TIP_EMAIL = 'cos_abandonat';
 
-async function trimiteEmailCosAbandonat(email) {
+async function trimiteEmailCosAbandonat(email, limba = 'ro') {
   if (!process.env.RESEND_API_KEY) {
     console.warn('[email-cos-abandonat] RESEND_API_KEY lipsă — email netrimis către', email);
     return;
@@ -33,6 +34,7 @@ async function trimiteEmailCosAbandonat(email) {
     console.log('[email-cos-abandonat] adresă dezabonată, sărim peste:', email);
     return;
   }
+  const email_ = renderEmailCosAbandonat(limba);
   await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -42,14 +44,9 @@ async function trimiteEmailCosAbandonat(email) {
     body: JSON.stringify({
       from: 'noreply@homebestpal.com',
       to: email,
-      subject: 'Ai rămas la un pas de finalizarea comenzii',
-      html: `
-        <p>Salut,</p>
-        <p>Am văzut că ai ajuns pe pagina de finalizare a comenzii pe My Darrin, dar n-ai apucat să o trimiți.</p>
-        <p>Devizul tău rămâne calculat de Darrin AI, iar plata e protejată prin escrow — banii ajung la partener doar după ce confirmi tu că lucrarea e făcută.</p>
-        <p><a href="https://mydarrin.homebestpal.com/mydarrin-catalog" style="display:inline-block;background:#FF8C00;color:#fff;padding:12px 24px;border-radius:10px;text-decoration:none;font-weight:700">Reia comanda</a></p>
-        <p style="font-size:12px;color:#666">Dacă nu mai vrei să primești acest tip de email, scrie-ne la contact@homebestpal.com.</p>
-      `,
+      // Pasul 11-T1: textul vine din lib/i18n.js, în limba din profil (ro / en).
+      subject: email_.subiect,
+      html: email_.html,
     }),
   });
 }
@@ -104,12 +101,12 @@ module.exports = async function handler(req, res) {
 
       const { data: profil } = await supabaseAdmin
         .from('profiles')
-        .select('email')
+        .select('email, limba, tara')
         .eq('id', userId)
         .maybeSingle();
       if (!profil?.email) continue;
 
-      await trimiteEmailCosAbandonat(profil.email);
+      await trimiteEmailCosAbandonat(profil.email, limbaProfilEmailComportamental(profil));
       trimise++;
     } catch (err) {
       console.error('[email-cos-abandonat]', userId, err);
