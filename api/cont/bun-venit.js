@@ -22,7 +22,7 @@ const { incarcaContactPlatformaSigur } = require('../../lib/contact-platforma');
 const { fromHeader } = require('../../lib/email-sender');
 const { esteSuprimat } = require('../../lib/email-suppression');
 const { esteRolPartener } = require('../../lib/activare-partener');
-const { dashboardPentruRol, PAGINA_RUTA_INVESTITOR } = require('../../lib/destinatie-rol');
+const { dashboardPentruRol } = require('../../lib/destinatie-rol');
 const { inregistreazaEmailConfirmat } = require('../../lib/palnie');
 
 const SITE_URL = process.env.SITE_URL || 'https://mydarrin.homebestpal.com';
@@ -71,7 +71,7 @@ async function handler(req, res, user) {
       partener: !!rolPartener,
       investitor,
       link: rolPartener ? SITE_URL + dashboardPentruRol(rolPartener)
-        : investitor ? SITE_URL + (areInvestitor ? dashboardPentruRol('investor') : PAGINA_RUTA_INVESTITOR)
+        : investitor ? SITE_URL + dashboardPentruRol('investor') // pasul 11-I2: panoul, cu sau fără rol
         : null,
     });
     const r = await fetch('https://api.resend.com/emails', {

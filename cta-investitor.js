@@ -31,6 +31,12 @@
      verificare   Dosarul tău e în verificare            #panou
      runda        Intră în rundă →                       openRunda; cu dosarul în verificare, nota de sub buton
      panou        Mergi la panoul tău →                  mydarrin-panou-investitor.html (11-I1)
+
+   Pasul 11-I2 (decizia LM, 14 nov. 2026): contul de investitor — rolul `investor`
+   sau „Investitor” ales la înscriere (rol_solicitat) — are întotdeauna starea
+   `panou`: „Devino investitor” / „Intră în rundă” duc în panou, iar „Investește”
+   din panou deschide ruta KYC sau subscrierea (?ruta=investeste). Stările
+   fara_dosar … runda rămân pentru conturile care nu au ales „Investitor”.
    ════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -98,6 +104,7 @@
   function calculeaza(c) {
     var kyc = c.kyc, investitor = c.investitor, runda = c.runda;
     var st = kyc && kyc.status;
+    if (investitor || c.rolSolicitat === 'investor') return { stare: 'panou' };
     if (st === 'respins') {
       var pas = 1;
       (c.lipsa || []).some(function (k) { if (PAS_LIPSA[k]) { pas = PAS_LIPSA[k]; return true; } return false; });
@@ -122,7 +129,7 @@
       return Promise.all([profil(tok), json('/api/investitori/kyc', tok), promRunda]).then(function (r) {
         var p = r[0] || {};
         var investitor = Array.isArray(p.roles) && p.roles.indexOf('investor') !== -1;
-        var c = { kyc: r[1] && r[1].kyc, lipsa: (r[1] && r[1].lipsa) || [], investitor: investitor, runda: r[2] };
+        var c = { kyc: r[1] && r[1].kyc, lipsa: (r[1] && r[1].lipsa) || [], investitor: investitor, runda: r[2], rolSolicitat: p.rol_solicitat };
         var rez = calculeaza(c);
         rez.cont = true; rez.kyc = c.kyc; rez.investitor = investitor; rez.runda = c.runda;
         if (!investitor) return rez;
@@ -230,8 +237,10 @@
       var st = r.kyc && r.kyc.status;
       if (!r.kyc) curent = 'date';
       else if (st === 'ciorna') {
-        for (var i = 0; i < r.pas - 1; i++) stari[SEGMENTE[i]] = 'facut';
-        curent = SEGMENTE[r.pas - 1];
+        // Starea `panou` (11-I2) nu are r.pas: pasul salvat vine din dosar.
+        var pas = r.pas || Math.min(Math.max(Number(r.kyc.pas_curent) || 1, 1), 5);
+        for (var i = 0; i < pas - 1; i++) stari[SEGMENTE[i]] = 'facut';
+        curent = SEGMENTE[pas - 1];
       } else {
         SEGMENTE.slice(0, 5).forEach(function (s) { stari[s] = 'facut'; });
         if (st === 'in_verificare') { curent = 'verificare'; eticheta.verificare = 'în curs'; }

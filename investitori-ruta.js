@@ -48,6 +48,7 @@
 
   var CHEIE_REVENIRE = 'myd_revenire_dupa_login';
   var ADRESA_RUTEI = '/mydarrin-investitori.html?ruta=investitor';
+  var PANOU = '/mydarrin-panou-investitor.html'; // pasul 11-I2
   var BUCKET = 'investitori-kyc';
   var MARIME_MAXIMA = 5 * 1024 * 1024;
   var TIPURI = { 'image/jpeg': 1, 'image/png': 1, 'image/webp': 1, 'application/pdf': 1 };
@@ -501,7 +502,8 @@
     window.MDFeedback.salveaza(buton, el('mi-msg'), function () {
       return salveazaPas().then(function (j) {
         if (n === PASI.length) {
-          setTimeout(function () { inchide(true); window.location.href = '/mydarrin-investitori.html?bun_venit=1#inv-private-dashboard'; }, 900);
+          // Pasul 11-I2: rolul `investor` e acum pe cont → subscrierea (?ruta=investeste → openRunda).
+          setTimeout(function () { inchide(true); window.location.href = '/mydarrin-investitori.html?ruta=investeste'; }, 900);
           return tr('Dosarul a fost trimis. Rolul de investitor e pe contul tău.');
         }
         setTimeout(function () { if (st) arataPas(n + 1); }, 450);
@@ -583,6 +585,18 @@
     el('mi-reincearca').focus();
   }
 
+  // Pasul de corectat la un dosar respins, după ce lipsește (aceeași hartă ca în cta-investitor.js).
+  var PAS_LIPSA = {
+    date_personale: 1, data_nasterii: 1, cetatenie: 1, adresa_domiciliu: 1, id_fiscal: 1, cont_bancar: 1,
+    tip_document: 2, document_fata: 2, document_verso: 2, act_serie_numar: 2, act_valabil_pana: 2,
+    mifid: 3, pep: 3, sanctiuni: 3, rezidenta_fiscala: 4,
+  };
+  function pasDeCorectat(lipsa) {
+    var pas = 1;
+    (lipsa || []).some(function (k) { if (PAS_LIPSA[k]) { pas = PAS_LIPSA[k]; return true; } return false; });
+    return pas;
+  }
+
   // Completează fereastra deschisă cu dosarul KYC (pasul salvat).
   function umpleRuta(j, pasCerut) {
     var kyc = j.kyc;
@@ -614,11 +628,16 @@
       return cuTermen(Promise.all(cereri), TERMEN_MS).then(function (r) {
         if (st !== stareCurenta) return;
         var p = r[0];
-        if (!doarRuta && p && Array.isArray(p.roles) && p.roles.indexOf('investor') !== -1) {
+        // Pasul 11-I2: un dosar în lucru (ciornă sau respins) are întâietate și cu
+        // rolul `investor` — „Investește” din panou îl deschide pe el, nu subscrierea.
+        var kyc = r[1] && r[1].kyc;
+        var deCompletat = kyc && (kyc.status === 'ciorna' || kyc.status === 'respins');
+        if (!doarRuta && !deCompletat && p && Array.isArray(p.roles) && p.roles.indexOf('investor') !== -1) {
           inchide(true);
           if (typeof window.openRunda === 'function') window.openRunda(d);
           return;
         }
+        if (!pasCerut && kyc && kyc.status === 'respins') pasCerut = pasDeCorectat(r[1].lipsa);
         umpleRuta(r[1], pasCerut);
       });
     }).catch(function (e) {
@@ -689,11 +708,26 @@
 
   window.MYD_INVESTITOR = { start: start, deschideRuta: deschideRuta, deschideDateCont: deschideDateCont, inchide: inchide, ibanValid: ibanValid };
 
-  // Revenirea după autentificare (?ruta=investitor): ruta pornește singură.
+  // Revenirea după autentificare (?ruta=investitor).
+  // Pasul 11-I2 (decizia LM, 14 nov. 2026): contul de investitor (rolul `investor`
+  // sau „Investitor” ales la înscriere) merge în panoul lui, nu direct în pasul 1;
+  // ceilalți (fără sesiune, client) au fluxul de până acum.
+  // ?ruta=investeste = „Investește” / „Subscriere nouă” din panou: ruta KYC de la
+  // pasul salvat sau, cu rolul `investor`, subscrierea (start).
+  function contDeInvestitor(p) {
+    return !!p && ((Array.isArray(p.roles) && p.roles.indexOf('investor') !== -1) || p.rol_solicitat === 'investor');
+  }
   function laIncarcare() {
-    if (!/[?&]ruta=investitor(&|$)/.test(location.search)) return;
+    var investeste = /[?&]ruta=investeste(&|$)/.test(location.search);
+    if (!investeste && !/[?&]ruta=investitor(&|$)/.test(location.search)) return;
     try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) {}
-    setTimeout(function () { start(null); }, 300);
+    if (investeste || !poateAreSesiune()) { setTimeout(function () { start(null); }, 300); return; }
+    cuTermen(sesiune(), TERMEN_MS).then(function (s) {
+      return s ? cuTermen(cereProfil(s), TERMEN_MS) : null;
+    }).catch(function () { return null; }).then(function (p) {
+      if (contDeInvestitor(p)) { location.replace(PANOU); return; }
+      start(null);
+    });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', laIncarcare);
   else laIncarcare();

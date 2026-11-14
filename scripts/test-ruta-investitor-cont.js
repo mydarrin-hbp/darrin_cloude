@@ -1,5 +1,7 @@
 // scripts/test-ruta-investitor-cont.js
 // Pasul 11-I1 (14 nov. 2026): crearea contului de investitor și panoul propriu.
+// Actualizat la pasul 11-I2 (decizia LM, 14 nov. 2026): după cod, contul de
+// investitor ajunge în panoul lui (starea „cont nou”), nu în pasul 1 al rutei.
 //
 // Fără rețea externă: serverul local (scripts/server-test.js) și Playwright.
 // Clientul Supabase e simulat (nimic nu ajunge la Supabase): signUp, verifyOtp
@@ -13,13 +15,15 @@
 //      nou Client / Partener; din nou „Devino investitor” → Investitor;
 //      datele + GDPR → performRegister primește rolSolicitat 'investor'
 //      (signUp interceptat), account_created are role 'investor', fără partner_*;
-//      codul de 6 cifre → revenirea la ?ruta=investitor → ruta pornește singură;
+//      codul de 6 cifre → revenirea la ?ruta=investitor → panoul, starea „cont nou”
+//      (11-I2), fără ruta KYC deschisă;
 //   B. browserul a avut o sesiune: fereastra pe „Intră în cont” (tot cu Investitor
 //      la „Creare cont”); login → revenirea la rută; fără schimbarea rolurilor;
-//   C. destinația: alegeDestinatie([], { rolSolicitat: 'investor' }) → ruta;
+//   C. destinația: alegeDestinatie([], { rolSolicitat: 'investor' }) → panoul (11-I2);
 //      ['investor'] → panoul; ['client','investor'] (fără comenzi) → panoul;
 //      emailul de bun venit pentru investitor, în RO și EN;
-//   D. panoul: cont cu rolul investor → se afișează; fără rol → #cum-functioneaza;
+//   D. panoul: cont cu rolul investor → se afișează; „Investitor” ales la înscriere,
+//      fără rol → starea „cont nou”; client fără nicio alegere → #cum-functioneaza;
 //      „Rolurile mele” arată Investitor cu linkul spre panou;
 //   E. fereastra deschisă din index / catalog / pagina partenerului și, pe pagina
 //      Investitori, din antet: Client / Partener, fără Investitor;
@@ -30,6 +34,7 @@
 const path = require('path');
 const { chromium } = require('playwright');
 const { porneste } = require('./server-test');
+const DR = require(path.join(__dirname, '..', 'lib', 'destinatie-rol'));
 
 const R = path.join(__dirname, '..');
 let ok = 0, esec = 0;
@@ -86,15 +91,17 @@ async function context(br, B, { lang, latime, roles, aAvutCont, cuSesiune, rolSo
       return json(r, {
         ok: true, email: USER.email, nume: 'Ana Test', prenume: 'Ana', nume_familie: 'Test', telefon: '+40700000009', tara: 'RO',
         roles: stare.roles.slice(), roluri_dashboard: inv ? ['investor'] : [], are_comenzi: false,
-        destinatie: inv ? '/mydarrin-panou-investitor.html' : '/mydarrin-investitori.html?ruta=investitor',
-        tip_destinatie: inv ? 'rol' : 'ruta_investitor', rol_solicitat: rolSolicitat || 'investor', partener: null, investitor: null, activare: null,
+        destinatie: (DR.alegeDestinatie(stare.roles, { rolSolicitat: rolSolicitat || 'investor', areComenzi: false }) || {}).destinatie || null,
+        tip_destinatie: (DR.alegeDestinatie(stare.roles, { rolSolicitat: rolSolicitat || 'investor', areComenzi: false }) || {}).tip || null,
+        rol_solicitat: rolSolicitat || 'investor', partener: null, investitor: null, activare: null,
       });
     }
     if (/\/api\/investitori\/kyc(\?|$)/.test(u)) return json(r, { ok: true, kyc: null, lipsa: ['date_personale'], cont: { prenume: 'Ana', nume: 'Test', email: USER.email, telefon: '+40700000009', tara: 'RO' } });
     if (/\/api\/investitori\/portofoliu/.test(u)) return json(r, { ok: true, kyc_status: 'in_verificare', actiuni: 0, valoare_investita: 0, in_asteptare: 0, pct_companie: 0, subscrieri: [], runda: null, exit: { buyback_disponibil: false } });
     if (/\/api\/investitori\//.test(u)) return json(r, { ok: true });
     if (/\/api\/public\/runda-curenta/.test(u)) return json(r, { ok: true, runda: null });
-    if (/\/api\/public\/destinatie-post-login/.test(u)) return json(r, { ok: true, tip: 'ruta_investitor', destinatie: '/mydarrin-investitori.html?ruta=investitor' });
+    // Destinația, după regula reală (lib/destinatie-rol.js).
+    if (/\/api\/public\/destinatie-post-login/.test(u)) return json(r, { ok: true, ...DR.alegeDestinatie(stare.roles, { rolSolicitat: rolSolicitat || 'investor', areComenzi: false }) });
     if (/\/api\/cont\/bun-venit/.test(u)) return json(r, { ok: true, trimis: false });
     if (/\/api\/public\/(reguli-platforma|tari-active)/.test(u)) return r.continue();
     return json(r, { ok: false }, 503);
@@ -182,12 +189,13 @@ async function testeBrowser() {
       verifica(ac && ac.parametri.role === 'investor', `${et}: account_created: ${JSON.stringify(ac)}`);
       verifica(!jurnal.some((e) => /^partner_/.test(e.nume)), `${et}: evenimente partner_* pentru investitor: ${jurnal.map((e) => e.nume)}`);
 
-      // Codul → revenirea la rută → ruta pornește singură.
+      // Codul → revenirea → panoul investitorului, starea „cont nou” (11-I2).
       await page.fill('#verify-cod-input', '123456');
       await page.click('#mdc-cod-btn');
-      await page.waitForURL(/mydarrin-investitori/, { timeout: 10000 }).catch(() => {});
-      const ruta = await page.waitForSelector('#mi-fer', { timeout: 15000 }).then(() => true, () => false);
-      verifica(ruta, `${et}: după cod, ruta de investitor nu pornește (${page.url()})`);
+      await page.waitForURL(/mydarrin-panou-investitor/, { timeout: 15000 }).catch(() => {});
+      const panou = await page.waitForSelector('#pi-app[data-pi-mod="cont-nou"]:not([hidden])', { timeout: 15000 }).then(() => true, () => false);
+      verifica(panou, `${et}: după cod, nu ajunge în panou, starea „cont nou” (${page.url()})`);
+      verifica(!(await page.$('#mi-fer')), `${et}: după cod s-a deschis ruta KYC`);
       verifica(!/reason=cont|index\.html/.test(page.url()), `${et}: a plecat de pe pagină: ${page.url()}`);
       verifica(!stare.cereri.some((x) => /rol-solicitat/.test(x)), `${et}: s-a schimbat rolul solicitat prin API`);
       verifica(!erori.length, `${et}: erori JS: ${erori.slice(0, 2)}`);
@@ -266,7 +274,16 @@ async function testeBrowser() {
       await ctx.close();
     }
     {
-      const { ctx, page } = await context(br, B, { lang, cuSesiune: true, roles: ['client'] });
+      // „Investitor” ales la înscriere, fără rol: starea „cont nou” (11-I2).
+      const { ctx, page, erori } = await context(br, B, { lang, cuSesiune: true, roles: ['client'] });
+      await page.goto(B + '/mydarrin-panou-investitor.html', { waitUntil: 'load' });
+      const nou = await page.waitForSelector('#pi-app[data-pi-mod="cont-nou"]:not([hidden])', { timeout: 15000 }).then(() => true, () => false);
+      verifica(nou && /panou-investitor/.test(page.url()), `D ${lang}: fără rol, cu „Investitor” ales, panoul nu e în starea „cont nou” (${page.url()})`);
+      verifica(!erori.length, `D ${lang} cont nou: erori JS: ${erori.slice(0, 2)}`);
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await context(br, B, { lang, cuSesiune: true, roles: ['client'], rolSolicitat: 'client' });
       await page.goto(B + '/mydarrin-panou-investitor.html', { waitUntil: 'load' });
       await page.waitForURL(/mydarrin-investitori\.html#cum-functioneaza/, { timeout: 15000 }).catch(() => {});
       verifica(/mydarrin-investitori\.html#cum-functioneaza$/.test(page.url()), `D ${lang}: fără rol, panoul nu trimite la #cum-functioneaza (${page.url()})`);
@@ -280,11 +297,10 @@ async function testeBrowser() {
 
 // ── C. destinația și emailul (fără browser) ────────────────────────────
 function testeServer() {
-  const DR = require(path.join(R, 'lib', 'destinatie-rol'));
   const d1 = DR.alegeDestinatie([], { rolSolicitat: 'investor' });
-  verifica(d1 && d1.tip === 'ruta_investitor' && d1.destinatie === '/mydarrin-investitori.html?ruta=investitor', `alegeDestinatie([], investor): ${JSON.stringify(d1)}`);
+  verifica(d1 && d1.tip === 'panou_investitor_nou' && d1.destinatie === '/mydarrin-panou-investitor.html', `alegeDestinatie([], investor): ${JSON.stringify(d1)}`);
   const d1b = DR.alegeDestinatie(['client'], { rolSolicitat: 'investor', areComenzi: false });
-  verifica(d1b && d1b.tip === 'ruta_investitor', `alegeDestinatie(['client'], investor): ${JSON.stringify(d1b)}`);
+  verifica(d1b && d1b.tip === 'panou_investitor_nou' && d1b.destinatie === '/mydarrin-panou-investitor.html', `alegeDestinatie(['client'], investor): ${JSON.stringify(d1b)}`);
   const d2 = DR.alegeDestinatie(['investor']);
   verifica(d2 && d2.destinatie === '/mydarrin-panou-investitor.html', `alegeDestinatie(['investor']): ${JSON.stringify(d2)}`);
   const d3 = DR.alegeDestinatie(['client', 'investor'], { areComenzi: false });
@@ -297,21 +313,22 @@ function testeServer() {
   verifica(d6 && d6.tip === 'client_fara_comenzi', `clientul, neschimbat: ${JSON.stringify(d6)}`);
   // Copia din ui-comun.js e identică (scripts/test-destinatie-rol.js verifică textul).
   const ui = require('fs').readFileSync(path.join(R, 'ui-comun.js'), 'utf8');
-  verifica(/rolSolicitat === 'investor'/.test(ui) && /PAGINA_RUTA_INVESTITOR/.test(ui), 'ui-comun.js nu are regula de investitor');
+  verifica(/rolSolicitat === 'investor'/.test(ui) && /panou_investitor_nou/.test(ui), 'ui-comun.js nu are regula de investitor');
 
   const { renderEmailContConfirmat } = require(path.join(R, 'lib', 'i18n'));
   const text = (h) => h.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
   const ro = renderEmailContConfirmat('ro', { nume: 'Ana', partener: false, investitor: true, link: 'https://x/ruta' });
   const en = renderEmailContConfirmat('en', { nume: 'Ana', partener: false, investitor: true, link: 'https://x/ruta' });
-  verifica(/dosarul de investitor/.test(text(ro.html)) && !/comanda|activarea/i.test(text(ro.html)), `emailul RO de investitor: ${text(ro.html).slice(0, 160)}`);
-  verifica(/investor application/.test(text(en.html)) && !/[ăâîșț]/i.test(text(en.html)), `emailul EN de investitor: ${text(en.html).slice(0, 160)}`);
+  verifica(/Intră în panoul tău de investitor/.test(text(ro.html)) && !/comanda|activarea/i.test(text(ro.html)), `emailul RO de investitor: ${text(ro.html).slice(0, 160)}`);
+  verifica(/Go to your investor dashboard/.test(text(en.html)) && !/[ăâîșț]/i.test(text(en.html)), `emailul EN de investitor: ${text(en.html).slice(0, 160)}`);
   verifica(!/\d+\s?(%|EUR|RON|lei)/.test(text(ro.html) + text(en.html)), 'emailul de investitor conține cifre (sume, procente)');
   const p = renderEmailContConfirmat('ro', { partener: true, investitor: true, link: null });
   verifica(/activarea/.test(text(p.html)), 'cu rol de partener, emailul rămâne de partener');
 
   // Fără secretul KYC în fișierele pasului.
   const fs = require('fs');
-  for (const f of ['cont-fereastra.js', 'cta-investitor.js', 'investitori-ruta.js', 'lib/destinatie-rol.js', 'api/cont/bun-venit.js', 'docs/migrations-propuse/2026-11-14_rol_solicitat_investitor.sql', 'scripts/test-ruta-investitor-cont.js']) {
+  for (const f of ['cont-fereastra.js', 'cta-investitor.js', 'investitori-ruta.js', 'lib/destinatie-rol.js', 'api/cont/bun-venit.js', 'docs/migrations-propuse/2026-11-14_rol_solicitat_investitor.sql', 'scripts/test-ruta-investitor-cont.js',
+    'panou-investitor.js', 'cont-dashboard.js', 'account-system.js', 'lib/i18n.js']) {
     verifica(!fs.readFileSync(path.join(R, f), 'utf8').includes('KYC_HMAC' + '_SECRET'), `${f} conține numele secretului KYC`);
   }
 }
