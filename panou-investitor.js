@@ -3,7 +3,16 @@
 
    Panoul investitorului (mydarrin-panou-investitor.html). Accesul îl decide
    serverul: fără sesiune → fereastra de cont, cu revenire aici; fără rolul
-   `investor` → pagina Investitori. Nimic nu se cere înainte de verificare.
+   `investor` și fără alegerea „Investitor” la înscriere → pagina Investitori.
+   Nimic nu se cere înainte de verificare.
+
+   Pasul 11-I2 (decizia LM, 14 nov. 2026): contul creat ca investitor
+   (rol_solicitat = 'investor'), încă fără rolul `investor`, intră în panou în
+   starea „cont nou”: runda deschisă (/api/public/runda-curenta), pitch deck-ul
+   (/api/public/pitch-deck, după vizibilitate), banda despre dosar și butonul
+   „Investește în runda …”, care deschide ruta KYC pe pagina Investitori
+   (?ruta=investeste). API-urile cu requireAuth(['investor']) nu se apelează
+   în această stare; secțiunile lor arată „Apare după prima subscriere.”
 
    Datele vin doar din API: /api/investitori/portofoliu, kyc, exit, istoric și
    indicatori. Calculele (lock-up, acțiuni vandabile) sunt pe server.
@@ -39,6 +48,7 @@
     return new Date(Date.UTC(p[0], p[1] - 1, p[2])).toLocaleDateString(local(), { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
   }
   function numeRunda(r) { return r ? (en() ? (r.denumire_en || r.denumire_ro) : (r.denumire_ro || r.denumire_en)) : '—'; }
+  var ADRESA_INVESTESTE = '/mydarrin-investitori.html?ruta=investeste';
 
   function token() {
     return window.supabaseClient.auth.getSession().then(function (r) {
@@ -80,8 +90,8 @@
     else if (st === 'in_verificare') el.innerHTML = banda('pi-banda-info', tr('Verificarea identității tale e în curs. Te anunțăm prin email.'));
     else if (st === 'respins') {
       var motiv = en() ? (kyc.motiv_respingere_en || kyc.motiv_respingere) : kyc.motiv_respingere;
-      el.innerHTML = banda('pi-banda-rosu', tr('Verificarea identității nu a fost aprobată.') + (motiv ? ' ' + tr('Motiv:') + ' ' + motiv : ''), '/mydarrin-investitori.html', tr('Corectează și retrimite'));
-    } else el.innerHTML = banda('pi-banda-info', tr('Dosarul tău nu e trimis încă.'), '/mydarrin-investitori.html', tr('Continuă dosarul'));
+      el.innerHTML = banda('pi-banda-rosu', tr('Verificarea identității nu a fost aprobată.') + (motiv ? ' ' + tr('Motiv:') + ' ' + motiv : ''), ADRESA_INVESTESTE, tr('Corectează și retrimite'));
+    } else el.innerHTML = banda('pi-banda-info', tr('Dosarul tău nu e trimis încă.'), ADRESA_INVESTESTE, tr('Continuă dosarul'));
   }
   // Zile până la expirarea actului, față de ziua de azi în România.
   function zilePanaLa(s) {
@@ -301,17 +311,20 @@
     });
   }
 
-  function leaga() {
+  function leagaNav() {
     Array.prototype.forEach.call(document.querySelectorAll('.pi-nav button'), function (b) {
       b.addEventListener('click', function () { arataPanou(b.getAttribute('data-pi-panou')); });
     });
+    window.addEventListener('hashchange', function () { arataPanou((location.hash || '').slice(1), true); });
+  }
+  function leaga() {
+    leagaNav();
     $('pi-exit-form').addEventListener('submit', trimiteExit);
     $('pi-exit-lista').addEventListener('click', function (e) {
       var b = e.target.closest && e.target.closest('[data-pi-anuleaza]');
       if (b) anuleaza(b);
     });
     $('pi-reincearca').addEventListener('click', incarca);
-    window.addEventListener('hashchange', function () { arataPanou((location.hash || '').slice(1), true); });
   }
 
   function areSesiune() {
@@ -319,8 +332,99 @@
     return window.supabaseClient.auth.getSession().then(function (r) { return !!(r && r.data && r.data.session); }).catch(function () { return false; });
   }
 
+  // ── Starea „cont nou” (pasul 11-I2) ─────────────────────────────────
+  function jsonPublic(url) {
+    return fetch(url, { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+  }
+  function rundaContNou(runda) {
+    var titlu = $('pi-runda-titlu'), desc = $('pi-runda-descriere'), date = $('pi-runda-date'), btn = $('pi-investeste');
+    if (!runda) {
+      titlu.textContent = tr('Nicio rundă deschisă');
+      date.innerHTML = '';
+      btn.textContent = tr('Completează dosarul de investitor');
+      return;
+    }
+    var nume = numeRunda(runda);
+    titlu.textContent = nume;
+    var d = en() ? (runda.descriere_en || runda.descriere_ro) : (runda.descriere_ro || runda.descriere_en);
+    desc.textContent = d || '';
+    desc.hidden = !d;
+    var m = runda.moneda;
+    // Doar valorile primite de la server; ce lipsește nu apare.
+    var c = [];
+    if (runda.pret_actiune != null) c.push(['Preț / acțiune', suma(runda.pret_actiune, m)]);
+    if (runda.investitie_minima != null) c.push(['Investiția minimă', suma(runda.investitie_minima, m)]);
+    if (runda.suma_tinta != null) c.push(['Suma țintă', suma(runda.suma_tinta, m)]);
+    if (runda.equity_oferit_pct != null) c.push(['Equity oferit', numar(runda.equity_oferit_pct) + '%']);
+    if (runda.data_sfarsit) c.push(['Se închide la', dataZi(runda.data_sfarsit)]);
+    if (runda.progres && runda.progres.stranse != null) c.push(['Strâns până acum', suma(runda.progres.stranse, m) + ' (' + numar(runda.progres.pct) + '%)']);
+    date.innerHTML = c.map(function (x) {
+      return '<div><dt>' + esc(tr(x[0])) + '</dt><dd translate="no">' + esc(x[1]) + '</dd></div>';
+    }).join('');
+    btn.textContent = tr('Investește în runda {nume}', { nume: nume });
+  }
+  function pitchContNou(j) {
+    var text = $('pi-pitch-text'), link = $('pi-pitch-link');
+    if (!j || j.stare !== 'disponibil') {
+      text.textContent = j ? tr('Pitch deck-ul e în pregătire.') : tr('Pitch deck-ul nu se poate încărca acum.');
+      link.hidden = true;
+      return;
+    }
+    text.textContent = j.vizibilitate === 'public'
+      ? tr('Prezentarea completă a companiei și a rundei.')
+      : tr('Acum vezi rezumatul; deck-ul complet se deschide după aprobarea verificării identității.');
+    link.hidden = false;
+  }
+  function telefonLipsa(p) {
+    var z = $('pi-telefon-lipsa');
+    if (p.telefon) { z.innerHTML = ''; return; }
+    var text = tr('Telefonul nu a fost salvat pe cont (numărul poate fi deja folosit pe alt cont). Îl adaugi la „Date personale”, primul pas al dosarului, când decizi să investești.');
+    if (window.MDFeedback && typeof window.MDFeedback.mesaj === 'function') window.MDFeedback.mesaj(z, 'info', text);
+    else z.innerHTML = banda('pi-banda-info', text);
+  }
+  function sectiuniGoale() {
+    ['participatii', 'subscrieri', 'exit', 'istoric', 'indicatori'].forEach(function (id) {
+      var sec = $(id);
+      Array.prototype.forEach.call(sec.children, function (c) { if (c.tagName !== 'H2') c.hidden = true; });
+      var gol = document.createElement('div');
+      gol.className = 'pi-card';
+      gol.setAttribute('data-pi-gol', id);
+      gol.innerHTML = '<p class="pi-mic">' + esc(tr('Apare după prima subscriere.')) + '</p>';
+      sec.appendChild(gol);
+    });
+  }
+  function dateleMeleContNou(p) {
+    var c = [['Nume', p.nume || '—'], ['Email', p.email || '—'], ['Telefon', p.telefon || '—']];
+    $('pi-datele').innerHTML = c.map(function (x) {
+      return '<div><dt>' + esc(tr(x[0])) + '</dt><dd translate="no">' + esc(x[1]) + '</dd></div>';
+    }).join('');
+    var nota = document.createElement('p');
+    nota.className = 'pi-mic';
+    nota.id = 'pi-datele-nota';
+    nota.style.marginTop = '12px';
+    nota.textContent = tr('IBAN-ul, adresa de domiciliu și actul de identitate se completează în dosarul de investitor, când decizi să investești.');
+    $('pi-datele').parentNode.appendChild(nota);
+  }
+  function contNou(p) {
+    $('pi-app').setAttribute('data-pi-mod', 'cont-nou');
+    $('pi-cont-nou').hidden = false;
+    document.querySelector('#prezentare .pi-kpi').hidden = true;
+    telefonLipsa(p);
+    sectiuniGoale();
+    dateleMeleContNou(p);
+    var limba = en() ? 'en' : 'ro';
+    return Promise.all([
+      jsonPublic('/api/public/runda-curenta'),
+      jsonPublic('/api/public/pitch-deck?limba=' + limba + '&doar_stare=1'),
+    ]).then(function (r) {
+      rundaContNou(r[0] && r[0].runda);
+      pitchContNou(r[1]);
+      $('pi-app').setAttribute('data-pi-gata', '1');
+    });
+  }
+
   function porneste() {
-    window.MYD_PAZA.verifica({ container: 'myd-cont-antet', public: true }).then(function (r) {
+    window.MYD_PAZA.verifica({ container: 'myd-cont-antet', public: true, rolNou: 'investor' }).then(function (r) {
       var p = r && r.profil;
       if (!p) {
         return areSesiune().then(function (are) {
@@ -328,9 +432,17 @@
           $('pi-acces-eroare').hidden = false;
         });
       }
-      if (!Array.isArray(p.roles) || p.roles.indexOf('investor') === -1) {
+      var areRol = Array.isArray(p.roles) && p.roles.indexOf('investor') !== -1;
+      if (!areRol && p.rol_solicitat !== 'investor') {
         location.replace('/mydarrin-investitori.html#cum-functioneaza');
         return;
+      }
+      if (!areRol) {
+        $('pi-app').hidden = false;
+        leagaNav();
+        arataPanou((location.hash || '').slice(1), true);
+        try { if (window.lucide) window.lucide.createIcons(); } catch (e) {}
+        return contNou(p);
       }
       $('pi-app').hidden = false;
       leaga();

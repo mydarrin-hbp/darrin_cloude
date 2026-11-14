@@ -147,9 +147,20 @@ async function verificaCodTelefon(telefon, cod) {
    Authentication → Emails să includă {{ .Token }} — implicit conține doar
    {{ .ConfirmationURL }}, fără acest cod vizibil userul nu are ce introduce
    aici, deși token-ul există intern la Supabase indiferent de template. */
+// Pasul 11-I2: sesiunea primită de la verifyOtp. Dacă stocarea (cookie-urile pe
+// domeniul părinte, lib/supabaseClient.js) nu o are încă sau a refuzat-o,
+// cererea de destinație de după cod o folosește pe aceasta — altfel pagina ar
+// rămâne pe loc, cu „Contul a fost creat”, fără să ducă nicăieri.
+let sesiuneDupaCod = null;
+async function sesiuneCurenta() {
+  const s = (await sb().auth.getSession()).data.session;
+  return s || sesiuneDupaCod;
+}
+
 async function confirmaCodEmail(email, cod) {
   const { data, error } = await sb().auth.verifyOtp({ email, token: cod, type: 'signup' });
   if (error) throw error;
+  sesiuneDupaCod = (data && data.session) || null;
   trimiteBunVenit(data.session);
   // Pasul 11-A1: emailul confirmat, primul pas al înscrierii de partener.
   const M = window.MYD_MASURARE;
@@ -228,7 +239,7 @@ function mesajServer(j, implicit) {
 
 // Răspunsul complet al serverului: { destinatie, tip, rol?, roluri? } sau null fără sesiune.
 async function raspunsDestinatie() {
-  const session = (await sb().auth.getSession()).data.session;
+  const session = await sesiuneCurenta();
   if (!session) return null;
   const r = await fetch('/api/public/destinatie-post-login', { headers: { Authorization: 'Bearer ' + session.access_token } });
   const j = await r.json().catch(() => ({}));

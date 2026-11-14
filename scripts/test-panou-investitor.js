@@ -312,7 +312,7 @@ async function testeBrowser(baza, browser) {
     verifica(part.length === 2 && /10 februarie 2025/.test(part[0]) && /10 februarie 2026/.test(part[0]) && /10 octombrie 2027/.test(part[1]) && /safe/.test(part[1]), `participații: ${JSON.stringify(part)}`);
     verifica(!(await p.evaluate(() => /în așteptare/i.test(document.getElementById('pi-participatii').textContent))), 'o subscriere neaprobată apare la participații');
     await panou(p, 'subscrieri');
-    verifica(await p.evaluate(() => document.querySelectorAll('#pi-subscrieri tr').length) === 3 && await p.getAttribute('#pi-subscriere-noua', 'href') === '/mydarrin-investitori.html?ruta=investitor', 'subscrierile sau „Subscriere nouă”');
+    verifica(await p.evaluate(() => document.querySelectorAll('#pi-subscrieri tr').length) === 3 && await p.getAttribute('#pi-subscriere-noua', 'href') === '/mydarrin-investitori.html?ruta=investeste', 'subscrierile sau „Subscriere nouă”');
     await panou(p, 'istoric');
     const ist = await p.evaluate(() => [...document.querySelectorAll('[data-pi-eveniment]')].map((x) => x.getAttribute('data-pi-eveniment')));
     verifica(ist.join() === 'exit_trimis,subscriere_aprobata', `istoric: ${ist}`);

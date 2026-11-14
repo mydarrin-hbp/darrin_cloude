@@ -486,6 +486,20 @@
         return { profil: p, rol: act.rol, activare: true };
       }
 
+      // Pasul 11-I2: rolul ales la înscriere (opt.rolNou, ex. 'investor'), încă
+      // neacordat → antetul cu insigna rolului; pagina arată starea „cont nou”.
+      if (!areRol.length && !admin && opt.rolNou && p.rol_solicitat === opt.rolNou && permise.indexOf(opt.rolNou) !== -1) {
+        var cn = document.getElementById(opt.container || 'myd-cont-antet');
+        if (cn) {
+          stil();
+          cn.innerHTML = '';
+          var mesajNou = ss(CHEIE_MESAJ);
+          if (mesajNou) { ss(CHEIE_MESAJ, null); banda(cn, 'ok', tr(mesajNou), null, null, 'myd-banda-redirect'); }
+          antet(cn, p, opt.rolNou, opt.tema);
+        }
+        return { profil: p, rol: opt.rolNou, contNou: true };
+      }
+
       if (!areRol.length) {
         if (opt.public) return { profil: p };
         if (!admin) {

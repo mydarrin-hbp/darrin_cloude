@@ -119,7 +119,8 @@ async function cont(db, rolSolicitat) {
   verifica(!/roles[^;]*'investor'|array\['investor'/.test(nou), 'funcția pune investor în roles');
 
   // 5. Verificarea de la final oprește tranzacția.
-  const strica = MIGRARE.replace(/'partener_asigurari',\n\s*'investor'\) then/, "'partener_asigurari') then");
+  // \r?\n: pe Windows (core.autocrlf) fișierul are CRLF; conținutul din repo e același.
+  const strica = MIGRARE.replace(/'partener_asigurari',\r?\n\s*'investor'\) then/, "'partener_asigurari') then");
   verifica(strica !== MIGRARE, 'nu am putut construi varianta greșită a migrării');
   const db2 = await baza();
   let oprit = null;

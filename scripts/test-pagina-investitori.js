@@ -16,7 +16,9 @@
 //      aliniere ca hero-urile din 11-R3g; antetul standard, fără antetul propriu
 //      și fără mini-footer;
 //   E. butonul principal în toate stările (răspunsuri simulate): textul (RO și
-//      EN), acțiunea, nota de sub buton și parcursul în 7 segmente;
+//      EN), acțiunea, nota de sub buton și parcursul în 7 segmente; pasul 11-I2:
+//      contul de investitor (rolul `investor` sau „Investitor” ales la
+//      înscriere) are mereu „Mergi la panoul tău” → panoul;
 //   F. fără rundă vizibilă: nicio cifră în #runda și insigna ascunsă; cu rundă:
 //      insigna cu numele rundei;
 //   G. intrarea directă pe fiecare ancoră: fără ecran gol;
@@ -74,20 +76,24 @@ function sesiuneSimulata(cfg) {
 }
 
 const RUNDA_TEST = { cod: 'TEST', denumire_ro: 'Runda de test', denumire_en: 'Test round', descriere_ro: null, descriere_en: null, stare: 'deschisa', data_start: null, data_sfarsit: null, moneda: 'EUR', suma_tinta: 100000, investitie_minima: null, pret_actiune: 1, equity_oferit_pct: 5, tickete: [], progres: null };
-function profil(roluri) {
-  return { ok: true, email: UTILIZATOR.email, nume: 'Ana Test', prenume: 'Ana', nume_familie: 'Test', telefon: '+40700000001', tara: 'RO', roles: roluri, roluri_dashboard: ['client'], destinatie: '/mydarrin-catalog.html', tip_destinatie: 'rol', partener: null, investitor: null, activare: null };
+function profil(roluri, rolSolicitat) {
+  return { ok: true, email: UTILIZATOR.email, nume: 'Ana Test', prenume: 'Ana', nume_familie: 'Test', telefon: '+40700000001', tara: 'RO', roles: roluri, roluri_dashboard: ['client'], destinatie: '/mydarrin-catalog.html', tip_destinatie: 'rol', rol_solicitat: rolSolicitat || 'client', partener: null, investitor: null, activare: null };
 }
 // Stările din tabelul pasului 11-R3h (text RO, text EN, profilul, dosarul, runda, subscrierile).
 const STARI = {
   vizitator: { ro: 'Devino investitor →', en: 'Become an investor →' },
   fara_dosar: { ro: 'Începe dosarul →', en: 'Start your application →', roluri: ['client'], kyc: null },
   ciorna: { ro: 'Continuă dosarul (pasul 3) →', en: 'Continue your application (step 3) →', roluri: ['client'], kyc: { status: 'ciorna', pas_curent: 3 } },
+  // Pasul 11-I2: contul de investitor (rolul `investor` sau „Investitor” ales la înscriere)
+  // merge mereu în panou; „Investește” din panou deschide ruta sau subscrierea.
   // Dosar respins, apoi salvat din nou: ciornă, cu rolul `investor` rămas pe cont și rundă deschisă.
-  ciorna_investitor: { ro: 'Continuă dosarul (pasul 2) →', en: 'Continue your application (step 2) →', roluri: ['client', 'investor'], kyc: { status: 'ciorna', pas_curent: 2 }, runda: true },
-  respins: { ro: 'Corectează dosarul →', en: 'Fix your application →', roluri: ['client', 'investor'], kyc: { status: 'respins', pas_curent: 5, motiv_respingere: 'Actul de identitate a expirat.', motiv_respingere_en: 'The ID document has expired.' }, lipsa: ['act_valabil_pana'] },
-  verificare: { ro: 'Dosarul tău e în verificare', en: 'Your application is under review', roluri: ['client', 'investor'], kyc: { status: 'in_verificare', pas_curent: 5 } },
-  runda: { ro: 'Intră în rundă →', en: 'Join the round →', roluri: ['client', 'investor'], kyc: { status: 'in_verificare', pas_curent: 5 }, runda: true },
+  ciorna_investitor: { ro: 'Mergi la panoul tău →', en: 'Go to your dashboard →', roluri: ['client', 'investor'], kyc: { status: 'ciorna', pas_curent: 2 }, runda: true },
+  respins: { ro: 'Mergi la panoul tău →', en: 'Go to your dashboard →', roluri: ['client', 'investor'], kyc: { status: 'respins', pas_curent: 5, motiv_respingere: 'Actul de identitate a expirat.', motiv_respingere_en: 'The ID document has expired.' }, lipsa: ['act_valabil_pana'] },
+  verificare: { ro: 'Mergi la panoul tău →', en: 'Go to your dashboard →', roluri: ['client', 'investor'], kyc: { status: 'in_verificare', pas_curent: 5 } },
+  runda: { ro: 'Mergi la panoul tău →', en: 'Go to your dashboard →', roluri: ['client', 'investor'], kyc: { status: 'in_verificare', pas_curent: 5 }, runda: true },
   panou: { ro: 'Mergi la panoul tău →', en: 'Go to your dashboard →', roluri: ['client', 'investor'], kyc: { status: 'aprobat', pas_curent: 5 }, subscrieri: 1 },
+  // „Investitor” ales la înscriere, fără rol și fără dosar (starea „cont nou” din panou).
+  cont_nou: { ro: 'Mergi la panoul tău →', en: 'Go to your dashboard →', roluri: ['client'], rolSolicitat: 'investor', kyc: null, runda: true },
 };
 
 function cerere(baza, cale) {
@@ -109,7 +115,7 @@ async function deschide(browser, baza, cale, o) {
   const raspunde = (r, corp) => setTimeout(() => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(corp) }).catch(() => {}), o.intarziere || 0);
   if (o.contact) await ctx.route(/\/api\/public\/contact/, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, contact: { investitori_email: 'investitori@example.com' } }) }));
   await ctx.route(/\/api\/public\/runda-curenta/, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, runda: (s && s.runda) || o.runda ? RUNDA_TEST : null }) }));
-  await ctx.route(/\/api\/cont\/profil/, (r) => (cuSesiune ? raspunde(r, profil(s.roluri)) : r.fulfill({ status: 401, contentType: 'application/json', body: '{"error":"Neautentificat"}' })));
+  await ctx.route(/\/api\/cont\/profil/, (r) => (cuSesiune ? raspunde(r, profil(s.roluri, s.rolSolicitat)) : r.fulfill({ status: 401, contentType: 'application/json', body: '{"error":"Neautentificat"}' })));
   await ctx.route(/\/api\/investitori\/kyc(\?|$)/, (r) => raspunde(r, { ok: true, kyc: s && s.kyc, lipsa: (s && s.lipsa) || ['date_personale'], cont: { prenume: 'Ana', nume: 'Test', email: UTILIZATOR.email, telefon: '+40700000001', tara: 'RO' } }));
   await ctx.route(/\/api\/investitori\/portofoliu/, (r) => raspunde(r, { ok: true, kyc_status: s && s.kyc && s.kyc.status, actiuni: 0, valoare_investita: 0, in_asteptare: 0, pct_companie: 0,
     subscrieri: s && s.subscrieri ? [{ id: 's1', status: 'in_asteptare', actiuni: 0, valoare_investita: 0, instrument: null, creat_la: null, runda: null }] : [], runda: null, exit: { buyback_disponibil: false, discount_buyback_pct: null, lock_up_luni: null } }));
@@ -250,9 +256,7 @@ const parcurs = (p) => p.evaluate(() => [...document.querySelectorAll('[data-inv
         verifica(b.length === 3 && b.every((t) => t === (limba ? s.ro : s.en)), `${et}: butoanele ${JSON.stringify(b)} (aștept „${limba ? s.ro : s.en}”)`);
         if (limba) {
           const nota = await p.evaluate(() => [...document.querySelectorAll('[data-cta-nota]')].filter((n) => !n.hidden).map((n) => n.textContent));
-          if (stare === 'respins') verifica(nota.length && nota.every((n) => /Actul de identitate a expirat\./.test(n)), `${et}: motivul sub buton ${JSON.stringify(nota)}`);
-          else if (stare === 'runda') verifica(nota.length && nota.every((n) => n === 'Subscrierea se aprobă după verificarea identității.'), `${et}: nota de sub buton ${JSON.stringify(nota)}`);
-          else verifica(!nota.length, `${et}: notă neașteptată ${JSON.stringify(nota)}`);
+          verifica(!nota.length, `${et}: notă neașteptată ${JSON.stringify(nota)}`);
           const seg = await parcurs(p);
           const asteptat = {
             vizitator: ['-', '-', '-', '-', '-', '-', '-'],
@@ -263,6 +267,7 @@ const parcurs = (p) => p.evaluate(() => [...document.querySelectorAll('[data-inv
             verificare: ['facut', 'facut', 'facut', 'facut', 'facut', 'curent*:în curs · aici ai rămas', '-'],
             runda: ['facut', 'facut', 'facut', 'facut', 'facut', 'curent*:în curs · aici ai rămas', '-'],
             panou: ['facut', 'facut', 'facut', 'facut', 'facut', 'facut:aprobată', 'facut'],
+            cont_nou: ['curent*:aici ai rămas', '-', '-', '-', '-', '-', '-'],
           }[stare];
           verifica(JSON.stringify(seg) === JSON.stringify(asteptat), `${et}: parcursul ${JSON.stringify(seg)}`);
           const panou = await p.evaluate(() => ({ sectiune: !document.getElementById('panou').hidden, meniu: !document.querySelector('.inv-sectiuni a[href="#panou"]').hidden }));
@@ -283,11 +288,12 @@ const parcurs = (p) => p.evaluate(() => [...document.querySelectorAll('[data-inv
             vizitator: a.cont && a.revenire === '/mydarrin-investitori.html?ruta=investitor' && p.url() === inainte,
             fara_dosar: a.ruta && /Pasul 1 din 5/.test(a.subtitlu),
             ciorna: a.ruta && /Pasul 3 din 5/.test(a.subtitlu),
-            ciorna_investitor: a.ruta && /Pasul 2 din 5/.test(a.subtitlu) && !a.runda,
-            respins: a.ruta && /Pasul 2 din 5/.test(a.subtitlu),
-            verificare: a.hash === '#panou' && !a.ruta && !a.runda,
-            runda: a.runda,
+            ciorna_investitor: /mydarrin-panou-investitor/.test(p.url()) && !a.ruta && !a.runda,
+            respins: /mydarrin-panou-investitor/.test(p.url()) && !a.ruta && !a.runda,
+            verificare: /mydarrin-panou-investitor/.test(p.url()) && !a.ruta && !a.runda,
+            runda: /mydarrin-panou-investitor/.test(p.url()) && !a.ruta && !a.runda,
             panou: /mydarrin-panou-investitor/.test(p.url()) && !a.ruta && !a.runda,
+            cont_nou: /mydarrin-panou-investitor/.test(p.url()) && !a.ruta && !a.runda,
           }[stare];
           verifica(actiune, `${et}: acțiunea butonului ${JSON.stringify(a)}`);
         }
