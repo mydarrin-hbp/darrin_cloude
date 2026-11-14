@@ -20,9 +20,11 @@
    existente: MYD_INVESTITOR.deschideRuta / start și openRunda.
 
      stare        text                                   acțiune
-     vizitator    Devino investitor →                    fereastra de cont pe pagină; după cont /
-                                                         cod / login, revenirea în ruta de investitor
-                                                         (myd_revenire_dupa_login → ?ruta=investitor)
+     vizitator    Devino investitor →                    fereastra de cont pe pagină, cu tipul
+                                                         „Investitor” ales (11-I1): „Creare cont”, sau
+                                                         „Intră în cont” dacă browserul a avut o sesiune;
+                                                         după cont / cod / login, revenirea în ruta de
+                                                         investitor (myd_revenire_dupa_login → ?ruta=investitor)
      fara_dosar   Începe dosarul →                       deschideRuta(…), pasul 1
      ciorna       Continuă dosarul (pasul N) →           deschideRuta(…), la pasul N salvat pe server
      respins      Corectează dosarul →                   deschideRuta(…, pasul de corectat); motivul sub buton
@@ -133,10 +135,23 @@
   }
 
   // ── Butonul principal ───────────────────────────────────────────────
+  // Pasul 11-I1: browserul a avut o sesiune (token Supabase rămas sau marcajul pus
+  // de account-system.js la login) → fereastra pe „Intră în cont”; altfel, „Creare cont”.
+  function aAvutSesiune() {
+    try {
+      if (localStorage.getItem('myd_a_avut_cont_v1')) return true;
+      for (var i = 0; i < localStorage.length; i++) if (/^sb-.*-auth-token/.test(localStorage.key(i) || '')) return true;
+    } catch (e) {}
+    return /(^|;\s*)sb-[^=;]*-auth-token/.test(document.cookie || '');
+  }
   function deschideFereastraCont(btn) {
     try { sessionStorage.setItem(CHEIE_REVENIRE, RUTA); } catch (e) {}
     function cuMDCont() {
-      window.MDCont.deschide({ tab: 'login', mesaj: tr('Intră în cont sau creează-ți unul; după aceea continui dosarul de investitor.') });
+      window.MDCont.deschide({
+        tab: aAvutSesiune() ? 'login' : 'register',
+        rol: 'investor',
+        mesaj: tr('Intră în cont sau creează-ți unul; după aceea continui dosarul de investitor.'),
+      });
     }
     if (window.MDCont) { cuMDCont(); return; }
     if (!document.querySelector('script[src$="cont-fereastra.js"]')) {
@@ -375,7 +390,7 @@
     }).catch(function () {});
   }
 
-  window.MYD_CTA_INVESTITOR = { reincarca: reincarca, calculeaza: calculeaza, TEXT: TEXT, stare: function () { return stareCurenta; } };
+  window.MYD_CTA_INVESTITOR = { reincarca: reincarca, calculeaza: calculeaza, TEXT: TEXT, stare: function () { return stareCurenta; }, deschideFereastraCont: deschideFereastraCont };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', porneste);
   else porneste();
 })();

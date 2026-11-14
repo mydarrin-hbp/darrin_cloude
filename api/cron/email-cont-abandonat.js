@@ -100,6 +100,7 @@ module.exports = async function handler(req, res) {
 
   for (const profil of clienti || []) {
     if (esteRolPartener(profil.rol_solicitat)) continue; // partener în activare, nu client
+    if (profil.rol_solicitat === 'investor') continue; // pasul 11-I1: investitor, nu client care n-a comandat
     try {
       if (!(await emailConfirmat(profil.id))) continue; // fără codul de 6 cifre: niciun email
 

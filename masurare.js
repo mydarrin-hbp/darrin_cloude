@@ -65,7 +65,7 @@
     asigurari: 'insurance', asigurator: 'insurance',
   };
   var ROL_EN = {
-    client: 'client', investitor: 'investor',
+    client: 'client', investitor: 'investor', investor: 'investor',
     partener_servicii: 'partner_services', partener_materiale: 'partner_materials',
     partener_inchirieri: 'partner_rentals', partener_curier: 'partner_courier',
     partener_asigurari: 'partner_insurance',

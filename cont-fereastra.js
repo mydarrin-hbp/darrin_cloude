@@ -46,6 +46,11 @@
      MDCont.deschide({ tab: 'register', partener: true })  — „Partener” ales, grila deschisă
      MDCont.deschide({ tab: 'register', tip })  — pasul 11-R3g: tipul de partener bifat
        (servicii, materiale, inchirieri, curier, asigurator / asigurari); se poate schimba
+     MDCont.deschide({ tab, rol: 'investor', mesaj })  — pasul 11-I1: deschisă din pagina
+       Investitori, „Creare cont” arată un singur card, „Investitor”, deja ales, cu
+       linkul „Nu ești investitor? Alege alt tip de cont” (înapoi la Client / Partener).
+       'investor' e valid doar în acest context; merge în rolSolicitat (profiles.rol_solicitat).
+       Rolul `investor` îl adaugă doar serverul, la trimiterea dosarului.
      MDCont.alegeTipPartener({ rol })  — pasul 11-R3b: contul conectat, fără rol de
        partener, alege tipul; alegerea se salvează (/api/cont/rol-solicitat) și
        duce în dashboard-ul tipului, în modul activare
@@ -74,6 +79,7 @@
     inchirieri: '<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>',
     curier: '<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/>',
     asigurari: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
+    investitor: '<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
   };
   function icona(nume) {
     return '<svg class="mdc-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONE[nume] || '') + '</svg>';
@@ -82,6 +88,8 @@
   // Primul ecran: Client sau Partener; pentru Partener, unul dintre cele 5 tipuri.
   var CLIENT = { rol: 'client', ico: 'client', titlu: 'Client', text: 'Comand servicii', nume: 'Client' };
   var PARTENER = { ico: 'partener', titlu: 'Partener', text: 'Lucrez prin My Darrin' };
+  // Pasul 11-I1: doar din pagina Investitori (MDCont.deschide({ rol: 'investor' })).
+  var INVESTITOR = { rol: 'investor', ico: 'investitor', titlu: 'Investitor', text: 'Investesc în My Darrin', nume: 'Investitor' };
   var TIPURI = [
     { rol: 'partener_servicii', ico: 'servicii', titlu: 'Servicii', nume: 'Furnizor de servicii' },
     { rol: 'partener_materiale', ico: 'materiale', titlu: 'Materiale', nume: 'Furnizor de materiale' },
@@ -105,8 +113,16 @@
   function ss(k, v) { try { if (v === undefined) return sessionStorage.getItem(k); if (v === null) sessionStorage.removeItem(k); else sessionStorage.setItem(k, v); } catch (e) {} return null; }
   function $(id) { return document.getElementById(id); }
   function rolDinTip(tip) { return TIP_ROL[String(tip || '').toLowerCase()] || null; }
-  function rolValid(rol) { return ROLURI.some(function (r) { return r.rol === rol; }); }
-  function definitieRol(rol) { for (var i = 0; i < ROLURI.length; i++) if (ROLURI[i].rol === rol) return ROLURI[i]; return null; }
+  // 'investor' e valid doar în contextul paginii Investitori (stare.investitor).
+  function rolValid(rol) {
+    if (rol === INVESTITOR.rol) return !!stare.investitor;
+    return ROLURI.some(function (r) { return r.rol === rol; });
+  }
+  function definitieRol(rol) {
+    if (rol === INVESTITOR.rol) return INVESTITOR;
+    for (var i = 0; i < ROLURI.length; i++) if (ROLURI[i].rol === rol) return ROLURI[i];
+    return null;
+  }
   // Pasul 11-R3g: hub-ul „Devino partener” (vechea adresă mydarrin-devino-partener
   // e redirecționată 301 spre el, cu ?type= păstrat) și paginile de tip.
   function pePaginaPartener() { return /\/(mydarrin-devino-partener|cum-devii-partenerul-nostru|cum-devii-furnizor-servicii|cum-devii-furnizor-materiale|cum-devii-operator-inchirieri|cum-devii-curier-de-cartier|ghidul-asiguratorului)(\.html)?$/.test(location.pathname); }
@@ -239,6 +255,8 @@
       '.mdc-gdpr span{font-size:12px;color:#9CA3AF;line-height:1.6}' +
       '.mdc-gdpr a{color:#003366;text-decoration:none}.mdc-gdpr a:hover{text-decoration:underline}' +
       '.mdc-cat{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin:0 0 16px;padding:0;border:0;min-width:0}' +
+      '.mdc-card[hidden],.mdc-jos[hidden]{display:none}' +
+      '.mdc-cat.mdc-cat-unic{grid-template-columns:minmax(0,1fr)}' +
       '.mdc-card{position:relative;display:flex;align-items:flex-start;gap:10px;border:1.5px solid #E5E7EB;border-radius:12px;padding:12px;cursor:pointer;min-height:64px;background:#fff;transition:border-color .15s,background .15s}' +
       '.mdc-card:hover,.mdc-tip:hover{border-color:#B9C7D6}' +
       '.mdc-card.ales,.mdc-tip.ales{border-color:#FF8C00;background:#FFF7EB}' +
@@ -353,11 +371,12 @@
             '<h3 class="mdc-h" id="mdc-titlu-rol">' + esc(tr('Creează cont gratuit')) + '</h3>' +
             '<p class="mdc-sub" id="mdc-sub-rol">' + esc(tr('Cum vrei să folosești My Darrin?')) + '</p>' +
             '<fieldset class="mdc-cat" id="mdc-categorii"><legend class="mdc-sr">' + esc(tr('Alege tipul contului')) + '</legend>' +
-              [['client', CLIENT], ['partener', PARTENER]].map(function (c) {
-                return '<label class="mdc-card" data-mdc-cat="' + c[0] + '"><input type="radio" name="mdc-cat" value="' + c[0] + '">' +
+              [['client', CLIENT], ['partener', PARTENER], ['investitor', INVESTITOR]].map(function (c) {
+                return '<label class="mdc-card" data-mdc-cat="' + c[0] + '"' + (c[0] === 'investitor' ? ' hidden' : '') + '><input type="radio" name="mdc-cat" value="' + c[0] + '">' +
                   icona(c[1].ico) + '<span class="mdc-card-txt"><b>' + esc(tr(c[1].titlu)) + '</b><small>' + esc(tr(c[1].text)) + '</small></span></label>';
               }).join('') +
             '</fieldset>' +
+            '<p class="mdc-jos" id="mdc-alt-tip-rand" hidden style="margin:-4px 0 14px;text-align:left"><button type="button" class="mdc-link" id="mdc-alt-tip">' + esc(tr('Nu ești investitor? Alege alt tip de cont')) + '</button></p>' +
             '<fieldset class="mdc-tipuri" id="mdc-tipuri" hidden><legend class="mdc-eticheta">' + esc(tr('Tipul de partener')) + '</legend><div class="mdc-grila" id="mdc-roluri">' +
               TIPURI.map(function (r) {
                 return '<label class="mdc-tip" data-mdc-rol="' + r.rol + '">' + icona(r.ico) + '<span>' + esc(tr(r.titlu)) + '</span>' +
@@ -430,7 +449,7 @@
   }
 
   // ── Starea ──
-  var stare = { tab: 'login', pasInscriere: 'rol', categorie: null, rol: null, inapoi: null };
+  var stare = { tab: 'login', pasInscriere: 'rol', categorie: null, rol: null, inapoi: null, investitor: false };
 
   function arataPanou(tab) {
     var m = construieste();
@@ -455,10 +474,15 @@
   function randeazaRol() {
     construieste();
     Array.prototype.forEach.call(document.querySelectorAll('#mdc-categorii .mdc-card'), function (l) {
-      var al = l.getAttribute('data-mdc-cat') === stare.categorie;
+      var cat = l.getAttribute('data-mdc-cat');
+      var al = cat === stare.categorie;
       l.classList.toggle('ales', al);
       l.querySelector('input').checked = al;
+      // Contextul de investitor: doar cardul Investitor; altfel, doar Client și Partener.
+      l.hidden = stare.investitor ? cat !== 'investitor' : cat === 'investitor';
     });
+    $('mdc-alt-tip-rand').hidden = !stare.investitor;
+    $('mdc-categorii').classList.toggle('mdc-cat-unic', !!stare.investitor);
     Array.prototype.forEach.call(document.querySelectorAll('#mdc-roluri .mdc-tip'), function (l) {
       var al = l.getAttribute('data-mdc-rol') === stare.rol;
       l.classList.toggle('ales', al);
@@ -469,9 +493,17 @@
     var t = $('mdc-rol-ales-text');
     if (t) t.innerHTML = d ? icona(d.ico) + esc(tr('Cont de {rol}', { rol: tr(d.nume) })) : '';
     var sub = $('mdc-sub-rol');
-    if (sub) sub.textContent = esteTip(stare.rol) ? tr('Confirmă tipul contului și continuă.') : tr('Cum vrei să folosești My Darrin?');
+    if (sub) sub.textContent = esteTip(stare.rol) || stare.investitor ? tr('Confirmă tipul contului și continuă.') : tr('Cum vrei să folosești My Darrin?');
+  }
+  // Pasul 11-I1: contul de investitor (din pagina Investitori) sau alegerea obișnuită.
+  function contextInvestitor(da) {
+    stare.investitor = !!da;
+    if (da) { stare.categorie = 'investitor'; stare.rol = INVESTITOR.rol; }
+    else if (stare.categorie === 'investitor') { stare.categorie = null; stare.rol = null; }
+    randeazaRol();
   }
   function alegeCategorie(cat) {
+    if (cat === 'investitor') { contextInvestitor(true); return; }
     stare.categorie = cat === 'client' || cat === 'partener' ? cat : null;
     if (stare.categorie === 'client') stare.rol = 'client';
     else if (!esteTip(stare.rol)) stare.rol = null;
@@ -515,8 +547,18 @@
     var tab = o.tab || (stare.tab === 'verify-cod' && ss(CHEIE_EMAIL) ? 'verify-cod' : stare.tab) || 'login';
     if (tab === 'inregistrare') tab = 'register';
     var rol = o.rol || rolDinTip(o.tip) || null;
-    if (!rol && tab === 'register' && pePaginaPartener()) rol = rolDinTip(new URLSearchParams(location.search).get('type'));
-    if (rol) {
+    if (rol === INVESTITOR.rol) {
+      // Pagina Investitori: cardul Investitor ales; tabul cerut (înregistrare sau login) rămâne.
+      contextInvestitor(true);
+      stare.pasInscriere = 'rol';
+      rol = null;
+    } else if (stare.investitor) {
+      contextInvestitor(false);
+    }
+    if (!rol && !stare.investitor && tab === 'register' && pePaginaPartener()) rol = rolDinTip(new URLSearchParams(location.search).get('type'));
+    if (stare.investitor) {
+      // nimic de ales: cardul e deja marcat
+    } else if (rol) {
       alegeRol(rol);
       tab = 'register';
       stare.pasInscriere = 'rol';
@@ -868,6 +910,7 @@
     $('mdc-uitat').addEventListener('click', cuFeedback(uitatParola));
     $('mdc-rol-continua').addEventListener('click', cuFeedback(continuaRol));
     $('mdc-schimba-rol').addEventListener('click', function () { arataPasInscriere('rol'); focusPrimul(); });
+    $('mdc-alt-tip').addEventListener('click', function () { contextInvestitor(false); $('mdc-rol-msg').innerHTML = ''; focusPrimul(); });
     $('auth-register').addEventListener('submit', cuFeedback(function (btn) {
       if (stare.pasInscriere === 'rol') { continuaRol(); return; }
       inregistrare($('mdc-register-btn') || btn);
@@ -917,7 +960,8 @@
   window.MDCont = {
     deschide: deschide, inchide: inchide, deschisa: deschisa, toggle: toggleAuthModal,
     switchTab: switchAuthTab, deschidePentruRol: deschidePentruRol, rolDinTip: rolDinTip, alegeTipPartener: alegeTipPartener,
-    ROLURI: ROLURI, TIPURI: TIPURI, CHEIE_MESAJ_PAGINA: CHEIE_MESAJ_PAGINA,
+    ROLURI: ROLURI, TIPURI: TIPURI, INVESTITOR: INVESTITOR, CHEIE_MESAJ_PAGINA: CHEIE_MESAJ_PAGINA,
+    rolAles: function () { return stare.rol; },
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', laIncarcare);

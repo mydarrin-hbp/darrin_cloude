@@ -252,6 +252,9 @@ async function destinatieDupaLogin() {
 async function mergiDupaLogin(laEroare, laFaraDestinatie) {
   // Revenirea la pagina cerută înainte de login (cont-dashboard.js → laLogin):
   // pagina își verifică singură rolul și trimite mai departe, dacă e cazul.
+  // Pasul 11-I1: browserul a avut o sesiune — data viitoare fereastra de cont
+  // din pagina Investitori se deschide pe „Intră în cont” (cta-investitor.js).
+  try { localStorage.setItem('myd_a_avut_cont_v1', '1'); } catch (e) {}
   let revenire = null;
   try { revenire = sessionStorage.getItem('myd_revenire_dupa_login'); sessionStorage.removeItem('myd_revenire_dupa_login'); } catch (e) {}
   if (revenire && /^\/(?!\/)/.test(revenire)) { window.location.href = revenire; return true; }

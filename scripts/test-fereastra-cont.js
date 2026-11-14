@@ -142,7 +142,7 @@ async function completeazaDate(p) {
 
         // 3. „Creare cont”: Client / Partener; grila doar cu „Partener”.
         await p.click('#tab-register-btn');
-        const categorii = await p.evaluate(() => [...document.querySelectorAll('#auth-modal input[name="mdc-cat"]')].map((r) => r.value));
+        const categorii = await p.evaluate(() => [...document.querySelectorAll('#auth-modal .mdc-card:not([hidden]) input[name="mdc-cat"]')].map((r) => r.value));
         const tipuri = await p.evaluate(() => [...document.querySelectorAll('#auth-modal input[name="mdc-rol"]')].map((r) => r.value));
         verifica(categorii.join() === 'client,partener', `${et}: cardurile din primul ecran: ${categorii.join()}`);
         verifica(tipuri.join() === 'partener_servicii,partener_materiale,partener_inchirieri,partener_curier,partener_asigurari', `${et}: tipurile de partener: ${tipuri.join()}`);
@@ -220,7 +220,7 @@ async function completeazaDate(p) {
         const m = await p.evaluate(() => {
           const r = (el) => el.getBoundingClientRect();
           const cutie = document.querySelector('#auth-modal .mdc-cutie');
-          const carduri = [...document.querySelectorAll('#mdc-categorii .mdc-card')].map(r);
+          const carduri = [...document.querySelectorAll('#mdc-categorii .mdc-card:not([hidden])')].map(r);
           const butoane = [...document.querySelectorAll('#mdc-roluri .mdc-tip')].map(r);
           const cercuri = [...document.querySelectorAll('#mdc-roluri input')].map(r);
           const coloane = new Set(butoane.map((b) => Math.round(b.left))).size;
