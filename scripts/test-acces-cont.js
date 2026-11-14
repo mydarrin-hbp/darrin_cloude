@@ -111,7 +111,7 @@ function sesiuneSimulata(cfg) {
       localStorage.clear();
       if (cfg.limba === 'ro') localStorage.setItem('myd_lang_v1', 'ro');
       // Bara de cookie-uri acoperă bara de jos pe mobil; consimțământul e dat dinainte.
-      localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: '2026-10-16T08:00:00Z', versiune: 1 }));
+      localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: '2026-10-16T08:00:00Z', marketing: false, versiune: 2 }));
       sessionStorage.setItem('__init', '1');
     }
   } catch (e) {}

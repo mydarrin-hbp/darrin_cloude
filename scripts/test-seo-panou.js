@@ -370,7 +370,7 @@ async function testPaginaPublica(browser, baza) {
   ];
   for (const [lang, titlu, desc] of [['ro', 'Titlu RO DE TEST', 'Descriere RO DE TEST'], ['en', 'EN TEST title', null], ['de', 'EN TEST title', null]]) {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
-    await ctx.addInitScript((l) => { try { localStorage.setItem('myd_lang_v1', l); localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), versiune: 1 })); } catch (e) {} }, lang);
+    await ctx.addInitScript((l) => { try { localStorage.setItem('myd_lang_v1', l); localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), marketing: false, versiune: 2 })); } catch (e) {} }, lang);
     await ctx.route(/\.supabase\.co\//, (r) => r.abort());
     const cereri = [];
     await ctx.route(/\/api\/public\/seo-config/, async (r) => {

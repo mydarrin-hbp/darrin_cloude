@@ -100,7 +100,7 @@ async function deschide(browser, baza, cale, o) {
   const cuSesiune = !!(s && s.roluri);
   const ctx = await browser.newContext({ viewport: { width: o.w || 1366, height: o.h || 900 } });
   await ctx.addInitScript((l) => {
-    try { if (l) localStorage.setItem('myd_lang_v1', l); localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), versiune: 1 })); } catch (e) {}
+    try { if (l) localStorage.setItem('myd_lang_v1', l); localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), marketing: false, versiune: 2 })); } catch (e) {}
   }, o.limba === undefined ? 'ro' : o.limba);
   await ctx.addInitScript(sesiuneSimulata, { user: UTILIZATOR, cuSesiune });
   await ctx.route(/\.supabase\.co\//, (r) => r.abort());

@@ -15,10 +15,15 @@
       primește sursa păstrată. Fără acord: nu se trimite și nu se păstrează nimic.
       Parametrii trec printr-o listă de chei permise; orice valoare care
       seamănă cu un email, un telefon sau un CUI e eliminată.
-   3. Pixelii Meta / TikTok / LinkedIn: pregătiți, dar opriți. Se încarcă doar
-      cu acord de marketing (MYD_CONSENT.marketingAllowed(), care NU există încă
-      în banner: bannerul are o singură categorie, „analitice”) și doar pentru
-      ID-urile setate în Vercel (/api/public/config-masurare). Niciun ID în cod.
+   3. Pixelii Meta / TikTok / LinkedIn (pasul 11-A3): se încarcă doar cu acord
+      de marketing (MYD_CONSENT.marketingAllowed(), categoria „Marketing” din
+      cookie-consent.js) și doar pentru ID-urile setate în Vercel
+      (/api/public/config-masurare). Niciun ID în cod. Fără advanced matching:
+      pixelii primesc doar numele evenimentului și o categorie (ex. „courier”).
+      Evenimentele de dinaintea încărcării pixelilor așteaptă într-o coadă.
+      La retragerea acordului, pixelii se opresc pe loc (fbq consent revoke,
+      ttq.revokeConsent, fără alte trimiteri), cookie-urile lor din domeniul
+      nostru se șterg, iar la pagina următoare scripturile nu se mai încarcă.
 
    Evenimente trimise automat de acest fișier:
      partner_landing_view  — paginile „Devino partener” / „Cum devii…”, cu tipul;
@@ -86,6 +91,8 @@
   var coadaGa = [];      // evenimente cu acord, înainte ca gtag să fie gata
   var dinUrl = null;     // sursa din adresa paginii, ținută doar în memorie până la acord
   var paginaTrimisa = false;
+  var inPagina = false;          // în evenimentePagina()
+  var paginaPentruPixeli = [];   // evenimentele paginii, păstrate pentru pixeli până la acordul de marketing
 
   // ── acord ─────────────────────────────────────────────────────────
   function acordAnaliza() {
@@ -192,7 +199,8 @@
    * @returns {boolean} true dacă evenimentul a plecat (sau așteaptă gtag)
    */
   function eveniment(nume, parametri) {
-    if (!EVENIMENTE[nume] || !acordAnaliza()) return false;
+    var ga = acordAnaliza(), mk = acordMarketing();
+    if (!EVENIMENTE[nume] || (!ga && !mk)) return false;
     var p = {};
     var src = parametri || {};
     Object.keys(src).forEach(function (k) {
@@ -204,13 +212,16 @@
     Object.keys(s).forEach(function (k) { p[k] = s[k]; });
     p.language = limba() === 'ro' ? 'ro' : 'en';
     jurnal.push({ nume: nume, parametri: p });
-    coadaGa.push({ nume: nume, p: p });
-    golesteCoadaGa();
-    trimitePixeli(nume, p);
+    if (ga) {
+      coadaGa.push({ nume: nume, p: p });
+      golesteCoadaGa();
+    }
+    if (mk) trimitePixeli(nume, p);
+    else if (inPagina) paginaPentruPixeli.push({ nume: nume, p: p });
     return true;
   }
 
-  // ── pixelii rețelelor (opriți până la acordul de marketing) ───────
+  // ── pixelii rețelelor (doar cu acordul de marketing) ──────────────
   var META = {
     partner_landing_view: ['track', 'ViewContent'], service_view: ['track', 'ViewContent'],
     account_created: ['track', 'CompleteRegistration'],
@@ -227,7 +238,10 @@
     partner_cta_click: 'ClickButton', add_to_cart: 'AddToCart',
     checkout_started: 'InitiateCheckout', order_created: 'PlaceAnOrder',
   };
-  var pixeli = { cerut: false, meta: false, tiktok: false, linkedin: false };
+  // cerut: configurația a fost cerută; gata: răspunsul a sosit; retras: acordul retras pe pagină.
+  var pixeli = { cerut: false, gata: false, retras: false, meta: false, tiktok: false, linkedin: false };
+  var coadaPixeli = [];
+  var idPixeli = {};
 
   function adaugaScript(src) {
     var s = document.createElement('script');
@@ -250,7 +264,7 @@
   function pornesteTiktok(id) {
     if (window.ttq) return;
     var t = window.ttq = [];
-    t.methods = ['page', 'track', 'identify', 'instances', 'debug', 'on', 'off', 'once', 'ready', 'alias', 'group', 'enableCookie', 'disableCookie'];
+    t.methods = ['page', 'track', 'identify', 'instances', 'debug', 'on', 'off', 'once', 'ready', 'alias', 'group', 'enableCookie', 'disableCookie', 'holdConsent', 'revokeConsent', 'grantConsent'];
     t.setAndDefer = function (o, m) { o[m] = function () { o.push([m].concat(Array.prototype.slice.call(arguments, 0))); }; };
     for (var i = 0; i < t.methods.length; i++) t.setAndDefer(t, t.methods[i]);
     adaugaScript('https://analytics.tiktok.com/i18n/pixel/events.js?sdkid=' + encodeURIComponent(id) + '&lib=ttq');
@@ -267,28 +281,86 @@
     pixeli.linkedin = true;
   }
 
+  function pornestePixeli() {
+    if (!acordMarketing()) return;
+    var ids = idPixeli;
+    if (/^\d{6,20}$/.test(ids.meta || '')) pornesteMeta(ids.meta);
+    if (/^[A-Z0-9]{10,30}$/.test(ids.tiktok || '')) pornesteTiktok(ids.tiktok);
+    if (/^\d{3,12}$/.test(ids.linkedin || '')) pornesteLinkedin(ids.linkedin);
+    while (coadaPixeli.length) { var x = coadaPixeli.shift(); trimitePixeli(x.nume, x.p); }
+  }
+
   function incarcaPixeli() {
-    if (pixeli.cerut || !acordMarketing() || typeof fetch !== 'function') return;
+    if (!acordMarketing()) return;
+    if (pixeli.retras) { reiaPixeli(); return; }
+    if (pixeli.cerut || typeof fetch !== 'function') return;
     pixeli.cerut = true;
+    // Evenimentele paginii trimise înainte de acordul de marketing (doar la GA4) ajung și la pixeli.
+    while (paginaPentruPixeli.length) coadaPixeli.push(paginaPentruPixeli.shift());
     fetch('/api/public/config-masurare', { credentials: 'omit' })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) {
-        var ids = (d && d.pixeli) || {};
-        if (!acordMarketing()) return;
-        if (/^\d{6,20}$/.test(ids.meta || '')) pornesteMeta(ids.meta);
-        if (/^[A-Z0-9]{10,30}$/.test(ids.tiktok || '')) pornesteTiktok(ids.tiktok);
-        if (/^\d{3,12}$/.test(ids.linkedin || '')) pornesteLinkedin(ids.linkedin);
+        idPixeli = (d && d.pixeli) || {};
+        pixeli.gata = true;
+        pornestePixeli();
       })
-      .catch(function () {});
+      .catch(function () { pixeli.gata = true; coadaPixeli.length = 0; });
   }
 
-  // Pixelii primesc doar categoria, nu sursa (rețelele au propriile id-uri de clic).
-  function trimitePixeli(nume, p) {
-    if (!acordMarketing()) return;
-    var categorie = p.partner_type || p.item_type || p.role || p.step || undefined;
+  // Cookie-urile pixelilor din domeniul nostru (cele din domeniile rețelelor
+  // nu pot fi șterse de pagină). Numele, după documentația fiecărui furnizor.
+  var COOKIE_PIXELI = /^(_fbp|_fbc|_ttp|ttclid|ttcsid(_.*)?|_tt_enable_cookie|li_fat_id|li_giant|li_sugr|lms_analytics|AnalyticsSyncHistory|UserMatchHistory)$/;
+  function stergeCookiePixeli() {
+    var nume = [];
     try {
-      if (pixeli.meta && window.fbq && META[nume]) window.fbq(META[nume][0], META[nume][1], categorie ? { content_category: categorie } : {});
-      if (pixeli.tiktok && window.ttq && TIKTOK[nume]) window.ttq.track(TIKTOK[nume], categorie ? { content_category: categorie } : {});
+      document.cookie.split(';').forEach(function (c) {
+        var n = c.split('=')[0].trim();
+        if (n && COOKIE_PIXELI.test(n)) nume.push(n);
+      });
+    } catch (e) { return []; }
+    var parti = location.hostname.split('.');
+    var domenii = [''];
+    for (var i = 0; i < parti.length - 1; i++) domenii.push('; domain=.' + parti.slice(i).join('.'));
+    nume.forEach(function (n) {
+      domenii.forEach(function (d) {
+        try { document.cookie = n + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/' + d; } catch (e) {}
+      });
+    });
+    return nume;
+  }
+
+  // Retragerea acordului: nicio trimitere de acum încolo, pe această pagină.
+  function oprestePixeli() {
+    stergeCookiePixeli();
+    if (!pixeli.cerut) return;
+    pixeli.retras = true;
+    coadaPixeli.length = 0;
+    try { if (pixeli.meta && window.fbq) window.fbq('consent', 'revoke'); } catch (e) {}
+    try { if (pixeli.tiktok && window.ttq && window.ttq.revokeConsent) window.ttq.revokeConsent(); } catch (e) {}
+    // LinkedIn nu are o funcție de retragere: nu mai primește nimic de la noi,
+    // iar la pagina următoare scriptul nu se mai încarcă.
+    // Pixelii pot scrie cookie-uri și după retragere (cereri în curs): a doua ștergere.
+    setTimeout(stergeCookiePixeli, 1500);
+  }
+
+  // Acordul dat din nou, pe aceeași pagină.
+  function reiaPixeli() {
+    pixeli.retras = false;
+    try { if (pixeli.meta && window.fbq) window.fbq('consent', 'grant'); } catch (e) {}
+    try { if (pixeli.tiktok && window.ttq && window.ttq.grantConsent) window.ttq.grantConsent(); } catch (e) {}
+    if (pixeli.gata) pornestePixeli();
+  }
+
+  // Pixelii primesc doar numele evenimentului și o categorie: fără sursă,
+  // fără email / telefon / nume (fără advanced matching).
+  function trimitePixeli(nume, p) {
+    if (!acordMarketing() || pixeli.retras) return;
+    if (!pixeli.gata) { coadaPixeli.push({ nume: nume, p: p }); return; }
+    var categorie = p.partner_type || p.item_type || p.role || p.step || undefined;
+    var date = categorie ? { content_category: categorie } : {};
+    try {
+      if (pixeli.meta && window.fbq && META[nume]) window.fbq(META[nume][0], META[nume][1], date);
+      if (pixeli.tiktok && window.ttq && TIKTOK[nume]) window.ttq.track(TIKTOK[nume], date);
       // LinkedIn: conversiile se definesc în Campaign Manager, după adresa paginii.
     } catch (e) {}
   }
@@ -307,8 +379,9 @@
   }
 
   function evenimentePagina() {
-    if (paginaTrimisa || !acordAnaliza()) return;
+    if (paginaTrimisa || !(acordAnaliza() || acordMarketing())) return;
     paginaTrimisa = true;
+    inPagina = true;
     var c = cale();
     if (Object.prototype.hasOwnProperty.call(PAGINI_PARTENER, c)) {
       eveniment('partner_landing_view', { partner_type: PAGINI_PARTENER[c] || tipDinQuery(), page: c });
@@ -325,6 +398,7 @@
       });
     }
     if (c === '/mydarrin-checkout' || c === '/cos') eveniment('checkout_started', { page: c });
+    inPagina = false;
   }
 
   // Locul butonului din pagină: data-cta-loc, altfel din structura paginii.
@@ -371,6 +445,7 @@
   }
 
   function laSchimbareAcord() {
+    if (!acordMarketing()) oprestePixeli();
     aplicaAcord();
     golesteCoadaGa();
     evenimentePagina();
@@ -398,6 +473,7 @@
     tip: function (t) { return TIP_EN[t] || null; },
     jurnal: jurnal,
     pixeli: pixeli,
+    stergeCookiePixeli: stergeCookiePixeli,
     EVENIMENTE: Object.keys(EVENIMENTE),
   };
 

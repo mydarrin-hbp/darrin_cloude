@@ -526,7 +526,7 @@ async function testePagini() {
     await ctx.addInitScript(([l, c]) => {
       try {
         localStorage.setItem('myd_lang_v1', l);
-        localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), versiune: 1 }));
+        localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), marketing: false, versiune: 2 }));
         if (c) sessionStorage.setItem('myd_checkout_config', JSON.stringify(c));
       } catch (e) {}
     }, [lang, cfg || null]);

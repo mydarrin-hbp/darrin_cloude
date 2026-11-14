@@ -44,7 +44,7 @@ function reset() {
 // În pagină, de la primul octet: momentul primului card, câte carduri existau la
 // DOMContentLoaded, nodurile primului lot, setările de src și deplasările de aspect.
 function urmareste(lang) {
-  try { localStorage.setItem('myd_lang_v1', lang); localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), versiune: 1 })); } catch (e) {}
+  try { localStorage.setItem('myd_lang_v1', lang); localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), marketing: false, versiune: 2 })); } catch (e) {}
   window.__t = { cls: 0, src: new Map() };
   window.__t.deplasari = [];
   try {

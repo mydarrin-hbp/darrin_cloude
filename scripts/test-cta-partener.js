@@ -72,7 +72,7 @@ async function deschide(browser, baza, pagina, stare, rol, opt) {
   const o = opt || {};
   const ctx = await browser.newContext({ viewport: { width: o.w || 1366, height: o.h || 900 } });
   await ctx.addInitScript((l) => {
-    try { localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), versiune: 1 })); if (l) localStorage.setItem('myd_lang_v1', l); } catch (e) {}
+    try { localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), marketing: false, versiune: 2 })); if (l) localStorage.setItem('myd_lang_v1', l); } catch (e) {}
   }, o.limba === undefined ? 'ro' : o.limba);
   await ctx.addInitScript(supabaseSimulat, stare !== 'vizitator');
   await ctx.route(/\.supabase\.co\//, (r) => r.abort());

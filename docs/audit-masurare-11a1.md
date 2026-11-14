@@ -78,16 +78,13 @@ Toate trec prin `MYD_MASURARE.eveniment()`, care respectă următoarele reguli:
 - Fiecare moment se scrie o singură dată pe cont.
 - Fără migrare, scrierea se oprește în tăcere.
 
-## 4. Pixelii rețelelor: pregătiți, opriți
+## 4. Pixelii rețelelor (pornire: pasul 11-A3, vezi `docs/banner-marketing-11a3.md`)
 - **Încărcarea:** `masurare.js` poate încărca pixelul Meta, pixelul TikTok și LinkedIn Insight Tag.
 - **Condițiile:** pixelul se încarcă doar dacă sunt îndeplinite amândouă:
   1. acord pentru cookie-uri de marketing (`MYD_CONSENT.marketingAllowed()`);
   2. ID-ul setat în Vercel, citit prin `/api/public/config-masurare`, cu format verificat.
 - **Fără ID**, pixelul nu se încarcă. Niciun ID nu e scris în cod.
-- **Bannerul de consimțământ nu are categoria „marketing”.**
-  - Are doar „Cookie-uri esențiale” și „Cookie-uri analitice”.
-  - Pixelii nu pot porni până nu se adaugă categoria. Pentru asta trebuie o machetă separată, de aprobat.
-  - Nu am schimbat bannerul.
+- **Categoria „Marketing” din banner:** adăugată la pasul 11-A3 (macheta aprobată de LM pe 13 nov. 2026). La 11-A1, bannerul avea doar „esențiale” și „analitice”.
 - **Corespondența evenimentelor:**
 
 | Eveniment | Meta | TikTok |
@@ -103,7 +100,7 @@ Toate trec prin `MYD_MASURARE.eveniment()`, care respectă următoarele reguli:
 
 - **LinkedIn:** Insight Tag trimite vizitele. Conversiile se definesc în Campaign Manager, după adresa paginii, de exemplu `/mydarrin-dashboard-partener`.
 - **Ce primesc pixelii:** doar categoria (`content_category`), fără sursa UTM și fără date personale.
-- **CSP:** domeniile pixelilor NU sunt adăugate, pentru că pixelii nu sunt activi. Se adaugă în `vercel.json` în același PR cu activarea:
+- **CSP:** domeniile pixelilor s-au adăugat în `vercel.json` la pasul 11-A3, exact acestea:
   - Meta: `script-src https://connect.facebook.net`; `connect-src https://www.facebook.com https://connect.facebook.net`;
   - TikTok: `script-src https://analytics.tiktok.com`; `connect-src https://analytics.tiktok.com`;
   - LinkedIn: `script-src https://snap.licdn.com`; `connect-src https://px.ads.linkedin.com`.
