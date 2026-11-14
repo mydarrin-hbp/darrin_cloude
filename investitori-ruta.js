@@ -642,10 +642,38 @@
     incarcaDatele(d, pasCerut, doarRuta);
   }
 
+  // Pasul 11-I1: fără sesiune, fereastra de cont pe aceeași pagină, cu tipul
+  // „Investitor” ales și aceeași revenire (nu mai pleacă la /index.html?reason=cont).
   function laLogin() {
     try { sessionStorage.setItem(CHEIE_REVENIRE, ADRESA_RUTEI); } catch (e) {}
-    window.location.href = '/index.html?reason=cont';
+    if (window.MYD_CTA_INVESTITOR && typeof window.MYD_CTA_INVESTITOR.deschideFereastraCont === 'function') {
+      window.MYD_CTA_INVESTITOR.deschideFereastraCont(null);
+      return;
+    }
+    function cuMDCont() {
+      window.MDCont.deschide({
+        tab: aAvutSesiune() ? 'login' : 'register',
+        rol: 'investor',
+        mesaj: tr('Intră în cont sau creează-ți unul; după aceea continui dosarul de investitor.'),
+      });
+    }
+    if (window.MDCont) { cuMDCont(); return; }
+    if (!document.querySelector('script[src$="cont-fereastra.js"]')) {
+      var s = document.createElement('script'); s.src = '/cont-fereastra.js'; document.head.appendChild(s);
+    }
+    var pana = Date.now() + 5000;
+    (function v() { if (window.MDCont) cuMDCont(); else if (Date.now() < pana) setTimeout(v, 80); })();
   }
+  // Pasul 11-I1: browserul a avut o sesiune (token Supabase rămas sau marcajul pus
+  // de account-system.js la login) → fereastra pe „Intră în cont”; altfel, „Creare cont”.
+  function aAvutSesiune() {
+    try {
+      if (localStorage.getItem('myd_a_avut_cont_v1')) return true;
+      for (var i = 0; i < localStorage.length; i++) if (/^sb-.*-auth-token/.test(localStorage.key(i) || '')) return true;
+    } catch (e) {}
+    return /(^|;\s*)sb-[^=;]*-auth-token/.test(document.cookie || '');
+  }
+
 
   // „Devino investitor” / „Intră în rundă”: login, ruta sau subscrierea, după starea contului.
   function start(deschizator) { deschide(deschizator, null, false); }

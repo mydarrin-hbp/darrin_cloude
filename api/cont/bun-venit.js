@@ -9,6 +9,9 @@
 // Un singur email per cont (email_comportamental_log, unique(user_id, tip)),
 // client sau partener; partenerul (profiles.rol_solicitat sau un rol de
 // partener în profiles.roles) primește linkul spre dashboard-ul lui.
+// Pasul 11-I1: investitorul (rol_solicitat = 'investor' sau rolul `investor`,
+// fără rol de partener) primește textul de investitor și linkul spre dosar
+// (ruta de investitor) sau, cu rolul deja acordat, spre panoul lui.
 //   → { ok, trimis, motiv? }
 
 const { requireAuth } = require('../../lib/auth-middleware');
@@ -19,7 +22,7 @@ const { incarcaContactPlatformaSigur } = require('../../lib/contact-platforma');
 const { fromHeader } = require('../../lib/email-sender');
 const { esteSuprimat } = require('../../lib/email-suppression');
 const { esteRolPartener } = require('../../lib/activare-partener');
-const { dashboardPentruRol } = require('../../lib/destinatie-rol');
+const { dashboardPentruRol, PAGINA_RUTA_INVESTITOR } = require('../../lib/destinatie-rol');
 const { inregistreazaEmailConfirmat } = require('../../lib/palnie');
 
 const SITE_URL = process.env.SITE_URL || 'https://mydarrin.homebestpal.com';
@@ -59,12 +62,17 @@ async function handler(req, res, user) {
 
     const roluri = Array.isArray(profil?.roles) ? profil.roles : [];
     const rolPartener = roluri.find(esteRolPartener) || (esteRolPartener(profil?.rol_solicitat) ? profil.rol_solicitat : null);
+    const areInvestitor = roluri.includes('investor');
+    const investitor = !rolPartener && (areInvestitor || profil?.rol_solicitat === 'investor');
     const limba = limbaProfilEmailComportamental(profil || {});
     await incarcaContactPlatformaSigur(); // footerul de dezabonare din back-office
     const { subiect, html } = renderEmailContConfirmat(limba, {
       nume: (user.user_metadata && user.user_metadata.prenume) || null,
       partener: !!rolPartener,
-      link: rolPartener ? SITE_URL + dashboardPentruRol(rolPartener) : null,
+      investitor,
+      link: rolPartener ? SITE_URL + dashboardPentruRol(rolPartener)
+        : investitor ? SITE_URL + (areInvestitor ? dashboardPentruRol('investor') : PAGINA_RUTA_INVESTITOR)
+        : null,
     });
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',

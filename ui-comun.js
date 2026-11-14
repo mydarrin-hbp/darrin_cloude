@@ -50,6 +50,7 @@
   var PAGINA_ROLURI = '/mydarrin-rolurile-mele';
   var PAGINA_ALEGERE = PAGINA_ROLURI;
   var PAGINA_CATALOG = '/mydarrin-catalog.html';
+  var PAGINA_RUTA_INVESTITOR = '/mydarrin-investitori.html?ruta=investitor';
 
   function definitie(rol) {
     for (var i = 0; i < ROLURI.length; i++) if (ROLURI[i].rol === rol) return ROLURI[i];
@@ -104,6 +105,10 @@
     if (lista.indexOf('superadmin') !== -1) return { tip: 'superadmin', destinatie: PAGINA_SUPERADMIN };
     var admin = lista.indexOf('admin') !== -1;
     if (admin && opt.adminCatalog) return { tip: 'admin_catalog', destinatie: PAGINA_ADMIN_CATALOG };
+    // Investitorul ales la înscriere, cu dosarul încă netrimis: ruta de investitor.
+    if (opt.rolSolicitat === 'investor' && lista.indexOf('investor') === -1) {
+      return { tip: 'ruta_investitor', destinatie: PAGINA_RUTA_INVESTITOR };
+    }
     // Rolul de partener ales, încă neacordat: dashboard-ul lui, în modul activare.
     var arePartener = lista.some(esteRolPartener);
     if (!arePartener && esteRolPartener(opt.rolSolicitat)) {
@@ -124,6 +129,7 @@
     PAGINA_ALEGERE: PAGINA_ALEGERE,
     PAGINA_ROLURI: PAGINA_ROLURI,
     PAGINA_CATALOG: PAGINA_CATALOG,
+    PAGINA_RUTA_INVESTITOR: PAGINA_RUTA_INVESTITOR,
     definitie: definitie,
     dashboardPentruRol: dashboardPentruRol,
     adaugaPentruRol: adaugaPentruRol,
