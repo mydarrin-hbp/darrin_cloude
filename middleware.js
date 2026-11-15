@@ -94,76 +94,208 @@ function ruteazaPublic(pathname) {
   return null;
 }
 
+// Pasul 11-S3 (15 nov. 2026): adresa proiectului se citește într-un try — o
+// valoare greșită în mediu nu mai oprește încărcarea middleware-ului (care ar
+// da 500 pe orice cale); fără ea, bariera rămâne fail-closed (vezi mai jos).
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const PROJECT_REF = SUPABASE_URL ? new URL(SUPABASE_URL).hostname.split('.')[0] : null;
+let PROJECT_REF = null;
+try { PROJECT_REF = SUPABASE_URL ? new URL(SUPABASE_URL).hostname.split('.')[0] : null; } catch (e) { PROJECT_REF = null; }
 const COOKIE_PREFIX = PROJECT_REF ? `sb-${PROJECT_REF}-auth-token` : null;
 
+// Pasul 11-S3: limita unui apel spre Supabase din middleware. Peste ea:
+// fail-closed pe paginile stricte / de catalog, next() pe cele publice.
+const TIMEOUT_SUPABASE_MS = 5000;
+
+// Motivele respingerii, scrise în log (fără token-uri, fără conținutul
+// cookie-urilor, fără email complet).
+const MOTIV = {
+  CONFIG: 'config_lipsa',
+  FARA_SESIUNE: 'fara_sesiune',
+  COOKIE: 'cookie_invalid',
+  EXPIRATA: 'sesiune_expirata',
+  INVALIDA: 'sesiune_invalida',
+  TIMEOUT: 'supabase_timeout',
+  EROARE: 'supabase_eroare',
+  FARA_ROL: 'fara_rol',
+  NEAUTORIZAT: 'cont_neautorizat',
+  EXCEPTIE: 'exceptie',
+};
+
+class EroareBariera extends Error {
+  constructor(motiv, detaliu) { super(motiv); this.motiv = motiv; this.detaliu = detaliu || ''; }
+}
+
+// Cel mult domeniul emailului (ex. „gmail.com”), niciodată adresa întreagă.
+function domeniuEmail(email) {
+  const s = String(email || '');
+  const i = s.lastIndexOf('@');
+  return i === -1 ? 'fara-email' : s.slice(i + 1).toLowerCase();
+}
+
+function scrieLog(motiv, request, detaliu) {
+  let cale = '?', host = '?';
+  try { cale = new URL(request.url).pathname; host = request.headers.get('host') || '?'; } catch (e) { /* cerere fără URL valid */ }
+  console.error(`[middleware] acces respins — motiv=${motiv} path=${cale} host=${host}${detaliu ? ' ' + detaliu : ''}`);
+}
+
+// Calea de revenire după reîmprospătarea sesiunii: doar căi interne
+// („/…”, nu „//…”, nu „/\…”, fără caractere de control), niciodată
+// /acces-temporar însuși. Aceeași regulă e aplicată și în acces-temporar.html.
+function caleRevenireValida(cale) {
+  if (typeof cale !== 'string' || !cale || cale.length > 512) return false;
+  if (cale[0] !== '/' || cale[1] === '/' || cale[1] === '\\') return false;
+  if (/[\u0000-\u001f\u007f\\]/.test(cale)) return false;
+  if (/^\/acces-temporar(\.html)?(?:[?#]|$)/.test(cale)) return false;
+  return true;
+}
+
 // FIX (2026-07-23): răspundea cu un simplu "403 Forbidden" în text brut —
-// o fundătură reală, fără niciun link către login. Un vizitator (chiar
-// superadminul, dintr-o sesiune expirată) care ajungea aici nu avea de unde
-// să știe că /acces-temporar există. Acum redirecționează acolo, exact ca
-// bariera generală (treceBarieraPlatforma) — un singur loc de intrare,
-// peste tot pe site, indiferent de motivul exact al respingerii (logat sub
-// consolă, nu în răspunsul HTTP, ca înainte).
-function respinge(request, motiv) {
-  console.error(`[middleware] acces respins (${motiv}) — path=${new URL(request.url).pathname} host=${request.headers.get('host')}`);
-  return Response.redirect(new URL('/acces-temporar', request.url), 307);
+// o fundătură reală, fără niciun link către login. Acum redirecționează la
+// /acces-temporar, un singur loc de intrare, indiferent de motivul exact al
+// respingerii (logat în consolă, nu în răspunsul HTTP).
+// Pasul 11-S3: `optiuni.motivPagina` = ce îi arată pagina utilizatorului
+// („alt_cont” — e conectat cu alt cont; „sesiune_expirata” — sesiunea se
+// reîmprospătează în browser și revine la `optiuni.revenire`).
+function respinge(request, motiv, detaliu, optiuni) {
+  scrieLog(motiv, request, detaliu);
+  let tinta;
+  try {
+    const u = new URL('/acces-temporar', request.url);
+    const o = optiuni || {};
+    if (o.motivPagina) u.searchParams.set('motiv', o.motivPagina);
+    if (o.revenire && caleRevenireValida(o.revenire)) u.searchParams.set('revenire', o.revenire);
+    tinta = u.toString();
+  } catch (e) {
+    tinta = 'https://mydarrin.homebestpal.com/acces-temporar';
+  }
+  return Response.redirect(tinta, 307);
+}
+
+// Un apel spre Supabase cu limită de timp: la depășire → EroareBariera
+// (supabase_timeout); la excepție → EroareBariera (supabase_eroare).
+async function cuTimeout(apel, ce) {
+  let ceas;
+  const limita = new Promise((_, respins) => {
+    ceas = setTimeout(() => respins(new EroareBariera(MOTIV.TIMEOUT, ce)), TIMEOUT_SUPABASE_MS);
+  });
+  try {
+    return await Promise.race([Promise.resolve().then(apel), limita]);
+  } catch (e) {
+    if (e instanceof EroareBariera) throw e;
+    throw new EroareBariera(MOTIV.EROARE, `${ce}: ${(e && e.name) || 'Error'}`);
+  } finally {
+    clearTimeout(ceas);
+  }
+}
+
+// Cookie-urile din antet. La un nume repetat (ex. același cookie scris și pe
+// subdomeniu, și pe .mydarrin.homebestpal.com) se păstrează PRIMA valoare —
+// exact ce citește browserul în lib/supabaseClient.js (getRawCookie, prima
+// potrivire). Înainte se păstra ultima, deci serverul putea combina bucăți
+// din sesiuni diferite.
+function citesteCookieuri(cookieHeader) {
+  const cookies = Object.create(null);
+  String(cookieHeader).split(';').forEach((part) => {
+    const idx = part.indexOf('=');
+    if (idx === -1) return;
+    const nume = part.slice(0, idx).trim();
+    if (nume && !(nume in cookies)) cookies[nume] = part.slice(idx + 1).trim();
+  });
+  return cookies;
 }
 
 // lib/supabaseClient.js salvează sesiunea în cookie-uri fragmentate
-// (sb-<ref>-auth-token.0, .1, ...) pe domeniul .mydarrin.homebestpal.com —
-// reasamblăm exact aceeași schemă aici, server-side. Verificat contra
-// sursei reale @supabase/supabase-js (SupabaseClient.js — defaultStorageKey
-// = `sb-${host.split('.')[0]}-auth-token`) și @supabase/auth-js
-// (_saveSession → storage.setItem(key, JSON.stringify(session))) — cheia și
-// forma JSON sunt exact cele presupuse aici.
+// (sb-<ref>-auth-token.0, .1, ...) pe domeniul .mydarrin.homebestpal.com, sau
+// (varianta veche) într-un singur cookie sb-<ref>-auth-token. Aceeași regulă
+// ca în browser (chunkedCookieStorage.getItem), fără amestec între forme:
+//   - dacă există .0 → doar bucățile consecutive .0, .1, … (o bucată rămasă
+//     după un gol, ex. .2 fără .1, e ignorată, ca în browser);
+//   - altfel → cookie-ul nefragmentat.
+// Pasul 11-S3: totul e în try — o codare stricată (URIError) sau un JSON
+// invalid întoarce { stare: 'invalid' }, nu o excepție.
+// Rezultat: { stare: 'lipsa' } | { stare: 'invalid' } | { stare: 'ok', access_token }.
+// refresh_token-ul nu mai e citit deloc (vezi obtineUtilizatorAutentificat).
 function extrageSesiune(cookieHeader) {
-  if (!cookieHeader || !COOKIE_PREFIX) return null;
-  const cookies = {};
-  cookieHeader.split(';').forEach((part) => {
-    const idx = part.indexOf('=');
-    if (idx === -1) return;
-    cookies[part.slice(0, idx).trim()] = part.slice(idx + 1).trim();
-  });
-
-  let full = '';
-  let i = 0;
-  while (cookies[`${COOKIE_PREFIX}.${i}`] !== undefined) {
-    full += decodeURIComponent(cookies[`${COOKIE_PREFIX}.${i}`]);
-    i++;
-  }
-  if (!full) return null;
-
   try {
-    const session = JSON.parse(full);
-    return { access_token: session?.access_token || null, refresh_token: session?.refresh_token || null };
+    if (!cookieHeader || !COOKIE_PREFIX) return { stare: 'lipsa' };
+    const cookies = citesteCookieuri(cookieHeader);
+    let brut;
+    if (cookies[`${COOKIE_PREFIX}.0`] !== undefined) {
+      brut = '';
+      for (let i = 0; i < 50 && cookies[`${COOKIE_PREFIX}.${i}`] !== undefined; i++) {
+        brut += decodeURIComponent(cookies[`${COOKIE_PREFIX}.${i}`]);
+      }
+    } else if (cookies[COOKIE_PREFIX] !== undefined) {
+      brut = decodeURIComponent(cookies[COOKIE_PREFIX]);
+    } else {
+      return { stare: 'lipsa' };
+    }
+    if (!brut) return { stare: 'invalid' };
+    const session = JSON.parse(brut);
+    const token = session && typeof session.access_token === 'string' ? session.access_token : null;
+    if (!token) return { stare: 'invalid' };
+    return { stare: 'ok', access_token: token };
+  } catch (e) {
+    return { stare: 'invalid' };
+  }
+}
+
+// Momentul expirării din JWT (câmpul exp), fără verificarea semnăturii —
+// folosit DOAR ca să știm că sesiunea trebuie reîmprospătată în browser.
+// Accesul îl dă exclusiv auth.getUser (verificare la Supabase).
+function expiraLa(token) {
+  try {
+    const parte = String(token).split('.')[1];
+    if (!parte) return null;
+    let b64 = parte.replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    const exp = JSON.parse(atob(b64)).exp;
+    return typeof exp === 'number' ? exp * 1000 : null;
   } catch (e) {
     return null;
   }
 }
 
-// Extrage utilizatorul autentificat din cookie (cu retry pe refresh_token
-// dacă access_token-ul a expirat) — folosit atât de bariera strictă
-// (superadmin/backoffice), cât și de bariera generală a platformei.
+// Utilizatorul autentificat din cookie — folosit de bariera strictă
+// (superadmin/backoffice), de pagina de catalog și de bariera generală.
+// Întoarce utilizatorul sau aruncă EroareBariera cu motivul.
+//
+// Pasul 11-S3 — FĂRĂ refreshSession în middleware: Supabase rotește
+// refresh token-urile (fiecare folosire emite unul nou și îl revocă pe cel
+// vechi). Middleware-ul folosea refresh_token-ul browserului fără să scrie
+// înapoi cookie-urile noi; după intervalul de reutilizare, browserul rămânea
+// cu un token revocat, iar reutilizarea lui putea revoca toată sesiunea
+// (delogare). Acum, la access_token expirat, middleware-ul trimite la
+// /acces-temporar?motiv=sesiune_expirata&revenire=<calea>, unde clientul
+// Supabase din browser reîmprospătează sesiunea și revine la pagina cerută.
 async function obtineUtilizatorAutentificat(request, supabaseAdmin) {
   const sesiune = extrageSesiune(request.headers.get('cookie'));
-  if (!sesiune || !sesiune.access_token) return null;
+  if (sesiune.stare === 'lipsa') throw new EroareBariera(MOTIV.FARA_SESIUNE);
+  if (sesiune.stare !== 'ok') throw new EroareBariera(MOTIV.COOKIE);
 
-  const { data: userData, error: userErr } = await supabaseAdmin.auth.getUser(sesiune.access_token);
-  if (!userErr && userData?.user) return userData.user;
+  const exp = expiraLa(sesiune.access_token);
+  if (exp !== null && exp <= Date.now()) throw new EroareBariera(MOTIV.EXPIRATA);
 
-  if (sesiune.refresh_token) {
-    const { data: refreshData, error: refreshErr } = await supabaseAdmin.auth.refreshSession({ refresh_token: sesiune.refresh_token });
-    if (!refreshErr && refreshData?.user) return refreshData.user;
+  const rezultat = await cuTimeout(() => supabaseAdmin.auth.getUser(sesiune.access_token), 'auth.getUser');
+  const { data, error } = rezultat || {};
+  if (error) {
+    const status = Number(error.status) || 0;
+    if (status >= 400 && status < 500) throw new EroareBariera(MOTIV.INVALIDA, `status=${status}`);
+    throw new EroareBariera(MOTIV.EROARE, `auth.getUser status=${status || '?'}`);
   }
-  return null;
+  if (!data || !data.user || !data.user.id) throw new EroareBariera(MOTIV.INVALIDA);
+  return data.user;
 }
 
+// Sursa autoritativă e profiles.roles, nu doar metadatele din JWT — vezi
+// aceeași convenție în lib/auth-middleware.js (corectat audit 2026-07-11).
+// Pasul 11-S3: eroarea de la interogare → EroareBariera (supabase_eroare),
+// nu „fără roluri” tăcut și nici excepție netratată.
 async function obtineRoluri(supabaseAdmin, userId) {
-  // Sursa autoritativă e profiles.roles, nu doar metadatele din JWT — vezi
-  // aceeași convenție în lib/auth-middleware.js (corectat audit 2026-07-11).
-  const { data: profile } = await supabaseAdmin.from('profiles').select('roles').eq('id', userId).single();
+  const rezultat = await cuTimeout(() => supabaseAdmin.from('profiles').select('roles').eq('id', userId).maybeSingle(), 'profiles');
+  const { data: profile, error } = rezultat || {};
+  if (error) throw new EroareBariera(MOTIV.EROARE, `profiles ${error.code || ''}`.trim());
   return Array.isArray(profile?.roles) ? profile.roles : [];
 }
 
@@ -194,8 +326,17 @@ const RUTA_ACCES_COMPLET = '*';
 // pentru emailul curent, cu ruta_url = "*" (acces complet) sau exact egală
 // cu pagina cerută (fără extensia .html) — ramâne scopat la ruta acordată,
 // exact ca înainte, pentru conturile de tip tester/demo.
+// Pasul 11-S3: orice eroare (sesiune, timeout, interogare) → false
+// (fail-closed); o eroare la accese_temporare nu mai e confundată cu
+// „niciun rând” (care ar fi deschis accesul).
 async function treceBarieraPlatforma(request, supabaseAdmin, pathname) {
-  const user = await obtineUtilizatorAutentificat(request, supabaseAdmin);
+  let user;
+  try {
+    user = await obtineUtilizatorAutentificat(request, supabaseAdmin);
+  } catch (e) {
+    if (e instanceof EroareBariera) return false;
+    throw e;
+  }
   if (!user) return false;
 
   const roluri = await obtineRoluri(supabaseAdmin, user.id);
@@ -204,12 +345,14 @@ async function treceBarieraPlatforma(request, supabaseAdmin, pathname) {
   if (!user.email) return false;
   const rutaCeruta = pathname.replace(/\.html$/, '') || '/';
 
-  const { data: acces } = await supabaseAdmin
+  const rezAcces = await cuTimeout(() => supabaseAdmin
     .from('accese_temporare')
     .select('ruta_url, expira_la, nda_acceptat')
     .eq('email', user.email.toLowerCase())
     .eq('activ', true)
-    .maybeSingle();
+    .maybeSingle(), 'accese_temporare');
+  if (rezAcces && rezAcces.error) throw new EroareBariera(MOTIV.EROARE, 'accese_temporare');
+  const acces = rezAcces ? rezAcces.data : null;
 
   // Niciun rând în accese_temporare = cont real de business (client/partener/
   // investitor, creat prin fluxul propriu de înregistrare, nu prin
@@ -343,31 +486,89 @@ async function raspunsOg(request, url, destinatie, supabaseAdmin) {
   }
 }
 
-export default async function middleware(request) {
-  const url = new URL(request.url);
-  const pathname = url.pathname;
-
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    // Fail-closed: fără configurare validă nu putem verifica nimic — mai
-    // bine blocat decât deschis din greșeală.
-    return respinge(request, 'lipsesc SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY din mediu');
+// Pasul 11-S3: bariera paginilor stricte (contul unic SUPERADMIN_EMAIL) și a
+// paginii de catalog (admin sau superadmin). Regulile de acces sunt aceleași
+// ca înainte; se schimbă doar tratarea erorilor — fiecare cale de eșec duce
+// la respinge() (307 → /acces-temporar), niciodată la next().
+async function barieraAdmin(request, supabaseAdmin, url, pathname, doarContulUnic) {
+  let user;
+  try {
+    user = await obtineUtilizatorAutentificat(request, supabaseAdmin);
+  } catch (e) {
+    if (!(e instanceof EroareBariera)) throw e;
+    if (e.motiv === MOTIV.EXPIRATA) {
+      // Sesiunea se reîmprospătează în browser, apoi revine aici.
+      return respinge(request, e.motiv, e.detaliu, { motivPagina: 'sesiune_expirata', revenire: pathname + url.search });
+    }
+    if (e.motiv === MOTIV.COOKIE || e.motiv === MOTIV.INVALIDA) {
+      // Cookie stricat sau sesiune revocată: pagina oferă „Ieși din cont”.
+      return respinge(request, e.motiv, e.detaliu, { motivPagina: 'sesiune_invalida' });
+    }
+    return respinge(request, e.motiv, e.detaliu);
   }
 
-  const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  const idUser = `user=${user.id}`;
+  if (!(await verificaRoluri(supabaseAdmin, user.id))) {
+    return respinge(request, MOTIV.FARA_ROL, `${idUser}${doarContulUnic ? '' : ' (pagina de catalog)'}`, { motivPagina: 'alt_cont' });
+  }
+  if (doarContulUnic && (!user.email || String(user.email).toLowerCase() !== SUPERADMIN_EMAIL)) {
+    return respinge(request, MOTIV.NEAUTORIZAT, `${idUser} domeniu=${domeniuEmail(user.email)}`, { motivPagina: 'alt_cont' });
+  }
+  return next();
+}
 
-  // Paginile interne stricte (superadmin/backoffice/etc.) rămân pe bariera
-  // veche, neschimbată: DOAR admin/superadmin, niciodată acces temporar.
-  if (PAGINI_STRICTE.includes(pathname)) {
-    const user = await obtineUtilizatorAutentificat(request, supabaseAdmin);
-    if (!user) return respinge(request, 'niciun cookie de sesiune valid');
-    const areRolPermis = await verificaRoluri(supabaseAdmin, user.id);
-    if (!areRolPermis) return respinge(request, `user ${user.id} autentificat dar fără rol admin/superadmin`);
-    if (!user.email || user.email.toLowerCase() !== SUPERADMIN_EMAIL) {
-      return respinge(request, `user ${user.id} (${user.email || 'fără email'}) are rol admin/superadmin dar nu e contul unic autorizat`);
+function creeazaClientAdmin() {
+  // Fiecare cerere HTTP a clientului e oprită după TIMEOUT_SUPABASE_MS
+  // (AbortSignal); cuTimeout() de mai sus e limita sigură, peste orice client.
+  const cuAbort = (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function')
+    ? (resursa, opt) => fetch(resursa, Object.assign({}, opt, { signal: (opt && opt.signal) || AbortSignal.timeout(TIMEOUT_SUPABASE_MS) }))
+    : undefined;
+  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, Object.assign(
+    { auth: { autoRefreshToken: false, persistSession: false } },
+    cuAbort ? { global: { fetch: cuAbort } } : {},
+  ));
+}
+
+// Pasul 11-S3: niciun drum din middleware nu mai produce un 500
+// (MIDDLEWARE_INVOCATION_FAILED). Orice excepție neprevăzută:
+//   - pagini stricte, de catalog sau sub bariera generală → respinge()
+//     (fail-closed: o eroare nu deschide niciodată accesul);
+//   - pagini publice → next() (vizitatorii nu sunt blocați).
+export default async function middleware(request) {
+  let zona = 'stricta';
+  try {
+    const url = new URL(request.url);
+    const pathname = url.pathname;
+    const publicRoute = ruteazaPublic(pathname);
+    zona = PAGINI_STRICTE.includes(pathname) ? 'stricta'
+      : PAGINI_ADMIN_CATALOG.includes(pathname) ? 'catalog'
+      : (PAGINI_PUBLICE.has(pathname) || publicRoute) ? 'publica'
+      : 'generala';
+    return await ruleaza(request, url, pathname, publicRoute);
+  } catch (e) {
+    const motiv = e instanceof EroareBariera ? e.motiv : MOTIV.EXCEPTIE;
+    const detaliu = e instanceof EroareBariera ? e.detaliu : ((e && e.name) || 'Error');
+    if (zona === 'publica') {
+      scrieLog(`${motiv} (pagină publică, next)`, request, detaliu);
+      try { return next(); } catch (e2) { return new Response(null, { status: 204 }); }
     }
-    return next();
+    return respinge(request, motiv, detaliu);
+  }
+}
+
+async function ruleaza(request, url, pathname, publicRoute) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !COOKIE_PREFIX) {
+    // Fail-closed: fără configurare validă nu putem verifica nimic — mai
+    // bine blocat decât deschis din greșeală.
+    return respinge(request, MOTIV.CONFIG, 'lipsesc SUPABASE_URL/cheia de serviciu din mediu');
+  }
+
+  const supabaseAdmin = creeazaClientAdmin();
+
+  // Paginile interne stricte (superadmin/backoffice/etc.): DOAR contul unic
+  // autorizat, cu rol admin/superadmin, niciodată acces temporar.
+  if (PAGINI_STRICTE.includes(pathname)) {
+    return barieraAdmin(request, supabaseAdmin, url, pathname, true);
   }
 
   // Pagina adminilor de catalog (pasul 9, 15 oct. 2026): admin sau superadmin,
@@ -375,12 +576,7 @@ export default async function middleware(request) {
   // numiți de superadmin). Dreptul pe catalog (admin_permissions, capitole,
   // țară) îl verifică din nou API-ul, la fiecare cerere.
   if (PAGINI_ADMIN_CATALOG.includes(pathname)) {
-    const user = await obtineUtilizatorAutentificat(request, supabaseAdmin);
-    if (!user) return respinge(request, 'niciun cookie de sesiune valid');
-    if (!(await verificaRoluri(supabaseAdmin, user.id))) {
-      return respinge(request, `user ${user.id} autentificat dar fără rol admin/superadmin (pagina de catalog)`);
-    }
-    return next();
+    return barieraAdmin(request, supabaseAdmin, url, pathname, false);
   }
 
   // Pagini publice (Etapa LANSARE, Faza A) — ocolesc complet bariera
@@ -389,7 +585,6 @@ export default async function middleware(request) {
   // vezi PAGINA_STATICA) și rutele de categorie/produs ("/servicii/:slug"
   // etc.) trebuie rezolvate ÎNAINTE de bariera generală — toate destinațiile
   // lui ruteazaPublic() sunt, prin construcție, pagini din PAGINI_PUBLICE.
-  const publicRoute = ruteazaPublic(pathname);
   if (PAGINI_PUBLICE.has(pathname) || publicRoute) {
     let dest = null;
     if (publicRoute) {
@@ -403,7 +598,11 @@ export default async function middleware(request) {
     // Roboții de previzualizare (pasul 11-S). Vizitatorii obișnuiți nu ajung
     // aici: doar o verificare a User-Agent-ului, fără cereri în plus.
     if (seoOg.esteRobot(request.headers.get('user-agent')) && !request.headers.get(seoOg.ANTET_INTERN)) {
-      const og = await raspunsOg(request, url, dest || url, supabaseAdmin);
+      // Pasul 11-S3: cu limită de timp — un Supabase lent nu ține pagina.
+      const og = await cuTimeout(() => raspunsOg(request, url, dest || url, supabaseAdmin), 'og').catch((e) => {
+        scrieLog(`${e.motiv || MOTIV.EXCEPTIE} (og, HTML original)`, request, e.detaliu || '');
+        return null;
+      });
       if (og) return og;
     }
     if (dest) {
