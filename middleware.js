@@ -222,10 +222,14 @@ function extrageSesiune(cookieHeader) {
     const cookies = citesteCookieuri(cookieHeader);
     let brut;
     if (cookies[`${COOKIE_PREFIX}.0`] !== undefined) {
-      brut = '';
+      // Pasul 11-S3b: bucățile se lipesc întâi, apoi se decodează o dată —
+      // tăietura la 3200 de caractere poate cădea în mijlocul unei secvențe
+      // %XX, iar decodarea fiecărei bucăți separat respingea sesiuni valide.
+      let lipit = '';
       for (let i = 0; i < 50 && cookies[`${COOKIE_PREFIX}.${i}`] !== undefined; i++) {
-        brut += decodeURIComponent(cookies[`${COOKIE_PREFIX}.${i}`]);
+        lipit += cookies[`${COOKIE_PREFIX}.${i}`];
       }
+      brut = decodeURIComponent(lipit);
     } else if (cookies[COOKIE_PREFIX] !== undefined) {
       brut = decodeURIComponent(cookies[COOKIE_PREFIX]);
     } else {
