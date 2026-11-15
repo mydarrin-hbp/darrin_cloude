@@ -54,6 +54,21 @@ function bucati(obj, marime = 3200) {
   for (let i = 0; i < enc.length; i += marime) out.push(enc.slice(i, i + marime));
   return out;
 }
+// O sesiune a cărei tăietură la 3200 cade în mijlocul unei secvențe %XX
+// (decodarea fiecărei bucăți separat ar arunca „URI malformed”).
+function sesiuneTaiataInEscape(id) {
+  for (let k = 0; k < 400; k++) {
+    const s = sesiune(id);
+    s.user.user_metadata = { nume: 'Popa Cristian', adresa: 'Târgu Neamț, județul Neamț', note: '"{}:,'.repeat(150) + 'a'.repeat(k) };
+    const b = bucati(s);
+    if (b.length < 2) continue;
+    try { b.forEach(decodeURIComponent); } catch (e) {
+      tokenLaUser.set(s.access_token, id);
+      return { s, b, cookie: b.map((c, i) => `${PREFIX}.${i}=${c}`).join('; ') };
+    }
+  }
+  return {};
+}
 const fragmentat = (obj) => bucati(obj).map((c, i) => `${PREFIX}.${i}=${c}`).join('; ');
 const nefragmentat = (obj) => `${PREFIX}=${encodeURIComponent(JSON.stringify(obj))}`;
 
@@ -205,6 +220,17 @@ const descrie = (rez) => rez.exceptie ? 'excepție ' + rez.exceptie.message : re
     resetSim();
     rez = await ruleaza(mw, cerere(SA, `${PREFIX}.0=${encodeURIComponent(JSON.stringify({ refresh_token: 'x' }))}`));
     verifica(e307(rez, 'sesiune_invalida'), 'A8 sesiune fără access_token → 307');
+  }
+
+  // Pasul 11-S3b: sesiune mare, tăiată la 3200 în mijlocul unei secvențe %XX
+  // (cum scria lib/supabaseClient.js înainte) → validă, nu „cookie_invalid”.
+  {
+    const { s, cookie } = sesiuneTaiataInEscape('u-super');
+    verifica(!!cookie, 'A11 s-a construit o sesiune tăiată în mijlocul unei secvențe %XX');
+    resetSim();
+    rez = await ruleaza(mw, cerere(SA, cookie));
+    verifica(eNext(rez), 'A11 bucăți tăiate în mijlocul lui %XX → se lipesc, apoi se decodează: next() (' + descrie(rez) + ')');
+    verifica(s && apeluri.getUser === 1, 'A11 sesiunea ajunge la verificarea Supabase');
   }
 
   resetSim();
@@ -402,6 +428,52 @@ const descrie = (rez) => rez.exceptie ? 'excepție ' + rez.exceptie.message : re
   const cazuri = [['/mydarrin-superadmin', true], ['/mydarrin-superadmin?tab=x', true], ['//evil.example', false], ['/\\evil.example', false],
     ['https://evil.example/', false], ['javascript:alert(1)', false], ['/acces-temporar', false], ['/acces-temporar?motiv=x', false], ['', false], ['/a\nb', false]];
   verifica(cazuri.every(([c, e]) => valida(c) === e && validaMw(c) === e), 'G6 revenire: doar căi interne (pagină și middleware) — ' + cazuri.filter(([c, e]) => valida(c) !== e || validaMw(c) !== e).map(([c]) => JSON.stringify(c)).join(', '));
+
+  // ── I. Stocarea sesiunii din browser (lib/supabaseClient.js) ─────────
+  {
+    const sursa = citeste('lib/supabaseClient.js');
+    const cod = sursa.slice(sursa.indexOf('const COOKIE_DOMAIN'), sursa.indexOf("import { createClient }"));
+    const borcan = new Map();
+    const documentSim = {
+      get cookie() { return [...borcan].map(([n, v]) => `${n}=${v}`).join('; '); },
+      set cookie(linie) {
+        const [nv, ...atr] = linie.split(';');
+        const i = nv.indexOf('=');
+        const n = nv.slice(0, i).trim(), v = nv.slice(i + 1);
+        if (atr.some((a) => /expires=Thu, 01 Jan 1970/i.test(a))) borcan.delete(n); else borcan.set(n, v);
+      },
+    };
+    const st = new Function('document', cod + '; return chunkedCookieStorage;')(documentSim);
+    const { s, b } = sesiuneTaiataInEscape('u-super');
+    const json = JSON.stringify(s);
+    // Cookie-uri vechi, tăiate în mijlocul lui %XX: citite corect acum.
+    b.forEach((c, i) => borcan.set(`${PREFIX}.${i}`, c));
+    let citit = null, exc = null;
+    try { citit = st.getItem(PREFIX); } catch (e) { exc = e; }
+    verifica(!exc && citit === json, 'I1 browser: bucăți vechi tăiate în mijlocul lui %XX → sesiunea întreagă, fără „URI malformed”' + (exc ? ' (' + exc.message + ')' : ''));
+    // Scrierea nouă nu mai taie o secvență %XX: fiecare bucată se decodează singură.
+    borcan.clear();
+    st.setItem(PREFIX, json);
+    const scrise = [...borcan].filter(([n]) => n.startsWith(PREFIX + '.')).map(([, v]) => v);
+    let fiecare = true;
+    try { scrise.forEach(decodeURIComponent); } catch (e) { fiecare = false; }
+    verifica(scrise.length >= 2 && fiecare && scrise.every((c) => c.length <= 3200), `I2 browser: setItem nu mai taie în mijlocul lui %XX (${scrise.length} bucăți, ≤ 3200)`);
+    verifica(st.getItem(PREFIX) === json, 'I3 browser: scriere + citire → aceeași sesiune');
+    resetSim();
+    rez = await ruleaza(mw, cerere(SA, documentSim.cookie));
+    verifica(eNext(rez), 'I4 cookie-urile scrise de browser trec de middleware (superadmin)');
+    // Cookie stricat → null, nu excepție.
+    borcan.clear();
+    borcan.set(`${PREFIX}.0`, '%E0%A4%A');
+    exc = null; citit = 'x';
+    try { citit = st.getItem(PREFIX); } catch (e) { exc = e; }
+    verifica(!exc && citit === null, 'I5 browser: cookie stricat → null (fără sesiune), fără excepție');
+    borcan.clear();
+    borcan.set(PREFIX, '%E0%A4%A');
+    exc = null;
+    try { citit = st.getItem(PREFIX); } catch (e) { exc = e; }
+    verifica(!exc && citit === null, 'I6 browser: cookie nefragmentat stricat → null');
+  }
 
   // ── H. Pagina în browser ────────────────────────────────────────────
   let pw = null;
