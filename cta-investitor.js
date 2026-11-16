@@ -88,17 +88,37 @@
   // ── Citirea stării (fără endpoint nou) ───────────────────────────────
   var promRunda = json('/api/public/runda-curenta').then(function (j) { return (j && j.runda) || null; });
 
+  // Pasul 11-I3: clientul Supabase anunță că e gata (lib/supabaseClient.js:
+  // evenimentul myd:supabase-gata), fără interogare la fiecare 100 ms.
+  function clientGata(ms) {
+    if (window.supabaseClient) return Promise.resolve(true);
+    return new Promise(function (ok) {
+      var gata = false, ceas;
+      function fin() {
+        if (gata) return;
+        gata = true; clearTimeout(ceas); window.removeEventListener('myd:supabase-gata', fin);
+        ok(!!window.supabaseClient);
+      }
+      ceas = setTimeout(fin, ms);
+      window.addEventListener('myd:supabase-gata', fin);
+    });
+  }
   function sesiune() {
-    return asteapta(function () { return !!window.supabaseClient; }, 4000).then(function (gata) {
+    return clientGata(4000).then(function (gata) {
       if (!gata) return null;
       return window.supabaseClient.auth.getSession().then(function (r) { return (r && r.data && r.data.session) || null; });
     }).catch(function () { return null; });
   }
+  // Pasul 11-I3: cache-ul comun al paginii (lib/supabaseClient.js) în locul unei cereri proprii.
+  function profilDirect(token) {
+    if (window.MYD_PROFIL) return window.MYD_PROFIL.cere(token).then(function (r) { return r.ok ? r.corp : null; }).catch(function () { return null; });
+    return json('/api/cont/profil', token);
+  }
   function profil(token) {
     if (window.MYD_CONT && typeof window.MYD_CONT.profil === 'function') {
-      return window.MYD_CONT.profil().then(function (p) { return p || json('/api/cont/profil', token); }).catch(function () { return json('/api/cont/profil', token); });
+      return window.MYD_CONT.profil().then(function (p) { return p || profilDirect(token); }).catch(function () { return profilDirect(token); });
     }
-    return json('/api/cont/profil', token);
+    return profilDirect(token);
   }
 
   function calculeaza(c) {

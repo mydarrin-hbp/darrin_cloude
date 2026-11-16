@@ -311,7 +311,24 @@ input:valid:not(:placeholder-shown):not([type="checkbox"]) {
 
 <meta charset="UTF-8">
 <!-- Limba (10 oct. 2026): engleza implicită, româna din selector — i18n-loader.js, sincron, primul script -->
+<!-- Pasul 11-I3: dicționarul EN al panoului pornește odată cu HTML-ul, nu după i18n-loader.js
+     (aceeași cerere ca fetch-ul din loader: as="fetch", crossorigin). -->
+<link rel="preload" href="/i18n/en/mydarrin-panou-investitor.json" as="fetch" crossorigin="anonymous">
 <script src="/i18n-loader.js" data-pagina="mydarrin-panou-investitor"></script>
+<!-- Pasul 11-I3: profilul contului pornește de aici, înaintea clientului Supabase (lib/profil-cont.js). -->
+<script src="/lib/profil-cont.js"></script>
+<!-- Pasul 11-I3: runda deschisă și starea pitch deck-ului (API publice) pornesc odată cu profilul,
+     doar cu o sesiune salvată, nu după scripturile grele ale paginii; panou-investitor.js le folosește. -->
+<script>
+(function () {
+  try {
+    if (!window.MYD_PROFIL || !window.MYD_PROFIL.devreme()) return;
+    var limba = window.MYD_I18N && window.MYD_I18N.lang === 'ro' ? 'ro' : 'en';
+    var j = function (u) { return fetch(u, { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }); };
+    window.MYD_PI_PUBLICE = Promise.all([j('/api/public/runda-curenta'), j('/api/public/pitch-deck?limba=' + limba + '&doar_stare=1')]);
+  } catch (e) {}
+})();
+</script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Panoul investitorului · My Darrin</title>
 <meta name="robots" content="noindex, nofollow"/>
@@ -1024,6 +1041,16 @@ function triggerHeaderSearch(){
 
 <div class="pi">
   <p class="pi-banda pi-banda-rosu" id="pi-acces-eroare" role="alert" hidden>Nu am putut verifica accesul la panou. Reîncarcă pagina.</p>
+  <!-- Pasul 11-I3: scheletul, vizibil imediat (fără pagină goală); panou-investitor.js
+       îl ascunde când apare panoul. Fără cifre provizorii: doar starea de încărcare. -->
+  <div id="pi-schelet" aria-busy="true">
+    <div class="pi-schelet-antet" aria-hidden="true"></div>
+    <h1 class="pi-titlu">Panoul investitorului</h1>
+    <article class="pi-card">
+      <div class="pi-kpi-et">Runda deschisă</div>
+      <p class="pi-incarcare" role="status" aria-live="polite"><span class="pi-spin" aria-hidden="true"></span><span>Se încarcă…</span></p>
+    </article>
+  </div>
   <div id="pi-app" hidden>
     <div id="myd-cont-antet"></div>
     <h1 class="pi-titlu">Panoul investitorului</h1>
@@ -1518,7 +1545,12 @@ function setLang(code,flag,label){
   document.querySelectorAll('.lang-opt').forEach(o=>o.classList.remove('active'));
   event.target.closest('.lang-opt').classList.add('active');
   document.getElementById('langDd').classList.remove('open');
-  // In real app: reload page with locale
+  // Pasul 11-I3: selectorul era doar decorativ aici (nu schimba limba). Ca pe
+  // index.html: i18n-loader.js salvează alegerea (myd_lang_v1, iar pentru un
+  // cont autentificat și profiles.limba) și reîncarcă pagina în limba aleasă.
+  if (window.MYD_I18N && (code === 'ro' || window.MYD_I18N.SUPPORTED.indexOf(code) !== -1)) {
+    window.MYD_I18N.setLanguage(code, {persist:true});
+  }
 }
 document.addEventListener('click',e=>{
   const dd=document.getElementById('langDd');

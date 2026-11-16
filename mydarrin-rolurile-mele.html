@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <!-- Limba (10 oct. 2026): engleza implicită, româna din selector — i18n-loader.js, sincron, primul script -->
 <script src="/i18n-loader.js" data-pagina="mydarrin-rolurile-mele"></script>
+<!-- Pasul 11-I3: profilul contului pornește de aici, înaintea clientului Supabase (lib/profil-cont.js). -->
+<script src="/lib/profil-cont.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rolurile mele | My Darrin</title>
 <meta name="description" content="Rolurile contului tău My Darrin: rolurile active, starea lor și rolurile pe care le poți adăuga pe același cont.">
@@ -29,6 +31,7 @@
   .ant { background: #fff; border-bottom: 1px solid var(--linie); }
   .ant-in { max-width: 960px; margin: 0 auto; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
   .logo { font-weight: 800; font-size: 16px; color: var(--albastru); text-decoration: none; }
+  .ant-dreapta { display: flex; align-items: center; gap: 12px; }
   .ant a.inapoi { font-size: 13px; color: var(--gri); text-decoration: none; font-weight: 600; min-height: 44px; display: inline-flex; align-items: center; }
   main { max-width: 960px; margin: 0 auto; padding: 24px 16px 64px; }
   h1 { font-size: 26px; margin: 0 0 6px; color: var(--albastru); }
@@ -72,7 +75,11 @@
 <header class="ant">
   <div class="ant-in">
     <a class="logo" href="/">My Darrin</a>
-    <a class="inapoi" href="/">← Înapoi la site</a>
+    <div class="ant-dreapta">
+      <!-- Pasul 11-I3: selectorul de limbă (același ca în antetul public, cont-dashboard.js). -->
+      <span id="rm-limba"></span>
+      <a class="inapoi" href="/">← Înapoi la site</a>
+    </div>
   </div>
 </header>
 <main>
@@ -251,6 +258,8 @@
 
   function porneste() {
     if (!window.MYD_PAZA) { arataEroare('Nu am putut încărca rolurile contului. Reîncarcă pagina.'); return; }
+    var zonaLimba = document.getElementById('rm-limba');
+    if (zonaLimba && window.MYD_PAZA.selectorLimbaHtml) { zonaLimba.innerHTML = window.MYD_PAZA.selectorLimbaHtml(); window.MYD_PAZA.leagaSelectorLimba(zonaLimba); }
     // public: true → fără redirect după rol; fără sesiune → autentificare, cu revenire aici.
     window.MYD_PAZA.verifica({ public: true, container: 'myd-cont-antet' }).then(function (r) {
       if (!r) return;

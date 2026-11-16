@@ -433,7 +433,8 @@ const descrie = (rez) => rez.exceptie ? 'excepție ' + rez.exceptie.message : re
   // ── I. Stocarea sesiunii din browser (lib/supabaseClient.js) ─────────
   {
     const sursa = citeste('lib/supabaseClient.js');
-    const cod = sursa.slice(sursa.indexOf('const COOKIE_DOMAIN'), sursa.indexOf("import { createClient }"));
+    // Pasul 11-I3: codul cookie-urilor, până la primul import (supabase-js vine acum din lib/vendor/).
+    const cod = sursa.slice(sursa.indexOf('const COOKIE_DOMAIN'), sursa.indexOf('\nimport ', sursa.indexOf('const COOKIE_DOMAIN')));
     const borcan = new Map();
     const documentSim = {
       get cookie() { return [...borcan].map(([n, v]) => `${n}=${v}`).join('; '); },
@@ -492,22 +493,23 @@ async function testPagina(pw) {
   const baza = `http://localhost:${srv.address().port}`;
   const br = await pw.chromium.launch();
   // Clientul Supabase din browser: lib/supabaseClient.js real (cookie-urile în bucăți),
-  // cu createClient de la esm.sh înlocuit — nicio cerere spre Supabase.
-  const SIM = `export function createClient(url, key, opt) {
+  // cu createClient înlocuit — nicio cerere spre Supabase. Pasul 11-I3: supabase-js
+  // vine din lib/vendor/ (build-ul UMD pune exporturile pe self.supabase).
+  const SIM = `self.supabase = { createClient: function (url, key, opt) {
     const st = opt.auth.storage, cheie = 'sb-' + new URL(url).hostname.split('.')[0] + '-auth-token';
     return { auth: {
       async signOut() { window.__iesiri = (window.__iesiri || 0) + 1; st.removeItem(cheie); return { error: null }; },
       async getSession() { window.__getSession = (window.__getSession || 0) + 1; return { data: { session: window.__sesiuneNoua || null }, error: null }; },
       async signInWithPassword() { return { data: null, error: { message: 'x' } }; },
     } };
-  }`;
+  } };`;
   async function deschide(lang, cale, o = {}) {
     const ctx = await br.newContext();
     await ctx.addInitScript(([l, s]) => {
       try { localStorage.setItem('myd_lang_v1', l); localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, marketing: false, data: new Date().toISOString(), versiune: 2 })); } catch (e) {}
       if (s) window.__sesiuneNoua = { access_token: 'nou', expires_at: Math.floor(Date.now() / 1000) + 3600 };
     }, [lang, !!o.sesiuneNoua]);
-    await ctx.route(/esm\.sh/, (r) => r.fulfill({ status: 200, contentType: 'application/javascript', body: SIM }));
+    await ctx.route(/\/lib\/vendor\/supabase-js-[\d.]+\.umd\.js/, (r) => r.fulfill({ status: 200, contentType: 'application/javascript', body: SIM }));
     await ctx.route(/\.supabase\.co\/|googletagmanager|google-analytics|_vercel\/insights|ipapi\.co/, (r) => r.fulfill({ status: 200, contentType: 'application/javascript', body: '' }));
     if (o.cookies) await ctx.addCookies(o.cookies.map(([name, value]) => ({ name, value, url: baza })));
     const page = await ctx.newPage();

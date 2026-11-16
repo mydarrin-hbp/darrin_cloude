@@ -395,15 +395,23 @@
     return ro.replace(/\{(\w+)\}/g, function (m, k) { return param && param[k] != null ? param[k] : m; });
   }
 
-  function asteaptaAuth() {
+  // Pasul 11-I3: clientul Supabase anunță că e gata (lib/supabaseClient.js:
+  // evenimentul myd:supabase-gata), fără interogare la fiecare 100 ms.
+  function clientGata(ms) {
+    if (window.supabaseClient) return Promise.resolve(true);
     return new Promise(function (ok) {
-      var n = 0;
-      (function verifica() {
-        if (window.MyDarrinAuth && window.supabaseClient) return ok(true);
-        if (++n > 50) return ok(false);
-        setTimeout(verifica, 100);
-      })();
+      var gata = false, ceas;
+      function fin() {
+        if (gata) return;
+        gata = true; clearTimeout(ceas); window.removeEventListener('myd:supabase-gata', fin);
+        ok(!!window.supabaseClient);
+      }
+      ceas = setTimeout(fin, ms);
+      window.addEventListener('myd:supabase-gata', fin);
     });
+  }
+  function asteaptaAuth() {
+    return clientGata(5000).then(function (gata) { return gata && !!window.MyDarrinAuth; });
   }
 
   var promProfil = null;
@@ -414,6 +422,14 @@
       return window.supabaseClient.auth.getSession().then(function (r) {
         var sesiune = r && r.data && r.data.session;
         if (!sesiune) return null;
+        // Pasul 11-I3: cache-ul comun al paginii (lib/supabaseClient.js).
+        if (window.MYD_PROFIL) {
+          return window.MYD_PROFIL.cere(sesiune.access_token, !!reincarca).then(function (r) {
+            if (r.status === 401) return null;
+            if (!r.ok) throw new Error((r.corp && r.corp.error) || ('HTTP ' + r.status));
+            return r.corp;
+          });
+        }
         return fetch('/api/cont/profil', { headers: { Authorization: 'Bearer ' + sesiune.access_token }, cache: 'no-store' })
           .then(function (res) {
             if (res.status === 401) return null;
@@ -1139,7 +1155,8 @@
   var tariCache = null;
   function incarcaTari() {
     if (tariCache) return Promise.resolve(tariCache);
-    return fetch('/api/public/tari-active').then(function (r) { return r.ok ? r.json() : null; })
+    // Pasul 11-I3: o singură cerere /api/public/tari-active pe pagină (promisiune comună cu myd-geo.js, tva-config.js, ui-comun.js, statistici-publice.js).
+    return (window.__mydTariActive = window.__mydTariActive || fetch('/api/public/tari-active').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }))
       .then(function (d) { tariCache = (d && d.tari) || [{ tara_cod: 'RO', tara_nume: 'România' }]; return tariCache; })
       .catch(function () { return [{ tara_cod: 'RO', tara_nume: 'România' }]; });
   }

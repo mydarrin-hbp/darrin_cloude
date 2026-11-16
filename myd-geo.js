@@ -74,10 +74,11 @@ var MYD_GEO = window.MYD_GEO = {
 };
 
 // ── Checkout activ — sursă reală tax_configurations, via /api/public/tari-active ──
+// Pasul 11-I3: o singură cerere /api/public/tari-active pe pagină (promisiune comună cu myd-geo.js, tva-config.js, ui-comun.js, statistici-publice.js).
 function _refreshCheckoutActiv() {
-  fetch('/api/public/tari-active')
-    .then(function(r){ return r.json(); })
+  (window.__mydTariActive = window.__mydTariActive || fetch('/api/public/tari-active').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }))
     .then(function(d){
+      if (!d) throw new Error('tari-active indisponibil');
       var lista = (d && Array.isArray(d.active)) ? d.active : ['RO'];
       MYD_GEO.tariActive = lista;
       var cc = (MYD_GEO.data && MYD_GEO.data.cc) || DEFAULT_CC;

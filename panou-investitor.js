@@ -405,6 +405,24 @@
     nota.textContent = tr('IBAN-ul, adresa de domiciliu și actul de identitate se completează în dosarul de investitor, când decizi să investești.');
     $('pi-datele').parentNode.appendChild(nota);
   }
+  // Pasul 11-I3: runda și starea pitch deck-ului sunt publice — pornesc odată cu
+  // profilul (în paralel), nu după el. O singură cerere pentru fiecare.
+  var publice = null;
+  function cereriPublice() {
+    // Pornite deja din <head> (mydarrin-panou-investitor.html), odată cu profilul.
+    if (!publice && window.MYD_PI_PUBLICE) publice = window.MYD_PI_PUBLICE;
+    if (!publice) {
+      var limba = en() ? 'en' : 'ro';
+      publice = Promise.all([
+        jsonPublic('/api/public/runda-curenta'),
+        jsonPublic('/api/public/pitch-deck?limba=' + limba + '&doar_stare=1'),
+      ]);
+    }
+    return publice;
+  }
+  function incarcareHtml() {
+    return '<p class="pi-incarcare" role="status" aria-live="polite"><span class="pi-spin" aria-hidden="true"></span><span>' + esc(tr('Se încarcă…')) + '</span></p>';
+  }
   function contNou(p) {
     $('pi-app').setAttribute('data-pi-mod', 'cont-nou');
     $('pi-cont-nou').hidden = false;
@@ -412,16 +430,22 @@
     telefonLipsa(p);
     sectiuniGoale();
     dateleMeleContNou(p);
-    var limba = en() ? 'en' : 'ro';
-    return Promise.all([
-      jsonPublic('/api/public/runda-curenta'),
-      jsonPublic('/api/public/pitch-deck?limba=' + limba + '&doar_stare=1'),
-    ]).then(function (r) {
+    // Până sosesc datele reale: starea de încărcare, fără cifre.
+    $('pi-runda-date').innerHTML = incarcareHtml();
+    return cereriPublice().then(function (r) {
       rundaContNou(r[0] && r[0].runda);
       pitchContNou(r[1]);
       $('pi-app').setAttribute('data-pi-gata', '1');
     });
   }
+
+  // Există o sesiune salvată? (cookie-ul scris de lib/supabaseClient.js, în bucăți)
+  function poateAreSesiune() {
+    if (/(^|;\s*)sb-[^=;]*-auth-token/.test(document.cookie || '')) return true;
+    try { for (var i = 0; i < localStorage.length; i++) if (/^sb-.*-auth-token/.test(localStorage.key(i) || '')) return true; } catch (e) {}
+    return false;
+  }
+  function ascundeSchelet() { var s = $('pi-schelet'); if (s) s.hidden = true; }
 
   function porneste() {
     window.MYD_PAZA.verifica({ container: 'myd-cont-antet', public: true, rolNou: 'investor' }).then(function (r) {
@@ -429,6 +453,7 @@
       if (!p) {
         return areSesiune().then(function (are) {
           if (!are) { window.MYD_PAZA.laLogin(); return; }
+          ascundeSchelet();
           $('pi-acces-eroare').hidden = false;
         });
       }
@@ -437,6 +462,7 @@
         location.replace('/mydarrin-investitori.html#cum-functioneaza');
         return;
       }
+      ascundeSchelet();
       if (!areRol) {
         $('pi-app').hidden = false;
         leagaNav();
@@ -452,6 +478,9 @@
     });
   }
 
+  // Pasul 11-I3: cu sesiune, cererile publice pornesc chiar acum (la execuția
+  // scriptului), nu la DOMContentLoaded.
+  if (poateAreSesiune()) cereriPublice();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', porneste);
   else porneste();
 })();

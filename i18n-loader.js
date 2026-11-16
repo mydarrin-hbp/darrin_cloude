@@ -40,6 +40,14 @@
    sosesc după prag, traducerea se aplică atunci.
    În modul RO pagina nu se ascunde și nu se traduce nimic.
 
+   Pasul 11-I3 (16 nov. 2026): dacă dicționarele nu au sosit în
+   ARATA_INDICATOR = 600 ms, peste pagina încă ascunsă apare un indicator de
+   încărcare fără text (pe <html>, nu în <body>), ca pagina să nu pară goală;
+   conținutul apare tot doar tradus. Dicționarele se cer cu modul de cache
+   implicit: serverul le trimite cu „max-age=0, must-revalidate” și ETag
+   (vercel.json), deci la a doua pagină răspunsul e 304, fără conținut. Așa se
+   potrivesc și cu <link rel="preload" as="fetch"> din paginile care îl au.
+
    Evenimentul `myd:lang` se trimite o singură dată, după DOMContentLoaded
    și după traducere (ca înainte): ascultătorii (catalog, marketplace-
    materiale, reguli-platforma.js, seo-meta.js) sunt înregistrați de
@@ -67,6 +75,8 @@
   var ATRIBUTE = ['placeholder', 'title', 'aria-label', 'alt'];
   // Prag de siguranță: pagina nu rămâne ascunsă mai mult (vezi antetul).
   var MAX_ASTEPTARE = 3000;
+  // Pasul 11-I3: după acest timp, indicatorul de încărcare (fără text) peste pagina ascunsă.
+  var ARATA_INDICATOR = 600;
 
   var root = document.documentElement;
   var intern = INTERNE.test(location.pathname) || root.hasAttribute('data-i18n-off');
@@ -295,11 +305,21 @@
   }
 
   // ── Limba activă și schimbarea ei ─────────────────────────────────────
+  // Pasul 11-I3: pentru un cont autentificat, limba aleasă (ro / en) se
+  // salvează și pe cont (profiles.limba, lib/profil-cont.js), cu keepalive;
+  // reîncărcarea așteaptă doar pornirea cererii (cel mult 800 ms).
   function setLanguage(l, opts) {
     opts = opts || {};
     l = normalizeaza(l);
     if (opts.persist !== false) salveaza(l);
-    if (l !== limba) location.reload();
+    if (l === limba) return;
+    var reincarca = function () { location.reload(); };
+    var p = window.MYD_PROFIL;
+    if (opts.persist === false || !p || typeof p.salveazaLimba !== 'function') { reincarca(); return; }
+    var gata = false;
+    var o = function () { if (!gata) { gata = true; reincarca(); } };
+    setTimeout(o, 800);
+    p.salveazaLimba(l).then(o, o);
   }
   function _actualizeazaSelectoare() {
     var steaguri = { ro: ['🇷🇴', 'Română', 'RO'], en: ['🇬🇧', 'English', 'EN'], de: ['🇩🇪', 'Deutsch', 'DE'], fr: ['🇫🇷', 'Français', 'FR'], tr: ['🇹🇷', 'Türkçe', 'TR'], bg: ['🇧🇬', 'Български', 'BG'], el: ['🇬🇷', 'Ελληνικά', 'EL'] };
@@ -308,6 +328,8 @@
     if (s && f) f.textContent = s[0];
     if (s && lb) lb.textContent = s[1];
     Array.prototype.forEach.call(document.querySelectorAll('.lang-opt'), function (o) {
+      // Pasul 11-I3: selectorul paginilor de cont (data-limba) își marchează singur limba.
+      if (o.hasAttribute('data-limba')) return;
       o.classList.toggle('active', (o.getAttribute('onclick') || '').indexOf("setLang('" + limba + "'") !== -1);
     });
     var sel = document.getElementById('lang-switcher') || document.getElementById('sb-limba');
@@ -321,13 +343,14 @@
   var pagina = (scriptCurent && scriptCurent.getAttribute('data-pagina')) ||
     (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '') || 'index';
   function json(url) {
-    return fetch(url, { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+    return fetch(url).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
   }
   var ascuns = false;
   function arata() {
     if (!ascuns) return;
     ascuns = false;
     root.classList.remove('myd-i18n-pending');
+    root.classList.remove('myd-i18n-lent');
   }
 
   window.MYD_I18N = {
@@ -395,10 +418,14 @@
     // opacity pe <body>, nu visibility pe <html>: unele stiluri ale paginilor pun
     // visibility:visible pe elemente, care ar fi scăpat de ascundere (româna se
     // vedea o clipă); opacitatea părintelui nu poate fi anulată de copii.
-    st.textContent = 'html.myd-i18n-pending body{opacity:0!important}';
+    st.textContent = 'html.myd-i18n-pending body{opacity:0!important}' +
+      // Pasul 11-I3: indicatorul de încărcare, pe <html> (body e ascuns), fără text.
+      'html.myd-i18n-lent::after{content:"";position:fixed;top:50%;left:50%;width:28px;height:28px;margin:-14px 0 0 -14px;box-sizing:border-box;border-radius:50%;border:3px solid #E2E8F0;border-top-color:#FF8C00;animation:myd-i18n-rot .8s linear infinite;z-index:2147483647}' +
+      '@keyframes myd-i18n-rot{to{transform:rotate(360deg)}}@media (prefers-reduced-motion:reduce){html.myd-i18n-lent::after{animation:none}}';
     (document.head || root).appendChild(st);
     root.classList.add('myd-i18n-pending');
     ascuns = true;
+    setTimeout(function () { if (ascuns) root.classList.add('myd-i18n-lent'); }, ARATA_INDICATOR);
     setTimeout(function () {
       if (aplicat) return;
       if (!esuat) try { console.warn('[MYD i18n] Dicționarele (' + limba + ') nu au sosit în ' + MAX_ASTEPTARE + ' ms; pagina se afișează fără traducere.'); } catch (e) {}
