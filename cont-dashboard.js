@@ -214,6 +214,8 @@
       '.myd-limba .lang-chip svg{width:12px;height:12px;opacity:.6}' +
       '.myd-limba .lang-panel{display:none;position:absolute;top:calc(100% + 8px);right:0;background:#fff;border-radius:12px;border:1px solid #D5DFE8;box-shadow:0 8px 30px rgba(26,38,64,.12);min-width:140px;overflow:hidden;z-index:100}' +
       '.myd-limba.open .lang-panel{display:block}' +
+      // În antetul contului selectorul poate ajunge la marginea stângă (telefon): lista se deschide spre dreapta.
+      '.myd-id .myd-limba .lang-panel{left:0;right:auto}' +
       '.myd-limba .lang-opt{display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:13px;font-weight:500;color:#2D2D2D;cursor:pointer;transition:background .15s;min-height:44px;box-sizing:border-box}' +
       '.myd-limba .lang-opt:hover,.myd-limba .lang-opt:focus-visible{background:#EBF4FB;outline:none}' +
       '.myd-limba .lang-opt.active{color:#003366;font-weight:700}';

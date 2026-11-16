@@ -388,9 +388,15 @@ async function teste(browser, baza) {
   await deschide(browser, baza, { lang: 'en', cuSesiune: true, profil: 'investitor_nou' }, '/mydarrin-panou-investitor',
     (p) => p.waitForFunction(() => window.__mv && window.__mv.runda != null, null, { timeout: 15000 }));
   for (const lang of ['en', 'ro']) {
-    const m = await deschide(browser, baza, { lang, cuSesiune: true, profil: 'investitor_nou' }, '/mydarrin-panou-investitor',
-      (p) => p.waitForFunction(() => window.__mv && window.__mv.runda != null, null, { timeout: 15000 }));
-    verifica(m.runda != null && m.runda - m.html <= 800, `A ${lang}: runda la ${m.runda - m.html} ms după HTML (prag 800)`);
+    // Mediana a trei încărcări (o singură măsurătoare variază cu încărcarea mașinii).
+    const rulari = [];
+    for (let i = 0; i < 3; i++) {
+      rulari.push(await deschide(browser, baza, { lang, cuSesiune: true, profil: 'investitor_nou' }, '/mydarrin-panou-investitor',
+        (p) => p.waitForFunction(() => window.__mv && window.__mv.runda != null, null, { timeout: 15000 })));
+    }
+    const dupaHtml = rulari.map((x) => (x.runda == null ? Infinity : x.runda - x.html)).sort((x, y) => x - y);
+    const m = rulari[0];
+    verifica(dupaHtml[1] <= 800, `A ${lang}: runda la ${dupaHtml[1]} ms după HTML, mediana din ${dupaHtml.join(' / ')} (prag 800)`);
     const api = m.cereri.filter((x) => /^\/api\//.test(x.p)).map((x) => x.m + ' ' + x.p);
     const duble = api.filter((x, i) => api.indexOf(x) !== i);
     verifica(!duble.length, `A ${lang}: cereri API făcute de două ori la deschiderea panoului: ${[...new Set(duble)].join(', ')}`);
@@ -485,6 +491,8 @@ async function teste(browser, baza) {
       verifica(!iese, `F ${nume} ${latime}: pagina nu iese din ecran`);
       if (latime === 390) {
         await c.page.click(sel + ' .lang-chip');
+        const lista = await c.page.$eval(sel + ' .lang-panel', (e) => { const r = e.getBoundingClientRect(); return { st: r.left, dr: r.right, w: innerWidth }; });
+        verifica(lista.st >= 0 && lista.dr <= lista.w, `F ${nume} ${latime}: lista deschisă încape în ecran (${JSON.stringify(lista)})`);
         await c.page.click(sel + ' .lang-opt[data-limba="ro"]');
         await c.page.waitForFunction(() => document.documentElement.lang === 'ro', null, { timeout: 10000 }).catch(() => {});
         verifica(await c.page.evaluate(() => document.documentElement.lang) === 'ro', `F ${nume}: după „Română”, pagina e în română`);
