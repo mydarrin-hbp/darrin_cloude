@@ -392,6 +392,58 @@ const PAGINI_STRICTE = [
 // Pasul 9: pagina adminilor de catalog — admin sau superadmin (vezi mai jos).
 const PAGINI_ADMIN_CATALOG = ['/mydarrin-admin-catalog', '/mydarrin-admin-catalog.html'];
 
+// ── Pasul 11-A4 (15 nov. 2026): domeniul admin. servește doar backoffice-ul ──
+// Pe HOST_ADMIN se deschid doar paginile din PAGINI_PERMISE_ADMIN (lista unică),
+// plus /api/* și fișierele statice. Orice altă pagină HTML (fără extensie sau
+// .html) → 307 spre același drum și același query pe DOMENIU_PUBLIC. 307, nu
+// 301: nu rămâne în cache-ul browserului dacă lista se schimbă. Regula se
+// aplică doar acestui host — previzualizările *.vercel.app și localhost nu
+// sunt atinse. Nu face niciun apel spre Supabase.
+const HOST_ADMIN = 'admin.mydarrin.homebestpal.com';
+const DOMENIU_PUBLIC = 'https://mydarrin.homebestpal.com';
+// Paginile de acces și cont folosite efectiv de paginile interne:
+//  - /acces-temporar: login-ul (respinge() trimite aici; e exclus și din matcher);
+//  - /acord-confidentialitate: pasul de după login pentru accesele temporare
+//    (exclus din matcher, listat aici pentru claritate);
+//  - /reset-password: account-system.js trimite linkul de resetare spre
+//    window.location.origin + '/reset-password.html' (deci și spre admin.);
+//  - /pitch-deck-prezentator: fereastra prezentatorului, deschisă din
+//    superadmin la „▶ Prezintă” (pitch-deck-prezentare.js, același host).
+const PAGINI_ACCES_ADMIN = [
+  '/acces-temporar', '/acces-temporar.html',
+  '/acord-confidentialitate', '/acord-confidentialitate.html',
+  '/reset-password', '/reset-password.html',
+  '/pitch-deck-prezentator', '/pitch-deck-prezentator.html',
+];
+const PAGINI_PERMISE_ADMIN = new Set(['/', ...PAGINI_STRICTE, ...PAGINI_ADMIN_CATALOG, ...PAGINI_ACCES_ADMIN]);
+// Ca vercel.json („/” pe admin. → superadmin); făcut și aici, ca rezultatul să
+// nu depindă de ordinea în care Vercel aplică middleware-ul și redirecturile.
+const ACASA_ADMIN = '/mydarrin-superadmin';
+
+function esteHostAdmin(request, url) {
+  const brut = request.headers.get('host') || url.host || '';
+  return brut.toLowerCase().replace(/:\d+$/, '').replace(/\.$/, '') === HOST_ADMIN;
+}
+
+// Pagină HTML = ultimul segment fără extensie sau cu .html.
+function esteCerereHtml(pathname) {
+  const ultim = pathname.split('/').pop();
+  return !ultim.includes('.') || /\.html?$/i.test(ultim);
+}
+
+// Răspunsul pentru hostul admin.: null = cererea continuă normal (bariera de
+// mai jos rămâne neschimbată); altfel un redirect 307.
+function domeniuAdmin(request, url) {
+  if (!esteHostAdmin(request, url)) return null;
+  const pathname = url.pathname;
+  if (pathname === '/') return Response.redirect(new URL(ACASA_ADMIN + url.search, url).toString(), 307);
+  if (pathname === '/api' || pathname.startsWith('/api/')) return null;
+  if (!esteCerereHtml(pathname)) return null;
+  const cale = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
+  if (PAGINI_PERMISE_ADMIN.has(cale)) return null;
+  return Response.redirect(DOMENIU_PUBLIC + pathname + url.search, 307);
+}
+
 // FIX (27 august 2026, Etapa LANSARE, Faza A) — cerere explicită a
 // fondatorului: prima ridicare, scopită, a barierei globale de pre-lansare
 // (activă din 23 iulie 2026, vezi comentariul de sus). Provizoriu — vezi
@@ -542,6 +594,9 @@ export default async function middleware(request) {
   let zona = 'stricta';
   try {
     const url = new URL(request.url);
+    // Pasul 11-A4: întâi domeniul admin. — înaintea oricărui apel spre Supabase.
+    const redirectAdmin = domeniuAdmin(request, url);
+    if (redirectAdmin) return redirectAdmin;
     const pathname = url.pathname;
     const publicRoute = ruteazaPublic(pathname);
     zona = PAGINI_STRICTE.includes(pathname) ? 'stricta'

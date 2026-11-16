@@ -318,7 +318,8 @@ const descrie = (rez) => rez.exceptie ? 'excepție ' + rez.exceptie.message : re
 
   // Bariera generală rămâne dezactivată: o pagină neenumerată trece fără Supabase.
   resetSim({ getUser: 'arunca' });
-  rez = await ruleaza(mw, cerere('/mydarrin-dashboard-client', `${PREFIX}.0=%E0%A4%A`));
+  // Pasul 11-A4: pe admin. pagina publică e trimisă pe domeniul public, deci verificarea se face acolo.
+  rez = await ruleaza(mw, cerere('/mydarrin-dashboard-client', `${PREFIX}.0=%E0%A4%A`, { host: 'mydarrin.homebestpal.com' }));
   verifica(eNext(rez) && apeluri.getUser === 0, 'C10 bariera generală dezactivată, ca azi → next()');
   const src = citeste('middleware.js');
   verifica(/const BARIERA_GENERALA_ACTIVA = false;/.test(src), 'C11 BARIERA_GENERALA_ACTIVA rămâne false');
