@@ -337,6 +337,9 @@ async function capturi(browser, baza, dosar) {
     for (const latime of [390, 1366]) {
       const c = await context(browser, baza, { cuSesiune: true, profil, lang: 'en', viewport: { width: latime, height: latime < 800 ? 844 : 900 } });
       await c.page.goto(baza + cale, { waitUntil: 'load', timeout: 60000 });
+      // Doar pentru capturi: pe unele mașini Windows, local('Helvetica Neue') din
+      // @font-face 'Helvetica World' se rezolvă la un font fără glife (text în casete).
+      await c.page.addStyleTag({ content: "@font-face{font-family:'Helvetica World';src:local('Arial')}" }).catch(() => {});
       await c.page.waitForSelector(sel, { timeout: 8000 }).catch(() => {});
       await asteapta(800);
       await c.page.screenshot({ path: path.join(dosar, `${nume}-${latime}.png`) });
