@@ -57,15 +57,24 @@
   function ss(k, v) { try { if (v === undefined) return sessionStorage.getItem(k); if (v === null) sessionStorage.removeItem(k); else sessionStorage.setItem(k, v); } catch (e) { return null; } return null; }
   function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } return null; }
 
-  function asteaptaAuth() {
+  // Pasul 11-I3: clientul Supabase anunță că e gata (lib/supabaseClient.js:
+  // evenimentul myd:supabase-gata), fără interogare la fiecare 100 ms.
+  function clientGata(ms) {
+    if (window.supabaseClient) return Promise.resolve(true);
     return new Promise(function (ok) {
-      var n = 0;
-      (function verifica() {
-        if (window.MyDarrinAuth && window.supabaseClient) return ok(true);
-        if (++n > 60) return ok(false);
-        setTimeout(verifica, 100);
-      })();
+      var gata = false, ceas;
+      function fin() {
+        if (gata) return;
+        gata = true; clearTimeout(ceas); window.removeEventListener('myd:supabase-gata', fin);
+        ok(!!window.supabaseClient);
+      }
+      ceas = setTimeout(fin, ms);
+      window.addEventListener('myd:supabase-gata', fin);
     });
+  }
+  // account-system.js (MyDarrinAuth) e un script sincron, încărcat înaintea acestuia.
+  function asteaptaAuth() {
+    return clientGata(6000).then(function (gata) { return gata && !!window.MyDarrinAuth; });
   }
 
   function sesiune() {
@@ -76,9 +85,18 @@
     return sesiune().then(function (s) { return s ? { Authorization: 'Bearer ' + s.access_token } : {}; });
   }
 
-  function cereProfil() {
+  // Pasul 11-I3: prin cache-ul comun al paginii (window.MYD_PROFIL, din
+  // lib/supabaseClient.js) — o singură cerere, oricâte scripturi o cer.
+  // reincarca = true după o salvare (benzile se reîmprospătează).
+  function cereProfil(reincarca) {
     return antetAuth().then(function (h) {
       if (!h.Authorization) return { status: 401 };
+      if (window.MYD_PROFIL) {
+        return window.MYD_PROFIL.cere(h.Authorization.slice(7), !!reincarca).then(function (r) {
+          var j = r.corp || {};
+          return { status: r.status, profil: r.ok ? j : null, eroare: r.ok ? null : j };
+        });
+      }
       return fetch('/api/cont/profil', { headers: h, cache: 'no-store' }).then(function (res) {
         return res.json().catch(function () { return {}; }).then(function (j) { return { status: res.status, profil: res.ok ? j : null, eroare: res.ok ? null : j }; });
       });
@@ -173,6 +191,76 @@
   function numeCont(p) { return (p.partener && p.partener.nume_firma) || p.nume || String(p.email || '').split('@')[0]; }
 
   // ── Antetul de identitate ──────────────────────────────────────────
+  // ── Pasul 11-I3: selectorul de limbă pe paginile de cont ─────────────
+  // Același selector ca în antetul public (index.html: .lang-dd / .lang-chip /
+  // .lang-panel / .lang-opt, aceleași stiluri), cu limbile platformei (RO + EN).
+  // Alegerea o face i18n-loader.js (MYD_I18N.setLanguage): myd_lang_v1 și,
+  // pentru contul autentificat, profiles.limba (lib/profil-cont.js); pagina se
+  // reîncarcă imediat în limba aleasă.
+  var LIMBI_CONT = [['ro', '🇷🇴', 'Română'], ['en', '🇬🇧', 'English']];
+  function limbaPagina() { return (window.MYD_I18N && window.MYD_I18N.lang) === 'ro' ? 'ro' : 'en'; }
+  function stilLimba() {
+    if (document.getElementById('myd-limba-stil')) return;
+    var st = document.createElement('style');
+    st.id = 'myd-limba-stil';
+    st.textContent =
+      '.myd-limba{position:relative}' +
+      '.myd-limba .lang-chip{display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;transition:opacity .15s;background:transparent;border:0;padding:8px 6px;min-height:44px;color:inherit;font-family:inherit;font-weight:500;white-space:nowrap}' +
+      '.myd-limba .myd-limba-cod{display:none}' +
+      // Antetul activării, pe telefon: codul limbii în loc de nume, ca antetul să încapă.
+      '@media (max-width:480px){#myd-activare-pagina .myd-limba .myd-limba-nume{display:none}#myd-activare-pagina .myd-limba .myd-limba-cod{display:inline}#myd-activare-pagina .myd-limba .lang-chip{padding:8px 4px}}' +
+      '.myd-limba .lang-chip:hover{opacity:.8}' +
+      '.myd-limba .lang-chip:focus-visible{outline:3px solid #0E9E99;outline-offset:2px;border-radius:8px}' +
+      '.myd-limba .lang-chip svg{width:12px;height:12px;opacity:.6}' +
+      '.myd-limba .lang-panel{display:none;position:absolute;top:calc(100% + 8px);right:0;background:#fff;border-radius:12px;border:1px solid #D5DFE8;box-shadow:0 8px 30px rgba(26,38,64,.12);min-width:140px;overflow:hidden;z-index:100}' +
+      '.myd-limba.open .lang-panel{display:block}' +
+      '.myd-limba .lang-opt{display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:13px;font-weight:500;color:#2D2D2D;cursor:pointer;transition:background .15s;min-height:44px;box-sizing:border-box}' +
+      '.myd-limba .lang-opt:hover,.myd-limba .lang-opt:focus-visible{background:#EBF4FB;outline:none}' +
+      '.myd-limba .lang-opt.active{color:#003366;font-weight:700}';
+    (document.head || document.documentElement).appendChild(st);
+  }
+  function selectorLimbaHtml() {
+    stilLimba();
+    var l = limbaPagina();
+    var c = LIMBI_CONT.filter(function (x) { return x[0] === l; })[0];
+    return '<div class="lang-dd myd-limba" data-myd-limba>' +
+      '<button type="button" class="lang-chip" aria-haspopup="true" aria-expanded="false" aria-label="' + esc(tr('Limba')) + ': ' + esc(c[2]) + '">' +
+        '<span aria-hidden="true">' + c[1] + '</span><span class="myd-limba-nume" translate="no">' + esc(c[2]) + '</span><span class="myd-limba-cod" translate="no" aria-hidden="true">' + c[0].toUpperCase() + '</span>' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>' +
+      '</button>' +
+      '<div class="lang-panel" role="menu">' + LIMBI_CONT.map(function (x) {
+        return '<div class="lang-opt' + (x[0] === l ? ' active' : '') + '" role="menuitemradio" aria-checked="' + (x[0] === l) + '" tabindex="0" data-limba="' + x[0] + '" lang="' + x[0] + '" translate="no"><span aria-hidden="true">' + x[1] + '</span> ' + x[2] + '</div>';
+      }).join('') + '</div></div>';
+  }
+  function alegeLimba(cod) {
+    if (!cod || cod === limbaPagina()) return false;
+    if (window.MYD_I18N && typeof window.MYD_I18N.setLanguage === 'function') window.MYD_I18N.setLanguage(cod, { persist: true });
+    return true;
+  }
+  var inchidereLimbaLegata = false;
+  function leagaSelectorLimba(rad) {
+    Array.prototype.forEach.call((rad || document).querySelectorAll('[data-myd-limba]'), function (dd) {
+      if (dd.__mydLimba) return;
+      dd.__mydLimba = true;
+      var btn = dd.querySelector('.lang-chip');
+      var deschide = function (da) { dd.classList.toggle('open', da); btn.setAttribute('aria-expanded', String(da)); };
+      btn.addEventListener('click', function (e) { e.stopPropagation(); deschide(!dd.classList.contains('open')); });
+      Array.prototype.forEach.call(dd.querySelectorAll('.lang-opt'), function (o) {
+        var alege = function (e) { e.stopPropagation(); deschide(false); if (!alegeLimba(o.getAttribute('data-limba'))) btn.focus(); };
+        o.addEventListener('click', alege);
+        o.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); alege(e); } });
+      });
+      dd.addEventListener('keydown', function (e) { if (e.key === 'Escape' && dd.classList.contains('open')) { deschide(false); btn.focus(); } });
+    });
+    if (inchidereLimbaLegata) return;
+    inchidereLimbaLegata = true;
+    document.addEventListener('click', function (e) {
+      Array.prototype.forEach.call(document.querySelectorAll('[data-myd-limba].open'), function (dd) {
+        if (!dd.contains(e.target)) { dd.classList.remove('open'); var b = dd.querySelector('.lang-chip'); if (b) b.setAttribute('aria-expanded', 'false'); }
+      });
+    });
+  }
+
   function antet(container, p, rol, tema) {
     var d = dr().definitie(rol) || dr().definitie('client');
     var nume = numeCont(p);
@@ -186,9 +274,11 @@
       '<span class="myd-id-insigna" id="myd-id-insigna" style="background:' + esc(d.culoare) + '">' + esc(tr(d.insigna)) + '</span>' +
       (p.furnizor_propriu ? '<span class="myd-id-insigna" id="myd-id-furnizor-propriu" style="background:#0E7C66">' + esc(tr('Furnizor propriu al platformei')) + '</span>' : '') +
       comutatorRol(p, rol) +
+      selectorLimbaHtml() +
       '<a class="myd-id-roluri" id="myd-id-roluri" href="' + esc(dr().PAGINA_ROLURI) + '">' + esc(tr('Rolurile mele')) + '</a>' +
       '<button type="button" class="myd-id-iesi" id="myd-id-iesi">' + esc(tr('Ieși')) + '</button>';
     container.appendChild(div);
+    leagaSelectorLimba(div);
     div.querySelector('#myd-id-iesi').onclick = function () { window.MyDarrinAuth.performLogout(); };
     var sel = div.querySelector('#myd-id-comuta');
     if (sel) sel.onchange = function () {
@@ -414,7 +504,7 @@
 
   function reincarcaBenzi() {
     var c = document.getElementById(ultimaOptiune.container || 'myd-cont-antet');
-    return cereProfil().then(function (r) {
+    return cereProfil(true).then(function (r) {
       if (!r.profil || !c) return;
       window.__MYD_PROFIL = r.profil;
       Array.prototype.forEach.call(c.querySelectorAll('.myd-banda'), function (b) { b.remove(); });
@@ -441,9 +531,20 @@
   function verifica(optiuni) {
     var opt = optiuni || {};
     ultimaOptiune = opt;
-    return asteaptaAuth().then(function (gata) {
-      if (!gata) { if (opt.public) return { status: 0 }; laLogin(); return null; }
-      return cereProfil();
+    // Pasul 11-I3: profilul cerut la încărcare cu tokenul din cookie
+    // (lib/profil-cont.js) — fără să așteptăm clientul Supabase. Dacă nu există
+    // sau serverul nu-l acceptă (ex. 401), drumul obișnuit: clientul, apoi profilul.
+    var devreme = window.MYD_PROFIL && typeof window.MYD_PROFIL.devreme === 'function' ? window.MYD_PROFIL.devreme() : null;
+    var dinCookie = devreme ? devreme.then(function (r) {
+      if (!r || !r.ok) return null;
+      return { status: r.status, profil: r.corp || {}, eroare: null };
+    }).catch(function () { return null; }) : Promise.resolve(null);
+    return dinCookie.then(function (rd) {
+      if (rd) return rd;
+      return asteaptaAuth().then(function (gata) {
+        if (!gata) { if (opt.public) return { status: 0 }; laLogin(); return null; }
+        return cereProfil();
+      });
     }).then(function (r) {
       if (!r) return false;
       if (r.status === 0) return { profil: null };
@@ -539,5 +640,7 @@
     });
   }
 
-  window.MYD_PAZA = { verifica: verifica, laLogin: laLogin, reincarcaBenzi: reincarcaBenzi, bandaProduse: bandaProduse, fereastraContBancar: fereastraContBancar, fereastraContract: fereastraContract, listaActivare: listaActivare, deschideActivare: deschideFlux };
+  window.MYD_PAZA = { verifica: verifica, laLogin: laLogin, reincarcaBenzi: reincarcaBenzi, bandaProduse: bandaProduse, fereastraContBancar: fereastraContBancar, fereastraContract: fereastraContract, listaActivare: listaActivare, deschideActivare: deschideFlux,
+    // Pasul 11-I3: selectorul de limbă, refolosit de antetul activării (activare-pasi.js).
+    selectorLimbaHtml: selectorLimbaHtml, leagaSelectorLimba: leagaSelectorLimba };
 })();

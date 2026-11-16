@@ -217,15 +217,21 @@
   }
   // doarPozitia: doar pasul curent (după schimbarea pasului), fără să citească
   // formularul, care încă nu are ciorna aplicată.
-  function salveazaCiorna(doarPozitia) {
-    clearTimeout(st.ceas);
-    if (!st.ciornaActiva) return Promise.resolve();
+  // Corpul ciornei de trimis (pasul curent + câmpurile reținute).
+  function corpCiorna(doarPozitia) {
     var corp = $('mya-corp');
     var cheie = PASI[st.pas - 1];
     if (corp && !doarPozitia && st.formularGata) st.ciorna.date[cheie] = valoriPas(corp);
     st.ciorna.pas_curent = st.pas;
-    return cerere('/api/partener/activare-ciorna', { method: 'PUT', body: { pas_curent: st.pas, date: st.ciorna.date } })
-      .then(function (j) { st.salvatLa = j.actualizat_la || new Date().toISOString(); arataSalvat(); })
+    return { pas_curent: st.pas, date: st.ciorna.date };
+  }
+  function salveazaCiorna(doarPozitia) {
+    clearTimeout(st.ceas);
+    if (!st.ciornaActiva) return Promise.resolve();
+    var corpTrimis = corpCiorna(doarPozitia);
+    var text = JSON.stringify(corpTrimis);
+    return cerere('/api/partener/activare-ciorna', { method: 'PUT', body: corpTrimis })
+      .then(function (j) { st.ultimaTrimisa = text; st.salvatLa = j.actualizat_la || new Date().toISOString(); arataSalvat(); })
       .catch(function (e) {
         // Fără tabelul ciornei (migrarea neaplicată) sau fără rol: salvarea automată se oprește.
         if (e && (e.status === 503 || e.status === 403 || e.cod === 'CIORNA_INDISPONIBILA')) st.ciornaActiva = false;
@@ -605,6 +611,8 @@
     return '<header class="mya-antet"><img class="mya-logo" src="' + LOGO + '" alt="My Darrin · Home Best Pal" width="120" height="40">' +
       '<div class="mya-cont"><div class="mya-cont-txt"><b>' + esc(nume) + '</b> <span>· ' + esc(tr(d ? d.titlu : '')) + '</span></div>' +
       '<div class="mya-actiuni">' +
+        // Pasul 11-I3: selectorul de limbă (același ca în antetul public, cont-dashboard.js).
+        (window.MYD_PAZA && window.MYD_PAZA.selectorLimbaHtml ? window.MYD_PAZA.selectorLimbaHtml() : '') +
         '<a class="mya-site" id="mya-site" href="/">' + esc(tr('Înapoi la site')) + '</a>' +
         '<button type="button" class="mya-deconectare" id="mya-deconectare">' + esc(tr('Deconectare')) + '</button>' +
         '<button type="button" class="mya-meniu-btn" id="mya-meniu-btn" aria-haspopup="true" aria-expanded="false" aria-controls="mya-meniu" aria-label="' + esc(tr('Mai multe')) + '">⋯</button>' +
@@ -612,12 +620,31 @@
       '</div></div></header>';
   }
 
-  // „Înapoi la site”: ciorna se salvează (cel mult 3 s), apoi pagina principală.
-  // Sesiunea rămâne: la revenire, dashboard-ul deschide activarea la pasul rămas.
+  // „Înapoi la site”: sesiunea rămâne; la revenire, dashboard-ul deschide
+  // activarea la pasul rămas.
+  // Pasul 11-I3: nu mai așteptăm salvarea (înainte: până la 3 s, și când nimic
+  // nu se schimbase). Ciorna neschimbată de la ultima salvare → plecăm imediat.
+  // Altfel ciorna pleacă cu keepalive (cererea se termină și după ce se
+  // deschide pagina principală) și plecăm imediat. Peste limita keepalive
+  // (64 KB) rămâne vechiul drum: salvarea, cel mult 3 s, apoi plecarea.
+  var LIMITA_KEEPALIVE = 60000;
   function inapoiLaSite(e) {
     if (e) e.preventDefault();
     var pleaca = function () { window.location.href = '/'; };
-    Promise.race([salveazaCiorna(false), new Promise(function (ok) { setTimeout(ok, 3000); })]).then(pleaca, pleaca);
+    clearTimeout(st.ceas);
+    if (!st.ciornaActiva) { pleaca(); return; }
+    var corpTrimis = corpCiorna(false);
+    var text = JSON.stringify(corpTrimis);
+    if (text === st.ultimaTrimisa) { pleaca(); return; }
+    if (text.length > LIMITA_KEEPALIVE) {
+      Promise.race([salveazaCiorna(false), new Promise(function (ok) { setTimeout(ok, 3000); })]).then(pleaca, pleaca);
+      return;
+    }
+    antetAuth().then(function (h) {
+      try {
+        fetch('/api/partener/activare-ciorna', { method: 'PUT', keepalive: true, headers: Object.assign({ 'Content-Type': 'application/json' }, h), body: text }).catch(function () {});
+      } catch (err) { /* fără keepalive: ciorna rămâne cea salvată automat */ }
+    }).catch(function () {}).then(pleaca, pleaca);
   }
   // „Deconectare”: doar după confirmare (MDFeedback.confirma), cu ciorna salvată.
   function deconectare() {
@@ -633,6 +660,7 @@
     });
   }
   function leagaAntet() {
+    if (window.MYD_PAZA && window.MYD_PAZA.leagaSelectorLimba) window.MYD_PAZA.leagaSelectorLimba($('myd-activare-pagina'));
     $('mya-site').onclick = inapoiLaSite;
     $('mya-deconectare').onclick = deconectare;
     $('mya-deconectare-meniu').onclick = deconectare;
@@ -788,6 +816,8 @@
     return cerere('/api/partener/activare-ciorna').then(function (j) {
       if (j && j.ciorna) st.ciorna = { pas_curent: j.ciorna.pas_curent, date: j.ciorna.date || {} };
       if (j && j.ciorna) st.salvatLa = j.ciorna.actualizat_la;
+      // Ce e deja pe server: „Înapoi la site” nu mai trimite o ciornă neschimbată.
+      if (j && j.ciorna) st.ultimaTrimisa = JSON.stringify({ pas_curent: st.ciorna.pas_curent, date: st.ciorna.date });
     }).catch(function (e) { if (e && (e.status === 503 || e.cod === 'CIORNA_INDISPONIBILA')) st.ciornaActiva = false; }).then(function () {
       var ceruta = cum && cum.pas;
       var dinCiorna = st.ciorna && st.ciorna.pas_curent;

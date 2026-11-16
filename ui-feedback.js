@@ -18,8 +18,12 @@
      if (await MDFeedback.confirma('Ștergi…?', { textOk: 'Șterge', periculos: true })) { … }
      MDFeedback.aplicaErori(formular, [{ camp: 'suma_tinta', mesaj: { ro, en } }]);
    Opțiuni salveaza: { textSalveaza: 'Se verifică…', textOk: '✓ Verificat', ok, eroare,
-     form, toast: true, timeout: 15000 }. Fără zonă de mesaj, rezultatul apare
-   ca toast. Peste 15 s fără răspuns sau fără rețea: eroare cu „Reîncearcă”.
+     form, toast: true, timeout: 15000, durataOk: 1800 }. Fără zonă de mesaj,
+   rezultatul apare ca toast. Peste 15 s fără răspuns sau fără rețea: eroare
+   cu „Reîncearcă”. durataOk (pasul 11-I3): cât rămâne butonul verde „✓ Salvat”
+   (și blocat, fără clic dublu) după răspunsul serverului; implicit 1800 ms.
+   Un flux cu pași (ruta KYC) îl scurtează, ca butonul pasului următor să fie
+   gata când apare pasul.
 
    Forma comună a erorilor de la server (lib/raspuns-eroare.js):
      { ok:false, cod, mesaj:{ro,en}, campuri:[{camp, mesaj:{ro,en}}] }
@@ -458,7 +462,7 @@
         buton.removeAttribute('aria-busy');
         buton.textContent = tr(optiuni.textOk || '✓ Salvat');
         buton.style.background = VERDE; buton.style.color = '#fff';
-        setTimeout(function () { buton.disabled = false; buton.__mdOcupat = false; restaureaza(); }, 1800);
+        setTimeout(function () { buton.disabled = false; buton.__mdOcupat = false; restaureaza(); }, optiuni.durataOk != null ? optiuni.durataOk : 1800);
       }
       mesaj(zona, 'ok', textOk);
       if (cuToast) toast('succes', textOk, { evita: buton });

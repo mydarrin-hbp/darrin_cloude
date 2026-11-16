@@ -276,8 +276,9 @@ async function handler(req, res, user) {
   res.setHeader('Cache-Control', 'private, no-store');
   try {
     if (req.method === 'GET') {
-      const kyc = await K.citesteKyc(user.id);
-      return res.status(200).json({ ok: true, kyc: pentruProprietar(kyc), lipsa: K.cerinteLipsa(kyc), cont: await datePrecompletare(user) });
+      // Pasul 11-I3: cele două citiri sunt independente — în paralel.
+      const [kyc, cont] = await Promise.all([K.citesteKyc(user.id), datePrecompletare(user)]);
+      return res.status(200).json({ ok: true, kyc: pentruProprietar(kyc), lipsa: K.cerinteLipsa(kyc), cont });
     }
     if (req.method !== 'POST') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 

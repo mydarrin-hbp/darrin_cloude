@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "regions": ["fra1"],
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
@@ -214,6 +215,24 @@
         {
           "key": "Cache-Control",
           "value": "no-store, no-cache, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/lib/vendor/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/i18n/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
         }
       ]
     }

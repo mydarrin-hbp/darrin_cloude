@@ -145,6 +145,21 @@
       })();
     });
   }
+  // Pasul 11-I3: clientul Supabase anunță că e gata (lib/supabaseClient.js:
+  // evenimentul myd:supabase-gata), fără interogare la fiecare 100 ms.
+  function clientGata(ms) {
+    if (window.supabaseClient) return Promise.resolve(true);
+    return new Promise(function (ok) {
+      var gata = false, ceas;
+      function fin() {
+        if (gata) return;
+        gata = true; clearTimeout(ceas); window.removeEventListener('myd:supabase-gata', fin);
+        ok(!!window.supabaseClient);
+      }
+      ceas = setTimeout(fin, ms);
+      window.addEventListener('myd:supabase-gata', fin);
+    });
+  }
   function areFeedback() { return !!window.MDFeedback; }
   function areAuth() { return !!(window.MyDarrinAuth && typeof window.MyDarrinAuth.performRegister === 'function' && window.supabaseClient); }
 
@@ -606,7 +621,7 @@
   function deschidePentruRol(rol) {
     if (!rolValid(rol)) return Promise.resolve(false);
     // Fără clientul Supabase nu poate exista o sesiune: fereastra se deschide.
-    return asteapta(function () { return !!window.supabaseClient; }, 4000).then(function (gata) {
+    return clientGata(4000).then(function (gata) {
       if (!gata) return null;
       return window.supabaseClient.auth.getSession().then(function (r) { return (r && r.data && r.data.session) || null; }).catch(function () { return null; });
     }).then(function (sesiune) {

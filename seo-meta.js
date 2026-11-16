@@ -57,8 +57,12 @@
   }
 
   var cerereCurenta = 0;
+  var limbaCeruta = null;
   function aplica(l) {
     var limba = limbaCurenta(l);
+    // Pasul 11-I3: myd:lang vine și pentru limba deja cerută la încărcare — fără a doua cerere.
+    if (limba === limbaCeruta) return;
+    limbaCeruta = limba;
     var nr = ++cerereCurenta;
     fetch('/api/public/seo-config?path=' + encodeURIComponent(cale) + '&lang=' + limba)
       .then(function (r) { return r.json(); })

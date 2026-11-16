@@ -29,6 +29,14 @@
 // Pasul 11-R3: activare = lista „Activează contul” (lib/activare-partener.js),
 // cu starea fiecărui punct; null dacă nu e partener și n-a ales un rol de partener.
 //
+// Pasul 11-I3 (16 nov. 2026): viteza. Rândul din profiles se citește o singură
+// dată (înainte: de două ori, și în contextCont), eligibilitatea partenerului
+// la fel (înainte: și în stareActivare), iar citirile independente rulează în
+// paralel: ~5 runde spre Supabase în loc de ~10. Câmpurile răspunsului și
+// regulile sunt aceleași; în plus, limba = profiles.limba (ro / en / null).
+// PATCH { limba: 'ro' | 'en' } — selectorul de limbă de pe paginile de cont
+// salvează limba aleasă pe cont (profiles.limba); orice altă valoare → 400.
+//
 // roles vine din profiles.roles (singura sursă pentru acces). Fără date
 // sensibile: fără IBAN (doar „are cont bancar activ: da / nu”), fără CNP,
 // fără CUI. Paza din pagini e doar pentru experiența utilizatorului; accesul
@@ -44,6 +52,7 @@ const { citesteKyc, starePublica } = require('../../lib/investitori-kyc');
 const { stareActivare } = require('../../lib/activare-partener');
 const { inregistreazaActivare, inregistreazaEmailConfirmat } = require('../../lib/palnie');
 const { trimiteEroare } = require('../../lib/raspuns-eroare');
+const v = require('../../lib/valideaza');
 
 function numeAfisat(user) {
   const m = user.user_metadata || {};
@@ -63,17 +72,58 @@ async function motivRespingere(partnerId) {
   return motiv ? String(motiv).slice(0, 500) : null;
 }
 
+// Pasul 11-I3: limbile platformei (bilingv RO + EN, decizia LM din 9 oct. 2026).
+const LIMBI_CONT = ['ro', 'en'];
+const SCHEMA_LIMBA = { limba: v.text({ max: 5, eticheta: ['Limba', 'Language'] }) };
+const EROARE_LIMBA = ['Nu am putut salva limba pe cont. Încearcă din nou.', 'We could not save the language on your account. Please try again.'];
+
+async function salveazaLimba(req, res, user) {
+  if (!v.valideazaSauTrimite(req, res, SCHEMA_LIMBA, { necunoscute: 'ignora' })) return null;
+  const limba = String((req.body || {}).limba || '').toLowerCase();
+  if (!LIMBI_CONT.includes(limba)) {
+    return trimiteEroare(res, 400, 'DATE_INVALIDE', 'Alege limba: română (ro) sau engleză (en).', 'Choose the language: Romanian (ro) or English (en).', ['limba']);
+  }
+  const { error } = await supabaseAdmin.from('profiles').update({ limba }).eq('id', user.id);
+  if (error) {
+    console.error('[cont/profil] limba:', error.message || error);
+    return trimiteEroare(res, 500, 'EROARE_SERVER', EROARE_LIMBA[0], EROARE_LIMBA[1]);
+  }
+  return res.status(200).json({ ok: true, limba });
+}
+
 async function handler(req, res, user) {
-  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   res.setHeader('Cache-Control', 'private, no-store');
+  if (req.method === 'PATCH') {
+    try { return await salveazaLimba(req, res, user); } catch (err) {
+      console.error('[cont/profil] limba:', err);
+      return trimiteEroare(res, 500, 'EROARE_SERVER', EROARE_LIMBA[0], EROARE_LIMBA[1]);
+    }
+  }
+  if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
   try {
     // select('*'): coloana telefonului diferă între medii (phone / telefon).
     const { data: profil, error } = await supabaseAdmin.from('profiles').select('*').eq('id', user.id).maybeSingle();
     if (error) throw error;
     const roles = Array.isArray(profil?.roles) ? profil.roles : [];
 
+    // Citirile independente, în paralel: eligibilitatea partenerului, dosarul
+    // de investitor (o eroare nu oprește profilul) și contextul contului (din
+    // rândul de mai sus; doar comenzile, pentru client, sunt o citire nouă).
+    const [p, investitor, ctx] = await Promise.all([
+      eligibilitatePartener(user.id),
+      citesteKyc(user.id).then(starePublica).catch((e) => { console.warn('[cont/profil] KYC:', e.message || e); return null; }),
+      contextCont(user, profil ? { roles, rol_solicitat: profil.rol_solicitat || null } : null),
+    ]);
+
+    // Apoi, tot în paralel: motivul respingerii (doar la respins), destinația
+    // și lista de activare (cu eligibilitatea de mai sus; o eroare nu oprește profilul).
+    const [motiv, d, activare] = await Promise.all([
+      p && p.status_verificare === 'rejected' ? motivRespingere(user.id) : null,
+      destinatiePentru(user, ctx),
+      stareActivare(user.id, ctx, { partener: p }).catch((e) => { console.warn('[cont/profil] activare:', e.message || e); return null; }),
+    ]);
+
     let partener = null;
-    const p = await eligibilitatePartener(user.id);
     if (p) {
       partener = {
         nume_firma: p.nume_firma || null,
@@ -82,22 +132,13 @@ async function handler(req, res, user) {
         status_verificare: p.status_verificare || 'pending_review',
         contract_semnat: p.contract_semnat,
         cont_bancar: p.cont_bancar,
-        motiv_respingere: p.status_verificare === 'rejected' ? await motivRespingere(user.id) : null,
+        motiv_respingere: motiv,
         poate_vinde: p.poate_vinde,
         motiv_nu_poate_vinde: p.motiv,
       };
     }
 
-    // Starea rutei de investitor; o eroare de citire nu oprește profilul.
-    let investitor = null;
-    try { investitor = starePublica(await citesteKyc(user.id)); } catch (e) { console.warn('[cont/profil] KYC:', e.message || e); }
-
     const m = user.user_metadata || {};
-    const ctx = await contextCont(user);
-    const d = await destinatiePentru(user, ctx);
-    // Lista de activare: o eroare de citire nu oprește profilul.
-    let activare = null;
-    try { activare = await stareActivare(user.id, ctx); } catch (e) { console.warn('[cont/profil] activare:', e.message || e); }
     // Pasul 11-A1: momentele pâlniei, pentru raportul intern (fără date personale).
     await Promise.all([inregistreazaEmailConfirmat(user), inregistreazaActivare(user.id, activare)]);
     return res.status(200).json({
@@ -108,6 +149,7 @@ async function handler(req, res, user) {
       nume_familie: String(m.nume || '').trim() || null,
       telefon: (profil && (profil.phone || profil.telefon)) || null,
       tara: (profil && profil.tara) || null,
+      limba: profil && LIMBI_CONT.includes(profil.limba) ? profil.limba : null,
       roles,
       roluri_dashboard: roluriCuDashboard(roles, ctx.areComenzi === false ? { areComenzi: false } : null),
       destinatie: d && d.destinatie ? d.destinatie : null,

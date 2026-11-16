@@ -84,12 +84,22 @@
     return r === 1;
   }
 
-  function asteaptaClient() {
+  // Pasul 11-I3: clientul Supabase anunță că e gata (lib/supabaseClient.js:
+  // evenimentul myd:supabase-gata), fără interogare la fiecare 100 ms.
+  function clientGata(ms) {
+    if (window.supabaseClient) return Promise.resolve(true);
     return new Promise(function (ok) {
-      var n = 0;
-      (function v() { if (window.supabaseClient || n++ > 50) return ok(!!window.supabaseClient); setTimeout(v, 100); })();
+      var gata = false, ceas;
+      function fin() {
+        if (gata) return;
+        gata = true; clearTimeout(ceas); window.removeEventListener('myd:supabase-gata', fin);
+        ok(!!window.supabaseClient);
+      }
+      ceas = setTimeout(fin, ms);
+      window.addEventListener('myd:supabase-gata', fin);
     });
   }
+  function asteaptaClient() { return clientGata(5000); }
   function sesiune() {
     return asteaptaClient().then(function (are) {
       if (!are) return null;
@@ -222,7 +232,8 @@
     document.addEventListener('keydown', laTasta, true);
   }
 
-  function arataPas(n) {
+  function continutPas(n) { return [null, pas1, pas2, pas3, pas4, pas5][n](); }
+  function arataPas(n, pregatit) {
     st.pas = n;
     st.incarcare = false;
     ['mi-inapoi', 'mi-mai-tarziu', 'mi-continua'].forEach(function (id) { el(id).hidden = false; });
@@ -232,7 +243,7 @@
     el('mi-continua').textContent = n === PASI.length ? tr('Trimite pentru verificare') : tr('Continuă');
     el('mi-msg').innerHTML = '';
     var corp = el('mi-corp');
-    corp.innerHTML = [null, pas1, pas2, pas3, pas4, pas5][n]();
+    corp.innerHTML = pregatit || continutPas(n);
     corp.scrollTop = 0;
     if (n === 1) legaturiPas1();
     if (n === 2) legaturiPas2();
@@ -496,20 +507,32 @@
     });
   }
 
+  // Pasul 11-I3: după răspunsul serverului, „✓ Salvat” rămâne vizibil atât cât
+  // să se vadă, apoi apare pasul următor (înainte: 450 ms, iar butonul rămânea
+  // blocat 1,8 s, și pe pasul următor); la trimiterea finală, 400 ms (înainte 900).
+  var DUPA_SALVARE_MS = 150;
+  var DUPA_TRIMITERE_MS = 400;
   function continua() {
     var n = st.pas;
+    var ultim = n === PASI.length;
     var buton = el('mi-continua');
+    // Pasul următor se pregătește cât se salvează pasul curent; se afișează
+    // doar după răspunsul real al serverului (la eroare rămâne pasul curent, cu
+    // valorile introduse). Pasul 5 (rezumatul) depinde de răspuns: se face după.
+    var pregatit = !ultim && n + 1 < PASI.length ? continutPas(n + 1) : null;
     window.MDFeedback.salveaza(buton, el('mi-msg'), function () {
-      return salveazaPas().then(function (j) {
-        if (n === PASI.length) {
-          // Pasul 11-I2: rolul `investor` e acum pe cont → subscrierea (?ruta=investeste → openRunda).
-          setTimeout(function () { inchide(true); window.location.href = '/mydarrin-investitori.html?ruta=investeste'; }, 900);
-          return tr('Dosarul a fost trimis. Rolul de investitor e pe contul tău.');
-        }
-        setTimeout(function () { if (st) arataPas(n + 1); }, 450);
-        return tr('Salvat.');
+      return salveazaPas().then(function () {
+        return ultim ? tr('Dosarul a fost trimis. Rolul de investitor e pe contul tău.') : tr('Salvat.');
       });
-    }, { textSalveaza: n === PASI.length ? 'Se trimite…' : 'Se salvează…', form: el('mi-corp') });
+    }, { textSalveaza: ultim ? 'Se trimite…' : 'Se salvează…', form: el('mi-corp'), durataOk: ultim ? DUPA_TRIMITERE_MS : DUPA_SALVARE_MS }).then(function (r) {
+      if (!r || !r.ok || !st) return;
+      if (ultim) {
+        // Pasul 11-I2: rolul `investor` e acum pe cont → subscrierea (?ruta=investeste → openRunda).
+        setTimeout(function () { inchide(true); window.location.href = '/mydarrin-investitori.html?ruta=investeste'; }, DUPA_TRIMITERE_MS);
+        return;
+      }
+      setTimeout(function () { if (st && st.pas === n) arataPas(n + 1, pregatit); }, DUPA_SALVARE_MS);
+    });
   }
 
   function maiTarziu() {

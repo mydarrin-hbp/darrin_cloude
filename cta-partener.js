@@ -88,7 +88,22 @@
       s.type = 'module'; s.src = '/lib/supabaseClient.js';
       document.head.appendChild(s);
     }
-    return asteapta(function () { return !!window.supabaseClient; }, 4000);
+    return clientGata(4000);
+  }
+  // Pasul 11-I3: clientul Supabase anunță că e gata (lib/supabaseClient.js:
+  // evenimentul myd:supabase-gata), fără interogare la fiecare 100 ms.
+  function clientGata(ms) {
+    if (window.supabaseClient) return Promise.resolve(true);
+    return new Promise(function (ok) {
+      var gata = false, ceas;
+      function fin() {
+        if (gata) return;
+        gata = true; clearTimeout(ceas); window.removeEventListener('myd:supabase-gata', fin);
+        ok(!!window.supabaseClient);
+      }
+      ceas = setTimeout(fin, ms);
+      window.addEventListener('myd:supabase-gata', fin);
+    });
   }
 
   // { stare, destinatie } din profilul de pe server.
@@ -98,8 +113,10 @@
       return window.supabaseClient.auth.getSession().then(function (r) {
         var s = r && r.data && r.data.session;
         if (!s) return { stare: 'vizitator' };
-        return fetch('/api/cont/profil', { headers: { Authorization: 'Bearer ' + s.access_token }, cache: 'no-store' })
-          .then(function (res) { return res.ok ? res.json() : null; })
+        // Pasul 11-I3: cache-ul comun al paginii (lib/supabaseClient.js).
+        return (window.MYD_PROFIL
+          ? window.MYD_PROFIL.cere(s.access_token).then(function (r) { return r.ok ? r.corp : null; })
+          : fetch('/api/cont/profil', { headers: { Authorization: 'Bearer ' + s.access_token }, cache: 'no-store' }).then(function (res) { return res.ok ? res.json() : null; }))
           .then(function (p) {
             if (!p) return { stare: 'client' };
             var act = p.activare;

@@ -306,6 +306,8 @@ input:valid:not(:placeholder-shown):not([type="checkbox"]) {
 <meta charset="UTF-8">
 <!-- Limba (10 oct. 2026): engleza implicită, româna din selector — i18n-loader.js, sincron, primul script -->
 <script src="/i18n-loader.js" data-pagina="mydarrin-dashboard-client"></script>
+<!-- Pasul 11-I3: profilul contului pornește de aici, înaintea clientului Supabase (lib/profil-cont.js). -->
+<script src="/lib/profil-cont.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard Client — Comenzile mele | My Darrin</title>
 <script src="https://cdn.tailwindcss.com"></script>
@@ -1782,7 +1784,12 @@ function setLang(code,flag,label){
   document.querySelectorAll('.lang-opt').forEach(o=>o.classList.remove('active'));
   event.target.closest('.lang-opt').classList.add('active');
   document.getElementById('langDd').classList.remove('open');
-  // In real app: reload page with locale
+  // Pasul 11-I3: selectorul era doar decorativ aici (nu schimba limba). Ca pe
+  // index.html: i18n-loader.js salvează alegerea (myd_lang_v1, iar pentru un
+  // cont autentificat și profiles.limba) și reîncarcă pagina în limba aleasă.
+  if (window.MYD_I18N && (code === 'ro' || window.MYD_I18N.SUPPORTED.indexOf(code) !== -1)) {
+    window.MYD_I18N.setLanguage(code, {persist:true});
+  }
 }
 document.addEventListener('click',e=>{
   const dd=document.getElementById('langDd');

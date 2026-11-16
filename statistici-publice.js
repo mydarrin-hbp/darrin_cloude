@@ -78,8 +78,8 @@
       }).catch(function () {});
     }
     if (tari.length) {
-      fetch('/api/public/tari-active')
-        .then(function (r) { return r.ok ? r.json() : null; })
+      // Pasul 11-I3: o singură cerere /api/public/tari-active pe pagină (promisiune comună cu myd-geo.js, tva-config.js, ui-comun.js, statistici-publice.js).
+      (window.__mydTariActive = window.__mydTariActive || fetch('/api/public/tari-active').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }))
         .then(function (d) {
           var n = (d && Array.isArray(d.active)) ? d.active.length : 0;
           if (n <= 0) return;
