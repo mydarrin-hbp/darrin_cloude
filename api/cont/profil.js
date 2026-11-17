@@ -123,6 +123,11 @@ async function handler(req, res, user) {
       stareActivare(user.id, ctx, { partener: p }).catch((e) => { console.warn('[cont/profil] activare:', e.message || e); return null; }),
     ]);
 
+    // Pasul 12-P1: motivul respingerii firmei, în starea contului („Necesită completări”).
+    if (activare && activare.stare_cont && activare.stare_cont.stare === 'necesita_completari' && !activare.stare_cont.motiv && motiv) {
+      activare.stare_cont.motiv = motiv;
+    }
+
     let partener = null;
     if (p) {
       partener = {

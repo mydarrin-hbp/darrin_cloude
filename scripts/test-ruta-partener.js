@@ -11,9 +11,9 @@
 //     data-cta-partener și tipul corect;
 //   - nicio apariție de „0 LEI”, „0 Lei”, „0 lei” pe paginile rutei, în
 //     cta-partener.js și în dicționarele EN ale paginilor;
-//   - „Creează cont” de pe fiecare card din hub deschide fereastra de cont pe
-//     „Creare cont”, cu tipul bifat (care se poate schimba); butonul principal
-//     al fiecărei pagini de tip, la fel;
+//   - „Creează cont” de pe fiecare card din hub și butonul principal al fiecărei
+//     pagini de tip duc la pre-înscriere, /parteneri/inscriere?categorie=<tip>
+//     (pasul 12-P1; înainte: fereastra de cont cu tipul bifat);
 //   - utilizator conectat: butoanele urmează starea contului (cta-partener.js),
 //     nu deschid fereastra;
 //   - „Configurează profilul” nu mai există;
@@ -205,20 +205,16 @@ const stareFereastra = (p) => p.evaluate(() => {
         if (f === HUB) {
           verifica(h.text === 'Creează-ți contul de partener →', `hub: butonul principal „${h.text}”`);
           verifica(h.secundar.join() === 'Alege tipul de parteneriat ↓' && h.secundarTinta === '#tipuri', `hub: butonul secundar ${h.secundar} → ${h.secundarTinta}`);
-          // Cardurile: „Creează cont” → fereastra pe „Creare cont”, tipul bifat; se poate schimba.
+          // Cardurile: „Creează cont” → pre-înscrierea, cu tipul cardului (pasul 12-P1).
           for (const [pg, tip, rol] of PAGINI_TIP) {
             const card = p.locator(`#tip-${tip}`);
             verifica(await card.locator('a.rp-link').getAttribute('href') === pg, `hub, cardul ${tip}: „Află mai mult” nu duce la ${pg}`);
-            await card.locator('[data-cta-card]').click();
-            await p.waitForFunction(() => { const m = document.getElementById('auth-modal'); return m && !m.classList.contains('hidden'); }, null, { timeout: 8000 }).catch(() => {});
-            const s = await stareFereastra(p);
-            verifica(s.deschisa && s.inregistrare && s.rol === rol, `hub, cardul ${tip}: fereastra ${JSON.stringify(s)} (aștept ${rol})`);
-            if (tip === 'servicii') {
-              await p.locator('label[data-mdc-rol="partener_curier"]').click();
-              verifica((await stareFereastra(p)).rol === 'partener_curier', 'hub: tipul bifat nu se poate schimba');
-            }
-            await p.evaluate(() => window.MDCont && window.MDCont.inchide());
+            const href = await card.locator('[data-cta-card]').getAttribute('href');
+            verifica(href === '/parteneri/inscriere?categorie=' + rol.replace('partener_', ''), `hub, cardul ${tip}: „Creează cont” → ${href} (aștept categoria ${rol})`);
           }
+          await p.locator('#tip-servicii [data-cta-card]').click();
+          await p.waitForURL(/parteneri\/inscriere/, { timeout: 8000 }).catch(() => {});
+          verifica(/\/parteneri\/inscriere\?categorie=servicii$/.test(p.url()), `hub: clicul pe cardul servicii duce la pre-înscriere (${p.url()})`);
         } else {
           const [, tip, rol] = PAGINI_TIP.find((x) => x[0] === f);
           verifica(/^Creează-ți cont de .+ →$/.test(h.text), `${f}: butonul principal „${h.text}”`);
@@ -227,10 +223,8 @@ const stareFereastra = (p) => p.evaluate(() => {
             document.querySelectorAll('#ce-castigi .rp-punct').length === 3, document.querySelectorAll('#intrebari .rp-faq details').length <= 5,
             !!document.querySelector('#detalii') && !document.querySelector('#detalii').open, !!document.querySelector('.rp-banda [data-cta-partener]')));
           verifica(sec.every(Boolean), `${f}: structura șablonului incompletă ${JSON.stringify(sec)}`);
-          await p.locator('.rp-hero [data-rp-principal]').click();
-          await p.waitForFunction(() => { const m = document.getElementById('auth-modal'); return m && !m.classList.contains('hidden'); }, null, { timeout: 8000 }).catch(() => {});
-          const s = await stareFereastra(p);
-          verifica(s.deschisa && s.inregistrare && s.rol === rol, `${f}: fereastra ${JSON.stringify(s)} (aștept ${rol})`);
+          const href = await p.locator('.rp-hero [data-rp-principal]').getAttribute('href');
+          verifica(href === '/parteneri/inscriere?categorie=' + rol.replace('partener_', ''), `${f}: butonul principal → ${href} (aștept categoria ${rol})`);
         }
         verifica(!erori.length, `${f}: ${erori.join(' | ')}`);
         await ctx.close();

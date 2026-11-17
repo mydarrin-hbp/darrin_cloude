@@ -151,14 +151,12 @@ const asteaptaStare = (p) => p.waitForFunction(() => { const l = [...document.qu
           await asteapta(400);
           verifica(navigari.some((u) => u.endsWith(dashboard(rol))), `${et}: clicul nu duce la dashboard (${navigari.join(' ') || '—'})`);
         } else if (stare === 'vizitator') {
+          // Pasul 12-P1: vizitatorul merge la pre-înscrierea în 60 de secunde, cu categoria paginii.
+          const asteptat = '/parteneri/inscriere' + (rolPagina ? '?categorie=' + rolPagina.replace('partener_', '') : '');
+          verifica(b.every((x) => x.href === asteptat), `${et}: destinația ${JSON.stringify(b.map((x) => x.href))} (așteptat ${asteptat})`);
           await p.click('[data-cta-partener]:visible');
-          await p.waitForFunction(() => { const m = document.getElementById('auth-modal'); return m && !m.classList.contains('hidden'); }, null, { timeout: 8000 }).catch(() => {});
-          const a = await p.evaluate(() => {
-            const c = document.querySelector('#auth-modal input[name="mdc-cat"]:checked');
-            const r = document.querySelector('#auth-modal input[name="mdc-rol"]:checked');
-            return { cat: c && c.value, rol: r && r.value, grila: !document.getElementById('mdc-tipuri').hidden, inregistrare: !document.getElementById('auth-register').hidden };
-          });
-          verifica(a.inregistrare && a.cat === 'partener' && a.grila && a.rol === rolPagina, `${et}: fereastra de cont ${JSON.stringify(a)} (rol așteptat ${rolPagina})`);
+          await p.waitForURL(/parteneri\/inscriere/, { timeout: 8000 }).catch(() => {});
+          verifica(new URL(p.url()).pathname === '/parteneri/inscriere' && (!rolPagina || new URL(p.url()).searchParams.get('categorie') === rolPagina.replace('partener_', '')), `${et}: clicul duce la pre-înscriere (${p.url()})`);
         } else {
           await p.click('[data-cta-partener]:visible');
           await p.waitForFunction(() => { const f = document.getElementById('mdc-tip-cont'); return f && !f.hidden; }, null, { timeout: 8000 }).catch(() => {});

@@ -68,6 +68,13 @@
   var CHEIE_EMAIL = 'myd_pending_confirm_email';
   var CHEIE_REDIRECT = 'myd_post_auth_redirect';
   var CHEIE_MESAJ_PAGINA = 'myd_mesaj_pagina';
+  // Pasul 12-P1: rolul contului care așteaptă codul (textul butonului) și
+  // datele pre-înscrierii de partener (/parteneri/inscriere), salvate în ciorna
+  // activării după cod (salveazaPreinscriere).
+  var CHEIE_ROL_COD = 'myd_pending_confirm_rol';
+  var CHEIE_PREINSCRIERE = 'myd_preinscriere_v1';
+  var RETRIMITE_DUPA_S = 45;
+  var PAGINA_INSCRIERE_PARTENER = '/parteneri/inscriere';
 
   // Iconițele, din setul Lucide (același ca pe site), desenate inline: fereastra
   // nu depinde de încărcarea scriptului Lucide pe pagină.
@@ -300,6 +307,21 @@
       '.mdc-rol-ales{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:0 0 16px;padding:8px 12px;border-radius:12px;background:#EBF4FB;font-size:12.5px;color:#003366;font-weight:600}' +
       '.mdc-rol-ales span{display:inline-flex;align-items:center;gap:6px}.mdc-rol-ales .mdc-ico{color:#003366}' +
       '.mdc-cod{text-align:center;font-size:20px;font-weight:700;letter-spacing:.4em;margin-bottom:8px}' +
+      // Pasul 12-P1 (macheta B1.2): 6 căsuțe desenate peste câmpul real (lipirea și
+      // completarea automată a codului din SMS/email merg nativ, pe un singur câmp).
+      '.mdc-cutii{position:relative;margin:4px 0 16px}' +
+      '.mdc-cutii-vizual{display:flex;gap:8px;justify-content:space-between;pointer-events:none}' +
+      '.mdc-cutii-vizual span{flex:1 1 0;max-width:56px;height:58px;border-radius:12px;border:1px solid #D5DEE8;background:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#1A2332;box-sizing:border-box}' +
+      '.mdc-cutii-vizual span.plin{border:2px solid #003366}.mdc-cutii-vizual span.urm{border:2px solid #FF8C00}' +
+      '.mdc-cutii input.mdc-cod{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;font-size:16px;letter-spacing:normal;cursor:text}' +
+      '.mdc-cutii input.mdc-cod:focus-visible+.mdc-cutii-vizual{outline:3px solid #0E9E99;outline-offset:3px;border-radius:12px}' +
+      '.mdc-cutii input[aria-invalid="true"]+.mdc-cutii-vizual span{border-color:#C0392B}' +
+      '.mdc-cod-actiuni{display:flex;gap:10px;margin-top:12px}' +
+      '.mdc-cod-actiuni>*{flex:1 1 0;min-height:46px;border-radius:12px;border:1px solid #D5DEE8;background:#fff;color:#003366;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;text-decoration:none;font-family:inherit;cursor:pointer;box-sizing:border-box;padding:0 10px}' +
+      '.mdc-cod-actiuni>[hidden]{display:none}' +
+      '.mdc-cod-actiuni button[disabled]{background:#F1F4F8;color:#4A5A6B;cursor:default}' +
+      '.mdc-cod-sfat{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid #E6ECF2;border-radius:14px;padding:14px;margin-top:14px;font-size:13px;line-height:1.45;color:#4A5A6B}' +
+      '.mdc-cod-sfat b{color:#1A2332;overflow-wrap:anywhere}.mdc-cod-sfat svg{flex:0 0 auto}' +
       '.mdc-indiciu{margin:0 0 14px;font-size:12.5px;line-height:1.45;color:#5A6B7D;text-align:center}' +
       '.mdc-sr{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}' +
       '.mdc-zona:empty{display:none}' +
@@ -445,15 +467,24 @@
         '</form>' +
 
         // Creare cont — 3. codul din email
+        // Pasul 12-P1: ecranul de cod din macheta B1.2, același pentru client, partener și investitor.
         '<form id="auth-verify-cod" class="mdc-panou" hidden novalidate>' +
-          '<h3 class="mdc-h">' + esc(tr('Confirmă adresa de email')) + '</h3>' +
-          '<p class="mdc-sub">' + tr('Am trimis un cod de 6 cifre la {email}. Introdu-l mai jos.', { email: '<b id="verify-cod-email"></b>' }) + '</p>' +
-          '<input type="text" id="verify-cod-input" class="mdc-in mdc-cod" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" aria-label="' + esc(tr('Codul de 6 cifre')) + '" data-eticheta="' + esc(tr('Codul de 6 cifre')) + '">' +
-          '<p class="mdc-indiciu" id="mdc-cod-indiciu">' + esc(tr('Nu găsești emailul? Verifică și folderul Spam sau Promoții.')) + '</p>' +
-          '<button type="submit" class="mdc-btn mdc-btn-albastru" id="mdc-cod-btn">' + esc(tr('Confirmă codul')) + '</button>' +
+          '<h3 class="mdc-h">' + esc(tr('Verifică emailul')) + '</h3>' +
+          '<p class="mdc-sub">' + tr('Am trimis un cod de 6 cifre la {email}. Rămâi pe această pagină; poți lipi codul direct.', { email: '<b id="verify-cod-email"></b>' }) + '</p>' +
+          '<div class="mdc-cutii">' +
+            '<input type="text" id="verify-cod-input" class="mdc-in mdc-cod" inputmode="numeric" autocomplete="one-time-code" aria-label="' + esc(tr('Codul de 6 cifre')) + '" data-eticheta="' + esc(tr('Codul de 6 cifre')) + '">' +
+            '<div class="mdc-cutii-vizual" id="mdc-cutii" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>' +
+          '</div>' +
+          '<button type="submit" class="mdc-btn mdc-btn-portocaliu" id="mdc-cod-btn">' + esc(tr('Confirmă și intră în panou')) + '</button>' +
           '<div id="verify-cod-msg" class="mdc-zona"></div>' +
-          '<p class="mdc-jos">' + esc(tr('Nu ai primit codul?')) + ' <button type="button" class="mdc-link mdc-link-albastru" id="mdc-retrimite">' + esc(tr('Retrimite codul')) + '</button></p>' +
+          '<div class="mdc-cod-actiuni">' +
+            '<a id="mdc-gmail" href="https://mail.google.com/" target="_blank" rel="noopener" hidden>' + esc(tr('Deschide Gmail')) + '</a>' +
+            '<button type="button" id="mdc-retrimite">' + esc(tr('Retrimite codul')) + '</button>' +
+          '</div>' +
           '<div id="mdc-retrimite-msg" class="mdc-zona"></div>' +
+          '<p class="mdc-cod-sfat" id="mdc-cod-indiciu"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A5A6B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>' +
+            // Expeditorul nu apare până nu e confirmat de LM (decizia din 17 nov. 2026).
+            '<span>' + esc(tr('Nu-l găsești? Verifică Promoții și Spam.')) + '</span></p>' +
           '<p class="mdc-jos" style="margin-top:8px"><button type="button" class="mdc-link" id="mdc-alt-email">' + esc(tr('Ai greșit adresa? Înapoi la date')) + '</button></p>' +
         '</form>' +
       '</div>';
@@ -571,6 +602,12 @@
       contextInvestitor(false);
     }
     if (!rol && !stare.investitor && tab === 'register' && pePaginaPartener()) rol = rolDinTip(new URLSearchParams(location.search).get('type'));
+    // Pasul 12-P1: înregistrarea unui partener (rol de partener ales sau „Partener”)
+    // se face pe pagina de pre-înscriere, nu în fereastră.
+    if (tab === 'register' && !stare.investitor && !peInscriere() && (esteTip(rol) || o.partener)) {
+      window.location.href = PAGINA_INSCRIERE_PARTENER + (esteTip(rol) ? '?categorie=' + encodeURIComponent(TIP_DIN_ROL[rol]) : '');
+      return;
+    }
     if (stare.investitor) {
       // nimic de ales: cardul e deja marcat
     } else if (rol) {
@@ -612,7 +649,7 @@
   }
 
   function switchAuthTab(tab) {
-    if (tab === 'verify-cod') { var e = ss(CHEIE_EMAIL); if (e && $('verify-cod-email')) $('verify-cod-email').textContent = e; }
+    if (tab === 'verify-cod') { var e = ss(CHEIE_EMAIL); if (e && $('verify-cod-email')) { construieste(); pregatesteCod(e); } }
     if (!deschisa()) deschide({ tab: tab });
     else { arataPanou(tab); focusPrimul(); }
   }
@@ -626,6 +663,8 @@
       return window.supabaseClient.auth.getSession().then(function (r) { return (r && r.data && r.data.session) || null; }).catch(function () { return null; });
     }).then(function (sesiune) {
       if (sesiune) return false;
+      // Pasul 12-P1: contul de partener se creează pe pagina de pre-înscriere.
+      if (esteTip(rol) && !peInscriere()) { window.location.href = PAGINA_INSCRIERE_PARTENER + '?categorie=' + encodeURIComponent(TIP_DIN_ROL[rol] || ''); return true; }
       deschide({ tab: 'register', rol: rol });
       return true;
     });
@@ -757,60 +796,152 @@
       return;
     }
     $('mdc-rol-msg').innerHTML = '';
+    // Pasul 12-P1: contul de partener se creează pe pagina de pre-înscriere
+    // (/parteneri/inscriere), cu categoria aleasă; limba și UTM-ul rămân
+    // (i18n-loader.js și masurare.js le-au reținut deja).
+    if (esteTip(stare.rol) && !peInscriere()) {
+      var tip = TIP_DIN_ROL[stare.rol] || '';
+      window.location.href = PAGINA_INSCRIERE_PARTENER + (tip ? '?categorie=' + encodeURIComponent(tip) : '');
+      return;
+    }
     arataPasInscriere('date');
     focusPrimul();
   }
+  var TIP_DIN_ROL = { partener_servicii: 'servicii', partener_materiale: 'materiale', partener_inchirieri: 'inchirieri', partener_curier: 'curier', partener_asigurari: 'asigurari' };
+  function peInscriere() { return /^\/(parteneri\/inscriere|mydarrin-inscriere-partener)(\.html)?\/?$/.test(location.pathname); }
+
+  // Pasul 12-P1: nucleul înregistrării, comun ferestrei de cont și paginii de
+  // pre-înscriere a partenerului (MDCont.inregistreaza). Se cheamă din interiorul
+  // MDFeedback.salveaza: întoarce mesajul verde sau { faraMesaj } (ecranul de
+  // cod), aruncă erorile cu câmpurile lor (MDFeedback.aplicaErori).
+  //   c: { email, tel, parola, gdpr } — câmpurile (pentru marcarea erorilor)
+  //   d: { prenume, nume, rol }
+  //   o: { recuperare: element pentru linkul „Recuperare parolă” }
+  function inregistreazaCont(c, d, o) {
+    var opt = o || {};
+    var gresite = [];
+    var email = c.email.value.trim();
+    var telefon = telefonNormalizat(c.tel.value);
+    if (!RE_EMAIL.test(email)) gresite.push({ camp: c.email, mesaj: tr('Adresa de email nu e validă. Exemplu: nume@exemplu.ro') });
+    if (!telefonValid(telefon)) gresite.push({ camp: c.tel, mesaj: tr('Scrie telefonul în format internațional, cu prefixul țării (de exemplu +40 712 345 678).') });
+    if (c.parola.value.length < 8) gresite.push({ camp: c.parola, mesaj: tr('Parola trebuie să aibă cel puțin 8 caractere.') });
+    if (gresite.length) return Promise.reject(eroareCampuri(gresite));
+    if (!rolValid(d.rol)) return Promise.reject(new Error(tr('Alege tipul contului.')));
+    if (opt.recuperare) opt.recuperare.innerHTML = '';
+    var prenume = String(d.prenume || '').trim(), nume = String(d.nume || '').trim();
+    return asiguraAuth().then(function () {
+      return window.MyDarrinAuth.performRegister(email, c.parola.value, nume, c.gdpr.checked, {
+        prenume: prenume, telefon: telefon, rolSolicitat: d.rol,
+      }).catch(function (e) {
+        if (window.MyDarrinAuth.emailDejaInregistrat(e) || /user_already_exists|email_exists/.test(String(e && e.code))) throw emailExistent(email, c.email, opt.recuperare);
+        // Supabase refuză un cod nou pentru același email la mai puțin de un
+        // minut („For security purposes…”): contul există, neconfirmat, creat
+        // adineauri. Ecranul de cod, nu o eroare. (Limita generală de emailuri
+        // a proiectului rămâne o eroare: contul poate să nu existe.)
+        if (/for security purposes/i.test(String((e && e.message) || ''))) return { limita: true };
+        throw new Error(mesajAuth(e));
+      });
+    }).then(function (user) {
+      ss(CHEIE_ROL_COD, d.rol);
+      if (user && user.limita) return arataEcranCod(email, 'info', tr('Ai deja un cont neconfirmat cu {email}. Ți-am trimis un cod adineauri; dacă nu l-ai primit, așteaptă un minut, apoi apasă „Retrimite codul”.', { email: email }));
+      // Cu confirmarea pe email activă, Supabase nu spune că emailul există
+      // (protecție la enumerare): întoarce un utilizator fără identități.
+      if (user && Array.isArray(user.identities) && user.identities.length === 0) throw emailExistent(email, c.email, opt.recuperare);
+      return window.MyDarrinAuth.getCurrentUser().then(function (sesiune) {
+        if (sesiune) {
+          // Confirmarea pe email e oprită în Supabase: contul e deja activ.
+          setTimeout(function () { salveazaPreinscriere().then(function () { dupaAutentificare('cont_creat'); }); }, 500);
+          return tr('Contul a fost creat.');
+        }
+        // Cont nou sau cont existent, încă neconfirmat (Supabase retrimite
+        // codul): în ambele cazuri, ecranul de cod.
+        ss(CHEIE_EMAIL, email);
+        setTimeout(function () { arataCod(email); }, 700);
+        return tr('Ți-am trimis codul de 6 cifre pe email.');
+      });
+    });
+  }
 
   function inregistrare(btn) {
-    var form = $('auth-register');
-    var c = {
-      prenume: $('reg-prenume'), nume: $('reg-nume'), email: $('reg-email'),
-      tel: $('reg-tel'), parola: $('reg-pass'), gdpr: $('reg-gdpr'),
-    };
-    $('reg-recover-link-container').innerHTML = '';
+    var c = { email: $('reg-email'), tel: $('reg-tel'), parola: $('reg-pass'), gdpr: $('reg-gdpr') };
     return window.MDFeedback.salveaza(btn, $('mdc-register-msg'), function () {
-      var gresite = [];
-      var email = c.email.value.trim();
-      var telefon = telefonNormalizat(c.tel.value);
-      if (!RE_EMAIL.test(email)) gresite.push({ camp: c.email, mesaj: tr('Adresa de email nu e validă. Exemplu: nume@exemplu.ro') });
-      if (!telefonValid(telefon)) gresite.push({ camp: c.tel, mesaj: tr('Scrie telefonul în format internațional, cu prefixul țării (de exemplu +40 712 345 678).') });
-      if (c.parola.value.length < 8) gresite.push({ camp: c.parola, mesaj: tr('Parola trebuie să aibă cel puțin 8 caractere.') });
-      if (gresite.length) throw eroareCampuri(gresite);
-      if (!rolValid(stare.rol)) throw new Error(tr('Alege tipul contului.'));
-      var prenume = c.prenume.value.trim(), nume = c.nume.value.trim();
-      return asiguraAuth().then(function () {
-        return window.MyDarrinAuth.performRegister(email, c.parola.value, nume, c.gdpr.checked, {
-          prenume: prenume, telefon: telefon, rolSolicitat: stare.rol,
-        }).catch(function (e) {
-          if (window.MyDarrinAuth.emailDejaInregistrat(e) || /user_already_exists|email_exists/.test(String(e && e.code))) throw emailExistent(email);
-          // Supabase refuză un cod nou pentru același email la mai puțin de un
-          // minut („For security purposes…”): contul există, neconfirmat, creat
-          // adineauri. Ecranul de cod, nu o eroare. (Limita generală de emailuri
-          // a proiectului rămâne o eroare: contul poate să nu existe.)
-          if (/for security purposes/i.test(String((e && e.message) || ''))) return { limita: true };
-          throw new Error(mesajAuth(e));
-        });
-      }).then(function (user) {
-        if (user && user.limita) return arataEcranCod(email, 'info', tr('Ai deja un cont neconfirmat cu {email}. Ți-am trimis un cod adineauri; dacă nu l-ai primit, așteaptă un minut, apoi apasă „Retrimite codul”.', { email: email }));
-        // Cu confirmarea pe email activă, Supabase nu spune că emailul există
-        // (protecție la enumerare): întoarce un utilizator fără identități.
-        if (user && Array.isArray(user.identities) && user.identities.length === 0) throw emailExistent(email);
-        return window.MyDarrinAuth.getCurrentUser().then(function (sesiune) {
-          if (sesiune) {
-            // Confirmarea pe email e oprită în Supabase: contul e deja activ.
-            setTimeout(function () { dupaAutentificare('cont_creat'); }, 500);
-            return tr('Contul a fost creat.');
-          }
-          // Cont nou sau cont existent, încă neconfirmat (Supabase retrimite
-          // codul): în ambele cazuri, ecranul de cod.
-          ss(CHEIE_EMAIL, email);
-          $('verify-cod-email').textContent = email;
-          $('verify-cod-input').value = '';
-          setTimeout(function () { switchAuthTab('verify-cod'); }, 700);
-          return tr('Ți-am trimis codul de 6 cifre pe email.');
+      return inregistreazaCont(c, { prenume: $('reg-prenume').value, nume: $('reg-nume').value, rol: stare.rol }, { recuperare: $('reg-recover-link-container') });
+    }, { form: $('auth-register'), textSalveaza: tr('Se creează contul…'), textOk: tr('✓ Trimis') });
+  }
+
+  // ── Pasul 12-P1: ecranul de cod (macheta B1.2) ──
+  var ceasRetrimite = null;
+  function pornesteRetrimitere(secunde) {
+    var b = $('mdc-retrimite');
+    if (!b) return;
+    clearInterval(ceasRetrimite);
+    var ramase = secunde;
+    var scrie = function () {
+      if (ramase <= 0) { clearInterval(ceasRetrimite); b.disabled = false; b.textContent = tr('Retrimite codul'); return; }
+      b.disabled = true;
+      b.textContent = tr('Retrimite ({timp})', { timp: Math.floor(ramase / 60) + ':' + String(ramase % 60).padStart(2, '0') });
+      ramase--;
+    };
+    scrie();
+    ceasRetrimite = setInterval(scrie, 1000);
+  }
+  function deseneazaCutii() {
+    var v = ($('verify-cod-input') || {}).value || '';
+    Array.prototype.forEach.call(document.querySelectorAll('#mdc-cutii span'), function (s, i) {
+      s.textContent = v.charAt(i) || '';
+      s.className = v.charAt(i) ? 'plin' : (i === v.length ? 'urm' : '');
+    });
+  }
+  // Textele ecranului de cod, după rol și adresă.
+  function pregatesteCod(email) {
+    $('verify-cod-email').textContent = email;
+    $('verify-cod-input').value = '';
+    deseneazaCutii();
+    var rol = ss(CHEIE_ROL_COD) || stare.rol;
+    $('mdc-cod-btn').textContent = rol === 'client' ? tr('Confirmă și intră în cont') : tr('Confirmă și intră în panou');
+    // „Deschide Gmail” doar pentru adresele Gmail.
+    $('mdc-gmail').hidden = !/@(gmail|googlemail)\.com$/i.test(String(email || '').trim());
+    $('mdc-retrimite-msg').innerHTML = '';
+    pornesteRetrimitere(RETRIMITE_DUPA_S);
+  }
+  // Fereastra deschisă direct pe ecranul de cod (pagina de pre-înscriere).
+  function arataCod(email, rol) {
+    if (rol) ss(CHEIE_ROL_COD, rol);
+    ss(CHEIE_EMAIL, email);
+    if (!deschisa()) deschide({ tab: 'verify-cod' });
+    else switchAuthTab('verify-cod');
+    pregatesteCod(email);
+    focusPrimul();
+  }
+
+  // ── Pasul 12-P1: datele pre-înscrierii, în ciorna activării ──
+  // Categoria, profesia și orașul (/parteneri/inscriere) intră în
+  // partener_activare_ciorna.date.preinscriere, prin API-ul ciornei
+  // (/api/partener/activare-ciorna): pașii activării le găsesc precompletate.
+  // Cel mult 4 s: intrarea în panou nu așteaptă mai mult; la eșec datele rămân
+  // în sesiune și le salvează panoul (panou-cont-nou.js).
+  function salveazaPreinscriere() {
+    var brut = ss(CHEIE_PREINSCRIERE);
+    if (!brut) return Promise.resolve(false);
+    var date;
+    try { date = JSON.parse(brut); } catch (e) { ss(CHEIE_PREINSCRIERE, null); return Promise.resolve(false); }
+    var lucru = clientGata(4000).then(function (gata) {
+      if (!gata) return false;
+      return window.supabaseClient.auth.getSession().then(function (r) {
+        var s = r && r.data && r.data.session;
+        if (!s) return false;
+        var h = { Authorization: 'Bearer ' + s.access_token, 'Content-Type': 'application/json' };
+        return fetch('/api/partener/activare-ciorna', { headers: h, cache: 'no-store' }).then(function (res) { return res.ok ? res.json() : null; }).then(function (j) {
+          var c = (j && j.ciorna) || {};
+          var dateCiorna = Object.assign({}, c.date || {}, { preinscriere: date });
+          return fetch('/api/partener/activare-ciorna', { method: 'PUT', headers: h, body: JSON.stringify({ pas_curent: c.pas_curent || 1, date: dateCiorna }) });
+        }).then(function (res) {
+          if (res && res.ok) { ss(CHEIE_PREINSCRIERE, null); return true; }
+          return false;
         });
       });
-    }, { form: form, textSalveaza: tr('Se creează contul…'), textOk: tr('✓ Trimis') });
+    }).catch(function () { return false; });
+    return Promise.race([lucru, new Promise(function (ok) { setTimeout(function () { ok(false); }, 4000); })]);
   }
 
   // ── Contul neconfirmat (pasul 11-R3c) ──
@@ -823,10 +954,9 @@
   // revine fără verde și fără roșu.
   function arataEcranCod(email, tip, text) {
     ss(CHEIE_EMAIL, email);
-    $('verify-cod-email').textContent = email;
-    $('verify-cod-input').value = '';
-    $('mdc-retrimite-msg').innerHTML = '';
-    switchAuthTab('verify-cod');
+    if (!deschisa()) deschide({ tab: 'verify-cod' });
+    else switchAuthTab('verify-cod');
+    pregatesteCod(email);
     window.MDFeedback.mesaj($('verify-cod-msg'), tip, text);
     return { faraMesaj: true };
   }
@@ -840,9 +970,11 @@
     });
   }
 
-  function emailExistent(email) {
-    window.MyDarrinAuth.injecteazaLinkRecuperareParola($('reg-recover-link-container'), email);
-    return eroareCampuri([{ camp: $('reg-email'), mesaj: tr('Acest email are deja un cont. Intră în cont sau recuperează parola.') }], tr('Acest email are deja un cont. Intră în cont sau recuperează parola.'));
+  function emailExistent(email, campEmail, recuperare) {
+    window.MyDarrinAuth.injecteazaLinkRecuperareParola(recuperare || $('reg-recover-link-container'), email);
+    var e = eroareCampuri([{ camp: campEmail || $('reg-email'), mesaj: tr('Acest email are deja un cont. Intră în cont sau recuperează parola.') }], tr('Acest email are deja un cont. Intră în cont sau recuperează parola.'));
+    e.cod = 'email_existent';
+    return e;
   }
 
   function confirmaCod(btn) {
@@ -856,7 +988,10 @@
         return window.MyDarrinAuth.confirmaCodEmail(email, cod).catch(function (e) { throw eroareCampuri([{ camp: input, mesaj: mesajAuth(e) }], mesajAuth(e)); });
       }).then(function () {
         ss(CHEIE_EMAIL, null);
-        setTimeout(function () { dupaAutentificare('cont_creat'); }, 500);
+        ss(CHEIE_ROL_COD, null);
+        clearInterval(ceasRetrimite);
+        // Pasul 12-P1: datele pre-înscrierii în ciornă, apoi panoul.
+        setTimeout(function () { salveazaPreinscriere().then(function () { dupaAutentificare('cont_creat'); }); }, 500);
         return tr('Email confirmat.');
       });
     }, { form: $('auth-verify-cod'), textSalveaza: tr('Se verifică…'), textOk: tr('✓ Confirmat') });
@@ -868,7 +1003,7 @@
       if (!email) throw new Error(tr('Nu mai știm adresa de email. Apasă „Ai greșit adresa? Înapoi la date” și trimite din nou.'));
       return asiguraAuth().then(function () {
         return window.MyDarrinAuth.retrimiteCodEmail(email).catch(function (e) { throw new Error(mesajAuth(e)); });
-      }).then(function () { return tr('Am retrimis codul la {email}.', { email: email }); });
+      }).then(function () { setTimeout(function () { pornesteRetrimitere(RETRIMITE_DUPA_S); }, 1900); return tr('Am retrimis codul la {email}.', { email: email }); });
     }, { textSalveaza: tr('Se trimite…'), textOk: tr('✓ Trimis') });
   }
 
@@ -934,7 +1069,8 @@
     $('mdc-tip-cont').addEventListener('submit', cuFeedback(function () { trimiteTipCont($('mdc-tip-cont-btn')); }));
     $('mdc-retrimite').addEventListener('click', cuFeedback(retrimiteCod));
     $('mdc-alt-email').addEventListener('click', function () { stare.pasInscriere = 'date'; arataPanou('register'); focusPrimul(); });
-    $('verify-cod-input').addEventListener('input', function () { this.value = this.value.replace(/\D/g, '').slice(0, 6); });
+    // Lipirea („123 456”, „Codul: 123456”) și tastarea: doar cifrele, cel mult 6.
+    $('verify-cod-input').addEventListener('input', function () { this.value = this.value.replace(/\D/g, '').slice(0, 6); deseneazaCutii(); });
   }
 
   // Tab nu iese din fereastră cât e deschisă.
@@ -977,6 +1113,10 @@
     switchTab: switchAuthTab, deschidePentruRol: deschidePentruRol, rolDinTip: rolDinTip, alegeTipPartener: alegeTipPartener,
     ROLURI: ROLURI, TIPURI: TIPURI, INVESTITOR: INVESTITOR, CHEIE_MESAJ_PAGINA: CHEIE_MESAJ_PAGINA,
     rolAles: function () { return stare.rol; },
+    // Pasul 12-P1: pagina de pre-înscriere a partenerului refolosește înregistrarea,
+    // ecranul de cod și salvarea datelor în ciornă.
+    inregistreaza: inregistreazaCont, arataCod: arataCod, salveazaPreinscriere: salveazaPreinscriere,
+    CHEIE_PREINSCRIERE: CHEIE_PREINSCRIERE, telefonNormalizat: telefonNormalizat,
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', laIncarcare);

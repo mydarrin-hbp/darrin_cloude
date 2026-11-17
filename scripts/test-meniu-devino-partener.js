@@ -224,11 +224,11 @@ function profil(stare) {
           verifica(b && b.stare === stare && b.text === TEXT[stare][limba ? 0 : 1], `${et}: butonul din meniu ${JSON.stringify(b)}`);
           if (stare === 'activare' || stare === 'verificare' || stare === 'activ') verifica(b && /mydarrin-dashboard-partener\.html\?type=servicii/.test(b.href), `${et}: butonul nu duce în dashboard (${b && b.href})`);
           if (stare === 'vizitator' && limba === 'ro') {
-            // Clic: fereastra de cont, la „Creare cont”, cu „Partener” ales.
+            // Pasul 12-P1: clic → pre-înscrierea partenerului (/parteneri/inscriere), nu fereastra de cont.
+            verifica(b && b.href === '/parteneri/inscriere', `${et}: butonul din meniu → ${b && b.href} (aștept /parteneri/inscriere)`);
             await p.evaluate(() => document.querySelector('[data-meniu-partener="antet"] [data-cta-partener]').click());
-            await p.waitForFunction(() => { const m = document.getElementById('auth-modal'); return m && !m.classList.contains('hidden'); }, null, { timeout: 8000 }).catch(() => {});
-            const c = await p.evaluate(() => { const r = document.querySelector('#auth-modal input[name="mdc-cat"]:checked'); return r ? r.value : null; });
-            verifica(c === 'partener', `${et}: clicul nu deschide fereastra de cont cu „Partener” (${c})`);
+            await p.waitForURL(/parteneri\/inscriere/, { timeout: 8000 }).catch(() => {});
+            verifica(new URL(p.url()).pathname === '/parteneri/inscriere', `${et}: clicul nu duce la pre-înscriere (${p.url()})`);
           }
           if (stare === 'vizitator' && !limba) {
             const l = await intrari(p, '[data-meniu-partener="antet"]');

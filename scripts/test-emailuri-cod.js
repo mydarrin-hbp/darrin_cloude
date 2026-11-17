@@ -16,7 +16,7 @@
 //     fără roșu → cod → destinația (clientul în catalog, partenerul în dashboard);
 //     limita de coduri → mesajul spune să aștepte un minut; în engleză;
 //   - „Creare cont” cu un email neconfirmat → ecranul de cod;
-//   - indiciul „Spam sau Promoții” sub câmpul codului;
+//   - sfatul „Promoții și Spam” sub câmpul codului (macheta B1.2, pasul 12-P1; expeditorul, după confirmarea LM);
 //   - „Devino partener” (11-R3g: hub-ul) se deschide cu hero, tipuri și pași, fără file goale;
 //   - 390, 768, 1024, 1366 px: fără derulare orizontală, fără erori JS.
 // Rulare: node scripts/test-emailuri-cod.js
@@ -226,8 +226,22 @@ async function testeBrowser() {
     await p.click(`#auth-modal label[data-mdc-cat="${cat}"]`);
     if (tip) await p.click(`#auth-modal label[data-mdc-rol="${tip}"]`);
     await p.click('#mdc-rol-continua');
-    await completeazaDate(p);
-    await p.click('#mdc-register-btn');
+    if (tip) {
+      // Pasul 12-P1: partenerul își creează contul pe pagina de pre-înscriere.
+      await p.waitForURL(/parteneri\/inscriere/, { timeout: 8000 });
+      await p.waitForFunction(() => window.MDCont && window.MDFeedback, null, { timeout: 10000 });
+      await p.fill('#pi-oras', 'Iași');
+      await p.fill('#pi-prenume', 'Ana');
+      await p.fill('#pi-nume', 'Popescu');
+      await p.fill('#pi-tel', '+40 712 345 678');
+      await p.fill('#pi-email', 'ana@example.com');
+      await p.fill('#pi-parola', 'parola-lunga-1');
+      await p.check('#pi-gdpr');
+      await p.click('#pi-trimite');
+    } else {
+      await completeazaDate(p);
+      await p.click('#mdc-register-btn');
+    }
     await p.waitForSelector('#verify-cod-input', { state: 'visible', timeout: 8000 });
   }
   async function login(p) {
@@ -269,7 +283,7 @@ async function testeBrowser() {
       await asteapta(1200);
       verifica(apeluri.bunVenit.length === 0 && apeluri.vechi === 0, `${et}: email de bun venit cerut înainte de cod (${apeluri.bunVenit.length} / vechi ${apeluri.vechi})`);
       const s = await stareCod(p);
-      verifica(s.indiciuVizibil && /Spam sau Promoții/.test(s.indiciu), `${et}: lipsește indiciul „Spam sau Promoții” sub cod („${s.indiciu}”)`);
+      verifica(s.indiciuVizibil && /Promoții și Spam/.test(s.indiciu), `${et}: lipsește sfatul „Promoții și Spam” („${s.indiciu}”)`);
       await p.fill('#verify-cod-input', '123456');
       await p.click('#mdc-cod-btn');
       verifica(await asteaptaNavigare(nav, dest), `${et}: după cod a ajuns la ${nav.join(' → ') || 'nicăieri'} (așteptat ${dest})`);
@@ -304,7 +318,7 @@ async function testeBrowser() {
       verifica(s.email === 'ana@example.com', `${et}: emailul de pe ecranul de cod e „${s.email}”`);
       if (!limba) {
         const text = await p.evaluate(() => document.getElementById('auth-verify-cod').innerText);
-        verifica(/Check your Spam or Promotions folder too/.test(text), `${et}: indiciul Spam nu e în engleză`);
+        verifica(/Check Promotions and Spam/.test(text), `${et}: sfatul „Promoții și Spam” nu e în engleză`);
         const ro = text.match(/[ăâîșțşţ][^\n]{0,30}/gi) || [];
         verifica(!ro.length, `${et}: text românesc pe ecranul de cod: ${ro.slice(0, 3).join(' | ')}`);
       }

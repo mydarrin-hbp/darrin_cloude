@@ -7,6 +7,7 @@
 //   /api/public/tari-active       → aceleași țări
 //   orice alt /api/...            → 503 (paginile trebuie să se randeze și așa)
 //   /_vercel/insights/script.js   → script gol (Web Analytics, pasul 11-A1)
+//   rescrierile fixe din vercel.json (ex. /parteneri/inscriere), pasul 12-P1
 // Datele simulate urmează auditul live din 16 oct. 2026 (checkout activ în
 // RO, AT, BG, GR, GB, MD) și deciziile LM din 17 oct. (24 h, 6 zile); nu sunt
 // citite din baza de date.
@@ -54,6 +55,15 @@ const REDIRECTURI = (() => {
   } catch (e) { return []; }
 })();
 
+// Pasul 12-P1: rescrierile din vercel.json cu sursă fixă și fără parametri în
+// destinație (ex. /parteneri/inscriere → /mydarrin-inscriere-partener.html), ca pe Vercel.
+const RESCRIERI = (() => {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(RADACINA, 'vercel.json'), 'utf8')).rewrites
+      .filter((r) => !r.has && !/[:(*]/.test(r.source) && !/[?:]/.test(r.destination) && r.source !== '/');
+  } catch (e) { return []; }
+})();
+
 // Destinația păstrează parametrii adresei (cei din destinație au întâietate).
 function redirect(url, res) {
   const r = REDIRECTURI.find((x) => x.source === url.pathname);
@@ -68,7 +78,8 @@ function redirect(url, res) {
 function cerere(req, res, opt) {
   const url = new URL(req.url, 'http://x');
   if (opt && opt.redirecturi && redirect(url, res)) return;
-  const p = decodeURIComponent(url.pathname);
+  const rescriere = RESCRIERI.find((r) => r.source === url.pathname);
+  const p = rescriere ? rescriere.destination : decodeURIComponent(url.pathname);
   // Pasul 11-A1: scriptul Vercel Web Analytics (servit de Vercel în producție):
   // aici un script gol, fără trimitere de date.
   if (p === '/_vercel/insights/script.js') {

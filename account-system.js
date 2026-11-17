@@ -165,7 +165,8 @@ async function confirmaCodEmail(email, cod) {
   // Pasul 11-A1: emailul confirmat, primul pas al înscrierii de partener.
   const M = window.MYD_MASURARE;
   const rol = data.user && data.user.user_metadata && data.user.user_metadata.rol_solicitat;
-  if (M && rol && /^partener_/.test(rol)) M.eveniment('partner_step_completed', { step: 'email_confirmed', role: M.rol(rol) });
+  // Pasul 12-P1: evenimentul propriu, partner_email_verified (înainte: partner_step_completed, step=email_confirmed).
+  if (M && rol && /^partener_/.test(rol)) M.eveniment('partner_email_verified', { role: M.rol(rol) });
   return data.user;
 }
 

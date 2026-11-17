@@ -178,7 +178,7 @@ const ZGOMOT_PAGINA = { 'mydarrin-pitch-deck': /^\[pitch-deck\] Error: http 503(
 
     // Deschiderea din URL (pasul 11-R3g): mydarrin-devino-partener.html?type=<tip> duce la
     // hub (cum-devii-partenerul-nostru), cu tipul păstrat: cardul tipului e marcat, iar
-    // butonul principal deschide fereastra de cont cu „Partener” și tipul deja bifat.
+    // butonul principal duce la pre-înscrierea partenerului, cu tipul (pasul 12-P1).
     // type=asigurator (linkurile „Asigurator” de pe celelalte pagini) → asigurari.
     if (!process.argv.slice(2).length || pagini.includes('cum-devii-partenerul-nostru')) {
       for (const latime of LATIMI) {
@@ -195,9 +195,12 @@ const ZGOMOT_PAGINA = { 'mydarrin-pitch-deck': /^\[pitch-deck\] Error: http 503(
           const marcat = await p.evaluate((x) => { const c = document.getElementById('tip-' + x); return { cale: location.pathname, tip: new URLSearchParams(location.search).get('type'), marcat: !!c && c.classList.contains('rp-ales') }; }, t);
           verifica(marcat.cale === '/cum-devii-partenerul-nostru' && marcat.tip === tip && marcat.marcat, `${et}: ${JSON.stringify(marcat)}`);
           await p.click('.rp-hero [data-rp-principal]');
-          await p.waitForFunction(() => { const m = document.getElementById('auth-modal'); return m && !m.classList.contains('hidden'); }, null, { timeout: 8000 }).catch(() => {});
-          const rol = await p.evaluate(() => { const r = document.querySelector('#auth-modal input[name="mdc-rol"]:checked'); return r ? r.value : null; });
-          verifica(rol === 'partener_' + t, `${et}: rolul din fereastra de cont „${rol}” (așteptat „partener_${t}”)`);
+          await p.waitForURL(/parteneri\/inscriere/, { timeout: 8000 }).catch(() => {});
+          const dest = new URL(p.url());
+          verifica(dest.pathname === '/parteneri/inscriere' && dest.searchParams.get('categorie') === t, `${et}: butonul principal → ${dest.pathname}${dest.search} (așteptat categoria „${t}”)`);
+          await p.waitForFunction(() => !!document.querySelector('input[name="pi-categorie"]:checked'), null, { timeout: 8000 }).catch(() => {});
+          const ales = await p.evaluate(() => (document.querySelector('input[name="pi-categorie"]:checked') || {}).value || null);
+          verifica(ales === t, `${et}: pe pre-înscriere, categoria aleasă „${ales}” (așteptat „${t}”)`);
           verifica(!erori.length, `${et}: ${erori.length} erori JS (${erori.slice(0, 3).join(' | ')})`);
           await ctx.close();
         }
