@@ -28,6 +28,15 @@
 
    Folosit de cont-dashboard.js (MYD_PAZA.verifica):
      MYD_ACTIVARE.deschide(profil, optiuni, { pas })
+
+   Pasul 12-P1 (17 nov. 2026): din panoul „cont nou” (panou-cont-nou.js),
+     MYD_ACTIVARE.deschide(profil, optiuni, { pas, unPas: true, laInchidere })
+   deschide doar pasul cerut, în orice ordine. „← Înapoi la panou” și salvarea
+   pasului duc înapoi în panou (laInchidere), cu starea reîncărcată. Un pas
+   care așteaptă firma (pe server: „blocat”, fiindcă endpoint-urile lui cer
+   firma salvată) arată de ce, cu trimitere la „Firma (CUI)”. Datele
+   pre-înscrierii (ciorna.date.preinscriere) precompletează pașii: codul NACE
+   al profesiei la „Profesii”, orașul la zonele curierului.
    ════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -173,6 +182,15 @@
   }
   function citeste(url) { return cerere(url).catch(function () { return null; }); }
 
+  // Pasul 12-P1: datele pre-înscrierii (categoria, profesia, orașul), din ciornă.
+  function preinscriere() { return (st.ciorna && st.ciorna.date && st.ciorna.date.preinscriere) || {}; }
+  function precompleteaza(cheie, corp) {
+    var p = preinscriere();
+    if (cheie === 'profesii' && st.act.tip === 'curier' && p.oras) {
+      var loc = corp.querySelector('#mya-z-loc');
+      if (loc && !loc.value) loc.value = p.oras;
+    }
+  }
   function stare(cheie) { var x = st.act && st.act.pasi[PASI.indexOf(cheie)]; return x ? x.stare : 'de_completat'; }
   function facut(cheie) { var s = stare(cheie); return s === 'completat' || s === 'in_verificare'; }
   function deschis(n) { return n === 1 || facut('firma'); }
@@ -418,6 +436,10 @@
       if (c.length) {
         principal = (c.find(function (x) { return x.principal; }) || c[0]).cod_nace;
         secundare = c.filter(function (x) { return x.cod_nace !== principal; }).map(function (x) { return x.cod_nace; });
+      } else {
+        // Pasul 12-P1: profesia de la pre-înscriere → codul NACE principal (îl poate schimba).
+        var dinPre = preinscriere().nace;
+        if (dinPre && toate.some(function (x) { return x.cod === dinPre; })) principal = dinPre;
       }
       $('mya-nace-caut').addEventListener('input', deseneaza);
       deseneaza();
@@ -700,13 +722,24 @@
         '<p class="mya-sub">' + esc(tr(dupaTip(SUB[cheie], tip))) + '</p>' +
         '<form id="mya-corp" novalidate></form><div id="mya-msg"></div></section>' +
         '<div class="mya-subsol">' +
-          (st.pas > 1 ? '<button type="button" class="mya-inapoi" id="mya-inapoi">← ' + esc(tr('Înapoi')) + '</button>' : '') +
+          (st.unPas ? '<button type="button" class="mya-inapoi" id="mya-inapoi">← ' + esc(tr('Înapoi la panou')) + '</button>'
+            : st.pas > 1 ? '<button type="button" class="mya-inapoi" id="mya-inapoi">← ' + esc(tr('Înapoi')) + '</button>' : '') +
           '<span class="mya-auto" id="mya-auto" aria-live="polite"></span>' +
           '<button type="button" class="mya-continua" id="mya-continua"></button>' +
         '</div>' +
       '</main>';
     var corp = $('mya-corp');
     st.formularGata = false;
+    // Pasul 12-P1: din panou, un pas care așteaptă firma: explicația, nu un formular care n-ar putea fi salvat.
+    if (st.unPas && !deschis(st.pas)) {
+      corp.outerHTML = '<div class="mya-stare info" id="mya-corp" role="status">' + esc(tr('Pasul acesta se deschide după ce salvezi firma (CUI): îl legăm de firma ta.')) + '</div>';
+      $('mya-continua').textContent = tr('Completează firma');
+      $('mya-continua').onclick = function () { mergiLa(1); };
+      if ($('mya-inapoi')) $('mya-inapoi').onclick = inchideUnPas;
+      leagaAntet();
+      rad.scrollTop = 0;
+      return;
+    }
     st.pasCurent = PAS[cheie](corp);
     var pc = st.pasCurent;
     var bt = $('mya-continua');
@@ -717,6 +750,7 @@
     Promise.resolve(pc.gata).then(function () {
       var d = st.ciorna.date[cheie];
       if (d) { aplicaCiorna(corp, d); if (pc.dupaCiorna) pc.dupaCiorna(d); }
+      else precompleteaza(cheie, corp);
       st.formularGata = true;
       arataSalvat();
     });
@@ -725,7 +759,9 @@
     corp.addEventListener('focusout', function () { programeaza(400); });
     corp.addEventListener('submit', function (e) { e.preventDefault(); continua(); });
     bt.onclick = continua;
-    if ($('mya-inapoi')) $('mya-inapoi').onclick = function () { retineFormular(); mergiLa(st.pas - 1); };
+    if ($('mya-inapoi')) $('mya-inapoi').onclick = st.unPas
+      ? function () { retineFormular(); salveazaCiorna(false); inchideUnPas(); }
+      : function () { retineFormular(); mergiLa(st.pas - 1); };
     leagaAntet();
     Array.prototype.forEach.call(rad.querySelectorAll('.mya-pasi [data-deschis]'), function (b) {
       b.onclick = function () { retineFormular(); mergiLa(Number(b.getAttribute('data-pas'))); };
@@ -736,7 +772,7 @@
   }
 
   function mergiLa(n) {
-    if (n < 1 || n > 6 || !deschis(n)) return;
+    if (n < 1 || n > 6 || (!st.unPas && !deschis(n))) return;
     // Ciorna pasului părăsit e deja reținută; o singură salvare, cu poziția nouă.
     clearTimeout(st.ceas);
     st.pas = n; randeaza(); salveazaCiorna(true);
@@ -757,6 +793,8 @@
       if (!r || !r.ok) return;
       masoaraPas(cheie);
       if (cheie === 'contract') { termina(); return; }
+      // Pasul 12-P1: din panou, înapoi în panou, cu starea actualizată.
+      if (st.unPas) { setTimeout(inchideUnPas, 500); return; }
       setTimeout(function () { st.pas = Math.min(6, st.pas + 1); randeaza(); salveazaCiorna(true); }, 500);
     });
   }
@@ -784,6 +822,14 @@
     location.reload();
   }
 
+  // Pasul 12-P1: înapoi în panoul „cont nou”, care își reîncarcă starea.
+  function inchideUnPas() {
+    var dupa = st.laInchidere;
+    inchide();
+    st.unPas = false; st.laInchidere = null;
+    if (typeof dupa === 'function') dupa();
+  }
+
   function inchide() {
     var rad = $('myd-activare-pagina');
     if (rad) rad.remove();
@@ -801,6 +847,7 @@
     if (!profil || !profil.activare) return null;
     stil();
     st.profil = profil; st.act = profil.activare; st.opt = optiuni || {};
+    st.unPas = !!(cum && cum.unPas); st.laInchidere = (cum && cum.laInchidere) || null;
     var rad = $('myd-activare-pagina');
     if (!rad) {
       rad = document.createElement('div');
@@ -822,7 +869,7 @@
       var ceruta = cum && cum.pas;
       var dinCiorna = st.ciorna && st.ciorna.pas_curent;
       var pas = ceruta || dinCiorna || primulNefacut();
-      st.pas = deschis(pas) ? pas : 1;
+      st.pas = st.unPas && ceruta ? ceruta : (deschis(pas) ? pas : 1);
       randeaza();
       return rad;
     });

@@ -51,12 +51,16 @@
   var EVENIMENTE = {
     partner_landing_view: 1, partner_cta_click: 1, account_created: 1,
     partner_step_completed: 1, partner_activation_completed: 1, zone_unavailable_view: 1,
+    // Pasul 12-P1: pre-înscrierea partenerului (/parteneri/inscriere).
+    partner_signup_start: 1, partner_signup_error: 1, partner_email_verified: 1,
     service_view: 1, add_to_cart: 1, checkout_started: 1, order_created: 1, darrin_ai_used: 1,
   };
   // Doar aceste chei pot pleca într-un eveniment (plus sursa și limba).
   var CHEI_PERMISE = {
     partner_type: 1, position: 1, role: 1, step: 1, item_type: 1, item_category: 1,
     item_slug: 1, order_type: 1, page: 1,
+    // Pasul 12-P1: doar codul erorii (ex. camp_lipsa, email_existent), niciodată date personale.
+    error_code: 1,
   };
 
   // Tipul de partener, din valorile interne → valori stabile, în engleză.

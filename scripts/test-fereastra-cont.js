@@ -23,7 +23,7 @@
 // conținutul ferestrei se derulează când e mai înaltă decât ecranul.
 // Fluxuri (Supabase simulat în pagină, destinația simulată pe rută):
 //   - client nou → cod → catalog, cu „Contul a fost creat”;
-//   - partener nou (servicii) → cod → dashboard-ul rolului;
+//   - partener nou (servicii) → pre-înscriere (/parteneri/inscriere, pasul 12-P1) → cod → dashboard-ul rolului;
 //   - login pornit din checkout → revine în checkout, nu în catalog.
 // Rulare: node scripts/test-fereastra-cont.js [pagina ...]
 
@@ -180,14 +180,12 @@ async function completeazaDate(p) {
         await p.keyboard.press('Escape');
         verifica(!(await vizibila(p)), `${et}: Escape nu închide fereastra`);
 
-        // 4. „Devino partener” → servicii: „Partener” și „Servicii” deja alese (fără sesiune).
+        // 4. „Devino partener” → servicii: pre-înscrierea, cu „Servicii” ales (pasul 12-P1).
         if (pg === 'cum-devii-partenerul-nostru') {
-          await p.click('#tip-servicii [data-cta-card]');
-          await deschisa(p);
-          const a = await ales(p);
-          verifica(a.cat === 'partener' && a.rol === 'partener_servicii' && a.grila, `${et}: din „Devino partener” → servicii: ${JSON.stringify(a)}`);
-          verifica(await p.isVisible('#mdc-pas-rol'), `${et}: rolul ales nu se confirmă în primul ecran`);
           verifica(await p.evaluate(() => !document.getElementById('partner-modal') && !document.getElementById('f-firma')), `${et}: fereastra publică cu formularul de 14 câmpuri a rămas`);
+          await p.click('#tip-servicii [data-cta-card]');
+          await p.waitForURL(/parteneri\/inscriere/, { timeout: 8000 }).catch(() => {});
+          verifica(/\/parteneri\/inscriere\?categorie=servicii$/.test(p.url()), `${et}: din „Devino partener” → servicii: ${p.url()}`);
         }
 
         verifica(!erori.length, `${et}: ${erori.length} erori JS (${erori.slice(0, 3).join(' | ')})`);
@@ -205,16 +203,13 @@ async function completeazaDate(p) {
         const p = await ctx.newPage();
         const erori = [];
         urmaresteErori(p, erori);
-        if (pagina === 'index') {
-          await p.goto(`${baza}/index.html`, { waitUntil: 'networkidle', timeout: 60000 });
-          await p.evaluate(() => window.MDCont.deschide({ tab: 'register', rol: 'partener_servicii' }));
-        } else {
-          // Hub-ul cu ?type=servicii: butonul principal deschide fereastra cu tipul bifat.
-          await p.goto(`${baza}/cum-devii-partenerul-nostru.html?type=servicii`, { waitUntil: 'networkidle', timeout: 60000 });
-          await p.waitForFunction(() => { const b = document.querySelector('.rp-hero [data-rp-principal]'); return b && b.getAttribute('data-cta-stare') === 'vizitator'; }, null, { timeout: 10000 }).catch(() => {});
-          await p.click('.rp-hero [data-rp-principal]');
-        }
+        // Pasul 12-P1: rolul de partener preselectat duce la pre-înscriere; ecranul rolului
+        // se verifică din „Creare cont”, cu „Partener” și „Servicii” alese în fereastră.
+        await p.goto(`${baza}/${pagina === 'index' ? 'index' : 'cum-devii-partenerul-nostru'}.html`, { waitUntil: 'networkidle', timeout: 60000 });
+        await p.evaluate(() => window.MDCont.deschide({ tab: 'register' }));
         await deschisa(p);
+        await p.click('#auth-modal label[data-mdc-cat="partener"]');
+        await p.click('#auth-modal label[data-mdc-rol="partener_servicii"]');
         const a = await ales(p);
         verifica(a.cat === 'partener' && a.rol === 'partener_servicii' && a.grila, `${et}: din ?type=servicii: ${JSON.stringify(a)}`);
         const m = await p.evaluate(() => {
@@ -269,9 +264,8 @@ async function completeazaDate(p) {
           // Pasul 11-R3g: adresa veche duce la hub, cu ?type= păstrat; butonul principal are tipul.
           await p.waitForFunction(() => { const b = document.querySelector('.rp-hero [data-rp-principal]'); return b && b.getAttribute('data-cta-stare') === 'vizitator'; }, null, { timeout: 10000 }).catch(() => {});
           await p.click('.rp-hero [data-rp-principal]');
-          await deschisa(p);
-          const a = await ales(p);
-          verifica(a.cat === 'partener' && a.rol === rol, `${et}: ${JSON.stringify(a)} (așteptat ${rol})`);
+          await p.waitForURL(/parteneri\/inscriere/, { timeout: 8000 }).catch(() => {});
+          verifica(new URL(p.url()).searchParams.get('categorie') === rol.replace('partener_', ''), `${et}: pre-înscriere ${p.url()} (așteptat ${rol})`);
           verifica(!erori.length, `${et}: ${erori.length} erori JS (${erori.slice(0, 3).join(' | ')})`);
           await ctx.close();
         }
@@ -343,9 +337,31 @@ async function completeazaDate(p) {
       await flux('client nou → cod → catalog', 'index.html',
         { ok: true, tip: 'client_fara_comenzi', destinatie: '/mydarrin-catalog.html' },
         inscriere('client'), '/mydarrin-catalog.html', 'Contul a fost creat');
-      await flux('partener nou (servicii) → cod → dashboard-ul rolului', 'despre-noi.html',
+      // Pasul 12-P1: „Partener” → „Continuă” duce la pre-înscriere; acolo contul, codul, dashboard-ul.
+      await flux('partener nou (servicii) → pre-înscriere → cod → dashboard-ul rolului', 'despre-noi.html',
         { ok: true, tip: 'activare_partener', rol: 'partener_servicii', destinatie: '/mydarrin-dashboard-partener.html?type=servicii' },
-        inscriere('partener', 'partener_servicii'), '/mydarrin-dashboard-partener.html');
+        async (p) => {
+          await p.evaluate(() => window.toggleAuthModal());
+          await deschisa(p);
+          await p.click('#tab-register-btn');
+          await p.click('#auth-modal label[data-mdc-cat="partener"]');
+          await p.click('#auth-modal label[data-mdc-rol="partener_servicii"]');
+          await p.click('#mdc-rol-continua');
+          await p.waitForURL(/parteneri\/inscriere\?categorie=servicii/, { timeout: 8000 });
+          await p.waitForFunction(() => window.MDCont && window.MDFeedback, null, { timeout: 10000 });
+          await p.fill('#pi-oras', 'Iași');
+          await p.fill('#pi-prenume', 'Ana');
+          await p.fill('#pi-nume', 'Popescu');
+          await p.fill('#pi-tel', '+40 712 345 678');
+          await p.fill('#pi-email', 'ana@example.com');
+          await p.fill('#pi-parola', 'parola-lunga-1');
+          await p.check('#pi-gdpr');
+          // Profesia e opțională dacă lista nu se încarcă (API indisponibil pe serverul de test).
+          await p.click('#pi-trimite');
+          await p.waitForSelector('#verify-cod-input', { state: 'visible', timeout: 8000 });
+          await p.fill('#verify-cod-input', '123456');
+          await p.click('#mdc-cod-btn');
+        }, '/mydarrin-dashboard-partener.html');
       await flux('login pornit din checkout → revine în checkout', 'mydarrin-checkout.html',
         { ok: true, tip: 'client_fara_comenzi', destinatie: '/mydarrin-catalog.html' },
         async (p) => {

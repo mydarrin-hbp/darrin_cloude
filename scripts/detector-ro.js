@@ -56,7 +56,9 @@ const PUBLICE = ['index', 'servicii-urgente', 'despre-noi', 'afla-ce-facem', 'my
   'garantii-si-asigurari', 'ghidul-asiguratorului', 'reclamatii', 'cum-devii-furnizor-servicii',
   'cum-devii-partenerul-nostru', 'cum-devii-curier-de-cartier', 'cum-devii-furnizor-materiale', 'cum-devii-operator-inchirieri',
   'mydarrin-investitori', 'mydarrin-pitch-deck', 'acord-confidentialitate', 'acces-temporar', 'mydarrin-termeni',
-  'mydarrin-politica-confidentialitate'];
+  'mydarrin-politica-confidentialitate',
+  // Pasul 12-P1: pre-înscrierea partenerului (/parteneri/inscriere).
+  'mydarrin-inscriere-partener', 'mydarrin-inscriere-partener.html?profesie=instalator'];
 
 // Paginile cu cont. Wizard-ul de partener e „Completare profil partener”
 // (decizie LM, 14 oct. 2026): nu mai e pagină publică, se testează ca dashboard.

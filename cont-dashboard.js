@@ -346,6 +346,12 @@
     if (window.MYD_ACTIVARE) return window.MYD_ACTIVARE.deschide(p, opt, pas ? { pas: pas } : null);
     return null;
   }
+  // Pasul 12-P1: contul încă neactiv → panoul „cont nou” (panou-cont-nou.js,
+  // machetele B1.3–B1.5), nu pasul „Firma”. Fără panou (script lipsă): ca înainte.
+  function deschidePanouNou(p, opt) {
+    if (window.MYD_PANOU_NOU && window.MYD_PANOU_NOU.deschide(p, opt)) return true;
+    return false;
+  }
   function listaActivare(container, p, opt) {
     var act = p && p.activare;
     if (!container || !act) return null;
@@ -585,7 +591,7 @@
           listaActivare(ca, p, opt);
         }
         blocheazaPanouri(opt.blocheaza);
-        deschideFlux(p, opt);
+        if (!deschidePanouNou(p, opt)) deschideFlux(p, opt);
         return { profil: p, rol: act.rol, activare: true };
       }
 
@@ -632,7 +638,8 @@
           listaActivare(c, p, opt);
           var inchisa = false;
           try { inchisa = sessionStorage.getItem('myd_activare_inchisa') === '1'; } catch (e) {}
-          if (!p.activare.complet && !inchisa) deschideFlux(p, opt);
+          // Pasul 12-P1: panoul „cont nou” în locul pasului „Firma” deschis automat.
+          if (!deschidePanouNou(p, opt) && !p.activare.complet && !inchisa) deschideFlux(p, opt);
         } else if (partenerPagina) benziPartener(c, p, actiuniFinale(opt));
       }
       return { profil: p, rol: rol };

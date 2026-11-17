@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ro" class="myd-i18n-pending">
+<head>
+<meta charset="UTF-8">
+<!-- Limba: engleza implicită, româna din selector — i18n-loader.js, sincron, primul script -->
+<script src="/i18n-loader.js" data-pagina="mydarrin-inscriere-partener"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cont de partener My Darrin, în 60 de secunde</title>
+<meta name="description" content="Creează gratuit contul de partener My Darrin și primește comenzi în zona ta. Firma, contul bancar și documentele le completezi mai târziu, înainte de prima comandă.">
+<link rel="canonical" href="https://mydarrin.homebestpal.com/parteneri/inscriere">
+<!--
+  Pasul 12-P1 (17 nov. 2026, macheta B1.1, aprobată): pre-înscrierea partenerului
+  în 60 de secunde, la /parteneri/inscriere (rescriere în vercel.json și middleware.js).
+  - „Ce faci?”: Servicii · Materiale · Închirieri · Curier · Asigurări → profiles.rol_solicitat
+    (partener_servicii, partener_materiale, partener_inchirieri, partener_curier, partener_asigurari);
+  - Profesia (doar la Servicii): /api/public/profesii (competente_esco), preselectată din ?profesie=<slug>;
+  - înregistrarea, ecranul de cod și salvarea datelor în ciorna activării: cont-fereastra.js
+    (MDCont.inregistreaza / arataCod / salveazaPreinscriere), fără logică dublată;
+  - după cod: panoul partenerului, starea „cont nou” (panou-cont-nou.js).
+  Firma, IBAN-ul, profesiile și dotările, documentele și contractul rămân obligatorii,
+  înainte de prima comandă acceptată (regulile din server nu se schimbă).
+  Logica paginii: inscriere-partener.js.
+-->
+<style>
+  :root { --fond:#F6F8FB; --chenar:#E6ECF2; --camp:#D5DEE8; --albastru:#003366; --portocaliu:#FF8C00; --text:#1A2332; --gri:#4A5A6B; --turcoaz-inchis:#0B6E6A; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; overflow-x: clip; max-width: 100vw; }
+  body { background: var(--fond); color: var(--text); font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+  a { color: var(--albastru); }
+  .pi-antet { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #fff; border-bottom: 1px solid var(--chenar); }
+  .pi-antet img { border-radius: 9px; display: block; }
+  .pi-marca { font-size: 16px; font-weight: 700; color: var(--albastru); flex-grow: 1; text-decoration: none; }
+  .pi-intra { min-height: 44px; display: inline-flex; align-items: center; font-size: 13px; font-weight: 700; color: var(--albastru); background: none; border: 0; padding: 0 2px; cursor: pointer; font-family: inherit; text-decoration: none; }
+  .pi-intra:hover { text-decoration: underline; }
+  .pi-continut { max-width: 480px; margin: 0 auto; padding: 0 0 40px; }
+  .pi-intro { padding: 20px 16px 8px; display: flex; flex-direction: column; gap: 6px; }
+  .pi-eticheta { font-size: 12px; font-weight: 700; letter-spacing: .06em; color: var(--turcoaz-inchis); }
+  .pi-intro h1 { margin: 0; font-size: 24px; font-weight: 800; line-height: 1.2; }
+  .pi-intro p { margin: 0; font-size: 14px; line-height: 1.45; color: var(--gri); }
+  form.pi-form { padding: 8px 16px 0; display: flex; flex-direction: column; gap: 12px; }
+  .pi-camp { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 700; }
+  .pi-camp input, .pi-camp select { height: 46px; border-radius: 12px; border: 1px solid var(--camp); background: #fff; padding: 0 12px; font-size: 15px; color: var(--text); font-family: inherit; width: 100%; }
+  .pi-camp input:focus, .pi-camp select:focus { outline: 3px solid rgba(0,51,102,.18); border-color: var(--albastru); }
+  .pi-ajutor { font-size: 12px; font-weight: 400; color: var(--gri); }
+  .pi-rand { display: flex; gap: 10px; } .pi-rand > * { flex: 1 1 0; min-width: 0; }
+  fieldset.pi-ce { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  fieldset.pi-ce legend { font-size: 13px; font-weight: 700; padding: 0; margin-bottom: 6px; }
+  .pi-cipuri { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pi-cip { position: relative; }
+  .pi-cip input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .pi-cip span { min-height: 44px; padding: 0 11px; border-radius: 99px; border: 1px solid var(--camp); background: #fff; color: var(--text); font-size: 13px; display: inline-flex; align-items: center; cursor: pointer; }
+  .pi-cip input:checked + span { border: 2px solid var(--albastru); background: #EAF1F8; color: var(--albastru); font-weight: 700; padding: 0 10px; }
+  .pi-cip input:focus-visible + span { outline: 3px solid #0E9E99; outline-offset: 2px; }
+  .pi-gdpr { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 1.4; }
+  .pi-gdpr input { width: 22px; height: 22px; margin: 0; flex-shrink: 0; accent-color: var(--albastru); }
+  .pi-buton { min-height: 52px; border: none; border-radius: 14px; background: var(--portocaliu); color: #1A1A1A; font-size: 16px; font-weight: 800; cursor: pointer; font-family: inherit; }
+  .pi-buton:disabled { opacity: .8; cursor: default; }
+  .pi-nota { text-align: center; font-size: 12.5px; color: var(--gri); margin: 0; }
+  [hidden] { display: none !important; }
+  /* Selectorul de limbă (cont-dashboard.js): pe telefon, doar codul limbii, ca în machetă. */
+  @media (max-width: 480px) { #pi-limba .myd-limba-nume { display: none; } #pi-limba .myd-limba-cod { display: inline; } }
+  @media (min-width: 768px) { .pi-antet { padding: 14px 32px; } .pi-continut { padding-top: 16px; } }
+</style>
+<script>
+  window.__ENV__ = {
+    SUPABASE_URL: 'https://aacojyvujhywanaulvuu.supabase.co',
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhY29qeXZ1amh5d2FuYXVsdnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MjAzMzIsImV4cCI6MjA5ODQ5NjMzMn0.iwZnxctvazOL5OU_wqD7AvAKrVoOqLH_uvj1krK8-vs'
+  };
+</script>
+<script type="module" src="/lib/supabaseClient.js"></script>
+<script src="/account-system.js"></script>
+<script src="/ui-feedback.js"></script>
+<script src="/lib/destinatie-rol.js"></script>
+<script src="/cont-dashboard.js"></script>
+<script src="/seo-meta.js"></script>
+<script src="/cookie-consent.js" defer></script>
+<script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="/analytics-loader.js" defer></script><script src="/masurare.js" defer></script><script src="/_vercel/insights/script.js" defer></script>
+</head>
+<body>
+<header class="pi-antet">
+  <img src="/assets/img/logo-my-darrin.webp" alt="My Darrin" width="34" height="34">
+  <a class="pi-marca" href="/">My Darrin</a>
+  <span id="pi-limba"></span>
+  <button type="button" class="pi-intra" id="pi-intra">Intră în cont</button>
+</header>
+
+<main class="pi-continut">
+  <div class="pi-intro">
+    <span class="pi-eticheta">CONT DE PARTENER · GRATUIT</span>
+    <h1>Primește comenzi în zona ta</h1>
+    <p>Creezi contul în 60 de secunde. Firma, contul bancar și documentele le completezi mai târziu, înainte de prima comandă.</p>
+  </div>
+
+  <form class="pi-form" id="pi-form" novalidate>
+    <fieldset class="pi-ce">
+      <legend>Ce faci?</legend>
+      <div class="pi-cipuri" id="pi-categorii">
+        <label class="pi-cip"><input type="radio" name="pi-categorie" value="servicii"><span>Servicii</span></label>
+        <label class="pi-cip"><input type="radio" name="pi-categorie" value="materiale"><span>Materiale</span></label>
+        <label class="pi-cip"><input type="radio" name="pi-categorie" value="inchirieri"><span>Închirieri</span></label>
+        <label class="pi-cip"><input type="radio" name="pi-categorie" value="curier"><span>Curier</span></label>
+        <label class="pi-cip"><input type="radio" name="pi-categorie" value="asigurari"><span>Asigurări</span></label>
+      </div>
+    </fieldset>
+
+    <label class="pi-camp" id="pi-profesie-camp">Profesia
+      <select id="pi-profesie" aria-describedby="pi-profesie-ajutor">
+        <option value="">Alege profesia</option>
+      </select>
+      <span class="pi-ajutor" id="pi-profesie-ajutor" hidden>Aleasă deja din reclamă; o poți schimba.</span>
+    </label>
+
+    <label class="pi-camp">Orașul în care lucrezi
+      <input id="pi-oras" autocomplete="address-level2" maxlength="80" required>
+    </label>
+
+    <div class="pi-rand">
+      <label class="pi-camp">Prenume
+        <input id="pi-prenume" autocomplete="given-name" maxlength="60" required>
+      </label>
+      <label class="pi-camp">Nume
+        <input id="pi-nume" autocomplete="family-name" maxlength="60" required>
+      </label>
+    </div>
+
+    <label class="pi-camp">Telefon
+      <input id="pi-tel" type="tel" inputmode="tel" autocomplete="tel" maxlength="24" placeholder="+40 7xx xxx xxx" required>
+    </label>
+
+    <label class="pi-camp">Email
+      <input id="pi-email" type="email" inputmode="email" autocomplete="email" maxlength="254" placeholder="nume@gmail.com" required>
+    </label>
+
+    <label class="pi-camp">Parola
+      <input id="pi-parola" type="password" autocomplete="new-password" minlength="8" required aria-describedby="pi-parola-ajutor">
+      <span class="pi-ajutor" id="pi-parola-ajutor">Minimum 8 caractere.</span>
+    </label>
+
+    <label class="pi-gdpr">
+      <input type="checkbox" id="pi-gdpr" required>
+      <span>Accept <a href="/mydarrin-termeni.html" target="_blank" rel="noopener">Termenii și condițiile</a> și <a href="/mydarrin-politica-confidentialitate.html" target="_blank" rel="noopener">Politica de confidențialitate</a>.</span>
+    </label>
+
+    <button type="submit" class="pi-buton" id="pi-trimite">Creează cont de partener</button>
+    <div id="pi-msg"></div>
+    <div id="pi-recuperare"></div>
+    <p class="pi-nota" id="pi-nota">Primești un cod pe email · 0% comision din manoperă</p>
+  </form>
+</main>
+
+<script src="/cont-fereastra.js" defer></script>
+<script src="/inscriere-partener.js" defer></script>
+</body>
+</html>

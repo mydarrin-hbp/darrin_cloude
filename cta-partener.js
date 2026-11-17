@@ -32,6 +32,10 @@
      data-cta-card — butonul „Creează cont” de pe cardurile tipurilor din hub,
        cu texte scurte (TEXT_CARD).
    Costul se scrie doar „GRATUIT” / „FREE” (decizia LM, 3 nov. 2026).
+
+   Pasul 12-P1 (17 nov. 2026): vizitatorul merge la pre-înscrierea în 60 de
+   secunde, /parteneri/inscriere?categorie=<tip> (link real, nu fereastra de
+   cont). Clientul conectat păstrează alegerea tipului pe contul lui.
    ════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -157,6 +161,12 @@
     el.setAttribute('data-cta-stare', r.stare);
     if (r.destinatie && (r.stare === 'activare' || r.stare === 'verificare' || r.stare === 'activ')) {
       el.setAttribute('href', r.destinatie);
+      el.onclick = null;
+      return;
+    }
+    // Pasul 12-P1: vizitatorul → pagina de pre-înscriere, cu categoria butonului.
+    if (r.stare === 'vizitator') {
+      el.setAttribute('href', '/parteneri/inscriere' + (tip ? '?categorie=' + encodeURIComponent(tip) : ''));
       el.onclick = null;
       return;
     }
