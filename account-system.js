@@ -355,7 +355,26 @@ function togglePasswordVisibility(inputId, btnEl) {
    Se apelează la încărcarea mydarrin-superadmin.html /
    mydarrin-backoffice-serviciu.html.
    ════════════════════════════════════════════════════════════════ */
+// Pasul 11-I3b (17 nov. 2026): clientul Supabase e un modul (lib/supabaseClient.js),
+// gata după scripturile paginii; barierele îl așteaptă (evenimentul
+// myd:supabase-gata), nu presupun că e deja încărcat. Fără client în 10 s:
+// ca înainte (sb() aruncă, pagina trimite pe site). Regulile nu se schimbă.
+function clientSupabaseGata(ms) {
+  if (window.supabaseClient) return Promise.resolve(true);
+  return new Promise(function (ok) {
+    let gata = false;
+    const fin = function () {
+      if (gata) return;
+      gata = true; clearTimeout(ceas); window.removeEventListener('myd:supabase-gata', fin);
+      ok(!!window.supabaseClient);
+    };
+    const ceas = setTimeout(fin, ms);
+    window.addEventListener('myd:supabase-gata', fin);
+  });
+}
+
 async function enforceSuperadminBarrier() {
+  await clientSupabaseGata(10000);
   const user = await getCurrentUser();
   const roles = await getUserRoles(user);
   if (!user || !roles.includes('superadmin')) {
@@ -366,6 +385,7 @@ async function enforceSuperadminBarrier() {
 }
 
 async function enforceAdminBarrier() {
+  await clientSupabaseGata(10000);
   const user = await getCurrentUser();
   const roles = await getUserRoles(user);
   if (!user || !(roles.includes('admin') || roles.includes('superadmin'))) {
@@ -380,6 +400,7 @@ async function enforceAdminBarrier() {
    o înregistrare în admin_permissions pentru acea secțiune, cu
    poate_scrie = true (acordată explicit de un superadmin din RBAC). */
 async function enforceSuperadminOrPermission(sectiune) {
+  await clientSupabaseGata(10000);
   const user = await getCurrentUser();
   const roles = await getUserRoles(user);
   if (!user) {

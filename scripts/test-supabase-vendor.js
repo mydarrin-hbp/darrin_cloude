@@ -5,13 +5,17 @@
 //      .mydarrin.homebestpal.com, păstrată după reîncărcare; parolă greșită → eroare;
 //   B. cont nou cu cod din email (performRegister → confirmaCodEmail): fără
 //      sesiune până la cod; cod greșit → eroare; codul corect → sesiune;
-//   C. sesiune creată cu versiunea veche (lib/supabaseClient.js din main, cu
+//   C. sesiune creată cu versiunea veche (lib/supabaseClient.js din ac9dcd0, cu
 //      supabase-js de pe esm.sh): citită de 2.45.0 fără cerere; după expirarea
 //      access_token-ului, reîmprospătată o singură dată, cu refresh token-ul
 //      vechi, iar cookie-urile se rescriu; cookie-ul rămâne citibil de
 //      middleware.js și de lib/profil-cont.js;
 //   D. ieșirea din cont (performLogout): /auth/v1/logout, toate cookie-urile de
-//      sesiune șterse, redirecționare spre site.
+//      sesiune șterse, redirecționare spre site;
+//   E. pasul 11-I3b (17 nov. 2026): superadminul autentificat rămâne pe
+//      admin.…/mydarrin-superadmin (pagina reală). Bariera din pagină e un
+//      <script type="module"> inline, după lib/supabaseClient.js: un `await` la
+//      nivelul modulului clientului o lăsa să ruleze fără client → homepage.
 // Paginile se servesc pe https://www.mydarrin.homebestpal.com prin interceptare
 // (cookie-urile Secure pe domeniul părinte funcționează ca în producție);
 // serverul Supabase Auth e simulat — nicio cerere nu ajunge la Supabase.
@@ -52,8 +56,10 @@ function serverAuth() {
     const req = route.request();
     const u = new URL(req.url());
     const corp = (() => { try { return JSON.parse(req.postData() || '{}'); } catch (e) { return {}; } })();
-    const json = (cod, b) => route.fulfill({ status: cod, contentType: 'application/json', headers: { 'access-control-allow-origin': SITE, 'access-control-allow-credentials': 'true', 'access-control-allow-headers': '*' }, body: b === undefined ? '' : JSON.stringify(b) });
-    if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': SITE, 'access-control-allow-methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS', 'access-control-allow-headers': '*' } });
+    // CORS ca Supabase: originea cererii (www. și admin.)
+    const origine = req.headers().origin || SITE;
+    const json = (cod, b) => route.fulfill({ status: cod, contentType: 'application/json', headers: { 'access-control-allow-origin': origine, 'access-control-allow-credentials': 'true', 'access-control-allow-headers': '*' }, body: b === undefined ? '' : JSON.stringify(b) });
+    if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': origine, 'access-control-allow-methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS', 'access-control-allow-headers': '*' } });
     const p = u.pathname.replace(/^\/auth\/v1/, '');
     const grant = u.searchParams.get('grant_type');
     s.apeluri.push({ m: req.method(), p, grant, corp, auth: req.headers().authorization || '' });
@@ -101,11 +107,24 @@ function pagina(clientJs) {
 <script src="/account-system.js"></script>
 </head><body><p>test autentificare</p></body></html>`;
 }
-const SURSA_VECHE = (() => { try { return execSync('git show main:lib/supabaseClient.js', { cwd: RADACINA, encoding: 'utf8' }); } catch (e) { return null; } })();
+// Versiunea veche = lib/supabaseClient.js de dinaintea pasului 11-I3 (ac9dcd0, PR #73): supabase-js de pe esm.sh.
+const SURSA_VECHE = (() => { try { return execSync('git show ac9dcd0:lib/supabaseClient.js', { cwd: RADACINA, encoding: 'utf8' }); } catch (e) { return null; } })();
 
 async function context(br, auth) {
   const ctx = await br.newContext();
-  await ctx.route(/\.supabase\.co\//, (r) => (/\/auth\/v1\//.test(r.request().url()) ? auth.trateaza(r) : r.fulfill({ status: 200, contentType: 'application/json', body: '[]' })));
+  await ctx.route(/\.supabase\.co\//, (r) => {
+    const url = r.request().url();
+    if (/\/auth\/v1\//.test(url)) return auth.trateaza(r);
+    const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'GET,POST,PATCH,DELETE,OPTIONS' };
+    if (r.request().method() === 'OPTIONS') return r.fulfill({ status: 204, headers: cors });
+    // profiles.roles (getUserRoles, .single()): rolurile din serverul simulat
+    if (/\/rest\/v1\/profiles/.test(url)) {
+      const id = (url.match(/id=eq\.([0-9a-f-]+)/) || [])[1];
+      const us = Object.values(auth.s.utilizatori).find((x) => x.id === id);
+      return r.fulfill({ status: 200, contentType: 'application/json', headers: cors, body: JSON.stringify({ roles: (us && us.roluri) || [] }) });
+    }
+    return r.fulfill({ status: 200, contentType: 'application/json', headers: cors, body: '[]' });
+  });
   await ctx.route((u) => u.hostname.endsWith('mydarrin.homebestpal.com'), async (r) => {
     const u = new URL(r.request().url());
     if (u.pathname === '/test-nou') return r.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: pagina('/lib/supabaseClient.js') });
@@ -113,9 +132,10 @@ async function context(br, auth) {
     if (u.pathname === '/lib/supabaseClient-vechi.js') return r.fulfill({ status: 200, contentType: 'application/javascript; charset=utf-8', body: SURSA_VECHE });
     if (u.pathname === '/' || u.pathname === '') return r.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: '<!doctype html><title>site</title><p>site</p>' });
     if (u.pathname.startsWith('/api/')) return r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
-    const f = path.join(RADACINA, decodeURIComponent(u.pathname));
+    let f = path.join(RADACINA, decodeURIComponent(u.pathname));
+    if (!path.extname(f) && fs.existsSync(f + '.html')) f += '.html'; // cleanUrls, ca pe Vercel
     if (!f.startsWith(RADACINA) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) return r.fulfill({ status: 404, body: '' });
-    const tip = /\.js$/.test(f) ? 'application/javascript; charset=utf-8' : /\.json$/.test(f) ? 'application/json' : 'text/plain';
+    const tip = /\.js$/.test(f) ? 'application/javascript; charset=utf-8' : /\.json$/.test(f) ? 'application/json' : /\.html$/.test(f) ? 'text/html; charset=utf-8' : /\.css$/.test(f) ? 'text/css' : /\.png$/.test(f) ? 'image/png' : /\.svg$/.test(f) ? 'image/svg+xml' : 'text/plain';
     return r.fulfill({ status: 200, contentType: tip, body: fs.readFileSync(f) });
   });
   const page = await ctx.newPage();
@@ -200,7 +220,7 @@ function sesiuneDinCookieuri(lista) {
       } else {
         const vers = await page.evaluate(() => [...document.querySelectorAll('script')].length && performance.getEntriesByType('resource').map((r) => r.name).find((n) => /esm\.sh\/@supabase\/supabase-js@[\d.]+\//.test(n)) || '');
         const vVeche = (vers.match(/supabase-js@([\d.]+)/) || [])[1] || '?';
-        verifica(vVeche !== '2.45.0', `C: sesiunea se creează cu versiunea veche, de pe esm.sh (${vVeche})`);
+        verifica(/^\d+\.\d+\.\d+$/.test(vVeche) && vVeche !== '2.45.0', `C: sesiunea se creează cu versiunea veche, de pe esm.sh (${vVeche})`);
         console.log(`  C: sesiunea veche creată cu supabase-js ${vVeche} (esm.sh), citită și reîmprospătată de 2.45.0 (lib/vendor/)`);
         const user = await page.evaluate(() => window.MyDarrinAuth.performLogin('vechi@example.com', 'Parola-Veche-1').then((x) => x && x.email, (e) => 'eroare: ' + e.message));
         verifica(user === 'vechi@example.com', `C: login cu versiunea veche (${user})`);
@@ -251,6 +271,36 @@ function sesiuneDinCookieuri(lista) {
         verifica(await page.evaluate(() => window.supabaseClient.auth.getSession().then((r) => !r.data.session)), 'D: după ieșire, nicio sesiune');
       }
       verifica(!erori.length, `C/D: fără erori JS (${erori.join(' | ')})`);
+      await ctx.close();
+    }
+
+    // ── E. Superadminul rămâne pe admin.…/mydarrin-superadmin ──
+    {
+      const auth = serverAuth();
+      const u = auth.utilizator('super@example.com'); u.parola = 'Parola-Super-1'; u.email_confirmed_at = new Date().toISOString(); u.roluri = ['superadmin'];
+      const { ctx, page } = await context(br, auth);
+      await ctx.route(/cdn\.tailwindcss\.com|cdn\.jsdelivr\.net|unpkg\.com|cdnjs\.cloudflare\.com|fonts\.(googleapis|gstatic)\.com|googletagmanager/, (r) => r.fulfill({ status: 200, contentType: /css/.test(r.request().url()) ? 'text/css' : 'application/javascript', body: '' }));
+      await page.goto(SITE + '/test-nou'); await gata(page);
+      const user = await page.evaluate(() => window.MyDarrinAuth.performLogin('super@example.com', 'Parola-Super-1').then((x) => x && x.email, (e) => 'eroare: ' + e.message));
+      verifica(user === 'super@example.com', `E: login superadmin (${user})`);
+      const ADMIN = 'https://admin.mydarrin.homebestpal.com';
+      if (process.env.DEPANARE) {
+        page.on('console', (m) => console.log('   [consola]', m.type(), m.text().slice(0, 200)));
+        page.on('request', (r) => { if (/supabase\.co|\/api\//.test(r.url())) console.log('   [cerere]', r.method(), r.url().slice(0, 140)); });
+        page.on('framenavigated', (f) => { if (f === page.mainFrame()) console.log('   [navigare]', f.url()); });
+      }
+      for (const incercare of [1, 2, 3]) {
+        await page.goto(ADMIN + '/mydarrin-superadmin', { waitUntil: 'load' });
+        await page.waitForTimeout(2500);
+        const st = await page.evaluate(() => ({ url: location.href, poarta: !!document.getElementById('auth-gate-overlay') }));
+        verifica(new URL(st.url).hostname === 'admin.mydarrin.homebestpal.com' && /mydarrin-superadmin/.test(st.url), `E${incercare}: superadminul rămâne pe admin.…/mydarrin-superadmin (${st.url})`);
+        verifica(!st.poarta, `E${incercare}: bariera din pagină trece („Se verifică accesul…” dispare)`);
+      }
+      // Un cont fără rolul superadmin e trimis tot pe site (regula neschimbată).
+      u.roluri = ['client'];
+      await page.goto(ADMIN + '/mydarrin-superadmin', { waitUntil: 'load' });
+      await page.waitForURL((x) => x.hostname === 'mydarrin.homebestpal.com', { timeout: 10000 }).catch(() => {});
+      verifica(new URL(page.url()).hostname === 'mydarrin.homebestpal.com', `E: fără rolul superadmin → site-ul public, ca înainte (${page.url()})`);
       await ctx.close();
     }
   } finally {
