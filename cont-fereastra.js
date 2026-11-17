@@ -73,8 +73,6 @@
   // activării după cod (salveazaPreinscriere).
   var CHEIE_ROL_COD = 'myd_pending_confirm_rol';
   var CHEIE_PREINSCRIERE = 'myd_preinscriere_v1';
-  // Expeditorul emailurilor cu cod (domeniul verificat, lib/email-sender.js).
-  var EXPEDITOR = 'noreply@homebestpal.com';
   var RETRIMITE_DUPA_S = 45;
   var PAGINA_INSCRIERE_PARTENER = '/parteneri/inscriere';
 
@@ -485,7 +483,8 @@
           '</div>' +
           '<div id="mdc-retrimite-msg" class="mdc-zona"></div>' +
           '<p class="mdc-cod-sfat" id="mdc-cod-indiciu"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A5A6B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>' +
-            '<span>' + tr('Nu-l găsești? Verifică Promoții și Spam. Emailul vine de la {expeditor}.', { expeditor: '<b translate="no">' + EXPEDITOR + '</b>' }) + '</span></p>' +
+            // Expeditorul nu apare până nu e confirmat de LM (decizia din 17 nov. 2026).
+            '<span>' + esc(tr('Nu-l găsești? Verifică Promoții și Spam.')) + '</span></p>' +
           '<p class="mdc-jos" style="margin-top:8px"><button type="button" class="mdc-link" id="mdc-alt-email">' + esc(tr('Ai greșit adresa? Înapoi la date')) + '</button></p>' +
         '</form>' +
       '</div>';

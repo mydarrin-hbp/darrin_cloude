@@ -16,7 +16,7 @@
 //     fără roșu → cod → destinația (clientul în catalog, partenerul în dashboard);
 //     limita de coduri → mesajul spune să aștepte un minut; în engleză;
 //   - „Creare cont” cu un email neconfirmat → ecranul de cod;
-//   - sfatul „Promoții și Spam”, cu expeditorul, sub câmpul codului (macheta B1.2, pasul 12-P1);
+//   - sfatul „Promoții și Spam” sub câmpul codului (macheta B1.2, pasul 12-P1; expeditorul, după confirmarea LM);
 //   - „Devino partener” (11-R3g: hub-ul) se deschide cu hero, tipuri și pași, fără file goale;
 //   - 390, 768, 1024, 1366 px: fără derulare orizontală, fără erori JS.
 // Rulare: node scripts/test-emailuri-cod.js
@@ -283,7 +283,7 @@ async function testeBrowser() {
       await asteapta(1200);
       verifica(apeluri.bunVenit.length === 0 && apeluri.vechi === 0, `${et}: email de bun venit cerut înainte de cod (${apeluri.bunVenit.length} / vechi ${apeluri.vechi})`);
       const s = await stareCod(p);
-      verifica(s.indiciuVizibil && /Promoții și Spam/.test(s.indiciu) && /noreply@homebestpal\.com/.test(s.indiciu), `${et}: lipsește sfatul „Promoții și Spam” cu expeditorul („${s.indiciu}”)`);
+      verifica(s.indiciuVizibil && /Promoții și Spam/.test(s.indiciu), `${et}: lipsește sfatul „Promoții și Spam” („${s.indiciu}”)`);
       await p.fill('#verify-cod-input', '123456');
       await p.click('#mdc-cod-btn');
       verifica(await asteaptaNavigare(nav, dest), `${et}: după cod a ajuns la ${nav.join(' → ') || 'nicăieri'} (așteptat ${dest})`);

@@ -304,7 +304,7 @@ async function testeBrowser() {
           const ret = await p.evaluate(() => ({ t: document.getElementById('mdc-retrimite').textContent, d: document.getElementById('mdc-retrimite').disabled }));
           verifica(ret.d && /0:4\d/.test(ret.t), `${et} B2: „Retrimite (0:4x)”, dezactivat (${ret.t})`);
           const sfat = await p.textContent('#mdc-cod-indiciu');
-          verifica(/noreply@homebestpal\.com/.test(sfat) && (lang === 'ro' ? /Promoții și Spam/.test(sfat) : /Promotions and Spam/.test(sfat)), `${et} B2: sfatul cu expeditorul (${sfat.trim()})`);
+          verifica((lang === 'ro' ? /Promoții și Spam/.test(sfat) : /Promotions and Spam/.test(sfat)) && !/@/.test(sfat), `${et} B2: sfatul Promoții / Spam, fără expeditor neconfirmat (${sfat.trim()})`);
           verifica(await portocalii(p, '#auth-modal') === 1, `${et} B2: un singur buton portocaliu`);
           // Lipirea: „12 34 56” → 123456, în cele 6 căsuțe.
           await p.fill('#verify-cod-input', 'Cod: 65 43 21');
@@ -327,7 +327,9 @@ async function testeBrowser() {
           const salut = await p.textContent('.mpn-salut');
           verifica(salut.includes(lang === 'ro' ? 'Bun venit, Ion' : 'Welcome, Ion') && salut.includes(lang === 'ro' ? 'Instalator' : 'Plumber') && salut.includes('Iași'), `${et} B3: salutul și profesia (${salut.replace(/\s+/g, ' ').trim()})`);
           const info = await p.textContent('.mpn-info b');
-          verifica(lang === 'ro' ? /Comenzi de instalator în Iași/.test(info) : /Plumber orders in Iași/.test(info), `${et} B3: cardul turcoaz (${info})`);
+          verifica(info === (lang === 'ro' ? 'Comenzi în zona ta · Instalator · Iași' : 'Orders in your area · Plumber · Iași'), `${et} B3: cardul turcoaz (${info})`);
+          const subLista = await p.textContent('.mpn-lista > .mpn-mic');
+          verifica(subLista === (lang === 'ro' ? 'Începi cu firma; restul îl faci în ce ordine vrei.' : 'Start with the company; do the rest in any order.'), `${et} B3: textul listei (${subLista})`);
           verifica(await p.textContent('.mpn-stare .mpn-insigna') === (lang === 'ro' ? 'Profil incomplet' : 'Profile incomplete'), `${et} B3: starea „Profil incomplet”`);
           const port = await p.evaluate(() => [...document.querySelectorAll('#myd-panou-nou *')].filter((b) => b.closest('button, a') && b.getClientRects().length && getComputedStyle(b).visibility !== 'hidden' && /255, 140, 0/.test(getComputedStyle(b).backgroundColor)).map((b) => b.tagName + '.' + b.className + ' ' + b.textContent.trim().slice(0, 30)));
           verifica(port.length === 1, `${et} B3: un singur buton portocaliu în panou (${port.join(' | ')})`);

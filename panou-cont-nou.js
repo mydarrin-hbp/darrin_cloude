@@ -281,24 +281,19 @@
 
   function infoHtml() {
     var t = tip();
-    var o = oras();
-    var unde = o || tr('zona ta');
-    var titlu, text;
+    // Decizia LM (17 nov. 2026): „Comenzi în zona ta · {profesie} · {oraș}”, pentru orice tip
+    // (profesia la servicii, tipul de partener la celelalte); orașul lipsă nu apare.
+    var titlu = [tr('Comenzi în zona ta'), eticheta(), oras()].filter(Boolean).join(' · ');
+    var text;
     if (t === 'servicii') {
-      var prof = numeProfesie();
-      titlu = prof ? tr('Comenzi de {profesie} în {oras}', { profesie: String(prof).toLowerCase(), oras: unde }) : tr('Comenzi de servicii în {oras}', { oras: unde });
       text = tr('Te anunțăm pe email și în aplicație când apare o comandă în zona ta. Vezi suma ta înainte să accepți; 0% comision din manoperă.');
     } else if (t === 'curier') {
-      titlu = tr('Livrări în {oras}', { oras: unde });
       text = tr('Te anunțăm pe email și în aplicație când apare o livrare în zona ta. Vezi suma ta înainte să accepți; 0% comision din manoperă.');
     } else if (t === 'asigurari') {
-      titlu = tr('Cereri de asigurare în {oras}', { oras: unde });
       text = tr('Te anunțăm pe email și în aplicație când un client din zona ta cere o poliță din oferta ta. Prețul public îl afișează platforma; tu acorzi un discount între 5% și 15%, pe categorie.');
     } else {
-      titlu = t === 'materiale' ? tr('Comenzi de materiale în {oras}', { oras: unde }) : tr('Comenzi de închirieri în {oras}', { oras: unde });
       text = tr('Te anunțăm pe email și în aplicație când un client din zona ta comandă din oferta ta. Prețul public îl afișează platforma; tu acorzi un discount între 5% și 15%, pe categorie.');
     }
-    titlu = titlu.charAt(0).toUpperCase() + titlu.slice(1);
     return '<section class="mpn-info" data-mpn-info="' + t + '">' + ICON.clopot + '<div><b>' + esc(titlu) + '</b><span>' + esc(text) + '</span></div></section>';
   }
 
@@ -310,7 +305,7 @@
     var lista = '<section class="mpn-card mpn-lista" aria-labelledby="mpn-t-lista">' +
       '<div class="mpn-cap-lista"><h2>' + esc(tr('Ce mai ai de făcut')) + '</h2><span>' + esc(tr('{n} din 6 pași', { n: sc.pasi_facuti })) + '</span></div>' +
       '<h2 id="mpn-t-lista" class="mpn-t-lista-tel">' + esc(tr('Ce mai ai de făcut')) + '</h2>' +
-      '<p class="mpn-mic">' + esc(tr('Obligatorii înainte de prima comandă acceptată. Le faci în ce ordine vrei.')) + '</p>' +
+      '<p class="mpn-mic">' + esc(tr('Începi cu firma; restul îl faci în ce ordine vrei.')) + '</p>' +
       sc.randuri.map(function (r) { return randHtml(r, sc); }).join('') +
       (urm ? '<button type="button" class="mpn-buton" id="mpn-continua" data-mpn-pas="' + (sc.randuri.filter(function (r) { return r.cheie === sc.urmatorul; })[0] || {}).pas + '">' + esc(tr(pePaTip(urm.urm, tip()))) + '</button>' : '') +
     '</section>';
