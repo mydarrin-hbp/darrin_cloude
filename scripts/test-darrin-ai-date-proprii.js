@@ -567,6 +567,8 @@ async function testeBrowser() {
             await pg.click(loc.trimite);
             await pg.waitForSelector(loc.rezultat);
             if (CAPTURI_B && latime === 390) { await pg.waitForTimeout(700); await captura2(pg, `${loc.nume}-${lang}-390-dupa`, loc.captura || '#dv-rezultat'); }
+            // Desktop: modalul din catalog cu conținutul pe toată lățimea (înainte: coloană îngustă în dreapta).
+            if (CAPTURI_B && latime === 1366 && loc.nume === 'catalog-ai') { await pg.waitForTimeout(700); await pg.screenshot({ path: path.join(CAPTURI_B, `${loc.nume}-${lang}-1366-dupa.png`) }); }
             egal(pg.erori, [], 'erori JS');
             adevarat((await depasire(pg)) <= 0, 'derulare orizontală');
             await pg.close();
@@ -617,6 +619,18 @@ async function testeBrowser() {
           await ctx.unroute(re);
         }
         await ctx.close();
+        // Modalul din catalog, înainte, la 1366 px (tot ecranul).
+        const vechiCatalog = dinMain('mydarrin-catalog.html');
+        if (vechiCatalog) {
+          const ctxD = await context(browser, 1366, lang);
+          await ctxD.route(/\/mydarrin-catalog\.html(\?|$)/, (r) => r.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: vechiCatalog }));
+          const pg = await pagina(ctxD, '/mydarrin-catalog.html');
+          await pg.evaluate(() => openConsultanta());
+          await pg.waitForTimeout(700);
+          await pg.screenshot({ path: path.join(CAPTURI_B, `catalog-ai-${lang}-1366-inainte.png`) });
+          await pg.close();
+          await ctxD.close();
+        }
       }
     }
 
