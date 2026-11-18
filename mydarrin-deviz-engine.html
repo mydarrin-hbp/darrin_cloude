@@ -491,7 +491,8 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
           <div class="flex-1">
             <span class="font-bold text-[#003366]">SUBTOTAL</span>
             <span class="text-[#8C9BAD] mx-2">=</span>
-            <span class="text-[#0E9E99] font-mono text-sm">manoperă + materiale + chirie scule + curier + asigurare + transport pe greutate + ajutor</span>
+            <span class="text-[#0E9E99] font-mono text-sm">cost de bază + transport + asigurare</span>
+            <div class="text-[11px] text-[#6B7A8D] mt-1 font-mono">cost de bază = manoperă + materiale + utilaje · transport = curier + transport pe greutate + ajutor · asigurare = cost de bază × cost_asigurare_pct <span class="text-[10px] text-[#8C9BAD]">(azi 1%)</span></div>
           </div>
           <div class="text-xs text-[#8C9BAD] text-right">din rețeta nivelului</div>
         </div>
@@ -520,7 +521,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
           <div class="flex-1">
             <span class="font-bold text-[#CC7000]">+ COMISION PLATFORMĂ — My Darrin</span>
             <span class="text-[#8C9BAD] mx-2">=</span>
-            <span class="text-[#FF8C00] font-mono text-sm">subtotal × comision_platforma_default_pct</span>
+            <span class="text-[#FF8C00] font-mono text-sm">cost de bază × comision_platforma_default_pct</span>
             <span class="ml-2 text-[10px] text-[#8C9BAD]">azi 12%</span>
           </div>
           <div class="text-xs text-[#CC7000] text-right font-bold">backoffice_config</div>
@@ -547,38 +548,43 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       </div>
 
       <div class="rounded-xl p-4 mb-6" style="background:#FFF0D6;border:1px solid #FFB866;font-size:12px;color:#6B7A8D;line-height:1.65">
-        <strong style="color:#CC7000">Eliminate din formulă la 22 iulie 2026:</strong> costul indirect de 10%, comisionul variabil 7–20% (<code>mydarrin_pct</code>), coeficientul de zonă, coeficientul de legislație și coeficientul de urgență. Procentele de mai sus se aplică fiecare pe subtotal, nu în cascadă. Serverul respinge cu HTTP 400 orice câmp de preț trimis din client (<code>comision_pct</code>, <code>tva</code>, <code>mydarrin_pct</code>, <code>zone_coef</code>, <code>urgency_coef</code> ș.a.), iar procentele și TVA-ul se citesc doar din baza de date.
+        <strong style="color:#CC7000">Eliminate din formulă la 22 iulie 2026:</strong> costul indirect de 10%, comisionul variabil 7–20% (<code>mydarrin_pct</code>), coeficientul de zonă, coeficientul de legislație și coeficientul de urgență. Procentele nu se aplică în cascadă: marketingul și mentenanța se calculează pe subtotal, iar asigurarea și comisionul platformei pe costul de bază (manoperă + materiale + utilaje), fără transport. Serverul respinge cu HTTP 400 orice câmp de preț trimis din client (<code>comision_pct</code>, <code>tva</code>, <code>mydarrin_pct</code>, <code>zone_coef</code>, <code>urgency_coef</code> ș.a.), iar procentele și TVA-ul se citesc doar din baza de date.
       </div>
 
       <div class="grid md:grid-cols-2 gap-5">
         <div class="rounded-xl p-5" style="background:#F4F7F9;border:1px solid #D5DFE8">
           <div class="font-bold text-[#003366] mb-3 text-sm">📊 Exemplu: înlocuire calorifer · România</div>
-          <div class="space-y-1.5 text-xs">
-            <div class="flex justify-between"><span class="text-[#6B7A8D]">Manoperă · instalator · 1 oră</span><span class="font-mono">520,00 Lei</span></div>
-            <div class="flex justify-between"><span class="text-[#6B7A8D]">Material · calorifer C11 600/8 · 1 buc</span><span class="font-mono">310,00 Lei</span></div>
-            <div class="flex justify-between"><span class="text-[#6B7A8D]">Material · fitinguri + teflon · 1 set</span><span class="font-mono">85,00 Lei</span></div>
-            <div class="flex justify-between" style="border-bottom:1px dashed #E8F0F7;padding-bottom:8px;margin-bottom:8px"><span class="text-[#6B7A8D]">Curier · livrare materiale</span><span class="font-mono">88,00 Lei</span></div>
-            <div class="flex justify-between" style="border-top:2px solid #FF8C00;padding-top:8px;margin-bottom:10px"><span class="font-bold text-[#003366]">Subtotal</span><span class="font-bold font-mono text-[#FF8C00]">1.003,00 Lei</span></div>
-            <div class="flex justify-between text-[#6B7A8D]"><span>+ Marketing (3%)</span><span class="font-mono">30,09 Lei</span></div>
-            <div class="flex justify-between text-[#6B7A8D]"><span>+ Mentenanță platformă (2%)</span><span class="font-mono">20,06 Lei</span></div>
-            <div class="flex justify-between font-semibold text-[#FF8C00]"><span>+ Comision platformă (12%)</span><span class="font-mono font-bold">120,36 Lei</span></div>
-            <div class="flex justify-between border-t border-[#D5DFE8] pt-1.5 mt-2"><span class="font-bold">Total fără TVA</span><span class="font-bold font-mono">1.173,51 Lei</span></div>
-            <div class="flex justify-between text-red-500"><span>+ TVA RO (21%)</span><span class="font-mono">+ 246,44 Lei</span></div>
-            <div class="flex justify-between text-[#6B7A8D]"><span>Prag minim RO: 150,00 Lei → depășit, nu se aplică</span><span class="font-mono">OK</span></div>
+          <!-- Pasul 12-D1: cifrele de mai jos sunt verificate de scripts/test-deviz-engine-exemplu.js
+               (recalculate cu aplicaFormulaPret din lib/calculeaza-pret.js); data-ex = câmpul comparat. -->
+          <div class="space-y-1.5 text-xs" id="exemplu-calorifer">
+            <div class="flex justify-between"><span class="text-[#6B7A8D]">Manoperă · instalator · 1 oră</span><span class="font-mono" data-ex="manopera">520,00 Lei</span></div>
+            <div class="flex justify-between"><span class="text-[#6B7A8D]">Material · calorifer C11 600/8 · 1 buc</span><span class="font-mono" data-ex="material_calorifer">310,00 Lei</span></div>
+            <div class="flex justify-between"><span class="text-[#6B7A8D]">Material · fitinguri + teflon · 1 set</span><span class="font-mono" data-ex="material_fitinguri">85,00 Lei</span></div>
+            <div class="flex justify-between border-t border-[#D5DFE8] pt-1.5"><span class="font-semibold text-[#003366]">Cost de bază (manoperă + materiale + utilaje)</span><span class="font-mono font-semibold" data-ex="cost_baza">915,00 Lei</span></div>
+            <div class="flex justify-between"><span class="text-[#6B7A8D]">+ Curier · livrare materiale</span><span class="font-mono" data-ex="cost_curier">88,00 Lei</span></div>
+            <div class="flex justify-between" style="border-bottom:1px dashed #E8F0F7;padding-bottom:8px;margin-bottom:8px"><span class="text-[#6B7A8D]">+ Asigurare (<span data-ex-pct="asigurare">1</span>% din costul de bază)</span><span class="font-mono" data-ex="cost_asigurare">9,15 Lei</span></div>
+            <div class="flex justify-between" style="border-top:2px solid #FF8C00;padding-top:8px;margin-bottom:10px"><span class="font-bold text-[#003366]">Subtotal</span><span class="font-bold font-mono text-[#FF8C00]" data-ex="subtotal">1.012,15 Lei</span></div>
+            <div class="flex justify-between text-[#6B7A8D]"><span>+ Marketing (<span data-ex-pct="marketing">3</span>% din subtotal)</span><span class="font-mono" data-ex="cost_marketing">30,36 Lei</span></div>
+            <div class="flex justify-between text-[#6B7A8D]"><span>+ Mentenanță platformă (<span data-ex-pct="mentenanta">2</span>% din subtotal)</span><span class="font-mono" data-ex="cost_mentenanta">20,24 Lei</span></div>
+            <div class="flex justify-between font-semibold text-[#FF8C00]"><span>+ Comision platformă (<span data-ex-pct="comision">12</span>% din costul de bază)</span><span class="font-mono font-bold" data-ex="comision_platforma">109,80 Lei</span></div>
+            <div class="flex justify-between border-t border-[#D5DFE8] pt-1.5 mt-2"><span class="font-bold">Total fără TVA</span><span class="font-bold font-mono" data-ex="total_fara_tva">1.172,55 Lei</span></div>
+            <div class="flex justify-between text-red-500"><span>+ TVA RO (<span data-ex-pct="tva">21</span>%)</span><span class="font-mono" data-ex="tva_suma">+ 246,24 Lei</span></div>
+            <div class="flex justify-between text-[#6B7A8D]"><span>Prag minim RO: <span data-ex="prag_minim_comanda">150,00</span> Lei → depășit, nu se aplică</span><span class="font-mono">OK</span></div>
             <div class="flex justify-between border-t-2 border-[#003366] pt-2 mt-1">
               <span class="font-bold text-[#003366] text-sm">PREȚ FINAL CLIENT</span>
-              <span class="font-bold font-mono text-[#FF8C00] text-lg">1.419,95 Lei</span>
+              <span class="font-bold font-mono text-[#FF8C00] text-lg" data-ex="pret_final">1.418,79 Lei</span>
             </div>
           </div>
         </div>
         <div class="space-y-3">
           <div class="rounded-xl p-4" style="background:#EBF4FB;border:1px solid #D6E8F5">
             <div class="font-bold text-[#003366] text-sm mb-2">🏗 Structura prețului final din exemplu</div>
-            <div class="space-y-2">
-              <div><div class="flex justify-between text-xs mb-1"><span class="text-[#6B7A8D]">Resurse (manoperă, materiale, curier)</span><span>70,6%</span></div><div class="h-2 bg-[#D5DFE8] rounded-full"><div class="h-2 rounded-full bg-[#0E9E99]" style="width:70.6%"></div></div></div>
-              <div><div class="flex justify-between text-xs mb-1"><span class="text-[#6B7A8D]">Marketing + mentenanță</span><span>3,5%</span></div><div class="h-2 bg-[#D5DFE8] rounded-full"><div class="h-2 rounded-full bg-[#A78BFA]" style="width:3.5%"></div></div></div>
-              <div><div class="flex justify-between text-xs mb-1"><span class="text-[#6B7A8D] font-bold">Comision platformă (12%)</span><span class="font-bold">8,5%</span></div><div class="h-2 bg-[#D5DFE8] rounded-full"><div class="h-2 rounded-full bg-[#FF8C00]" style="width:8.5%"></div></div></div>
-              <div><div class="flex justify-between text-xs mb-1"><span class="text-red-400">TVA (21%)</span><span class="text-red-400">17,4%</span></div><div class="h-2 bg-[#D5DFE8] rounded-full"><div class="h-2 rounded-full bg-red-300" style="width:17.4%"></div></div></div>
+            <div class="space-y-2" id="exemplu-structura">
+              <div><div class="flex justify-between text-xs mb-1"><span class="text-[#6B7A8D]">Resurse (manoperă, materiale, curier)</span><span data-ex-struct="resurse">70,7%</span></div><div class="h-2 bg-[#D5DFE8] rounded-full"><div class="h-2 rounded-full bg-[#0E9E99]" style="width:70.7%"></div></div></div>
+              <div><div class="flex justify-between text-xs mb-1"><span class="text-[#6B7A8D]">Asigurare (1% din costul de bază)</span><span data-ex-struct="asigurare">0,6%</span></div><div class="h-2 bg-[#D5DFE8] rounded-full"><div class="h-2 rounded-full bg-[#7AB3E0]" style="width:0.6%"></div></div></div>
+              <div><div class="flex justify-between text-xs mb-1"><span class="text-[#6B7A8D]">Marketing + mentenanță</span><span data-ex-struct="marketing_mentenanta">3,6%</span></div><div class="h-2 bg-[#D5DFE8] rounded-full"><div class="h-2 rounded-full bg-[#A78BFA]" style="width:3.6%"></div></div></div>
+              <div><div class="flex justify-between text-xs mb-1"><span class="text-[#6B7A8D] font-bold">Comision platformă (12% din costul de bază)</span><span class="font-bold" data-ex-struct="comision">7,7%</span></div><div class="h-2 bg-[#D5DFE8] rounded-full"><div class="h-2 rounded-full bg-[#FF8C00]" style="width:7.7%"></div></div></div>
+              <div><div class="flex justify-between text-xs mb-1"><span class="text-red-400">TVA (21%)</span><span class="text-red-400" data-ex-struct="tva">17,4%</span></div><div class="h-2 bg-[#D5DFE8] rounded-full"><div class="h-2 rounded-full bg-red-300" style="width:17.4%"></div></div></div>
             </div>
           </div>
           <div class="rounded-xl p-4" style="background:#F4F7F9;border:1px solid #D5DFE8;font-size:12px;color:#6B7A8D;line-height:1.65">
@@ -1085,7 +1091,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
             <div class="text-center text-[#D5DFE8]">↓</div>
             <div class="flow-node" style="background:#E0F5F4;border:1px solid rgba(14,158,153,.3);padding:12px 16px">
               <div class="font-bold text-xs text-[#0B7A76]">7. Cost Engine calcul</div>
-              <div class="text-[11px] text-[#6B7A8D] mt-0.5">Formula în 5 pași: subtotal → marketing → mentenanță → comision platformă → TVA, apoi prag minim per țară</div>
+              <div class="text-[11px] text-[#6B7A8D] mt-0.5">Formula: subtotal = cost de bază + transport + asigurare (1% din costul de bază) → marketing 3% și mentenanță 2% pe subtotal → comision platformă 12% pe costul de bază → TVA pe total, apoi prag minim per țară</div>
             </div>
             <div class="text-center text-[#D5DFE8]">↓</div>
             <div class="flow-node" style="background:linear-gradient(135deg,#E0F5F4,#EBF4FB);border:1px solid rgba(14,158,153,.2);padding:12px 16px">
@@ -1411,9 +1417,9 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
         <div style="margin-top:12px;padding:12px;background:#FDECEA;border-radius:12px;border:1px solid rgba(220,38,38,.2)">
           <div style="font-size:10px;font-weight:700;color:#C0392B;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Exemplu concret</div>
           <div style="font-size:12px;color:#6B7A8D;line-height:1.65">
-            Manoperă 2 m² × 45 Lei = <strong style="color:#2D2D2D">90,00 Lei</strong> subtotal · România<br>
-            + marketing 2,70 + mentenanță 1,80 + comision 10,80 = 105,30 Lei · + TVA 21% (22,11) = <strong style="color:#2D2D2D">127,41 Lei</strong><br>
-            127,41 &lt; prag RO 150 → <strong style="color:#003366">clientul plătește 150,00 Lei</strong>
+            <span id="exemplu-prag">Manoperă 2 m² × 45 Lei = <strong style="color:#2D2D2D" data-ex="cost_baza">90,00 Lei</strong> cost de bază · + asigurare 1% <span data-ex="cost_asigurare">0,90</span> = <span data-ex="subtotal">90,90</span> Lei subtotal · România<br>
+            + marketing <span data-ex="cost_marketing">2,73</span> + mentenanță <span data-ex="cost_mentenanta">1,82</span> + comision <span data-ex="comision_platforma">10,80</span> = <span data-ex="total_fara_tva">106,25</span> Lei · + TVA 21% (<span data-ex="tva_suma">22,31</span>) = <strong style="color:#2D2D2D" data-ex="pret_fara_prag">128,56 Lei</strong><br>
+            128,56 &lt; prag RO 150 → <strong style="color:#003366">clientul plătește <span data-ex="pret_final">150,00</span> Lei</strong></span>
           </div>
         </div>
       </div>
@@ -1502,8 +1508,9 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
           Pragul în formula completă
         </div>
         <div style="font-family:monospace;font-size:12.5px;line-height:2;color:rgba(255,255,255,.75)">
-          <span style="color:#FCD34D">SUBTOTAL</span> = Σ componente din rețetă<br>
-          <span style="color:#A78BFA">TAXE_PLATFORMĂ</span> = SUBTOTAL × (marketing% + mentenanță% + comision%)<br>
+          <span style="color:#FCD34D">COST_BAZĂ</span> = manoperă + materiale + utilaje (din rețetă)<br>
+          <span style="color:#FCD34D">SUBTOTAL</span> = COST_BAZĂ + transport + COST_BAZĂ × asigurare%<br>
+          <span style="color:#A78BFA">TAXE_PLATFORMĂ</span> = SUBTOTAL × (marketing% + mentenanță%) + COST_BAZĂ × comision%<br>
           <span style="color:#F87171">TVA</span> = (SUBTOTAL + TAXE_PLATFORMĂ) × cota_tva_țară<br>
           <span style="color:#fff;font-weight:700;font-size:14px">PREȚ FINAL</span> = <span style="color:#F87171">max</span>( SUBTOTAL + TAXE_PLATFORMĂ + TVA , <span style="color:#FF8C00">prag_minim_țară</span> )
         </div>
@@ -2537,7 +2544,7 @@ function addCountry(){
 }
 
 // VMC SIMULATOR — aceeași formulă ca lib/calculeaza-pret.js
-const VMC_PCT = { marketing: 3, mentenanta: 2, comision: 12 };
+const VMC_PCT = { marketing: 3, mentenanta: 2, comision: 12, asigurare: 1 };
 let VMC_DATA = {
   RO: { flag:'🇷🇴', nume:'România', moneda:'RON', tva:21, prag:150, checkout:true },
   MD: { flag:'🇲🇩', nume:'Moldova', moneda:'MDL', tva:20, prag:500, checkout:true },
@@ -2579,7 +2586,7 @@ function renderVmcUi() {
 async function loadVmcLive() {
   const [tax, cfg] = await Promise.all([
     supaDevizFetch('tax_configurations', '?select=tara_cod,tara_nume,moneda,cota_tva,prag_minim_comanda,checkout_activ&tara_cod=in.(RO,MD,DE,FR,BG)&order=tara_cod'),
-    supaDevizFetch('backoffice_config', '?select=cheie,valoare&sectiune=eq.pricing'),
+    supaDevizFetch('backoffice_config', '?select=cheie,valoare,tara_cod&sectiune=in.(pricing,asigurari)'),
   ]);
   const badge = document.getElementById('vmc-src');
   if (!Array.isArray(tax) || !tax.length) {
@@ -2596,9 +2603,12 @@ async function loadVmcLive() {
   });
   VMC_DATA = next;
   if (Array.isArray(cfg)) {
-    cfg.forEach(r => {
+    // Ca lib/calculeaza-pret.js: întâi rândurile ALL, apoi cele RO, care le suprascriu.
+    const ordonat = cfg.filter(r => r.tara_cod == null || r.tara_cod === 'ALL').concat(cfg.filter(r => r.tara_cod === 'RO'));
+    ordonat.forEach(r => {
       const v = Number(r.valoare);
       if (!Number.isFinite(v)) return;
+      if (r.cheie === 'cost_asigurare_pct') VMC_PCT.asigurare = v;
       if (r.cheie === 'cost_marketing_pct') VMC_PCT.marketing = v;
       if (r.cheie === 'cost_mentenanta_pct') VMC_PCT.mentenanta = v;
       if (r.cheie === 'comision_platforma_default_pct') VMC_PCT.comision = v;
@@ -2620,10 +2630,14 @@ function simCalc() {
   const cur = d.moneda;
   const prag = d.prag == null ? 100 : d.prag;
 
-  const subtotal = r2(price * qty);
+  // Pasul 12-D1: aceeași ordine ca aplicaFormulaPret — asigurarea și comisionul
+  // din costul de bază; marketingul și mentenanța din subtotal.
+  const baza = r2(price * qty);
+  const asig = r2(baza * VMC_PCT.asigurare / 100);
+  const subtotal = r2(baza + asig);
   const mkt = r2(subtotal * VMC_PCT.marketing / 100);
   const ment = r2(subtotal * VMC_PCT.mentenanta / 100);
-  const com = r2(subtotal * VMC_PCT.comision / 100);
+  const com = r2(baza * VMC_PCT.comision / 100);
   const fara = r2(subtotal + mkt + ment + com);
   const tva = r2(fara * d.tva / 100);
   const cuTva = r2(fara + tva);
@@ -2635,10 +2649,12 @@ function simCalc() {
       <div>
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:10px">Defalcare calcul</div>
         <div style="font-size:12.5px;line-height:2">
-          <div style="display:flex;justify-content:space-between;gap:10px"><span style="color:#6B7A8D">${name} · ${qty} ${um} × ${fmt2(price)} ${cur}</span><span style="font-family:monospace;font-weight:600">${fmt2(subtotal)} ${cur}</span></div>
+          <div style="display:flex;justify-content:space-between;gap:10px"><span style="color:#6B7A8D">${name} · ${qty} ${um} × ${fmt2(price)} ${cur}</span><span style="font-family:monospace;font-weight:600">${fmt2(baza)} ${cur}</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:#6B7A8D">+ Asigurare (${VMC_PCT.asigurare}% din costul de bază)</span><span style="font-family:monospace">${fmt2(asig)} ${cur}</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:#6B7A8D">Subtotal</span><span style="font-family:monospace;font-weight:600">${fmt2(subtotal)} ${cur}</span></div>
           <div style="display:flex;justify-content:space-between"><span style="color:#6B7A8D">+ Marketing (${VMC_PCT.marketing}%)</span><span style="font-family:monospace">${fmt2(mkt)} ${cur}</span></div>
           <div style="display:flex;justify-content:space-between"><span style="color:#6B7A8D">+ Mentenanță (${VMC_PCT.mentenanta}%)</span><span style="font-family:monospace">${fmt2(ment)} ${cur}</span></div>
-          <div style="display:flex;justify-content:space-between"><span style="color:#FF8C00;font-weight:600">+ Comision platformă (${VMC_PCT.comision}%)</span><span style="font-family:monospace;font-weight:700;color:#FF8C00">${fmt2(com)} ${cur}</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:#FF8C00;font-weight:600">+ Comision platformă (${VMC_PCT.comision}% din costul de bază)</span><span style="font-family:monospace;font-weight:700;color:#FF8C00">${fmt2(com)} ${cur}</span></div>
           <div style="display:flex;justify-content:space-between;border-top:1px solid #D5DFE8;padding-top:6px;margin-top:4px"><span style="color:#6B7A8D">+ TVA (${d.tva}%)</span><span style="font-family:monospace">+${fmt2(tva)} ${cur}</span></div>
           <div style="display:flex;justify-content:space-between"><span style="color:#6B7A8D">Total cu TVA</span><span style="font-family:monospace;font-weight:700">${fmt2(cuTva)} ${cur}</span></div>
           ${aplicat

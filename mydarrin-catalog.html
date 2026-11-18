@@ -2921,6 +2921,7 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
         <div id="escalate-to-argint" style="display:none;background:#FFF8EE;border-radius:14px;border:1px solid #FFD980;padding:14px;margin-bottom:14px">
           <div style="font-weight:700;color:#CC7000;font-size:13px;margin-bottom:6px">Darrin AI recomandă consultanță cu specialist</div>
           <div style="font-size:12.5px;color:#6B7A8D;line-height:1.6;margin-bottom:12px">Nu am putut determina cu certitudine problema din datele transmise. Un specialist tehnic online poate evalua situația mai precis în timp real.</div>
+          <a id="ai-buton-consultanta" href="/mydarrin-catalog.html" style="display:none;text-align:center;text-decoration:none;width:100%;box-sizing:border-box;padding:12px;border-radius:12px;background:#0E9E99;color:#fff;font-size:13px;font-weight:700;font-family:inherit;margin-bottom:8px">Consultanță Darrin →</a>
           <button onclick="switchConsTab('argint',document.getElementById('ctab-argint'))" style="width:100%;padding:12px;border-radius:12px;background:#FF8C00;color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .18s" onmouseover="this.style.background='#CC7000'" onmouseout="this.style.background='#FF8C00'">
             Comandă consultanță online cu specialist →
           </button>
@@ -3190,11 +3191,11 @@ function handleDrop(e){
 // ── DARRIN AI — motor real (Anthropic, constrâns la catalogul My Darrin) ──
 // Înlocuiește vechiul matching determinist pe cuvinte-cheie: apelează
 // api/darrin-ai/deviz.js, care folosește un model Claude real cu output
-// constrâns prin tool use la categoriile reale din `categorii`
-// (category_type='servicii') — AI-ul nu poate recomanda ceva în afara
-// catalogului. Prețul FINAL nu se calculează aici, doar o estimare de
-// cost brut; oficializarea trece prin /api/deviz/calculate.js existent,
-// la pasul de Confirmare (necesită login).
+// constrâns prin tool use la categoriile reale din `categorii` și la serviciile
+// publicate din catalog — AI-ul nu poate recomanda ceva în afara catalogului.
+// Pasul 12-D1: nicio sumă de la AI. Pagina arată 1–3 servicii propuse, cu
+// prețul „de la” calculat de server (lib/pret-serviciu.js) sau, fără preț,
+// „Vezi prețul pe pagina serviciului”; la încredere mică, Consultanța Darrin.
 let proiectMode = false;
 let ultimulRezultatAI = null;
 
@@ -3267,14 +3268,16 @@ async function sendToAI(){
     const body = proiectMode
       ? { mod: 'proiect', text: txt || undefined, tip_constructie: tipConstructie || undefined, suprafata_mp: suprafata ? Number(suprafata) : undefined, locatie: locatie || undefined }
       : { mod: 'servicii', text: txt || undefined, files: filesPayload };
+    body.lang = daiLimba();
+    body.tara = (window.MYD_GEO_LAST && window.MYD_GEO_LAST.cc) || (window.MYD_GEO && window.MYD_GEO.data && window.MYD_GEO.data.cc) || 'RO';
 
     const res = await fetch('/api/darrin-ai/deviz', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    const data = await res.json();
-    if(!res.ok) throw new Error(data?.error || 'Eroare necunoscută');
+    const data = await res.json().catch(() => null);
+    if(!res.ok || !data || !data.ok) throw new Error(window.MYD_I18N ? MYD_I18N.eroare(data, 'Eroare necunoscută') : 'Eroare necunoscută');
 
     renderAIResult(data);
   } catch(e){
@@ -3283,6 +3286,34 @@ async function sendToAI(){
   } finally {
     if(sendBtn) sendBtn.disabled = false;
   }
+}
+
+// Pasul 12-D1: limba paginii și textele, prin window.t (dicționarul EN al paginii).
+function daiLimba(){ return (window.MYD_I18N && window.MYD_I18N.lang === 'ro') ? 'ro' : 'en'; }
+function daiT(ro, param){ return typeof window.t === 'function' ? window.t(null, ro, param) : ro.replace(/\{(\w+)\}/g, (m, x) => (param && param[x] != null ? param[x] : m)); }
+function daiTitlu(s){ return (s && s.titlu && (s.titlu[daiLimba()] || s.titlu.ro)) || ''; }
+// Prețul vine doar din răspunsul serverului (pret_de_la, calculat de lib/pret-serviciu.js).
+function daiPret(s){
+  if (!s || !(Number(s.pret_de_la) > 0)) return null;
+  return typeof window.formatCurrency === 'function' ? window.formatCurrency(Number(s.pret_de_la), s.moneda || 'RON') : Number(s.pret_de_la).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + ({ RON: 'Lei', MDL: 'Lei', EUR: '€', GBP: '£' }[s.moneda || 'RON'] || s.moneda);
+}
+function daiUrlSigur(u){ return (typeof u === 'string' && /^\/mydarrin-produs\.html\?slug=[^"'<>\s]+&type=serviciu$/.test(u)) ? u : '/mydarrin-catalog.html'; }
+
+// Cardul unui serviciu propus — același card ca până acum în #rec-services.
+function daiCardServiciu(s){
+  const div=document.createElement('div');
+  div.style.cssText='display:flex;flex-direction:column;gap:8px;padding:13px 14px;background:#fff;border-radius:12px;border:1.5px solid #D5DFE8';
+  div.setAttribute('data-ai-serviciu', s.id_serviciu || '');
+  const pret = daiPret(s);
+  div.innerHTML=`
+    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 10px">
+      <div style="font-weight:700;font-size:13px;color:#2D2D2D;min-width:0">${escapeHTML(daiTitlu(s))}</div>
+      ${pret ? `<div style="font-weight:800;font-size:15px;color:#003366;white-space:nowrap" data-pret-server="1">${escapeHTML(daiT('De la'))} ${escapeHTML(pret)}</div>` : ''}
+    </div>
+    <div style="font-size:10.5px;color:#8C9BAD">${escapeHTML(pret ? daiT('Preț calculat de platformă pentru primul nivel, cu TVA inclus.') : daiT('Vezi prețul pe pagina serviciului'))}</div>
+    <a href="${daiUrlSigur(s.url)}" style="display:block;text-align:center;text-decoration:none;background:#0E9E99;color:#fff;border:none;border-radius:9px;padding:10px 14px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">${escapeHTML(daiT('Vezi serviciul →'))}</a>
+  `;
+  return div;
 }
 
 function renderAIResult(data){
@@ -3294,29 +3325,31 @@ function renderAIResult(data){
   document.getElementById('cp-2').style.background='#0E9E99';
   document.getElementById('cp-3').style.background='#0E9E99';
 
+  const servicii = Array.isArray(data.servicii) ? data.servicii.slice(0, 3) : [];
   const incredereProc = Math.round((data.incredere||0)*100);
   const recEl=document.getElementById('ai-recommendation');
   if(recEl) recEl.innerHTML =
-    `Categorie identificată: <strong>${escapeHTML(data.titlu_categorie)}</strong> · încredere ${incredereProc}%<br>${escapeHTML(data.explicatie||'')}`;
+    `${escapeHTML(data.explicatie||'')}<br><span style="font-size:11px;color:#8C9BAD">${escapeHTML(daiT('Încredere {n}%', { n: incredereProc }))}</span>`;
 
   const recSvc=document.getElementById('rec-services');
   if(recSvc){
     recSvc.innerHTML='';
-    const div=document.createElement('div');
-    div.style.cssText='display:flex;flex-direction:column;gap:8px;padding:13px 14px;background:#fff;border-radius:12px;border:1.5px solid #D5DFE8';
-    div.innerHTML=`
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div style="font-weight:700;font-size:13px;color:#2D2D2D">${escapeHTML(data.titlu_categorie)}</div>
-        <div style="font-weight:800;font-size:15px;color:#003366">~${Math.round(data.cost_brut_estimat).toLocaleString('ro-RO')} Lei</div>
-      </div>
-      <div style="font-size:10.5px;color:#8C9BAD">Estimare brută, preliminară — prețul oficial (cu TVA, comisioane, zonă și urgență) se calculează la pasul de confirmare.</div>
-      <button onclick="confirmaEstimareAI()" style="background:#0E9E99;color:#fff;border:none;border-radius:9px;padding:10px 14px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">Continuă spre deviz oficial →</button>
-    `;
-    recSvc.appendChild(div);
+    servicii.forEach(s => recSvc.appendChild(daiCardServiciu(s)));
   }
 
+  // Încredere mică: butonul spre „Consultanță Darrin” (serviciul din catalog).
   const esc=document.getElementById('escalate-to-argint');
-  if(esc) esc.style.display = (data.incredere!==undefined && data.incredere < 0.5) ? 'block' : 'none';
+  const slab = !!data.recomanda_consultanta || !servicii.length;
+  if(esc) esc.style.display = slab ? 'block' : 'none';
+  const btnCons = document.getElementById('ai-buton-consultanta');
+  if(btnCons){
+    if(data.consultanta && data.consultanta.url){
+      btnCons.setAttribute('href', daiUrlSigur(data.consultanta.url));
+      btnCons.style.display='block';
+    } else {
+      btnCons.style.display='none';
+    }
+  }
 
   setTimeout(()=>{ result?.scrollIntoView({behavior:'smooth',block:'start'}); },200);
 }
@@ -3337,54 +3370,6 @@ function renderAIError(msg){
   if(esc) esc.style.display='block';
 
   setTimeout(()=>{ result?.scrollIntoView({behavior:'smooth',block:'start'}); },200);
-}
-
-// ── Pasul 4: Confirmare — oficializează estimarea prin /api/deviz/calculate.js (existent, neschimbat) ──
-async function confirmaEstimareAI(){
-  if(!ultimulRezultatAI) return;
-  const { data: sessionData } = await window.supabaseClient.auth.getSession();
-  const token = sessionData?.session?.access_token;
-  if(!token){
-    alert('Autentifică-te pentru a primi devizul oficial, apoi apasă din nou "Continuă spre deviz oficial".');
-    if(typeof toggleAuthModal==='function') toggleAuthModal();
-    return;
-  }
-
-  document.getElementById('cp-4').style.background='#FF8C00';
-
-  try {
-    const res = await fetch('/api/deviz/calculate', {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
-      body: JSON.stringify({ serviciu_id: ultimulRezultatAI.categorie_slug, cost_brut: ultimulRezultatAI.cost_brut_estimat }),
-    });
-    const data = await res.json();
-    if(!res.ok) throw new Error(data?.error || 'Eroare la calculul devizului');
-
-    document.getElementById('cp-4').style.background='#0E9E99';
-    const recSvc=document.getElementById('rec-services');
-    if(recSvc){
-      const div=document.createElement('div');
-      div.style.cssText='padding:13px 14px;background:#E0F5F4;border-radius:12px;border:1px solid rgba(14,158,153,.3)';
-      div.innerHTML=`
-        <div style="font-size:11px;font-weight:700;color:#0E9E99;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Deviz oficial</div>
-        <div style="font-weight:800;font-size:20px;color:#003366;margin-bottom:8px">${Number(data.deviz.pret_final).toLocaleString('ro-RO')} Lei</div>
-        <button onclick="goToService('${String(ultimulRezultatAI.categorie_slug || '').replace(/[^a-z0-9_-]/gi, '')}')" style="width:100%;background:#FF8C00;color:#fff;border:none;border-radius:9px;padding:10px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">Comandă serviciul →</button>
-      `;
-      recSvc.appendChild(div);
-    }
-  } catch(e){
-    console.error('[confirmaEstimareAI]', e);
-    alert('Nu am putut calcula devizul oficial: ' + e.message);
-    document.getElementById('cp-4').style.background='#D5DFE8';
-  }
-}
-
-function goToService(slug){
-  closeConsultanta();
-  const base = (window.location.href.replace(/\/[^/]*$/, '') + '/').replace(/\/+$/, '/');
-  const path = base + 'mydarrin-produs.html';
-  window.location.href = path + '?slug=' + encodeURIComponent(slug) + '&type=serviciu';
 }
 
 // ── ARGINT ──
@@ -5827,7 +5812,7 @@ if(typeof lucide!=="undefined")lucide.createIcons();
       <span style="font-size:22px"><i data-lucide="bot" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>
       <div>
         <div style="color:#fff;font-weight:800;font-size:13.5px">Darrin AI</div>
-        <div style="color:rgba(255,255,255,.6);font-size:10.5px;display:flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:50%;background:#8C9BAD;display:inline-block"></span>Asistent rapid · răspunsuri predefinite</div>
+        <div style="color:rgba(255,255,255,.6);font-size:10.5px;display:flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:50%;background:#8C9BAD;display:inline-block"></span>Asistent rapid · caută în catalogul My Darrin</div>
       </div>
     </div>
     <button onclick="toggleDaiChat()" style="background:rgba(255,255,255,.15);border:none;width:28px;height:28px;border-radius:8px;color:#fff;cursor:pointer;font-size:16px">×</button>
@@ -5890,43 +5875,8 @@ function daiAddMessage(text, fromUser){
   msgs.scrollTop = msgs.scrollHeight;
 }
 
-function daiRespond(query){
-  const q = query.toLowerCase();
-  let response = '';
-  let actionLabel = '', actionUrl = '';
-
-  if (q.includes('calorifer') && (q.includes('curg') || q.includes('scurg'))) {
-    response = 'Am înțeles — scurgere la calorifer. Te pot direcționa direct către serviciul potrivit din catalog, unde Darrin AI te va întreba exact de unde curge (perete, sub calorifer sau robinet) pentru diagnosticul corect.';
-    actionLabel = 'Deschide diagnosticul →'; actionUrl = 'mydarrin-catalog.html?openAI=true&q=' + encodeURIComponent(query);
-  } else if (q.includes('electric')) {
-    response = 'Pentru instalații electrice avem 6 servicii disponibile: reparații, înlocuire becuri, montaj tablou, testare instalație și consultanță. Te duc direct la categoria potrivită.';
-    actionLabel = 'Vezi servicii electrice →'; actionUrl = 'mydarrin-catalog.html?cat=instalatii-electrice';
-  } else if (q.includes('funcționează') || q.includes('functioneaza')) {
-    response = 'Simplu: alegi un serviciu din catalog, vezi prețul calculat pentru nivelul ales, plătești către Home Best Pal SRL, iar suma este păstrată ca garanție până la confirmarea lucrării executate de un partener aprobat.';
-    actionLabel = 'Cum funcționează, detaliat →'; actionUrl = 'mydarrin-cum-functioneaza.html';
-  } else if (q.includes('partener')) {
-    response = 'Excelent! Înregistrarea ca partener e gratuită — alegi tipul (Servicii, Materiale sau Închirieri), completezi datele firmei și primești comenzi direct prin platformă.';
-    actionLabel = 'Devino partener →'; actionUrl = 'cum-devii-partenerul-nostru.html';
-  } else {
-    response = 'Mulțumesc pentru mesaj! Pentru o analiză detaliată a problemei tale (inclusiv încărcare de imagini), recomand să folosești consultanța completă Darrin AI din catalog — e gratuită.';
-    actionLabel = 'Consultanță completă →'; actionUrl = 'mydarrin-catalog.html?openAI=true&q=' + encodeURIComponent(query);
-  }
-
-  setTimeout(() => {
-    daiAddMessage(response, false);
-    if (actionUrl) {
-      setTimeout(() => {
-        const msgs = document.getElementById('dai-chat-messages');
-        const btn = document.createElement('a');
-        btn.href = actionUrl;
-        btn.textContent = actionLabel;
-        btn.style.cssText = 'display:inline-block;background:#FF8C00;color:#fff;text-decoration:none;border-radius:10px;padding:9px 14px;font-size:12px;font-weight:700;margin-left:26px';
-        msgs.appendChild(btn);
-        msgs.scrollTop = msgs.scrollHeight;
-      }, 200);
-    }
-  }, 500);
-}
+// Pasul 12-D1: daiRespond() vine din /darrin-ai-cautare.js — caută în catalogul
+// real (/api/public/catalog), nu într-o listă de răspunsuri scrisă în pagină.
 
 function daiQuickQuestion(question){
   daiAddMessage(question, true);
@@ -5943,6 +5893,7 @@ function daiSendMessage(){
   daiRespond(text);
 }
 </script>
+<script src="/darrin-ai-cautare.js" defer></script>
 
 
 

@@ -2627,7 +2627,7 @@ fetch('/api/public/statistici-homepage').then(r=>r.json()).then(d=>{
       <span style="font-size:22px"><i data-lucide="bot" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></span>
       <div>
         <div style="color:#fff;font-weight:800;font-size:13.5px">Darrin AI</div>
-        <div style="color:rgba(255,255,255,.6);font-size:10.5px;display:flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:50%;background:#8C9BAD;display:inline-block"></span>Asistent rapid · răspunsuri predefinite</div>
+        <div style="color:rgba(255,255,255,.6);font-size:10.5px;display:flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:50%;background:#8C9BAD;display:inline-block"></span>Asistent rapid · caută în catalogul My Darrin</div>
       </div>
     </div>
     <button onclick="toggleDaiChat()" style="background:rgba(255,255,255,.15);border:none;width:28px;height:28px;border-radius:8px;color:#fff;cursor:pointer;font-size:16px">×</button>
@@ -2690,43 +2690,8 @@ function daiAddMessage(text, fromUser){
   msgs.scrollTop = msgs.scrollHeight;
 }
 
-function daiRespond(query){
-  const q = query.toLowerCase();
-  let response = '';
-  let actionLabel = '', actionUrl = '';
-
-  if (q.includes('calorifer') && (q.includes('curg') || q.includes('scurg'))) {
-    response = 'Am înțeles — scurgere la calorifer. Te pot direcționa direct către serviciul potrivit din catalog, unde Darrin AI te va întreba exact de unde curge (perete, sub calorifer sau robinet) pentru diagnosticul corect.';
-    actionLabel = 'Deschide diagnosticul →'; actionUrl = 'mydarrin-catalog.html?openAI=true&q=' + encodeURIComponent(query);
-  } else if (q.includes('electric')) {
-    response = 'Pentru instalații electrice avem 6 servicii disponibile: reparații, înlocuire becuri, montaj tablou, testare instalație și consultanță. Te duc direct la categoria potrivită.';
-    actionLabel = 'Vezi servicii electrice →'; actionUrl = 'mydarrin-catalog.html?categorie=servicii&subcategorie=instalatii-electrice';
-  } else if (q.includes('funcționează') || q.includes('functioneaza')) {
-    response = 'Simplu: alegi un serviciu din catalog, vezi prețul calculat pentru nivelul ales, plătești către Home Best Pal SRL, iar suma este păstrată ca garanție până la confirmarea lucrării executate de un partener aprobat.';
-    actionLabel = 'Cum funcționează, detaliat →'; actionUrl = 'mydarrin-cum-functioneaza.html';
-  } else if (q.includes('partener')) {
-    response = 'Excelent! Înregistrarea ca partener e gratuită — alegi tipul (Servicii, Materiale sau Închirieri), completezi datele firmei și primești comenzi direct prin platformă.';
-    actionLabel = 'Devino partener →'; actionUrl = 'cum-devii-partenerul-nostru.html';
-  } else {
-    response = 'Mulțumesc pentru mesaj! Pentru o analiză detaliată a problemei tale (inclusiv încărcare de imagini), recomand să folosești consultanța completă Darrin AI din catalog — e gratuită.';
-    actionLabel = 'Consultanță completă →'; actionUrl = 'mydarrin-catalog.html?openAI=true&q=' + encodeURIComponent(query);
-  }
-
-  setTimeout(() => {
-    daiAddMessage(response, false);
-    if (actionUrl) {
-      setTimeout(() => {
-        const msgs = document.getElementById('dai-chat-messages');
-        const btn = document.createElement('a');
-        btn.href = actionUrl;
-        btn.textContent = actionLabel;
-        btn.style.cssText = 'display:inline-block;background:#FF8C00;color:#fff;text-decoration:none;border-radius:10px;padding:9px 14px;font-size:12px;font-weight:700;margin-left:26px';
-        msgs.appendChild(btn);
-        msgs.scrollTop = msgs.scrollHeight;
-      }, 200);
-    }
-  }, 500);
-}
+// Pasul 12-D1: daiRespond() vine din /darrin-ai-cautare.js — caută în catalogul
+// real (/api/public/catalog), nu într-o listă de răspunsuri scrisă în pagină.
 
 function daiQuickQuestion(question){
   daiAddMessage(question, true);
@@ -2743,6 +2708,7 @@ function daiSendMessage(){
   daiRespond(text);
 }
 </script>
+<script src="/darrin-ai-cautare.js" defer></script>
 
 
 <!-- ════ MOBILE BOTTOM NAV BAR (doar pe ecrane < 1024px) ════ -->
