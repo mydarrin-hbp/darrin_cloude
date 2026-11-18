@@ -425,6 +425,38 @@ async function testeBrowser() {
           await pg.close();
         });
 
+        // Butoanele rapide ale widget-ului, după scoaterea daiRespond() din pagini:
+        // cele două de navigare duc la paginile lor (și pagina se deschide), cele
+        // două de căutare dau rezultate din catalog.
+        for (const pag of ['/index.html', '/mydarrin-cum-functioneaza.html']) {
+          await test(`${lang} ${latime}: butoanele rapide ale widget-ului pe ${pag}`, async () => {
+            const RAPIDE = [
+              ['Cum funcționează platforma?', /^\/mydarrin-cum-functioneaza\.html$/, '/mydarrin-cum-functioneaza.html'],
+              ['Vreau să devin partener', /^\/parteneri\/inscriere$/, '/parteneri/inscriere'],
+              ['Curge un calorifer, ce fac?', /^\/mydarrin-produs\.html\?slug=[a-z-]+&type=(serviciu|material)$/, null],
+              ['Vreau o instalație electrică', /(^\/mydarrin-produs\.html\?slug=[a-z-]+&type=serviciu$)|openAI=true/, null],
+            ];
+            for (const [intrebare, asteptat, destinatie] of RAPIDE) {
+              const pg = await pagina(ctx, pag);
+              await pg.evaluate(() => toggleDaiChat());
+              const buton = await pg.$(`#dai-chat-quickq button[onclick="daiQuickQuestion('${intrebare}')"]`);
+              adevarat(buton, 'lipsește butonul ' + intrebare);
+              await buton.click();
+              await pg.waitForSelector('[data-dai-rezultate] a');
+              const href = await pg.$eval('[data-dai-rezultate] a', (a) => a.getAttribute('href'));
+              adevarat(asteptat.test(href), `${intrebare} → ${href}`);
+              if (destinatie) {
+                await Promise.all([pg.waitForNavigation({ waitUntil: 'load' }), pg.click('[data-dai-rezultate] a')]);
+                egal(new URL(pg.url()).pathname, destinatie, 'adresa după clic');
+                const titlu = await pg.title();
+                adevarat(titlu && !/404|not found/i.test(titlu), 'pagina destinație nu s-a deschis: ' + titlu);
+              }
+              egal(pg.erori, [], 'erori JS');
+              await pg.close();
+            }
+          });
+        }
+
         await test(`${lang} ${latime}: widget-ul Darrin AI caută prin /api/public/catalog (interceptat)`, async () => {
           const pg = await pagina(ctx, '/mydarrin-cum-functioneaza.html');
           egal(await pg.evaluate(() => typeof PRODUCTS_DB), 'undefined', 'PRODUCTS_DB pe pagină');

@@ -125,8 +125,8 @@
   }
 
   var NAVIGARE = [
-    { re: /(functioneaz|how (does it|it) work)/, text: 'Află pas cu pas cum comanzi un serviciu și cum funcționează plata prin escrow.', eticheta: 'Cum funcționează →', href: 'mydarrin-cum-functioneaza.html' },
-    { re: /(partener|partner)/, text: 'Înregistrarea ca partener e gratuită: alegi tipul (Servicii, Materiale sau Închirieri) și completezi datele firmei.', eticheta: 'Devino partener →', href: 'cum-devii-partenerul-nostru.html' },
+    { re: /(functioneaz|how (does it|it) work)/, text: 'Află pas cu pas cum comanzi un serviciu și cum funcționează plata prin escrow.', eticheta: 'Cum funcționează →', href: '/mydarrin-cum-functioneaza.html' },
+    { re: /(partener|partner)/, text: 'Înregistrarea ca partener e gratuită: alegi tipul (Servicii, Materiale sau Închirieri) și completezi datele firmei.', eticheta: 'Devino partener →', href: '/parteneri/inscriere' },
   ];
 
   function daiRespond(intrebare) {
