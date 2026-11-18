@@ -28,7 +28,8 @@
   body { background: var(--fond); color: var(--text); font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
   a { color: var(--albastru); }
   .pi-antet { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #fff; border-bottom: 1px solid var(--chenar); }
-  .pi-antet img { border-radius: 9px; display: block; }
+  /* Pasul 12-P1b: logo-ul are dimensiunea lui și nu se comprimă în antet. */
+  .pi-antet img { border-radius: 9px; display: block; flex: 0 0 auto; width: 34px; height: 34px; min-width: 34px; object-fit: contain; }
   .pi-marca { font-size: 16px; font-weight: 700; color: var(--albastru); flex-grow: 1; text-decoration: none; }
   .pi-intra { min-height: 44px; display: inline-flex; align-items: center; font-size: 13px; font-weight: 700; color: var(--albastru); background: none; border: 0; padding: 0 2px; cursor: pointer; font-family: inherit; text-decoration: none; }
   .pi-intra:hover { text-decoration: underline; }
@@ -56,6 +57,9 @@
   .pi-buton { min-height: 52px; border: none; border-radius: 14px; background: var(--portocaliu); color: #1A1A1A; font-size: 16px; font-weight: 800; cursor: pointer; font-family: inherit; }
   .pi-buton:disabled { opacity: .8; cursor: default; }
   .pi-nota { text-align: center; font-size: 12.5px; color: var(--gri); margin: 0; }
+  /* Pasul 12-P1b: logarea, vizibilă sub butonul portocaliu. */
+  .pi-am-cont { text-align: center; font-size: 14px; color: var(--gri); margin: 0; }
+  .pi-am-cont button { background: none; border: 0; padding: 0 4px; min-height: 44px; font: inherit; font-size: 14px; font-weight: 700; color: var(--albastru); text-decoration: underline; cursor: pointer; }
   [hidden] { display: none !important; }
   /* Selectorul de limbă (cont-dashboard.js): pe telefon, doar codul limbii, ca în machetă. */
   @media (max-width: 480px) { #pi-limba .myd-limba-nume { display: none; } #pi-limba .myd-limba-cod { display: inline; } }
@@ -142,6 +146,7 @@
     </label>
 
     <button type="submit" class="pi-buton" id="pi-trimite">Creează cont de partener</button>
+    <p class="pi-am-cont" id="pi-am-cont">Ai deja cont? <button type="button" id="pi-intra-jos">Intră în cont</button></p>
     <div id="pi-msg"></div>
     <div id="pi-recuperare"></div>
     <p class="pi-nota" id="pi-nota">Primești un cod pe email · 0% comision din manoperă</p>

@@ -207,8 +207,8 @@
       '.myd-limba{position:relative}' +
       '.myd-limba .lang-chip{display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;transition:opacity .15s;background:transparent;border:0;padding:8px 6px;min-height:44px;color:inherit;font-family:inherit;font-weight:500;white-space:nowrap}' +
       '.myd-limba .myd-limba-cod{display:none}' +
-      // Antetul activării, pe telefon: codul limbii în loc de nume, ca antetul să încapă.
-      '@media (max-width:480px){#myd-activare-pagina .myd-limba .myd-limba-nume{display:none}#myd-activare-pagina .myd-limba .myd-limba-cod{display:inline}#myd-activare-pagina .myd-limba .lang-chip{padding:8px 4px}}' +
+      // Pasul 12-P1b: pe telefon, pe toate paginile, codul limbii („RO”) în loc de nume („Română”).
+      '@media (max-width:480px){.myd-limba .myd-limba-nume{display:none}.myd-limba .myd-limba-cod{display:inline}#myd-activare-pagina .myd-limba .lang-chip{padding:8px 4px}}' +
       '.myd-limba .lang-chip:hover{opacity:.8}' +
       '.myd-limba .lang-chip:focus-visible{outline:3px solid #0E9E99;outline-offset:2px;border-radius:8px}' +
       '.myd-limba .lang-chip svg{width:12px;height:12px;opacity:.6}' +
@@ -227,11 +227,13 @@
     var c = LIMBI_CONT.filter(function (x) { return x[0] === l; })[0];
     return '<div class="lang-dd myd-limba" data-myd-limba>' +
       '<button type="button" class="lang-chip" aria-haspopup="true" aria-expanded="false" aria-label="' + esc(tr('Limba')) + ': ' + esc(c[2]) + '">' +
-        '<span aria-hidden="true">' + c[1] + '</span><span class="myd-limba-nume" translate="no">' + esc(c[2]) + '</span><span class="myd-limba-cod" translate="no" aria-hidden="true">' + c[0].toUpperCase() + '</span>' +
+        // Pasul 12-P1b: fără steagul emoji — pe Windows se desenează ca literele „RO”,
+        // deci pe telefon apărea „RO RO”. Telefon: codul („RO ▾”); desktop: numele („Română ▾”).
+        '<span class="myd-limba-nume" translate="no">' + esc(c[2]) + '</span><span class="myd-limba-cod" translate="no" aria-hidden="true">' + c[0].toUpperCase() + '</span>' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>' +
       '</button>' +
       '<div class="lang-panel" role="menu">' + LIMBI_CONT.map(function (x) {
-        return '<div class="lang-opt' + (x[0] === l ? ' active' : '') + '" role="menuitemradio" aria-checked="' + (x[0] === l) + '" tabindex="0" data-limba="' + x[0] + '" lang="' + x[0] + '" translate="no"><span aria-hidden="true">' + x[1] + '</span> ' + x[2] + '</div>';
+        return '<div class="lang-opt' + (x[0] === l ? ' active' : '') + '" role="menuitemradio" aria-checked="' + (x[0] === l) + '" tabindex="0" data-limba="' + x[0] + '" lang="' + x[0] + '" translate="no">' + x[2] + '</div>';
       }).join('') + '</div></div>';
   }
   function alegeLimba(cod) {
