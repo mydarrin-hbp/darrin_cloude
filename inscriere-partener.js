@@ -142,9 +142,13 @@
       window.MYD_PAZA.leagaSelectorLimba(zona);
     }
 
-    $('pi-intra').addEventListener('click', function () {
+    // Logarea: linkul din antet și rândul „Ai deja cont? Intră în cont” (pasul 12-P1b).
+    // După autentificare, destinația o decide serverul (destinatie-rol): panoul partenerului.
+    var intra = function () {
       asteapta(function () { return !!window.MDCont; }, 8000).then(function (gata) { if (gata) window.MDCont.deschide({ tab: 'login' }); });
-    });
+    };
+    $('pi-intra').addEventListener('click', intra);
+    $('pi-intra-jos').addEventListener('click', intra);
 
     var pornit = false;
     $('pi-form').addEventListener('focusin', function () {

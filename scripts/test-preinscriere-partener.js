@@ -140,6 +140,12 @@ function supabaseSimulat() {
         return { data: { user: user(), session: ses() }, error: null };
       },
       resend: async () => ({ error: null }),
+      signInWithPassword: async (o) => {
+        window.__auth.push({ tip: 'login', email: o.email });
+        if (o.password !== 'Parola-Test-1') return { data: {}, error: { message: 'Invalid login credentials', status: 400 } };
+        sessionStorage.setItem('sim_email', o.email); sessionStorage.setItem('sim_ses', '1');
+        return { data: { user: user(), session: ses() }, error: null };
+      },
     },
     from: () => lant({ data: null, error: null }),
     rpc: () => lant({ data: null, error: null }),
@@ -366,6 +372,35 @@ async function testeBrowser() {
           verifica(!erori.length, `${et} B: erori JS (${erori.slice(0, 3).join(' | ')})`);
           await ctx.close();
         }
+      }
+    }
+
+    // ── B4b. Pasul 12-P1b: „Ai deja cont? Intră în cont” sub butonul portocaliu → logarea → panoul ──
+    for (const lang of ['ro', 'en']) {
+      for (const latime of [390, 1366]) {
+        const et = `${lang} ${latime}`;
+        const server = serverSimulat();
+        const { ctx, p, erori } = await context(latime, lang, server);
+        await p.goto(`${baza}${PAGINA}`, { waitUntil: 'load' });
+        await p.waitForFunction(() => window.MDCont && window.MDFeedback && !document.documentElement.classList.contains('myd-i18n-pending'), null, { timeout: 10000 }).catch(() => {});
+        const rand = await p.evaluate(() => {
+          const r = document.getElementById('pi-am-cont'), b = document.getElementById('pi-intra-jos'), t = document.getElementById('pi-trimite');
+          const cs = getComputedStyle(b);
+          return { text: r.innerText.replace(/\s+/g, ' ').trim(), vizibil: !!r.getClientRects().length, subButon: r.getBoundingClientRect().top > t.getBoundingClientRect().bottom, culoare: cs.color, marime: cs.fontSize, aliniere: getComputedStyle(r).textAlign };
+        });
+        verifica(rand.vizibil && rand.text === (lang === 'ro' ? 'Ai deja cont? Intră în cont' : 'Already have an account? Sign in'), `${et} B4b: rândul de logare (${rand.text})`);
+        verifica(rand.subButon && rand.culoare === 'rgb(0, 51, 102)' && rand.marime === '14px' && rand.aliniere === 'center', `${et} B4b: sub butonul portocaliu, albastru #003366, 14 px, centrat (${JSON.stringify(rand)})`);
+        await p.click('#pi-intra-jos');
+        await p.waitForSelector('#auth-login:not([hidden])', { timeout: 8000 }).catch(() => {});
+        verifica(await p.isVisible('#login-email'), `${et} B4b: se deschide fereastra de logare, tabul „Intră în cont”`);
+        await p.fill('#login-email', 'ion@gmail.com');
+        await p.fill('#login-pass', 'Parola-Test-1');
+        await p.click('#mdc-login-btn');
+        await p.waitForURL(/mydarrin-dashboard-partener/, { timeout: 15000 }).catch(() => {});
+        await p.waitForSelector('#myd-panou-nou .mpn-stare', { timeout: 15000 }).catch(() => {});
+        verifica(/mydarrin-dashboard-partener\.html\?type=servicii/.test(p.url()) && await p.isVisible('#myd-panou-nou'), `${et} B4b: după logare, panoul partenerului (${p.url()})`);
+        verifica(!erori.length, `${et} B4b: erori JS (${erori.slice(0, 3).join(' | ')})`);
+        await ctx.close();
       }
     }
 

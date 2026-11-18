@@ -81,11 +81,13 @@
     var s = document.createElement('style');
     s.id = 'mpn-stil';
     s.textContent =
-      '#myd-panou-nou{position:fixed;inset:0;z-index:9300;background:#F6F8FB;color:#1A2332;font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;overflow-y:auto;overflow-x:hidden;-webkit-text-size-adjust:100%;display:flex;flex-direction:column}' +
+      // Pasul 12-P1b: overflow-x:clip (nu doar hidden) — conținutul nu poate fi derulat orizontal
+      // nici din cod (focus, scrollIntoView), deci meniul și logo-ul nu mai ajung lipite de margine.
+      '#myd-panou-nou{position:fixed;inset:0;z-index:9300;background:#F6F8FB;color:#1A2332;font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;overflow-y:auto;overflow-x:hidden;overflow-x:clip;-webkit-text-size-adjust:100%;display:flex;flex-direction:column;width:100%;max-width:100vw;margin:0;padding:0}' +
       '#myd-panou-nou *{box-sizing:border-box}#myd-panou-nou [hidden]{display:none!important}' +
       '#myd-panou-nou a{color:#003366}' +
       '.mpn-antet{display:flex;align-items:center;gap:8px;padding:12px 16px;background:#fff;border-bottom:1px solid #E6ECF2;position:sticky;top:0;z-index:2}' +
-      '.mpn-antet img{border-radius:9px;display:block;flex:0 0 auto}' +
+      '.mpn-antet img{border-radius:9px;display:block;flex:0 0 auto;width:34px;height:34px;min-width:34px;max-width:none;object-fit:contain}' +
       '.mpn-marca{font-size:16px;font-weight:700;color:#003366;flex-grow:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
       '.mpn-marca .mpn-lung{display:none}' +
       '.mpn-site{min-height:44px;padding:0 10px;border:1px solid #D5DEE8;border-radius:10px;display:inline-flex;align-items:center;font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap;background:#fff}' +
@@ -138,12 +140,12 @@
       '.mpn-jos button[aria-current="page"]{font-weight:700;color:#003366}' +
       '.mpn-jos svg{width:22px;height:22px}' +
       '@media (min-width:1024px){' +
-        '.mpn-antet{padding:14px 32px;gap:12px}.mpn-antet img{width:38px;height:38px;border-radius:10px}' +
+        '.mpn-antet{padding:14px 32px;gap:12px}.mpn-antet img{width:38px;height:38px;min-width:38px;border-radius:10px}' +
         '.mpn-marca{font-size:18px}.mpn-marca .mpn-lung{display:inline}' +
         '#myd-panou-nou .myd-limba .myd-limba-nume{display:inline}#myd-panou-nou .myd-limba .myd-limba-cod{display:none}' +
         '.mpn-site{font-size:14px;padding:0 14px}.mpn-av{display:flex}' +
-        '.mpn-meniu{display:flex;flex-direction:column;gap:4px;width:232px;flex:0 0 232px;background:#fff;border-right:1px solid #E6ECF2;padding:20px 14px}' +
-        '.mpn-meniu button{min-height:44px;border-radius:10px;color:#4A5A6B;font-size:14px;display:flex;align-items:center;padding:0 12px;background:none;border:0;text-align:left;font-family:inherit;cursor:pointer}' +
+        '.mpn-meniu{display:flex;flex-direction:column;gap:4px;width:232px;min-width:232px;flex:0 0 232px;background:#fff;border-right:1px solid #E6ECF2;padding:20px 16px;margin:0}' +
+        '.mpn-meniu button{min-height:44px;min-width:0;width:100%;margin:0;border-radius:10px;color:#4A5A6B;font-size:14px;display:flex;align-items:center;justify-content:flex-start;padding:0 12px;background:none;border:0;text-align:left;text-indent:0;white-space:nowrap;overflow:visible;font-family:inherit;cursor:pointer}' +
         '.mpn-meniu button[aria-current="page"]{background:#EAF1F8;color:#003366;font-weight:700}' +
         '.mpn-main{padding:28px 32px 40px;gap:18px}' +
         '.mpn-salut{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}.mpn-salut h1{font-size:28px}.mpn-salut p{font-size:15px}.mpn-salut .mpn-insigna{display:inline-block;font-size:13px;padding:7px 14px}' +
@@ -348,6 +350,7 @@
   function randeaza() {
     var rad = $('myd-panou-nou');
     if (!rad) return;
+    rad.scrollLeft = 0;
     rad.innerHTML = antetHtml() +
       '<div class="mpn-corp">' + meniuHtml() +
         '<main class="mpn-main" id="mpn-main">' + (st.sectiune === 'activitate' ? activitateHtml() : golHtml(st.sectiune)) + '</main>' +
