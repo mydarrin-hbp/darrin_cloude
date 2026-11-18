@@ -17,7 +17,12 @@
 //      DOM), butonul Consultanță Darrin la încredere mică; widget-ul flotant
 //      caută prin /api/public/catalog (interceptat), nu într-o listă din cod;
 //      RO și EN, 390 și 1366 px, fără erori JS și fără derulare orizontală.
+//   E. pasul 12-D1b: la 360 / 390 / 412 / 1366 px, câmpul Darrin AI (modalul din
+//      catalog, „Creează deviz”, widget-ul) are ≥ 60% din lățime, primește focus,
+//      se tastează în el și trimiterea arată rezultatele; Android cu tastatura
+//      deschisă (412 × 500): câmpul rămâne vizibil. RO și EN.
 // Capturi înainte / după (opțional): CAPTURI=docs/capturi-12d1 node scripts/test-darrin-ai-date-proprii.js
+//   pasul 12-D1b: CAPTURI_12D1B=docs/capturi-12d1b node scripts/test-darrin-ai-date-proprii.js
 //   („înainte” = paginile din main, servite din git, cu răspunsul vechi al API-ului).
 // Rulare: node scripts/test-darrin-ai-date-proprii.js   (FARA_BROWSER=1: doar A–C)
 
@@ -297,8 +302,8 @@ async function testeBrowser() {
   const dinMain = (f) => { try { return execSync(`git show main:${f}`, { cwd: RADACINA, maxBuffer: 64 * 1024 * 1024 }).toString(); } catch (e) { return null; } };
   const RASPUNS_VECHI = { ok: true, request_id: null, categorie_slug: 'instalatii-termice', titlu_categorie: 'Instalații termice', cost_brut_estimat: 450, incredere: 0.82, explicatie: 'Caloriferul pierde apă la racord; estimarea are la bază prețurile tipice de piață.' };
 
-  async function context(browser, latime, lang) {
-    const ctx = await browser.newContext({ viewport: { width: latime, height: latime < 720 ? 844 : 900 }, hasTouch: latime < 720 });
+  async function context(browser, latime, lang, mobil = false) {
+    const ctx = await browser.newContext({ viewport: { width: latime, height: latime < 720 ? 844 : 900 }, hasTouch: latime < 720, isMobile: mobil });
     await ctx.addInitScript((l) => { try { localStorage.setItem('myd_lang_v1', l); localStorage.setItem('myd_cookie_consent_v1', JSON.stringify({ analitice: false, data: new Date().toISOString(), marketing: false, versiune: 2 })); } catch (e) {} }, lang);
     await ctx.route(/supabase\.co\//, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
     await ctx.route(/ipapi\.co|nominatim|homebestpal\.com/, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
@@ -329,9 +334,18 @@ async function testeBrowser() {
     await pg.waitForTimeout(500);
     return pg;
   }
-  // La 390 px, câmpul modalului are lățimea 0 (defect existent și în main, raportat separat):
-  // textul se pune direct în câmp, ca la tastare.
-  const completeazaModal = (pg, text) => pg.evaluate((t) => { document.getElementById('chat-input').value = t; }, text);
+  // Pasul 12-D1b: câmpul modalului se completează ca de un om (vizibil, cu lățime reală).
+  // Doar versiunea „înainte” din main (câmp cu lățimea 0 pe telefon) primește textul direct.
+  const completeazaModal = (pg, text) => pg.fill('#chat-input', text);
+  const completeazaModalVechi = (pg, text) => pg.evaluate((t) => { document.getElementById('chat-input').value = t; }, text);
+  const captura2 = async (pg, nume, el) => {
+    const dir = process.env.CAPTURI_12D1B ? path.resolve(process.env.CAPTURI_12D1B) : null;
+    if (!dir) return;
+    const fisier = path.join(dir, nume + '.png');
+    const tinta = el ? await pg.$(el) : null;
+    const gata = tinta ? await tinta.screenshot({ path: fisier }).then(() => true, () => false) : false;
+    if (!gata) await pg.screenshot({ path: fisier }).catch(() => {});
+  };
   const depasire = (pg) => pg.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   // Verificarea din DOM: orice sumă de bani din zona rezultatului trebuie să stea
   // într-un element [data-pret-server] și să fie unul din prețurile trimise de server.
@@ -491,7 +505,7 @@ async function testeBrowser() {
         if (CAPTURI) {
           VECHI.activ = true;
           for (const [f, nume, pas, el] of [
-            ['mydarrin-catalog.html', 'catalog-ai', async (pg) => { await pg.evaluate(() => openConsultanta()); await completeazaModal(pg, 'Curge un calorifer'); await pg.evaluate(() => sendToAI()); await pg.waitForSelector('#rec-services div'); }, '#ai-result'],
+            ['mydarrin-catalog.html', 'catalog-ai', async (pg) => { await pg.evaluate(() => openConsultanta()); await completeazaModalVechi(pg, 'Curge un calorifer'); await pg.evaluate(() => sendToAI()); await pg.waitForSelector('#rec-services div'); }, '#ai-result'],
             ['mydarrin-creeaza-deviz.html', 'creeaza-deviz', async (pg) => { await pg.fill('#dv-text', 'Curge un calorifer'); await pg.click('#dv-submit-btn'); await pg.waitForSelector('#dv-rezultat', { state: 'visible' }); }, '#dv-rezultat'],
             ['mydarrin-cum-functioneaza.html', 'widget', async (pg) => { await pg.evaluate(() => toggleDaiChat()); await pg.fill('#dai-chat-input', 'Curge un calorifer'); await pg.evaluate(() => daiSendMessage()); await pg.waitForTimeout(1200); }, '#dai-chat-panel'],
           ]) {
@@ -506,6 +520,117 @@ async function testeBrowser() {
           VECHI.activ = false;
         }
         await ctx.close();
+      }
+    }
+
+
+    // ── E. Pasul 12-D1b: câmpurile Darrin AI pe telefon ─────────────────
+    // La 360 / 390 / 412 / 1366 px: câmpul are cel puțin 60% din lățimea
+    // containerului (modal, card, widget), primește focus, se tastează în el
+    // „curge un calorifer”, iar butonul de trimitere (≥ 44 × 44 px pe telefon)
+    // afișează rezultatele (API simulat). Apoi tastatura deschisă pe Android:
+    // înălțimea scade la 500 px și câmpul rămâne vizibil.
+    const CAPTURI_B = process.env.CAPTURI_12D1B ? path.resolve(process.env.CAPTURI_12D1B) : null;
+    if (CAPTURI_B) fs.mkdirSync(CAPTURI_B, { recursive: true });
+    const LOCURI = [
+      { nume: 'catalog-ai', pagina: '/mydarrin-catalog.html', deschide: (pg) => pg.evaluate(() => openConsultanta()), camp: '#chat-input', cont: '#consultanta-modal', trimite: 'button[onclick="sendToAI()"]', rezultat: '#rec-services [data-ai-serviciu]', captura: '#consultanta-modal' },
+      { nume: 'creeaza-deviz', pagina: '/mydarrin-creeaza-deviz.html', deschide: async () => {}, camp: '#dv-text', cont: '#dv-text', parinteCard: true, trimite: '#dv-submit-btn', rezultat: '#dv-rez-servicii .svc-card', captura: null },
+      { nume: 'widget', pagina: '/mydarrin-cum-functioneaza.html', deschide: (pg) => pg.evaluate(() => toggleDaiChat()), camp: '#dai-chat-input', cont: '#dai-chat-panel', trimite: 'button[onclick="daiSendMessage()"]', rezultat: '[data-dai-rezultate] a', captura: '#dai-chat-panel' },
+    ];
+    const masoara = (pg, loc) => pg.evaluate(([camp, cont, card, trimite]) => {
+      const c = document.querySelector(camp);
+      let k = document.querySelector(cont);
+      if (card) k = k.parentElement;
+      const b = document.querySelector(trimite);
+      const rc = c.getBoundingClientRect(), rk = k.getBoundingClientRect(), rb = b.getBoundingClientRect();
+      return { camp: rc.width, cont: rk.width, sus: rc.top, jos: rc.bottom, inaltimeVizibila: (window.visualViewport ? window.visualViewport.height : innerHeight), bw: rb.width, bh: rb.height };
+    }, [loc.camp, loc.cont, !!loc.parinteCard, loc.trimite]);
+    for (const lang of ['ro', 'en']) {
+      for (const latime of [360, 390, 412, 1366]) {
+        reset();
+        const mobil = latime < 720;
+        const ctx = await context(browser, latime, lang, mobil);
+        for (const loc of LOCURI) {
+          await test(`E ${lang} ${latime}: ${loc.nume} — câmp ≥ 60%, focus, tastare, trimitere → rezultate`, async () => {
+            ANTHROPIC.raspuns = { categorie_slug: 'instalatii-termice', servicii_ids: ['inlocuire-calorifer'], incredere: 0.86, explicatie: lang === 'ro' ? 'Caloriferul pierde apă.' : 'The radiator is leaking.' };
+            const pg = await pagina(ctx, loc.pagina);
+            await loc.deschide(pg);
+            await pg.waitForTimeout(450);
+            const m = await masoara(pg, loc);
+            adevarat(m.camp >= 0.6 * m.cont, `câmpul are ${Math.round(m.camp)} px din ${Math.round(m.cont)} px`);
+            if (mobil) adevarat(m.bw >= 44 && m.bh >= 44, `butonul de trimitere are ${Math.round(m.bw)} × ${Math.round(m.bh)} px`);
+            await pg.click(loc.camp);
+            egal(await pg.evaluate((sel) => document.activeElement === document.querySelector(sel), loc.camp), true, 'focus pe câmp');
+            await pg.keyboard.type('curge un calorifer');
+            egal(await pg.$eval(loc.camp, (e) => e.value), 'curge un calorifer', 'textul tastat');
+            if (CAPTURI_B && latime === 390 && loc.captura) await captura2(pg, `${loc.nume}-${lang}-390-dupa-tastare`, loc.captura);
+            await pg.click(loc.trimite);
+            await pg.waitForSelector(loc.rezultat);
+            if (CAPTURI_B && latime === 390) { await pg.waitForTimeout(700); await captura2(pg, `${loc.nume}-${lang}-390-dupa`, loc.captura || '#dv-rezultat'); }
+            // Desktop: modalul din catalog cu conținutul pe toată lățimea (înainte: coloană îngustă în dreapta).
+            if (CAPTURI_B && latime === 1366 && loc.nume === 'catalog-ai') { await pg.waitForTimeout(700); await pg.screenshot({ path: path.join(CAPTURI_B, `${loc.nume}-${lang}-1366-dupa.png`) }); }
+            egal(pg.erori, [], 'erori JS');
+            adevarat((await depasire(pg)) <= 0, 'derulare orizontală');
+            await pg.close();
+          });
+        }
+        await ctx.close();
+      }
+      // Android cu tastatura deschisă: 412 × 915, apoi înălțimea vizibilă scade la 500 px.
+      reset();
+      const ctx = await context(browser, 412, lang, true);
+      for (const loc of LOCURI) {
+        await test(`E ${lang}: Android cu tastatura deschisă (412 × 500) — ${loc.nume}: câmpul rămâne vizibil`, async () => {
+          const pg = await pagina(ctx, loc.pagina);
+          await pg.setViewportSize({ width: 412, height: 915 });
+          await loc.deschide(pg);
+          await pg.waitForTimeout(450);
+          await pg.click(loc.camp);
+          await pg.setViewportSize({ width: 412, height: 500 });
+          await pg.waitForTimeout(700);
+          const m = await masoara(pg, loc);
+          adevarat(m.sus >= 0 && m.jos <= m.inaltimeVizibila, `câmpul e între ${Math.round(m.sus)} și ${Math.round(m.jos)} px, ecranul vizibil are ${Math.round(m.inaltimeVizibila)} px`);
+          adevarat(m.camp >= 0.6 * m.cont, `câmpul are ${Math.round(m.camp)} px din ${Math.round(m.cont)} px`);
+          await pg.keyboard.type('curge');
+          egal(await pg.$eval(loc.camp, (e) => e.value), 'curge', 'se tastează cu tastatura deschisă');
+          egal(pg.erori, [], 'erori JS');
+          await pg.close();
+        });
+      }
+      await ctx.close();
+    }
+
+    // Capturile „înainte” ale pasului 12-D1b: paginile din main la 390 px.
+    if (CAPTURI_B) {
+      for (const lang of ['ro', 'en']) {
+        reset();
+        const ctx = await context(browser, 390, lang, true);
+        for (const loc of LOCURI) {
+          const f = loc.pagina.slice(1);
+          const vechi = dinMain(f);
+          if (!vechi) continue;
+          const re = new RegExp('/' + f.replace('.', '\\.') + '(\\?|$)');
+          await ctx.route(re, (r) => r.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: vechi }));
+          const pg = await pagina(ctx, loc.pagina);
+          await loc.deschide(pg);
+          await pg.waitForTimeout(450);
+          await captura2(pg, `${loc.nume}-${lang}-390-inainte`, loc.captura || '#deviz-hero');
+          await pg.close();
+          await ctx.unroute(re);
+        }
+        await ctx.close();
+        // Modalul din catalog, înainte, la 1366 px (tot ecranul).
+        const vechiCatalog = dinMain('mydarrin-catalog.html');
+        if (vechiCatalog) {
+          const ctxD = await context(browser, 1366, lang);
+          await ctxD.route(/\/mydarrin-catalog\.html(\?|$)/, (r) => r.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: vechiCatalog }));
+          const pg = await pagina(ctxD, '/mydarrin-catalog.html');
+          await pg.evaluate(() => openConsultanta());
+          await pg.waitForTimeout(700);
+          await pg.screenshot({ path: path.join(CAPTURI_B, `catalog-ai-${lang}-1366-inainte.png`) });
+          await pg.close();
+          await ctxD.close();
+        }
       }
     }
 
