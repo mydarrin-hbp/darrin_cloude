@@ -2,17 +2,27 @@
 // Darrin AI — motor public de deviz (Varianta 1: Evaluare Instantă Servicii,
 // Varianta 2 redusă: punct de intrare "Deviz Sumar" pentru proiecte).
 //
-// Spre deosebire de restul modalului "Darrin AI" din mydarrin-catalog.html
-// (matching determinist pe cuvinte-cheie împotriva unui PRODUCTS_DB static),
-// acest endpoint apelează un model Claude real. Siguranța nu vine din
-// interzicerea AI-ului, ci din constrângerea output-ului: categoria e
-// obligatoriu una din cele reale din `categorii` (tool use cu enum), nu text
-// liber — modelul nu poate "inventa" un serviciu în afara catalogului.
+// Pasul 12-D1 (18 nov. 2026, regula LM din 17 nov.): Darrin AI interpretează
+// și propune DOAR din datele My Darrin. Modelul Claude primește lista
+// categoriilor reale (`categorii`) și lista serviciilor publicate din catalog
+// (`catalog_servicii`, stare = 'publicat', status_public = true) și poate
+// alege doar din ele (tool use cu enum): o categorie și 1–3 servicii, plus
+// încrederea și o explicație scurtă. Nu mai cere și nu mai primește nicio
+// sumă: vechiul câmp cost_brut_estimat_lei („prețuri tipice de piață”) a fost
+// scos complet (schema tool-ului, răspuns, stocare, pagini).
 //
-// Acest endpoint NU calculează prețul final — doar o estimare de cost brut +
-// categorie + încredere. Prețul oficial rămâne exclusiv la
-// /api/deviz/calculate.js (server-side, VMC/TVA/zonă/urgență pe țară),
-// nemodificat, apelat separat de front-end la pasul de confirmare.
+// Serverul verifică tot ce vine de la model: ID-urile trebuie să existe și să
+// fie publicate (celelalte se resping); o explicație cu sume de bani (lei, RON,
+// EUR, cifre urmate de monedă) se înlocuiește cu un text fix RO / EN. La
+// încredere mică sau fără niciun serviciu valid, răspunsul recomandă
+// „Consultanță Darrin” (dacă serviciul e publicat).
+//
+// Prețul: niciodată de la model. Pentru fiecare serviciu propus, serverul
+// calculează prețul „de la” al primului nivel (Bronze → Silver → Gold →
+// Platinum) pentru țara clientului, cu lib/pret-serviciu.js (rețetă sau
+// catalog_preturi, apoi formula publică din lib/calculeaza-pret.js). Dacă nu
+// se poate calcula, pret_de_la = null și pagina scrie „Vezi prețul pe pagina
+// serviciului”.
 //
 // Funcționează și pentru vizitatori neautentificați (estimarea e liber
 // accesibilă) — de-aia nu folosește requireAuth, doar getAuthenticatedUser
@@ -37,6 +47,8 @@ const crypto = require('crypto');
 const v = require('../../lib/valideaza');
 const { limiteazaCererea } = require('../../lib/rate-limit');
 const { trimiteEroare } = require('../../lib/raspuns-eroare');
+const { citesteTot } = require('../../lib/citeste-tot');
+const { calculeazaPretServiciu } = require('../../lib/pret-serviciu');
 
 const ANTHROPIC_MODEL = 'claude-sonnet-5';
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
@@ -47,6 +59,28 @@ const MAX_FILES = 3;
 const MAX_FILE_BYTES = 2 * 1024 * 1024; // 2MB decodat/fișier — vezi nota de limită de mai sus
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf']);
 const MODURI = new Set(['servicii', 'proiect']);
+const LIMBI = ['ro', 'en'];
+
+// Pasul 12-D1: câte servicii poate propune modelul și pragul de încredere sub
+// care se recomandă consultanța (același prag ca în paginile de dinainte).
+const MAX_SERVICII = 3;
+const PRAG_INCREDERE = 0.5;
+const MAX_EXPLICATIE = 600;
+// Serviciul de consultanță din catalog, recomandat când nimic nu se potrivește.
+const ID_CONSULTANTA = 'consultanta-darrin';
+// Ordinea nivelurilor: „primul nivel” e cel mai de jos dintre cele existente.
+const ORDINE_NIVELURI = ['Bronze', 'Silver', 'Gold', 'Platinum'];
+
+// Explicația pusă de server: când modelul scrie totuși sume de bani sau când
+// niciun serviciu propus nu e valid.
+const EXPLICATIE_FIXA = {
+  ro: 'Am ales din catalogul My Darrin serviciile care se potrivesc cel mai bine cu descrierea ta. Prețul fiecărui serviciu îl vezi pe pagina lui.',
+  en: 'We picked the services from the My Darrin catalogue that best match your description. You can see the price of each service on its page.',
+};
+const EXPLICATIE_LIPSA = {
+  ro: 'Nu am găsit în catalogul My Darrin un serviciu care să se potrivească sigur cu descrierea ta. Îți recomandăm Consultanța Darrin.',
+  en: 'We could not find a service in the My Darrin catalogue that clearly matches your description. We recommend a Darrin Consultancy.',
+};
 
 // Pasul 11-S1: câmpurile acceptate; orice alt câmp e refuzat. Regulile de
 // conținut (ce e obligatoriu pentru fiecare mod, mărimea fișierelor) rămân mai jos.
@@ -60,7 +94,21 @@ const SCHEMA = {
   tip_constructie: v.text({ max: 200, eticheta: ['Tip construcție', 'Construction type'] }),
   suprafata_mp: v.numar({ min: 0, max: 1000000, eticheta: ['Suprafață (m²)', 'Area (m²)'] }),
   locatie: v.text({ max: 200, eticheta: ['Locație', 'Location'] }),
+  // Pasul 12-D1: limba explicației și țara pentru prețul „de la”.
+  lang: v.dinLista(LIMBI, { implicit: 'en', eticheta: ['Limba', 'Language'] }),
+  tara: v.text({ max: 2, eticheta: ['Țara', 'Country'] }),
 };
+
+// Sume de bani: cifre urmate de monedă („250 lei”, „1.200 de RON”, „90€”) sau
+// moneda înaintea cifrelor („RON 300”, „€ 90”, „$40”).
+const MONEDE = '(?:lei|leu|ron|eur|euro|euros|€|\\$|usd|gbp|£|bgn|mdl)';
+const RE_SUMA = new RegExp(
+  `\\d[\\d.,\\s]*\\s*(?:de\\s+|of\\s+)?${MONEDE}(?![a-zăâîșț])|(?<![a-zăâîșț])${MONEDE}\\s*\\d`,
+  'i'
+);
+function continutSume(text) {
+  return RE_SUMA.test(String(text || ''));
+}
 
 function base64Bytes(b64) {
   // lungime base64 → octeți decodați, fără să decodăm efectiv (evită alocare inutilă)
@@ -80,59 +128,99 @@ async function incarcaSluguriServicii() {
   return data;
 }
 
-function construiestePrompt(mod, { text, tipConstructie, suprafataMp, locatie }) {
+// Serviciile publicate din catalog: singurele pe care modelul le poate propune.
+async function incarcaServiciiPublicate() {
+  const { data, error } = await citesteTot(() => supabaseAdmin
+    .from('catalog_servicii')
+    .select('id, id_serviciu, titlu, traduceri, unitate_masura')
+    .eq('categorie', 'servicii')
+    .eq('stare', 'publicat')
+    .eq('status_public', true)
+    .order('titlu')
+    .order('id'));
+  if (error) throw new Error(`nu am putut încărca serviciile publicate: ${error.message}`);
+  const lista = (data || []).filter((s) => s.id_serviciu);
+  if (!lista.length) throw new Error('nu există servicii publicate în catalog');
+  return lista;
+}
+
+function titluServiciu(s) {
+  const en = s.traduceri && s.traduceri.en && s.traduceri.en.titlu;
+  return { ro: s.titlu, en: en || s.titlu };
+}
+
+function construiestePrompt(mod, { text, tipConstructie, suprafataMp, locatie, lang, servicii, sluguri, areConsultanta }) {
+  const linii = [
+    'Ești Darrin AI, asistentul platformei My Darrin (servicii pentru locuință și construcții).',
+    'Rolul tău: interpretezi nevoia clientului și alegi DOAR din datele My Darrin de mai jos — o categorie din lista CATEGORII și 1–3 servicii din lista SERVICII, prin ID-ul lor exact.',
+    'Reguli obligatorii:',
+    '- Alegi numai ID-uri din listele primite. Nu inventezi servicii, soluții tehnice sau surse externe.',
+    '- Nu scrii prețuri, sume de bani, costuri, tarife, durate sau termene — nici estimative. Prețul îl calculează exclusiv platforma, pe pagina serviciului.',
+    '- Dacă nimic din listă nu se potrivește sigur, dai o încredere mică (sub 0.5)' + (areConsultanta ? ` și propui serviciul „${ID_CONSULTANTA}” (Consultanță Darrin).` : '.'),
+    `- Explicația are 1–3 propoziții, în limba ${lang === 'ro' ? 'română' : 'engleză'}: ce ai înțeles din descriere și de ce ai ales serviciile.`,
+    '',
+    'CATEGORII (slug: titlu):',
+    ...sluguri.map((c) => `- ${c.slug}: ${c.title}`),
+    '',
+    'SERVICII (ID: titlu RO / titlu EN):',
+    ...servicii.map((s) => { const t = titluServiciu(s); return `- ${s.id_serviciu}: ${t.ro} / ${t.en}`; }),
+    '',
+  ];
   if (mod === 'proiect') {
-    return [
-      'Ești motorul de estimare pentru My Darrin, o platformă românească de servicii pentru locuință și construcții.',
+    linii.push(
       'Clientul descrie un proiect de construcție/renovare la scară mai mare (nu o reparație punctuală).',
       `Tip construcție/proiect: ${tipConstructie || '(nespecificat)'}`,
       `Suprafață: ${suprafataMp ? `${suprafataMp} m²` : '(nespecificată)'}`,
       `Locație: ${locatie || '(nespecificată)'}`,
       text ? `Descriere suplimentară a clientului: ${text}` : '',
-      '',
-      'Aceasta este doar o estimare preliminară ("Deviz Sumar") pe baza informațiilor date — NU o ofertă tehnică detaliată (nu ai planșe, nu ai extras de materiale). Dacă informația e insuficientă pentru o estimare rezonabilă, reflectă asta printr-o încredere (incredere) scăzută, nu printr-un refuz.',
-    ].filter(Boolean).join('\n');
+      'Dacă informația e insuficientă, reflectă asta printr-o încredere scăzută, nu printr-un refuz.'
+    );
+  } else {
+    linii.push(
+      'Clientul descrie o nevoie punctuală (reparație, instalație, finisaj) prin text și, opțional, imagini/PDF.',
+      text ? `Descrierea clientului: ${text}` : 'Clientul nu a scris text — bazează-te doar pe fișierele atașate.'
+    );
   }
-  return [
-    'Ești motorul de estimare pentru My Darrin, o platformă românească de servicii pentru locuință.',
-    'Clientul descrie o nevoie punctuală (reparație, instalație, finisaj) prin text și, opțional, imagini/PDF.',
-    text ? `Descrierea clientului: ${text}` : 'Clientul nu a scris text — bazează-te doar pe fișierele atașate.',
-  ].join('\n');
+  return linii.filter((l, i) => l !== '' || linii[i - 1] !== '').join('\n');
 }
 
-async function apeleazaAnthropic({ apiKey, promptSistem, contentBlocks, sluguri }) {
-  const tool = {
+function construiesteTool(sluguri, servicii) {
+  return {
     name: 'identifica_serviciu',
     description:
-      'Clasifică nevoia clientului într-o categorie reală din catalogul My Darrin și oferă o estimare de cost BRUT (înainte de comisioane, marketing, platformă, coeficient de zonă/urgență și TVA — acestea se aplică separat, server-side).',
+      'Alege din catalogul My Darrin categoria și 1–3 servicii publicate care se potrivesc nevoii clientului. Fără prețuri sau sume: prețul îl calculează platforma.',
     input_schema: {
       type: 'object',
       properties: {
         categorie_slug: {
           type: 'string',
           enum: sluguri.map((s) => s.slug),
-          description: 'Slug-ul categoriei din catalogul real My Darrin care se potrivește cel mai bine.',
+          description: 'Slug-ul categoriei din lista CATEGORII care se potrivește cel mai bine.',
         },
-        cost_brut_estimat_lei: {
-          type: 'number',
-          minimum: 0,
-          description: 'Estimare de cost brut în RON, pe baza prețurilor tipice de piață din România pentru acest tip de lucrare (manoperă + materiale uzuale), înainte de orice comision My Darrin.',
+        servicii_ids: {
+          type: 'array',
+          minItems: 1,
+          maxItems: MAX_SERVICII,
+          items: { type: 'string', enum: servicii.map((s) => s.id_serviciu) },
+          description: 'ID-urile a 1–3 servicii din lista SERVICII, în ordinea potrivirii.',
         },
         incredere: {
           type: 'number',
           minimum: 0,
           maximum: 1,
-          description: 'Cât de sigur ești de estimare, 0–1. Scade pentru input vag, ambiguu sau insuficient — nu inventa certitudine.',
+          description: 'Cât de sigur ești de alegere, 0–1. Scade pentru input vag, ambiguu sau insuficient — nu inventa certitudine.',
         },
         explicatie: {
           type: 'string',
-          description: 'Explicație scurtă (2-3 propoziții), în română, pentru client: ce ai înțeles și pe ce s-a bazat estimarea.',
+          description: 'Explicație scurtă (1–3 propoziții) pentru client: ce ai înțeles și de ce ai ales serviciile. Fără prețuri, sume, durate sau surse externe.',
         },
       },
-      required: ['categorie_slug', 'cost_brut_estimat_lei', 'incredere', 'explicatie'],
+      required: ['categorie_slug', 'servicii_ids', 'incredere', 'explicatie'],
     },
   };
+}
 
+async function apeleazaAnthropic({ apiKey, promptSistem, contentBlocks, tool }) {
   const res = await fetch(ANTHROPIC_API_URL, {
     method: 'POST',
     headers: {
@@ -158,7 +246,80 @@ async function apeleazaAnthropic({ apiKey, promptSistem, contentBlocks, sluguri 
   if (!toolUse) {
     throw new Error('Anthropic API nu a returnat blocul tool_use așteptat');
   }
-  return { input: toolUse.input, raw: json };
+  return { input: toolUse.input || {}, raw: json };
+}
+
+// Verifică răspunsul modelului față de datele reale (funcție pură, testată
+// direct în scripts/test-darrin-ai-date-proprii.js).
+function valideazaRezultatAI(input, { sluguri, servicii, lang }) {
+  const l = lang === 'ro' ? 'ro' : 'en';
+  const peId = new Map(servicii.map((s) => [s.id_serviciu, s]));
+  const cerute = Array.isArray(input && input.servicii_ids) ? input.servicii_ids : [];
+  const alese = [];
+  const respinse = [];
+  for (const id of cerute) {
+    const s = typeof id === 'string' ? peId.get(id) : null;
+    if (!s) { respinse.push(String(id).slice(0, 80)); continue; }
+    if (!alese.includes(s) && alese.length < MAX_SERVICII) alese.push(s);
+  }
+
+  const categorie = sluguri.find((c) => c.slug === (input && input.categorie_slug)) || null;
+  let incredere = Number(input && input.incredere);
+  if (!Number.isFinite(incredere)) incredere = 0;
+  incredere = Math.min(1, Math.max(0, incredere));
+  if (!alese.length) incredere = 0;
+
+  let explicatie = typeof (input && input.explicatie) === 'string' ? input.explicatie.trim().slice(0, MAX_EXPLICATIE) : '';
+  let explicatieInlocuita = false;
+  if (!alese.length) {
+    explicatie = EXPLICATIE_LIPSA[l];
+    explicatieInlocuita = true;
+  } else if (!explicatie || continutSume(explicatie)) {
+    explicatie = EXPLICATIE_FIXA[l];
+    explicatieInlocuita = true;
+  }
+
+  const consultanta = peId.get(ID_CONSULTANTA) || null;
+  const recomandaConsultanta = incredere < PRAG_INCREDERE;
+  return { alese, respinse, categorie, incredere, explicatie, explicatieInlocuita, consultanta, recomandaConsultanta };
+}
+
+// Prețul „de la” al primului nivel, pentru țară; null dacă nu se poate calcula.
+async function pretDeLa(serviciuId, tara) {
+  try {
+    const { data: niveluri } = await supabaseAdmin
+      .from('catalog_niveluri').select('id, nivel').eq('serviciu_id', serviciuId);
+    const rang = (n) => { const i = ORDINE_NIVELURI.indexOf(n); return i < 0 ? 99 : i; };
+    const lista = (niveluri || []).slice().sort((a, b) => rang(a.nivel) - rang(b.nivel));
+    if (!lista.length) return null;
+    const r = await calculeazaPretServiciu({ nivelId: lista[0].id, cantitate: 1, taraCod: tara });
+    if (!r || !r.ok || !(r.calc && r.calc.pret_final > 0)) return null;
+    return { pret: r.calc.pret_final, nivel: lista[0].nivel };
+  } catch (e) {
+    console.warn('[darrin-ai/deviz] prețul „de la” nu s-a putut calcula:', e.code || e.message);
+    return null;
+  }
+}
+
+async function monedaTara(tara) {
+  try {
+    const { data } = await supabaseAdmin.from('tax_configurations').select('moneda').eq('tara_cod', tara).maybeSingle();
+    return (data && data.moneda) || null;
+  } catch (e) { return null; }
+}
+
+async function formaServiciu(s, tara, moneda) {
+  const pret = await pretDeLa(s.id, tara);
+  return {
+    id: s.id,
+    id_serviciu: s.id_serviciu,
+    titlu: titluServiciu(s),
+    unitate_masura: s.unitate_masura || null,
+    url: `/mydarrin-produs.html?slug=${encodeURIComponent(s.id_serviciu)}&type=serviciu`,
+    pret_de_la: pret ? pret.pret : null,
+    nivel: pret ? pret.nivel : null,
+    moneda: pret ? (moneda || 'RON') : null,
+  };
 }
 
 module.exports = async function handler(req, res) {
@@ -168,13 +329,16 @@ module.exports = async function handler(req, res) {
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    console.error('[darrin-ai/deviz] ANTHROPIC_API_KEY lipsește din mediu');
+    console.error('[darrin-ai/deviz] cheia Anthropic lipsește din mediu');
     return trimiteEroare(res, 500, 'INDISPONIBIL', 'Serviciul Darrin AI nu este configurat încă. Contactează suportul.', 'The Darrin AI service is not set up yet. Please contact support.');
   }
 
   const date = v.valideazaSauTrimite(req, res, SCHEMA);
   if (!date) return;
   const { mod = 'servicii', text, files, tip_constructie, suprafata_mp, locatie } = date;
+  const lang = date.lang === 'ro' ? 'ro' : 'en';
+  const taraCeruta = String(date.tara || '').trim().toUpperCase();
+  const tara = /^[A-Z]{2}$/.test(taraCeruta) ? taraCeruta : 'RO';
 
   // Pasul 11-S1: fiecare cerere apelează un model AI plătit — cel mult 10
   // estimări în 10 minute de pe același IP.
@@ -221,11 +385,12 @@ module.exports = async function handler(req, res) {
   }
 
   let sluguri;
+  let servicii;
   try {
-    sluguri = await incarcaSluguriServicii();
+    [sluguri, servicii] = await Promise.all([incarcaSluguriServicii(), incarcaServiciiPublicate()]);
   } catch (e) {
-    console.error('[darrin-ai/deviz]', e);
-    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca lista de categorii din catalog', 'We could not load the catalogue categories. Please try again.');
+    console.error('[darrin-ai/deviz]', e.message);
+    return trimiteEroare(res, 500, 'EROARE_SERVER', 'Nu am putut încărca catalogul My Darrin. Încearcă din nou.', 'We could not load the My Darrin catalogue. Please try again.');
   }
 
   const contentBlocks = [];
@@ -241,22 +406,28 @@ module.exports = async function handler(req, res) {
     contentBlocks.push({ type: 'text', text: '(fără text sau fișiere — vezi restul promptului de sistem)' });
   }
 
-  const promptSistem = construiestePrompt(mod, { text, tipConstructie: tip_constructie, suprafataMp: suprafata_mp, locatie });
+  const areConsultanta = servicii.some((s) => s.id_serviciu === ID_CONSULTANTA);
+  const promptSistem = construiestePrompt(mod, { text, tipConstructie: tip_constructie, suprafataMp: suprafata_mp, locatie, lang, servicii, sluguri, areConsultanta });
+  const tool = construiesteTool(sluguri, servicii);
 
   let rezultatAI;
   try {
-    rezultatAI = await apeleazaAnthropic({ apiKey, promptSistem, contentBlocks, sluguri });
+    rezultatAI = await apeleazaAnthropic({ apiKey, promptSistem, contentBlocks, tool });
   } catch (e) {
-    console.error('[darrin-ai/deviz]', e);
+    console.error('[darrin-ai/deviz]', e.message);
     return trimiteEroare(res, 502, 'SERVICIU_EXTERN', 'Darrin AI nu a putut procesa cererea momentan. Încearcă din nou sau vorbește cu un specialist.', 'Darrin AI could not process the request right now. Please try again or talk to a specialist.');
   }
 
-  const { categorie_slug, cost_brut_estimat_lei, incredere, explicatie } = rezultatAI.input;
-  const categorieValida = sluguri.find((s) => s.slug === categorie_slug);
-  if (!categorieValida) {
-    // apărare suplimentară, deși enum-ul din tool_schema ar trebui să prevină asta deja
-    console.error('[darrin-ai/deviz] categorie_slug în afara catalogului real:', categorie_slug);
-    return trimiteEroare(res, 502, 'SERVICIU_EXTERN', 'Darrin AI a răspuns cu o categorie neașteptată. Încearcă din nou sau vorbește cu un specialist.', 'Darrin AI answered with an unexpected category. Please try again or talk to a specialist.');
+  const rez = valideazaRezultatAI(rezultatAI.input, { sluguri, servicii, lang });
+  if (rez.respinse.length) {
+    console.warn('[darrin-ai/deviz] ID-uri respinse (inexistente sau nepublicate):', rez.respinse.join(', '));
+  }
+
+  const moneda = await monedaTara(tara);
+  const serviciiRaspuns = await Promise.all(rez.alese.map((s) => formaServiciu(s, tara, moneda)));
+  let consultanta = null;
+  if (rez.recomandaConsultanta && rez.consultanta) {
+    consultanta = serviciiRaspuns.find((s) => s.id_serviciu === ID_CONSULTANTA) || await formaServiciu(rez.consultanta, tara, moneda);
   }
 
   // Copie în Storage pentru audit trail — best-effort, nu blochează răspunsul
@@ -279,6 +450,8 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // Pasul 12-D1: nicio sumă nu se mai salvează (coloana ai_cost_brut_estimat
+  // rămâne goală pentru cererile noi; schema nu se schimbă).
   const { data: inserted, error: insertErr } = await supabaseAdmin
     .from('devize_ai_requests')
     .insert({
@@ -286,10 +459,9 @@ module.exports = async function handler(req, res) {
       input_text: text || null,
       input_files: inputFiles,
       ai_model: ANTHROPIC_MODEL,
-      ai_categorie_slug: categorie_slug,
-      ai_cost_brut_estimat: cost_brut_estimat_lei,
-      ai_incredere: incredere,
-      ai_explicatie: explicatie,
+      ai_categorie_slug: rez.categorie ? rez.categorie.slug : null,
+      ai_incredere: rez.incredere,
+      ai_explicatie: rez.explicatie,
       ai_raw_response: rezultatAI.raw,
     })
     .select('id')
@@ -297,16 +469,27 @@ module.exports = async function handler(req, res) {
 
   if (insertErr) {
     // Nu blocăm răspunsul către client pentru o eroare de audit trail — dar o logăm cu prioritate mare.
-    console.error('[darrin-ai/deviz] nu am putut salva devize_ai_requests:', insertErr);
+    console.error('[darrin-ai/deviz] nu am putut salva devize_ai_requests:', insertErr.message || insertErr);
   }
 
   return res.status(200).json({
     ok: true,
     request_id: inserted?.id || null,
-    categorie_slug,
-    titlu_categorie: categorieValida.title,
-    cost_brut_estimat: cost_brut_estimat_lei,
-    incredere,
-    explicatie,
+    lang,
+    tara,
+    categorie_slug: rez.categorie ? rez.categorie.slug : null,
+    titlu_categorie: rez.categorie ? rez.categorie.title : null,
+    servicii: serviciiRaspuns,
+    incredere: rez.incredere,
+    explicatie: rez.explicatie,
+    explicatie_inlocuita: rez.explicatieInlocuita,
+    recomanda_consultanta: rez.recomandaConsultanta,
+    consultanta,
   });
 };
+
+module.exports.valideazaRezultatAI = valideazaRezultatAI;
+module.exports.continutSume = continutSume;
+module.exports.construiestePrompt = construiestePrompt;
+module.exports.EXPLICATIE_FIXA = EXPLICATIE_FIXA;
+module.exports.EXPLICATIE_LIPSA = EXPLICATIE_LIPSA;
