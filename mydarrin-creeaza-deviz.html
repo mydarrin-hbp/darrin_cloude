@@ -1273,6 +1273,19 @@ async function incarcaServiciiRealeDeviz() {
 }
 
 document.addEventListener('DOMContentLoaded', incarcaServiciiRealeDeviz);
+
+// Pasul 12-D1b: cu tastatura deschisă (Android, browserul din Facebook), înălțimea
+// vizibilă scade; câmpul în care se scrie se aduce în vedere, ca să nu rămână sub tastatură.
+(function () {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  vv.addEventListener('resize', function () {
+    const activ = document.activeElement;
+    if (!activ || !/^(TEXTAREA|INPUT)$/.test(activ.tagName)) return;
+    const r = activ.getBoundingClientRect();
+    if (r.top < 0 || r.bottom > vv.height) activ.scrollIntoView({ block: 'center' });
+  });
+})();
 </script>
 
 

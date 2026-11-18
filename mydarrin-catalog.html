@@ -2815,7 +2815,7 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
   </div>
 
   <!-- SCROLLABLE CONTENT -->
-  <div style="flex:1;overflow-y:auto;padding:20px 22px">
+  <div id="consultanta-continut" style="flex:1;min-height:0;overflow-y:auto;padding:20px 22px">
 
     <!-- ══ BRONZ: DARRIN AI CHAT ══ -->
     <div id="cons-bronz">
@@ -2884,9 +2884,9 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
         <!-- Preview uploaded files -->
         <div id="file-preview" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
         <!-- Send button -->
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
-          <div style="font-size:11px;color:#8C9BAD">Adresă prestare (opțional — îmbunătățește recomandarea)</div>
-          <button onclick="sendToAI()" style="display:inline-flex;align-items:center;gap:7px;background:#0E9E99;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .18s" onmouseover="this.style.background='#0B7A76'" onmouseout="this.style.background='#0E9E99'">
+        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;margin-top:12px">
+          <div style="font-size:11px;color:#8C9BAD;flex:1 1 140px;min-width:0">Adresă prestare (opțional — îmbunătățește recomandarea)</div>
+          <button onclick="sendToAI()" style="display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;flex-shrink:0;background:#0E9E99;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .18s" onmouseover="this.style.background='#0B7A76'" onmouseout="this.style.background='#0E9E99'">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             <span id="send-to-ai-label">Trimite la Darrin AI</span>
           </button>
@@ -3051,7 +3051,7 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
 <style>
 .cons-tab{ font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif; }
 .active-cons-tab{ background:rgba(14,158,153,.25)!important; color:#0E9E99!important; border:1px solid rgba(14,158,153,.4)!important; }
-#consultanta-modal{ display:flex!important; }
+#consultanta-modal{ display:flex!important; flex-direction:column; } /* pasul 12-D1b: antetul sus, conținutul dedesubt (pe rând, câmpul AI avea lățimea 0 pe telefon) */
 #consultanta-modal.cons-open{ transform:translateX(0)!important; box-shadow:-12px 0 50px rgba(0,0,0,.2)!important; }
 </style>
 
@@ -3098,6 +3098,26 @@ function triggerHeroCatSearch(){
   }
 }
 
+// Pasul 12-D1b: cu tastatura deschisă (Android, browserul din Facebook), înălțimea
+// vizibilă scade; modalul o urmează și câmpul în care se scrie rămâne în vedere.
+(function(){
+  const vv = window.visualViewport;
+  function potriveste(){
+    const modal = document.getElementById('consultanta-modal');
+    if (!modal || !consOpen) return;
+    modal.style.height = vv ? Math.round(vv.height) + 'px' : '';
+    modal.style.top = vv ? Math.round(vv.offsetTop) + 'px' : '';
+    const activ = document.activeElement;
+    if (activ && modal.contains(activ) && /^(TEXTAREA|INPUT)$/.test(activ.tagName)) activ.scrollIntoView({ block: 'nearest' });
+  }
+  if (vv) { vv.addEventListener('resize', potriveste); vv.addEventListener('scroll', potriveste); }
+  document.addEventListener('focusin', (e) => {
+    const modal = document.getElementById('consultanta-modal');
+    if (modal && modal.contains(e.target)) setTimeout(potriveste, 300);
+  });
+  window.MYD_POTRIVESTE_MODAL_AI = potriveste;
+})();
+
 function closeConsultanta(){
   const modal = document.getElementById('consultanta-modal');
   modal.classList.remove('cons-open');
@@ -3105,6 +3125,7 @@ function closeConsultanta(){
     document.getElementById('consultanta-overlay').style.display='none';
     consOpen=false;
     document.body.style.overflow='';
+    modal.style.height=''; modal.style.top='';
   },350);
 }
 
@@ -5789,7 +5810,7 @@ if(typeof lucide!=="undefined")lucide.createIcons();
 <style>
 .cons-tab{ font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif; }
 .active-cons-tab{ background:rgba(14,158,153,.25)!important; color:#0E9E99!important; border:1px solid rgba(14,158,153,.4)!important; }
-#consultanta-modal{ display:flex!important; }
+#consultanta-modal{ display:flex!important; flex-direction:column; } /* pasul 12-D1b: antetul sus, conținutul dedesubt (pe rând, câmpul AI avea lățimea 0 pe telefon) */
 #consultanta-modal.cons-open{ transform:translateX(0)!important; }
 </style>
 
