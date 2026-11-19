@@ -37,11 +37,23 @@
 //
 // LIMITĂ IMPORTANTĂ: Vercel Serverless Functions au o limită hard de request
 // body de 4.5MB — encodarea base64 umflă dimensiunea reală cu ~33%. De-aia
-// limitele de mai jos (2MB/fișier decodat, max 3 fișiere) sunt mult sub
-// limita de 10MB a bucket-ului de Storage (aceea e doar plafonul propriu al
-// bucket-ului, nu garantează că cererea trece de Vercel).
+// totalul decodat al fișierelor e de cel mult 3MB (≈ 4MB în base64).
+//
+// Pasul 12-D2 (18 nov. 2026):
+// - pozele: cel mult 5 fișiere (poze sau PDF); pagina micșorează pozele
+//   înainte de trimitere (darrin-ai-fisiere.js), serverul verifică totalul
+//   (≤ 3MB decodat), PDF ≤ 2MB, tipurile JPEG / PNG / WebP / PDF (fără HEIC)
+//   și șterge metadatele (EXIF, GPS, XMP, IPTC) cu lib/sterge-metadate-imagine.js;
+//   imaginea curățată e cea trimisă modelului și cea salvată în Storage;
+// - rutele răspunsului: modelul spune și `relevanta` (potrivit / neclar /
+//   fara_legatura) și, la `neclar`, o întrebare de clarificare. Serverul aplică
+//   regulile: fără legătură → fără servicii, fără consultanță, explicație fixă;
+//   neclar → întrebarea și cel mult 3 servicii posibile, consultanța abia la a
+//   doua încercare (`incercare: 2`) tot neclară; potrivit → ca înainte;
+// - limita de cereri: 10 / 10 min pe IP pentru vizitatori, 20 pe cont pentru
+//   conturile autentificate, 60 pentru superadmin (rol citit din profiles.roles).
 
-const { getAuthenticatedUser } = require('../../lib/auth-middleware');
+const { getAuthenticatedUser, hasRole } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const crypto = require('crypto');
 const v = require('../../lib/valideaza');
@@ -49,15 +61,30 @@ const { limiteazaCererea } = require('../../lib/rate-limit');
 const { trimiteEroare } = require('../../lib/raspuns-eroare');
 const { citesteTot } = require('../../lib/citeste-tot');
 const { calculeazaPretServiciu } = require('../../lib/pret-serviciu');
+const { stergeMetadateImagine } = require('../../lib/sterge-metadate-imagine');
 
 const ANTHROPIC_MODEL = 'claude-sonnet-5';
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const ANTHROPIC_VERSION = '2023-06-01';
 
 const MAX_TEXT_LEN = 4000;
-const MAX_FILES = 3;
-const MAX_FILE_BYTES = 2 * 1024 * 1024; // 2MB decodat/fișier — vezi nota de limită de mai sus
-const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf']);
+const MAX_FILES = 5;
+const MAX_TOTAL_BYTES = 3 * 1024 * 1024; // 3MB decodat, toate fișierele — vezi nota de limită de mai sus
+const MAX_PDF_BYTES = 2 * 1024 * 1024; // un PDF nu se micșorează
+const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
+// Limita de cereri (pasul 12-D2): vizitator pe IP, cont autentificat, superadmin.
+const LIMITE_CERERI = { vizitator: 10, cont: 20, superadmin: 60 };
+const FEREASTRA_CERERI = 600;
+// Mesajul 429 al lui Darrin AI: în câte minute se poate încerca din nou (cu „tu”).
+function mesajLimita(minute) {
+  return {
+    ro: `Ai trimis multe cereri la Darrin AI într-un timp scurt. Poți încerca din nou peste ${minute} ${minute === 1 ? 'minut' : 'minute'}.`,
+    en: `You sent many requests to Darrin AI in a short time. You can try again in ${minute} ${minute === 1 ? 'minute' : 'minutes'}.`,
+  };
+}
+// Rutele răspunsului (pasul 12-D2).
+const RELEVANTE = ['potrivit', 'neclar', 'fara_legatura'];
+const MAX_INTREBARE = 200;
 const MODURI = new Set(['servicii', 'proiect']);
 const LIMBI = ['ro', 'en'];
 
@@ -77,6 +104,17 @@ const EXPLICATIE_FIXA = {
   ro: 'Am ales din catalogul My Darrin serviciile care se potrivesc cel mai bine cu descrierea ta. Prețul fiecărui serviciu îl vezi pe pagina lui.',
   en: 'We picked the services from the My Darrin catalogue that best match your description. You can see the price of each service on its page.',
 };
+// Pasul 12-D2: răspunsul pentru ce nu are legătură cu serviciile My Darrin
+// (nu repetăm conținutul documentului clientului).
+const EXPLICATIE_FARA_LEGATURA = {
+  ro: 'Nu am găsit în ce ai trimis o lucrare pe care o face My Darrin. Descrie problema în câteva cuvinte sau trimite o poză cu ea.',
+  en: 'We couldn\'t find a job My Darrin does in what you sent. Describe the problem in a few words or send a photo of it.',
+};
+// Întrebarea pusă de server când modelul spune „neclar” fără o întrebare folosibilă.
+const INTREBARE_IMPLICITA = {
+  ro: 'Poți descrie mai exact ce se întâmplă și unde? De exemplu: ce nu funcționează, de când și ce ai observat.',
+  en: 'Can you describe more exactly what is happening and where? For example: what isn\'t working, since when and what you noticed.',
+};
 const EXPLICATIE_LIPSA = {
   ro: 'Nu am găsit în catalogul My Darrin un serviciu care să se potrivească sigur cu descrierea ta. Îți recomandăm Consultanța Darrin.',
   en: 'We could not find a service in the My Darrin catalogue that clearly matches your description. We recommend a Darrin Consultancy.',
@@ -89,8 +127,11 @@ const SCHEMA = {
   text: v.text({ max: MAX_TEXT_LEN, eticheta: ['Descriere', 'Description'] }),
   files: v.lista(v.obiect({
     mime: v.dinLista([...ALLOWED_MIME], { obligatoriu: true, eticheta: ['Tipul fișierului', 'File type'] }),
-    data_base64: v.text({ obligatoriu: true, max: Math.ceil(MAX_FILE_BYTES * 4 / 3) + 4, faraTrim: true, eticheta: ['Conținutul fișierului', 'File content'] }),
+    data_base64: v.text({ obligatoriu: true, max: Math.ceil(MAX_TOTAL_BYTES * 4 / 3) + 4, faraTrim: true, eticheta: ['Conținutul fișierului', 'File content'] }),
   }, { eticheta: ['Fișier', 'File'] }), { max: MAX_FILES, eticheta: ['Fișiere', 'Files'] }),
+  // Pasul 12-D2: a câta încercare din aceeași conversație (1 sau 2): la a doua,
+  // clientul răspunde la întrebarea de clarificare.
+  incercare: v.numar({ min: 1, max: 2, intreg: true, eticheta: ['Încercarea', 'Attempt'] }),
   tip_constructie: v.text({ max: 200, eticheta: ['Tip construcție', 'Construction type'] }),
   suprafata_mp: v.numar({ min: 0, max: 1000000, eticheta: ['Suprafață (m²)', 'Area (m²)'] }),
   locatie: v.text({ max: 200, eticheta: ['Locație', 'Location'] }),
@@ -149,15 +190,22 @@ function titluServiciu(s) {
   return { ro: s.titlu, en: en || s.titlu };
 }
 
-function construiestePrompt(mod, { text, tipConstructie, suprafataMp, locatie, lang, servicii, sluguri, areConsultanta }) {
+function construiestePrompt(mod, { text, tipConstructie, suprafataMp, locatie, lang, servicii, sluguri, areConsultanta, incercare = 1 }) {
   const linii = [
     'Ești Darrin AI, asistentul platformei My Darrin (servicii pentru locuință și construcții).',
     'Rolul tău: interpretezi nevoia clientului și alegi DOAR din datele My Darrin de mai jos — o categorie din lista CATEGORII și 1–3 servicii din lista SERVICII, prin ID-ul lor exact.',
     'Reguli obligatorii:',
     '- Alegi numai ID-uri din listele primite. Nu inventezi servicii, soluții tehnice sau surse externe.',
     '- Nu scrii prețuri, sume de bani, costuri, tarife, durate sau termene — nici estimative. Prețul îl calculează exclusiv platforma, pe pagina serviciului.',
-    '- Dacă nimic din listă nu se potrivește sigur, dai o încredere mică (sub 0.5)' + (areConsultanta ? ` și propui serviciul „${ID_CONSULTANTA}” (Consultanță Darrin).` : '.'),
+    '- Spui cât de relevantă e cererea (câmpul relevanta):',
+    '  • „potrivit” — e o lucrare din catalog și descrierea ajunge ca să alegi serviciile;',
+    '  • „neclar” — pare o lucrare din catalog, dar descrierea nu ajunge (de exemplu un singur cuvânt, ca „calorifer”): pui o singură întrebare de clarificare (câmpul intrebare, cel mult 200 de caractere, fără sume) și propui cel mult 3 servicii posibile;',
+    '  • „fara_legatura” — textul sau fișierele nu au legătură cu serviciile My Darrin (de exemplu un document fiscal, o factură, o poză fără nicio lucrare): servicii_ids rămâne gol și nu repeți conținutul documentului.',
+    '- Dacă e o lucrare din catalog, dar nimic din listă nu se potrivește sigur, dai o încredere mică (sub 0.5)' + (areConsultanta ? ` și propui serviciul „${ID_CONSULTANTA}” (Consultanță Darrin).` : '.'),
+    '- Clientul poate trimite până la 5 poze sau PDF-uri. Descrii doar ce vezi legat de serviciile din listă; nu identifici persoane și nu comentezi alte lucruri din imagine (persoane, documente, obiecte personale, adrese).',
     `- Explicația are 1–3 propoziții, în limba ${lang === 'ro' ? 'română' : 'engleză'}: ce ai înțeles din descriere și de ce ai ales serviciile.`,
+    ...(lang === 'ro' ? ['- În română te adresezi clientului cu „tu” (ca interfața My Darrin): „ai menționat”, „îți recomandăm”, niciodată „ați menționat” sau „dumneavoastră”.'] : []),
+    ...(incercare === 2 ? ['- Aceasta e a doua încercare: textul conține descrierea de la început, întrebarea ta și răspunsul clientului. Dacă tot nu e clar, răspunzi „neclar” fără o nouă întrebare.'] : []),
     '',
     'CATEGORII (slug: titlu):',
     ...sluguri.map((c) => `- ${c.slug}: ${c.title}`),
@@ -197,12 +245,22 @@ function construiesteTool(sluguri, servicii) {
           enum: sluguri.map((s) => s.slug),
           description: 'Slug-ul categoriei din lista CATEGORII care se potrivește cel mai bine.',
         },
+        relevanta: {
+          type: 'string',
+          enum: RELEVANTE,
+          description: 'potrivit = lucrare din catalog, descriere suficientă; neclar = lucrare din catalog, descriere insuficientă; fara_legatura = nu are legătură cu serviciile My Darrin.',
+        },
         servicii_ids: {
           type: 'array',
-          minItems: 1,
+          minItems: 0,
           maxItems: MAX_SERVICII,
           items: { type: 'string', enum: servicii.map((s) => s.id_serviciu) },
-          description: 'ID-urile a 1–3 servicii din lista SERVICII, în ordinea potrivirii.',
+          description: 'ID-urile a 1–3 servicii din lista SERVICII, în ordinea potrivirii; gol la fara_legatura.',
+        },
+        intrebare: {
+          type: 'string',
+          maxLength: MAX_INTREBARE,
+          description: 'Doar la neclar: o singură întrebare de clarificare pentru client, cel mult 200 de caractere, fără sume.',
         },
         incredere: {
           type: 'number',
@@ -215,7 +273,7 @@ function construiesteTool(sluguri, servicii) {
           description: 'Explicație scurtă (1–3 propoziții) pentru client: ce ai înțeles și de ce ai ales serviciile. Fără prețuri, sume, durate sau surse externe.',
         },
       },
-      required: ['categorie_slug', 'servicii_ids', 'incredere', 'explicatie'],
+      required: ['relevanta', 'categorie_slug', 'servicii_ids', 'incredere', 'explicatie'],
     },
   };
 }
@@ -251,8 +309,17 @@ async function apeleazaAnthropic({ apiKey, promptSistem, contentBlocks, tool }) 
 
 // Verifică răspunsul modelului față de datele reale (funcție pură, testată
 // direct în scripts/test-darrin-ai-date-proprii.js).
-function valideazaRezultatAI(input, { sluguri, servicii, lang }) {
+function valideazaRezultatAI(input, { sluguri, servicii, lang, incercare = 1 }) {
   const l = lang === 'ro' ? 'ro' : 'en';
+  // Pasul 12-D2: fără câmpul relevanta (răspunsuri vechi) → „potrivit”, ca înainte.
+  const relevanta = RELEVANTE.includes(input && input.relevanta) ? input.relevanta : 'potrivit';
+  if (relevanta === 'fara_legatura') {
+    return {
+      relevanta, alese: [], respinse: [], categorie: null, incredere: 0,
+      explicatie: EXPLICATIE_FARA_LEGATURA[l], explicatieInlocuita: true,
+      intrebare: null, consultanta: null, recomandaConsultanta: false,
+    };
+  }
   const peId = new Map(servicii.map((s) => [s.id_serviciu, s]));
   const cerute = Array.isArray(input && input.servicii_ids) ? input.servicii_ids : [];
   const alese = [];
@@ -280,8 +347,24 @@ function valideazaRezultatAI(input, { sluguri, servicii, lang }) {
   }
 
   const consultanta = peId.get(ID_CONSULTANTA) || null;
+  if (relevanta === 'neclar') {
+    // Prima încercare: întrebarea, fără consultanță. A doua, tot neclară: consultanța.
+    let intrebare = null;
+    let recomandaConsultanta = false;
+    if (incercare >= 2) {
+      recomandaConsultanta = true;
+    } else {
+      intrebare = typeof (input && input.intrebare) === 'string' ? input.intrebare.trim() : '';
+      if (!intrebare || intrebare.length > MAX_INTREBARE || continutSume(intrebare)) intrebare = INTREBARE_IMPLICITA[l];
+      // Fără servicii posibile, explicația „recomandăm consultanța” nu se potrivește aici.
+      if (!alese.length) explicatie = '';
+    }
+    // Consultanța nu apare printre serviciile posibile la prima încercare.
+    const posibile = recomandaConsultanta ? alese : alese.filter((s) => s.id_serviciu !== ID_CONSULTANTA);
+    return { relevanta, alese: posibile, respinse, categorie, incredere, explicatie, explicatieInlocuita, intrebare, consultanta, recomandaConsultanta };
+  }
   const recomandaConsultanta = incredere < PRAG_INCREDERE;
-  return { alese, respinse, categorie, incredere, explicatie, explicatieInlocuita, consultanta, recomandaConsultanta };
+  return { relevanta, alese, respinse, categorie, incredere, explicatie, explicatieInlocuita, intrebare: null, consultanta, recomandaConsultanta };
 }
 
 // Prețul „de la” al primului nivel, pentru țară; null dacă nu se poate calcula.
@@ -336,13 +419,25 @@ module.exports = async function handler(req, res) {
   const date = v.valideazaSauTrimite(req, res, SCHEMA);
   if (!date) return;
   const { mod = 'servicii', text, files, tip_constructie, suprafata_mp, locatie } = date;
+  const incercare = date.incercare === 2 ? 2 : 1;
   const lang = date.lang === 'ro' ? 'ro' : 'en';
   const taraCeruta = String(date.tara || '').trim().toUpperCase();
   const tara = /^[A-Z]{2}$/.test(taraCeruta) ? taraCeruta : 'RO';
 
-  // Pasul 11-S1: fiecare cerere apelează un model AI plătit — cel mult 10
-  // estimări în 10 minute de pe același IP.
-  if (!(await limiteazaCererea(req, res, { key: 'darrin-ai-deviz', limit: 10, windowSeconds: 600 }))) return;
+  // Contul (opțional): leagă cererea de cont și alege limita de cereri.
+  let user = null;
+  try {
+    user = await getAuthenticatedUser(req);
+  } catch (e) {
+    // vizitator anonim — nu e o eroare, doar continuăm fără user
+  }
+
+  // Pasul 11-S1 / 12-D2: fiecare cerere apelează un model AI plătit — cel mult
+  // 10 cereri în 10 minute pe IP pentru vizitatori, 20 pe cont pentru un cont
+  // autentificat și 60 pentru superadmin (rolul verificat din profiles.roles).
+  let limita = LIMITE_CERERI.vizitator;
+  if (user && user.id) limita = (await hasRole(user, ['superadmin'])) ? LIMITE_CERERI.superadmin : LIMITE_CERERI.cont;
+  if (!(await limiteazaCererea(req, res, { key: 'darrin-ai-deviz', limit: limita, windowSeconds: FEREASTRA_CERERI, cont: user && user.id ? user.id : undefined, mesaj: mesajLimita }))) return;
 
   if (!MODURI.has(mod)) {
     return trimiteEroare(res, 400, 'DATE_INVALIDE', `mod invalid. Valori acceptate: ${[...MODURI].join(', ')}`, `Invalid mode. Accepted values: ${[...MODURI].join(', ')}`, ['mod']);
@@ -361,10 +456,33 @@ module.exports = async function handler(req, res) {
       if (!ALLOWED_MIME.has(f.mime)) {
         return trimiteEroare(res, 400, 'TIP_FISIER', `mime tip nepermis: ${f.mime}. Acceptate: ${[...ALLOWED_MIME].join(', ')}`, `File type not allowed: ${f.mime}. Accepted: ${[...ALLOWED_MIME].join(', ')}`, ['files']);
       }
-      if (base64Bytes(f.data_base64) > MAX_FILE_BYTES) {
-        return trimiteEroare(res, 400, 'PREA_MARE', `fișier prea mare — max ${MAX_FILE_BYTES / (1024 * 1024)}MB per fișier`, `The file is too large: at most ${MAX_FILE_BYTES / (1024 * 1024)}MB per file.`, ['files']);
+      if (f.mime === 'application/pdf' && base64Bytes(f.data_base64) > MAX_PDF_BYTES) {
+        return trimiteEroare(res, 400, 'PDF_PREA_MARE', 'Un PDF poate avea cel mult 2 MB. Alege un PDF mai mic sau trimite o poză a paginii.', 'A PDF can be at most 2 MB. Choose a smaller PDF or send a photo of the page.', ['files']);
       }
     }
+    const total = files.reduce((n, f) => n + base64Bytes(f.data_base64), 0);
+    if (total > MAX_TOTAL_BYTES) {
+      return trimiteEroare(res, 400, 'FISIERE_PREA_MARI', 'Fișierele atașate au împreună mai mult de 3 MB. Scoate un fișier sau alege unul mai mic.', 'The attached files add up to more than 3 MB. Remove a file or choose a smaller one.', ['files']);
+    }
+  }
+
+  // Pasul 12-D2: metadatele (EXIF, GPS, XMP, IPTC) se șterg pe server; imaginea
+  // curățată e cea trimisă modelului și cea salvată în Storage.
+  const fisiere = [];
+  for (const f of files || []) {
+    const buffer = Buffer.from(f.data_base64, 'base64');
+    if (f.mime === 'application/pdf') {
+      if (buffer.subarray(0, 5).toString('latin1') !== '%PDF-') {
+        return trimiteEroare(res, 400, 'FISIER_INVALID', 'Un fișier nu e un PDF valid. Alege alt fișier.', 'One of the files is not a valid PDF. Choose another file.', ['files']);
+      }
+      fisiere.push({ mime: f.mime, buffer, data_base64: f.data_base64 });
+      continue;
+    }
+    const curat = stergeMetadateImagine(buffer, f.mime);
+    if (!curat.ok) {
+      return trimiteEroare(res, 400, 'FISIER_INVALID', 'Nu putem citi una dintre poze. Fă poza direct din cameră sau alege una JPG / PNG.', 'We can\'t read one of the photos. Take it with the camera or choose a JPG / PNG.', ['files']);
+    }
+    fisiere.push({ mime: f.mime, buffer: curat.buffer, data_base64: curat.buffer.toString('base64') });
   }
 
   if (mod === 'servicii' && !text && (!files || files.length === 0)) {
@@ -375,13 +493,6 @@ module.exports = async function handler(req, res) {
   }
   if (suprafata_mp !== undefined && (typeof suprafata_mp !== 'number' || suprafata_mp < 0 || suprafata_mp > 1_000_000)) {
     return trimiteEroare(res, 400, 'DATE_INVALIDE', 'suprafata_mp trebuie să fie un număr valid', 'suprafata_mp must be a valid number.', ['suprafata_mp']);
-  }
-
-  let user = null;
-  try {
-    user = await getAuthenticatedUser(req);
-  } catch (e) {
-    // vizitator anonim — nu e o eroare, doar continuăm fără user
   }
 
   let sluguri;
@@ -395,7 +506,7 @@ module.exports = async function handler(req, res) {
 
   const contentBlocks = [];
   if (text) contentBlocks.push({ type: 'text', text });
-  for (const f of files || []) {
+  for (const f of fisiere) {
     if (f.mime === 'application/pdf') {
       contentBlocks.push({ type: 'document', source: { type: 'base64', media_type: f.mime, data: f.data_base64 } });
     } else {
@@ -407,7 +518,7 @@ module.exports = async function handler(req, res) {
   }
 
   const areConsultanta = servicii.some((s) => s.id_serviciu === ID_CONSULTANTA);
-  const promptSistem = construiestePrompt(mod, { text, tipConstructie: tip_constructie, suprafataMp: suprafata_mp, locatie, lang, servicii, sluguri, areConsultanta });
+  const promptSistem = construiestePrompt(mod, { text, tipConstructie: tip_constructie, suprafataMp: suprafata_mp, locatie, lang, servicii, sluguri, areConsultanta, incercare });
   const tool = construiesteTool(sluguri, servicii);
 
   let rezultatAI;
@@ -418,7 +529,7 @@ module.exports = async function handler(req, res) {
     return trimiteEroare(res, 502, 'SERVICIU_EXTERN', 'Darrin AI nu a putut procesa cererea momentan. Încearcă din nou sau vorbește cu un specialist.', 'Darrin AI could not process the request right now. Please try again or talk to a specialist.');
   }
 
-  const rez = valideazaRezultatAI(rezultatAI.input, { sluguri, servicii, lang });
+  const rez = valideazaRezultatAI(rezultatAI.input, { sluguri, servicii, lang, incercare });
   if (rez.respinse.length) {
     console.warn('[darrin-ai/deviz] ID-uri respinse (inexistente sau nepublicate):', rez.respinse.join(', '));
   }
@@ -434,15 +545,14 @@ module.exports = async function handler(req, res) {
   // dacă eșuează (conținutul relevant a ajuns deja la Claude ca base64).
   const cererePrefix = crypto.randomUUID();
   const inputFiles = [];
-  for (let i = 0; i < (files || []).length; i++) {
-    const f = files[i];
+  for (let i = 0; i < fisiere.length; i++) {
+    const f = fisiere[i];
     const ext = f.mime === 'application/pdf' ? 'pdf' : f.mime.split('/')[1] || 'bin';
     const path = `${user ? user.id : 'anon'}/${cererePrefix}/${i}.${ext}`;
     try {
-      const buffer = Buffer.from(f.data_base64, 'base64');
       const { error: uploadErr } = await supabaseAdmin.storage
         .from('deviz-ai-uploads')
-        .upload(path, buffer, { contentType: f.mime, upsert: false });
+        .upload(path, f.buffer, { contentType: f.mime, upsert: false });
       if (uploadErr) throw uploadErr;
       inputFiles.push({ path, mime: f.mime });
     } catch (e) {
@@ -462,7 +572,8 @@ module.exports = async function handler(req, res) {
       ai_categorie_slug: rez.categorie ? rez.categorie.slug : null,
       ai_incredere: rez.incredere,
       ai_explicatie: rez.explicatie,
-      ai_raw_response: rezultatAI.raw,
+      // Pasul 12-D2: ruta aplicată de server, lângă răspunsul brut (fără migrare).
+      ai_raw_response: { ...rezultatAI.raw, myd: { relevanta: rez.relevanta, intrebare: rez.intrebare, incercare } },
     })
     .select('id')
     .single();
@@ -479,6 +590,9 @@ module.exports = async function handler(req, res) {
     tara,
     categorie_slug: rez.categorie ? rez.categorie.slug : null,
     titlu_categorie: rez.categorie ? rez.categorie.title : null,
+    relevanta: rez.relevanta,
+    intrebare: rez.intrebare,
+    incercare,
     servicii: serviciiRaspuns,
     incredere: rez.incredere,
     explicatie: rez.explicatie,
@@ -493,3 +607,6 @@ module.exports.continutSume = continutSume;
 module.exports.construiestePrompt = construiestePrompt;
 module.exports.EXPLICATIE_FIXA = EXPLICATIE_FIXA;
 module.exports.EXPLICATIE_LIPSA = EXPLICATIE_LIPSA;
+module.exports.EXPLICATIE_FARA_LEGATURA = EXPLICATIE_FARA_LEGATURA;
+module.exports.INTREBARE_IMPLICITA = INTREBARE_IMPLICITA;
+module.exports.LIMITE_CERERI = LIMITE_CERERI;

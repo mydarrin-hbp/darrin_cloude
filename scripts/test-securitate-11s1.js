@@ -502,7 +502,7 @@ async function testEndpointuri() {
     for (let i = 0; i <= limita; i++) coduri.push((await apel(p, 'POST', corp(i), { ip: '198.51.100.9' })).statusCode);
     const ultim = await apel(p, 'POST', corp(99), { ip: '198.51.100.9' });
     verifica(!coduri.slice(0, limita).includes(429) && coduri[limita] === 429, `${path.basename(p)}: primele ${limita} trec, a ${limita + 1}-a → 429 (${coduri.join(',')})`);
-    verifica(ultim.statusCode === 429 && ultim.corp.cod === 'PREA_MULTE_CERERI' && /Încercați din nou peste 10 minute/.test(ultim.corp.mesaj.ro)
+    verifica(ultim.statusCode === 429 && ultim.corp.cod === 'PREA_MULTE_CERERI' && /ncerca(ți)? din nou peste 10 minute/.test(ultim.corp.mesaj.ro) /* pasul 12-D2: Darrin AI are textul lui, cu „tu” */
       && /try again in 10 minutes/.test(ultim.corp.mesaj.en) && ultim.headere['Retry-After'] === '600', `${path.basename(p)}: 429 cu RO + EN și Retry-After`);
     const altIp = await apel(p, 'POST', corp(100), { ip: '198.51.100.10' });
     verifica(altIp.statusCode !== 429, `${path.basename(p)}: alt IP nu e blocat`);

@@ -1008,13 +1008,13 @@ function triggerHeaderSearch(){
 <section id="deviz-hero" style="padding:56px 20px 40px;background:#fff;min-height:70vh">
   <div style="max-width:820px;margin:0 auto">
     <div style="text-align:center;margin-bottom:36px">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#0E9E99;margin-bottom:8px">Darrin AI · Estimare instantă</div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#0E9E99;margin-bottom:8px">Darrin AI · Recomandare instantă</div>
       <h1 style="font-family:'Syne',sans-serif;font-size:clamp(26px,4vw,38px);font-weight:800;color:#003366;margin-bottom:12px">Creează un deviz inteligent</h1>
       <p style="font-size:14.5px;color:#6B7A8D;max-width:560px;margin:0 auto;line-height:1.7">Descrie nevoia ta (text și, opțional, o poză) — Darrin AI îți propune în câteva secunde serviciile potrivite din catalogul My Darrin. Prețul îl calculează platforma, pe nivelurile fiecărui serviciu.</p>
     </div>
 
-    <!-- Formular estimare AI -->
-    <div style="background:#F4F7F9;border:1.5px solid #D5DFE8;border-radius:20px;padding:28px" class="reveal">
+    <!-- Formular Darrin AI -->
+    <div id="dv-formular" style="background:#F4F7F9;border:1.5px solid #D5DFE8;border-radius:20px;padding:28px" class="reveal">
       <div style="display:flex;gap:8px;margin-bottom:18px">
         <button type="button" id="dv-mod-servicii" onclick="setDevizMod('servicii')" class="cat-tab active" style="flex:1">Reparație / instalație</button>
         <button type="button" id="dv-mod-proiect" onclick="setDevizMod('proiect')" class="cat-tab" style="flex:1">Proiect mai amplu</button>
@@ -1032,10 +1032,17 @@ function triggerHeaderSearch(){
       <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:6px">Descrie ce ai nevoie</label>
       <textarea id="dv-text" rows="4" maxlength="4000" placeholder="Ex: mi s-a spart o țeavă sub chiuveta din bucătărie și curge apă..." style="width:100%;border:1.5px solid #D5DFE8;border-radius:10px;padding:10px 13px;font-size:13px;font-family:inherit;background:#fff;box-sizing:border-box;outline:none;resize:vertical;margin-bottom:12px"></textarea>
 
-      <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:6px">Poză (opțional, max 2MB)</label>
-      <input type="file" id="dv-file" accept="image/jpeg,image/png,image/webp,application/pdf" style="width:100%;font-size:12.5px;color:#6B7A8D;margin-bottom:16px"/>
+      <label for="dv-file" style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:6px">Poze sau PDF (opțional, cel mult 5)</label>
+      <!-- Pasul 12-D2: aceeași zonă și aceleași miniaturi ca în catalog (darrin-ai-fisiere.js) -->
+      <div id="dv-upload-zone" style="border:2px dashed #D5DFE8;border-radius:12px;padding:14px;text-align:center;cursor:pointer;transition:all .2s;background:#fff" onclick="document.getElementById('dv-file').click()" ondragover="event.preventDefault();this.style.borderColor='#0E9E99'" ondragleave="this.style.borderColor='#D5DFE8'" ondrop="event.preventDefault();this.style.borderColor='#D5DFE8';dvAtasari()&&dvAtasari().adauga(event.dataTransfer.files)">
+        <input type="file" id="dv-file" multiple accept="image/*,application/pdf" style="display:none" onchange="dvAtasari()&&dvAtasari().adauga(this.files);this.value=''"/>
+        <div style="font-size:12.5px;font-weight:600;color:#6B7A8D">Fă o poză sau alege fișiere · Poze și PDF</div>
+        <div style="font-size:10.5px;color:#8C9BAD;margin-top:3px">Cel mult 5 fișiere · pozele se micșorează automat · PDF până la 2 MB</div>
+      </div>
+      <div id="dv-file-preview" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px"></div>
+      <div id="dv-mesaj" aria-live="polite" style="margin-bottom:16px"></div>
 
-      <button type="button" id="dv-submit-btn" onclick="genereazaEstimareDeviz()" class="btn-p" style="width:100%;background:#0E9E99;color:#fff;border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;cursor:pointer">Generează estimare</button>
+      <button type="button" id="dv-submit-btn" onclick="genereazaEstimareDeviz()" class="btn-p" style="width:100%;min-height:44px;background:#0E9E99;color:#fff;border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;cursor:pointer">Caută serviciile potrivite</button>
       <p id="dv-status" style="text-align:center;font-size:12px;color:#8C9BAD;margin-top:10px"></p>
     </div>
 
@@ -1044,7 +1051,7 @@ function triggerHeaderSearch(){
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
         <div style="width:36px;height:36px;border-radius:10px;background:#E0F5F4;display:flex;align-items:center;justify-content:center"><i data-lucide="sparkles" class="w-5 h-5" style="color:#0E9E99"></i></div>
         <div>
-          <div style="font-weight:800;color:#003366;font-size:15px">Servicii propuse de Darrin AI</div>
+          <div style="font-weight:800;color:#003366;font-size:15px" id="dv-rez-titlu">Servicii propuse de Darrin AI</div>
           <div style="font-size:11px;color:#8C9BAD" id="dv-rez-incredere"></div>
         </div>
       </div>
@@ -1090,13 +1097,18 @@ function setDevizMod(mod) {
   document.getElementById('dv-camp-proiect').style.display = mod === 'proiect' ? 'grid' : 'none';
 }
 
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+// Pasul 12-D2: fișierele (cel mult 5 poze sau PDF-uri, pozele micșorate
+// automat) prin modulul comun darrin-ai-fisiere.js, ca în catalog.
+let dvAtasariObj = null;
+function dvAtasari() {
+  if (!dvAtasariObj && window.DarrinAIFisiere) {
+    dvAtasariObj = DarrinAIFisiere.creeaza({
+      previzualizare: document.getElementById('dv-file-preview'),
+      mesaj: document.getElementById('dv-mesaj'),
+      buton: document.getElementById('dv-submit-btn'),
+    });
+  }
+  return dvAtasariObj;
 }
 
 // Pasul 12-D1: Darrin AI propune 1–3 servicii din catalog; prețul vine doar
@@ -1111,11 +1123,30 @@ function dvPret(s) {
   if (!s || !(Number(s.pret_de_la) > 0)) return null;
   return typeof window.formatCurrency === 'function' ? window.formatCurrency(Number(s.pret_de_la), s.moneda || 'RON') : Number(s.pret_de_la).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + ({ RON: 'Lei', MDL: 'Lei', EUR: '€', GBP: '£' }[s.moneda || 'RON'] || s.moneda);
 }
+// Pasul 12-D2: rutele răspunsului — „fara_legatura” (doar textul fix, fără
+// servicii și fără consultanță, focus în descriere), „neclar” (întrebarea și
+// serviciile posibile; răspunsul se trimite ca incercare: 2), „potrivit” (ca
+// înainte; consultanța la încredere mică).
+let dvConversatie = null; // { text, intrebare, files }
 function afiseazaRezultatAI(data) {
-  const servicii = Array.isArray(data.servicii) ? data.servicii.slice(0, 3) : [];
+  const relevanta = data.relevanta || 'potrivit';
+  const faraLegatura = relevanta === 'fara_legatura';
+  const intrebare = relevanta === 'neclar' && data.intrebare ? data.intrebare : '';
+  const servicii = faraLegatura ? [] : (Array.isArray(data.servicii) ? data.servicii.slice(0, 3) : []);
   const lang = dvLimba();
-  document.getElementById('dv-rez-incredere').textContent = dvT('Încredere {n}%', { n: Math.round((data.incredere || 0) * 100) });
-  document.getElementById('dv-rez-explicatie').textContent = data.explicatie || '';
+  const rez = document.getElementById('dv-rezultat');
+  rez.setAttribute('data-relevanta', relevanta);
+  document.getElementById('dv-rez-titlu').textContent = (faraLegatura || intrebare) ? dvT('Darrin AI — Recomandare') : dvT('Servicii propuse de Darrin AI');
+  document.getElementById('dv-rez-incredere').textContent = (faraLegatura || intrebare) ? '' : dvT('Încredere {n}%', { n: Math.round((data.incredere || 0) * 100) });
+  const expl = document.getElementById('dv-rez-explicatie');
+  if (intrebare) {
+    expl.innerHTML = `<strong data-ai-intrebare="1" style="color:#003366">${dvEsc(intrebare)}</strong>`
+      + (data.explicatie ? `<br>${dvEsc(data.explicatie)}` : '')
+      + (servicii.length ? `<br><span style="font-size:11px;font-weight:700;color:#8C9BAD;text-transform:uppercase;letter-spacing:.06em">${dvEsc(dvT('Servicii posibile'))}</span>` : '');
+  } else {
+    expl.textContent = data.explicatie || '';
+    if (faraLegatura) expl.setAttribute('data-ai-text-fix', '1'); else expl.removeAttribute('data-ai-text-fix');
+  }
   document.getElementById('dv-rez-servicii').innerHTML = servicii.map((s) => {
     const pret = dvPret(s);
     const titlu = (s.titlu && (s.titlu[lang] || s.titlu.ro)) || '';
@@ -1132,11 +1163,14 @@ function afiseazaRezultatAI(data) {
     </a>`;
   }).join('');
   const cons = document.getElementById('dv-rez-consultanta');
-  const slab = !!data.recomanda_consultanta || !servicii.length;
+  const slab = !faraLegatura && !intrebare && (!!data.recomanda_consultanta || !servicii.length);
   cons.style.display = slab ? 'block' : 'none';
   const btn = document.getElementById('dv-rez-consultanta-btn');
-  if (data.consultanta && data.consultanta.url) { btn.setAttribute('href', dvUrl(data.consultanta.url)); btn.style.display = 'block'; }
+  if (slab && data.consultanta && data.consultanta.url) { btn.setAttribute('href', dvUrl(data.consultanta.url)); btn.style.display = 'block'; }
   else btn.style.display = 'none';
+  const camp = document.getElementById('dv-text');
+  camp.placeholder = intrebare ? dvT('Răspunde la întrebarea lui Darrin AI...') : dvT('Ex: mi s-a spart o țeavă sub chiuveta din bucătărie și curge apă...');
+  if (faraLegatura || intrebare) setTimeout(() => { try { camp.focus({ preventScroll: true }); } catch (e) { camp.focus(); } }, 50);
   if (window.lucide) window.lucide.createIcons();
 }
 
@@ -1144,73 +1178,72 @@ async function genereazaEstimareDeviz() {
   const btn = document.getElementById('dv-submit-btn');
   const status = document.getElementById('dv-status');
   const text = document.getElementById('dv-text').value.trim();
-  const fileInput = document.getElementById('dv-file');
-  const file = fileInput.files && fileInput.files[0];
+  const atas = dvAtasari();
+  const zonaMesaj = document.getElementById('dv-mesaj');
+  if (atas && atas.ocupat()) return;
+  const nrFisiere = atas ? atas.numar() : 0;
 
-  if (dvMod === 'servicii' && !text && !file) {
-    status.textContent = 'Scrie o descriere sau atașează o poză.';
-    status.style.color = '#DC2626';
+  if (dvMod === 'servicii' && !text && !nrFisiere) {
+    MDFeedback.mesaj(zonaMesaj, 'eroare', dvT('Scrie o descriere sau atașează o poză.'));
     return;
   }
   const tipConstructie = document.getElementById('dv-tip-constructie').value.trim();
   if (dvMod === 'proiect' && !tipConstructie && !text) {
-    status.textContent = 'Completează tipul de proiect sau descrierea.';
-    status.style.color = '#DC2626';
+    MDFeedback.mesaj(zonaMesaj, 'eroare', dvT('Completează tipul de proiect sau descrierea.'));
     return;
   }
+  MDFeedback.mesaj(zonaMesaj, 'info', '');
 
+  const textButon = dvT('Caută serviciile potrivite');
   btn.disabled = true;
-  btn.textContent = 'Se generează...';
+  btn.setAttribute('aria-busy', 'true');
+  btn.textContent = dvT('Darrin AI analizează…');
   status.textContent = '';
 
-  const body = { mod: dvMod, text: text || undefined, lang: dvLimba(), tara: dvTara() };
+  const aDoua = !!(dvConversatie && dvMod === 'servicii');
+  const textTrimis = aDoua
+    ? [dvConversatie.text, 'Întrebarea Darrin AI: ' + dvConversatie.intrebare, 'Răspunsul clientului: ' + text].filter(Boolean).join('\n\n').slice(0, 4000)
+    : text;
+  const body = { mod: dvMod, text: textTrimis || undefined, lang: dvLimba(), tara: dvTara() };
+  if (aDoua) body.incercare = 2;
   if (dvMod === 'proiect') {
     body.tip_constructie = tipConstructie || undefined;
     const suprafata = document.getElementById('dv-suprafata').value;
     if (suprafata) body.suprafata_mp = Number(suprafata);
   }
-  if (file) {
-    if (file.size > 2 * 1024 * 1024) {
-      status.textContent = 'Fișierul e prea mare (max 2MB).';
-      status.style.color = '#DC2626';
-      btn.disabled = false; btn.textContent = 'Generează estimare';
-      return;
-    }
+  const gata = () => { btn.disabled = false; btn.removeAttribute('aria-busy'); btn.textContent = textButon; };
+  if (nrFisiere && dvMod === 'servicii') {
     try {
-      const data_base64 = await fileToBase64(file);
-      body.files = [{ mime: file.type, data_base64 }];
+      body.files = (await atas.fisiere()).map((f) => ({ mime: f.mime, data_base64: f.data_base64 }));
     } catch (e) {
-      status.textContent = 'Nu am putut citi fișierul.';
-      status.style.color = '#DC2626';
-      btn.disabled = false; btn.textContent = 'Generează estimare';
+      MDFeedback.mesaj(zonaMesaj, 'eroare', dvT('Nu am putut citi fișierul.'));
+      gata();
       return;
     }
+  } else if (aDoua && dvConversatie.files && dvConversatie.files.length) {
+    body.files = dvConversatie.files;
   }
 
   try {
-    const res = await fetch('/api/darrin-ai/deviz', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
-    if (!res.ok || !data.ok) {
-      status.textContent = MYD_I18N.eroare(data, 'Nu am putut genera o estimare. Încearcă din nou.');
-      status.style.color = '#DC2626';
-      btn.disabled = false; btn.textContent = 'Generează estimare';
-      return;
-    }
+    const data = await DarrinAIFisiere.cerere(body);
     // Pasul 11-A1: Darrin AI folosit (fără textul cererii).
     window.MYD_MASURARE?.eveniment('darrin_ai_used', { page: 'creeaza-deviz' });
+    // Doar după un răspuns real: câmpul și fișierele se golesc.
+    const filesTrimise = body.files || [];
+    if (atas) atas.goleste();
+    dvConversatie = (data.relevanta === 'neclar' && data.intrebare && dvMod === 'servicii')
+      ? { text: aDoua ? dvConversatie.text : text, intrebare: data.intrebare, files: filesTrimise }
+      : null;
+    document.getElementById('dv-text').value = '';
     afiseazaRezultatAI(data);
     document.getElementById('dv-rezultat').style.display = 'block';
     document.getElementById('dv-rezultat').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    status.textContent = '';
   } catch (e) {
-    status.textContent = 'Eroare de rețea — încearcă din nou.';
-    status.style.color = '#DC2626';
+    // Pasul 12-D2: eroarea nu e un rezultat — mesaj sub câmp, cu „Reîncearcă”;
+    // textul și pozele rămân.
+    MDFeedback.mesaj(zonaMesaj, 'eroare', (e && e.message) || dvT('Darrin AI nu a putut răspunde acum. Reîncearcă peste câteva momente.'), { reincearca: () => genereazaEstimareDeviz() });
   }
-  btn.disabled = false;
-  btn.textContent = 'Generează estimare';
+  gata();
 }
 
 // Servicii pilot cu preț real (aceeași sursă de adevăr ca mydarrin-produs.html)
@@ -1912,6 +1945,8 @@ function daiSendMessage(){
 }
 </script>
 <script src="/darrin-ai-cautare.js" defer></script>
+<script src="/ui-feedback.js" defer></script>
+<script src="/darrin-ai-fisiere.js" defer></script>
 
 
 <script src="statistici-publice.js" defer></script>
