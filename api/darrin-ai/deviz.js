@@ -37,9 +37,14 @@
 //
 // LIMITĂ IMPORTANTĂ: Vercel Serverless Functions au o limită hard de request
 // body de 4.5MB — encodarea base64 umflă dimensiunea reală cu ~33%. De-aia
-// limitele de mai jos (2MB/fișier decodat, max 3 fișiere) sunt mult sub
-// limita de 10MB a bucket-ului de Storage (aceea e doar plafonul propriu al
-// bucket-ului, nu garantează că cererea trece de Vercel).
+// totalul decodat al fișierelor e de cel mult 3MB (≈ 4MB în base64).
+//
+// Pasul 12-D2 (18 nov. 2026):
+// - pozele: cel mult 5 fișiere (poze sau PDF); pagina micșorează pozele
+//   înainte de trimitere (darrin-ai-fisiere.js), serverul verifică totalul
+//   (≤ 3MB decodat), PDF ≤ 2MB, tipurile JPEG / PNG / WebP / PDF (fără HEIC)
+//   și șterge metadatele (EXIF, GPS, XMP, IPTC) cu lib/sterge-metadate-imagine.js;
+//   imaginea curățată e cea trimisă modelului și cea salvată în Storage;
 
 const { getAuthenticatedUser } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
@@ -49,15 +54,17 @@ const { limiteazaCererea } = require('../../lib/rate-limit');
 const { trimiteEroare } = require('../../lib/raspuns-eroare');
 const { citesteTot } = require('../../lib/citeste-tot');
 const { calculeazaPretServiciu } = require('../../lib/pret-serviciu');
+const { stergeMetadateImagine } = require('../../lib/sterge-metadate-imagine');
 
 const ANTHROPIC_MODEL = 'claude-sonnet-5';
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const ANTHROPIC_VERSION = '2023-06-01';
 
 const MAX_TEXT_LEN = 4000;
-const MAX_FILES = 3;
-const MAX_FILE_BYTES = 2 * 1024 * 1024; // 2MB decodat/fișier — vezi nota de limită de mai sus
-const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf']);
+const MAX_FILES = 5;
+const MAX_TOTAL_BYTES = 3 * 1024 * 1024; // 3MB decodat, toate fișierele — vezi nota de limită de mai sus
+const MAX_PDF_BYTES = 2 * 1024 * 1024; // un PDF nu se micșorează
+const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
 const MODURI = new Set(['servicii', 'proiect']);
 const LIMBI = ['ro', 'en'];
 
@@ -89,7 +96,7 @@ const SCHEMA = {
   text: v.text({ max: MAX_TEXT_LEN, eticheta: ['Descriere', 'Description'] }),
   files: v.lista(v.obiect({
     mime: v.dinLista([...ALLOWED_MIME], { obligatoriu: true, eticheta: ['Tipul fișierului', 'File type'] }),
-    data_base64: v.text({ obligatoriu: true, max: Math.ceil(MAX_FILE_BYTES * 4 / 3) + 4, faraTrim: true, eticheta: ['Conținutul fișierului', 'File content'] }),
+    data_base64: v.text({ obligatoriu: true, max: Math.ceil(MAX_TOTAL_BYTES * 4 / 3) + 4, faraTrim: true, eticheta: ['Conținutul fișierului', 'File content'] }),
   }, { eticheta: ['Fișier', 'File'] }), { max: MAX_FILES, eticheta: ['Fișiere', 'Files'] }),
   tip_constructie: v.text({ max: 200, eticheta: ['Tip construcție', 'Construction type'] }),
   suprafata_mp: v.numar({ min: 0, max: 1000000, eticheta: ['Suprafață (m²)', 'Area (m²)'] }),
@@ -157,6 +164,7 @@ function construiestePrompt(mod, { text, tipConstructie, suprafataMp, locatie, l
     '- Alegi numai ID-uri din listele primite. Nu inventezi servicii, soluții tehnice sau surse externe.',
     '- Nu scrii prețuri, sume de bani, costuri, tarife, durate sau termene — nici estimative. Prețul îl calculează exclusiv platforma, pe pagina serviciului.',
     '- Dacă nimic din listă nu se potrivește sigur, dai o încredere mică (sub 0.5)' + (areConsultanta ? ` și propui serviciul „${ID_CONSULTANTA}” (Consultanță Darrin).` : '.'),
+    '- Clientul poate trimite până la 5 poze sau PDF-uri. Descrii doar ce vezi legat de serviciile din listă; nu identifici persoane și nu comentezi alte lucruri din imagine (persoane, documente, obiecte personale, adrese).',
     `- Explicația are 1–3 propoziții, în limba ${lang === 'ro' ? 'română' : 'engleză'}: ce ai înțeles din descriere și de ce ai ales serviciile.`,
     '',
     'CATEGORII (slug: titlu):',
@@ -361,10 +369,33 @@ module.exports = async function handler(req, res) {
       if (!ALLOWED_MIME.has(f.mime)) {
         return trimiteEroare(res, 400, 'TIP_FISIER', `mime tip nepermis: ${f.mime}. Acceptate: ${[...ALLOWED_MIME].join(', ')}`, `File type not allowed: ${f.mime}. Accepted: ${[...ALLOWED_MIME].join(', ')}`, ['files']);
       }
-      if (base64Bytes(f.data_base64) > MAX_FILE_BYTES) {
-        return trimiteEroare(res, 400, 'PREA_MARE', `fișier prea mare — max ${MAX_FILE_BYTES / (1024 * 1024)}MB per fișier`, `The file is too large: at most ${MAX_FILE_BYTES / (1024 * 1024)}MB per file.`, ['files']);
+      if (f.mime === 'application/pdf' && base64Bytes(f.data_base64) > MAX_PDF_BYTES) {
+        return trimiteEroare(res, 400, 'PDF_PREA_MARE', 'Un PDF poate avea cel mult 2 MB. Alege un PDF mai mic sau trimite o poză a paginii.', 'A PDF can be at most 2 MB. Choose a smaller PDF or send a photo of the page.', ['files']);
       }
     }
+    const total = files.reduce((n, f) => n + base64Bytes(f.data_base64), 0);
+    if (total > MAX_TOTAL_BYTES) {
+      return trimiteEroare(res, 400, 'FISIERE_PREA_MARI', 'Fișierele atașate au împreună mai mult de 3 MB. Scoate un fișier sau alege unul mai mic.', 'The attached files add up to more than 3 MB. Remove a file or choose a smaller one.', ['files']);
+    }
+  }
+
+  // Pasul 12-D2: metadatele (EXIF, GPS, XMP, IPTC) se șterg pe server; imaginea
+  // curățată e cea trimisă modelului și cea salvată în Storage.
+  const fisiere = [];
+  for (const f of files || []) {
+    const buffer = Buffer.from(f.data_base64, 'base64');
+    if (f.mime === 'application/pdf') {
+      if (buffer.subarray(0, 5).toString('latin1') !== '%PDF-') {
+        return trimiteEroare(res, 400, 'FISIER_INVALID', 'Un fișier nu e un PDF valid. Alege alt fișier.', 'One of the files is not a valid PDF. Choose another file.', ['files']);
+      }
+      fisiere.push({ mime: f.mime, buffer, data_base64: f.data_base64 });
+      continue;
+    }
+    const curat = stergeMetadateImagine(buffer, f.mime);
+    if (!curat.ok) {
+      return trimiteEroare(res, 400, 'FISIER_INVALID', 'Nu putem citi una dintre poze. Fă poza direct din cameră sau alege una JPG / PNG.', 'We can\'t read one of the photos. Take it with the camera or choose a JPG / PNG.', ['files']);
+    }
+    fisiere.push({ mime: f.mime, buffer: curat.buffer, data_base64: curat.buffer.toString('base64') });
   }
 
   if (mod === 'servicii' && !text && (!files || files.length === 0)) {
@@ -395,7 +426,7 @@ module.exports = async function handler(req, res) {
 
   const contentBlocks = [];
   if (text) contentBlocks.push({ type: 'text', text });
-  for (const f of files || []) {
+  for (const f of fisiere) {
     if (f.mime === 'application/pdf') {
       contentBlocks.push({ type: 'document', source: { type: 'base64', media_type: f.mime, data: f.data_base64 } });
     } else {
@@ -434,15 +465,14 @@ module.exports = async function handler(req, res) {
   // dacă eșuează (conținutul relevant a ajuns deja la Claude ca base64).
   const cererePrefix = crypto.randomUUID();
   const inputFiles = [];
-  for (let i = 0; i < (files || []).length; i++) {
-    const f = files[i];
+  for (let i = 0; i < fisiere.length; i++) {
+    const f = fisiere[i];
     const ext = f.mime === 'application/pdf' ? 'pdf' : f.mime.split('/')[1] || 'bin';
     const path = `${user ? user.id : 'anon'}/${cererePrefix}/${i}.${ext}`;
     try {
-      const buffer = Buffer.from(f.data_base64, 'base64');
       const { error: uploadErr } = await supabaseAdmin.storage
         .from('deviz-ai-uploads')
-        .upload(path, buffer, { contentType: f.mime, upsert: false });
+        .upload(path, f.buffer, { contentType: f.mime, upsert: false });
       if (uploadErr) throw uploadErr;
       inputFiles.push({ path, mime: f.mime });
     } catch (e) {

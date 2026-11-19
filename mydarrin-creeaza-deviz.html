@@ -1032,8 +1032,15 @@ function triggerHeaderSearch(){
       <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:6px">Descrie ce ai nevoie</label>
       <textarea id="dv-text" rows="4" maxlength="4000" placeholder="Ex: mi s-a spart o țeavă sub chiuveta din bucătărie și curge apă..." style="width:100%;border:1.5px solid #D5DFE8;border-radius:10px;padding:10px 13px;font-size:13px;font-family:inherit;background:#fff;box-sizing:border-box;outline:none;resize:vertical;margin-bottom:12px"></textarea>
 
-      <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:6px">Poză (opțional, max 2MB)</label>
-      <input type="file" id="dv-file" accept="image/jpeg,image/png,image/webp,application/pdf" style="width:100%;font-size:12.5px;color:#6B7A8D;margin-bottom:16px"/>
+      <label for="dv-file" style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8C9BAD;margin-bottom:6px">Poze sau PDF (opțional, cel mult 5)</label>
+      <!-- Pasul 12-D2: aceeași zonă și aceleași miniaturi ca în catalog (darrin-ai-fisiere.js) -->
+      <div id="dv-upload-zone" style="border:2px dashed #D5DFE8;border-radius:12px;padding:14px;text-align:center;cursor:pointer;transition:all .2s;background:#fff" onclick="document.getElementById('dv-file').click()" ondragover="event.preventDefault();this.style.borderColor='#0E9E99'" ondragleave="this.style.borderColor='#D5DFE8'" ondrop="event.preventDefault();this.style.borderColor='#D5DFE8';dvAtasari()&&dvAtasari().adauga(event.dataTransfer.files)">
+        <input type="file" id="dv-file" multiple accept="image/*,application/pdf" style="display:none" onchange="dvAtasari()&&dvAtasari().adauga(this.files);this.value=''"/>
+        <div style="font-size:12.5px;font-weight:600;color:#6B7A8D">Fă o poză sau alege fișiere · Poze și PDF</div>
+        <div style="font-size:10.5px;color:#8C9BAD;margin-top:3px">Cel mult 5 fișiere · pozele se micșorează automat · PDF până la 2 MB</div>
+      </div>
+      <div id="dv-file-preview" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px"></div>
+      <div id="dv-mesaj" aria-live="polite" style="margin-bottom:16px"></div>
 
       <button type="button" id="dv-submit-btn" onclick="genereazaEstimareDeviz()" class="btn-p" style="width:100%;background:#0E9E99;color:#fff;border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;cursor:pointer">Generează estimare</button>
       <p id="dv-status" style="text-align:center;font-size:12px;color:#8C9BAD;margin-top:10px"></p>
@@ -1090,13 +1097,18 @@ function setDevizMod(mod) {
   document.getElementById('dv-camp-proiect').style.display = mod === 'proiect' ? 'grid' : 'none';
 }
 
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+// Pasul 12-D2: fișierele (cel mult 5 poze sau PDF-uri, pozele micșorate
+// automat) prin modulul comun darrin-ai-fisiere.js, ca în catalog.
+let dvAtasariObj = null;
+function dvAtasari() {
+  if (!dvAtasariObj && window.DarrinAIFisiere) {
+    dvAtasariObj = DarrinAIFisiere.creeaza({
+      previzualizare: document.getElementById('dv-file-preview'),
+      mesaj: document.getElementById('dv-mesaj'),
+      buton: document.getElementById('dv-submit-btn'),
+    });
+  }
+  return dvAtasariObj;
 }
 
 // Pasul 12-D1: Darrin AI propune 1–3 servicii din catalog; prețul vine doar
@@ -1144,20 +1156,21 @@ async function genereazaEstimareDeviz() {
   const btn = document.getElementById('dv-submit-btn');
   const status = document.getElementById('dv-status');
   const text = document.getElementById('dv-text').value.trim();
-  const fileInput = document.getElementById('dv-file');
-  const file = fileInput.files && fileInput.files[0];
+  const atas = dvAtasari();
+  const zonaMesaj = document.getElementById('dv-mesaj');
+  if (atas && atas.ocupat()) return;
+  const nrFisiere = atas ? atas.numar() : 0;
 
-  if (dvMod === 'servicii' && !text && !file) {
-    status.textContent = 'Scrie o descriere sau atașează o poză.';
-    status.style.color = '#DC2626';
+  if (dvMod === 'servicii' && !text && !nrFisiere) {
+    MDFeedback.mesaj(zonaMesaj, 'eroare', dvT('Scrie o descriere sau atașează o poză.'));
     return;
   }
   const tipConstructie = document.getElementById('dv-tip-constructie').value.trim();
   if (dvMod === 'proiect' && !tipConstructie && !text) {
-    status.textContent = 'Completează tipul de proiect sau descrierea.';
-    status.style.color = '#DC2626';
+    MDFeedback.mesaj(zonaMesaj, 'eroare', dvT('Completează tipul de proiect sau descrierea.'));
     return;
   }
+  MDFeedback.mesaj(zonaMesaj, 'info', '');
 
   btn.disabled = true;
   btn.textContent = 'Se generează...';
@@ -1169,19 +1182,11 @@ async function genereazaEstimareDeviz() {
     const suprafata = document.getElementById('dv-suprafata').value;
     if (suprafata) body.suprafata_mp = Number(suprafata);
   }
-  if (file) {
-    if (file.size > 2 * 1024 * 1024) {
-      status.textContent = 'Fișierul e prea mare (max 2MB).';
-      status.style.color = '#DC2626';
-      btn.disabled = false; btn.textContent = 'Generează estimare';
-      return;
-    }
+  if (nrFisiere && dvMod === 'servicii') {
     try {
-      const data_base64 = await fileToBase64(file);
-      body.files = [{ mime: file.type, data_base64 }];
+      body.files = (await atas.fisiere()).map((f) => ({ mime: f.mime, data_base64: f.data_base64 }));
     } catch (e) {
-      status.textContent = 'Nu am putut citi fișierul.';
-      status.style.color = '#DC2626';
+      MDFeedback.mesaj(zonaMesaj, 'eroare', dvT('Nu am putut citi fișierul.'));
       btn.disabled = false; btn.textContent = 'Generează estimare';
       return;
     }
@@ -1201,6 +1206,7 @@ async function genereazaEstimareDeviz() {
     }
     // Pasul 11-A1: Darrin AI folosit (fără textul cererii).
     window.MYD_MASURARE?.eveniment('darrin_ai_used', { page: 'creeaza-deviz' });
+    if (atas) atas.goleste();
     afiseazaRezultatAI(data);
     document.getElementById('dv-rezultat').style.display = 'block';
     document.getElementById('dv-rezultat').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1912,6 +1918,8 @@ function daiSendMessage(){
 }
 </script>
 <script src="/darrin-ai-cautare.js" defer></script>
+<script src="/ui-feedback.js" defer></script>
+<script src="/darrin-ai-fisiere.js" defer></script>
 
 
 <script src="statistici-publice.js" defer></script>
