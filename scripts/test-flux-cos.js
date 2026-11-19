@@ -354,9 +354,10 @@ async function testeServer() {
   console.log('D. mydarrin-serviciu.html (pagina veche)');
   await test('redirect permanent spre catalog (vercel.json); pagina nu mai are prețuri, devize sau alert()', async () => {
     const v = JSON.parse(fs.readFileSync(path.join(RADACINA, 'vercel.json'), 'utf8'));
-    for (const sursa of ['/mydarrin-serviciu', '/mydarrin-serviciu.html']) {
+    // Pasul 12-U1: 301 spre /catalog; /x.html → 308 de la Vercel (cleanUrls), apoi 301.
+    for (const sursa of ['/mydarrin-serviciu']) {
       const r = (v.redirects || []).find((x) => x.source === sursa);
-      adevarat(r && r.destination === '/mydarrin-catalog' && r.permanent === true, sursa);
+      adevarat(r && r.destination === '/catalog' && r.statusCode === 301, sursa);
     }
     const html = fs.readFileSync(path.join(RADACINA, 'mydarrin-serviciu.html'), 'utf8').replace(/<!--[\s\S]*?-->/g, '');
     adevarat(!/alert\(|\d+\s*Lei|calorifer/i.test(html), 'conținut vechi rămas');
@@ -374,7 +375,7 @@ async function testeServer() {
     adevarat(!/cartItems|id="cart-drawer"|PLATFORM_PCT/.test(s) && /src="\/?cos-indicator\.js"/.test(s), 'catalogul');
     for (const f of ['mydarrin-categorie-servicii.html', 'mydarrin-categorie-materiale.html', 'mydarrin-categorie-inchirieri.html']) {
       const p = fs.readFileSync(path.join(RADACINA, f), 'utf8');
-      adevarat(!/cartItems|cart-drawer/.test(p) && p.includes("location.replace('/mydarrin-catalog?"), f);
+      adevarat(!/cartItems|cart-drawer/.test(p) && /location\.replace\('\/(servicii|materiale|inchirieri)'/.test(p), f);
     }
   });
 }
@@ -522,7 +523,7 @@ async function testeBrowser() {
         egal(await pg.textContent('#btn-adauga-cos-motiv'), '', 'fără motiv de blocare');
         await pg.click('#btn-adauga-cos');
         await pg.waitForSelector('.md-toast-succes');
-        adevarat(await pg.$('.md-toast-succes a.md-toast-actiune[href="mydarrin-cos.html"]'), '„Vezi coșul” în toast');
+        adevarat(await pg.$('.md-toast-succes a.md-toast-actiune[href="/mydarrin-cos"]'), '„Vezi coșul” în toast');
         await pg.waitForFunction(() => document.querySelector('[data-cos-link] [data-cos-numar]').textContent === '1');
         egal(await numarAntet(pg), 1, 'antetul');
         egal(cos().length, 1);
@@ -597,7 +598,7 @@ async function testeBrowser() {
 
       await test(`${latime}: mydarrin-serviciu.html → redirecționare spre catalog`, async () => {
         const pg = await pagina(ctx, '/mydarrin-serviciu.html');
-        await pg.waitForURL(/\/mydarrin-catalog/);
+        await pg.waitForURL(/\/catalog(\?|$)/);
         adevarat(!/calorifer/i.test(await pg.title()), 'titlul vechi');
         await pg.close();
       });
@@ -616,7 +617,7 @@ async function testeBrowser() {
             const q = a.getBoundingClientRect();
             return { href: a.getAttribute('href'), vizibil: q.width > 20 && q.height > 20 && q.right <= innerWidth + 1 && q.left >= -1 && getComputedStyle(a).visibility !== 'hidden', inAntet: !!a.closest('header') };
           });
-          egal([r.href, r.vizibil, r.inAntet], ['mydarrin-cos.html', true, true]);
+          egal([r.href, r.vizibil, r.inAntet], ['/mydarrin-cos', true, true]);
           egal(await numarAntet(pg), 0, 'insigna la 0');
           egal(await depasire(pg), 0, 'derulare orizontală');
           egal(pg.erori, [], 'erori JS');

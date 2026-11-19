@@ -489,7 +489,7 @@
           : camp('mya-u-den', 'Utilajul sau scula', intrare('mya-u-den', 'denumire', ' maxlength="120" placeholder="' + esc(tr('De exemplu: aparat de sudură PPR')) + '"'))) +
         camp('mya-u-cant', 'Cantitatea', intrare('mya-u-cant', 'cantitate', ' type="number" min="1" max="999" inputmode="numeric" value="1"')) +
       '</div>' +
-      (curier ? '' : '<p class="mya-stare info">' + esc(tr('Echipa și certificările (de exemplu ISCIR) le poți adăuga și mai târziu, din „Completare profil partener”.')) + ' <a href="/mydarrin-devino-partener-wizard.html?pas=5" style="color:#003366;font-weight:700">' + esc(tr('Deschide')) + '</a></p>');
+      (curier ? '' : '<p class="mya-stare info">' + esc(tr('Echipa și certificările (de exemplu ISCIR) le poți adăuga și mai târziu, din „Completare profil partener”.')) + ' <a href="/mydarrin-devino-partener-wizard?pas=5" style="color:#003366;font-weight:700">' + esc(tr('Deschide')) + '</a></p>');
     var existente = [];
     var gata = citeste('/api/partener/wizard-utilaje').then(function (j) {
       existente = (j && j.utilaje) || [];

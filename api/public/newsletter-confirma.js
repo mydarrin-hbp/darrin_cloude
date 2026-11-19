@@ -12,8 +12,10 @@ const { renderEmailNewsletterBunVenit } = require('../../lib/i18n');
 const { incarcaContactPlatformaSigur } = require('../../lib/contact-platforma');
 const { fromHeader } = require('../../lib/email-sender');
 
-const REDIRECT_SUCCES = 'https://mydarrin.homebestpal.com/?newsletter=confirmat';
-const REDIRECT_INVALID = 'https://mydarrin.homebestpal.com/?newsletter=invalid';
+// Pasul 12-U1: adresa site-ului din SITE_URL.
+const { adresaAbsoluta } = require('../../lib/adresa-site');
+const REDIRECT_SUCCES = adresaAbsoluta('/?newsletter=confirmat');
+const REDIRECT_INVALID = adresaAbsoluta('/?newsletter=invalid');
 
 function redirect(res, url) {
   res.setHeader('Location', url);

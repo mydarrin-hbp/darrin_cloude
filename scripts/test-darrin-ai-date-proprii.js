@@ -189,7 +189,7 @@ async function testeEndpoint() {
     const r = res.corp;
     egal(r.servicii.map((s) => s.id_serviciu), ['inlocuire-calorifer', 'reparatie-garnituri-calorifer']);
     egal(r.servicii[0].titlu, { ro: 'Înlocuire calorifer', en: 'Radiator replacement' });
-    egal(r.servicii[0].url, '/mydarrin-produs.html?slug=inlocuire-calorifer&type=serviciu');
+    egal(r.servicii[0].url, '/servicii/inlocuire-calorifer');
     egal(r.servicii[0].nivel, 'Bronze', 'primul nivel (Bronze înaintea Gold)');
     egal(r.servicii[0].pret_de_la, await pretAsteptat(NV(11)), 'preț = lib/pret-serviciu.js');
     egal(r.servicii[0].pret_de_la, 399.95, '280 Lei → 399,95 Lei cu formula publică');
@@ -232,7 +232,7 @@ async function testeEndpoint() {
     await test(`${lang}: încredere mică → recomandare de consultanță, serviciile rămân`, async () => {
       res = await intreaba({ categorie_slug: 'instalatii-termice', servicii_ids: ['inlocuire-calorifer'], incredere: 0.3, explicatie: 'Nu e clar.' }, { mod: 'servicii', text: 'ceva', lang });
       egal(res.corp.recomanda_consultanta, true); egal(res.corp.servicii.length, 1);
-      egal(res.corp.consultanta.url, '/mydarrin-produs.html?slug=consultanta-darrin&type=serviciu');
+      egal(res.corp.consultanta.url, '/servicii/consultanta-darrin');
     });
   }
   await test('consultanța nepublicată → fără buton de consultanță (consultanta: null)', async () => {
@@ -396,7 +396,7 @@ async function testeBrowser() {
           egal(carduri.map((c) => c.id), ['inlocuire-calorifer', 'montaj-tablou-electric']);
           adevarat(carduri[0].text.includes(lang === 'ro' ? 'Înlocuire calorifer' : 'Radiator replacement'), 'titlul în limba paginii');
           adevarat(carduri[1].text.includes(lang === 'ro' ? 'Vezi prețul pe pagina serviciului' : 'See the price on the service page'), 'fără preț → trimitere la pagina serviciului');
-          egal(carduri[0].href, '/mydarrin-produs.html?slug=inlocuire-calorifer&type=serviciu');
+          egal(carduri[0].href, '/servicii/inlocuire-calorifer');
           await verificaPreturi(pg, '#ai-result', [399.95]);
           egal(await pg.$eval('#escalate-to-argint', (e) => getComputedStyle(e).display), 'none', 'fără consultanță la încredere mare');
           egal(pg.erori, [], 'erori JS');
@@ -412,7 +412,7 @@ async function testeBrowser() {
           await completeazaModal(pg, 'ceva neclar');
           await pg.evaluate(() => sendToAI());
           await pg.waitForSelector('#ai-buton-consultanta', { state: 'visible' });
-          egal(await pg.$eval('#ai-buton-consultanta', (e) => e.getAttribute('href')), '/mydarrin-produs.html?slug=consultanta-darrin&type=serviciu');
+          egal(await pg.$eval('#ai-buton-consultanta', (e) => e.getAttribute('href')), '/servicii/consultanta-darrin');
           egal(await pg.$$eval('#rec-services [data-ai-serviciu]', (e) => e.length), 0);
           await verificaPreturi(pg, '#ai-result', []);
           egal(pg.erori, [], 'erori JS');
@@ -431,7 +431,7 @@ async function testeBrowser() {
           egal(expl, EXPLICATIE_FIXA[lang], 'explicația cu sume înlocuită');
           await verificaPreturi(pg, '#dv-rezultat', [399.95, await pretAsteptat(NV(21))]);
           egal(await pg.$eval('#dv-rez-consultanta', (e) => getComputedStyle(e).display), 'block', 'consultanța la încredere mică');
-          egal(await pg.$eval('#dv-rez-consultanta-btn', (e) => e.getAttribute('href')), '/mydarrin-produs.html?slug=consultanta-darrin&type=serviciu');
+          egal(await pg.$eval('#dv-rez-consultanta-btn', (e) => e.getAttribute('href')), '/servicii/consultanta-darrin');
           adevarat(!(await pg.$('#dv-rez-cost')), 'rândul „Cost brut estimat” a rămas');
           egal(pg.erori, [], 'erori JS');
           adevarat((await depasire(pg)) <= 0, 'derulare orizontală');
@@ -445,10 +445,10 @@ async function testeBrowser() {
         for (const pag of ['/index.html', '/mydarrin-cum-functioneaza.html']) {
           await test(`${lang} ${latime}: butoanele rapide ale widget-ului pe ${pag}`, async () => {
             const RAPIDE = [
-              ['Cum funcționează platforma?', /^\/mydarrin-cum-functioneaza\.html$/, '/mydarrin-cum-functioneaza.html'],
+              ['Cum funcționează platforma?', /^\/ajutor$/, '/ajutor'],
               ['Vreau să devin partener', /^\/parteneri\/inscriere$/, '/parteneri/inscriere'],
-              ['Curge un calorifer, ce fac?', /^\/mydarrin-produs\.html\?slug=[a-z-]+&type=(serviciu|material)$/, null],
-              ['Vreau o instalație electrică', /(^\/mydarrin-produs\.html\?slug=[a-z-]+&type=serviciu$)|openAI=true/, null],
+              ['Curge un calorifer, ce fac?', /^\/(servicii|materiale)\/[a-z-]+$/, null],
+              ['Vreau o instalație electrică', /(^\/servicii\/[a-z-]+$)|openAI=true/, null],
             ];
             for (const [intrebare, asteptat, destinatie] of RAPIDE) {
               const pg = await pagina(ctx, pag);
@@ -482,7 +482,7 @@ async function testeBrowser() {
           adevarat(APELURI.catalog > inainte, 'nu s-a cerut /api/public/catalog');
           const linkuri = await pg.$$eval('[data-dai-rezultate] a', (e) => e.map((a) => a.getAttribute('href')));
           adevarat(linkuri.length >= 1 && linkuri.length <= 3, 'între 1 și 3 rezultate');
-          adevarat(linkuri.every((h) => /^\/mydarrin-produs\.html\?slug=(inlocuire-calorifer|reparatie-garnituri-calorifer|mat-calorifer-otel)&type=(serviciu|material)$/.test(h)), 'rezultate din catalogul simulat: ' + linkuri.join(', '));
+          adevarat(linkuri.every((h) => /^\/(servicii|materiale)\/(inlocuire-calorifer|reparatie-garnituri-calorifer|mat-calorifer-otel)$/.test(h)), 'rezultate din catalogul simulat: ' + linkuri.join(', '));
           adevarat(!linkuri.some((h) => /ciorna|retras/.test(h)), 'rezultat nepublicat');
           await captura(pg, `widget-${lang}-${latime}-dupa`, '#dai-chat-panel');
           // Fără rezultat: trimitere spre Darrin AI din catalog, fără cifre inventate.
@@ -495,7 +495,7 @@ async function testeBrowser() {
           const rc = raspuns();
           await apiCatalog(cerere({ metoda: 'GET', query: { tara: 'RO', lang } }), rc);
           const peSlug = Object.fromEntries([...rc.corp.servicii, ...rc.corp.materiale, ...rc.corp.inchirieri].map((p) => [p.id_serviciu, p.pret_de_la]));
-          const afisate = linkuri.map((h) => peSlug[decodeURIComponent(h.match(/slug=([^&]+)/)[1])]);
+          const afisate = linkuri.map((h) => peSlug[decodeURIComponent(h.split('/').pop())]); // /servicii/<slug> (pasul 12-U1)
           await verificaPreturi(pg, '#dai-chat-messages', afisate);
           egal(pg.erori, [], 'erori JS');
           await pg.close();

@@ -17,7 +17,7 @@
   'use strict';
   if (window.MDCos && window.MDCos.adauga) return;
 
-  var PAGINA_COS = 'mydarrin-cos.html';
+  var PAGINA_COS = '/mydarrin-cos';
   var API = '/api/client/cos-multi';
 
   function tr(ro, param) {

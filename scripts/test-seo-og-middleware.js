@@ -51,10 +51,15 @@ async function incarcaMiddleware() {
   process.env.SUPABASE_URL = 'https://abcdefgh.supabase.co';
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'cheie-test';
   let src = fs.readFileSync(path.join(RADACINA, 'middleware.js'), 'utf8');
+  globalThis.__adreseCurate = require('../lib/adrese-curate.js');
+  globalThis.__adresaSite = require('../lib/adresa-site.js');
   const inlocuiri = [
     [/import \{ createClient \} from '@supabase\/supabase-js';/, 'const { createClient } = globalThis.__stub;'],
     [/import \{ next, rewrite \} from '@vercel\/functions';/, 'const { next, rewrite } = globalThis.__stub;'],
     [/import seoOg from '\.\/lib\/seo-og\.js';/, 'const seoOg = globalThis.__stub.seoOg;'],
+    // Pasul 12-U1: adresele curate și adresa site-ului (module fără dependențe).
+    [/import adreseCurate from '\.\/lib\/adrese-curate\.js';/, 'const adreseCurate = globalThis.__adreseCurate;'],
+    [/import adresaSite from '\.\/lib\/adresa-site\.js';/, 'const adresaSite = globalThis.__adresaSite;'],
   ];
   inlocuiri.forEach(([re, cu]) => { if (!re.test(src)) throw new Error('importul lipsește: ' + re); src = src.replace(re, cu); });
   return (await import('data:text/javascript;base64,' + Buffer.from(src).toString('base64'))).default;
@@ -75,10 +80,10 @@ function reset() {
   DB.tabele = {
     profiles: [], accese_temporare: [],
     seo_config: [
-      { id: 's1', page_path: '/despre-noi', limba: 'ro', meta_title: 'Despre noi RO', og_titlu: 'Titlu OG RO', og_descriere: 'Descriere OG RO',
+      { id: 's1', page_path: '/despre', limba: 'ro', meta_title: 'Despre noi RO', og_titlu: 'Titlu OG RO', og_descriere: 'Descriere OG RO',
         og_imagine_url: 'https://abcdefgh.supabase.co/storage/v1/object/public/seo-og/despre-noi/ro/og.jpg', og_imagine_alt: 'Echipa "My Darrin" <test>', og_imagine_latime: 1200, og_imagine_inaltime: 628 },
-      { id: 's2', page_path: '/despre-noi', limba: 'en', og_titlu: 'OG title EN', og_descriere: 'OG description EN' },
-      { id: 's3', page_path: '/partener', limba: 'ro', og_titlu: 'Devino partener — OG' },
+      { id: 's2', page_path: '/despre', limba: 'en', og_titlu: 'OG title EN', og_descriere: 'OG description EN' },
+      { id: 's3', page_path: '/parteneri', limba: 'ro', og_titlu: 'Devino partener — OG' },
     ],
   };
   DB.coloane = {};
@@ -125,12 +130,12 @@ function reset() {
 
   // Scurtătura /partener → hub-ul cum-devii-partenerul-nostru.html (pasul 11-R3g)
   reset();
-  r = await mw(cerereHttp('/partener'));
+  r = await mw(cerereHttp('/parteneri'));
   html = r instanceof Response ? await r.text() : '';
-  verifica(r instanceof Response && meta(html, 'og:title')[0] === 'Devino partener — OG' && cereriFetch[0].url.endsWith('/cum-devii-partenerul-nostru'), 'scurtătura /partener: HTML-ul paginii reale, og: înlocuite');
+  verifica(r instanceof Response && meta(html, 'og:title')[0] === 'Devino partener — OG' && cereriFetch[0].url.endsWith('/cum-devii-partenerul-nostru'), 'adresa /parteneri: HTML-ul paginii reale, og: înlocuite');
   reset();
-  r = await mw(cerereHttp('/partener'));
-  verifica(r instanceof Response && r.headers.get('x-myd-og') === 'ro', 'scurtătura /partener (hub-ul) folosește suprascrierea ei');
+  r = await mw(cerereHttp('/parteneri'));
+  verifica(r instanceof Response && r.headers.get('x-myd-og') === 'ro', 'adresa /parteneri (hub-ul) folosește suprascrierea ei');
 
   // 2. Fără suprascriere → original
   reset();
@@ -138,11 +143,11 @@ function reset() {
   verifica(r && r.tip === 'next' && cereriFetch.length === 0, 'robot, pagină fără suprascriere → next() (HTML-ul original), fără fetch');
   r = await mw(cerereHttp('/despre-noi', { lang: 'en', antete: {} }));
   reset();
-  DB.tabele.seo_config = [{ id: 'x', page_path: '/despre-noi', limba: 'ro', canonical_url: 'https://mydarrin.homebestpal.com/despre-noi' }];
+  DB.tabele.seo_config = [{ id: 'x', page_path: '/despre', limba: 'ro', canonical_url: 'https://mydarrin.homebestpal.com/despre-noi' }];
   r = await mw(cerereHttp('/despre-noi'));
   verifica(r && r.tip === 'next', 'suprascriere doar cu URL canonic (fără titlu / descriere / imagine) → HTML-ul original');
   reset();
-  r = await mw(cerereHttp('/partener?lang=en'));
+  r = await mw(cerereHttp('/parteneri?lang=en'));
   verifica(r && r.tip === 'rewrite' && r.dest.endsWith('/cum-devii-partenerul-nostru?lang=en'), 'scurtătură fără suprascriere EN → rewrite-ul existent, neschimbat');
 
   // 3. Pagină care nu e publică → bariera existentă
@@ -157,8 +162,8 @@ function reset() {
   reset();
   r = await mw(cerereHttp('/despre-noi', { ua: CHROME }));
   verifica(r && r.tip === 'next' && interogari === 0 && cereriFetch.length === 0, 'vizitator Chrome → next(), 0 interogări, 0 fetch');
-  r = await mw(cerereHttp('/partener', { ua: CHROME }));
-  verifica(r && r.tip === 'rewrite' && interogari === 0 && cereriFetch.length === 0, 'vizitator Chrome pe /partener → rewrite, 0 interogări');
+  r = await mw(cerereHttp('/parteneri', { ua: CHROME }));
+  verifica(r && r.tip === 'rewrite' && interogari === 0 && cereriFetch.length === 0, 'vizitator Chrome pe /parteneri → rewrite, 0 interogări');
   r = await mw(cerereHttp('/despre-noi', { antete: { [seoOg.ANTET_INTERN]: '1' } }));
   verifica(r && r.tip === 'next' && interogari === 0, 'cererea internă (cu antetul) nu reintră în ramura OG');
 

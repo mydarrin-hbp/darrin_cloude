@@ -156,7 +156,7 @@ async function testeBrowser() {
       verifica(c.texte[0] === t.card, `${et}: textul cardului: „${c.texte[0]}”`);
       verifica(c.link === t.link, `${et}: linkul „alt tip”: „${c.link}”`);
       verifica(c.mesaj === t.mesaj, `${et}: mesajul persistent: „${c.mesaj}”`);
-      verifica(await page.evaluate(() => sessionStorage.getItem('myd_revenire_dupa_login')) === '/mydarrin-investitori.html?ruta=investitor', `${et}: revenirea nu e reținută`);
+      verifica(await page.evaluate(() => sessionStorage.getItem('myd_revenire_dupa_login')) === '/investitori?ruta=investitor', `${et}: revenirea nu e reținută`);
 
       // „Alege alt tip de cont” → Client / Partener.
       await page.click('#mdc-alt-tip');
@@ -192,7 +192,7 @@ async function testeBrowser() {
       // Codul → revenirea → panoul investitorului, starea „cont nou” (11-I2).
       await page.fill('#verify-cod-input', '123456');
       await page.click('#mdc-cod-btn');
-      await page.waitForURL(/mydarrin-panou-investitor/, { timeout: 15000 }).catch(() => {});
+      await page.waitForURL(/\/cont\/investitor/, { timeout: 15000 }).catch(() => {});
       const panou = await page.waitForSelector('#pi-app[data-pi-mod="cont-nou"]:not([hidden])', { timeout: 15000 }).then(() => true, () => false);
       verifica(panou, `${et}: după cod, nu ajunge în panou, starea „cont nou” (${page.url()})`);
       verifica(!(await page.$('#mi-fer')), `${et}: după cod s-a deschis ruta KYC`);
@@ -270,7 +270,7 @@ async function testeBrowser() {
       await page.goto(B + '/mydarrin-rolurile-mele.html', { waitUntil: 'load' });
       const card = await page.waitForSelector('article[data-rol="investor"] a.rm-deschide', { timeout: 15000 }).then(() => true, () => false);
       const href = card ? await page.getAttribute('article[data-rol="investor"] a.rm-deschide', 'href') : null;
-      verifica(href === '/mydarrin-panou-investitor.html', `D ${lang}: „Rolurile mele” fără linkul spre panou: ${href}`);
+      verifica(href === '/cont/investitor', `D ${lang}: „Rolurile mele” fără linkul spre panou: ${href}`);
       await ctx.close();
     }
     {
@@ -285,8 +285,8 @@ async function testeBrowser() {
     {
       const { ctx, page } = await context(br, B, { lang, cuSesiune: true, roles: ['client'], rolSolicitat: 'client' });
       await page.goto(B + '/mydarrin-panou-investitor.html', { waitUntil: 'load' });
-      await page.waitForURL(/mydarrin-investitori\.html#cum-functioneaza/, { timeout: 15000 }).catch(() => {});
-      verifica(/mydarrin-investitori\.html#cum-functioneaza$/.test(page.url()), `D ${lang}: fără rol, panoul nu trimite la #cum-functioneaza (${page.url()})`);
+      await page.waitForURL(/\/investitori#cum-functioneaza/, { timeout: 15000 }).catch(() => {});
+      verifica(/\/investitori#cum-functioneaza$/.test(page.url()), `D ${lang}: fără rol, panoul nu trimite la #cum-functioneaza (${page.url()})`);
       await ctx.close();
     }
   }
@@ -298,15 +298,15 @@ async function testeBrowser() {
 // ── C. destinația și emailul (fără browser) ────────────────────────────
 function testeServer() {
   const d1 = DR.alegeDestinatie([], { rolSolicitat: 'investor' });
-  verifica(d1 && d1.tip === 'panou_investitor_nou' && d1.destinatie === '/mydarrin-panou-investitor.html', `alegeDestinatie([], investor): ${JSON.stringify(d1)}`);
+  verifica(d1 && d1.tip === 'panou_investitor_nou' && d1.destinatie === '/cont/investitor', `alegeDestinatie([], investor): ${JSON.stringify(d1)}`);
   const d1b = DR.alegeDestinatie(['client'], { rolSolicitat: 'investor', areComenzi: false });
-  verifica(d1b && d1b.tip === 'panou_investitor_nou' && d1b.destinatie === '/mydarrin-panou-investitor.html', `alegeDestinatie(['client'], investor): ${JSON.stringify(d1b)}`);
+  verifica(d1b && d1b.tip === 'panou_investitor_nou' && d1b.destinatie === '/cont/investitor', `alegeDestinatie(['client'], investor): ${JSON.stringify(d1b)}`);
   const d2 = DR.alegeDestinatie(['investor']);
-  verifica(d2 && d2.destinatie === '/mydarrin-panou-investitor.html', `alegeDestinatie(['investor']): ${JSON.stringify(d2)}`);
+  verifica(d2 && d2.destinatie === '/cont/investitor', `alegeDestinatie(['investor']): ${JSON.stringify(d2)}`);
   const d3 = DR.alegeDestinatie(['client', 'investor'], { areComenzi: false });
-  verifica(d3 && d3.destinatie === '/mydarrin-panou-investitor.html', `alegeDestinatie(['client','investor']): ${JSON.stringify(d3)}`);
+  verifica(d3 && d3.destinatie === '/cont/investitor', `alegeDestinatie(['client','investor']): ${JSON.stringify(d3)}`);
   const d4 = DR.alegeDestinatie(['client', 'investor'], { rolSolicitat: 'investor' });
-  verifica(d4 && d4.destinatie === '/mydarrin-panou-investitor.html', `investitor cu dosarul trimis, rol_solicitat investor: ${JSON.stringify(d4)}`);
+  verifica(d4 && d4.destinatie === '/cont/investitor', `investitor cu dosarul trimis, rol_solicitat investor: ${JSON.stringify(d4)}`);
   const d5 = DR.alegeDestinatie(['client'], { rolSolicitat: 'partener_servicii' });
   verifica(d5 && d5.tip === 'activare_partener', `partenerul, neschimbat: ${JSON.stringify(d5)}`);
   const d6 = DR.alegeDestinatie(['client'], { areComenzi: false });

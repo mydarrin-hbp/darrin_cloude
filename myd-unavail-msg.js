@@ -5,7 +5,7 @@
    care blochează accesul pe bază de țară — o singură sursă de adevăr
    pentru text, nu copii care pot diverge).
 
-   Folosire: <script src="myd-unavail-msg.js"></script>, apoi
+   Folosire: <script src="/myd-unavail-msg.js"></script>, apoi
    window.MYD_UNAVAIL.apply(lang) populează elementele cu id-urile
    fixe unavail-title-pre / unavail-body-text / unavail-submit-btn
    (aceleași id-uri, indiferent de pagină).

@@ -125,7 +125,7 @@
   }
 
   var NAVIGARE = [
-    { re: /(functioneaz|how (does it|it) work)/, text: 'Află pas cu pas cum comanzi un serviciu și cum funcționează plata prin escrow.', eticheta: 'Cum funcționează →', href: '/mydarrin-cum-functioneaza.html' },
+    { re: /(functioneaz|how (does it|it) work)/, text: 'Află pas cu pas cum comanzi un serviciu și cum funcționează plata prin escrow.', eticheta: 'Cum funcționează →', href: '/ajutor' },
     { re: /(partener|partner)/, text: 'Înregistrarea ca partener e gratuită: alegi tipul (Servicii, Materiale sau Închirieri) și completezi datele firmei.', eticheta: 'Devino partener →', href: '/parteneri/inscriere' },
   ];
 
@@ -138,11 +138,11 @@
     }
     return incarcaCatalog().then(function (lista) {
       var gasite = cauta(lista, intrebare);
-      var aiUrl = 'mydarrin-catalog.html?openAI=true&q=' + encodeURIComponent(intrebare);
+      var aiUrl = '/catalog?openAI=true&q=' + encodeURIComponent(intrebare);
       if (gasite.length) {
         mesaj(T('Am găsit în catalogul My Darrin:'));
         legaturi(gasite.map(function (p) {
-          return { href: '/mydarrin-produs.html?slug=' + encodeURIComponent(p.id_serviciu) + '&type=' + p.tip, text: p.titlu + ' →', pret: pret(p) };
+          return { href: '/' + (({ serviciu: 'servicii', servicii: 'servicii', material: 'materiale', materiale: 'materiale', inchiriere: 'inchirieri', inchirieri: 'inchirieri' }[p.tip] || 'servicii')) + '/' + encodeURIComponent(p.id_serviciu), text: p.titlu + ' →', pret: pret(p) };
         }));
         return 'catalog';
       }

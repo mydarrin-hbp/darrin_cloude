@@ -36,7 +36,7 @@ async function trimiteEmailConfirmare(email, token, limba) {
     console.warn('[newsletter] RESEND_API_KEY lipsă — email de confirmare netrimis către', email);
     return;
   }
-  const link = `https://mydarrin.homebestpal.com/api/public/newsletter-confirma?token=${token}`;
+  const link = `${require('../../lib/adresa-site').siteUrl()}/api/public/newsletter-confirma?token=${token}`;
   await incarcaContactPlatformaSigur(); // footerul de dezabonare / GDPR din back-office
   const { subiect, html } = renderEmailNewsletterConfirmare(limba, link);
   await fetch('https://api.resend.com/emails', {

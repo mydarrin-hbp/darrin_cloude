@@ -470,7 +470,7 @@ async function main() {
     await p.locator('.md-confirma-ok').click();
     await p.waitForTimeout(400);
     verifica('revocarea șterge dreptul, nu contul', !S.perm.has('u-fara') && !!UTILIZATORI['u-fara']);
-    verifica('legătura „Deschide pagina de catalog” există', await p.$eval('#cat-admini-card a[href="mydarrin-admin-catalog.html"]', (a) => !!a));
+    verifica('legătura „Deschide pagina de catalog” există', await p.$eval('#cat-admini-card a[href="/mydarrin-admin-catalog"]', (a) => !!a));
     await capturaDe(p, '5-superadmin-revocare');
     await ctx.close();
   } finally {

@@ -438,7 +438,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
      folosește storage-ul IMPLICIT (localStorage), izolat per subdomeniu,
      NU storage-ul comun pe cookie-uri (chunkedCookieStorage) folosit la
      login — sesiunea reală era mereu invizibilă aici, indiferent de cheie. -->
-<script type="module" src="lib/supabaseClient.js"></script>
+<script type="module" src="/lib/supabaseClient.js"></script>
 <script>
 // Fallback pentru account-system.js — dacă nu se încarcă (ex: file://)
 // creăm un stub minim ca pagina să nu se blocheze
@@ -449,20 +449,20 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
   isLoggedIn:     function(){ return false; }
 };
 </script>
-<script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
-<script src="format-currency.js"></script>
+<script src="/account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
+<script src="/format-currency.js"></script>
 <script src="/ui-feedback.js"></script>
 <!-- Pasul 10b: harta unică rol → dashboard și paza după rol (cont-dashboard.js) -->
-<script src="lib/destinatie-rol.js"></script>
-<script src="cont-dashboard.js"></script>
+<script src="/lib/destinatie-rol.js"></script>
+<script src="/cont-dashboard.js"></script>
 <!-- Pasul 11-R3, corecție: activarea contului pe pași, cu salvare automată -->
-<script src="activare-pasi.js"></script>
+<script src="/activare-pasi.js"></script>
 <!-- Pasul 12-P1: panoul partenerului în starea „cont nou” (machetele B1.3–B1.5) -->
-<script src="panou-cont-nou.js"></script>
-<script src="agenda-cont.js"></script>
-<script src="profil-partener-card.js"></script>
-<script src="forme-juridice-public.js"></script>
-<script src="seo-meta.js"></script>
+<script src="/panou-cont-nou.js"></script>
+<script src="/agenda-cont.js"></script>
+<script src="/profil-partener-card.js"></script>
+<script src="/forme-juridice-public.js"></script>
+<script src="/seo-meta.js"></script>
 <script src="/cookie-consent.js" defer></script>
 <script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="/analytics-loader.js" defer></script><script src="/masurare.js" defer></script><script src="/_vercel/insights/script.js" defer></script>
 <div id="auth-gate-overlay" style="position:fixed;inset:0;background:#0F1923;z-index:99999;display:flex;align-items:center;justify-content:center;color:#8BA3C0;font-family:sans-serif;font-size:14px">
@@ -521,7 +521,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
         const TIP_LA_TAB = { servicii_tehnice: 'servicii', curier_utilitara: 'curier', asigurari: 'asigurari' };
         const tabReal = data?.partner_type ? TIP_LA_TAB[data.partner_type] : null;
         if (data?.partner_type === 'furnizor_materiale' || data?.partner_type === 'inchirieri_utilaje') {
-          window.location.href = 'mydarrin-dashboard-furnizor.html';
+          window.location.href = '/mydarrin-dashboard-furnizor';
           return;
         }
         if (tabReal && tabReal !== 'servicii') {
@@ -541,7 +541,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
       window.MYDProfilPartener?.afiseaza('profil-incomplet-card');
     } catch (e) {
       console.error('[dashboard-partener] eroare barieră:', e);
-      window.location.href = 'https://mydarrin.homebestpal.com';
+      window.location.href = window.location.protocol + '//' + window.location.host.replace(/^admin\./, '') + '/'; // pasul 12-U1: site-ul public, fără domeniul scris în cod
     }
   })();
 </script>
@@ -2834,7 +2834,7 @@ function renderPolite() {
 <script id="partner-router">
 /* ═══════════════════════════════════════════════════════════════════
    MY DARRIN — PARTNER NAVIGATION ROUTER v2026.06
-   Unified router for all "Devino Partener" entry points across pages.
+   Unified router for all "Devino partener" entry points across pages.
 
    Handles:
    1. Same-page modal trigger (pages WITH partner-modal)
@@ -2848,7 +2848,7 @@ function renderPolite() {
   'use strict';
 
   // ── CONSTANTS ──────────────────────────────────────────────────
-  const PARTNER_PAGE = 'cum-devii-partenerul-nostru.html';
+  const PARTNER_PAGE = '/parteneri';
   const VALID_TYPES  = ['servicii', 'materiale', 'inchirieri',
                         'curier',   'asigurari'];
   const IS_PARTNER_PAGE = window.location.pathname
@@ -3407,7 +3407,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(typeof lucide!=='undefined') lucide.createIcons();
 });
 </script>
-<script src="cont-fereastra.js" defer></script>
-<script src="ui-comun.js" defer></script>
+<script src="/cont-fereastra.js" defer></script>
+<script src="/ui-comun.js" defer></script>
 </body>
 </html>

@@ -31,7 +31,7 @@
   var VERSIUNE = 2;
   // Eticheta „NOU” pe categoria Marketing: 60 de zile de la publicare (13 nov. 2026).
   var NOU_PANA_LA = Date.UTC(2027, 0, 12);
-  var POLITICA = '/mydarrin-politica-confidentialitate.html#art7';
+  var POLITICA = '/confidentialitate#art7';
   var listeners = [];
 
   var TEXTE = {

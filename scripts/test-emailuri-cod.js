@@ -107,7 +107,7 @@ async function testeServer() {
   verifica(r.statusCode === 200 && r.corp.trimis === true, `bun-venit, confirmat: ${JSON.stringify(r.corp)}`);
   verifica(emailuri.length === 1 && emailuri[0].to === 'ana@example.com', `bun-venit: destinatar ${emailuri[0] && emailuri[0].to} (așteptat ana@example.com)`);
   verifica(emailuri[0] && /e confirmat/.test(emailuri[0].subject) && !/a fost creat/.test(emailuri[0].subject + emailuri[0].html), `bun-venit RO: subiect „${emailuri[0] && emailuri[0].subject}”`);
-  verifica(emailuri[0] && /Contul tău e confirmat/.test(emailuri[0].html) && /mydarrin-dashboard-client/.test(emailuri[0].html), 'bun-venit RO: corpul nu spune „Contul tău e confirmat” sau nu are linkul contului');
+  verifica(emailuri[0] && /Contul tău e confirmat/.test(emailuri[0].html) && /\/cont\/comenzi/.test(emailuri[0].html), 'bun-venit RO: corpul nu spune „Contul tău e confirmat” sau nu are linkul contului');
 
   r = await apel(bunVenit, 'tok-confirmat');
   verifica(r.corp.trimis === false && r.corp.motiv === 'deja_trimis' && emailuri.length === 1, `bun-venit, al doilea apel: ${JSON.stringify(r.corp)}, ${emailuri.length} emailuri`);
@@ -116,7 +116,7 @@ async function testeServer() {
   const ep = emailuri[1];
   verifica(r.corp.trimis === true && ep && ep.to === 'firma@example.com', `bun-venit partener: ${JSON.stringify(r.corp)}`);
   verifica(ep && /is confirmed/.test(ep.subject) && /Your account is confirmed/.test(ep.html) && !/has been created/.test(ep.html), `bun-venit partener EN: subiect „${ep && ep.subject}”`);
-  verifica(ep && /mydarrin-dashboard-partener\.html\?type=servicii/.test(ep.html) && /Go to your dashboard/.test(ep.html), 'bun-venit partener: lipsește linkul spre dashboard-ul lui');
+  verifica(ep && /\/cont\/partener\?type=servicii/.test(ep.html) && /Go to your dashboard/.test(ep.html), 'bun-venit partener: lipsește linkul spre dashboard-ul lui');
 
   r = await apel(bunVenit, 'tok-vechi');
   verifica(r.corp.trimis === false && emailuri.length === 2, `bun-venit, cont cu vechiul email de bun venit: ${JSON.stringify(r.corp)}`);
@@ -372,7 +372,7 @@ async function testeBrowser() {
             derulare: document.documentElement.scrollWidth - window.innerWidth,
           };
         });
-        verifica(s.cale === '/cum-devii-partenerul-nostru', `${et}: nu ajunge la hub (${s.cale})`);
+        verifica(s.cale === '/parteneri', `${et}: nu ajunge la hub (${s.cale})`);
         verifica(s.hero && s.tipuri === 5 && s.pasi === 4 && !s.file, `${et}: hub incomplet ${JSON.stringify(s)}`);
         verifica(s.derulare <= 1, `${et}: derulare orizontală de ${s.derulare}px`);
         verifica(!erori.length, `${et}: ${erori.length} erori JS (${erori.slice(0, 3).join(' | ')})`);

@@ -75,21 +75,21 @@ async function dupaLogin(id) {
 (async () => {
   console.log('Harta unică rol → dashboard');
   await test('cele 8 destinații cerute', () => {
-    egal(DR.dashboardPentruRol('partener_servicii'), '/mydarrin-dashboard-partener.html?type=servicii');
-    egal(DR.dashboardPentruRol('partener_curier'), '/mydarrin-dashboard-partener.html?type=curier');
-    egal(DR.dashboardPentruRol('partener_asigurari'), '/mydarrin-dashboard-partener.html?type=asigurari');
-    egal(DR.dashboardPentruRol('partener_materiale'), '/mydarrin-dashboard-furnizor.html?type=materiale');
-    egal(DR.dashboardPentruRol('partener_inchirieri'), '/mydarrin-dashboard-furnizor.html?type=inchirieri');
-    egal(DR.dashboardPentruRol('investor'), '/mydarrin-panou-investitor.html');
-    egal(DR.dashboardPentruRol('client'), '/mydarrin-dashboard-client.html');
+    egal(DR.dashboardPentruRol('partener_servicii'), '/cont/partener?type=servicii');
+    egal(DR.dashboardPentruRol('partener_curier'), '/cont/partener?type=curier');
+    egal(DR.dashboardPentruRol('partener_asigurari'), '/cont/partener?type=asigurari');
+    egal(DR.dashboardPentruRol('partener_materiale'), '/mydarrin-dashboard-furnizor?type=materiale');
+    egal(DR.dashboardPentruRol('partener_inchirieri'), '/mydarrin-dashboard-furnizor?type=inchirieri');
+    egal(DR.dashboardPentruRol('investor'), '/cont/investitor');
+    egal(DR.dashboardPentruRol('client'), '/cont/comenzi');
     egal(DR.dashboardPentruRol('admin'), null);
   });
   await test('roluriPentruPagina: pagina + type → rolul', () => {
-    egal(DR.roluriPentruPagina('/mydarrin-dashboard-furnizor.html', 'materiale'), ['partener_materiale']);
+    egal(DR.roluriPentruPagina('/mydarrin-dashboard-furnizor', 'materiale'), ['partener_materiale']);
     egal(DR.roluriPentruPagina('mydarrin-dashboard-furnizor', 'inchirieri'), ['partener_inchirieri']);
     egal(DR.roluriPentruPagina('/mydarrin-dashboard-furnizor', null), ['partener_materiale', 'partener_inchirieri']);
-    egal(DR.roluriPentruPagina('/mydarrin-dashboard-client.html', null), ['client']);
-    egal(DR.roluriPentruPagina('/mydarrin-dashboard-partener.html', 'curier'), ['partener_curier']);
+    egal(DR.roluriPentruPagina('/cont/comenzi', null), ['client']);
+    egal(DR.roluriPentruPagina('/cont/partener', 'curier'), ['partener_curier']);
   });
   await test('„client” nu contează lângă un rol de partener', () => {
     egal(DR.roluriCuDashboard(['client', 'partener_materiale']), ['partener_materiale']);
@@ -115,13 +115,13 @@ async function dupaLogin(id) {
   console.log('\nDestinația după login (destinatie-post-login)');
   const cazuri = [
     ['superadmin', ['superadmin', 'client'], '/mydarrin-superadmin'],
-    ['furnizor de materiale (HBP, cu client rămas)', ['client', 'partener_materiale'], '/mydarrin-dashboard-furnizor.html?type=materiale'],
-    ['furnizor de închirieri', ['partener_inchirieri'], '/mydarrin-dashboard-furnizor.html?type=inchirieri'],
-    ['partener servicii', ['partener_servicii'], '/mydarrin-dashboard-partener.html?type=servicii'],
-    ['curier', ['partener_curier'], '/mydarrin-dashboard-partener.html?type=curier'],
-    ['asigurător', ['partener_asigurari'], '/mydarrin-dashboard-partener.html?type=asigurari'],
-    ['investitor', ['investor'], '/mydarrin-panou-investitor.html'],
-    ['client cu o comandă', ['client'], '/mydarrin-dashboard-client.html'],
+    ['furnizor de materiale (HBP, cu client rămas)', ['client', 'partener_materiale'], '/mydarrin-dashboard-furnizor?type=materiale'],
+    ['furnizor de închirieri', ['partener_inchirieri'], '/mydarrin-dashboard-furnizor?type=inchirieri'],
+    ['partener servicii', ['partener_servicii'], '/cont/partener?type=servicii'],
+    ['curier', ['partener_curier'], '/cont/partener?type=curier'],
+    ['asigurător', ['partener_asigurari'], '/cont/partener?type=asigurari'],
+    ['investitor', ['investor'], '/cont/investitor'],
+    ['client cu o comandă', ['client'], '/cont/comenzi'],
   ];
   for (const [nume, roles, asteptat] of cazuri) {
     await test(`${nume} → ${asteptat}`, async () => {
@@ -152,7 +152,7 @@ async function dupaLogin(id) {
     cont('m1', ['client', 'partener_curier', 'investor']);
     const res = await dupaLogin('m1');
     egal(res.corp.tip, 'alegere');
-    egal(res.corp.destinatie, '/mydarrin-rolurile-mele'); // pasul 11-L: alegerea rolului e pagina „Rolurile mele”
+    egal(res.corp.destinatie, '/cont/roluri'); // pasul 11-L: alegerea rolului e pagina „Rolurile mele”
     egal(res.corp.roluri, ['partener_curier', 'investor']);
   });
 
@@ -163,13 +163,13 @@ async function dupaLogin(id) {
     const res = await dupaLogin('k1');
     egal(res.statusCode, 200, JSON.stringify(res.corp));
     egal(res.corp.tip, 'client_fara_comenzi');
-    egal(res.corp.destinatie, '/mydarrin-catalog.html');
+    egal(res.corp.destinatie, '/catalog');
   });
   await test('comenzile altui client nu contează', async () => {
     reset();
     cont('k2', ['client']);
     comanda('altcineva');
-    egal((await dupaLogin('k2')).corp.destinatie, '/mydarrin-catalog.html');
+    egal((await dupaLogin('k2')).corp.destinatie, '/catalog');
   });
   await test('excepția coș / checkout: revenirea o face browserul, înaintea destinației de pe server', () => {
     const as = fs.readFileSync(path.join(RADACINA, 'account-system.js'), 'utf8');
@@ -182,14 +182,14 @@ async function dupaLogin(id) {
     reset();
     cont('k3', ['client']);
     comanda('k3'); comanda('k3');
-    egal((await dupaLogin('k3')).corp.destinatie, '/mydarrin-dashboard-client.html');
+    egal((await dupaLogin('k3')).corp.destinatie, '/cont/comenzi');
   });
   const solicitate = [
-    ['partener_servicii', '/mydarrin-dashboard-partener.html?type=servicii'],
-    ['partener_materiale', '/mydarrin-dashboard-furnizor.html?type=materiale'],
-    ['partener_inchirieri', '/mydarrin-dashboard-furnizor.html?type=inchirieri'],
-    ['partener_curier', '/mydarrin-dashboard-partener.html?type=curier'],
-    ['partener_asigurari', '/mydarrin-dashboard-partener.html?type=asigurari'],
+    ['partener_servicii', '/cont/partener?type=servicii'],
+    ['partener_materiale', '/mydarrin-dashboard-furnizor?type=materiale'],
+    ['partener_inchirieri', '/mydarrin-dashboard-furnizor?type=inchirieri'],
+    ['partener_curier', '/cont/partener?type=curier'],
+    ['partener_asigurari', '/cont/partener?type=asigurari'],
   ];
   for (const [rol, asteptat] of solicitate) {
     await test(`a ales ${rol}, încă fără rol → ${asteptat} (modul activare)`, async () => {
@@ -210,12 +210,12 @@ async function dupaLogin(id) {
   await test('a ales un rol de partener și îl are activ → dashboard-ul rolului (ca azi)', async () => {
     reset();
     cont('s3', ['client', 'partener_servicii'], { rol_solicitat: 'partener_servicii' });
-    egal((await dupaLogin('s3')).corp.destinatie, '/mydarrin-dashboard-partener.html?type=servicii');
+    egal((await dupaLogin('s3')).corp.destinatie, '/cont/partener?type=servicii');
   });
   await test('a ales alt tip de partener decât cel activ → dashboard-ul rolului activ (un singur tip pe cont)', async () => {
     reset();
     cont('s4', ['client', 'partener_materiale'], { rol_solicitat: 'partener_curier' });
-    egal((await dupaLogin('s4')).corp.destinatie, '/mydarrin-dashboard-furnizor.html?type=materiale');
+    egal((await dupaLogin('s4')).corp.destinatie, '/mydarrin-dashboard-furnizor?type=materiale');
   });
   await test('a ales „client” la înscriere, fără comenzi → catalogul', async () => {
     reset();
@@ -233,7 +233,7 @@ async function dupaLogin(id) {
     reset();
     cont('s7', ['client', 'partener_curier', 'investor']);
     const res = await dupaLogin('s7');
-    egal(res.corp.destinatie, '/mydarrin-rolurile-mele');
+    egal(res.corp.destinatie, '/cont/roluri');
     egal(res.corp.roluri, ['partener_curier', 'investor']);
   });
   await test('migrarea neaplicată (fără coloana rol_solicitat) → citește doar roles, ca înainte', async () => {
@@ -244,16 +244,16 @@ async function dupaLogin(id) {
     comanda('m2');
     const res = await dupaLogin('m2');
     egal(res.statusCode, 200, JSON.stringify(res.corp));
-    egal(res.corp.destinatie, '/mydarrin-dashboard-client.html');
+    egal(res.corp.destinatie, '/cont/comenzi');
   });
   await test('tabela comenzi indisponibilă → clientul își păstrează dashboard-ul (ca înainte)', async () => {
     reset();
     delete DB.tabele.comenzi;
     cont('m3', ['client']);
-    egal((await dupaLogin('m3')).corp.destinatie, '/mydarrin-dashboard-client.html');
+    egal((await dupaLogin('m3')).corp.destinatie, '/cont/comenzi');
   });
   console.log('\nFluxul complet al partenerului (Supabase simulat)');
-  for (const [tip, dashboard] of [['servicii', '/mydarrin-dashboard-partener.html?type=servicii'], ['materiale', '/mydarrin-dashboard-furnizor.html?type=materiale']]) {
+  for (const [tip, dashboard] of [['servicii', '/cont/partener?type=servicii'], ['materiale', '/mydarrin-dashboard-furnizor?type=materiale']]) {
     await test(`${tip}: cont nou → cod → dashboard în modul activare → Firma (rolul se adaugă) → lista actualizată`, async () => {
       reset();
       const rol = 'partener_' + tip;
@@ -323,7 +323,7 @@ async function dupaLogin(id) {
     reset();
     cont('r1', ['client']);
     const ok = await cheama(rolApi, { metoda: 'POST', token: 'tok-r1', body: { rol: 'partener_curier' } });
-    egal([ok.statusCode, ok.corp.destinatie], [200, '/mydarrin-dashboard-partener.html?type=curier']);
+    egal([ok.statusCode, ok.corp.destinatie], [200, '/cont/partener?type=curier']);
     egal(DB.tabele.profiles[0].rol_solicitat, 'partener_curier');
     egal(DB.tabele.profiles[0].roles, ['client'], 'alegerea nu adaugă rolul');
     const rau = await cheama(rolApi, { metoda: 'POST', token: 'tok-r1', body: { rol: 'superadmin' } });
@@ -346,7 +346,7 @@ async function dupaLogin(id) {
     egal(res.statusCode, 200, JSON.stringify(res.corp));
     egal(res.corp.roluri_dashboard, []);
     egal(res.corp.are_comenzi, false);
-    egal(res.corp.destinatie, '/mydarrin-catalog.html');
+    egal(res.corp.destinatie, '/catalog');
     egal(res.corp.rol_solicitat, 'client');
     comanda('p1');
     const res2 = raspuns();

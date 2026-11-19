@@ -37,21 +37,33 @@
   // tip = parametrul ?type= al dashboard-ului; formular = ?type= din „Devino partener”;
   // adauga = pagina din care contul existent adaugă rolul (vezi adaugaPentruRol).
   var ROLURI = [
-    { rol: 'client', titlu: 'Client', insigna: 'Client', pagina: '/mydarrin-dashboard-client.html', culoare: '#003366', fundal: 'linear-gradient(135deg,#EBF4FB,#DDE6F5)' },
-    { rol: 'partener_servicii', titlu: 'Furnizor de Servicii', insigna: 'Partener servicii', pagina: '/mydarrin-dashboard-partener.html', tip: 'servicii', formular: 'servicii', culoare: '#FF8C00', fundal: 'linear-gradient(135deg,#FFF0D6,#FDE8C4)' },
-    { rol: 'partener_materiale', titlu: 'Furnizor de Materiale', insigna: 'Furnizor de materiale', pagina: '/mydarrin-dashboard-furnizor.html', tip: 'materiale', formular: 'materiale', culoare: '#003366', fundal: 'linear-gradient(135deg,#EBF4FB,#DDE6F5)' },
-    { rol: 'partener_inchirieri', titlu: 'Furnizor de Închirieri', insigna: 'Furnizor de închirieri', pagina: '/mydarrin-dashboard-furnizor.html', tip: 'inchirieri', formular: 'inchirieri', culoare: '#0E9E99', fundal: 'linear-gradient(135deg,#E0F5F4,#C5EEEC)' },
-    { rol: 'partener_curier', titlu: 'Curier de Cartier', insigna: 'Curier', pagina: '/mydarrin-dashboard-partener.html', tip: 'curier', formular: 'curier', culoare: '#7C3AED', fundal: 'linear-gradient(135deg,#F3EEFF,#E9D8FD)' },
-    { rol: 'partener_asigurari', titlu: 'Furnizor de Asigurări', insigna: 'Asigurător', pagina: '/mydarrin-dashboard-partener.html', tip: 'asigurari', formular: 'asigurator', culoare: '#1A7A3A', fundal: 'linear-gradient(135deg,#D4EDDA,#B8DFC5)' },
-    { rol: 'investor', titlu: 'Investitor', insigna: 'Investitor', pagina: '/mydarrin-panou-investitor.html', adauga: '/mydarrin-investitori.html?ruta=investitor', culoare: '#CC7000', fundal: 'linear-gradient(135deg,#FFF3E0,#FFE0B2)' },
+    { rol: 'client', titlu: 'Client', insigna: 'Client', pagina: '/cont/comenzi', culoare: '#003366', fundal: 'linear-gradient(135deg,#EBF4FB,#DDE6F5)' },
+    { rol: 'partener_servicii', titlu: 'Furnizor de Servicii', insigna: 'Partener servicii', pagina: '/cont/partener', tip: 'servicii', formular: 'servicii', culoare: '#FF8C00', fundal: 'linear-gradient(135deg,#FFF0D6,#FDE8C4)' },
+    { rol: 'partener_materiale', titlu: 'Furnizor de Materiale', insigna: 'Furnizor de materiale', pagina: '/mydarrin-dashboard-furnizor', tip: 'materiale', formular: 'materiale', culoare: '#003366', fundal: 'linear-gradient(135deg,#EBF4FB,#DDE6F5)' },
+    { rol: 'partener_inchirieri', titlu: 'Furnizor de Închirieri', insigna: 'Furnizor de închirieri', pagina: '/mydarrin-dashboard-furnizor', tip: 'inchirieri', formular: 'inchirieri', culoare: '#0E9E99', fundal: 'linear-gradient(135deg,#E0F5F4,#C5EEEC)' },
+    { rol: 'partener_curier', titlu: 'Curier de Cartier', insigna: 'Curier', pagina: '/cont/partener', tip: 'curier', formular: 'curier', culoare: '#7C3AED', fundal: 'linear-gradient(135deg,#F3EEFF,#E9D8FD)' },
+    { rol: 'partener_asigurari', titlu: 'Furnizor de Asigurări', insigna: 'Asigurător', pagina: '/cont/partener', tip: 'asigurari', formular: 'asigurator', culoare: '#1A7A3A', fundal: 'linear-gradient(135deg,#D4EDDA,#B8DFC5)' },
+    { rol: 'investor', titlu: 'Investitor', insigna: 'Investitor', pagina: '/cont/investitor', adauga: '/investitori?ruta=investitor', culoare: '#CC7000', fundal: 'linear-gradient(135deg,#FFF3E0,#FFE0B2)' },
   ];
   var PAGINA_SUPERADMIN = '/mydarrin-superadmin';
   var PAGINA_ADMIN_CATALOG = '/mydarrin-admin-catalog';
-  var PAGINA_ROLURI = '/mydarrin-rolurile-mele';
+  var PAGINA_ROLURI = '/cont/roluri';
   var PAGINA_ALEGERE = PAGINA_ROLURI;
-  var PAGINA_CATALOG = '/mydarrin-catalog.html';
-  var PAGINA_RUTA_INVESTITOR = '/mydarrin-investitori.html?ruta=investitor';
-  var PAGINA_PANOU_INVESTITOR = '/mydarrin-panou-investitor.html';
+  var PAGINA_CATALOG = '/catalog';
+  var PAGINA_RUTA_INVESTITOR = '/investitori?ruta=investitor';
+  var PAGINA_PANOU_INVESTITOR = '/cont/investitor';
+  // Pasul 12-U1: adresele curate ale paginilor de cont (ca în lib/adrese-curate.js);
+  // fișierul paginii (cu sau fără .html) e recunoscut la fel ca adresa nouă.
+  var ADRESE_CONT = {
+    '/mydarrin-dashboard-client': '/cont/comenzi',
+    '/mydarrin-dashboard-partener': '/cont/partener',
+    '/mydarrin-panou-investitor': '/cont/investitor',
+    '/mydarrin-rolurile-mele': '/cont/roluri',
+  };
+  function adresaCurata(cale) {
+    var c = '/' + String(cale || '').replace(/^\/+/, '').replace(/\.html$/, '').replace(/\/+$/, '');
+    return ADRESE_CONT[c] || c;
+  }
 
   function definitie(rol) {
     for (var i = 0; i < ROLURI.length; i++) if (ROLURI[i].rol === rol) return ROLURI[i];
@@ -70,13 +82,13 @@
     var d = definitie(rol);
     if (!d) return null;
     if (d.adauga) return d.adauga;
-    return d.formular ? '/cum-devii-partenerul-nostru.html?type=' + d.formular : null;
+    return d.formular ? '/parteneri?type=' + d.formular : null;
   }
 
   // Rolul căruia îi aparține o pagină de dashboard (pagina + ?type=).
-  // mydarrin-dashboard-partener.html fără type → orice rol de partener de acolo.
+  // /cont/partener (mydarrin-dashboard-partener.html) fără type → orice rol de partener de acolo.
   function roluriPentruPagina(cale, type) {
-    var p = '/' + String(cale || '').replace(/^\//, '').replace(/\.html$/, '') + '.html';
+    var p = adresaCurata(cale);
     var lista = [];
     for (var i = 0; i < ROLURI.length; i++) {
       var r = ROLURI[i];
@@ -156,7 +168,7 @@
   function incarcaMeniu() {
     if (el('sidebar')) return Promise.resolve(true);
     if (promMeniu) return promMeniu;
-    promMeniu = fetch('index.html', { credentials: 'same-origin' })
+    promMeniu = fetch('/', { credentials: 'same-origin' })
       .then(function (r) { if (!r.ok) throw new Error('index.html ' + r.status); return r.text(); })
       .then(function (html) {
         var doc = new DOMParser().parseFromString(html, 'text/html');
@@ -178,7 +190,7 @@
     return promMeniu;
   }
 
-  // Meniul „Devino Partener” (pasul 11-R3f) se generează doar din
+  // Meniul „Devino partener” (pasul 11-R3f) se generează doar din
   // meniu-partener.js; meniul lateral preluat din index.html are locul gol.
   function completeazaMeniuPartener() {
     if (!document.querySelector('[data-meniu-partener]:not([data-meniu-gata])')) return;
@@ -224,7 +236,7 @@
     if (el('sidebar')) { deschideMeniu(); return; }
     incarcaMeniu().then(function (ok) {
       if (ok) requestAnimationFrame(deschideMeniu);
-      else window.location.href = 'index.html';
+      else window.location.href = '/';
     });
   });
 
@@ -376,7 +388,7 @@
     utilizatorCurent().then(function (u) {
       if (!u) { deschideCont({ tab: 'login' }); return; }
       profilCont().then(function (p) {
-        if (!p || areDashboardClient(p)) { window.location.href = 'mydarrin-dashboard-client.html'; return; }
+        if (!p || areDashboardClient(p)) { window.location.href = '/cont/comenzi'; return; }
         var text = trC('Nu ai încă nicio comandă. „Comenzile mele” apare după prima comandă.');
         if (window.MDFeedback) window.MDFeedback.toast('info', text);
         else if (typeof window.showToastMsg === 'function') window.showToastMsg(text);
@@ -670,7 +682,7 @@
   defineste('openPartnerModal', function (tip) {
     var m = el('partner-modal');
     if (!m) {
-      window.location.href = 'cum-devii-partenerul-nostru.html' + (tip ? '?type=' + encodeURIComponent(tip) : '');
+      window.location.href = '/parteneri' + (tip ? '?type=' + encodeURIComponent(tip) : '');
       return;
     }
     m.classList.remove('hidden');
@@ -681,13 +693,13 @@
   // ── Coșul: fără panou pe pagină → checkout (ca pe index.html) ─────
   defineste('toggleBasket', function () {
     var p = el('basket-panel');
-    if (!p) { window.location.href = 'mydarrin-checkout.html'; return; }
+    if (!p) { window.location.href = '/mydarrin-checkout'; return; }
     p.classList.toggle('hidden');
     document.body.style.overflow = p.classList.contains('hidden') ? '' : 'hidden';
   });
 
   // ── Consultanța Darrin AI: fereastra există doar în catalog ───────
-  defineste('openConsultanta', function () { window.location.href = 'mydarrin-catalog.html?openAI=true'; });
+  defineste('openConsultanta', function () { window.location.href = '/catalog?openAI=true'; });
 
   defineste('handlePartnerNavigation', function (tip) { window.openPartnerModal(tip); });
 

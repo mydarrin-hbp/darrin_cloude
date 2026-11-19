@@ -81,14 +81,16 @@
   var ARTICOL_EN = { serviciu: 'service', servicii: 'service', material: 'material', materiale: 'material', inchiriere: 'rental', inchirieri: 'rental' };
 
   // Paginile „Devino partener” / „Cum devii…” → tipul (null = din ?type=).
+  // Pasul 12-U1: după fișierul paginii (data-pagina), nu după adresă — aceeași
+  // pagină se deschide pe /parteneri/servicii și (până la 301) pe adresa veche.
   var PAGINI_PARTENER = {
-    '/partener': 'general', '/cum-devii-partenerul-nostru': 'general',
-    '/intrebari-frecvente-parteneri': 'general',
-    '/cum-devii-furnizor-servicii': 'services', '/cum-devii-furnizor-materiale': 'materials',
-    '/cum-devii-operator-inchirieri': 'rentals',
-    '/cum-devii-curier-de-cartier': 'courier', '/curier-cartier': 'courier',
-    '/ghidul-asiguratorului': 'insurance', '/asigurator': 'insurance',
-    '/mydarrin-devino-partener-wizard': null,
+    'cum-devii-partenerul-nostru': 'general',
+    'intrebari-frecvente-parteneri': 'general',
+    'cum-devii-furnizor-servicii': 'services', 'cum-devii-furnizor-materiale': 'materials',
+    'cum-devii-operator-inchirieri': 'rentals',
+    'cum-devii-curier-de-cartier': 'courier',
+    'ghidul-asiguratorului': 'insurance',
+    'mydarrin-devino-partener-wizard': null,
   };
 
   var jurnal = [];       // ce s-a trimis (pentru teste și depanare), fără date personale
@@ -374,6 +376,10 @@
     var c = location.pathname.replace(/\.html$/, '').replace(/\/+$/, '');
     return c || '/';
   }
+  // Fișierul paginii (data-pagina de pe <script src="/i18n-loader.js">).
+  function fisierPagina() {
+    try { return (function () { var s = document.querySelector('script[src*="i18n-loader"][data-pagina]'); return s ? s.getAttribute('data-pagina') : (location.pathname.split('/').pop() || 'index').replace(/\.html$/, ''); })(); } catch (e) { return ''; }
+  }
 
   function tipDinQuery() {
     try {
@@ -387,17 +393,19 @@
     paginaTrimisa = true;
     inPagina = true;
     var c = cale();
-    if (Object.prototype.hasOwnProperty.call(PAGINI_PARTENER, c)) {
-      eveniment('partner_landing_view', { partner_type: PAGINI_PARTENER[c] || tipDinQuery(), page: c });
+    var f = fisierPagina();
+    if (Object.prototype.hasOwnProperty.call(PAGINI_PARTENER, f)) {
+      eveniment('partner_landing_view', { partner_type: PAGINI_PARTENER[f] || tipDinQuery(), page: c });
     }
-    var produs = c === '/mydarrin-produs' || /^\/catalog\/[^/]+\/[^/]+\/[^/]+$/.test(c);
+    // Pasul 12-U1: pagina de produs — /servicii/<slug>, /materiale/<slug>, /inchirieri/<slug>.
+    var produs = f === 'mydarrin-produs';
     if (produs) {
       var q = new URLSearchParams(location.search);
       var bucati = c.split('/');
-      var tip = q.get('type') || (bucati.length === 5 ? bucati[2] : '');
+      var tip = q.get('type') || (bucati.length === 3 ? bucati[1] : '');
       eveniment('service_view', {
         item_type: ARTICOL_EN[tip] || tip || 'service',
-        item_category: q.get('cat') || (bucati.length === 5 ? bucati[3] : undefined),
+        item_category: q.get('cat') || undefined,
         item_slug: q.get('slug') || (bucati.length === 5 ? bucati[4] : undefined),
       });
     }
@@ -425,7 +433,7 @@
       var el = e.target && e.target.closest && e.target.closest('[data-cta-partener]');
       if (!el) return;
       var tip = el.getAttribute('data-cta-partener');
-      var tipPagina = PAGINI_PARTENER[cale()];
+      var tipPagina = PAGINI_PARTENER[fisierPagina()]; // pasul 12-U1: după fișier
       eveniment('partner_cta_click', {
         partner_type: (tip && TIP_EN[tip]) || tipPagina || tipDinQuery(),
         position: locButon(el),

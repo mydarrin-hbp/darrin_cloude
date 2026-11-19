@@ -25,7 +25,8 @@ const { esteRolPartener } = require('../../lib/activare-partener');
 const { dashboardPentruRol } = require('../../lib/destinatie-rol');
 const { inregistreazaEmailConfirmat } = require('../../lib/palnie');
 
-const SITE_URL = process.env.SITE_URL || 'https://mydarrin.homebestpal.com';
+// Pasul 12-U1: adresa site-ului într-un singur loc (lib/adresa-site.js).
+const SITE_URL = require('../../lib/adresa-site').siteUrl();
 const TIP_EMAIL = 'bun_venit_cont_confirmat';
 // Emailul vechi de bun venit (trimis înainte de 11-R3c): cine l-a primit nu-l mai primește o dată.
 const TIPURI_VECHI = ['bun_venit_client'];

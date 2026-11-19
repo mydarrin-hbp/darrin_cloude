@@ -421,8 +421,8 @@ body { font-family:var(--font-body); background:var(--surface-100); color:var(--
      folosește storage-ul IMPLICIT (localStorage), izolat per subdomeniu,
      NU storage-ul comun pe cookie-uri (chunkedCookieStorage) folosit la
      login — sesiunea reală era mereu invizibilă aici, indiferent de cheie. -->
-<script type="module" src="lib/supabaseClient.js"></script>
-<script src="account-system.js"></script>
+<script type="module" src="/lib/supabaseClient.js"></script>
+<script src="/account-system.js"></script>
 <div id="auth-gate-overlay" style="position:fixed;inset:0;background:#0F1923;z-index:99999;display:flex;align-items:center;justify-content:center;color:#8BA3C0;font-family:sans-serif;font-size:14px">
   Se verifică accesul...
 </div>
@@ -433,7 +433,7 @@ body { font-family:var(--font-body); background:var(--surface-100); color:var(--
       if (ok) document.getElementById('auth-gate-overlay')?.remove();
     } catch (e) {
       console.error('Eroare la verificarea accesului:', e);
-      window.location.href = 'https://mydarrin.homebestpal.com';
+      window.location.href = window.location.protocol + '//' + window.location.host.replace(/^admin\./, '') + '/'; // pasul 12-U1: site-ul public, fără domeniul scris în cod
     }
   })();
 </script>
@@ -447,17 +447,17 @@ body { font-family:var(--font-body); background:var(--surface-100); color:var(--
   </a>
   <div style="display:flex;gap:6px;flex-wrap:wrap" id="mini-nav-links">
     <a href="/" style="color:rgba(255,255,255,.65);font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border-radius:7px;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='#fff'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.65)'">🏠 Acasă</a>
-    <a href="mydarrin-catalog.html" style="color:rgba(255,255,255,.65);font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border-radius:7px;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='#fff'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.65)'">📦 Catalog</a>
-    <a href="mydarrin-cum-functioneaza.html" style="color:rgba(255,255,255,.65);font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border-radius:7px;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='#fff'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.65)'">⏱ Cum funcționează</a>
-    <a href="mydarrin-investitori.html" style="color:rgba(255,255,255,.65);font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border-radius:7px;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='#fff'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.65)'">💼 Investitori</a>
-    <a href="mydarrin-superadmin.html" style="color:rgba(255,255,255,.65);font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border-radius:7px;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='#fff'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.65)'">🔐 Admin</a>
+    <a href="/catalog" style="color:rgba(255,255,255,.65);font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border-radius:7px;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='#fff'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.65)'">📦 Catalog</a>
+    <a href="/ajutor" style="color:rgba(255,255,255,.65);font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border-radius:7px;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='#fff'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.65)'">⏱ Cum funcționează</a>
+    <a href="/investitori" style="color:rgba(255,255,255,.65);font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border-radius:7px;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='#fff'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.65)'">💼 Investitori</a>
+    <a href="/mydarrin-superadmin" style="color:rgba(255,255,255,.65);font-size:12px;font-weight:600;text-decoration:none;padding:5px 12px;border-radius:7px;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='#fff'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.65)'">🔐 Admin</a>
   </div>
 </div>
 
 <!-- ════ BREADCRUMB ════ -->
 <div style="background:#fff;border-bottom:1px solid #EEF2F7;padding:9px 24px">
   <div style="max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-    <a href="/" style="color:#5A6B7D;text-decoration:none;font-size:12.5px;font-weight:600;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='#5A6B7D'">🏠 Acasă</a> <span style="color:#D5DFE8">›</span> <a href="mydarrin-backoffice-serviciu.html" style="color:#5A6B7D;text-decoration:none;font-size:12.5px;font-weight:600;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='#5A6B7D'">Backoffice</a> <span style="color:#D5DFE8">›</span> <span style="color:#1A2332;font-size:12.5px;font-weight:700">Design System</span>
+    <a href="/" style="color:#5A6B7D;text-decoration:none;font-size:12.5px;font-weight:600;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='#5A6B7D'">🏠 Acasă</a> <span style="color:#D5DFE8">›</span> <a href="/mydarrin-backoffice-serviciu" style="color:#5A6B7D;text-decoration:none;font-size:12.5px;font-weight:600;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='#5A6B7D'">Backoffice</a> <span style="color:#D5DFE8">›</span> <span style="color:#1A2332;font-size:12.5px;font-weight:700">Design System</span>
   </div>
 </div>
 
@@ -913,7 +913,7 @@ body { font-family:var(--font-body); background:var(--surface-100); color:var(--
         <div style="display:flex;gap:16px;padding:12px 0;border-bottom:1px solid var(--border);margin-bottom:20px">
           <a class="nav-underline active">Servicii</a>
           <a class="nav-underline">Acasă</a>
-          <a class="nav-underline">Devino Partener</a>
+          <a class="nav-underline">Devino partener</a>
           <a class="nav-underline">Contact</a>
         </div>
         <div class="sub-title">Tabs (Catalog)</div>
@@ -1016,7 +1016,7 @@ body { font-family:var(--font-body); background:var(--surface-100); color:var(--
           <div class="page-card"><div class="page-card-header" style="background:linear-gradient(135deg,#0B2D2B,#0B1E38)"><span class="page-tag">✓ Live v3</span></div><div class="page-card-body"><div class="page-title">🧠 Deviz AI</div><div class="page-desc">Formular, preview, alocare actori</div><div class="page-status" style="color:var(--success)"><span style="width:6px;height:6px;border-radius:50%;background:var(--success);display:inline-block"></span>Aprobat</div></div></div>
           <div class="page-card"><div class="page-card-header" style="background:linear-gradient(135deg,var(--accent-700),#7A3A08)"><span class="page-tag">🔜 Design</span></div><div class="page-card-body"><div class="page-title">📄 Pagină Serviciu</div><div class="page-desc">Galerie, recenzii, rezervare</div><div class="page-status" style="color:var(--warning)"><span style="width:6px;height:6px;border-radius:50%;background:var(--warning);display:inline-block"></span>În design</div></div></div>
           <div class="page-card"><div class="page-card-header" style="background:linear-gradient(135deg,#4B7BEC,#2B4C7E)"><span class="page-tag">🔜 Design</span></div><div class="page-card-body"><div class="page-title">🛒 Checkout</div><div class="page-desc">Coș, plată Escrow, confirmare</div><div class="page-status" style="color:var(--warning)"><span style="width:6px;height:6px;border-radius:50%;background:var(--warning);display:inline-block"></span>În design</div></div></div>
-          <div class="page-card"><div class="page-card-header" style="background:linear-gradient(135deg,#7C3AED,#5B21B6)"><span class="page-tag">Planificat</span></div><div class="page-card-body"><div class="page-title">🤝 Devino Partener</div><div class="page-desc">Beneficii, înregistrare, verificare</div><div class="page-status" style="color:var(--ink-300)"><span style="width:6px;height:6px;border-radius:50%;background:var(--ink-200);display:inline-block"></span>Planificat</div></div></div>
+          <div class="page-card"><div class="page-card-header" style="background:linear-gradient(135deg,#7C3AED,#5B21B6)"><span class="page-tag">Planificat</span></div><div class="page-card-body"><div class="page-title">🤝 Devino partener</div><div class="page-desc">Beneficii, înregistrare, verificare</div><div class="page-status" style="color:var(--ink-300)"><span style="width:6px;height:6px;border-radius:50%;background:var(--ink-200);display:inline-block"></span>Planificat</div></div></div>
           <div class="page-card"><div class="page-card-header" style="background:linear-gradient(135deg,#059669,#064E3B)"><span class="page-tag">Planificat</span></div><div class="page-card-body"><div class="page-title">📈 Investitori</div><div class="page-desc">KPIs, runde finanțare, contact</div><div class="page-status" style="color:var(--ink-300)"><span style="width:6px;height:6px;border-radius:50%;background:var(--ink-200);display:inline-block"></span>Planificat</div></div></div>
           <div class="page-card"><div class="page-card-header" style="background:linear-gradient(135deg,#1E3557,#243F6A)"><span class="page-tag">🔜 Design</span></div><div class="page-card-body"><div class="page-title">👤 Dashboard Client</div><div class="page-desc">Comenzi, devize, garanții</div><div class="page-status" style="color:var(--warning)"><span style="width:6px;height:6px;border-radius:50%;background:var(--warning);display:inline-block"></span>În design</div></div></div>
           <div class="page-card"><div class="page-card-header" style="background:linear-gradient(135deg,#E8871A,#C46E0F)"><span class="page-tag">🔜 Design</span></div><div class="page-card-body"><div class="page-title">🔧 Dashboard Partener</div><div class="page-desc">Comenzi, execuție, plăți</div><div class="page-status" style="color:var(--warning)"><span style="width:6px;height:6px;border-radius:50%;background:var(--warning);display:inline-block"></span>În design</div></div></div>
@@ -1058,7 +1058,7 @@ sections.forEach(s => obs.observe(s));
 <!-- ════ QUICK NAV ════ -->
 <div style="background:#002855;border-top:1px solid rgba(255,255,255,.08);padding:10px 24px">
   <div style="max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap">
-    <a href="/" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">🏠 Acasă</a> <span style="color:rgba(255,255,255,.15)">·</span> <a href="mydarrin-backoffice-serviciu.html" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">⚙️ Backoffice</a> <span style="color:rgba(255,255,255,.15)">·</span> <a href="mydarrin-catalog.html" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">📦 Catalog</a> <span style="color:rgba(255,255,255,.15)">·</span> <a href="mydarrin-produs.html" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">🔧 Produs</a> <span style="color:rgba(255,255,255,.15)">·</span> <a href="mydarrin-business-model.html" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">📋 Business Model</a>
+    <a href="/" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">🏠 Acasă</a> <span style="color:rgba(255,255,255,.15)">·</span> <a href="/mydarrin-backoffice-serviciu" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">⚙️ Backoffice</a> <span style="color:rgba(255,255,255,.15)">·</span> <a href="/catalog" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">📦 Catalog</a> <span style="color:rgba(255,255,255,.15)">·</span> <a href="/mydarrin-produs" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">🔧 Produs</a> <span style="color:rgba(255,255,255,.15)">·</span> <a href="/mydarrin-business-model" style="display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.55)'">📋 Business Model</a>
   </div>
 </div>
 
@@ -1073,12 +1073,12 @@ sections.forEach(s => obs.observe(s));
   </div>
   <div style="display:flex;gap:16px;flex-wrap:wrap">
     <a href="/" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">🏠 Acasă</a>
-    <a href="mydarrin-catalog.html" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">📦 Catalog</a>
-    <a href="mydarrin-marketplace.html" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">🏪 Marketplace</a>
-    <a href="cum-devii-partenerul-nostru.html" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">👷 Parteneri</a>
-    <a href="mydarrin-investitori.html" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">💼 Investitori</a>
-    <a href="mydarrin-app-mobile.html" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">📱 App Mobile</a>
-    <a href="mydarrin-superadmin.html" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">🔐 Admin</a>
+    <a href="/catalog" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">📦 Catalog</a>
+    <a href="/mydarrin-marketplace" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">🏪 Marketplace</a>
+    <a href="/parteneri" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">👷 Parteneri</a>
+    <a href="/investitori" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">💼 Investitori</a>
+    <a href="/mydarrin-app-mobile" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">📱 App Mobile</a>
+    <a href="/mydarrin-superadmin" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">🔐 Admin</a>
   </div>
 </div>
 
@@ -1086,7 +1086,7 @@ sections.forEach(s => obs.observe(s));
 <script id="partner-router">
 /* ═══════════════════════════════════════════════════════════════════
    MY DARRIN — PARTNER NAVIGATION ROUTER v2026.06
-   Unified router for all "Devino Partener" entry points across pages.
+   Unified router for all "Devino partener" entry points across pages.
 
    Handles:
    1. Same-page modal trigger (pages WITH partner-modal)
@@ -1100,7 +1100,7 @@ sections.forEach(s => obs.observe(s));
   'use strict';
 
   // ── CONSTANTS ──────────────────────────────────────────────────
-  const PARTNER_PAGE = 'cum-devii-partenerul-nostru.html';
+  const PARTNER_PAGE = '/parteneri';
   const VALID_TYPES  = ['servicii', 'materiale', 'inchirieri',
                         'curier',   'asigurari'];
   const IS_PARTNER_PAGE = window.location.pathname
@@ -1302,6 +1302,6 @@ sections.forEach(s => obs.observe(s));
 })();
 
 </script>
-<script src="ui-comun.js" defer></script>
+<script src="/ui-comun.js" defer></script>
 </body>
 </html>

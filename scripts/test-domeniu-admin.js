@@ -62,10 +62,15 @@ globalThis.__stub = {
 
 async function incarcaMiddleware() {
   let src = citeste('middleware.js');
+  globalThis.__adreseCurate = require('../lib/adrese-curate.js');
+  globalThis.__adresaSite = require('../lib/adresa-site.js');
   const inlocuiri = [
     [/import \{ createClient \} from '@supabase\/supabase-js';/, 'const { createClient } = globalThis.__stub;'],
     [/import \{ next, rewrite \} from '@vercel\/functions';/, 'const { next, rewrite } = globalThis.__stub;'],
     [/import seoOg from '\.\/lib\/seo-og\.js';/, 'const seoOg = globalThis.__stub.seoOg;'],
+    // Pasul 12-U1: adresele curate și adresa site-ului (module fără dependențe).
+    [/import adreseCurate from '\.\/lib\/adrese-curate\.js';/, 'const adreseCurate = globalThis.__adreseCurate;'],
+    [/import adresaSite from '\.\/lib\/adresa-site\.js';/, 'const adresaSite = globalThis.__adresaSite;'],
   ];
   inlocuiri.forEach(([re, cu]) => { if (!re.test(src)) throw new Error('importul lipsește: ' + re); src = src.replace(re, cu); });
   return import('data:text/javascript;base64,' + Buffer.from(src).toString('base64'));
@@ -204,10 +209,10 @@ const sprePublic = (rez) => status(rez) !== null && /^https:\/\/mydarrin\.homebe
     const sa = citeste('mydarrin-superadmin.html');
     const m = sa.match(/<a\b([^>]*)>\s*<svg(?:(?!<\/a>)[\s\S])*?<\/svg>\s*Pagina publică investitori ↗\s*<\/a>/);
     verifica(!!m, 'D1 meniul superadmin are „Pagina publică investitori ↗”');
-    verifica(m && /href="https:\/\/mydarrin\.homebestpal\.com\/mydarrin-investitori"/.test(m[1]) && /target="_blank"/.test(m[1]) && /rel="noopener"/.test(m[1]), 'D1 „Pagina publică investitori ↗” → domeniul public, target="_blank" rel="noopener"');
+    verifica(m && /href="https:\/\/mydarrin\.homebestpal\.com\/investitori"/.test(m[1]) && /target="_blank"/.test(m[1]) && /rel="noopener"/.test(m[1]), 'D1 „Pagina publică investitori ↗” → domeniul public, target="_blank" rel="noopener"');
     verifica(!/>\s*Investitori\s*<\/a>/.test(sa), 'D2 nu mai există linkul de meniu „Investitori” simplu');
-    verifica(/window\.open\('https:\/\/mydarrin\.homebestpal\.com\/mydarrin-investitori','_blank','noopener'\)">🌍 Pagina publică investitori ↗/.test(sa), 'D3 butonul „🌍 Pagina publică investitori ↗” → domeniul public, tab nou');
-    verifica(/<a href="https:\/\/mydarrin\.homebestpal\.com\/mydarrin-investitori"[^>]*target="_blank" rel="noopener">💼 Investitori ↗<\/a>/.test(sa), 'D4 linkul din subsol „💼 Investitori ↗” → domeniul public, tab nou');
+    verifica(/window\.open\('https:\/\/mydarrin\.homebestpal\.com\/investitori','_blank','noopener'\)">🌍 Pagina publică investitori ↗/.test(sa), 'D3 butonul „🌍 Pagina publică investitori ↗” → domeniul public, tab nou');
+    verifica(/<a href="https:\/\/mydarrin\.homebestpal\.com\/investitori"[^>]*target="_blank" rel="noopener">💼 Investitori ↗<\/a>/.test(sa), 'D4 linkul din subsol „💼 Investitori ↗” → domeniul public, tab nou');
     verifica(/<option value="\/mydarrin-investitori\.html">/.test(sa), 'D5 selectorul de pagini SEO rămâne neschimbat');
     verifica(/Investitori Admin/.test(sa), 'D6 „Investitori Admin” rămâne');
   }

@@ -125,7 +125,7 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 <body>
 <div id="pd-app" data-i18n-skip>
   <header class="pd-top">
-    <a class="pd-inapoi" href="/mydarrin-investitori" data-t="inapoi"></a>
+    <a class="pd-inapoi" href="/investitori" data-t="inapoi"></a>
     <strong class="pd-titlu" style="font-size:13px;color:rgba(255,255,255,.55)">My Darrin · Pitch deck</strong>
     <span class="pd-spatiu"></span>
     <div class="pd-comutator" role="group" id="pd-comutator" hidden>
@@ -152,7 +152,7 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
   </nav>
 </div>
 
-<script type="module" src="lib/supabaseClient.js"></script>
+<script type="module" src="/lib/supabaseClient.js"></script>
 <script src="/pitch-deck-render.js"></script>
 <script src="/pitch-deck-prezentare.js"></script>
 <script>
@@ -294,7 +294,7 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
         if (stare.deck) { stare.deck.distruge(); stare.deck = null; }
         arataMesaj('<h1 data-in-pregatire>' + esc(T().pregatire_t) + '</h1><p>' + esc(T().pregatire_p) + '</p>' +
           '<p><button type="button" class="pd-link" id="pd-spre-live">' + esc(T().pregatire_live) + ' →</button></p>' +
-          '<a class="pd-cta" href="/mydarrin-investitori">' + esc(T().investitori) + '</a>');
+          '<a class="pd-cta" href="/investitori">' + esc(T().investitori) + '</a>');
         $('pd-spre-live').onclick = function () { seteazaMod('live'); };
         document.dispatchEvent(new CustomEvent('mdpd:gata', { detail: { stare: 'in_pregatire', limba: l } }));
         return;
@@ -313,7 +313,7 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
     stare.vedere = 'deck';
     aplicaMod();
     stare.deck = window.MDPitchDeck.creeaza($('pd-deck-slideuri'), {
-      payload: stare.payload, limba: l, hash: true, urlRunda: '/mydarrin-investitori#runda',
+      payload: stare.payload, limba: l, hash: true, urlRunda: '/investitori#runda',
       // „Vezi cifrele reale →” de pe slide-urile 10, 12, 17, 18
       onLive: function () { seteazaMod('live'); },
       onSchimbare: function (i, total) {
@@ -390,7 +390,7 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
     } else if (L.ind && L.ind.status >= 500) {
       html += '<p class="pd-nota">' + esc(t.live_eroare) + '</p>';
     } else {
-      html += '<p class="pd-nota" data-live="doar-investitori">' + esc(t.inv_doar) + ' <a href="/mydarrin-investitori">' + esc(t.investitori) + ' →</a></p>';
+      html += '<p class="pd-nota" data-live="doar-investitori">' + esc(t.inv_doar) + ' <a href="/investitori">' + esc(t.investitori) + ' →</a></p>';
     }
     html += '<p style="margin-top:18px"><button type="button" class="pd-link" id="pd-live-inapoi">' + esc(t.inapoi_prognoza) + '</button></p>';
     $('pd-live').innerHTML = html;

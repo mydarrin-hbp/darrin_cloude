@@ -243,8 +243,8 @@ async function testeBrowser() {
       // Codul: pagina se schimbă singură, fără reîncărcare manuală.
       await page.fill('#verify-cod-input', '123456');
       await page.click('#mdc-cod-btn');
-      await page.waitForURL(/mydarrin-panou-investitor\.html/, { timeout: 15000 }).catch(() => {});
-      verifica(/mydarrin-panou-investitor\.html/.test(page.url()), `${et}: după cod nu ajunge în panou (${page.url()})`);
+      await page.waitForURL(/\/cont\/investitor/, { timeout: 15000 }).catch(() => {});
+      verifica(/\/cont\/investitor/.test(page.url()), `${et}: după cod nu ajunge în panou (${page.url()})`);
       verifica(await panouContNou(page), `${et}: panoul nu e în starea „cont nou”`);
       await page.waitForTimeout(400);
       const s = await stareaPanoului(page);
@@ -253,7 +253,7 @@ async function testeBrowser() {
       verifica(!stare.pasiTrimisi.length, `${et}: s-a trimis un pas KYC: ${stare.pasiTrimisi}`);
       verifica(s.nume === 'Ana Test' && s.insigna === t.insigna, `${et}: antetul: ${s.nume} / ${s.insigna}`);
       verifica(s.banda === t.banda, `${et}: banda: „${s.banda}”`);
-      verifica(s.titluRunda === 'Seed' && s.buton === t.buton && s.href === '/mydarrin-investitori.html?ruta=investeste', `${et}: runda / butonul: ${s.titluRunda} / ${s.buton} / ${s.href}`);
+      verifica(s.titluRunda === 'Seed' && s.buton === t.buton && s.href === '/investitori?ruta=investeste', `${et}: runda / butonul: ${s.titluRunda} / ${s.buton} / ${s.href}`);
       const asteptate = lang === 'ro' ? ['2,5 EUR', '1.000 EUR', '250.000 EUR', '10%'] : ['2.5 EUR', '1,000 EUR', '250,000 EUR', '10%'];
       verifica(asteptate.every((x) => s.date.includes(x)) && s.date.length === 5, `${et}: datele rundei: ${JSON.stringify(s.date)}`);
       verifica(!s.kpiVizibil, `${et}: KPI-urile de portofoliu se văd în starea „cont nou”`);
@@ -304,7 +304,7 @@ async function testeBrowser() {
       await page.goto(B + '/mydarrin-panou-investitor.html', { waitUntil: 'load' });
       await panouContNou(page);
       await page.click('#pi-investeste');
-      await page.waitForURL(/mydarrin-investitori\.html/, { timeout: 15000 }).catch(() => {});
+      await page.waitForURL(/\/investitori/, { timeout: 15000 }).catch(() => {});
       const sub = await subtitluRuta(page);
       verifica(t.pas1.test(sub || ''), `${et}: „Investește” nu deschide pasul 1: „${sub}”`);
       const campuri = await page.evaluate(() => ['mi-id_fiscal', 'mi-iban', 'mi-data_nasterii', 'mi-cetatenie', 'mi-adresa_strada'].map((id) => !!document.getElementById(id)));
@@ -354,8 +354,8 @@ async function testeBrowser() {
     const { ctx, page, stare, erori } = await context(br, B, Object.assign({ lang: 'ro', cuSesiune: true }, o));
     await page.goto(B + '/mydarrin-investitori.html?ruta=investitor', { waitUntil: 'load' });
     if (panou) {
-      await page.waitForURL(/mydarrin-panou-investitor\.html/, { timeout: 15000 }).catch(() => {});
-      verifica(/mydarrin-panou-investitor\.html/.test(page.url()), `${et}: nu ajunge în panou (${page.url()})`);
+      await page.waitForURL(/\/cont\/investitor/, { timeout: 15000 }).catch(() => {});
+      verifica(/\/cont\/investitor/.test(page.url()), `${et}: nu ajunge în panou (${page.url()})`);
       verifica(!(await page.$('#mi-fer')), `${et}: ruta KYC deschisă`);
     } else {
       const sub = await subtitluRuta(page);
@@ -377,8 +377,8 @@ async function testeBrowser() {
       await page.waitForSelector('#verify-cod-input', { state: 'visible', timeout: 10000 });
       await page.fill('#verify-cod-input', '654321');
       await page.click('#mdc-cod-btn');
-      await page.waitForURL(/mydarrin-panou-investitor\.html/, { timeout: 15000 }).catch(() => {});
-      const plecat = stare.navigari.some((u) => /^\/mydarrin-panou-investitor\.html/.test(u));
+      await page.waitForURL(/\/cont\/investitor/, { timeout: 15000 }).catch(() => {});
+      const plecat = stare.navigari.some((u) => /^\/cont\/investitor/.test(u));
       verifica(plecat, `${et} ${lang}: după cod pagina nu pleacă spre panou (${stare.navigari}; ${stare.cereri.filter((x) => /destinatie/.test(x))})`);
       // Cu sesiunea refuzată de stocare, panoul cere apoi login (corect: fără sesiune).
       if (!refuzata) verifica(await panouContNou(page), `${et} ${lang}: panoul nu e în starea „cont nou”`);
@@ -393,7 +393,7 @@ async function testeBrowser() {
     const { ctx, page } = await context(br, B, { lang: 'ro', cuSesiune: true, roles: ['client'], rolSolicitat: 'client' });
     await page.goto(B + '/mydarrin-panou-investitor.html', { waitUntil: 'load' });
     await page.waitForURL(/#cum-functioneaza/, { timeout: 15000 }).catch(() => {});
-    verifica(/mydarrin-investitori\.html#cum-functioneaza$/.test(page.url()), `paza: clientul fără alegere rămâne în panou (${page.url()})`);
+    verifica(/\/investitori#cum-functioneaza$/.test(page.url()), `paza: clientul fără alegere rămâne în panou (${page.url()})`);
     await ctx.close();
   }
   {
@@ -411,7 +411,7 @@ async function testeBrowser() {
 
 // ── 4 + 7. Fără browser ────────────────────────────────────────────────
 function testeServer() {
-  const PANOU = '/mydarrin-panou-investitor.html';
+  const PANOU = '/cont/investitor';
   const d1 = DR.alegeDestinatie([], { rolSolicitat: 'investor' });
   verifica(d1 && d1.destinatie === PANOU, `alegeDestinatie([], investor): ${JSON.stringify(d1)}`);
   const d2 = DR.alegeDestinatie(['investor']);
@@ -427,14 +427,14 @@ function testeServer() {
   const d7 = DR.alegeDestinatie(['admin'], { rolSolicitat: 'investor', adminCatalog: true });
   verifica(d7 && d7.tip === 'admin_catalog', `admin înaintea investitorului: ${JSON.stringify(d7)}`);
   const d8 = DR.alegeDestinatie(['client', 'partener_servicii'], { rolSolicitat: 'partener_servicii' });
-  verifica(d8 && d8.destinatie === '/mydarrin-dashboard-partener.html?type=servicii', `partenerul cu rol, neschimbat: ${JSON.stringify(d8)}`);
+  verifica(d8 && d8.destinatie === '/cont/partener?type=servicii', `partenerul cu rol, neschimbat: ${JSON.stringify(d8)}`);
 
   // Emailul de bun venit: butonul spre panou, RO și EN.
   const { renderEmailContConfirmat } = require(path.join(R, 'lib', 'i18n'));
   const text = (h) => h.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
   for (const [l, buton] of [['ro', 'Intră în panoul tău de investitor'], ['en', 'Go to your investor dashboard']]) {
     const e = renderEmailContConfirmat(l, { nume: 'Ana', partener: false, investitor: true, link: null });
-    verifica(text(e.html).includes(buton) && /href="https:\/\/mydarrin\.homebestpal\.com\/mydarrin-panou-investitor\.html"/.test(e.html), `emailul ${l}: butonul / linkul: ${text(e.html).slice(0, 200)}`);
+    verifica(text(e.html).includes(buton) && /href="https:\/\/mydarrin\.homebestpal\.com\/cont\/investitor"/.test(e.html), `emailul ${l}: butonul / linkul: ${text(e.html).slice(0, 200)}`);
   }
   const bv = fs.readFileSync(path.join(R, 'api', 'cont', 'bun-venit.js'), 'utf8');
   verifica(/investitor \? SITE_URL \+ dashboardPentruRol\('investor'\)/.test(bv) && !/PAGINA_RUTA_INVESTITOR/.test(bv), 'bun-venit.js: linkul investitorului nu e panoul');

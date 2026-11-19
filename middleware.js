@@ -32,6 +32,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { next, rewrite } from '@vercel/functions';
 import seoOg from './lib/seo-og.js';
+import adreseCurate from './lib/adrese-curate.js';
+import adresaSite from './lib/adresa-site.js';
 
 export const config = {
   runtime: 'edge',
@@ -58,42 +60,40 @@ export const config = {
 const PAGINA_STATICA = {
   '/home': '/index',
   '/cos': '/mydarrin-checkout',
-  // Pasul 11-R3g: scurtătura duce la singura pagină „Devino partener” (hub-ul).
-  '/partener': '/cum-devii-partenerul-nostru',
-  // Pasul 12-P1: pre-înscrierea partenerului în 60 de secunde (macheta B1.1).
-  '/parteneri/inscriere': '/mydarrin-inscriere-partener',
-  '/investitor': '/mydarrin-investitori',
-  '/curier-cartier': '/cum-devii-curier-de-cartier',
-  '/asigurator': '/ghidul-asiguratorului',
   '/confirmare-livrare': '/confirmare-livrare',
 };
 
-// Pasul 11-C4: un singur catalog — /servicii/<slug>, /catalog/materiale/<slug> etc.
-// duc la mydarrin-catalog cu filtrul (categorie = servicii | materiale | inchirieri,
-// subcategorie = slug-ul din categorii).
-const TIP_CATEGORIE = { servicii: 'servicii', materiale: 'materiale', inchirieri: 'inchirieri', inchiriere: 'inchirieri' };
-
+// Pasul 12-U1 (19 nov. 2026): adresele curate (lib/adrese-curate.js, sursa
+// unică). Fiecare adresă nouă servește fișierul de azi, fără .html (vezi
+// TEST-ul de mai sus); /servicii/<serviciu>, /materiale/<produs> și
+// /inchirieri/<echipament> servesc mydarrin-produs. Pagina își citește
+// filtrul / produsul din cale (MYD_ADRESE.parametriPagina); parametrii puși
+// aici în destinație servesc robotului OG și logurilor.
+// Adresele /cont/* servesc paginile de cont: trec prin bariera generală, ca
+// adresele lor vechi (vezi ruleaza), nu prin ramura publică.
 function ruteazaPublic(pathname) {
   if (PAGINA_STATICA[pathname]) {
     return { destinatie: PAGINA_STATICA[pathname] };
   }
-
-  let m = pathname.match(/^\/(servicii|materiale|inchiriere)\/([^/]+)$/);
-  if (m) {
-    return { destinatie: '/mydarrin-catalog', query: { categorie: TIP_CATEGORIE[m[1]], subcategorie: m[2] } };
+  const r = adreseCurate.rescriere(pathname);
+  if (r && pathname === adreseCurate.curata(pathname)) {
+    return { destinatie: '/' + r.fisier, query: r.parametri, cont: /^\/cont\//.test(pathname) };
   }
-
-  m = pathname.match(/^\/catalog\/(servicii|materiale|inchirieri)\/([^/]+)$/);
-  if (m) {
-    return { destinatie: '/mydarrin-catalog', query: { categorie: TIP_CATEGORIE[m[1]], subcategorie: m[2] } };
-  }
-
-  m = pathname.match(/^\/catalog\/([^/]+)\/([^/]+)\/([^/]+)$/);
-  if (m) {
-    return { destinatie: '/mydarrin-produs', query: { type: m[1], cat: m[2], slug: m[3] } };
-  }
-
   return null;
+}
+
+// Pasul 12-U1: redirecționările care depind de parametri (vercel.json le are
+// doar pe cele după cale, care rulează înaintea middleware-ului):
+//   /mydarrin-catalog?categorie=servicii → /servicii, /mydarrin-catalog → /catalog;
+//   /mydarrin-produs?slug=x&type=serviciu → /servicii/x;
+//   /catalog/<tip>/<categorie>/<slug> → /<servicii|materiale|inchirieri>/<slug>.
+// 301, cu ceilalți parametri păstrați. Nu face niciun apel spre Supabase.
+function redirectAdresaVeche(url) {
+  const p = url.pathname;
+  if (p !== '/mydarrin-catalog' && p !== '/mydarrin-produs' && !/^\/catalog\/[^/]+\/[^/]+\/[^/]+$/.test(p)) return null;
+  const tinta = adreseCurate.redirect(p, url.search);
+  if (!tinta) return null;
+  return new Response(null, { status: 301, headers: { location: tinta } });
 }
 
 // Pasul 11-S3 (15 nov. 2026): adresa proiectului se citește într-un try — o
@@ -169,7 +169,7 @@ function respinge(request, motiv, detaliu, optiuni) {
     if (o.revenire && caleRevenireValida(o.revenire)) u.searchParams.set('revenire', o.revenire);
     tinta = u.toString();
   } catch (e) {
-    tinta = 'https://mydarrin.homebestpal.com/acces-temporar';
+    tinta = adresaSite.adresaAbsoluta('/acces-temporar');
   }
   return Response.redirect(tinta, 307);
 }
@@ -402,7 +402,8 @@ const PAGINI_ADMIN_CATALOG = ['/mydarrin-admin-catalog', '/mydarrin-admin-catalo
 // aplică doar acestui host — previzualizările *.vercel.app și localhost nu
 // sunt atinse. Nu face niciun apel spre Supabase.
 const HOST_ADMIN = 'admin.mydarrin.homebestpal.com';
-const DOMENIU_PUBLIC = 'https://mydarrin.homebestpal.com';
+// Pasul 12-U1: adresa site-ului public din SITE_URL (lib/adresa-site.js).
+const DOMENIU_PUBLIC = adresaSite.siteUrl();
 // Paginile de acces și cont folosite efectiv de paginile interne:
 //  - /acces-temporar: login-ul (respinge() trimite aici; e exclus și din matcher);
 //  - /acord-confidentialitate: pasul de după login pentru accesele temporare
@@ -601,9 +602,14 @@ export default async function middleware(request) {
     const redirectAdmin = domeniuAdmin(request, url);
     if (redirectAdmin) return redirectAdmin;
     const pathname = url.pathname;
+    // Pasul 12-U1: adresele vechi cu parametri → 301 spre adresa curată
+    // (nu și cererea internă a robotului OG, care cere chiar fișierul).
+    const redirectVechi = request.headers.get(seoOg.ANTET_INTERN) ? null : redirectAdresaVeche(url);
+    if (redirectVechi) return redirectVechi;
     const publicRoute = ruteazaPublic(pathname);
     zona = PAGINI_STRICTE.includes(pathname) ? 'stricta'
       : PAGINI_ADMIN_CATALOG.includes(pathname) ? 'catalog'
+      : (publicRoute && publicRoute.cont) ? 'generala'
       : (PAGINI_PUBLICE.has(pathname) || publicRoute) ? 'publica'
       : 'generala';
     return await ruleaza(request, url, pathname, publicRoute);
@@ -647,14 +653,13 @@ async function ruleaza(request, url, pathname, publicRoute) {
   // vezi PAGINA_STATICA) și rutele de categorie/produs ("/servicii/:slug"
   // etc.) trebuie rezolvate ÎNAINTE de bariera generală — toate destinațiile
   // lui ruteazaPublic() sunt, prin construcție, pagini din PAGINI_PUBLICE.
-  if (PAGINI_PUBLICE.has(pathname) || publicRoute) {
+  if (PAGINI_PUBLICE.has(pathname) || (publicRoute && !publicRoute.cont)) {
     let dest = null;
     if (publicRoute) {
       dest = new URL(publicRoute.destinatie, request.url);
+      for (const [k, v] of url.searchParams.entries()) dest.searchParams.set(k, v);
       if (publicRoute.query) {
         for (const [k, v] of Object.entries(publicRoute.query)) dest.searchParams.set(k, v);
-      } else {
-        for (const [k, v] of url.searchParams.entries()) dest.searchParams.set(k, v);
       }
     }
     // Roboții de previzualizare (pasul 11-S). Vizitatorii obișnuiți nu ajung
@@ -682,8 +687,11 @@ async function ruleaza(request, url, pathname, publicRoute) {
   // accese_temporare, NDA) rămâne intact în cod — gating reversibil, conform
   // notei „Etapa LANSARE provizorie": un singur `if` de reactivat, nu o
   // rescriere, dacă se decide revenirea la acces condiționat.
-  if (!BARIERA_GENERALA_ACTIVA) return next();
-  const permis = await treceBarieraPlatforma(request, supabaseAdmin, pathname);
+  // Pasul 12-U1: /cont/* — aceeași barieră ca adresele vechi ale paginilor de
+  // cont; accesul temporar (ruta_url) e comparat cu fișierul servit.
+  const destCont = publicRoute && publicRoute.cont ? new URL(publicRoute.destinatie + url.search, request.url) : null;
+  if (!BARIERA_GENERALA_ACTIVA) return destCont ? rewrite(destCont) : next();
+  const permis = await treceBarieraPlatforma(request, supabaseAdmin, destCont ? destCont.pathname : pathname);
   if (permis === 'nda_pending') {
     console.log(`[middleware-bariera] NDA neacceptat — path=${pathname}, redirect spre /acord-confidentialitate`);
     return Response.redirect(new URL('/acord-confidentialitate', request.url), 307);
@@ -693,5 +701,5 @@ async function ruleaza(request, url, pathname, publicRoute) {
     return Response.redirect(new URL('/acces-temporar', request.url), 307);
   }
 
-  return next();
+  return destCont ? rewrite(destCont) : next();
 }

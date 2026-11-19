@@ -387,7 +387,7 @@
     var p = o.payload || {};
     var deck = p.deck || {};
     var slideuri = Array.isArray(deck.slide_uri) ? deck.slide_uri : [];
-    var ctx = { limba: o.limba === 'ro' ? 'ro' : 'en', runda: p.runda || null, contact: p.contact || null, qr_svg: p.qr_svg || null, disclaimer: deck.disclaimer || '', onLive: o.onLive || null, prefix: o.prefix || '', urlRunda: o.urlRunda || '/mydarrin-investitori#runda' };
+    var ctx = { limba: o.limba === 'ro' ? 'ro' : 'en', runda: p.runda || null, contact: p.contact || null, qr_svg: p.qr_svg || null, disclaimer: deck.disclaimer || '', onLive: o.onLive || null, prefix: o.prefix || '', urlRunda: o.urlRunda || '/investitori#runda' };
     var rezumat = p.stare === 'rezumat';
     var total = slideuri.length + (rezumat ? 1 : 0);
     var T = TEXTE[ctx.limba];
@@ -463,7 +463,7 @@
     var total = slideuri.length + (rezumat ? 1 : 0);
     var i = o.index | 0;
     if (i < 0 || i >= total) { container.innerHTML = ''; return; }
-    var ctx = { limba: o.limba === 'ro' ? 'ro' : 'en', runda: p.runda || null, contact: p.contact || null, qr_svg: p.qr_svg || null, disclaimer: deck.disclaimer || '', onLive: null, prefix: o.prefix || 'static-', urlRunda: '/mydarrin-investitori#runda' };
+    var ctx = { limba: o.limba === 'ro' ? 'ro' : 'en', runda: p.runda || null, contact: p.contact || null, qr_svg: p.qr_svg || null, disclaimer: deck.disclaimer || '', onLive: null, prefix: o.prefix || 'static-', urlRunda: '/investitori#runda' };
     container.innerHTML = '<div class="mdpd mdpd-static" lang="' + ctx.limba + '"><div class="mdpd-stage" aria-hidden="true" inert>' +
       (i < slideuri.length ? slideHtml(slideuri[i], i, total, ctx) : rezumatHtml(i, total, ctx)) + '</div></div>';
     var s = container.querySelector('.mdpd-slide');

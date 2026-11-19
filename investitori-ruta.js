@@ -47,8 +47,8 @@
   if (window.MYD_INVESTITOR) return;
 
   var CHEIE_REVENIRE = 'myd_revenire_dupa_login';
-  var ADRESA_RUTEI = '/mydarrin-investitori.html?ruta=investitor';
-  var PANOU = '/mydarrin-panou-investitor.html'; // pasul 11-I2
+  var ADRESA_RUTEI = '/investitori?ruta=investitor';
+  var PANOU = '/cont/investitor'; // pasul 11-I2
   var BUCKET = 'investitori-kyc';
   var MARIME_MAXIMA = 5 * 1024 * 1024;
   var TIPURI = { 'image/jpeg': 1, 'image/png': 1, 'image/webp': 1, 'application/pdf': 1 };
@@ -528,7 +528,7 @@
       if (!r || !r.ok || !st) return;
       if (ultim) {
         // Pasul 11-I2: rolul `investor` e acum pe cont → subscrierea (?ruta=investeste → openRunda).
-        setTimeout(function () { inchide(true); window.location.href = '/mydarrin-investitori.html?ruta=investeste'; }, DUPA_TRIMITERE_MS);
+        setTimeout(function () { inchide(true); window.location.href = '/investitori?ruta=investeste'; }, DUPA_TRIMITERE_MS);
         return;
       }
       setTimeout(function () { if (st && st.pas === n) arataPas(n + 1, pregatit); }, DUPA_SALVARE_MS);

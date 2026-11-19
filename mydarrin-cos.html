@@ -23,9 +23,9 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
   isLoggedIn:     function(){ return false; }
 };
 </script>
-<script src="account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
+<script src="/account-system.js" onerror="console.warn('[MyDarrin] account-system.js indisponibil local — stub activ')"></script>
 <script src="/ui-feedback.js"></script>
-<script src="format-currency.js"></script>
+<script src="/format-currency.js"></script>
 <style>
   *{box-sizing:border-box}
   body{margin:0;font-family:'Helvetica Neue',Arial,system-ui,sans-serif;background:#F7F9FC;color:#2D2D2D}
@@ -64,8 +64,8 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 <body>
 
 <header>
-  <a class="logo" href="index.html">My Darrin</a>
-  <a class="back" href="mydarrin-catalog.html">← Înapoi la catalog</a>
+  <a class="logo" href="/">My Darrin</a>
+  <a class="back" href="/catalog">← Înapoi la catalog</a>
 </header>
 
 <div class="wrap">
@@ -74,7 +74,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 
   <div id="empty-state" class="empty" style="display:none">
     <p>Coșul tău e gol momentan.</p>
-    <a class="btn-cta" href="mydarrin-catalog.html">Răsfoiește catalogul</a>
+    <a class="btn-cta" href="/catalog">Răsfoiește catalogul</a>
   </div>
 
   <div id="sectiune-servicii" style="display:none">
@@ -168,7 +168,7 @@ function randeaza() {
     const transport = v ? (v.transport == null ? tr('Transportul se confirmă la checkout.') : v.transport > 0 ? tr('Transport: {suma}.', { suma: fmt(v.transport) }) : tr('Transport: inclus, fără cost separat.')) : '';
     const adresa = v && c.addr
       ? `<div class="item-meta">📍 ${escapeHTML(c.addr)}${transport ? ' · ' + escapeHTML(transport) : ''}</div>`
-      : `<div class="addr-warn">${escapeHTML(tr('Adresa de prestare nu a fost verificată pentru acest serviciu.'))} <a href="mydarrin-produs.html?slug=${encodeURIComponent(c.slug || '')}&type=${encodeURIComponent(tipItem(c))}">${escapeHTML(tr('Deschide configurarea'))}</a></div>`;
+      : `<div class="addr-warn">${escapeHTML(tr('Adresa de prestare nu a fost verificată pentru acest serviciu.'))} <a href="/${({ serviciu: 'servicii', servicii: 'servicii', material: 'materiale', materiale: 'materiale', inchiriere: 'inchirieri', inchirieri: 'inchirieri' }[tipItem(c)] || 'servicii')}/${encodeURIComponent(c.slug || '')}">${escapeHTML(tr('Deschide configurarea'))}</a></div>`;
     const detalii = [c.tierLabel || numeNivel(c.tier), c.qty ? `${c.qty} ${c.unit || ''}`.trim() : ''].filter(Boolean).join(' · ');
     return `<div class="item" data-id="${escapeHTML(it.id)}" data-tip="serviciu">
       <div class="item-top">
@@ -283,7 +283,7 @@ function finalizeazaServiciu(id) {
   if (!it) return;
   const cfg = Object.assign({}, it.configurare, { cos_itemi_ids: [it.id] });
   try { sessionStorage.setItem('myd_checkout_config', JSON.stringify(cfg)); } catch (e) { /* fără stocare */ }
-  window.location.href = 'mydarrin-checkout.html';
+  window.location.href = '/mydarrin-checkout';
 }
 
 function finalizeazaMateriale() {
@@ -302,13 +302,13 @@ function finalizeazaMateriale() {
     cos_itemi_ids: materiale.map((it) => it.id), salvat_la: Date.now(),
   };
   try { sessionStorage.setItem('myd_checkout_config', JSON.stringify(cfg)); } catch (e) { /* fără stocare */ }
-  window.location.href = 'mydarrin-checkout.html';
+  window.location.href = '/mydarrin-checkout';
 }
 
 document.addEventListener('DOMContentLoaded', incarcaCos);
 </script>
 
-<script src="cos-indicator.js" defer></script>
+<script src="/cos-indicator.js" defer></script>
 <!-- Pasul 11-A1: consimțământ, GA4 (după acord), măsurarea pâlniei, Vercel Web Analytics -->
 <script src="/cookie-consent.js" defer></script>
 <script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="/analytics-loader.js" defer></script><script src="/masurare.js" defer></script><script src="/_vercel/insights/script.js" defer></script>

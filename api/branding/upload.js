@@ -16,7 +16,7 @@ const VALID_SLOTS = ['header_logo', 'footer_logo', 'robot_mascot'];
 const MAX_SIZE_BYTES = 2 * 1024 * 1024; // 2MB
 
 async function handler(req, res, user) {
-  res.setHeader('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGIN || 'https://mydarrin.homebestpal.com');
+  res.setHeader('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGIN || require('../../lib/adresa-site').siteUrl());
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();

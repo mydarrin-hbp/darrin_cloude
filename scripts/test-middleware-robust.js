@@ -131,10 +131,15 @@ globalThis.__stub = {
 
 async function incarcaMiddleware() {
   let src = citeste('middleware.js');
+  globalThis.__adreseCurate = require('../lib/adrese-curate.js');
+  globalThis.__adresaSite = require('../lib/adresa-site.js');
   const inlocuiri = [
     [/import \{ createClient \} from '@supabase\/supabase-js';/, 'const { createClient } = globalThis.__stub;'],
     [/import \{ next, rewrite \} from '@vercel\/functions';/, 'const { next, rewrite } = globalThis.__stub;'],
     [/import seoOg from '\.\/lib\/seo-og\.js';/, 'const seoOg = globalThis.__stub.seoOg;'],
+    // Pasul 12-U1: adresele curate și adresa site-ului (module fără dependențe).
+    [/import adreseCurate from '\.\/lib\/adrese-curate\.js';/, 'const adreseCurate = globalThis.__adreseCurate;'],
+    [/import adresaSite from '\.\/lib\/adresa-site\.js';/, 'const adresaSite = globalThis.__adresaSite;'],
   ];
   inlocuiri.forEach(([re, cu]) => { if (!re.test(src)) throw new Error('importul lipsește: ' + re); src = src.replace(re, cu); });
   return (await import('data:text/javascript;base64,' + Buffer.from(src).toString('base64'))).default;
@@ -333,13 +338,13 @@ const descrie = (rez) => rez.exceptie ? 'excepție ' + rez.exceptie.message : re
   rez = await ruleaza(mw, cerere('/despre-noi', null, { ua: FB, host: 'mydarrin.homebestpal.com' }));
   verifica(eNext(rez) && rez.ms <= 6000, `D2 robot OG, Supabase nu răspunde → next() în ≤ 6 s (${rez.ms} ms)`);
   resetSim({ from: 'arunca' });
-  rez = await ruleaza(mw, cerere('/partener', null, { ua: FB, host: 'mydarrin.homebestpal.com' }));
+  rez = await ruleaza(mw, cerere('/parteneri', null, { ua: FB, host: 'mydarrin.homebestpal.com' }));
   verifica(!rez.exceptie && rez.r && rez.r.tip === 'rewrite', 'D3 scurtătură publică, robot, Supabase aruncă → rewrite-ul obișnuit');
   resetSim({ createClient: 'arunca' });
   rez = await ruleaza(mw, cerere('/', null, { host: 'mydarrin.homebestpal.com' }));
   verifica(eNext(rez), 'D4 pagină publică, createClient aruncă → next() (fail-open doar pe public)');
   resetSim({ getUser: 'arunca' });
-  rez = await ruleaza(mw, cerere('/mydarrin-catalog', `${PREFIX}.0=%E0%A4%A`, { host: 'mydarrin.homebestpal.com' }));
+  rez = await ruleaza(mw, cerere('/mydarrin-cos', `${PREFIX}.0=%E0%A4%A`, { host: 'mydarrin.homebestpal.com' }));
   verifica(eNext(rez), 'D5 vizitator cu cookie stricat pe o pagină publică → next()');
   resetSim();
   rez = await ruleaza(mw, cerere('/%E0%A4%A', null, { host: 'mydarrin.homebestpal.com' }));
