@@ -106,9 +106,10 @@ async function testeServer() {
 
   // Rutele
   const vj = JSON.parse(fs.readFileSync(path.join(RADACINA, 'vercel.json'), 'utf8'));
-  verifica(vj.rewrites.some((r) => r.source === '/parteneri/inscriere' && r.destination === '/mydarrin-inscriere-partener.html'), 'A15 vercel.json: /parteneri/inscriere');
+  // Pasul 12-U1: rescrierea vine din tabelul comun (lib/adrese-curate.js), fără .html în destinație.
+  verifica(vj.rewrites.some((r) => r.source === '/parteneri/inscriere' && r.destination === '/mydarrin-inscriere-partener'), 'A15 vercel.json: /parteneri/inscriere');
   const mw = fs.readFileSync(path.join(RADACINA, 'middleware.js'), 'utf8');
-  verifica(/'\/parteneri\/inscriere': '\/mydarrin-inscriere-partener'/.test(mw), 'A15 middleware.js: /parteneri/inscriere');
+  verifica(/adreseCurate\.rescriere\(pathname\)/.test(mw) && require(path.join(RADACINA, 'lib/adrese-curate.js')).rescriere('/parteneri/inscriere').fisier === 'mydarrin-inscriere-partener', 'A15 middleware.js: /parteneri/inscriere');
 }
 
 // ── B. Browser ────────────────────────────────────────────────────────────

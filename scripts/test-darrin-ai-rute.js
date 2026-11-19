@@ -8,7 +8,7 @@
 //      10 (vizitator, IP) / 20 (cont) / 60 (superadmin) și mesajul 429 cu
 //      minutele rămase, RO + EN;
 //   B. Chromium (catalog și „Creează deviz”, RO și EN, 390 și 1366 px):
-//      fara_legatura → textul fix, 0 carduri, niciun link spre /mydarrin-produs,
+//      fara_legatura → textul fix, 0 carduri, niciun link spre un serviciu,
 //      căsuța portocalie ascunsă, focus în câmp; neclar → întrebarea fără
 //      căsuța portocalie, răspunsul ca incercare: 2, a doua oară căsuța cu un
 //      singur buton; erorile 429 / 500 / timeout / fără internet → mesaj cu
@@ -211,7 +211,7 @@ async function testeBrowser() {
           await ctx.addInitScript(() => { window.MYD_DAI_TIMEOUT_MS = 1500; });
           const tag = `${lang} ${latime} ${s.nume}`;
 
-          await test(`${tag}: fara_legatura → doar textul fix, 0 carduri, niciun link spre /mydarrin-produs, fără căsuța portocalie, focus în câmp`, async () => {
+          await test(`${tag}: fara_legatura → doar textul fix, 0 carduri, niciun link spre un serviciu, fără căsuța portocalie, focus în câmp`, async () => {
             ANTHROPIC.raspuns = R.faraLegatura(lang);
             const pg = await C.pagina(ctx, baza, s.adresa);
             await s.deschide(pg); await pg.waitForTimeout(400);
@@ -219,7 +219,7 @@ async function testeBrowser() {
             await asteaptaRezultat(pg, s);
             egal((await textVizibil(pg, s.text)).trim().split('\n')[0], fixRo[lang]);
             egal(await pg.$$eval(s.carduri, (e) => e.length), 0, 'carduri');
-            egal(await pg.$$eval(`${s.rezultat} a[href*="/mydarrin-produs"]`, (e) => e.filter((a) => a.offsetParent).length), 0, 'link spre un serviciu');
+            egal(await pg.$$eval(`${s.rezultat} a[href*="/mydarrin-produs"], ${s.rezultat} a[href^="/servicii/"]`, (e) => e.filter((a) => a.offsetParent).length), 0, 'link spre un serviciu');
             egal(await vizibil(pg, s.portocaliu), false, 'căsuța portocalie');
             await pg.waitForTimeout(150);
             egal(await pg.evaluate((c) => document.activeElement === document.querySelector(c), s.camp), true, 'focus în câmpul de descriere');
@@ -245,7 +245,7 @@ async function testeBrowser() {
             egal(ultima.incercare, 2, 'a doua încercare');
             adevarat(ultima.text.includes(lang === 'ro' ? 'calorifer' : 'radiator') && ultima.text.includes(R.neclar(lang).intrebare), 'descrierea de la început și întrebarea în a doua cerere');
             const butoane = await pg.$$eval(`${s.portocaliu} a, ${s.portocaliu} button`, (e) => e.filter((x) => x.offsetParent && getComputedStyle(x).display !== 'none').map((x) => [x.textContent.trim(), x.getAttribute('href')]));
-            egal(butoane, [[lang === 'ro' ? 'Consultanță Darrin →' : 'Darrin Consultancy →', '/mydarrin-produs.html?slug=consultanta-darrin&type=serviciu']], 'un singur buton în căsuța de consultanță');
+            egal(butoane, [[lang === 'ro' ? 'Consultanță Darrin →' : 'Darrin Consultancy →', '/servicii/consultanta-darrin']], 'un singur buton în căsuța de consultanță');
             if (CAPTURI) { await laRezultat(pg, s, s.portocaliu, 'end'); await C.captura(CAPTURI, pg, `${s.nume}-${lang}-${latime}-neclar-2-consultanta-dupa`, s.captura); }
             egal(pg.dialoguri, [], 'alert'); egal(pg.erori, [], 'erori JS');
             await pg.close();

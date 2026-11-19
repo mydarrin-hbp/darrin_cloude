@@ -9,7 +9,7 @@
 //   - Citea doar user.user_metadata.roles (array) — dar partner-register.js
 //     setează la invitare doar `role` (singular) în metadate, niciodată
 //     `roles` (array). Rezultat: toți cei 5 parteneri înregistrați prin
-//     wizard-ul public "Devino Partener" primeau 403 la primul login,
+//     wizard-ul public "Devino partener" primeau 403 la primul login,
 //     indiferent de tip. Acum citește profiles.roles (sursa autoritativă,
 //     populată de handle_new_user() din schema.sql).
 //   - Securitate (14 oct. 2026): fără fallback pe user_metadata — îl poate

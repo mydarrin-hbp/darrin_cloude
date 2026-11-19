@@ -354,18 +354,18 @@ function server() {
           await test(`${eticheta}: „Adaugă în coș” pune produsul în coșul de pe server (cantitatea 10), fără checkout direct`, async () => {
             egal(page.url(), urlInainte, 'pagina nu se schimbă');
             egal(DB.tabele.cos_multi_itemi.map((r) => [r.configurare.tip, r.configurare.id, r.configurare.qty]), [['material', `mp:materiale:${ID.m1}`, 10]]);
-            adevarat(await page.$('.md-toast-succes a.md-toast-actiune[href="mydarrin-cos.html"]'), '„Vezi coșul”');
+            adevarat(await page.$('.md-toast-succes a.md-toast-actiune[href="/mydarrin-cos"]'), '„Vezi coșul”');
           });
 
-          // Din configuratorul unui serviciu: produsul revine în mydarrin-produs.html.
-          await page.route('**/mydarrin-produs.html*', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>produs</title>' }));
+          // Din configuratorul unui serviciu: produsul revine în configurator (pasul 12-U1: /servicii/<slug>).
+          await page.route('**/servicii/montaj-parchet-laminat*', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>produs</title>' }));
           await page.goto(`${BASE}/mydarrin-marketplace-materiale.html?slug=montaj-parchet-laminat&type=servicii`, { waitUntil: 'networkidle' });
           await page.waitForSelector('.card');
           await page.click('.card .btn-select');
-          await page.waitForURL('**/mydarrin-produs.html*');
+          await page.waitForURL('**/servicii/montaj-parchet-laminat*');
           await test(`${eticheta}: din configurator, „${limba === 'ro' ? 'Adaugă la serviciu' : 'Add to the service'}” revine cu addAddon=mp:materiale:<id>`, async () => {
             const u = new URL(page.url());
-            egal([u.searchParams.get('slug'), u.searchParams.get('addAddon')], ['montaj-parchet-laminat', `mp:materiale:${ID.m1}`]);
+            egal([u.pathname, u.searchParams.get('addAddon')], ['/servicii/montaj-parchet-laminat', `mp:materiale:${ID.m1}`]);
           });
           await test(`${eticheta}: 0 erori JS`, async () => { egal(erori, []); });
           await ctx.close();

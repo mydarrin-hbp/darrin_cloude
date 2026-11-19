@@ -49,37 +49,75 @@ function json(res, cod, corp) {
   res.end(JSON.stringify(corp));
 }
 
-const REDIRECTURI = (() => {
-  try {
-    return JSON.parse(fs.readFileSync(path.join(RADACINA, 'vercel.json'), 'utf8')).redirects.filter((r) => !r.has && !/[:(*]/.test(r.source));
-  } catch (e) { return []; }
+// Pasul 12-U1: rutele ca pe Vercel, în ordinea verificată în producție (19 nov. 2026):
+//   1. cleanUrls / trailingSlash: /x.html → 308 /x, /x/ → 308 /x (înaintea oricărei reguli);
+//   2. redirects din vercel.json (fără „has”), cu :parametri în sursă; parametrii
+//      adresei se păstrează (cei din destinație au întâietate);
+//   3. middleware.js: redirecționările care depind de parametri
+//      (/mydarrin-catalog?categorie=…, /mydarrin-produs?slug=…) — aceeași funcție,
+//      lib/adrese-curate.js → redirect();
+//   4. rewrites: adresele curate (lib/adrese-curate.js → rescriere()) și cele fixe.
+// Pașii 1–3 doar cu { redirecturi: true }; rescrierile (4) mereu.
+const adreseCurate = require('../lib/adrese-curate');
+const VERCEL = (() => {
+  try { return JSON.parse(fs.readFileSync(path.join(RADACINA, 'vercel.json'), 'utf8')); } catch (e) { return { redirects: [], rewrites: [] }; }
 })();
+const REDIRECTURI = (VERCEL.redirects || []).filter((r) => !r.has);
+const RESCRIERI_FIXE = (VERCEL.rewrites || []).filter((r) => !r.has && !/[:(*]/.test(r.source) && !/[?:]/.test(r.destination) && r.source !== '/');
 
-// Pasul 12-P1: rescrierile din vercel.json cu sursă fixă și fără parametri în
-// destinație (ex. /parteneri/inscriere → /mydarrin-inscriere-partener.html), ca pe Vercel.
-const RESCRIERI = (() => {
-  try {
-    return JSON.parse(fs.readFileSync(path.join(RADACINA, 'vercel.json'), 'utf8')).rewrites
-      .filter((r) => !r.has && !/[:(*]/.test(r.source) && !/[?:]/.test(r.destination) && r.source !== '/');
-  } catch (e) { return []; }
-})();
+// Sursa „/catalog/servicii/:categorie” → { re, nume } (doar segmente :nume, ca în vercel.json).
+function tiparSursa(sursa) {
+  const nume = [];
+  const re = new RegExp('^' + sursa.split('/').map((seg) => {
+    if (seg.startsWith(':')) { nume.push(seg.slice(1)); return '([^/]+)'; }
+    return seg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }).join('/') + '$');
+  return { re, nume };
+}
 
-// Destinația păstrează parametrii adresei (cei din destinație au întâietate).
-function redirect(url, res) {
-  const r = REDIRECTURI.find((x) => x.source === url.pathname);
-  if (!r) return false;
-  const d = new URL(r.destination, 'http://x');
-  url.searchParams.forEach((v, k) => { if (!d.searchParams.has(k)) d.searchParams.append(k, v); });
-  res.writeHead(r.statusCode || (r.permanent ? 308 : 307), { location: d.pathname + d.search });
+function trimiteRedirect(res, status, loc) {
+  res.writeHead(status, { location: loc });
   res.end();
   return true;
+}
+
+function redirect(url, res) {
+  // 1. cleanUrls + trailingSlash (Vercel, înaintea regulilor din vercel.json).
+  if (/\.html$/.test(url.pathname)) {
+    const curat = url.pathname.replace(/\/index\.html$/, '/').replace(/\.html$/, '') || '/';
+    return trimiteRedirect(res, 308, curat + url.search);
+  }
+  if (url.pathname.length > 1 && url.pathname.endsWith('/')) return trimiteRedirect(res, 308, url.pathname.replace(/\/+$/, '') + url.search);
+  // 2. vercel.json
+  for (const r of REDIRECTURI) {
+    const t = tiparSursa(r.source);
+    const m = url.pathname.match(t.re);
+    if (!m) continue;
+    let dest = r.destination;
+    t.nume.forEach((n, i) => { dest = dest.split(':' + n).join(m[i + 1]); });
+    const d = new URL(dest, 'http://x');
+    url.searchParams.forEach((v, k) => { if (!d.searchParams.has(k)) d.searchParams.append(k, v); });
+    return trimiteRedirect(res, r.statusCode || (r.permanent ? 308 : 307), d.pathname + d.search);
+  }
+  // 3. middleware.js (aceeași regulă ca redirectAdresaVeche)
+  if (url.pathname === '/mydarrin-catalog' || url.pathname === '/mydarrin-produs' || /^\/catalog\/[^/]+\/[^/]+\/[^/]+$/.test(url.pathname)) {
+    const tinta = adreseCurate.redirect(url.pathname, url.search);
+    if (tinta) return trimiteRedirect(res, 301, tinta);
+  }
+  return false;
+}
+
+function rescriere(pathname) {
+  const fixa = RESCRIERI_FIXE.find((r) => r.source === pathname);
+  if (fixa) return fixa.destination;
+  const r = adreseCurate.rescriere(pathname);
+  return r && pathname === adreseCurate.curata(pathname) ? '/' + r.fisier : null;
 }
 
 function cerere(req, res, opt) {
   const url = new URL(req.url, 'http://x');
   if (opt && opt.redirecturi && redirect(url, res)) return;
-  const rescriere = RESCRIERI.find((r) => r.source === url.pathname);
-  const p = rescriere ? rescriere.destination : decodeURIComponent(url.pathname);
+  const p = rescriere(url.pathname) || decodeURIComponent(url.pathname);
   // Pasul 11-A1: scriptul Vercel Web Analytics (servit de Vercel în producție):
   // aici un script gol, fără trimitere de date.
   if (p === '/_vercel/insights/script.js') {

@@ -34,7 +34,10 @@ const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascri
 function server() {
   return new Promise((ok) => {
     const s = http.createServer((req, res) => {
-      const p = decodeURIComponent(new URL(req.url, 'http://x').pathname);
+      let p = decodeURIComponent(new URL(req.url, 'http://x').pathname);
+      // Pasul 12-U1: adresele curate (/cont/comenzi…) servesc fișierul lor, ca pe Vercel.
+      const rescriere = require('../lib/adrese-curate').rescriere(p);
+      if (rescriere && !/\.html$/.test(p)) p = '/' + rescriere.fisier;
       let f = path.join(RADACINA, p === '/' ? 'index.html' : p);
       if (!fs.existsSync(f) && fs.existsSync(f + '.html')) f += '.html';
       if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end('404'); }
@@ -48,16 +51,16 @@ function server() {
 const PROFILURI = {
   furnizor: {
     ok: true, email: 'contact@homebestpal.ro', nume: null, roles: ['client', 'partener_materiale'],
-    roluri_dashboard: ['partener_materiale'], destinatie: '/mydarrin-dashboard-furnizor.html?type=materiale', tip_destinatie: 'rol',
+    roluri_dashboard: ['partener_materiale'], destinatie: '/mydarrin-dashboard-furnizor?type=materiale', tip_destinatie: 'rol',
     partener: { nume_firma: 'Home Best Pal', partner_type: 'furnizor_materiale', rol: 'partener_materiale', status_verificare: 'approved', contract_semnat: false, cont_bancar: false, motiv_respingere: null },
   },
   client: {
     ok: true, email: 'ana.client@example.com', nume: 'Ana Popescu', roles: ['client'],
-    roluri_dashboard: ['client'], destinatie: '/mydarrin-dashboard-client.html', tip_destinatie: 'rol', partener: null,
+    roluri_dashboard: ['client'], destinatie: '/cont/comenzi', tip_destinatie: 'rol', partener: null,
   },
   servicii_verificare: {
     ok: true, email: 'contact@aromalive.ro', nume: null, roles: ['partener_servicii'],
-    roluri_dashboard: ['partener_servicii'], destinatie: '/mydarrin-dashboard-partener.html?type=servicii', tip_destinatie: 'rol',
+    roluri_dashboard: ['partener_servicii'], destinatie: '/cont/partener?type=servicii', tip_destinatie: 'rol',
     partener: { nume_firma: 'Aroma Live', partner_type: 'servicii_tehnice', rol: 'partener_servicii', status_verificare: 'pending_review', contract_semnat: false, cont_bancar: false, motiv_respingere: null },
   },
 };
@@ -199,7 +202,7 @@ async function main() {
           test(`${et}: fără text românesc în antet și meniu`, limba === 'ro' || !(await page.evaluate(romanaInZone, ['#header-account-btn', '#myd-cont-meniu', '#mbn-cont'])).length,
             limba === 'en' ? JSON.stringify(await page.evaluate(romanaInZone, ['#header-account-btn', '#myd-cont-meniu', '#mbn-cont'])) : '');
           await page.keyboard.press('Escape');
-          await Promise.all([page.waitForURL(/mydarrin-dashboard-furnizor\.html\?type=materiale/, { timeout: 8000 }).catch(() => {}), page.click('#header-account-btn')]);
+          await Promise.all([page.waitForURL(/mydarrin-dashboard-furnizor(\.html)?\?type=materiale/, { timeout: 8000 }).catch(() => {}), page.click('#header-account-btn')]);
         } else {
           test(`${et}: bara de jos arată „HB” și „${limba === 'ro' ? 'Contul meu' : 'My account'}”`, st.bara.startsWith('HB') && st.bara.includes(limba === 'ro' ? 'Contul meu' : 'My account'), JSON.stringify(st));
           await page.evaluate(() => window.openSidebar());
@@ -215,9 +218,9 @@ async function main() {
           test(`${et}: fără text românesc în meniul lateral`, limba === 'ro' || !(await page.evaluate(romanaInZone, ['#myd-cont-sb', '#myd-cont-sb-dashboard', '#myd-cont-sb-iesi', '#mbn-cont'])).length,
             limba === 'en' ? JSON.stringify(await page.evaluate(romanaInZone, ['#myd-cont-sb', '#myd-cont-sb-dashboard', '#myd-cont-sb-iesi', '#mbn-cont'])) : '');
           await page.evaluate(() => window.closeSidebar());
-          await Promise.all([page.waitForURL(/mydarrin-dashboard-furnizor\.html\?type=materiale/, { timeout: 8000 }).catch(() => {}), page.click('#mbn-cont')]);
+          await Promise.all([page.waitForURL(/mydarrin-dashboard-furnizor(\.html)?\?type=materiale/, { timeout: 8000 }).catch(() => {}), page.click('#mbn-cont')]);
         }
-        test(`${et}: click pe cont → mydarrin-dashboard-furnizor.html?type=materiale`, /mydarrin-dashboard-furnizor\.html\?type=materiale$/.test(page.url()), page.url());
+        test(`${et}: click pe cont → mydarrin-dashboard-furnizor?type=materiale`, /mydarrin-dashboard-furnizor\?type=materiale$/.test(page.url()), page.url());
 
         // 4b. Dashboard-ul furnizorului: identitatea și benzile
         await page.waitForSelector('#myd-id', { timeout: 10000 }).catch(() => {});
@@ -257,8 +260,8 @@ async function main() {
         const tinta = mobil ? '#mbn-cont' : '#header-account-btn';
         const av = await page.evaluate((s) => (document.querySelector(s + ' .myd-cont-av') || {}).textContent || '', tinta);
         test(`${et}: client — inițialele „AP” din numele profilului`, av.startsWith('AP'), av);
-        await Promise.all([page.waitForURL(/mydarrin-dashboard-client\.html/, { timeout: 8000 }).catch(() => {}), page.click(tinta)]);
-        test(`${et}: client — click pe cont → mydarrin-dashboard-client.html`, /mydarrin-dashboard-client\.html$/.test(page.url()), page.url());
+        await Promise.all([page.waitForURL(/\/cont\/comenzi/, { timeout: 8000 }).catch(() => {}), page.click(tinta)]);
+        test(`${et}: client — click pe cont → /cont/comenzi`, /\/cont\/comenzi$/.test(page.url()), page.url());
         await page.waitForSelector('#myd-id', { timeout: 10000 }).catch(() => {});
         const ins = await page.locator('#myd-id-insigna').textContent().catch(() => '');
         test(`${et}: dashboard client — insigna „Client”, fără benzi de partener`, ins === 'Client' && !(await page.locator('.myd-banda').count()), ins);
@@ -270,10 +273,10 @@ async function main() {
       // 3. Clientul deschide dashboard-ul de furnizor → redirect cu mesaj
       {
         const { ctx, page, erori } = await deschide({ profil: 'client', limba, latime, pagina: '/mydarrin-dashboard-furnizor.html?type=materiale' });
-        await page.waitForURL(/mydarrin-dashboard-client\.html/, { timeout: 10000 }).catch(() => {});
+        await page.waitForURL(/\/cont\/comenzi/, { timeout: 10000 }).catch(() => {});
         await page.waitForSelector('#myd-banda-redirect', { timeout: 10000 }).catch(() => {});
         const msg = await page.locator('#myd-banda-redirect').innerText().catch(() => '');
-        test(`${et}: client pe dashboard-ul de furnizor → dashboard-ul clientului`, /mydarrin-dashboard-client\.html$/.test(page.url()), page.url());
+        test(`${et}: client pe dashboard-ul de furnizor → dashboard-ul clientului`, /\/cont\/comenzi$/.test(page.url()), page.url());
         test(`${et}: mesajul „${limba === 'ro' ? 'Te-am dus în contul tău de client.' : 'We took you to your client account.'}”`,
           msg.includes(limba === 'ro' ? 'Te-am dus în contul tău de client.' : 'We took you to your client account.'), msg);
         await captura(page, `redirect-client-${limba}-${latime}`);
@@ -310,9 +313,9 @@ async function main() {
       // 5. Fără sesiune → fereastra de login, cu revenire
       {
         const { ctx, page } = await deschide({ profil: null, limba, latime, pagina: '/mydarrin-dashboard-furnizor.html?type=materiale' });
-        await page.waitForURL(/index\.html\?reason=cont/, { timeout: 10000 }).catch(() => {});
+        await page.waitForURL(/\/\?reason=cont/, { timeout: 10000 }).catch(() => {});
         const rev = await page.evaluate(() => sessionStorage.getItem('myd_revenire_dupa_login'));
-        test(`${et}: fără sesiune → index.html?reason=cont, revenire la dashboard reținută`, /index\.html\?reason=cont/.test(page.url()) && rev === '/mydarrin-dashboard-furnizor.html?type=materiale', `${page.url()} · ${rev}`);
+        test(`${et}: fără sesiune → /?reason=cont, revenire la dashboard reținută`, /\/\?reason=cont/.test(page.url()) && rev === '/mydarrin-dashboard-furnizor.html?type=materiale', `${page.url()} · ${rev}`);
         await ctx.close();
       }
     }

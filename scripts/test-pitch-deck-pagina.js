@@ -473,7 +473,7 @@ async function testStari(browser, baza) {
     await pg.keyboard.press('End');
     await pg.waitForTimeout(700);
     const btn = await pg.$('.mdpd-slide.mdpd-activ [data-intra-runda]');
-    verifica(btn && (await btn.getAttribute('href')) === '/mydarrin-investitori#runda' && (await btn.innerText()) === (lang === 'ro' ? 'Intră în rundă' : 'Join the round'), `C ${lang} rezumat: butonul „Intră în rundă”`);
+    verifica(btn && (await btn.getAttribute('href')) === '/investitori#runda' && (await btn.innerText()) === (lang === 'ro' ? 'Intră în rundă' : 'Join the round'), `C ${lang} rezumat: butonul „Intră în rundă”`);
     verifica((await pg.innerText('#pd-contor')) === '4 / 4', `C ${lang} rezumat: indicatorul 4 / 4`);
     const t = await textTaiat(pg); verifica(!t, `C ${lang} ${latime}px rezumat: fără text tăiat (${t})`);
     await ctx.close();

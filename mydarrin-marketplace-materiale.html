@@ -52,8 +52,8 @@
 <body>
 
 <header>
-  <a class="logo" href="index.html">My Darrin</a>
-  <a class="back" href="mydarrin-catalog.html" id="link-inapoi">← Înapoi la catalog</a>
+  <a class="logo" href="/">My Darrin</a>
+  <a class="back" href="/catalog" id="link-inapoi">← Înapoi la catalog</a>
 </header>
 
 <main class="wrap">
@@ -120,7 +120,7 @@ function arataToast(text) {
 
 if (DIN_CONFIGURATOR) {
   const inapoi = document.getElementById('link-inapoi');
-  inapoi.href = `mydarrin-produs.html?slug=${encodeURIComponent(PARENT_SLUG)}&type=${encodeURIComponent(PARENT_TYPE)}`;
+  inapoi.href = `/${({ serviciu: 'servicii', servicii: 'servicii', material: 'materiale', materiale: 'materiale', inchiriere: 'inchirieri', inchirieri: 'inchirieri' }[PARENT_TYPE] || 'servicii')}/${encodeURIComponent(PARENT_SLUG)}`;
   inapoi.textContent = t('← Înapoi la configurare');
   document.getElementById('titlu-pagina').textContent = t('Alege materialul sau echipamentul');
   document.getElementById('context-sub').textContent = t('Produsul ales intră în prețul serviciului tău, cu TVA inclus.');
@@ -246,7 +246,7 @@ function cardProdus(p, i, moneda) {
 function adaugaLaServiciu(i) {
   const p = stare.date.produse[i];
   arataToast(t('„{p}” a fost ales — te ducem înapoi în configurator...', { p: p.denumire }));
-  const dest = `mydarrin-produs.html?slug=${encodeURIComponent(PARENT_SLUG)}&type=${encodeURIComponent(PARENT_TYPE)}&addAddon=${encodeURIComponent(p.id)}`;
+  const dest = `/${({ serviciu: 'servicii', servicii: 'servicii', material: 'materiale', materiale: 'materiale', inchiriere: 'inchirieri', inchirieri: 'inchirieri' }[PARENT_TYPE] || 'servicii')}/${encodeURIComponent(PARENT_SLUG)}?addAddon=${encodeURIComponent(p.id)}`;
   setTimeout(() => { window.location.href = dest; }, 500);
 }
 
@@ -283,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.addEventListener('myd:lang', () => { if (stare.date) randeaza(); });
 </script>
 
-<script src="cos-indicator.js" defer></script>
+<script src="/cos-indicator.js" defer></script>
 <!-- Pasul 11-A1: consimțământ, GA4 (după acord), măsurarea pâlniei, Vercel Web Analytics -->
 <script src="/cookie-consent.js" defer></script>
 <script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="/analytics-loader.js" defer></script><script src="/masurare.js" defer></script><script src="/_vercel/insights/script.js" defer></script>

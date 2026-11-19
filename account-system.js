@@ -283,9 +283,15 @@ async function mergiDupaLogin(laEroare, laFaraDestinatie) {
   return false;
 }
 
+// Pasul 12-U1: pagina de start a site-ului public, din adresa curentă (fără domeniul scris
+// în cod): pe admin.<domeniu> sau www.<domeniu> → <domeniu>; pe previzualizări și local, aceeași origine.
+function siteulPublic() {
+  return window.location.protocol + '//' + window.location.host.replace(/^(admin|www)\./, '') + '/';
+}
+
 async function performLogout() {
   await sb().auth.signOut();
-  window.location.href = 'https://mydarrin.homebestpal.com';
+  window.location.href = siteulPublic();
 }
 
 /* ── Recuperare parolă (Etapa 1, audit 2026-07-12) ──
@@ -379,7 +385,7 @@ async function enforceSuperadminBarrier() {
   const user = await getCurrentUser();
   const roles = await getUserRoles(user);
   if (!user || !roles.includes('superadmin')) {
-    window.location.href = 'https://mydarrin.homebestpal.com';
+    window.location.href = siteulPublic();
     return false;
   }
   return true;
@@ -390,7 +396,7 @@ async function enforceAdminBarrier() {
   const user = await getCurrentUser();
   const roles = await getUserRoles(user);
   if (!user || !(roles.includes('admin') || roles.includes('superadmin'))) {
-    window.location.href = 'https://mydarrin.homebestpal.com';
+    window.location.href = siteulPublic();
     return false;
   }
   return true;
@@ -405,7 +411,7 @@ async function enforceSuperadminOrPermission(sectiune) {
   const user = await getCurrentUser();
   const roles = await getUserRoles(user);
   if (!user) {
-    window.location.href = 'https://mydarrin.homebestpal.com';
+    window.location.href = siteulPublic();
     return false;
   }
   if (roles.includes('superadmin')) return true;
@@ -424,7 +430,7 @@ async function enforceSuperadminOrPermission(sectiune) {
     }
   }
 
-  window.location.href = 'https://mydarrin.homebestpal.com';
+  window.location.href = siteulPublic();
   return false;
 }
 

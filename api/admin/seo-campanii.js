@@ -78,6 +78,14 @@ function segmentPagina(pagePath) {
   return String(pagePath || '/').replace(/^\/+/, '').replace(/[^a-z0-9._-]+/gi, '-') || 'index';
 }
 function prefixMedia(c) { return `${segmentPagina(c.page_path)}/${c.limba}/${c.id}/`; }
+// Pasul 12-U1: un material al campaniei e recunoscut după limba și id-ul campaniei
+// (unic), nu după segmentul paginii — materialele încărcate pe adresa veche
+// (ex. partener/ro/<id>/…) rămân ale campaniei după mutarea pe /parteneri.
+// Încărcările noi folosesc tot prefixMedia (segmentul adresei curente).
+function apartineCampaniei(c, cale) {
+  const m = /^[a-z0-9._-]+\/(ro|en)\/([^/]+)\/[a-z0-9_]+\.[a-z0-9]+$/i.exec(String(cale || ''));
+  return !!m && m[1] === c.limba && m[2] === String(c.id) && !/(^|\/)\.\.?(\/|$)/.test(String(cale));
+}
 
 function curata(v, max) {
   if (v == null) return null;
@@ -137,7 +145,7 @@ async function adreseMedia(c, cuDescarcare) {
   const r = {};
   for (const tip of R.TIPURI_MEDIA) {
     const m = media[tip];
-    if (!m || !m.cale || !String(m.cale).startsWith(prefixMedia(c))) continue;   // doar materialele acestei campanii
+    if (!m || !m.cale || !apartineCampaniei(c, m.cale)) continue;   // doar materialele acestei campanii
     const ext = String(m.cale).split('.').pop();
     const nume = `${tip}.${ext}`;
     const { data, error } = await supabaseAdmin.storage.from(BUCKET).createSignedUrl(m.cale, EXPIRA_S, cuDescarcare ? { download: nume } : undefined);
@@ -259,7 +267,7 @@ async function sterge(req, res, admin) {
   if (v.stare !== 'ciorna') {
     return trimiteEroare(res, 409, 'DOAR_CIORNE', 'Se pot șterge doar ciornele. Campaniile active se arhivează.', 'Only drafts can be deleted. Active campaigns are archived.');
   }
-  const cai = R.TIPURI_MEDIA.map((t) => v.media && v.media[t] && v.media[t].cale).filter((c) => c && String(c).startsWith(prefixMedia(v)));
+  const cai = R.TIPURI_MEDIA.map((t) => v.media && v.media[t] && v.media[t].cale).filter((c) => c && apartineCampaniei(v, c));
   if (cai.length) {
     const { error: eS } = await supabaseAdmin.storage.from(BUCKET).remove(cai);
     if (eS) console.error('[admin/seo-campanii sterge] materialele nu s-au șters din stocare:', eS);
@@ -372,7 +380,7 @@ async function stergeMedia(req, res, admin) {
   }
   const { data, error } = await supabaseAdmin.from(TABEL).update({ media, actualizat_de: admin.id, updated_at: new Date().toISOString() }).eq('id', c.id).select().single();
   if (error) throw new EroareDb(error);
-  if (String(vechi).startsWith(prefixMedia(c))) await supabaseAdmin.storage.from(BUCKET).remove([vechi]);
+  if (apartineCampaniei(c, vechi)) await supabaseAdmin.storage.from(BUCKET).remove([vechi]);
   await inregistreazaAudit({ admin, req, actiune: 'campanie_material_sters', entitate: TABEL, entitate_id: c.id, detalii: { tip: b.tip, cale: vechi } });
   return res.status(200).json({ ok: true, campanie: data, media_urls: await adreseMedia(data, false) });
 }
@@ -414,4 +422,4 @@ async function handler(req, res, admin) {
 }
 
 module.exports = formaComuna(requireAuth(['admin', 'superadmin'], handler));
-module.exports.intern = { citeste, prefixMedia, segmentPagina, limite, BUCKET, TABEL, EroareDb, refuzLipsa, adreseMedia, textExport };
+module.exports.intern = { citeste, prefixMedia, apartineCampaniei, segmentPagina, limite, BUCKET, TABEL, EroareDb, refuzLipsa, adreseMedia, textExport };

@@ -265,7 +265,7 @@ async function testeServer() {
     for (const f of ['mydarrin-categorie-servicii.html', 'mydarrin-categorie-materiale.html', 'mydarrin-categorie-inchirieri.html']) {
       const s = fs.readFileSync(path.join(RADACINA, f), 'utf8').replace(/<!--[\s\S]*?-->/g, '');
       adevarat(!/unsplash/i.test(s) && !/const SUBCATEGORY_DB|price\s*:\s*\d/.test(s), f + ': conținut vechi');
-      adevarat(s.includes("location.replace('/mydarrin-catalog?"), f + ': redirecționarea');
+      adevarat(/location\.replace\('\/(servicii|materiale|inchirieri)'/.test(s), f + ': redirecționarea');
     }
     adevarat(fs.readFileSync(path.join(RADACINA, 'mydarrin-catalog.html'), 'utf8').includes("'/api/public/catalog?tara='"), 'sursa prețurilor din catalog');
   });
@@ -387,7 +387,7 @@ async function testeBrowser() {
         const pg = await pagina(ctx, `/mydarrin-produs.html?slug=${P.faraPret.slug}&type=serviciu`);
         await pg.waitForSelector('#cos-deviz:not([hidden])');
         egal(await pg.$eval('#btn-adauga-cos', (b) => getComputedStyle(b).display), 'none');
-        adevarat((await pg.getAttribute('#btn-cere-deviz', 'href')).startsWith('mydarrin-creeaza-deviz.html?descriere='), 'legătura spre deviz');
+        adevarat((await pg.getAttribute('#btn-cere-deviz', 'href')).startsWith('/deviz?descriere='), 'legătura spre deviz');
         adevarat(!/\d/.test(await pg.textContent('#s-total')), 'fără cifră: ' + await pg.textContent('#s-total'));
         await captura(pg, `produs-deviz-${latime}`);
         egal(pg.erori, [], 'erori JS');
@@ -433,7 +433,7 @@ async function testeBrowser() {
     await test('catalog: „Adaugă în coș” la un serviciu → configurarea, fără să adauge nimic', async () => {
       const pg = await pagina(ctx, '/mydarrin-catalog.html?categorie=servicii&subcategorie=instalatii-electrice');
       await pg.waitForSelector('[data-slug="montaj-priza"] .card-cta', { state: 'attached' });
-      await Promise.all([pg.waitForURL(/mydarrin-produs\.html\?slug=montaj-priza&type=serviciu/), pg.$eval('[data-slug="montaj-priza"] .card-cta', (b) => b.click())]);
+      await Promise.all([pg.waitForURL(/\/servicii\/montaj-priza$/), pg.$eval('[data-slug="montaj-priza"] .card-cta', (b) => b.click())]);
       egal(DB.tabele.cos_multi_itemi.length, 0);
       await pg.close();
     });

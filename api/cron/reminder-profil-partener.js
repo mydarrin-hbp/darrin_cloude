@@ -32,7 +32,8 @@ const { dashboardPentruRol } = require('../../lib/destinatie-rol');
 const { emailConfirmat } = require('../../lib/email-confirmat');
 const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
-const SITE_URL = process.env.SITE_URL || 'https://mydarrin.homebestpal.com';
+// Pasul 12-U1: adresa site-ului într-un singur loc (lib/adresa-site.js).
+const SITE_URL = require('../../lib/adresa-site').siteUrl();
 
 const PRAG_ORE = 48;
 const TIP_EMAIL = 'profil_partener_incomplet_48h';

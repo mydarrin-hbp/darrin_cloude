@@ -114,6 +114,9 @@ const stareFereastra = (p) => p.evaluate(() => {
   return { deschisa: !!m && !m.classList.contains('hidden'), rol: r ? r.value : null, inregistrare: !!tab && tab.getAttribute('aria-selected') === 'true' };
 });
 
+// Pasul 12-U1: adresa curată a paginii (cum-devii-furnizor-servicii.html → /parteneri/servicii).
+const ADRESA = (f) => require(path.join(RADACINA, 'lib/adrese-curate.js')).adresaNoua(f.replace(/\.html$/, ''));
+
 (async () => {
   const srv = await porneste(0, { redirecturi: true });
   const baza = 'http://localhost:' + srv.address().port;
@@ -122,24 +125,30 @@ const stareFereastra = (p) => p.evaluate(() => {
     // ── 1. Redirecționarea și linkurile spre vechea pagină ──
     {
       const v = JSON.parse(citeste('vercel.json'));
-      for (const src of ['/mydarrin-devino-partener.html', '/mydarrin-devino-partener']) {
+      // Pasul 12-U1: hub-ul are adresa curată /parteneri; vechile adrese fac 301 spre ea
+      // (forma .html: întâi 308 de la Vercel, cleanUrls, apoi 301).
+      for (const src of ['/mydarrin-devino-partener', '/partener', '/cum-devii-partenerul-nostru']) {
         const r = v.redirects.find((x) => x.source === src);
-        verifica(r && r.destination === '/cum-devii-partenerul-nostru' && r.statusCode === 301, `vercel.json: ${src} → 301 spre hub lipsește`);
+        verifica(r && r.destination === '/parteneri' && r.statusCode === 301, `vercel.json: ${src} → 301 spre hub lipsește`);
       }
-      const rw = v.rewrites.find((x) => x.source === '/partener');
-      verifica(rw && rw.destination === '/cum-devii-partenerul-nostru.html', 'vercel.json: /partener nu mai duce la hub');
-      verifica(/'\/partener': '\/cum-devii-partenerul-nostru'/.test(citeste('middleware.js')), 'middleware.js: /partener nu duce la hub');
+      const rw = v.rewrites.find((x) => x.source === '/parteneri');
+      verifica(rw && rw.destination === '/cum-devii-partenerul-nostru', 'vercel.json: /parteneri nu servește hub-ul');
+      verifica(require(path.join(RADACINA, 'lib/adrese-curate.js')).rescriere('/parteneri').fisier === 'cum-devii-partenerul-nostru' && /adreseCurate\.rescriere\(pathname\)/.test(citeste('middleware.js')), 'middleware.js: /parteneri nu duce la hub');
       for (const [cale, asteptat] of [
-        ['/mydarrin-devino-partener.html?type=curier', '/cum-devii-partenerul-nostru?type=curier'],
-        ['/mydarrin-devino-partener?type=servicii&utm_source=x', '/cum-devii-partenerul-nostru?type=servicii&utm_source=x'],
-        ['/mydarrin-devino-partener.html', '/cum-devii-partenerul-nostru'],
+        ['/mydarrin-devino-partener?type=servicii&utm_source=x', '/parteneri?type=servicii&utm_source=x'],
+        ['/partener?type=curier', '/parteneri?type=curier'],
       ]) {
         const r = await cererePlain(baza, cale);
         verifica(r.status === 301 && r.location === asteptat, `${cale}: ${r.status} → ${r.location} (aștept 301 → ${asteptat})`);
       }
+      {
+        const r1 = await cererePlain(baza, '/mydarrin-devino-partener.html?type=curier');
+        const r2 = await cererePlain(baza, r1.location);
+        verifica(r1.status === 308 && r1.location === '/mydarrin-devino-partener?type=curier' && r2.status === 301 && r2.location === '/parteneri?type=curier', `/mydarrin-devino-partener.html?type=curier: ${r1.status} → ${r1.location} → ${r2.status} → ${r2.location}`);
+      }
       // Pagina veche rămâne doar o redirecționare (pentru orice altă cale de acces).
       const veche = citeste('mydarrin-devino-partener.html');
-      verifica(veche.length < 3000 && /location\.replace\('\/cum-devii-partenerul-nostru' \+ location\.search \+ location\.hash\)/.test(veche), 'mydarrin-devino-partener.html nu e doar redirecționarea spre hub');
+      verifica(veche.length < 3000 && /location\.replace\('\/parteneri' \+ location\.search \+ location\.hash\)/.test(veche), 'mydarrin-devino-partener.html nu e doar redirecționarea spre hub');
       // middleware.js păstrează vechea adresă doar în lista căilor publice (redirecționarea trece de barieră).
       const fisiere = fs.readdirSync(RADACINA).filter((f) => (f.endsWith('.html') || f.endsWith('.js')) && !['mydarrin-devino-partener.html', 'mydarrin-devino-partener-wizard.html', 'middleware.js'].includes(f))
         .concat(['lib/destinatie-rol.js']);
@@ -148,7 +157,7 @@ const stareFereastra = (p) => p.evaluate(() => {
       // Browserul ajunge pe hub, cu tipul păstrat; cardul tipului e marcat.
       const { ctx, p, erori } = await deschide(browser, baza, 'mydarrin-devino-partener.html?type=curier');
       const u = new URL(p.url());
-      verifica(u.pathname === '/cum-devii-partenerul-nostru' && u.searchParams.get('type') === 'curier', `redirecționarea în browser: ${p.url()}`);
+      verifica(u.pathname === '/parteneri' && u.searchParams.get('type') === 'curier', `redirecționarea în browser: ${p.url()}`);
       verifica(await p.evaluate(() => document.getElementById('tip-curier').classList.contains('rp-ales')), '?type=curier: cardul curierului nu e marcat');
       verifica(!erori.length, 'hub ?type=curier: ' + erori.join(' | '));
       await ctx.close();
@@ -170,12 +179,12 @@ const stareFereastra = (p) => p.evaluate(() => {
       verifica(/data-lucide="wrench"[\s\S]*data-lucide="package"[\s\S]*data-lucide="hard-hat"[\s\S]*data-lucide="truck"[\s\S]*data-lucide="shield"/.test(hub), 'hub: cele 5 carduri nu sunt în ordinea din meniu sau fără iconiță Lucide');
       for (const f of RUTA) {
         const t = citeste(f);
-        verifica(t.includes('href="ruta-partener.css"') && t.includes('src="ruta-partener.js"'), `${f}: fără componenta comună (ruta-partener.css / .js)`);
+        verifica(t.includes('href="/ruta-partener.css"') && t.includes('src="/ruta-partener.js"'), `${f}: fără componenta comună (ruta-partener.css / .js)`);
         verifica((t.match(/class="rp-hero"/g) || []).length === 1, `${f}: hero-ul comun lipsește sau e dublat`);
         verifica(!/#7C3AED|#6D28D9|#8B5CF6/i.test(t.slice(t.indexOf('class="rp"'), t.indexOf('<footer'))), `${f}: culoare mov în conținut`);
       }
       const meniu = citeste('meniu-partener.js');
-      verifica(meniu.includes("href: 'cum-devii-furnizor-servicii.html', ico: 'wrench'"), 'meniu-partener.js: „Furnizor de Servicii” nu duce la pagina nouă');
+      verifica(meniu.includes("href: '/parteneri/servicii', ico: 'wrench'"), 'meniu-partener.js: „Furnizor de Servicii” nu duce la pagina nouă');
     }
 
     // ── 3. Hero, butonul principal și fereastra cu tipul bifat (vizitator) ──
@@ -208,7 +217,7 @@ const stareFereastra = (p) => p.evaluate(() => {
           // Cardurile: „Creează cont” → pre-înscrierea, cu tipul cardului (pasul 12-P1).
           for (const [pg, tip, rol] of PAGINI_TIP) {
             const card = p.locator(`#tip-${tip}`);
-            verifica(await card.locator('a.rp-link').getAttribute('href') === pg, `hub, cardul ${tip}: „Află mai mult” nu duce la ${pg}`);
+            verifica(await card.locator('a.rp-link').getAttribute('href') === ADRESA(pg), `hub, cardul ${tip}: „Află mai mult” nu duce la ${ADRESA(pg)}`);
             const href = await card.locator('[data-cta-card]').getAttribute('href');
             verifica(href === '/parteneri/inscriere?categorie=' + rol.replace('partener_', ''), `hub, cardul ${tip}: „Creează cont” → ${href} (aștept categoria ${rol})`);
           }
@@ -236,7 +245,7 @@ const stareFereastra = (p) => p.evaluate(() => {
     {
       let { ctx, p } = await deschide(browser, baza, 'cum-devii-furnizor-materiale.html', { stare: 'activare', rol: 'partener_materiale' });
       let b = await p.evaluate(() => { const x = document.querySelector('.rp-hero [data-rp-principal]'); return { text: x.textContent.replace(/\s+/g, ' ').trim(), href: x.getAttribute('href') }; });
-      verifica(b.text === 'Finalizează-ți contul ca să primești comenzi →' && /mydarrin-dashboard-furnizor\.html\?type=materiale/.test(b.href), `materiale, activare: ${JSON.stringify(b)}`);
+      verifica(b.text === 'Finalizează-ți contul ca să primești comenzi →' && /mydarrin-dashboard-furnizor\?type=materiale/.test(b.href), `materiale, activare: ${JSON.stringify(b)}`);
       await ctx.close();
       ({ ctx, p } = await deschide(browser, baza, HUB, { stare: 'client' }));
       b = await p.evaluate(() => [...document.querySelectorAll('[data-cta-card]')].map((x) => x.textContent.trim()));
@@ -248,7 +257,7 @@ const stareFereastra = (p) => p.evaluate(() => {
       await ctx.close();
       ({ ctx, p } = await deschide(browser, baza, HUB, { stare: 'activ', rol: 'partener_curier' }));
       b = await p.evaluate(() => [...document.querySelectorAll('.rp [data-cta-partener]')].map((x) => [x.getAttribute('data-cta-stare'), x.getAttribute('href')]));
-      verifica(b.every(([s, h]) => s === 'activ' && /mydarrin-dashboard-partener\.html\?type=curier/.test(h)), `hub, partener activ: ${JSON.stringify(b.slice(0, 2))}`);
+      verifica(b.every(([s, h]) => s === 'activ' && /\/cont\/partener\?type=curier/.test(h)), `hub, partener activ: ${JSON.stringify(b.slice(0, 2))}`);
       await ctx.close();
     }
 

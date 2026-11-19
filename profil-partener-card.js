@@ -48,7 +48,7 @@
         '<div class="myd-profil-card" role="status">' +
           '<div><div class="t">Profil incomplet</div>' +
           '<div class="d">' + (TEXT_LIPSA[(s.lipsa || []).join(',')] || TEXT_LIPSA['nace,clauza_zona']) + '</div></div>' +
-          '<a href="mydarrin-devino-partener-wizard.html?pas=' + Number(s.pas) + '">Completează profilul →</a>' +
+          '<a href="/mydarrin-devino-partener-wizard?pas=' + Number(s.pas) + '">Completează profilul →</a>' +
         '</div>';
       el.style.display = 'block';
     } catch (e) {

@@ -153,7 +153,7 @@ async function testTaburi(browser, baza) {
     const ies = await pg.$$eval('#seo-tabel-body [data-editeaza]', (l) => l.filter((b) => { const r = b.getBoundingClientRect(); return r.right > document.documentElement.clientWidth + 1; }).length);
     verifica(ies === 0, `${w}×${h}: butoanele „Editează” încap în ecran (${ies} ies)`);
     verifica(randuri >= 25, `${et}: tabelul paginilor (${randuri})`);
-    await pg.click('#seo-tabel-body [data-editeaza="/despre-noi"]');
+    await pg.click('#seo-tabel-body [data-editeaza="/despre"]');
     const taburi = await pg.$$eval('#seo-taburi [role="tab"]', (t) => t.map((x) => x.textContent));
     verifica(JSON.stringify(taburi) === JSON.stringify(['SEO', 'Partajare (OG)', 'Social media & campanii']), `${et}: cele trei taburi (${JSON.stringify(taburi)})`);
 
@@ -179,7 +179,7 @@ async function testTaburi(browser, baza) {
     await pg.waitForFunction(() => /Salvat/.test((document.getElementById('seo-editor-msg') || {}).textContent || ''), null, { timeout: 5000 }).catch(() => {});
     const en = DB.tabele.seo_config.find((x) => x.limba === 'en');
     verifica(DB.tabele.seo_config.length === 2 && en && en.meta_title === 'About My Darrin — EN TEST title', `${et}: salvat EN, rând separat`);
-    const stare = await pg.$eval('#seo-tabel-body [data-editeaza="/despre-noi"]', (b) => b.closest('tr').children[2].textContent);
+    const stare = await pg.$eval('#seo-tabel-body [data-editeaza="/despre"]', (b) => b.closest('tr').children[2].textContent);
     verifica(/RO: Suprascris/.test(stare) && /EN: Suprascris/.test(stare), `${et}: tabelul arată starea pe limbă (${stare})`);
     if (w === 1440 || w === 390) await captura(pg, `seo-tab-seo-${w}`);
     const g = await geometrie(pg);
@@ -193,7 +193,7 @@ async function testTaburi(browser, baza) {
       const card = await pg.$$eval('.seo-card .seo-card-titlu', (t) => t.map((x) => x.textContent));
       verifica(card.length === 3 && card.every((t) => t === 'Titlu partajare DE TEST'), `${et}: previzualizarea Facebook / LinkedIn / WhatsApp din câmp (${card})`);
       const linkuri = await pg.$$eval('#seo-panou-tab a[target="_blank"]', (a) => a.map((x) => [x.href, x.rel]));
-      verifica(linkuri.length === 2 && linkuri[0][0].startsWith('https://developers.facebook.com/tools/debug/?q=https%3A%2F%2Fmydarrin.homebestpal.com%2Fdespre-noi')
+      verifica(linkuri.length === 2 && linkuri[0][0].startsWith('https://developers.facebook.com/tools/debug/?q=https%3A%2F%2Fmydarrin.homebestpal.com%2Fdespre')
         && linkuri[1][0].startsWith('https://www.linkedin.com/post-inspector/inspect/') && linkuri.every((l) => /noopener/.test(l[1])), `${et}: linkurile spre instrumentele oficiale, în filă nouă (${JSON.stringify(linkuri)})`);
       if (await pg.$('#seo-og-media input[type=file]')) {
         await pg.setInputFiles('#seo-og-media input[type=file]', { name: 'patrat.png', mimeType: 'image/png', buffer: await imagine(pg, 1000, 1000) });
@@ -206,7 +206,7 @@ async function testTaburi(browser, baza) {
         await pg.click('#seo-panou-tab [data-act="salveaza"]');
         await pg.waitForFunction(() => /salvat/i.test((document.getElementById('seo-og-msg') || {}).textContent || ''), null, { timeout: 5000 }).catch(() => {});
         const ro = DB.tabele.seo_config.find((x) => x.limba === 'ro');
-        verifica(ro && ro.og_titlu === 'Titlu partajare DE TEST' && /\/seo-og\/despre-noi\/ro\//.test(ro.og_imagine_url || '') && ro.og_imagine_latime === 1200 && ro.og_imagine_inaltime === 630
+        verifica(ro && ro.og_titlu === 'Titlu partajare DE TEST' && /\/seo-og\/despre\/ro\//.test(ro.og_imagine_url || '') && ro.og_imagine_latime === 1200 && ro.og_imagine_inaltime === 630
           && ro.meta_title === 'Despre My Darrin — titlu RO DE TEST', `${et}: OG salvat pe rândul RO, fără să șteargă titlul SEO (${ro && ro.og_imagine_url})`);
       }
       if (w === 1440 || w === 390) await captura(pg, `seo-tab-og-${w}`);
@@ -278,10 +278,10 @@ async function testCampanii(pg, et, w) {
   verifica(ct[0] === 'Meta 95 / 125 · TikTok 95 / 100' && /galben/.test(ct[1]), `${et}: C — textul principal: Meta + TikTok, galben aproape de TikTok 100 (${ct})`);
   await pg.fill('#cc-text_principal', 'Text principal DE TEST pentru reclamă.');
   await pg.selectOption('#cc-cta', 'cere_oferta');
-  await pg.fill('#cc-url_destinatie', 'https://mydarrin.homebestpal.com/despre-noi');
+  await pg.fill('#cc-url_destinatie', 'https://mydarrin.homebestpal.com/despre');
   await pg.fill('#cc-utm_source', 'facebook');
   await pg.fill('#cc-utm_campaign', 'lansare-oct');
-  verifica((await pg.textContent('#cc-link-final')) === 'https://mydarrin.homebestpal.com/despre-noi?utm_source=facebook&utm_campaign=lansare-oct', `${et}: C — linkul final cu UTM`);
+  verifica((await pg.textContent('#cc-link-final')) === 'https://mydarrin.homebestpal.com/despre?utm_source=facebook&utm_campaign=lansare-oct', `${et}: C — linkul final cu UTM`);
   const sim = await pg.evaluate(() => ({ meta: document.querySelector('.sim-meta .sim-bara-text strong').textContent, cta: document.querySelector('.sim-meta .sim-cta').textContent, v: !!document.querySelector('.sim-vertical .seo-zona-sigura'), p: !!document.querySelector('.sim-player') }));
   verifica(sim.meta === 'Servicii la tine acasă DE TEST' && sim.cta === 'Cere ofertă' && sim.v && sim.p, `${et}: C — previzualizările Meta / vertical / player, cu textele introduse (${JSON.stringify(sim)})`);
   await pg.click('[data-act="salveaza"]');
@@ -315,7 +315,7 @@ async function testCampanii(pg, et, w) {
   });
   verifica(/Încărcat \(720 × 1280/.test(mv) && zv.v && zv.muted && zv.s && zv.sus === 14 && zv.jos === 20, `${et}: C — video 9:16: încărcat, redare fără sunet, zona sigură 14 % / 20 % (${mv} ${JSON.stringify(zv)})`);
   const media = DB.tabele.seo_campanii_social[0].media;
-  verifica(media.video_vertical && media.video_vertical.mime === 'video/webm' && media.video_vertical.latime === 720 && media.imagine_patrat && media.imagine_patrat.cale === `despre-noi/ro/${c.id}/imagine_patrat.png`, `${et}: C — metadatele în media (${JSON.stringify(media)})`);
+  verifica(media.video_vertical && media.video_vertical.mime === 'video/webm' && media.video_vertical.latime === 720 && media.imagine_patrat && media.imagine_patrat.cale === `despre/ro/${c.id}/imagine_patrat.png`, `${et}: C — metadatele în media (${JSON.stringify(media)})`);
   verifica(!!(await pg.$('.sim-vertical video')) && !!(await pg.$('.sim-meta .sim-cutie img')), `${et}: C — materialele apar în previzualizările platformelor`);
 
   // Activare (materialele Facebook + TikTok există)
@@ -328,8 +328,8 @@ async function testCampanii(pg, et, w) {
   const [dl] = await Promise.all([pg.waitForEvent('download', { timeout: 15000 }), pg.click('[data-act="export"]')]);
   const zip = require('fs').readFileSync(await dl.path());
   const nume = zip.toString('latin1');
-  verifica(dl.suggestedFilename() === 'campanie-despre-noi-ro-lansare-de-test.zip' && zip.readUInt32LE(0) === 0x04034B50 && nume.includes('texte.txt') && nume.includes('imagine_patrat.png') && nume.includes('video_vertical.webm')
-    && zip.includes(INCARCATE.get(`campanii-media/despre-noi/ro/${c.id}/video_vertical.webm`)), `${et}: C — exportul .zip: texte.txt + materialele (${dl.suggestedFilename()}, ${zip.length} B)`);
+  verifica(dl.suggestedFilename() === 'campanie-despre-ro-lansare-de-test.zip' && zip.readUInt32LE(0) === 0x04034B50 && nume.includes('texte.txt') && nume.includes('imagine_patrat.png') && nume.includes('video_vertical.webm')
+    && zip.includes(INCARCATE.get(`campanii-media/despre/ro/${c.id}/video_vertical.webm`)), `${et}: C — exportul .zip: texte.txt + materialele (${dl.suggestedFilename()}, ${zip.length} B)`);
   if (w === 1440 || w === 390) await captura(pg, `seo-tab-campanii-${w}`);
   const g = await geometrie(pg);
   verifica(!g, `${et}: C — nimic în afara ecranului (${g})`);
@@ -365,8 +365,8 @@ async function testPaginaPublica(browser, baza) {
   const apiPublic = require(path.join(RADACINA, 'api/public/seo-config.js'));
   reset();
   DB.tabele.seo_config = [
-    { id: 'a', page_path: '/despre-noi', limba: 'ro', meta_title: 'Titlu RO DE TEST', meta_description: 'Descriere RO DE TEST' },
-    { id: 'b', page_path: '/despre-noi', limba: 'en', meta_title: 'EN TEST title' },
+    { id: 'a', page_path: '/despre', limba: 'ro', meta_title: 'Titlu RO DE TEST', meta_description: 'Descriere RO DE TEST' },
+    { id: 'b', page_path: '/despre', limba: 'en', meta_title: 'EN TEST title' },
   ];
   for (const [lang, titlu, desc] of [['ro', 'Titlu RO DE TEST', 'Descriere RO DE TEST'], ['en', 'EN TEST title', null], ['de', 'EN TEST title', null]]) {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });

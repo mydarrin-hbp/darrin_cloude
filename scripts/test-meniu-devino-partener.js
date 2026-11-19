@@ -43,12 +43,13 @@ const PUBLICE = ['index', 'servicii-urgente', 'despre-noi', 'afla-ce-facem', 'my
   'mydarrin-politica-confidentialitate'];
 
 const ASTEPTAT = [
-  ['cum-devii-partenerul-nostru.html', 'Cum devii partener My Darrin', 'How to become a My Darrin partner'],
-  ['cum-devii-furnizor-servicii.html', 'Furnizor de Servicii', 'Service Provider'],
-  ['cum-devii-furnizor-materiale.html', 'Furnizor de Materiale', 'Materials Supplier'],
-  ['cum-devii-operator-inchirieri.html', 'Furnizor de Închirieri', 'Rental Supplier'],
-  ['cum-devii-curier-de-cartier.html', 'Curier de cartier', 'Neighbourhood courier'],
-  ['ghidul-asiguratorului.html', 'Asigurător', 'Insurer'],
+  // Pasul 12-U1: adresele curate.
+  ['/parteneri', 'Cum devii partener My Darrin', 'How to become a My Darrin partner'],
+  ['/parteneri/servicii', 'Furnizor de Servicii', 'Service Provider'],
+  ['/parteneri/materiale', 'Furnizor de Materiale', 'Materials Supplier'],
+  ['/parteneri/inchirieri', 'Furnizor de Închirieri', 'Rental Supplier'],
+  ['/parteneri/curieri', 'Curier de cartier', 'Neighbourhood courier'],
+  ['/parteneri/asigurari', 'Asigurător', 'Insurer'],
 ];
 const TEXT = {
   vizitator: ['Creează-ți contul de partener', 'Create your partner account'],
@@ -78,7 +79,7 @@ function supabaseSimulat(cuSesiune) {
 }
 function profil(stare) {
   const rol = 'partener_servicii';
-  const baza = { ok: true, email: 'ana@example.com', nume: 'Ana Popescu', tara: 'RO', roles: ['client'], roluri_dashboard: [], are_comenzi: false, rol_solicitat: 'client', partener: null, investitor: null, activare: null, destinatie: '/mydarrin-catalog.html' };
+  const baza = { ok: true, email: 'ana@example.com', nume: 'Ana Popescu', tara: 'RO', roles: ['client'], roluri_dashboard: [], are_comenzi: false, rol_solicitat: 'client', partener: null, investitor: null, activare: null, destinatie: '/catalog' };
   if (stare === 'client') return baza;
   const pasi = ['firma', 'cont_bancar', 'profesii', 'dotari', 'documente', 'contract'].map((cheie) => ({ cheie, stare: stare === 'activare' ? 'de_completat' : 'completat' }));
   return {
@@ -158,7 +159,7 @@ function profil(stare) {
           const w = document.querySelector('[data-meniu-partener="antet"]').closest('.mega-wrap');
           return (w.querySelector('a').textContent || '').replace(/\s+/g, ' ').trim();
         });
-        verifica(titlu === 'Devino Partener', `${nume}: meniul se numește „${titlu}”`);
+        verifica(titlu === 'Devino partener', `${nume}: meniul se numește „${titlu}”`);
         const l = await intrari(p, '[data-meniu-partener="antet"]');
         verifica(potriveste(l, false), `${nume}: meniul din antet are ${l.length} intrări: ${JSON.stringify(l.map((x) => x.titlu + ' → ' + x.href))}`);
         if (await deschideAntet(p)) {
@@ -222,7 +223,7 @@ function profil(stare) {
           await p.waitForFunction(() => { const b = document.querySelector('[data-meniu-partener="antet"] [data-cta-partener]'); return b && b.getAttribute('data-cta-stare') && b.getAttribute('data-cta-stare') !== 'incarca'; }, null, { timeout: 10000 }).catch(() => {});
           const b = await p.evaluate(() => { const x = document.querySelector('[data-meniu-partener="antet"] [data-cta-partener]'); return x ? { stare: x.getAttribute('data-cta-stare'), text: (x.querySelector('[data-cta-text]').textContent || '').trim(), href: x.getAttribute('href') } : null; });
           verifica(b && b.stare === stare && b.text === TEXT[stare][limba ? 0 : 1], `${et}: butonul din meniu ${JSON.stringify(b)}`);
-          if (stare === 'activare' || stare === 'verificare' || stare === 'activ') verifica(b && /mydarrin-dashboard-partener\.html\?type=servicii/.test(b.href), `${et}: butonul nu duce în dashboard (${b && b.href})`);
+          if (stare === 'activare' || stare === 'verificare' || stare === 'activ') verifica(b && /\/cont\/partener\?type=servicii/.test(b.href), `${et}: butonul nu duce în dashboard (${b && b.href})`);
           if (stare === 'vizitator' && limba === 'ro') {
             // Pasul 12-P1: clic → pre-înscrierea partenerului (/parteneri/inscriere), nu fereastra de cont.
             verifica(b && b.href === '/parteneri/inscriere', `${et}: butonul din meniu → ${b && b.href} (aștept /parteneri/inscriere)`);
@@ -234,7 +235,7 @@ function profil(stare) {
             const l = await intrari(p, '[data-meniu-partener="antet"]');
             verifica(potriveste(l, true), `${et}: intrările nu sunt în engleză: ${JSON.stringify(l.map((x) => x.titlu))}`);
             const t = await p.evaluate(() => (document.querySelector('[data-meniu-partener="antet"]').closest('.mega-wrap').querySelector('a').textContent || '').trim());
-            verifica(t === 'Become a Partner', `${et}: titlul meniului e „${t}”`);
+            verifica(t === 'Become a partner', `${et}: titlul meniului e „${t}”`);
             const ro = await p.evaluate(() => (document.querySelector('[data-meniu-partener="antet"]').innerText.match(/[ăâîșțşţ][^\n]{0,30}/gi) || []));
             verifica(!ro.length, `${et}: text românesc în meniu: ${ro.slice(0, 3).join(' | ')}`);
           }

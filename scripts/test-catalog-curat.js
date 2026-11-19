@@ -114,21 +114,24 @@ async function testeFisiere() {
     const imgDom = s.slice(s.indexOf('function imgDomeniu('), s.indexOf('function mkCard('));
     adevarat(mk.length > 100 && mk.includes('${imgReal ? `src="${escAtribut(imgReal)}"') && /imaginiPrezentare\(item, d\)/.test(mk) && /d\.img \|\| IMG_DEF/.test(imgDom) && !/card-icoana/.test(mk), 'ordinea imaginilor pe cardurile de produs');
   });
-  await test('vercel.json: 301 pentru cele 3 pagini (cu și fără .html) spre catalogul filtrat; rutele /servicii/<slug> spre catalog', async () => {
+  // Pasul 12-U1: adresele curate — /servicii, /materiale, /inchirieri (catalogul pe filă),
+  // /<tip>/<slug> (produsul); /x.html → 308 de la Vercel (cleanUrls), apoi 301.
+  await test('vercel.json: 301 pentru cele 3 pagini spre adresa curată a filei; /materiale/<slug> → produsul', async () => {
     const v = JSON.parse(citeste('vercel.json'));
-    for (const [pag, cat] of [['servicii', 'servicii'], ['materiale', 'materiale'], ['inchirieri', 'inchirieri']]) {
-      for (const ext of ['', '.html']) {
-        const r = v.redirects.find((x) => x.source === `/mydarrin-categorie-${pag}${ext}`);
-        adevarat(r && r.permanent === true && r.destination === `/mydarrin-catalog?categorie=${cat}`, pag + ext);
-      }
+    for (const pag of ['servicii', 'materiale', 'inchirieri']) {
+      const r = v.redirects.find((x) => x.source === `/mydarrin-categorie-${pag}`);
+      adevarat(r && r.statusCode === 301 && r.destination === `/${pag}`, pag);
+      egal(v.rewrites.find((x) => x.source === `/${pag}`).destination, '/mydarrin-catalog', pag + ': rescrierea');
+      const c = v.redirects.find((x) => x.source === `/catalog/${pag}/:categorie`);
+      adevarat(c && c.statusCode === 301 && c.destination === `/${pag}?subcategorie=:categorie`, pag + ': /catalog/<tip>/<categorie>');
     }
     adevarat(!JSON.stringify(v.rewrites).includes('mydarrin-categorie'), 'rewrite spre pagina veche');
-    egal(v.rewrites.find((x) => x.source === '/materiale/:slug').destination, '/mydarrin-catalog.html?categorie=materiale&subcategorie=:slug');
+    egal(v.rewrites.find((x) => x.source === '/materiale/:slug').destination, '/mydarrin-produs?slug=:slug&type=material');
   });
   await test('paginile vechi: doar redirecționarea spre catalog, cu filtrul și parametrii păstrați', async () => {
     for (const [pag, cat] of [['servicii', 'servicii'], ['materiale', 'materiale'], ['inchirieri', 'inchirieri']]) {
       const s = citeste(`mydarrin-categorie-${pag}.html`);
-      adevarat(s.length < 3000 && s.includes(`p.set('categorie', '${cat}')`) && s.includes("location.replace('/mydarrin-catalog?'"), pag);
+      adevarat(s.length < 3000 && s.includes(`location.replace('/${pag}'`) && !s.includes('/mydarrin-catalog'), pag);
       adevarat(!/price|data-ron|unsplash|SUBCATEGORY_DB/i.test(s), pag + ': conținut vechi');
     }
     adevarat(!fs.existsSync(path.join(RADACINA, 'categorie-catalog.js')), 'categorie-catalog.js șters');
@@ -147,16 +150,17 @@ async function testeFisiere() {
     r.send = (x) => { r.corp = x; return r; };
     await apiSitemap(cerere({ metoda: 'GET' }), r);
     const xml = String(r.corp);
-    for (const c of ['servicii', 'materiale', 'inchirieri']) adevarat(xml.includes(`/mydarrin-catalog?categorie=${c}</loc>`), c);
+    for (const c of ['servicii', 'materiale', 'inchirieri']) adevarat(xml.includes(`/${c}</loc>`), c);
     adevarat(!xml.includes('mydarrin-categorie-'), 'pagini vechi în sitemap');
   });
-  await test('middleware.js: /servicii/<slug> și /catalog/materiale/<slug> → mydarrin-catalog cu categorie + subcategorie', async () => {
-    const s = citeste('middleware.js');
-    const bucata = s.slice(s.indexOf('const PAGINA_STATICA'), s.indexOf('const SUPABASE_URL'));
-    const ruteaza = new Function(bucata + '\nreturn ruteazaPublic;')();
-    egal(ruteaza('/servicii/instalatii-electrice'), { destinatie: '/mydarrin-catalog', query: { categorie: 'servicii', subcategorie: 'instalatii-electrice' } });
-    egal(ruteaza('/inchiriere/scule'), { destinatie: '/mydarrin-catalog', query: { categorie: 'inchirieri', subcategorie: 'scule' } });
-    egal(ruteaza('/catalog/materiale/lemn').query, { categorie: 'materiale', subcategorie: 'lemn' });
+  await test('adresele curate (lib/adrese-curate.js, folosit de middleware.js): fila, produsul, adresele vechi ale filtrului', async () => {
+    const A = require(path.join(RADACINA, 'lib/adrese-curate.js'));
+    egal(A.rescriere('/materiale'), { fisier: 'mydarrin-catalog', parametri: { categorie: 'materiale' } });
+    egal(A.rescriere('/servicii/montaj-priza'), { fisier: 'mydarrin-produs', parametri: { slug: 'montaj-priza', type: 'serviciu' } });
+    egal(A.redirect('/inchiriere/scule', ''), '/inchirieri?subcategorie=scule');
+    egal(A.redirect('/catalog/materiale/lemn', '?lang=en'), '/materiale?lang=en&subcategorie=lemn');
+    egal(A.redirect('/mydarrin-catalog', '?categorie=servicii&subcategorie=instalatii-electrice'), '/servicii?subcategorie=instalatii-electrice');
+    adevarat(/adreseCurate\.rescriere\(pathname\)/.test(citeste('middleware.js')), 'middleware.js folosește tabelul comun');
   });
 
   console.log('B. Prețurile catalogului (/api/public/catalog-categorie?toate=1)');
@@ -273,18 +277,18 @@ async function testeBrowser() {
         egal(pg.erori, [], 'erori JS');
         await pg.close();
       });
-      await test(`${latime}: filtrul se schimbă fără reîncărcare: eticheta „×” scoate subcategoria, altă filă → ?categorie=materiale`, async () => {
+      await test(`${latime}: filtrul se schimbă fără reîncărcare: eticheta „×” scoate subcategoria, altă filă → /materiale`, async () => {
         const pg = await pagina(ctx, '/mydarrin-catalog.html?categorie=servicii&subcategorie=prize-intrerupatoare');
         await pg.waitForFunction(() => window.FILTRU_SUBCATEGORIE && document.querySelectorAll('#grid-servicii .db-card').length > 0);
         await pg.waitForTimeout(300);
         egal(await carduriVizibile(pg), ['montaj-priza']);
         await pg.evaluate(() => { window.__faraReincarcare = true; });
         await pg.click('#filtru-subcategorie button');
-        egal(await adresa(pg), '/mydarrin-catalog.html?categorie=servicii');
+        egal(await adresa(pg), '/servicii');
         egal((await carduriVizibile(pg)).length, 5, 'toate serviciile publice');
         // Pe telefon, bara laterală e ascunsă: filele se schimbă din butoanele din capul paginii.
         await pg.locator('button[onclick^="switchMainTab(\'materiale\'"]:visible').first().click();
-        egal(await adresa(pg), '/mydarrin-catalog.html?categorie=materiale');
+        egal(await adresa(pg), '/materiale');
         egal(await carduriVizibile(pg), ['mat-parchet']);
         egal(await pg.evaluate(() => window.__faraReincarcare), true, 'fără reîncărcare');
         egal(pg.erori, [], 'erori JS');
@@ -298,10 +302,10 @@ async function testeBrowser() {
     await test('vechea pagină (adresa cu ?cat=) → catalogul cu filtrul corect, aplicat la încărcare', async () => {
       for (const [vechi, cat, fila] of [['/mydarrin-categorie-servicii.html?type=servicii&cat=instalatii-sanitare', 'servicii', 'servicii'], ['/mydarrin-categorie-materiale', 'materiale', 'materiale'], ['/mydarrin-categorie-inchirieri.html', 'inchirieri', 'inchiriere']]) {
         const pg = await pagina(ctx, vechi);
-        await pg.waitForURL(/\/mydarrin-catalog/);
+        await pg.waitForURL(new RegExp('/' + cat + '(\\?|$)'));
         await pg.waitForSelector('#grid-' + fila + ' .db-card', { state: 'attached' });
         await pg.waitForTimeout(400);
-        adevarat((await adresa(pg)).includes('categorie=' + cat), vechi + ' → ' + await adresa(pg));
+        adevarat((await adresa(pg)).startsWith('/' + cat), vechi + ' → ' + await adresa(pg));
         egal(await pg.$eval('#main-tab-' + fila, (b) => b.classList.contains('active')), true, vechi + ': fila');
         if (cat === 'servicii') egal(await carduriVizibile(pg), ['montaj-parchet-laminat', 'reparatie-baterie'], 'subcategoria din ?cat=');
         await pg.close();
@@ -336,7 +340,7 @@ async function testeBrowser() {
       await pg.waitForFunction(() => window.__catalogDesenat);
       egal(await pg.$eval('[data-slug="testare-instalatie"] .card-cta', (b) => b.textContent.trim()), 'Cere un deviz');
       egal(await pg.$eval('[data-slug="montaj-priza"] .card-cta', (b) => b.textContent.trim()), 'Adaugă în coș');
-      await Promise.all([pg.waitForURL(/mydarrin-produs\.html\?slug=montaj-priza/), pg.$eval('[data-slug="montaj-priza"] .card-cta', (b) => b.click())]);
+      await Promise.all([pg.waitForURL(/\/servicii\/montaj-priza$/), pg.$eval('[data-slug="montaj-priza"] .card-cta', (b) => b.click())]);
       await pg.close();
     });
     await ctx.close();

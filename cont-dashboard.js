@@ -107,7 +107,7 @@
   // după login (account-system.js → mergiDupaLogin citește CHEIE_REVENIRE).
   function laLogin() {
     ss(CHEIE_REVENIRE, location.pathname + location.search);
-    location.replace('/index.html?reason=cont');
+    location.replace('/?reason=cont');
   }
 
   var MESAJ_ROL = {
@@ -325,7 +325,7 @@
     if (st === 'rejected') {
       var t = tr('Cererea ta de partener a fost respinsă.');
       if (pt.motiv_respingere) t += ' ' + tr('Motiv: {motiv}', { motiv: pt.motiv_respingere });
-      banda(container, 'eroare', t, tr('Contactează-ne'), function () { location.href = '/mydarrin-contact.html'; }, 'myd-banda-respins');
+      banda(container, 'eroare', t, tr('Contactează-ne'), function () { location.href = '/contact'; }, 'myd-banda-respins');
       return;
     }
     if (st === 'pending_review' || !st) {

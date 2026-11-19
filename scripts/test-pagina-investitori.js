@@ -173,7 +173,7 @@ const parcurs = (p) => p.evaluate(() => [...document.querySelectorAll('[data-inv
     }
 
     // ── B. Meniul vertical și footer-ul ──
-    const ASTEPTAT = ['Cum devii investitor', 'Runda curentă', 'Pitch deck', 'Panoul meu', 'Contact investitori'].map((t, i) => [t, t === 'Panoul meu' ? 'mydarrin-panou-investitor.html' : `${PAGINA}#${ANCORE[i]}`]);
+    const ASTEPTAT = ['Cum devii investitor', 'Runda curentă', 'Pitch deck', 'Panoul meu', 'Contact investitori'].map((t, i) => [t, t === 'Panoul meu' ? '/cont/investitor' : `/investitori#${ANCORE[i]}`]);
     {
       const linkuri = new Set();
       for (const [pg, stare] of [['index.html', null], ['despre-noi.html', null], ['cum-comanzi.html', null], [PAGINA, null], ['index.html', 'panou']]) {
@@ -198,7 +198,7 @@ const parcurs = (p) => p.evaluate(() => [...document.querySelectorAll('[data-inv
         verifica(!erori.length, `${et}: ${erori.join(' | ')}`);
         await ctx.close();
       }
-      for (const l of linkuri) verifica(await cerere(baza, '/' + l) === 200, `linkul ${l} nu răspunde 200`);
+      for (const l of linkuri) verifica(await cerere(baza, l.startsWith('/') ? l : '/' + l) === 200, `linkul ${l} nu răspunde 200`);
       const inv = citeste(PAGINA);
       for (const a of ANCORE) verifica(new RegExp(`id="${a}"`).test(inv), `ancora #${a} lipsește`);
     }
@@ -221,8 +221,8 @@ const parcurs = (p) => p.evaluate(() => [...document.querySelectorAll('[data-inv
     // Pasul 11-I1: pentru investitor, #kpis și #panou duc la panoul de pe pagina proprie.
     for (const hash of ['kpis', 'panou']) {
       const { ctx, p, erori } = await deschide(browser, baza, `${PAGINA}#${hash}`, { stare: 'panou', faraAsteptare: true });
-      await p.waitForURL(/mydarrin-panou-investitor/, { timeout: 15000 }).catch(() => {});
-      verifica(/mydarrin-panou-investitor/.test(p.url()), `#${hash} (investitor): ${p.url()}`);
+      await p.waitForURL(/\/cont\/investitor/, { timeout: 15000 }).catch(() => {});
+      verifica(/\/cont\/investitor/.test(p.url()), `#${hash} (investitor): ${p.url()}`);
       verifica(!erori.length, `#${hash} (investitor): ${erori.join(' | ')}`);
       await ctx.close();
     }
@@ -285,15 +285,15 @@ const parcurs = (p) => p.evaluate(() => [...document.querySelectorAll('[data-inv
             hash: location.hash, revenire: sessionStorage.getItem('myd_revenire_dupa_login'),
           }));
           const actiune = {
-            vizitator: a.cont && a.revenire === '/mydarrin-investitori.html?ruta=investitor' && p.url() === inainte,
+            vizitator: a.cont && a.revenire === '/investitori?ruta=investitor' && p.url() === inainte,
             fara_dosar: a.ruta && /Pasul 1 din 5/.test(a.subtitlu),
             ciorna: a.ruta && /Pasul 3 din 5/.test(a.subtitlu),
-            ciorna_investitor: /mydarrin-panou-investitor/.test(p.url()) && !a.ruta && !a.runda,
-            respins: /mydarrin-panou-investitor/.test(p.url()) && !a.ruta && !a.runda,
-            verificare: /mydarrin-panou-investitor/.test(p.url()) && !a.ruta && !a.runda,
-            runda: /mydarrin-panou-investitor/.test(p.url()) && !a.ruta && !a.runda,
-            panou: /mydarrin-panou-investitor/.test(p.url()) && !a.ruta && !a.runda,
-            cont_nou: /mydarrin-panou-investitor/.test(p.url()) && !a.ruta && !a.runda,
+            ciorna_investitor: /\/cont\/investitor/.test(p.url()) && !a.ruta && !a.runda,
+            respins: /\/cont\/investitor/.test(p.url()) && !a.ruta && !a.runda,
+            verificare: /\/cont\/investitor/.test(p.url()) && !a.ruta && !a.runda,
+            runda: /\/cont\/investitor/.test(p.url()) && !a.ruta && !a.runda,
+            panou: /\/cont\/investitor/.test(p.url()) && !a.ruta && !a.runda,
+            cont_nou: /\/cont\/investitor/.test(p.url()) && !a.ruta && !a.runda,
           }[stare];
           verifica(actiune, `${et}: acțiunea butonului ${JSON.stringify(a)}`);
         }

@@ -22,12 +22,12 @@
   'use strict';
   if (window.MYD_MENIU_INVESTITORI) return;
 
-  var PAGINA = 'mydarrin-investitori.html';
+  var PAGINA = '/investitori';
   var INTRARI = [
     { ancora: 'cum-functioneaza', ico: 'book-open', titlu: 'Cum devii investitor' },
     { ancora: 'runda', ico: 'briefcase', titlu: 'Runda curentă' },
     { ancora: 'pitch-deck', ico: 'file-text', titlu: 'Pitch deck' },
-    { pagina: 'mydarrin-panou-investitor.html', ico: 'layout-dashboard', titlu: 'Panoul meu', doarInvestitor: true },
+    { pagina: '/cont/investitor', ico: 'layout-dashboard', titlu: 'Panoul meu', doarInvestitor: true },
     { ancora: 'contact', ico: 'mail', titlu: 'Contact investitori' },
   ];
 

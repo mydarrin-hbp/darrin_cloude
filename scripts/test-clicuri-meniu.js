@@ -193,7 +193,7 @@ const ZGOMOT_PAGINA = { 'mydarrin-pitch-deck': /^\[pitch-deck\] Error: http 503(
           await p.waitForFunction(() => { const b = document.querySelector('.rp-hero [data-rp-principal]'); return b && b.getAttribute('data-cta-stare') === 'vizitator'; }, null, { timeout: 10000 }).catch(() => {});
           const t = tipFormular(tip);
           const marcat = await p.evaluate((x) => { const c = document.getElementById('tip-' + x); return { cale: location.pathname, tip: new URLSearchParams(location.search).get('type'), marcat: !!c && c.classList.contains('rp-ales') }; }, t);
-          verifica(marcat.cale === '/cum-devii-partenerul-nostru' && marcat.tip === tip && marcat.marcat, `${et}: ${JSON.stringify(marcat)}`);
+          verifica(marcat.cale === '/parteneri' && marcat.tip === tip && marcat.marcat, `${et}: ${JSON.stringify(marcat)}`);
           await p.click('.rp-hero [data-rp-principal]');
           await p.waitForURL(/parteneri\/inscriere/, { timeout: 8000 }).catch(() => {});
           const dest = new URL(p.url());

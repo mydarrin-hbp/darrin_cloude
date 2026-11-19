@@ -27,7 +27,7 @@ async function trimiteEmailFinalizare(email, comanda, token, limba = 'ro') {
     console.warn('[finalizeaza-comanda] RESEND_API_KEY lipsă — link netrimis, token:', token);
     return;
   }
-  const link = `https://mydarrin.homebestpal.com/confirmare-livrare?token=${token}`;
+  const link = `${require('../../lib/adresa-site').siteUrl()}/confirmare-livrare?token=${token}`;
   // Pasul 11-T1: emailul în limba clientului (ro / en), din lib/i18n.js.
   const emailFin = renderEmailLucrareFinalizata(limba, { numarComanda: comanda.nr_comanda, link });
   try {

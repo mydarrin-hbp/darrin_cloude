@@ -273,7 +273,8 @@ async function deschide(browser, baza, cale, o) {
     return json(r, { ok: true, cereri: f.cereri });
   });
   const navigari = [];
-  await ctx.route(/\/(index\.html|mydarrin-investitori\.html)(\?|#|$)/, (r) => {
+  // Pasul 12-U1: și adresele curate (/?reason=cont, /investitori).
+  await ctx.route(/\/(index\.html|mydarrin-investitori\.html|investitori)?(\?|#|$)/, (r) => {
     if (o.oprireNavigare && r.request().isNavigationRequest()) { navigari.push(r.request().url()); return r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>x</title>' }); }
     return r.continue();
   });
@@ -292,13 +293,13 @@ async function testeBrowser(baza, browser) {
   // Acces
   {
     const { ctx, p, cereriDate, navigari } = await deschide(browser, baza, PAGINA, { sesiune: false, oprireNavigare: true });
-    verifica(navigari.some((u) => /index\.html\?reason=cont/.test(u)) && !cereriDate.length, `fără sesiune: ${navigari} ${cereriDate}`);
+    verifica(navigari.some((u) => /\/\?reason=cont/.test(u)) && !cereriDate.length, `fără sesiune: ${navigari} ${cereriDate}`);
     verifica(await p.evaluate(() => sessionStorage.getItem('myd_revenire_dupa_login')) === '/' + PAGINA, 'fără sesiune: revenirea aici nu e reținută');
     await ctx.close();
   }
   {
     const { ctx, p, cereriDate, navigari } = await deschide(browser, baza, PAGINA, { date: { roluri: ['client'] }, oprireNavigare: true });
-    verifica(navigari.some((u) => /mydarrin-investitori\.html/.test(u)) && /#cum-functioneaza$/.test(p.url()) && !cereriDate.length, `fără rol: ${p.url()} ${cereriDate}`);
+    verifica(navigari.some((u) => /\/investitori(\?|#|$)/.test(u)) && /#cum-functioneaza$/.test(p.url()) && !cereriDate.length, `fără rol: ${p.url()} ${cereriDate}`);
     await ctx.close();
   }
 
@@ -312,7 +313,7 @@ async function testeBrowser(baza, browser) {
     verifica(part.length === 2 && /10 februarie 2025/.test(part[0]) && /10 februarie 2026/.test(part[0]) && /10 octombrie 2027/.test(part[1]) && /safe/.test(part[1]), `participații: ${JSON.stringify(part)}`);
     verifica(!(await p.evaluate(() => /în așteptare/i.test(document.getElementById('pi-participatii').textContent))), 'o subscriere neaprobată apare la participații');
     await panou(p, 'subscrieri');
-    verifica(await p.evaluate(() => document.querySelectorAll('#pi-subscrieri tr').length) === 3 && await p.getAttribute('#pi-subscriere-noua', 'href') === '/mydarrin-investitori.html?ruta=investeste', 'subscrierile sau „Subscriere nouă”');
+    verifica(await p.evaluate(() => document.querySelectorAll('#pi-subscrieri tr').length) === 3 && await p.getAttribute('#pi-subscriere-noua', 'href') === '/investitori?ruta=investeste', 'subscrierile sau „Subscriere nouă”');
     await panou(p, 'istoric');
     const ist = await p.evaluate(() => [...document.querySelectorAll('[data-pi-eveniment]')].map((x) => x.getAttribute('data-pi-eveniment')));
     verifica(ist.join() === 'exit_trimis,subscriere_aprobata', `istoric: ${ist}`);
@@ -340,7 +341,7 @@ async function testeBrowser(baza, browser) {
     const { ctx, p } = await deschide(browser, baza, PAGINA, { date: d });
     const a = await p.evaluate(() => { const b = document.querySelector('#pi-alerta-act .pi-banda'); return b ? { c: b.className, t: b.textContent, h: b.querySelector('a').getAttribute('href') } : null; });
     if (!clasa) verifica(a === null, `act ${limita}: ${JSON.stringify(a)}`);
-    else verifica(a && a.c.includes(clasa) && a.h === '/mydarrin-contact.html' && (zile < 0 ? /a expirat; încarcă unul nou/ : /expiră pe/).test(a.t), `act ${limita}: ${JSON.stringify(a)}`);
+    else verifica(a && a.c.includes(clasa) && a.h === '/contact' && (zile < 0 ? /a expirat; încarcă unul nou/ : /expiră pe/).test(a.t), `act ${limita}: ${JSON.stringify(a)}`);
     await ctx.close();
   }
 
@@ -388,12 +389,12 @@ async function testeBrowser(baza, browser) {
     const c = (f) => fs.readFileSync(path.join(RADACINA, f), 'utf8');
     verifica(/noindex/.test(c(PAGINA)) && !/mydarrin-panou-investitor/.test(c('lib/seo-pagini.js') + c('api/public/sitemap.xml.js')), 'noindex sau sitemap');
     const DR = require(path.join(RADACINA, 'lib/destinatie-rol.js'));
-    verifica(DR.dashboardPentruRol('investor') === '/' + PAGINA, '„Rolurile mele → Investitor”');
+    verifica(DR.dashboardPentruRol('investor') === '/cont/investitor', '„Rolurile mele → Investitor”');
     verifica(!/\balert\(|\bconfirm\(|window\.prompt/.test(c('panou-investitor.js')), 'alert / confirm / prompt');
     verifica(!/window\.prompt|initiazaExitReal/.test(c('mydarrin-investitori.html')), 'exit-ul vechi a rămas în pagina Investitori');
     const { ctx, p } = await deschide(browser, baza, 'mydarrin-investitori.html#kpis', { oprireNavigare: false });
-    await p.waitForURL(/mydarrin-panou-investitor/, { timeout: 15000 }).catch(() => {});
-    verifica(/mydarrin-panou-investitor/.test(p.url()), `#kpis pentru investitor: ${p.url()}`);
+    await p.waitForURL(/\/cont\/investitor/, { timeout: 15000 }).catch(() => {});
+    verifica(/\/cont\/investitor/.test(p.url()), `#kpis pentru investitor: ${p.url()}`);
     await ctx.close();
   }
 

@@ -42,8 +42,8 @@
   'use strict';
   if (window.MYD_CTA_INVESTITOR) return;
 
-  var RUTA = '/mydarrin-investitori.html?ruta=investitor';
-  var PANOU = '/mydarrin-panou-investitor.html'; // pasul 11-I1
+  var RUTA = '/investitori?ruta=investitor';
+  var PANOU = '/cont/investitor'; // pasul 11-I1
   var CHEIE_REVENIRE = 'myd_revenire_dupa_login';
   var TEXT = {
     vizitator: 'Devino investitor',

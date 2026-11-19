@@ -1,7 +1,7 @@
 /* ════════════════════════════════════════════════════════════════
    MY DARRIN — meniu-partener.js, pasul 11-R3f (decizia LM, 3 nov. 2026)
 
-   Meniul „Devino Partener” se generează doar de aici, pe toate paginile:
+   Meniul „Devino partener” se generează doar de aici, pe toate paginile:
    meniul derulant din antet și lista din meniul lateral (telefon). Înainte,
    fiecare pagină avea copia ei și meniurile difereau (3, 4 sau 5 tipuri,
    asigurătorul lipsea). Paginile păstrează doar locul gol:
@@ -29,12 +29,12 @@
   if (window.MYD_MENIU_PARTENER) return;
 
   var INTRARI = [
-    { href: 'cum-devii-partenerul-nostru.html', ico: 'clipboard-list', titlu: 'Cum devii partener My Darrin', desc: 'Ghidul complet, pas cu pas · Gratuit', ghid: true },
-    { href: 'cum-devii-furnizor-servicii.html', ico: 'wrench', titlu: 'Furnizor de Servicii', desc: 'Meșteri, instalatori, tehnicieni', culoare: '#FF8C00', fundal: '#FFF0D6' },
-    { href: 'cum-devii-furnizor-materiale.html', ico: 'package', titlu: 'Furnizor de Materiale', desc: 'Bricolaj, construcții, electrice, sanitare', culoare: '#003366', fundal: '#EBF4FB' },
-    { href: 'cum-devii-operator-inchirieri.html', ico: 'hard-hat', titlu: 'Furnizor de Închirieri', desc: 'Utilaje, scule, transport', culoare: '#0E9E99', fundal: '#E0F5F4' },
-    { href: 'cum-devii-curier-de-cartier.html', ico: 'truck', titlu: 'Curier de cartier', desc: 'Livrare locală de materiale la șantier', culoare: '#E65100', fundal: '#FFF3E0' },
-    { href: 'ghidul-asiguratorului.html', ico: 'shield', titlu: 'Asigurător', desc: 'Polițe pentru comenzile platformei', culoare: '#7C3AED', fundal: '#F3E8FF' },
+    { href: '/parteneri', ico: 'clipboard-list', titlu: 'Cum devii partener My Darrin', desc: 'Ghidul complet, pas cu pas · Gratuit', ghid: true },
+    { href: '/parteneri/servicii', ico: 'wrench', titlu: 'Furnizor de Servicii', desc: 'Meșteri, instalatori, tehnicieni', culoare: '#FF8C00', fundal: '#FFF0D6' },
+    { href: '/parteneri/materiale', ico: 'package', titlu: 'Furnizor de Materiale', desc: 'Bricolaj, construcții, electrice, sanitare', culoare: '#003366', fundal: '#EBF4FB' },
+    { href: '/parteneri/inchirieri', ico: 'hard-hat', titlu: 'Furnizor de Închirieri', desc: 'Utilaje, scule, transport', culoare: '#0E9E99', fundal: '#E0F5F4' },
+    { href: '/parteneri/curieri', ico: 'truck', titlu: 'Curier de cartier', desc: 'Livrare locală de materiale la șantier', culoare: '#E65100', fundal: '#FFF3E0' },
+    { href: '/parteneri/asigurari', ico: 'shield', titlu: 'Asigurător', desc: 'Polițe pentru comenzile platformei', culoare: '#7C3AED', fundal: '#F3E8FF' },
   ];
 
   function tr(ro) { return typeof window.t === 'function' ? window.t(null, ro) : ro; }
@@ -82,7 +82,7 @@
   }
 
   function cta(clasa) {
-    return '<a href="cum-devii-partenerul-nostru.html" class="' + clasa + '" data-cta-partener="" data-cta-scurt="">' +
+    return '<a href="/parteneri" class="' + clasa + '" data-cta-partener="" data-cta-scurt="">' +
       '<span data-cta-text>' + esc(tr('Creează-ți contul de partener')) + '</span>' + (clasa === 'mmp-cta' ? ' ' + ico('arrow-right') : '') + '</a>';
   }
 

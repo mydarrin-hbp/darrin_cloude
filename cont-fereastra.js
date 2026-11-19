@@ -132,7 +132,11 @@
   }
   // Pasul 11-R3g: hub-ul „Devino partener” (vechea adresă mydarrin-devino-partener
   // e redirecționată 301 spre el, cu ?type= păstrat) și paginile de tip.
-  function pePaginaPartener() { return /\/(mydarrin-devino-partener|cum-devii-partenerul-nostru|cum-devii-furnizor-servicii|cum-devii-furnizor-materiale|cum-devii-operator-inchirieri|cum-devii-curier-de-cartier|ghidul-asiguratorului)(\.html)?$/.test(location.pathname); }
+  // Pasul 12-U1: după fișierul paginii (data-pagina), oricare ar fi adresa (/parteneri/…).
+  function pePaginaPartener() {
+    var f; try { f = (function () { var s = document.querySelector('script[src*="i18n-loader"][data-pagina]'); return s ? s.getAttribute('data-pagina') : (location.pathname.split('/').pop() || 'index').replace(/\.html$/, ''); })(); } catch (e) { f = ''; }
+    return /^(mydarrin-devino-partener|cum-devii-partenerul-nostru|cum-devii-furnizor-servicii|cum-devii-furnizor-materiale|cum-devii-operator-inchirieri|cum-devii-curier-de-cartier|ghidul-asiguratorului)$/.test(f);
+  }
 
   // ── Dependențele: ui-feedback.js, account-system.js, lib/supabaseClient.js ──
   function areScript(nume) { return !!document.querySelector('script[src$="' + nume + '"]'); }
@@ -442,8 +446,8 @@
             '</div>' +
             '<label class="mdc-gdpr"><input type="checkbox" id="reg-gdpr" required data-eticheta="' + esc(tr('Acordul pentru Termeni și GDPR')) + '">' +
               '<span>' + tr('Accept {termeni} și {politica} (prelucrare date GDPR) platformei My Darrin.', {
-                termeni: '<a href="mydarrin-termeni.html" target="_blank" rel="noopener">' + esc(tr('Termenii și Condițiile')) + '</a>',
-                politica: '<a href="mydarrin-politica-confidentialitate.html" target="_blank" rel="noopener">' + esc(tr('Politica de Confidențialitate')) + '</a>',
+                termeni: '<a href="/termeni" target="_blank" rel="noopener">' + esc(tr('Termenii și Condițiile')) + '</a>',
+                politica: '<a href="/confidentialitate" target="_blank" rel="noopener">' + esc(tr('Politica de Confidențialitate')) + '</a>',
               }) + '</span></label>' +
             '<button type="submit" class="mdc-btn mdc-btn-portocaliu" id="mdc-register-btn">' + esc(tr('Creează cont gratuit')) + '</button>' +
             '<div id="mdc-register-msg" class="mdc-zona"></div>' +

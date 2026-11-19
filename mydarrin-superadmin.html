@@ -457,16 +457,16 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
      combinat: enforceSuperadminBarrier() găsea mereu "nelogat" și
      redirecționa înapoi la homepage. Fix real: folosește exact același
      client comun (cookie-uri, .mydarrin.homebestpal.com) ca restul site-ului. -->
-<script type="module" src="lib/supabaseClient.js"></script>
-<script src="account-system.js"></script>
-<script src="ui-feedback.js"></script>
+<script type="module" src="/lib/supabaseClient.js"></script>
+<script src="/account-system.js"></script>
+<script src="/ui-feedback.js"></script>
 <link rel="stylesheet" href="/seo-panou.css"/>
 <script src="/seo-panou.js" defer></script>
 <script src="/lib/seo-campanii.js" defer></script>
 <script src="/seo-panou-media.js" defer></script>
 <script src="/seo-panou-og.js" defer></script>
 <script src="/seo-panou-campanii.js" defer></script>
-<script src="catalog-niveluri.js"></script>
+<script src="/catalog-niveluri.js"></script>
 <script src="/myd-csv.js"></script>
 <!-- Pasul 11-K: editorul și previzualizarea pitch deck-ului (aceeași schemă ca serverul, același render ca pagina publică) -->
 <link rel="stylesheet" href="/pitch-deck.css">
@@ -483,7 +483,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       if (ok) document.getElementById('auth-gate-overlay')?.remove();
     } catch (e) {
       console.error('Eroare la verificarea accesului:', e);
-      window.location.href = 'https://mydarrin.homebestpal.com';
+      window.location.href = window.location.protocol + '//' + window.location.host.replace(/^admin\./, '') + '/'; // pasul 12-U1: site-ul public, fără domeniul scris în cod
     }
   })();
 </script>
@@ -645,11 +645,11 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
       Dashboard Furnizor ↗
     </a>
-    <a class="sa-nav-item" href="https://mydarrin.homebestpal.com/mydarrin-investitori" target="_blank" rel="noopener">
+    <a class="sa-nav-item" href="https://mydarrin.homebestpal.com/investitori" target="_blank" rel="noopener">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
       Pagina publică investitori ↗
     </a>
-    <a class="sa-nav-item" href="mydarrin-deviz-engine.html">
+    <a class="sa-nav-item" href="/mydarrin-deviz-engine">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
       Deviz Engine
     </a>
@@ -692,7 +692,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       </button>
       <!-- Links rapide -->
       <a href="https://mydarrin.homebestpal.com/" style="font-size:11.5px;color:#4A6080;text-decoration:none;padding:6px 12px;border-radius:8px;border:1px solid #2D3F55;background:#192433;transition:all .15s" onmouseover="this.style.color='#E2E8F0'" onmouseout="this.style.color='#4A6080'" target="_blank" rel="noopener">← Homepage ↗</a>
-      <a href="https://mydarrin.homebestpal.com/mydarrin-catalog" style="font-size:11.5px;color:#4A6080;text-decoration:none;padding:6px 12px;border-radius:8px;border:1px solid #2D3F55;background:#192433;transition:all .15s" onmouseover="this.style.color='#E2E8F0'" onmouseout="this.style.color='#4A6080'" target="_blank" rel="noopener">Catalog ↗</a>
+      <a href="https://mydarrin.homebestpal.com/catalog" style="font-size:11.5px;color:#4A6080;text-decoration:none;padding:6px 12px;border-radius:8px;border:1px solid #2D3F55;background:#192433;transition:all .15s" onmouseover="this.style.color='#E2E8F0'" onmouseout="this.style.color='#4A6080'" target="_blank" rel="noopener">Catalog ↗</a>
     </div>
   </div>
 
@@ -822,7 +822,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
             <button class="btn-p" onclick="showPanel('comisioane')" style="background:#7C3AED">💰 Comisioane</button>
             <button class="btn-s" onclick="showPanel('parteneri')">👤 Parteneri Globali</button>
             <button class="btn-s" onclick="showPanel('config')">⚙ Config sistem</button>
-            <a href="mydarrin-sync-architecture.html" class="btn-s">🔄 Arhitectură Sync</a>
+            <a href="/mydarrin-sync-architecture" class="btn-s">🔄 Arhitectură Sync</a>
           </div>
         </div>
       </div>
@@ -1029,7 +1029,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
       <div class="sa-card" style="margin-top:20px" id="cat-admini-card">
         <div class="sa-card-hdr" style="flex-wrap:wrap;gap:8px">
           <div style="font-weight:700;color:#1A2332;font-size:13.5px">📚 Catalog servicii — adminii de catalog</div>
-          <a href="mydarrin-admin-catalog.html" target="_blank" rel="noopener" style="font-size:12px;font-weight:700;color:#0E9E99">Deschide pagina de catalog ↗</a>
+          <a href="/mydarrin-admin-catalog" target="_blank" rel="noopener" style="font-size:12px;font-weight:700;color:#0E9E99">Deschide pagina de catalog ↗</a>
         </div>
         <div class="sa-card-body">
           <div style="font-size:12px;color:#5A6B7D;margin-bottom:12px;line-height:1.5">Adminul de catalog creează, verifică și publică servicii doar pe ruta de încadrare, în capitolele alese (docs/regula-incadrare.md). Revocarea dreptului nu șterge contul.</div>
@@ -1310,8 +1310,8 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
             </div>
             <div style="display:flex;gap:10px;margin-top:14px">
               <button class="btn-p" onclick="bustCache()" style="font-size:12px">🔄 Forțează Cache Bust Global</button>
-              <a href="mydarrin-sync-architecture.html" class="btn-s" style="font-size:12px">📐 Arhitectură Sync</a>
-              <a href="mydarrin-deviz-engine.html" class="btn-s" style="font-size:12px">🧮 Deviz Engine</a>
+              <a href="/mydarrin-sync-architecture" class="btn-s" style="font-size:12px">📐 Arhitectură Sync</a>
+              <a href="/mydarrin-deviz-engine" class="btn-s" style="font-size:12px">🧮 Deviz Engine</a>
             </div>
           </div>
         </div>
@@ -1397,7 +1397,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
           </div>
           <div style="flex:1;min-width:220px">
             <div style="font-size:11.5px;color:#8FA3BD;line-height:1.6;margin-bottom:8px">
-              Folosit în search bar, chat consultanță, recomandări AI pe toate paginile (exceptând Devino Partener, care folosește varianta albastră dedicată, necontrolată de aici).
+              Folosit în search bar, chat consultanță, recomandări AI pe toate paginile (exceptând Devino partener, care folosește varianta albastră dedicată, necontrolată de aici).
             </div>
             <input type="file" accept="image/png,image/jpeg,image/webp" class="branding-file-input" style="display:none"/>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -2820,7 +2820,7 @@ body{font-family:"Helvetica World","Helvetica Neue",Arial,system-ui,sans-serif;b
           <div class="sa-card">
             <div class="sa-card-hdr"><div style="font-weight:700;color:#1A2332;font-size:13.5px">⚡ Acțiuni rapide</div></div>
             <div class="sa-card-body" style="display:flex;flex-direction:column;gap:8px">
-              <button class="btn-s" style="justify-content:flex-start" onclick="window.open('https://mydarrin.homebestpal.com/mydarrin-investitori','_blank','noopener')">🌍 Pagina publică investitori ↗</button>
+              <button class="btn-s" style="justify-content:flex-start" onclick="window.open('https://mydarrin.homebestpal.com/investitori','_blank','noopener')">🌍 Pagina publică investitori ↗</button>
               <button class="btn-s" style="justify-content:flex-start" onclick="exportInvestitoriCSV()">📥 Export CSV investitori</button>
             </div>
           </div>
@@ -3132,10 +3132,10 @@ window.addEventListener('scroll',()=>{});
   </div>
   <div style="display:flex;gap:14px;flex-wrap:wrap">
     <a href="https://mydarrin.homebestpal.com/" style="font-size:11.5px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'" target="_blank" rel="noopener">🏠 Acasă ↗</a>
-    <a href="https://mydarrin.homebestpal.com/mydarrin-catalog" style="font-size:11.5px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'" target="_blank" rel="noopener">📦 Catalog ↗</a>
+    <a href="https://mydarrin.homebestpal.com/catalog" style="font-size:11.5px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'" target="_blank" rel="noopener">📦 Catalog ↗</a>
     <a href="https://mydarrin.homebestpal.com/mydarrin-marketplace" style="font-size:11.5px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'" target="_blank" rel="noopener">🏪 Marketplace ↗</a>
-    <a href="https://mydarrin.homebestpal.com/mydarrin-investitori" style="font-size:11.5px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'" target="_blank" rel="noopener">💼 Investitori ↗</a>
-    <a href="mydarrin-superadmin.html" style="font-size:11.5px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">🔐 Admin</a>
+    <a href="https://mydarrin.homebestpal.com/investitori" style="font-size:11.5px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'" target="_blank" rel="noopener">💼 Investitori ↗</a>
+    <a href="/mydarrin-superadmin" style="font-size:11.5px;color:rgba(255,255,255,.5);text-decoration:none;font-weight:600" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='rgba(255,255,255,.5)'">🔐 Admin</a>
   </div>
 </div>
 
@@ -3143,7 +3143,7 @@ window.addEventListener('scroll',()=>{});
 <script id="partner-router">
 /* ═══════════════════════════════════════════════════════════════════
    MY DARRIN — PARTNER NAVIGATION ROUTER v2026.06
-   Unified router for all "Devino Partener" entry points across pages.
+   Unified router for all "Devino partener" entry points across pages.
 
    Handles:
    1. Same-page modal trigger (pages WITH partner-modal)
@@ -3157,7 +3157,7 @@ window.addEventListener('scroll',()=>{});
   'use strict';
 
   // ── CONSTANTS ──────────────────────────────────────────────────
-  const PARTNER_PAGE = 'cum-devii-partenerul-nostru.html';
+  const PARTNER_PAGE = '/parteneri';
   const VALID_TYPES  = ['servicii', 'materiale', 'inchirieri',
                         'curier',   'asigurari'];
   const IS_PARTNER_PAGE = window.location.pathname
@@ -7044,7 +7044,7 @@ function toggleNiveluriCatalog(id) {
 // există link real de arătat, deci returnăm null (onest, nu un link mort).
 function _catLinkPublic(s) {
   if (s.categorie === 'servicii') {
-    return `https://mydarrin.homebestpal.com/mydarrin-produs?slug=${encodeURIComponent(s.id_serviciu)}&type=serviciu`;
+    return `https://mydarrin.homebestpal.com/servicii/${encodeURIComponent(s.id_serviciu)}`;
   }
   if (s.nace) {
     return `https://mydarrin.homebestpal.com/mydarrin-marketplace-materiale?nace=${encodeURIComponent(s.nace)}&type=serviciu`;
@@ -7575,7 +7575,7 @@ window.showPanel = function(id) {
 };
 </script>
 
-<script src="ui-comun.js" defer></script>
+<script src="/ui-comun.js" defer></script>
 <script>
 // Deschide direct un panou din link (ex. emailul „Comandă fără partener”:
 // ?panel=comenzi), după ce pagina și verificarea de acces s-au încărcat.

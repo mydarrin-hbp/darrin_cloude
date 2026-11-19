@@ -16,7 +16,7 @@
      verificare „Contul tău e în verificare”         → dashboard-ul
      activ      „Mergi la dashboard-ul tău”           → dashboard-ul
 
-   Pasul 11-R3f: același buton e și în meniul „Devino Partener” al tuturor
+   Pasul 11-R3f: același buton e și în meniul „Devino partener” al tuturor
    paginilor (meniu-partener.js), cu data-cta-scurt.
 
    Folosire: orice element <a> cu data-cta-partener="<tip>" (servicii,
@@ -49,7 +49,7 @@
     verificare: 'Contul tău e în verificare',
     activ: 'Mergi la dashboard-ul tău',
   };
-  // Pasul 11-R3f: butonul din meniul „Devino Partener” (meniu-partener.js) are
+  // Pasul 11-R3f: butonul din meniul „Devino partener” (meniu-partener.js) are
   // loc puțin: cu data-cta-scurt, activarea neterminată e „Finalizează-ți contul”.
   var TEXT_SCURT = { activare: 'Finalizează-ți contul' };
   // Pasul 11-R3g: cardurile tipurilor din hub (loc puțin, câte un buton pe tip).

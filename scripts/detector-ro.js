@@ -346,7 +346,8 @@ function detecteaza(limba) {
       await p.route('**/api/comenzi/**', (r) => r.fulfill({ status: 599, body: '{}' }));
       // Încărcarea paginii: o eroare (server oprit, 404) nu mai trece neobservată.
       let incarcare = null;
-      const raspunsPagina = await p.goto(BASE + '/' + pg + (/[?#]/.test(pg) ? '' : '.html'), { waitUntil: 'networkidle', timeout: 60000 })
+      // Pasul 12-U1: o adresă care începe cu „/” (ex. /ajutor/cum-comand) se deschide așa cum e.
+      const raspunsPagina = await p.goto(pg.startsWith('/') ? BASE + pg : BASE + '/' + pg + (/[?#]/.test(pg) ? '' : '.html'), { waitUntil: 'networkidle', timeout: 60000 })
         .catch((e) => { incarcare = e.message.split('\n')[0].slice(0, 120); return null; });
       if (!incarcare && raspunsPagina && raspunsPagina.status() >= 400) incarcare = 'HTTP ' + raspunsPagina.status();
       if (!incarcare && !raspunsPagina) incarcare = 'fără răspuns';
@@ -357,7 +358,7 @@ function detecteaza(limba) {
       const r = await p.evaluate(detecteaza, LIMBA).catch((e) => ({ eroare: e.message }));
       if (incarcare) { r.randata = false; r.incarcare = incarcare; }
       // Captura paginii, înaintea stărilor ascunse.
-      await p.screenshot({ path: path.join(OUT, `${LIMBA}${CU_CONT_MOD ? '_' + PROFIL : ''}_${pg.replace(/[?=&.]/g, '_')}_${w}.png`) }).catch(() => {});
+      await p.screenshot({ path: path.join(OUT, `${LIMBA}${CU_CONT_MOD ? '_' + PROFIL : ''}_${pg.replace(/[?=&./]/g, '_')}_${w}.png`) }).catch(() => {});
       // Stări ascunse: meniul lateral, fereastra de cont, preferințele cookie.
       for (const [nume, deschide, inchide] of [
         ['meniu', 'typeof openSidebar==="function"&&(openSidebar(),true)', 'typeof closeSidebar==="function"&&closeSidebar()'],

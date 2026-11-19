@@ -167,7 +167,7 @@ async function handler(req, res, user) {
       email: emailNorm,
       parola,
       expira_la,
-      link_acces: 'https://mydarrin.homebestpal.com/acces-temporar',
+      link_acces: require('../../lib/adresa-site').adresaAbsoluta('/acces-temporar'),
     });
   } catch (err) {
     console.error('[creeaza-acces-temporar]', err);

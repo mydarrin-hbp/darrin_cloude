@@ -48,7 +48,7 @@
     return new Date(Date.UTC(p[0], p[1] - 1, p[2])).toLocaleDateString(local(), { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
   }
   function numeRunda(r) { return r ? (en() ? (r.denumire_en || r.denumire_ro) : (r.denumire_ro || r.denumire_en)) : '—'; }
-  var ADRESA_INVESTESTE = '/mydarrin-investitori.html?ruta=investeste';
+  var ADRESA_INVESTESTE = '/investitori?ruta=investeste';
 
   function token() {
     return window.supabaseClient.auth.getSession().then(function (r) {
@@ -108,8 +108,8 @@
     if (!kyc || !kyc.act_valabil_pana) return;
     var zile = zilePanaLa(kyc.act_valabil_pana);
     if (zile > ZILE_ALERTA) return;
-    if (zile >= 0) el.innerHTML = banda('pi-banda-galben', tr('Actul tău de identitate expiră pe {data}.', { data: dataZi(kyc.act_valabil_pana) }), '/mydarrin-contact.html', tr('Contactează-ne'));
-    else el.innerHTML = banda('pi-banda-rosu', tr('Actul tău de identitate a expirat; încarcă unul nou.'), '/mydarrin-contact.html', tr('Contactează-ne'));
+    if (zile >= 0) el.innerHTML = banda('pi-banda-galben', tr('Actul tău de identitate expiră pe {data}.', { data: dataZi(kyc.act_valabil_pana) }), '/contact', tr('Contactează-ne'));
+    else el.innerHTML = banda('pi-banda-rosu', tr('Actul tău de identitate a expirat; încarcă unul nou.'), '/contact', tr('Contactează-ne'));
   }
   function monedaPortofoliu(j) {
     if (j.runda && j.runda.moneda) return j.runda.moneda;
@@ -459,7 +459,7 @@
       }
       var areRol = Array.isArray(p.roles) && p.roles.indexOf('investor') !== -1;
       if (!areRol && p.rol_solicitat !== 'investor') {
-        location.replace('/mydarrin-investitori.html#cum-functioneaza');
+        location.replace('/investitori#cum-functioneaza');
         return;
       }
       ascundeSchelet();

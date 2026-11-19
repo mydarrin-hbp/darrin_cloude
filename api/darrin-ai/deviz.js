@@ -398,7 +398,8 @@ async function formaServiciu(s, tara, moneda) {
     id_serviciu: s.id_serviciu,
     titlu: titluServiciu(s),
     unitate_masura: s.unitate_masura || null,
-    url: `/mydarrin-produs.html?slug=${encodeURIComponent(s.id_serviciu)}&type=serviciu`,
+    // Pasul 12-U1: adresa curată a serviciului.
+    url: `/servicii/${encodeURIComponent(s.id_serviciu)}`,
     pret_de_la: pret ? pret.pret : null,
     nivel: pret ? pret.nivel : null,
     moneda: pret ? (moneda || 'RON') : null,

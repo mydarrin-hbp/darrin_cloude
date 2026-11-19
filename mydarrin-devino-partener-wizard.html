@@ -70,7 +70,7 @@ input:focus,select:focus{border-color:var(--primary)}
       <div class="logo-mark">D</div>
       <span style="font-weight:800;font-size:15px;color:#1A2332">My Darrin</span>
     </a>
-    <a id="link-dashboard" href="mydarrin-dashboard-partener.html" style="font-size:12.5px;font-weight:600;color:#5A6B7D">← Înapoi la dashboard</a>
+    <a id="link-dashboard" href="/cont/partener" style="font-size:12.5px;font-weight:600;color:#5A6B7D">← Înapoi la dashboard</a>
   </div>
 </header>
 
@@ -83,7 +83,7 @@ input:focus,select:focus{border-color:var(--primary)}
   <div id="gate-warning" style="display:none" class="gate-banner"></div>
   <div id="gate-actiuni" style="display:none;text-align:center;margin:-8px 0 20px">
     <a id="gate-login" href="/?redirect=devino-partener-wizard&amp;reason=profil_partener" class="btn btn-primary">Autentifică-te</a>
-    <a href="mydarrin-devino-partener.html" class="btn btn-ghost" style="margin-left:8px">Nu ai cont? Devino partener</a>
+    <a href="/parteneri" class="btn btn-ghost" style="margin-left:8px">Nu ai cont? Devino partener</a>
   </div>
 
   <!-- PASUL 1 — Auth + verificare email -->
@@ -260,14 +260,14 @@ input:focus,select:focus{border-color:var(--primary)}
       <div style="font-weight:700;font-size:13.5px;margin-bottom:3px">Aplicația dedicată partenerilor este în pregătire</div>
       <div style="font-size:12.5px;color:#6B7A8D">Vei primi linkul de descărcare pe email imediat ce este disponibilă — nu există încă un link real de publicat.</div>
     </div>
-    <a href="mydarrin-dashboard-partener.html" class="btn btn-primary" style="margin-top:6px">Mergi la dashboard-ul tău de partener →</a>
+    <a href="/cont/partener" class="btn btn-primary" style="margin-top:6px">Mergi la dashboard-ul tău de partener →</a>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
-<script type="module" src="lib/supabaseClient.js"></script>
-<script src="account-system.js"></script>
-<script src="forme-juridice-public.js"></script>
+<script type="module" src="/lib/supabaseClient.js"></script>
+<script src="/account-system.js"></script>
+<script src="/forme-juridice-public.js"></script>
 <script>
 MDFormeJuridice.completeazaSelect(document.getElementById('s2-entitate'));
 if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -365,7 +365,7 @@ async function verificaPasul1() {
     const act = profil && profil.activare;
     if (act) {
       // Dashboard-ul rolului (harta din lib/destinatie-rol.js: materiale și închirieri la furnizor).
-      const pagina = ['materiale', 'inchirieri'].includes(act.tip) ? 'mydarrin-dashboard-furnizor.html' : 'mydarrin-dashboard-partener.html';
+      const pagina = ['materiale', 'inchirieri'].includes(act.tip) ? '/mydarrin-dashboard-furnizor' : '/cont/partener';
       document.getElementById('link-dashboard').href = pagina + '?type=' + encodeURIComponent(act.tip);
     }
     const stare = await incarcaStareaSalvata();

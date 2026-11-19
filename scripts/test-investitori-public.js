@@ -81,7 +81,7 @@ function verifica(cond, mesaj) {
         verifica(!/reason=cont/.test(pagina.url()) && /mydarrin-investitori/.test(pagina.url()) && await pagina.evaluate(() => { const m = document.getElementById('auth-modal'); return !!m && !m.classList.contains('hidden'); }),
           `${eticheta}: „Devino investitor” deschide fereastra de cont pe pagină`);
         const revenire = await pagina.evaluate(() => sessionStorage.getItem('myd_revenire_dupa_login'));
-        verifica(revenire === '/mydarrin-investitori.html?ruta=investitor', `${eticheta}: revenirea la ruta de investitor e reținută`);
+        verifica(revenire === '/investitori?ruta=investitor', `${eticheta}: revenirea la ruta de investitor e reținută`);
 
         verifica(erori.length === 0, `${eticheta}: 0 erori JS (${erori.join(' | ')})`);
         console.log(`${eticheta}: ${erori.length} erori JS`);

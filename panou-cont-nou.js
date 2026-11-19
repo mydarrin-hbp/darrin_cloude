@@ -333,7 +333,7 @@
         '<dt>' + esc(tr('Telefon')) + '</dt><dd translate="no">' + esc(p.telefon || '—') + '</dd>' +
         '<dt>' + esc(tr('Activitatea')) + '</dt><dd>' + esc([eticheta(), oras()].filter(Boolean).join(' · ') || '—') + '</dd></dl>' +
         '<p style="margin-top:12px">' + esc(tr('Datele firmei apar aici după pasul „Firma (CUI)”.')) + '</p>' +
-        '<div class="mpn-legaturi"><a class="mpn-secundar" href="' + esc((window.MYD_DESTINATIE_ROL && window.MYD_DESTINATIE_ROL.PAGINA_ROLURI) || '/mydarrin-rolurile-mele.html') + '">' + esc(tr('Rolurile mele')) + '</a>' +
+        '<div class="mpn-legaturi"><a class="mpn-secundar" href="' + esc((window.MYD_DESTINATIE_ROL && window.MYD_DESTINATIE_ROL.PAGINA_ROLURI) || '/cont/roluri') + '">' + esc(tr('Rolurile mele')) + '</a>' +
         '<button type="button" class="mpn-secundar" id="mpn-iesi">' + esc(tr('Ieși din cont')) + '</button></div></section>';
     }
     var t = {
@@ -343,7 +343,7 @@
       ajutor: ['Ajutor', 'Ai o întrebare despre cont sau despre activare? Scrie-ne și îți răspundem pe email.'],
     }[sec];
     return '<section class="mpn-gol" data-mpn-gol="' + sec + '"><h2>' + esc(tr(t[0])) + '</h2><p>' + esc(tr(t[1])) + '</p>' +
-      (sec === 'ajutor' ? '<div class="mpn-legaturi"><a class="mpn-secundar" href="/mydarrin-contact.html">' + esc(tr('Contact')) + '</a><a class="mpn-secundar" href="/intrebari-frecvente-parteneri.html">' + esc(tr('Întrebări frecvente')) + '</a></div>' : '') +
+      (sec === 'ajutor' ? '<div class="mpn-legaturi"><a class="mpn-secundar" href="/contact">' + esc(tr('Contact')) + '</a><a class="mpn-secundar" href="/parteneri/intrebari">' + esc(tr('Întrebări frecvente')) + '</a></div>' : '') +
       '</section>';
   }
 

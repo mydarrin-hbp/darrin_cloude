@@ -66,7 +66,8 @@ function profil(stare, rol) {
     activare: { rol, tip, mod_activare: false, verificare: stare === 'activ' ? 'approved' : 'pending_review', activ: stare === 'activ', complet: stare !== 'activare', pasi },
   };
 }
-const dashboard = (rol) => (/materiale|inchirieri/.test(rol) ? '/mydarrin-dashboard-furnizor.html?type=' : '/mydarrin-dashboard-partener.html?type=') + rol.replace('partener_', '');
+// Pasul 12-U1: adresa curată a dashboard-ului de partener (/cont/partener).
+const dashboard = (rol) => (/materiale|inchirieri/.test(rol) ? '/mydarrin-dashboard-furnizor?type=' : '/cont/partener?type=') + rol.replace('partener_', '');
 
 async function deschide(browser, baza, pagina, stare, rol, opt) {
   const o = opt || {};
@@ -88,7 +89,7 @@ async function deschide(browser, baza, pagina, stare, rol, opt) {
     return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, rol: b.rol, destinatie: dashboard(b.rol) }) });
   });
   const navigari = [];
-  await ctx.route(/\/mydarrin-dashboard-(partener|furnizor)(\.html)?/, (r) => {
+  await ctx.route(/\/mydarrin-dashboard-(partener|furnizor)(\.html)?|\/cont\/partener/, (r) => {
     if (r.request().isNavigationRequest()) { navigari.push(r.request().url()); return r.fulfill({ status: 204, body: '' }); }
     return r.continue();
   });
@@ -130,7 +131,7 @@ const asteaptaStare = (p) => p.waitForFunction(() => { const l = [...document.qu
       verifica(!/5 pași/.test(html.find(([f]) => f === 'cum-devii-partenerul-nostru.html')[1]), 'hub: „5 pași” (fluxul vechi) a rămas');
       for (const f of ['cum-devii-furnizor-servicii.html', 'cum-devii-partenerul-nostru.html', 'cum-devii-furnizor-materiale.html', 'cum-devii-operator-inchirieri.html', 'cum-devii-curier-de-cartier.html', 'ghidul-asiguratorului.html']) {
         const t = html.find(([x]) => x === f)[1];
-        verifica(/data-cta-partener/.test(t) && /<script src="cta-partener\.js"/.test(t), `${f}: lipsește data-cta-partener sau cta-partener.js`);
+        verifica(/data-cta-partener/.test(t) && /<script src="\/?cta-partener\.js"/.test(t), `${f}: lipsește data-cta-partener sau cta-partener.js`);
       }
     }
 

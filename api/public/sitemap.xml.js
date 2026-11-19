@@ -16,44 +16,47 @@ const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { PAGINI: PAGINI_BAZA } = require('../../lib/seo-pagini');
 const { trimiteEroare } = require('../../lib/raspuns-eroare');
 
-const BASE_URL = 'https://mydarrin.homebestpal.com';
+// Pasul 12-U1: adresa site-ului din SITE_URL (lib/adresa-site.js), adresele curate.
+const { siteUrl } = require('../../lib/adresa-site');
 
 // Prioritate SEO relativă per pagină (1.0 = homepage, scade pentru pagini
 // mai puțin centrale) — listă separată de lib/seo-pagini.js (acolo e sursa
 // unică pentru CARE pagini există; aici doar cât de „importantă" e fiecare).
 const PRIORITATE = {
   '/': '1.0',
-  '/mydarrin-catalog': '0.9',
+  '/catalog': '0.9',
+  '/servicii': '0.7',
+  '/materiale': '0.7',
+  '/inchirieri': '0.7',
   '/mydarrin-marketplace': '0.8',
-  '/partener': '0.8',
-  '/despre-noi': '0.7',
+  '/parteneri': '0.8',
+  '/despre': '0.7',
   '/afla-ce-facem': '0.7',
-  '/mydarrin-cum-functioneaza': '0.7',
-  '/investitor': '0.6',
-  '/cum-comanzi': '0.6',
-  '/cum-platesc': '0.6',
-  '/cum-prestam-livram': '0.6',
-  '/cum-programez-serviciu': '0.6',
-  '/servicii-urgente': '0.6',
-  '/curier-cartier': '0.6',
-  '/cum-devii-furnizor-servicii': '0.6',
-  '/cum-devii-furnizor-materiale': '0.6',
-  '/cum-devii-operator-inchirieri': '0.6',
-  '/cum-devii-partenerul-nostru': '0.6',
-  '/asigurator': '0.6',
+  '/ajutor': '0.7',
+  '/investitori': '0.6',
+  '/ajutor/cum-comand': '0.6',
+  '/ajutor/cum-platesc': '0.6',
+  '/ajutor/livrare': '0.6',
+  '/ajutor/programare': '0.6',
+  '/urgente': '0.6',
+  '/parteneri/inscriere': '0.6',
+  '/parteneri/curieri': '0.6',
+  '/parteneri/servicii': '0.6',
+  '/parteneri/materiale': '0.6',
+  '/parteneri/inchirieri': '0.6',
+  '/parteneri/asigurari': '0.6',
+  '/deviz': '0.6',
   '/mydarrin-app-mobile': '0.5',
-  '/mydarrin-contact': '0.5',
-  '/garantii-si-asigurari': '0.5',
-  '/intrebari-frecvente-clienti': '0.5',
-  '/intrebari-frecvente-parteneri': '0.5',
+  '/contact': '0.5',
+  '/garantii': '0.5',
+  '/intrebari': '0.5',
+  '/parteneri/intrebari': '0.5',
   '/reclamatii': '0.3',
-  '/mydarrin-termeni': '0.2',
-  '/mydarrin-politica-confidentialitate': '0.2',
+  '/termeni': '0.2',
+  '/confidentialitate': '0.2',
 };
 
-// Pasul 11-C4: catalogul filtrat pe tipuri (fostele pagini de categorie, acum redirecționate).
-const CATALOG_FILTRAT = ['servicii', 'materiale', 'inchirieri'].map((c) => ({ cale: '/mydarrin-catalog?categorie=' + c, prioritate: '0.7' }));
-const PAGINI = PAGINI_BAZA.map((p) => ({ cale: p.cale, prioritate: PRIORITATE[p.cale] || '0.5' })).concat(CATALOG_FILTRAT);
+const PAGINI = PAGINI_BAZA.map((p) => ({ cale: p.cale, prioritate: PRIORITATE[p.cale] || '0.5' }));
 
 function escapeXml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -71,7 +74,7 @@ module.exports = async function handler(req, res) {
   }
 
   const urlsXml = PAGINI.map((p) => {
-    const url = overrideuri[p.cale] || (BASE_URL + p.cale);
+    const url = overrideuri[p.cale] || (siteUrl() + p.cale);
     return '  <url>\n    <loc>' + escapeXml(url) + '</loc>\n    <priority>' + p.prioritate + '</priority>\n  </url>';
   }).join('\n');
 
