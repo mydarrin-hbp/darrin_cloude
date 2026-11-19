@@ -24,6 +24,8 @@
      atasari.fisiere();                 // [{ mime, data_base64, nume, octeti }]
      atasari.ocupat();                  // true cât se pregătesc
      atasari.goleste();
+     await DarrinAIFisiere.cerere(body); // POST /api/darrin-ai/deviz (partea B):
+                                         // răspunsul sau o eroare cu mesajul în limba paginii
    ════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -272,5 +274,44 @@
     };
   }
 
-  window.DarrinAIFisiere = { creeaza: creeaza, MAX_FISIERE: MAX_FISIERE, MAX_TOTAL: MAX_TOTAL, MAX_PDF: MAX_PDF, _micsoreaza: micsoreaza };
+  // Pasul 12-D2, partea B: cererea la Darrin AI, comună paginilor. Întoarce
+  // răspunsul serverului sau aruncă o eroare cu mesajul în limba paginii
+  // (forma comună { mesaj: { ro, en } }; la 429, minutele rămase), cod și
+  // status. Analiza cu poze poate dura: timeout 45 s (testele îl scurtează
+  // prin window.MYD_DAI_TIMEOUT_MS).
+  async function cerere(body) {
+    var ms = Number(window.MYD_DAI_TIMEOUT_MS) > 0 ? Number(window.MYD_DAI_TIMEOUT_MS) : 45000;
+    var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+    var ceas = ctrl ? setTimeout(function () { ctrl.abort(); }, ms) : null;
+    var res, data = null;
+    try {
+      res = await fetch('/api/darrin-ai/deviz', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: ctrl ? ctrl.signal : undefined,
+      });
+      try { data = await res.json(); } catch (e) { data = null; }
+    } catch (e) {
+      var err = new Error(e && e.name === 'AbortError'
+        ? tr('Darrin AI nu a răspuns la timp. Verifică conexiunea și reîncearcă.')
+        : tr('Nu am putut contacta Darrin AI. Verifică conexiunea la internet și reîncearcă.'));
+      err.cod = e && e.name === 'AbortError' ? 'TIMEOUT' : 'RETEA';
+      err.status = 0;
+      throw err;
+    } finally {
+      if (ceas) clearTimeout(ceas);
+    }
+    if (!res.ok || !data || !data.ok) {
+      var rezerva = tr('Darrin AI nu a putut răspunde acum. Reîncearcă peste câteva momente.');
+      var text = window.MYD_I18N && typeof window.MYD_I18N.eroare === 'function' ? window.MYD_I18N.eroare(data, rezerva) : rezerva;
+      var er = new Error(text || rezerva);
+      er.cod = (data && data.cod) || null;
+      er.status = res.status;
+      throw er;
+    }
+    return data;
+  }
+
+  window.DarrinAIFisiere = { creeaza: creeaza, cerere: cerere, MAX_FISIERE: MAX_FISIERE, MAX_TOTAL: MAX_TOTAL, MAX_PDF: MAX_PDF, _micsoreaza: micsoreaza };
 })();

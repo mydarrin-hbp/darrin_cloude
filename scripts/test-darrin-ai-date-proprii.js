@@ -175,7 +175,7 @@ async function testeEndpoint() {
     const c = ANTHROPIC.cereri[0];
     const schema = c.tools[0].input_schema;
     adevarat(!JSON.stringify(c.tools).includes('cost_brut'), 'tool-ul încă pomenește cost_brut');
-    egal(schema.required, ['categorie_slug', 'servicii_ids', 'incredere', 'explicatie']);
+    egal(schema.required, ['relevanta', 'categorie_slug', 'servicii_ids', 'incredere', 'explicatie']); // pasul 12-D2: relevanta
     egal(schema.properties.servicii_ids.items.enum.slice().sort(), PUBLICATE, 'enum servicii');
     egal(schema.properties.servicii_ids.maxItems, 3);
     egal(schema.properties.categorie_slug.enum, ['instalatii-termice', 'instalatii-electrice', 'consultanta']);

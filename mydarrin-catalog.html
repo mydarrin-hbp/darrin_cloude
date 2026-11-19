@@ -2806,10 +2806,10 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
         Bronz<br><span style="font-size:9.5px;font-weight:500;opacity:.8">Darrin AI · Gratuit</span>
       </button>
       <button class="cons-tab" id="ctab-argint" onclick="switchConsTab('argint',this)" style="flex:1;padding:8px 6px;border-radius:10px;border:1px solid rgba(255,255,255,.12);cursor:pointer;font-family:inherit;font-size:11.5px;font-weight:700;transition:all .18s;background:rgba(255,255,255,.06);color:rgba(255,255,255,.6)">
-        Argint<br><span style="font-size:9.5px;font-weight:500">Consultant online</span>
+        Argint<br><span style="font-size:9.5px;font-weight:500" data-in-curand="1">În curând</span>
       </button>
       <button class="cons-tab" id="ctab-aur" onclick="switchConsTab('aur',this)" style="flex:1;padding:8px 6px;border-radius:10px;border:1px solid rgba(255,255,255,.12);cursor:pointer;font-family:inherit;font-size:11.5px;font-weight:700;transition:all .18s;background:rgba(255,255,255,.06);color:rgba(255,255,255,.6)">
-        Aur<br><span style="font-size:9.5px;font-weight:500">La adresă</span>
+        Aur<br><span style="font-size:9.5px;font-weight:500" data-in-curand="1">În curând</span>
       </button>
     </div>
   </div>
@@ -2827,7 +2827,7 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
         <div style="flex:1;height:3px;border-radius:99px;background:#D5DFE8" id="cp-4"></div>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:9.5px;color:#8C9BAD;margin-bottom:14px;margin-top:-12px;padding:0 1px">
-        <span>Descriere</span><span>Analiză</span><span>Estimare</span><span>Confirmare</span>
+        <span>Descriere</span><span>Analiză</span><span>Recomandare</span><span>Confirmare</span>
       </div>
 
       <!-- Chat messages -->
@@ -2844,7 +2844,7 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
         <div id="maria-example" style="background:linear-gradient(135deg,#FFF8EE,#FFF0D6);border-radius:14px;border:1px solid #FFD980;padding:12px 14px;font-size:12px;color:#6B7A8D;line-height:1.6">
           <div style="font-weight:700;color:#CC7000;margin-bottom:5px">Exemplu: Maria din Iași, str. Păcurari 23</div>
           <em>„Am o problemă la centrala termică pe gaz — nu pornește și apar erori. Am dat câteva imagini dar nu știu exact ce piesă este defectă..."</em>
-          <div style="margin-top:6px;color:#0E9E99;font-weight:600">→ Darrin AI: Analizez imaginile... Dacă nu pot determina problema, te voi ghida spre Consultanță Argint cu un specialist termic.</div>
+          <div style="margin-top:6px;color:#0E9E99;font-weight:600">→ Darrin AI: Analizez imaginile... Dacă nu e clar, îți pun o întrebare; dacă tot nu pot alege un serviciu, îți recomand Consultanța Darrin.</div>
         </div>
       </div>
 
@@ -2868,7 +2868,7 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
           <input type="number" id="proiect-suprafata" placeholder="Suprafață (m²)" min="0" style="border:1.5px solid #D5DFE8;border-radius:10px;padding:9px 10px;font-size:12.5px;font-family:inherit;outline:none"/>
         </div>
         <input type="text" id="proiect-locatie" placeholder="Locație (oraș/județ)" style="width:100%;border:1.5px solid #D5DFE8;border-radius:10px;padding:9px 10px;font-size:12.5px;font-family:inherit;outline:none;margin-bottom:8px"/>
-        <div style="font-size:10.5px;color:#8C9BAD;line-height:1.5">Deviz Sumar — o estimare preliminară pe baza acestor date, nu o ofertă tehnică detaliată (fără planșe/extras de materiale).</div>
+        <div style="font-size:10.5px;color:#8C9BAD;line-height:1.5">Deviz Sumar — Darrin AI îți propune serviciile din catalog potrivite proiectului; prețul îl calculează platforma, pe pagina fiecărui serviciu.</div>
       </div>
 
       <!-- Chat input -->
@@ -2923,31 +2923,27 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
         <div id="escalate-to-argint" style="display:none;background:#FFF8EE;border-radius:14px;border:1px solid #FFD980;padding:14px;margin-bottom:14px">
           <div style="font-weight:700;color:#CC7000;font-size:13px;margin-bottom:6px">Darrin AI recomandă consultanță cu specialist</div>
           <div style="font-size:12.5px;color:#6B7A8D;line-height:1.6;margin-bottom:12px">Nu am putut determina cu certitudine problema din datele transmise. Un specialist tehnic online poate evalua situația mai precis în timp real.</div>
-          <a id="ai-buton-consultanta" href="/mydarrin-catalog.html" style="display:none;text-align:center;text-decoration:none;width:100%;box-sizing:border-box;padding:12px;border-radius:12px;background:#0E9E99;color:#fff;font-size:13px;font-weight:700;font-family:inherit;margin-bottom:8px">Consultanță Darrin →</a>
-          <button onclick="switchConsTab('argint',document.getElementById('ctab-argint'))" style="width:100%;padding:12px;border-radius:12px;background:#FF8C00;color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .18s" onmouseover="this.style.background='#CC7000'" onmouseout="this.style.background='#FF8C00'">
-            Comandă consultanță online cu specialist →
-          </button>
+          <a id="ai-buton-consultanta" href="/mydarrin-catalog.html" style="display:none;text-align:center;text-decoration:none;width:100%;box-sizing:border-box;padding:12px;border-radius:12px;background:#0E9E99;color:#fff;font-size:13px;font-weight:700;font-family:inherit">Consultanță Darrin →</a>
+          <!-- Pasul 12-D2: butonul portocaliu „Comandă consultanță online cu specialist” (fila
+               Argint) a fost scos — Argint și Aur nu creează încă o cerere reală. Rămâne doar
+               Consultanța Darrin, serviciul real din catalog. -->
         </div>
       </div>
     </div>
 
     <!-- ══ ARGINT: CONSULTANT ONLINE ══ -->
     <div id="cons-argint" style="display:none">
+      <!-- Pasul 12-D2: fila nu creează încă o cerere reală (alocarea consultanților nu e construită). -->
+      <div class="cons-in-curand" role="status" style="background:#EAF2FB;border:1.5px solid #1D5FA8;color:#1D5FA8;border-radius:12px;padding:10px 12px;font-size:12.5px;font-weight:700;line-height:1.5;margin-bottom:14px">În curând — până atunci, Darrin AI (fila Bronz) și Consultanța Darrin din catalog te ajută să găsești serviciul potrivit.</div>
       <div style="background:linear-gradient(135deg,#F4F7F9,#EBF4FB);border-radius:16px;padding:18px;margin-bottom:16px;border:1px solid #D5DFE8">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
           <div style="font-size:32px"><i data-lucide="medal" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
           <div>
             <div style="font-weight:800;color:#003366;font-size:15px">Consultanță cu specialist uman online</div>
-            <div style="font-size:12px;color:#6B7A8D;margin-top:2px">Video call / Chat live / Telefon · Specialist verificat My Darrin</div>
+            <div style="font-size:12px;color:#6B7A8D;margin-top:2px">Specialist verificat My Darrin</div>
           </div>
         </div>
-        <p style="font-size:13px;color:#6B7A8D;line-height:1.65;margin-bottom:14px">Un specialist tehnic verificat va analiza problema ta în timp real prin video call, chat sau telefon. Are acces la istoricul descrierii tale și la imaginile/video-ul uploadat.</p>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
-          <span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:99px;background:#D4EDDA;color:#1A7A3A">Video call HD</span>
-          <span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:99px;background:#D4EDDA;color:#1A7A3A">Chat text live</span>
-          <span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:99px;background:#D4EDDA;color:#1A7A3A">Partajare ecran</span>
-          <span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:99px;background:#D4EDDA;color:#1A7A3A">Raport scris după sesiune</span>
-        </div>
+        <p style="font-size:13px;color:#6B7A8D;line-height:1.65;margin-bottom:14px">Un specialist tehnic verificat va analiza problema ta online, pe baza descrierii și a pozelor tale.</p>
         <!-- Pricing -->
         <div style="background:#fff;border-radius:12px;padding:14px;border:1px solid #D5DFE8">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -2981,7 +2977,7 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
       </div>
 
       <!-- CTA Argint -->
-      <button onclick="bookArgint()" style="width:100%;padding:14px;border-radius:14px;background:#003366;color:#fff;border:none;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px rgba(0,51,102,.25);transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px" onmouseover="this.style.background='#1A5FAD'" onmouseout="this.style.background='#003366'">
+      <button id="buton-argint" onclick="bookArgint()" disabled aria-disabled="true" style="opacity:.5;cursor:not-allowed;width:100%;padding:14px;border-radius:14px;background:#003366;color:#fff;border:none;font-size:14px;font-weight:800;font-family:inherit;box-shadow:0 4px 16px rgba(0,51,102,.25);transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px" onmouseover="this.style.background='#1A5FAD'" onmouseout="this.style.background='#003366'">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.68A2 2 0 012 .99h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
         Inițiază sesiunea cu specialistul
       </button>
@@ -2989,22 +2985,17 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
 
     <!-- ══ AUR: EVALUARE LA ADRESĂ ══ -->
     <div id="cons-aur" style="display:none">
+      <!-- Pasul 12-D2: fila nu creează încă o cerere reală (alocarea consultanților nu e construită). -->
+      <div class="cons-in-curand" role="status" style="background:#EAF2FB;border:1.5px solid #1D5FA8;color:#1D5FA8;border-radius:12px;padding:10px 12px;font-size:12.5px;font-weight:700;line-height:1.5;margin-bottom:14px">În curând — până atunci, Darrin AI (fila Bronz) și Consultanța Darrin din catalog te ajută să găsești serviciul potrivit.</div>
       <div style="background:linear-gradient(135deg,#FFF8EE,#FFF0D6);border-radius:16px;padding:18px;margin-bottom:16px;border:1.5px solid #FFD980">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
           <div style="font-size:32px"><i data-lucide="award" style="width:1em;height:1em;display:inline-block;vertical-align:middle"></i></div>
           <div>
             <div style="font-weight:800;color:#003366;font-size:15px">Evaluare fizică la adresa ta</div>
-            <div style="font-size:12px;color:#6B7A8D;margin-top:2px">Specialist tehnic vine la tine · Deviz exact · Raport detaliat</div>
+            <div style="font-size:12px;color:#6B7A8D;margin-top:2px">Un specialist tehnic vine la tine</div>
           </div>
         </div>
-        <p style="font-size:13px;color:#6B7A8D;line-height:1.65;margin-bottom:14px">Un specialist verificat și autorizat vine la adresa ta pentru inspecție fizică completă. Primești un raport detaliat cu diagnostic, recomandări și deviz estimativ.</p>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
-          <span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:99px;background:#D4EDDA;color:#1A7A3A">Inspecție la fața locului</span>
-          <span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:99px;background:#D4EDDA;color:#1A7A3A">Diagnostic complet</span>
-          <span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:99px;background:#D4EDDA;color:#1A7A3A">Deviz estimativ inclus</span>
-          <span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:99px;background:#D4EDDA;color:#1A7A3A">Raport PDF descărcabil</span>
-          <span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:99px;background:#D4EDDA;color:#1A7A3A">Garanție evaluare corectă</span>
-        </div>
+        <p style="font-size:13px;color:#6B7A8D;line-height:1.65;margin-bottom:14px">Un specialist verificat și autorizat vine la adresa ta pentru o inspecție la fața locului.</p>
         <div style="background:#fff;border-radius:12px;padding:14px;border:1px solid #FFD980">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
             <span style="font-size:13px;color:#6B7A8D">Evaluare la adresă</span>
@@ -3040,11 +3031,11 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
       </div>
 
       <!-- CTA Aur — deschide pagina produs cu slug dedicat -->
-      <button onclick="bookAur()" style="width:100%;padding:14px;border-radius:14px;background:#FF8C00;color:#fff;border:none;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 18px rgba(255,140,0,.35);transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px" onmouseover="this.style.background='#CC7000'" onmouseout="this.style.background='#FF8C00'">
+      <button id="buton-aur" onclick="bookAur()" disabled aria-disabled="true" style="opacity:.5;cursor:not-allowed;width:100%;padding:14px;border-radius:14px;background:#FF8C00;color:#fff;border:none;font-size:14px;font-weight:800;font-family:inherit;box-shadow:0 4px 18px rgba(255,140,0,.35);transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px" onmouseover="this.style.background='#CC7000'" onmouseout="this.style.background='#FF8C00'">
         Comandă evaluare la adresă
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
       </button>
-      <p style="text-align:center;font-size:11.5px;color:#8C9BAD;margin-top:8px">Escrow securizat · Darrin AI alocă specialistul din zona ta · Garanție evaluare</p>
+      <p style="text-align:center;font-size:11.5px;color:#8C9BAD;margin-top:8px">În curând</p>
     </div>
 
   </div><!-- /scrollable content -->
@@ -3055,6 +3046,9 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
 .active-cons-tab{ background:rgba(14,158,153,.25)!important; color:#0E9E99!important; border:1px solid rgba(14,158,153,.4)!important; }
 #consultanta-modal{ display:flex!important; flex-direction:column; } /* pasul 12-D1b: antetul sus, conținutul dedesubt (pe rând, câmpul AI avea lățimea 0 pe telefon) */
 #consultanta-modal.cons-open{ transform:translateX(0)!important; box-shadow:-12px 0 50px rgba(0,0,0,.2)!important; }
+/* Pasul 12-D2: cât e deschis panoul Darrin AI, butoanele plutitoare nu-i acoperă conținutul. */
+body.dai-panou-deschis #dai-fab, body.dai-panou-deschis #dai-chat-panel,
+body.dai-panou-deschis #myd-share-fab, body.dai-panou-deschis #myd-share-panel{ display:none!important; }
 </style>
 
 
@@ -3063,11 +3057,27 @@ document.querySelectorAll('.counter').forEach(el=>cobs.observe(el));
 let consOpen = false;
 let contactMode = 'chat';
 
+// Pasul 12-D2: cauza fundalului blurat fără panou — la închidere (pasul 12-D1b)
+// se ștergeau `top` și `height` din stilul modalului; la redeschidere, cu pagina
+// derulată, panoul stătea la poziția lui din document, în afara ecranului.
+// Acum se pun înapoi valorile de bază, iar o închidere întârziată nu mai ascunde
+// fundalul unei redeschideri rapide.
+let consInchidere = null;
+function consPozitieDeBaza(modal){
+  modal.style.top = '0px';
+  modal.style.height = '100vh';
+}
 function openConsultanta(){
   consOpen = true;
+  if(consInchidere){ clearTimeout(consInchidere); consInchidere = null; }
   document.getElementById('consultanta-overlay').style.display='block';
   const modal = document.getElementById('consultanta-modal');
+  consPozitieDeBaza(modal);
   modal.style.display='flex';
+  modal.classList.remove('cons-inchis');
+  // Butoanele plutitoare (distribuire, Darrin AI) se ascund cât e panoul deschis.
+  document.body.classList.add('dai-panou-deschis');
+  if(window.MYD_POTRIVESTE_MODAL_AI) window.MYD_POTRIVESTE_MODAL_AI();
   requestAnimationFrame(()=>modal.classList.add('cons-open'));
   document.body.style.overflow='hidden';
 
@@ -3119,14 +3129,27 @@ function triggerHeroCatSearch(){
   window.MYD_POTRIVESTE_MODAL_AI = potriveste;
 })();
 
+// La sfârșitul animației de închidere, clasa „cons-inchis” anunță ui-comun.js
+// (care urmărește clasele) că panoul a ieșit din ecran: butoanele plutitoare
+// de pe telefon reapar. Fără ea, uneori rămâneau ascunse după închidere.
+document.addEventListener('DOMContentLoaded', () => {
+  const modal = document.getElementById('consultanta-modal');
+  if (modal) modal.addEventListener('transitionend', (e) => {
+    if (e.target === modal && e.propertyName === 'transform' && !modal.classList.contains('cons-open')) modal.classList.add('cons-inchis');
+  });
+});
 function closeConsultanta(){
   const modal = document.getElementById('consultanta-modal');
   modal.classList.remove('cons-open');
-  setTimeout(()=>{
+  consOpen=false;
+  if(consInchidere) clearTimeout(consInchidere);
+  consInchidere = setTimeout(()=>{
+    consInchidere = null;
+    if(consOpen) return; // redeschis între timp
     document.getElementById('consultanta-overlay').style.display='none';
-    consOpen=false;
     document.body.style.overflow='';
-    modal.style.height=''; modal.style.top='';
+    document.body.classList.remove('dai-panou-deschis');
+    consPozitieDeBaza(modal);
   },350);
 }
 
@@ -3207,6 +3230,12 @@ function toggleProiectMode(){
     : 'Ai un proiect de construcție/renovare mai mare? → Deviz Sumar Proiect';
 }
 
+// Pasul 12-D2: rutele răspunsului. La „neclar”, Darrin AI pune o întrebare;
+// răspunsul clientului se trimite ca a doua încercare (incercare: 2), cu
+// descrierea de la început și fișierele ei. Erorile (429, 5xx, timeout, fără
+// internet) nu se mai afișează ca rezultat: mesaj MDFeedback sub câmp, cu
+// „Reîncearcă”; textul și pozele rămân.
+let conversatieAI = null; // { text, intrebare, files }
 async function sendToAI(){
   const txt = document.getElementById('chat-input')?.value.trim() || '';
   const tipConstructie = document.getElementById('proiect-tip')?.value || '';
@@ -3221,59 +3250,65 @@ async function sendToAI(){
   if(!proiectMode && !txt && nrFisiere===0){ MDFeedback.mesaj(zonaMesaj, 'eroare', daiT('Descrie problema sau atașează o poză / un PDF.')); return; }
   MDFeedback.mesaj(zonaMesaj, 'info', '');
 
-  // Mesaj utilizator în chat
-  const msgs=document.getElementById('chat-messages');
   const afisatText = txt || (proiectMode ? `Proiect: ${tipConstructie}${suprafata?` · ${suprafata} m²`:''}${locatie?` · ${locatie}`:''}` : daiT('[{n} fișier(e) atașat(e)]', { n: nrFisiere }));
-  const userMsg=document.createElement('div');
-  userMsg.style.cssText='display:flex;justify-content:flex-end;gap:10px';
-  userMsg.innerHTML=`<div style="background:#003366;border-radius:14px 0 14px 14px;padding:12px 15px;max-width:85%;color:#fff;font-size:13px;line-height:1.65">${escapeHTML(afisatText)}</div>`;
-  msgs.appendChild(userMsg);
-
-  if(nrFisiere>0){
-    const fileMsg=document.createElement('div');
-    fileMsg.style.cssText='display:flex;justify-content:flex-end';
-    fileMsg.innerHTML=`<div style="font-size:11px;color:#8C9BAD;margin-top:4px">${escapeHTML(daiT('{n} fișier(e) atașat(e)', { n: nrFisiere }))}</div>`;
-    msgs.appendChild(fileMsg);
-  }
-
-  document.getElementById('chat-input').value='';
 
   const thinking=document.getElementById('ai-thinking');
   if(thinking) thinking.style.display='block';
   const analysisEl=document.getElementById('ai-analysis-text');
   if(analysisEl) analysisEl.textContent = nrFisiere>0 ? daiT('Analizez descrierea și {n} fișier(e)...', { n: nrFisiere }) : daiT('Analizez descrierea...');
 
+  const cp2 = document.getElementById('cp-2');
+  const culoareCp2 = cp2 ? cp2.style.background : '';
   document.getElementById('cp-1').style.background='#0E9E99';
-  document.getElementById('cp-2').style.background='#FF8C00';
+  if(cp2) cp2.style.background='#FF8C00';
 
   const sendBtn = document.getElementById('send-to-ai-btn');
-  if(sendBtn) sendBtn.disabled = true;
+  if(sendBtn){ sendBtn.disabled = true; sendBtn.setAttribute('aria-busy', 'true'); }
 
   try {
-    const filesPayload = a ? (await a.fisiere()).map(f => ({ mime: f.mime, data_base64: f.data_base64 })) : [];
-
+    let filesPayload = a ? (await a.fisiere()).map(f => ({ mime: f.mime, data_base64: f.data_base64 })) : [];
+    const aDouaIncercare = !!(conversatieAI && !proiectMode);
+    let textTrimis = txt;
+    if(aDouaIncercare){
+      // Descrierea de la început, întrebarea lui Darrin AI și răspunsul (text pentru model).
+      textTrimis = [conversatieAI.text, 'Întrebarea Darrin AI: ' + conversatieAI.intrebare, 'Răspunsul clientului: ' + txt].filter(Boolean).join('\n\n').slice(0, 4000);
+      if(!filesPayload.length) filesPayload = conversatieAI.files || [];
+    }
     const body = proiectMode
       ? { mod: 'proiect', text: txt || undefined, tip_constructie: tipConstructie || undefined, suprafata_mp: suprafata ? Number(suprafata) : undefined, locatie: locatie || undefined }
-      : { mod: 'servicii', text: txt || undefined, files: filesPayload };
+      : { mod: 'servicii', text: textTrimis || undefined, files: filesPayload };
+    if(aDouaIncercare) body.incercare = 2;
     body.lang = daiLimba();
     body.tara = (window.MYD_GEO_LAST && window.MYD_GEO_LAST.cc) || (window.MYD_GEO && window.MYD_GEO.data && window.MYD_GEO.data.cc) || 'RO';
 
-    const res = await fetch('/api/darrin-ai/deviz', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json().catch(() => null);
-    if(!res.ok || !data || !data.ok) throw new Error(window.MYD_I18N ? MYD_I18N.eroare(data, 'Eroare necunoscută') : 'Eroare necunoscută');
+    const data = await DarrinAIFisiere.cerere(body);
 
-    // Fișierele trimise cu succes se scot din listă.
+    // Doar după un răspuns real: mesajul în chat, câmpul și fișierele se golesc.
+    const msgs=document.getElementById('chat-messages');
+    const userMsg=document.createElement('div');
+    userMsg.style.cssText='display:flex;justify-content:flex-end;gap:10px';
+    userMsg.innerHTML=`<div style="background:#003366;border-radius:14px 0 14px 14px;padding:12px 15px;max-width:85%;color:#fff;font-size:13px;line-height:1.65">${escapeHTML(afisatText)}</div>`;
+    msgs.appendChild(userMsg);
+    if(nrFisiere>0){
+      const fileMsg=document.createElement('div');
+      fileMsg.style.cssText='display:flex;justify-content:flex-end';
+      fileMsg.innerHTML=`<div style="font-size:11px;color:#8C9BAD;margin-top:4px">${escapeHTML(daiT('{n} fișier(e) atașat(e)', { n: nrFisiere }))}</div>`;
+      msgs.appendChild(fileMsg);
+    }
+    document.getElementById('chat-input').value='';
     if(a) a.goleste();
+
+    // Conversația continuă doar după un „neclar” cu întrebare.
+    conversatieAI = (data.relevanta === 'neclar' && data.intrebare && !proiectMode)
+      ? { text: aDouaIncercare ? conversatieAI.text : txt, intrebare: data.intrebare, files: filesPayload }
+      : null;
     renderAIResult(data);
   } catch(e){
-    console.error('[Darrin AI]', e);
-    renderAIError(e.message);
+    console.error('[Darrin AI]', e && e.cod ? e.cod : e);
+    if(cp2) cp2.style.background = culoareCp2 || '#D5DFE8';
+    renderAIError(e);
   } finally {
-    if(sendBtn) sendBtn.disabled = false;
+    if(sendBtn){ sendBtn.disabled = false; sendBtn.removeAttribute('aria-busy'); }
   }
 }
 
@@ -3311,14 +3346,31 @@ function renderAIResult(data){
   if(thinking) thinking.style.display='none';
   const result=document.getElementById('ai-result');
   if(result) result.style.display='block';
+  result && result.setAttribute('data-relevanta', data.relevanta || 'potrivit');
   document.getElementById('cp-2').style.background='#0E9E99';
-  document.getElementById('cp-3').style.background='#0E9E99';
 
-  const servicii = Array.isArray(data.servicii) ? data.servicii.slice(0, 3) : [];
+  const relevanta = data.relevanta || 'potrivit';
+  const faraLegatura = relevanta === 'fara_legatura';
+  const intrebare = relevanta === 'neclar' && data.intrebare ? data.intrebare : '';
+  if(!faraLegatura && !intrebare) document.getElementById('cp-3').style.background='#0E9E99';
+
+  const servicii = faraLegatura ? [] : (Array.isArray(data.servicii) ? data.servicii.slice(0, 3) : []);
   const incredereProc = Math.round((data.incredere||0)*100);
   const recEl=document.getElementById('ai-recommendation');
-  if(recEl) recEl.innerHTML =
-    `${escapeHTML(data.explicatie||'')}<br><span style="font-size:11px;color:#8C9BAD">${escapeHTML(daiT('Încredere {n}%', { n: incredereProc }))}</span>`;
+  if(recEl){
+    if(faraLegatura){
+      // Doar textul fix al serverului: fără servicii, fără consultanță.
+      recEl.innerHTML = `<span data-ai-text-fix="1">${escapeHTML(data.explicatie||'')}</span>`;
+    } else if(intrebare){
+      recEl.innerHTML =
+        `<div data-ai-intrebare="1" style="font-weight:700;color:#003366">${escapeHTML(intrebare)}</div>`
+        + (data.explicatie ? `<div style="margin-top:6px">${escapeHTML(data.explicatie)}</div>` : '')
+        + (servicii.length ? `<div style="font-size:11px;font-weight:700;color:#8C9BAD;margin-top:10px;text-transform:uppercase;letter-spacing:.06em">${escapeHTML(daiT('Servicii posibile'))}</div>` : '');
+    } else {
+      recEl.innerHTML =
+        `${escapeHTML(data.explicatie||'')}<br><span style="font-size:11px;color:#8C9BAD">${escapeHTML(daiT('Încredere {n}%', { n: incredereProc }))}</span>`;
+    }
+  }
 
   const recSvc=document.getElementById('rec-services');
   if(recSvc){
@@ -3326,13 +3378,14 @@ function renderAIResult(data){
     servicii.forEach(s => recSvc.appendChild(daiCardServiciu(s)));
   }
 
-  // Încredere mică: butonul spre „Consultanță Darrin” (serviciul din catalog).
+  // Căsuța de consultanță: doar la o analiză reală cu recomandare de consultanță
+  // („potrivit” cu încredere mică sau „neclar” și la a doua încercare).
   const esc=document.getElementById('escalate-to-argint');
-  const slab = !!data.recomanda_consultanta || !servicii.length;
+  const slab = !faraLegatura && !intrebare && (!!data.recomanda_consultanta || !servicii.length);
   if(esc) esc.style.display = slab ? 'block' : 'none';
   const btnCons = document.getElementById('ai-buton-consultanta');
   if(btnCons){
-    if(data.consultanta && data.consultanta.url){
+    if(slab && data.consultanta && data.consultanta.url){
       btnCons.setAttribute('href', daiUrlSigur(data.consultanta.url));
       btnCons.style.display='block';
     } else {
@@ -3340,25 +3393,25 @@ function renderAIResult(data){
     }
   }
 
+  const camp = document.getElementById('chat-input');
+  if(camp) camp.placeholder = intrebare
+    ? daiT('Răspunde la întrebarea lui Darrin AI...')
+    : daiT('Descrie problema ta... (ex: centrala nu pornește, apare codul E3, am verificat presiunea...)');
+  if(faraLegatura || intrebare){
+    // Clientul scrie din nou: focusul revine în câmpul de descriere.
+    if(camp) setTimeout(()=>{ try { camp.focus({ preventScroll: true }); } catch(e) { camp.focus(); } }, 50);
+  }
   setTimeout(()=>{ result?.scrollIntoView({behavior:'smooth',block:'start'}); },200);
 }
 
-function renderAIError(msg){
+// Erorile nu sunt un rezultat: mesaj MDFeedback sub câmp, cu „Reîncearcă”.
+function renderAIError(e){
   const thinking=document.getElementById('ai-thinking');
   if(thinking) thinking.style.display='none';
-  const result=document.getElementById('ai-result');
-  if(result) result.style.display='block';
-  document.getElementById('cp-2').style.background='#FF8C00';
-
-  const recEl=document.getElementById('ai-recommendation');
-  if(recEl) recEl.innerHTML = `Darrin AI nu a putut genera o estimare acum (${escapeHTML(msg)}). Poți vorbi direct cu un specialist verificat.`;
-  const recSvc=document.getElementById('rec-services');
-  if(recSvc) recSvc.innerHTML='';
-
-  const esc=document.getElementById('escalate-to-argint');
-  if(esc) esc.style.display='block';
-
-  setTimeout(()=>{ result?.scrollIntoView({behavior:'smooth',block:'start'}); },200);
+  const zona=document.getElementById('ai-mesaj');
+  const text = (e && e.message) || daiT('Darrin AI nu a putut răspunde acum. Reîncearcă peste câteva momente.');
+  if(window.MDFeedback) MDFeedback.mesaj(zona, 'eroare', text, { reincearca: () => sendToAI() });
+  if(zona) zona.scrollIntoView({ block: 'nearest' });
 }
 
 // ── ARGINT ──
@@ -3373,13 +3426,10 @@ function selContact(mode,btn){
   if(b){ b.style.borderColor='#003366'; b.style.background='#EBF4FB'; b.style.color='#003366'; }
 }
 
+// Pasul 12-D2: Argint nu creează încă o cerere reală (nu există serviciul în
+// catalog și nicio cerere nu ajunge în back-office) — trimiterea e dezactivată.
 function bookArgint(){
-  closeConsultanta();
-  // Redirect to product page with consultanta-argint slug
-  const addr = document.getElementById('cons-addr')?.value||'';
-  const desc = document.getElementById('chat-input')?.value||'';
-  const url = 'mydarrin-produs.html?slug=consultanta-argint&type=serviciu&addr='+encodeURIComponent(addr)+'&desc='+encodeURIComponent(desc.substring(0,100));
-  window.open(url,'_blank');
+  if(window.MDFeedback) MDFeedback.toast('info', daiT('În curând — până atunci, Darrin AI (fila Bronz) și Consultanța Darrin din catalog te ajută să găsești serviciul potrivit.'));
 }
 
 function updateConsAddr(){
@@ -3397,13 +3447,9 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
 });
 
+// Pasul 12-D2: la fel ca Argint — „În curând”.
 function bookAur(){
-  const addr=document.getElementById('aur-addr')?.value.trim()||'';
-  if(!addr){ alert('Introdu adresa de evaluare.'); return; }
-  closeConsultanta();
-  const desc=document.getElementById('aur-desc')?.value||'';
-  const url='mydarrin-produs.html?slug=consultanta-aur&type=serviciu&addr='+encodeURIComponent(addr)+'&desc='+encodeURIComponent(desc.substring(0,100));
-  window.open(url,'_blank');
+  if(window.MDFeedback) MDFeedback.toast('info', daiT('În curând — până atunci, Darrin AI (fila Bronz) și Consultanța Darrin din catalog te ajută să găsești serviciul potrivit.'));
 }
 
 // ESC to close
@@ -5112,14 +5158,7 @@ async function loadConsPrices() {
     });
 
     // Actualizăm și tab-urile din modal consultanță
-    var tabArgint = document.getElementById('ctab-argint');
-    if(tabArgint && cfg['consultanta_argint_pret']) {
-      tabArgint.querySelector('span').textContent = 'Consultant online · ' + cfg['consultanta_argint_pret'] + ' Lei';
-    }
-    var tabAur = document.getElementById('ctab-aur');
-    if(tabAur && cfg['consultanta_aur_pret']) {
-      tabAur.querySelector('span').textContent = 'La adresă · ' + cfg['consultanta_aur_pret'] + ' Lei';
-    }
+    // Pasul 12-D2: filele Argint și Aur din modal sunt „În curând” — fără preț.
 
     var loaded = document.getElementById('cons-prices-loaded');
     if(loaded) { loaded.textContent = 'Prețuri actualizate'; setTimeout(function(){loaded.style.display='none';},2000); }
@@ -5766,13 +5805,6 @@ if(typeof lucide!=="undefined")lucide.createIcons();
 #cart-drawer::-webkit-scrollbar{width:4px}
 #cart-drawer::-webkit-scrollbar-thumb{background:#D5DFE8;border-radius:2px}
 </style>
-
-
-<!-- ════════════════════════════════════════════════
-     MODAL CONSULTANȚĂ DARRIN AI — 3 Niveluri
-════════════════════════════════════════════════ -->
-<div id="consultanta-overlay" onclick="closeConsultanta()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(5px);z-index:850;transition:opacity .3s"></div>
-
 
 
 <style>
