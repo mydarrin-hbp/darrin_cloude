@@ -13,7 +13,10 @@
   în 60 de secunde, la /parteneri/inscriere (rescriere în vercel.json și middleware.js).
   - „Ce faci?”: Servicii · Materiale · Închirieri · Curier · Asigurări → profiles.rol_solicitat
     (partener_servicii, partener_materiale, partener_inchirieri, partener_curier, partener_asigurari);
-  - Profesia (doar la Servicii): /api/public/profesii (competente_esco), preselectată din ?profesie=<slug>;
+  - Pasul 12-P2 (20 nov. 2026, temporar până la B2): „Categoria principală” (Servicii, Materiale,
+    Închirieri) din arborele unic, /api/public/categorii, cu „Altceva” + text opțional; preselectată din
+    ?domeniu=<slug> sau ?profesie=<slug> (profesia rămâne doar indiciu). Profesia, competențele,
+    serviciile și zona se aleg în panoul partenerului, după cont;
   - înregistrarea, ecranul de cod și salvarea datelor în ciorna activării: cont-fereastra.js
     (MDCont.inregistreaza / arataCod / salveazaPreinscriere), fără logică dublată;
   - după cod: panoul partenerului, starea „cont nou” (panou-cont-nou.js).
@@ -107,11 +110,17 @@
       </div>
     </fieldset>
 
-    <label class="pi-camp" id="pi-profesie-camp">Profesia
-      <select id="pi-profesie" aria-describedby="pi-profesie-ajutor">
-        <option value="">Alege profesia</option>
+    <!-- Pasul 12-P2: categoria principală din arborele unic (/api/public/categorii), la Servicii, Materiale și Închirieri. -->
+    <label class="pi-camp" id="pi-domeniu-camp" hidden>Categoria principală
+      <select id="pi-domeniu" aria-describedby="pi-domeniu-reclama pi-domeniu-ajutor">
+        <option value="">Alege categoria</option>
       </select>
-      <span class="pi-ajutor" id="pi-profesie-ajutor" hidden>Aleasă deja din reclamă; o poți schimba.</span>
+      <span class="pi-ajutor" id="pi-domeniu-reclama" hidden>Aleasă deja din reclamă; o poți schimba.</span>
+      <span class="pi-ajutor" id="pi-domeniu-ajutor">Profesia, serviciile și zona le alegi în panoul tău, după ce îți faci contul.</span>
+    </label>
+
+    <label class="pi-camp" id="pi-altceva-camp" hidden>Ce faci, pe scurt (opțional)
+      <input id="pi-altceva" maxlength="80" autocomplete="off" placeholder="De exemplu: sobe de teracotă">
     </label>
 
     <label class="pi-camp">Orașul în care lucrezi
