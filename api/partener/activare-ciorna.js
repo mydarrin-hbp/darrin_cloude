@@ -11,6 +11,14 @@
 //          sensibile (IBAN, coduri) se scot pe server, oricum ar veni;
 // DELETE → { ok }   (după pasul 6, „Contractul”)
 //
+// Pasul 12-P2 (20 nov. 2026): date.preinscriere (categoria principală aleasă la
+// /parteneri/inscriere) se verifică pe server când se schimbă: categorie_id
+// trebuie să existe, să fie activ, principal și de tipul ales; la Servicii,
+// Materiale și Închirieri e obligatoriu un categorie_id valid sau „Altceva”
+// (categorie_altceva, cu textul curățat, cel mult 80) — lib/categorii-inscriere.js.
+// Altfel 400 CATEGORIE_* cu câmpul categorie_id. Denumirile categoriei se iau
+// din bază. La DELETE, datele pre-înscrierii rămân (fișa din back-office le arată).
+//
 // Ciorna e doar un ajutor: nu acordă nimic și nu înlocuiește salvarea pasului.
 // Tabelul vine din docs/migrations-propuse/2026-11-02_activare_ciorna.sql;
 // înainte de migrare răspunsul e 503 CIORNA_INDISPONIBILA, iar pagina oprește
@@ -21,6 +29,7 @@ const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { trimiteEroare, formaComuna } = require('../../lib/raspuns-eroare');
 const { esteRolPartener } = require('../../lib/activare-partener');
 const v = require('../../lib/valideaza');
+const { valideazaPreinscriere } = require('../../lib/categorii-inscriere');
 
 // Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
 const SCHEMA = {
@@ -89,7 +98,15 @@ async function handler(req, res, user) {
     }
 
     if (req.method === 'DELETE') {
-      const { error } = await supabaseAdmin.from(TABEL).delete().eq('user_id', user.id);
+      // Pasul 12-P2: categoria aleasă la înscriere rămâne (fără migrare, ciorna e
+      // singurul loc unde e salvată); restul ciornei se șterge.
+      const { data: veche, error: eCit } = await supabaseAdmin.from(TABEL).select('date').eq('user_id', user.id).maybeSingle();
+      if (tabelLipsa(eCit)) return res.status(200).json({ ok: true });
+      if (eCit) throw eCit;
+      const pre = veche && veche.date && veche.date.preinscriere;
+      const { error } = pre
+        ? await supabaseAdmin.from(TABEL).update({ pas_curent: 1, date: { preinscriere: pre }, actualizat_la: new Date().toISOString() }).eq('user_id', user.id)
+        : await supabaseAdmin.from(TABEL).delete().eq('user_id', user.id);
       if (tabelLipsa(error)) return res.status(200).json({ ok: true });
       if (error) throw error;
       return res.status(200).json({ ok: true });
@@ -108,8 +125,23 @@ async function handler(req, res, user) {
     }
     if (!(await areRolPartener(user.id))) return trimiteEroare(res, 403, 'FARA_ROL_PARTENER', MESAJ.fara_rol.ro, MESAJ.fara_rol.en);
 
+    const date = curata(corp.date);
+    // Pasul 12-P2: pre-înscrierea, verificată doar când se schimbă (salvarea automată
+    // a pașilor trimite înapoi aceeași valoare, deja verificată).
+    if (Object.prototype.hasOwnProperty.call(date, 'preinscriere')) {
+      const { data: veche, error: eCit } = await supabaseAdmin.from(TABEL).select('date').eq('user_id', user.id).maybeSingle();
+      if (tabelLipsa(eCit)) return trimiteEroare(res, 503, 'CIORNA_INDISPONIBILA', MESAJ.indisponibil.ro, MESAJ.indisponibil.en);
+      if (eCit) throw eCit;
+      const salvata = veche && veche.date ? veche.date.preinscriere : undefined;
+      if (JSON.stringify(salvata) !== JSON.stringify(date.preinscriere)) {
+        const r = await valideazaPreinscriere(date.preinscriere);
+        if (!r.ok) return trimiteEroare(res, 400, r.cod, r.mesaj.ro, r.mesaj.en, [{ camp: r.camp, mesaj: r.mesaj }]);
+        date.preinscriere = r.pre;
+      }
+    }
+
     const actualizat_la = new Date().toISOString();
-    const { error } = await supabaseAdmin.from(TABEL).upsert({ user_id: user.id, pas_curent: pas, date: curata(corp.date), actualizat_la }, { onConflict: 'user_id' });
+    const { error } = await supabaseAdmin.from(TABEL).upsert({ user_id: user.id, pas_curent: pas, date, actualizat_la }, { onConflict: 'user_id' });
     if (tabelLipsa(error)) return trimiteEroare(res, 503, 'CIORNA_INDISPONIBILA', MESAJ.indisponibil.ro, MESAJ.indisponibil.en);
     if (error) throw error;
     return res.status(200).json({ ok: true, actualizat_la });
