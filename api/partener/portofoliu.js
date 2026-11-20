@@ -12,12 +12,24 @@
 //
 // GET  → { ok, categorie, servicii:[{ id, titlu, domeniu, bifat }] }
 // POST { action:'toggle', catalog_serviciu_id, activ } → { ok }
+//
+// Pasul 12-P2 (20 nov. 2026, temporar până la macheta B2): „Ce lucrări faci”
+// din panoul contului nou (panou-cont-nou.js) folosește acest portofoliu.
+// - accesul: rolul de partener acordat (profiles.roles) SAU ales la înscriere
+//   (profiles.rol_solicitat) — contul nou nu are încă rând în partners; bifarea
+//   nu dă comenzi: alocarea cere și disponibilitate, aprobare, contract și IBAN;
+// - tipul catalogului: partners.partner_type, altfel din rol_solicitat;
+// - serviciile din categoria principală aleasă la înscriere (ciorna activării,
+//   date.preinscriere.categorie_id, cu subcategoriile ei) vin primele, marcate
+//   din_categoria_aleasa; răspunsul are și categoria_aleasa { id, denumire, denumire_en, text }.
+//   Doar catalogul de servicii are azi categorie_id / subcategorie_id completate.
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { verificaSiNotificaProfilComplet } = require('../../lib/verifica-profil-complet-partener');
 const v = require('../../lib/valideaza');
 const { trimiteEroare } = require('../../lib/raspuns-eroare');
+const { categorieAleasa } = require('../../lib/categorii-inscriere');
 
 // Pasul 11-S1: tipurile și lungimile câmpurilor primite (lib/valideaza.js).
 const SCHEMA = {
@@ -37,15 +49,41 @@ const TIP_LA_CATEGORIE = {
   inchirieri_utilaje: 'inchirieri',
 };
 
-async function actionList(req, res, user) {
+// rolul de partener → catalog_servicii.categorie (contul fără rând în partners)
+const ROL_LA_CATEGORIE = {
+  partener_servicii: 'servicii',
+  partener_materiale: 'materiale',
+  partener_inchirieri: 'inchirieri',
+};
+
+// Profilul: rolurile acordate și rolul ales la înscriere (citite cu service_role).
+async function profilRoluri(userId) {
+  let { data, error } = await supabaseAdmin.from('profiles').select('roles, rol_solicitat').eq('id', userId).maybeSingle();
+  if (error) ({ data, error } = await supabaseAdmin.from('profiles').select('roles').eq('id', userId).maybeSingle());
+  if (error) throw error;
+  return { roles: Array.isArray(data && data.roles) ? data.roles : [], rol_solicitat: (data && data.rol_solicitat) || null };
+}
+function arePartener(p) {
+  return p.roles.some((r) => ROLURI_PARTENER.includes(r)) || ROLURI_PARTENER.includes(p.rol_solicitat);
+}
+
+// Categoria aleasă la înscriere (ciorna activării), sau null.
+async function categorieDinInscriere(userId) {
+  const { data, error } = await supabaseAdmin.from('partener_activare_ciorna').select('date').eq('user_id', userId).maybeSingle();
+  if (error || !data) return null;
+  return categorieAleasa(data.date && data.date.preinscriere);
+}
+
+async function actionList(req, res, user, profil) {
   const { data: partner } = await supabaseAdmin
     .from('partners')
     .select('partner_type')
     .eq('id', user.id)
     .maybeSingle();
-  if (!partner) return trimiteEroare(res, 404, 'PARTENER_NU_EXISTA', 'Cont de partener inexistent.', 'The partner account does not exist.');
 
-  const categorie = TIP_LA_CATEGORIE[partner.partner_type];
+  const categorie = partner
+    ? TIP_LA_CATEGORIE[partner.partner_type]
+    : ROL_LA_CATEGORIE[profil.rol_solicitat] || ROL_LA_CATEGORIE[profil.roles.find((r) => ROL_LA_CATEGORIE[r])];
   if (!categorie) {
     // Curier/asigurări nu au un catalog de bifat în acest fel — alocarea
     // lor e pe rol/zonă, nu pe listă de servicii (vezi documentul, secțiunea
@@ -55,7 +93,7 @@ async function actionList(req, res, user) {
 
   const { data: catalog, error } = await supabaseAdmin
     .from('catalog_servicii')
-    .select('id, id_serviciu, titlu, domeniu, nace, cod_esco')
+    .select('id, id_serviciu, titlu, domeniu, nace, cod_esco, categorie_id, subcategorie_id, traduceri')
     .eq('categorie', categorie)
     .eq('status_public', true)
     .order('domeniu', { ascending: true })
@@ -71,8 +109,22 @@ async function actionList(req, res, user) {
     .eq('partener_id', user.id);
   const activeSet = new Set((active || []).filter((a) => a.activ).map((a) => a.catalog_serviciu_id));
 
-  const servicii = (catalog || []).map((s) => ({ ...s, bifat: activeSet.has(s.id) }));
-  return res.status(200).json({ ok: true, categorie, servicii });
+  // Pasul 12-P2: serviciile din categoria aleasă la înscriere (și subcategoriile ei), primele.
+  const aleasa = await categorieDinInscriere(user.id);
+  const iduri = new Set();
+  if (aleasa && aleasa.id) {
+    iduri.add(aleasa.id);
+    const { data: copii } = await supabaseAdmin.from('categorii').select('id').eq('parent_id', aleasa.id);
+    (copii || []).forEach((c) => iduri.add(c.id));
+  }
+  const servicii = (catalog || []).map((s) => {
+    const { categorie_id, subcategorie_id, traduceri, ...rest } = s;
+    const en = traduceri && traduceri.en ? traduceri.en : {};
+    return { ...rest, titlu_en: en.titlu || null, bifat: activeSet.has(s.id), din_categoria_aleasa: iduri.has(categorie_id) || iduri.has(subcategorie_id) };
+  });
+  // Sortare stabilă: întâi categoria aleasă, apoi ordinea de mai sus (domeniu, titlu).
+  const ordonate = servicii.filter((s) => s.din_categoria_aleasa).concat(servicii.filter((s) => !s.din_categoria_aleasa));
+  return res.status(200).json({ ok: true, categorie, servicii: ordonate, categoria_aleasa: aleasa });
 }
 
 async function actionToggle(req, res, user) {
@@ -110,7 +162,10 @@ async function actionToggle(req, res, user) {
 }
 
 async function handler(req, res, user) {
-  if (req.method === 'GET') return actionList(req, res, user);
+  const profil = await profilRoluri(user.id).catch(() => null);
+  // Fail-closed: fără profil citit sau fără rol de partener (acordat sau ales), refuz.
+  if (!profil || !arePartener(profil)) return trimiteEroare(res, 403, 'FARA_DREPT', 'Nu ai permisiunea necesară pentru acest rol', 'You do not have the required permission for this role');
+  if (req.method === 'GET') return actionList(req, res, user, profil);
   if (req.method === 'POST') {
     const { action } = req.body || {};
     if (action === 'toggle') return actionToggle(req, res, user);
@@ -119,4 +174,5 @@ async function handler(req, res, user) {
   return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
 }
 
-module.exports = requireAuth(ROLURI_PARTENER, handler);
+// Rolul se verifică în handler (acordat sau ales la înscriere), tot din profiles, cu service_role.
+module.exports = requireAuth([], handler);
