@@ -1,0 +1,142 @@
+/* ════════════════════════════════════════════════════════════════
+   MY DARRIN — landing.css, pasul 12-L1 (macheta L1, aprobată de LM, 19 nov. 2026)
+
+   Șablonul comun al paginilor de destinație: /parteneri, cele 5 categorii de
+   partener și /investitori. Markup-ul îl scrie
+   scripts/genereaza-pagini-destinatie.js (din lib/landing-pagini.js), între
+   comentariile „lp:inceput” și „lp:sfarsit”.
+
+   Primul ecran pe telefon (360 × 640, 390 × 844), fără derulare: eticheta,
+   titlul, subtitlul, 3 beneficii, un singur buton portocaliu și textul de sub
+   el. Dedesubt: imaginea campaniei (doar dacă există), „Cum funcționează”
+   (3 pași) și linkul spre întrebări — sau cardurile categoriilor (/parteneri),
+   sau runda și pașii investitorului (/investitori).
+
+   Fără Tailwind: stilurile de aici nu depind de nimic altceva.
+   html.lp-asteapta (pus de scriptul din <head> când adresa are utm_campaign)
+   ascunde vizual DOAR textele primului ecran, cel mult 300 ms, cât se aplică
+   varianta campaniei; locul lor rămâne (fără schimbări de layout).
+   ════════════════════════════════════════════════════════════════ */
+.lp {
+  --lp-fond: #F6F8FB; --lp-card: #FFFFFF; --lp-chenar: #E6ECF2; --lp-bleumarin: #003366;
+  --lp-portocaliu: #FF8C00; --lp-text-buton: #1A1A1A; --lp-turcoaz: #0E9E99; --lp-turcoaz-inchis: #0B6E6A;
+  --lp-text: #1A2332; --lp-gri: #4A5A6B;
+  display: block; background: var(--lp-fond); color: var(--lp-text); font-weight: 400;
+  font-family: 'Helvetica World', 'Helvetica Neue', Arial, system-ui, sans-serif;
+}
+.lp *, .lp *::before, .lp *::after { box-sizing: border-box; }
+
+/* ── Primul ecran ─────────────────────────────────────────────────── */
+.lp-erou { background: var(--lp-card); border-bottom: 1px solid var(--lp-chenar); }
+.lp-erou-in {
+  max-width: 640px; margin: 0 auto; padding: 18px 16px 18px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.lp-eticheta {
+  align-self: flex-start; margin: 0; font-size: 12px; line-height: 1.3; font-weight: 800;
+  color: #0B5E5A; background: #EAF6F5; border-radius: 99px; padding: 5px 10px;
+}
+.lp[data-lp-tip="investitori"] .lp-eticheta { color: var(--lp-bleumarin); background: #EEF2F6; }
+.lp-titlu {
+  margin: 0; font-size: 27px; line-height: 1.15; font-weight: 800; color: var(--lp-bleumarin);
+  letter-spacing: -.01em; text-wrap: balance;
+}
+.lp-sub { margin: 0; font-size: 15px; line-height: 1.45; color: var(--lp-gri); }
+.lp-beneficii { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.lp-beneficii li { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; line-height: 1.35; font-weight: 600; }
+.lp-beneficii svg { flex-shrink: 0; width: 20px; height: 20px; margin-top: 0; }
+.lp-buton {
+  display: flex; align-items: center; justify-content: center; min-height: 54px; padding: 0 20px;
+  border-radius: 14px; background: var(--lp-portocaliu); color: var(--lp-text-buton) !important;
+  font-size: 17px; font-weight: 800; text-decoration: none; text-align: center; line-height: 1.2;
+  box-shadow: 0 6px 18px rgba(255, 140, 0, .25); transition: background .15s, transform .15s;
+  -webkit-tap-highlight-color: transparent; text-shadow: none !important;
+}
+.lp-buton:hover { background: #F07F00; }
+.lp-buton:active { transform: translateY(1px); }
+.lp-buton:focus-visible { outline: 3px solid var(--lp-bleumarin) !important; outline-offset: 3px !important; }
+.lp-sub-buton { margin: -4px 0 0; font-size: 13px; line-height: 1.4; text-align: center; color: var(--lp-gri); }
+
+/* Varianta campaniei se aplică (cel mult 300 ms): doar textele, locul rămâne. */
+html.lp-asteapta [data-lp-camp] { visibility: hidden; }
+
+/* Telefoanele mici (360 × 640): totul încape în primul ecran. */
+@media (max-height: 700px) and (max-width: 480px) {
+  .lp-erou-in { padding-top: 12px; padding-bottom: 12px; gap: 9px; }
+  .lp-titlu { font-size: 24px; }
+  .lp-sub { font-size: 14px; line-height: 1.4; }
+  .lp-beneficii { gap: 6px; }
+  .lp-beneficii li { font-size: 14px; line-height: 1.3; }
+  .lp-buton { min-height: 50px; font-size: 16px; }
+  .lp-sub-buton { font-size: 12.5px; margin-top: -3px; }
+}
+
+/* ── Sub primul ecran ─────────────────────────────────────────────── */
+.lp-sec { max-width: 640px; margin: 0 auto; padding: 18px 16px 28px; display: flex; flex-direction: column; gap: 12px; }
+.lp-h2 { margin: 6px 0 0; font-size: 18px; line-height: 1.25; font-weight: 800; color: var(--lp-text); }
+.lp-card { background: var(--lp-card); border: 1px solid var(--lp-chenar); border-radius: 16px; padding: 14px; }
+.lp-pasi { list-style: none; margin: 0; display: flex; flex-direction: column; gap: 12px; }
+.lp-pasi li { display: flex; gap: 10px; align-items: center; font-size: 15px; line-height: 1.4; }
+.lp-nr {
+  width: 26px; height: 26px; border-radius: 99px; background: var(--lp-bleumarin); color: #FFFFFF;
+  font-size: 13px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.lp-link { align-self: flex-start; font-size: 15px; font-weight: 700; color: var(--lp-bleumarin); text-decoration: none; padding: 10px 0; }
+.lp-link:hover { text-decoration: underline; }
+
+/* Imaginea campaniei: sub primul ecran, cu raportul rezervat (fără CLS). */
+.lp-imagine { margin: 0; border-radius: 16px; overflow: hidden; background: #DCE5EE; }
+.lp-imagine img { display: block; width: 100%; height: auto; }
+.lp-imagine[hidden] { display: none; }
+
+/* Cardurile categoriilor (/parteneri) */
+.lp-categorii { display: flex; flex-direction: column; gap: 10px; }
+.lp-cat {
+  display: flex; align-items: center; gap: 12px; min-height: 68px; padding: 14px;
+  background: var(--lp-card); border: 1px solid var(--lp-chenar); border-radius: 16px;
+  text-decoration: none; color: var(--lp-text); transition: border-color .15s, box-shadow .15s;
+}
+.lp-cat:hover { border-color: #C9D6E3; box-shadow: 0 4px 14px rgba(0, 51, 102, .08); }
+.lp-cat.lp-ales { border-color: var(--lp-portocaliu); box-shadow: 0 0 0 3px rgba(255, 140, 0, .18); }
+.lp-cat-ico { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.lp-cat-ico svg { width: 20px; height: 20px; }
+.lp-cat-text { flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lp-cat-titlu { font-size: 15px; font-weight: 800; }
+.lp-cat-desc { font-size: 13px; color: var(--lp-gri); line-height: 1.35; }
+.lp-cat-sageata { color: var(--lp-gri); font-size: 20px; line-height: 1; }
+.lp-cat[data-ico="servicii"] .lp-cat-ico, .lp-cat[data-ico="asigurari"] .lp-cat-ico { background: #FFF3E0; color: #8A4A00; }
+.lp-cat[data-ico="materiale"] .lp-cat-ico, .lp-cat[data-ico="curier"] .lp-cat-ico { background: #EEF2F6; color: var(--lp-bleumarin); }
+.lp-cat[data-ico="inchirieri"] .lp-cat-ico { background: #EAF6F5; color: var(--lp-turcoaz-inchis); }
+
+/* Runda curentă (/investitori): doar valorile publicate; fără rundă, secțiunea lipsește. */
+.lp-runda[hidden] { display: none; }
+.lp-runda-titlu { margin: 0 0 6px; font-size: 16px; font-weight: 800; }
+.lp-detalii { margin: 0; }
+.lp-detalii > summary { cursor: pointer; font-size: 14px; font-weight: 700; color: var(--lp-bleumarin); padding: 8px 0; }
+
+/* ── Desktop ──────────────────────────────────────────────────────── */
+@media (min-width: 768px) {
+  .lp-erou-in { max-width: 720px; padding: 48px 24px 44px; gap: 16px; align-items: center; text-align: center; }
+  .lp-eticheta { align-self: center; font-size: 13px; }
+  .lp-titlu { font-size: 44px; }
+  .lp-sub { font-size: 18px; max-width: 600px; }
+  .lp-beneficii { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 10px 22px; }
+  .lp-beneficii li { font-size: 15px; }
+  .lp-buton { align-self: center; min-width: 320px; }
+  .lp-sec { max-width: 720px; padding: 32px 24px 48px; }
+  .lp-h2 { font-size: 22px; }
+}
+
+/* Un singur buton portocaliu în primul ecran (macheta L1): pe paginile scurte, butonul
+   „Abonează-te” din subsol intră în ecran pe telefon — pe aceste pagini e bleumarin. */
+main.lp ~ footer #ftr-nl-btn { background: #003366 !important; color: #FFFFFF !important; }
+
+/* Butoanele plutitoare (distribuire, Darrin AI) nu acoperă butonul principal:
+   când s-ar suprapune peste el (landing.js compară dreptunghiurile la derulare
+   și la redimensionare → html.lp-plutitoare-ascunse), se ascund; locul lor
+   rămâne, ca verificarea să poată continua. */
+html.lp-plutitoare-ascunse #myd-share-fab, html.lp-plutitoare-ascunse #myd-share-panel,
+html.lp-plutitoare-ascunse #dai-fab, html.lp-plutitoare-ascunse #chat-toggle {
+  opacity: 0 !important; pointer-events: none !important; visibility: hidden !important;
+}
+.lp-nota { margin: 0; font-size: 13px; line-height: 1.45; color: var(--lp-gri); }

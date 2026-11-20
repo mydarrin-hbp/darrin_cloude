@@ -126,8 +126,8 @@ const cardurile = (p) => p.evaluate(() => {
   };
 });
 async function apasaCta(p) {
-  await p.waitForSelector('#hero-intra-runda[data-cta-stare]:not([data-cta-stare="incarca"])', { timeout: 15000 }).catch(() => {});
-  await p.focus('#hero-intra-runda');
+  await p.waitForSelector('#lp-cta[data-cta-stare]:not([data-cta-stare="incarca"])', { timeout: 15000 }).catch(() => {});
+  await p.focus('#lp-cta');
   await p.keyboard.press('Enter');
   return fereastraDeschisa(p);
 }

@@ -355,7 +355,7 @@ async function testeBrowser() {
     console.log('fereastra de cont: gata');
 
     // 4. „Devino partener” (pasul 11-R3g): vechea pagină duce la hub, care se deschide
-    // cu partea de sus (hero), tipurile și pașii — fără file goale; 4 lățimi.
+    // cu partea de sus (hero), tipurile și beneficiile (12-L1) — fără file goale; 4 lățimi.
     for (const latime of [390, 768, 1024, 1366]) {
       for (const limba of ['ro', null]) {
         const et = `devino-partener ${latime}px ${limba || 'en'}`;
@@ -367,13 +367,14 @@ async function testeBrowser() {
         const s = await p.evaluate(() => {
           const viz = (sel) => { const e = document.querySelector(sel); return !!e && e.getClientRects().length > 0 && e.getBoundingClientRect().height > 100; };
           return {
-            cale: location.pathname, hero: viz('.rp-hero'), tipuri: document.querySelectorAll('#tipuri .rp-tip').length, pasi: document.querySelectorAll('#pasi .rp-pas').length,
+            cale: location.pathname, hero: viz('.lp-erou'), tipuri: document.querySelectorAll('#tipuri .lp-cat').length, pasi: document.querySelectorAll('.lp-beneficii li').length,
             file: document.querySelectorAll('#hero-tabs-bar button').length,
             derulare: document.documentElement.scrollWidth - window.innerWidth,
           };
         });
         verifica(s.cale === '/parteneri', `${et}: nu ajunge la hub (${s.cale})`);
-        verifica(s.hero && s.tipuri === 5 && s.pasi === 4 && !s.file, `${et}: hub incomplet ${JSON.stringify(s)}`);
+        // Pasul 12-L1 (macheta L1.3): primul ecran cu 3 beneficii și cele 5 carduri de categorie (pașii lungi sunt în /parteneri/intrebari).
+        verifica(s.hero && s.tipuri === 5 && s.pasi === 3 && !s.file, `${et}: hub incomplet ${JSON.stringify(s)}`);
         verifica(s.derulare <= 1, `${et}: derulare orizontală de ${s.derulare}px`);
         verifica(!erori.length, `${et}: ${erori.length} erori JS (${erori.slice(0, 3).join(' | ')})`);
         await ctx.close();

@@ -61,6 +61,8 @@
     item_slug: 1, order_type: 1, page: 1,
     // Pasul 12-P1: doar codul erorii (ex. camp_lipsa, email_existent), niciodată date personale.
     error_code: 1,
+    // Pasul 12-L1: varianta paginii de destinație („default” sau numele din utm_campaign).
+    variant: 1,
   };
 
   // Tipul de partener, din valorile interne → valori stabile, în engleză.
@@ -395,7 +397,18 @@
     var c = cale();
     var f = fisierPagina();
     if (Object.prototype.hasOwnProperty.call(PAGINI_PARTENER, f)) {
-      eveniment('partner_landing_view', { partner_type: PAGINI_PARTENER[f] || tipDinQuery(), page: c });
+      // Pasul 12-L1: pe paginile de destinație, evenimentul pleacă după ce se știe
+      // varianta afișată (window.__MYD_LP.gata, cel mult 300 ms; scriptul din <head>).
+      var tipP = PAGINI_PARTENER[f] || tipDinQuery();
+      var trimiteVedere = function (v) {
+        var era = inPagina;
+        inPagina = true;
+        eveniment('partner_landing_view', { partner_type: tipP, page: c, variant: v || undefined });
+        inPagina = era;
+      };
+      var lp = window.__MYD_LP;
+      if (lp && lp.gata && typeof lp.gata.then === 'function') lp.gata.then(trimiteVedere, function () { trimiteVedere('default'); });
+      else trimiteVedere(null);
     }
     // Pasul 12-U1: pagina de produs — /servicii/<slug>, /materiale/<slug>, /inchirieri/<slug>.
     var produs = f === 'mydarrin-produs';

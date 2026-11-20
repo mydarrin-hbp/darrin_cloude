@@ -314,6 +314,11 @@ input:valid:not(:placeholder-shown):not([type="checkbox"]) {
 <meta charset="UTF-8">
 <!-- Limba (10 oct. 2026): engleza implicită, româna din selector — i18n-loader.js, sincron, primul script -->
 <script src="/i18n-loader.js" data-pagina="cum-devii-partenerul-nostru"></script>
+<!-- lp:cap:inceput -->
+<script>/* 12-L1: varianta din utm_campaign (cel mult 300 ms; landing.js) */(function(){var h=document.documentElement,P="/parteneri",lp=window.__MYD_LP={pagina:P,varianta:null,aplicat:null,date:null,erou:false},c="",ok,inchis=false,rez=null;try{c=(new URLSearchParams(location.search).get("utm_campaign")||"").trim().toLowerCase()}catch(e){}if(!/^[a-z0-9][a-z0-9._-]{0,59}$/.test(c)||c==="implicita")c="";lp.varianta=c||null;lp.gata=new Promise(function(r){ok=r});function gata(v){if(inchis)return;inchis=true;h.classList.remove("lp-asteapta");ok(v)}if(c)h.classList.add("lp-asteapta");setTimeout(function(){gata(lp.aplicat||"default")},300);lp.aplica=function(){if(inchis||!rez||!lp.erou)return;var L=window.MYD_I18N&&window.MYD_I18N.lang==="ro"?"ro":"en",d=rez.continut&&rez.continut[L];if(d){var b=document.getElementById("lp-cta"),st=b&&b.getAttribute("data-cta-stare");Array.prototype.forEach.call(document.querySelectorAll("[data-lp-camp]"),function(el){var k=el.getAttribute("data-lp-camp"),v=d[k];if(!v||el.textContent===v)return;if(k==="buton"&&st&&st!=="vizitator"&&st!=="client"&&st!=="incarca")return;el.textContent=v})}lp.date=rez;lp.aplicat=c&&rez.varianta===c?c:"default";gata(lp.aplicat)};fetch("/api/public/landing?pagina="+encodeURIComponent(P)+(c?"&varianta="+encodeURIComponent(c):""),{headers:{Accept:"application/json"}}).then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.ok&&j.continut){rez=j;lp.aplica()}else gata("default")}).catch(function(){gata("default")})})();</script>
+<link rel="stylesheet" href="/landing.css">
+<script src="/landing.js" defer></script>
+<!-- lp:cap:sfarsit -->
 <link rel="alternate" hreflang="en" href="https://mydarrin.homebestpal.com/parteneri?lang=en"/>
 <link rel="alternate" hreflang="ro" href="https://mydarrin.homebestpal.com/parteneri?lang=ro"/>
 <link rel="alternate" hreflang="x-default" href="https://mydarrin.homebestpal.com/parteneri"/>
@@ -326,13 +331,9 @@ input:valid:not(:placeholder-shown):not([type="checkbox"]) {
 <meta property="og:url" content="https://mydarrin.homebestpal.com/parteneri"/>
 <meta property="og:image" content="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1200&q=80"/>
 <meta name="twitter:card" content="summary_large_image"/>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script>if(typeof tailwind!=="undefined"){tailwind.config={theme:{extend:{colors:{
-  primary:{DEFAULT:"#003366"},accent:{DEFAULT:"#FF8C00"},
-  ai:{DEFAULT:"#0E9E99"},surface:{DEFAULT:"#F4F7F9"}
-}}}}}</script>
+<link rel="stylesheet" href="/landing-tailwind.css">
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" defer></script>
+
 <style>
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
 html { scroll-behavior:smooth; }
@@ -668,7 +669,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 <script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="/analytics-loader.js" defer></script><script src="/masurare.js" defer></script><script src="/_vercel/insights/script.js" defer></script>
 <script src="/myd-geo.js"></script>
   <!-- DOMPurify — sanitizare XSS (audit 2026-07-10) -->
-  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js" defer></script>
   <script>
     // Helper escapeHTML — pentru text pur (mesaje chat, nume, etc.)
     // Folosește textContent intern — niciun risc XSS
@@ -686,7 +687,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
     }
   </script>
 <link rel="stylesheet" href="/ui-public.css">
-<link rel="stylesheet" href="/ruta-partener.css">
+
 </head>
 <body class="bg-[#F4F7F9] text-[#2D2D2D]" style="font-family:'Syne','Inter',sans-serif">
 
@@ -1026,177 +1027,39 @@ function triggerHeaderSearch(){
 
   </div>
 
-<!-- ════ Pasul 11-R3g (decizia LM, 3 nov. 2026): singura pagină „Devino partener”.
-     Șablonul comun al rutei: ruta-partener.css + ruta-partener.js; butoanele
-     urmează starea contului prin cta-partener.js (data-cta-partener). Vechea
-     pagină mydarrin-devino-partener.html e redirecționată 301 aici (vercel.json),
-     cu ?type= păstrat. Formularul vechi de configurare a profilului (nu salva
-     nimic într-un cont) a fost scos. ════ -->
-<div class="rp">
-
-<section class="rp-hero" id="rp-hero">
-  <div class="rp-hero-in">
-    <span class="rp-insigna">GRATUIT</span>
-    <h1>Devino partener My Darrin</h1>
-    <p class="rp-sub">Primești comenzi prin platformă, iar plata, păstrată ca garanție (escrow), îți ajunge după confirmarea lucrării.</p>
-    <div class="rp-butoane">
-      <a href="#tipuri" class="rp-btn" data-cta-partener="" data-rp-principal><span data-cta-text>Creează-ți contul de partener</span> <span aria-hidden="true">→</span></a>
-      <a href="#tipuri" class="rp-btn2">Alege tipul de parteneriat ↓</a>
-    </div>
-    <p class="rp-nota">Înscrierea e pentru firme, PFA și întreprinderi individuale.</p>
-  </div>
-</section>
-
-<section class="rp-sec rp-gri" id="tipuri" aria-labelledby="tipuri-titlu">
-  <div class="rp-in">
-    <div class="rp-cap">
-      <p class="rp-eticheta">Tipurile de parteneriat</p>
-      <h2 class="rp-h2" id="tipuri-titlu">Alege cum lucrezi cu My Darrin</h2>
-      <p>Un cont poate deține mai multe roluri simultan.</p>
-    </div>
-    <div class="rp-tipuri">
-      <article class="rp-tip" id="tip-servicii">
-        <div class="rp-ico" style="background:#FFF0D6;color:#CC7000"><i data-lucide="wrench"></i></div>
-        <h3>Furnizor de servicii</h3>
-        <p>Electricieni, instalatori, constructori, zugravi, grădinari, sudori: primești comenzi prin platformă.</p>
-        <div class="rp-tip-butoane">
-          <a href="/parteneri/servicii" class="rp-btn3" data-cta-partener="servicii" data-cta-card>Creează cont</a>
-          <a href="/parteneri/servicii" class="rp-link">Află mai mult</a>
-        </div>
-      </article>
-      <article class="rp-tip" id="tip-materiale">
-        <div class="rp-ico" style="background:#EBF4FB;color:#003366"><i data-lucide="package"></i></div>
-        <h3>Furnizor de materiale</h3>
-        <p>Materiale de construcții, electrice, sanitare: produsele tale apar în devizele platformei.</p>
-        <div class="rp-tip-butoane">
-          <a href="/parteneri/materiale" class="rp-btn3" data-cta-partener="materiale" data-cta-card>Creează cont</a>
-          <a href="/parteneri/materiale" class="rp-link">Află mai mult</a>
-        </div>
-      </article>
-      <article class="rp-tip" id="tip-inchirieri">
-        <div class="rp-ico" style="background:#E0F5F4;color:#0B7F7B"><i data-lucide="hard-hat"></i></div>
-        <h3>Furnizor de închirieri</h3>
-        <p>Utilaje, scule, vehicule: rezervările vin prin platformă.</p>
-        <div class="rp-tip-butoane">
-          <a href="/parteneri/inchirieri" class="rp-btn3" data-cta-partener="inchirieri" data-cta-card>Creează cont</a>
-          <a href="/parteneri/inchirieri" class="rp-link">Află mai mult</a>
-        </div>
-      </article>
-      <article class="rp-tip" id="tip-curier">
-        <div class="rp-ico" style="background:#FFF3E0;color:#C24400"><i data-lucide="truck"></i></div>
-        <h3>Curier de cartier</h3>
-        <p>Livrare locală de materiale la șantier, în zona ta.</p>
-        <div class="rp-tip-butoane">
-          <a href="/parteneri/curieri" class="rp-btn3" data-cta-partener="curier" data-cta-card>Creează cont</a>
-          <a href="/parteneri/curieri" class="rp-link">Află mai mult</a>
-        </div>
-      </article>
-      <article class="rp-tip" id="tip-asigurari">
-        <div class="rp-ico" style="background:#E8F0FB;color:#0B4D8A"><i data-lucide="shield"></i></div>
-        <h3>Asigurător</h3>
-        <p>Polițe integrate în comenzile platformei, cu atestat ASF.</p>
-        <div class="rp-tip-butoane">
-          <a href="/parteneri/asigurari" class="rp-btn3" data-cta-partener="asigurari" data-cta-card>Creează cont</a>
-          <a href="/parteneri/asigurari" class="rp-link">Află mai mult</a>
-        </div>
-      </article>
-    </div>
-  </div>
-</section>
-
-<section class="rp-sec" id="pasi" aria-labelledby="pasi-titlu">
-  <div class="rp-in">
-    <div class="rp-cap">
-      <p class="rp-eticheta">Pașii înregistrării</p>
-      <h2 class="rp-h2" id="pasi-titlu">De la cont la primele comenzi</h2>
-      <p>Restul datelor le completezi din dashboard, în ritmul tău. Ce scrii se salvează automat.</p>
-    </div>
-    <ol class="rp-pasi rp-4">
-      <li class="rp-pas"><h3>Contul, cu cod pe email</h3><p>Alegi tipul de partener, scrii datele tale și confirmi emailul cu un cod de 6 cifre.</p></li>
-      <li class="rp-pas"><h3>Datele firmei</h3><p>În dashboard: firma (după CUI, datele vin de la ANAF), contul bancar, profesiile, dotările și documentele.</p></li>
-      <li class="rp-pas"><h3>Verificarea</h3><p>Echipa My Darrin verifică firma și documentele. Te anunțăm prin email.</p></li>
-      <li class="rp-pas"><h3>Primele comenzi</h3><p>După aprobare semnezi contractul cu un cod primit pe email. Cu contul bancar adăugat, primești comenzi.</p></li>
-    </ol>
-  </div>
-</section>
-
-<section class="rp-sec rp-gri" id="intrebari" aria-labelledby="intrebari-titlu">
-  <div class="rp-in-ingust">
-    <div class="rp-cap">
-      <p class="rp-eticheta">Întrebări frecvente</p>
-      <h2 class="rp-h2" id="intrebari-titlu">Tot ce trebuie să știi</h2>
-    </div>
-    <div class="rp-faq">
-      <details><summary>Ce documente sunt necesare?</summary><div class="rp-rasp">La activare, în dashboard: CUI-ul firmei (restul datelor vin de la ANAF), contul bancar (IBAN) și documentele firmei, de exemplu CI / pașaport administrator și certificatul de înregistrare. Unele tipuri cer și atestate sau licențe (de exemplu ISCIR, ASF sau licența ARR pentru curieri). Lista pentru fiecare tip e pe pagina lui.</div></details>
-      <details><summary>Cât durează procesul de aprobare?</summary><div class="rp-rasp">Echipa My Darrin verifică documentele și aprobă contul, iar tu primești notificare pe email. Comenzile încep după semnarea contractului și adăugarea contului bancar.</div></details>
-      <details><summary>Cum funcționează sistemul Escrow?</summary><div class="rp-rasp">Clientul plătește integral la plasarea comenzii, către Home Best Pal SRL. Suma este păstrată ca garanție (escrow) și se eliberează după confirmarea execuției. <span data-regula-bloc hidden>Primești plata în cel mult <strong data-regula="termen-plata-partener"></strong> de la eliberarea sumei.</span></div></details>
-      <details><summary>Ce comision reține platforma?</summary><div class="rp-rasp">Niciunul din manoperă: 0%. Primești 100% din prețul de manoperă afișat în dashboard. Costurile platformei (comision platformă, marketing și mentenanță) sunt incluse în prețul plătit de client, nu se scad din manoperă. Furnizorii de materiale, închirieri și asigurări acordă în schimb un discount comercial de 5–15%.</div></details>
-      <details><summary>Cum se emite factura fiscală?</summary><div class="rp-rasp">Tu emiți factura către Home Best Pal SRL, antreprenorul general, pentru lucrările confirmate. Facturile tale le găsești în dashboard-ul de partener.</div></details>
-    </div>
-    <p class="rp-mic" data-contact-rand>Alte întrebări? <a data-contact="contact_email" href="/contact" style="color:#003366;font-weight:700">Contactează-ne</a></p>
-  </div>
-</section>
-
-<section class="rp-banda" aria-labelledby="banda-titlu">
-  <span class="rp-insigna">GRATUIT</span>
-  <h2 id="banda-titlu">Gata să primești comenzi prin My Darrin?</h2>
-  <p>Înscrierea e pentru firme, PFA și întreprinderi individuale.</p>
-  <a href="#tipuri" class="rp-btn" data-cta-partener=""><span data-cta-text>Creează-ți contul de partener</span> <span aria-hidden="true">→</span></a>
-</section>
-
-<div class="rp-fix" data-rp-fix>
-  <a href="#tipuri" class="rp-btn" data-cta-partener=""><span data-cta-text>Creează-ți contul de partener</span> <span aria-hidden="true">→</span></a>
+<!-- lp:erou:inceput -->
+<main class="lp" id="main-content" data-lp-pagina="/parteneri" data-lp-tip="hub">
+<section class="lp-erou" id="lp-erou" aria-labelledby="lp-titlu">
+<div class="lp-erou-in">
+<p class="lp-eticheta" data-lp-camp="eticheta">Parteneri My Darrin</p>
+<h1 class="lp-titlu" id="lp-titlu" data-lp-camp="titlu">Lucrează cu My Darrin</h1>
+<p class="lp-sub" data-lp-camp="subtitlu">Clienții comandă în platformă, iar comenzile ajung la partenerii din zona lor. Alegi ce faci și unde lucrezi.</p>
+<ul class="lp-beneficii">
+<li><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#0E9E99" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg><span data-lp-camp="beneficiu_1">Comenzi prin platformă, fără să cauți clienți</span></li>
+<li><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#0E9E99" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg><span data-lp-camp="beneficiu_2">Plata e păstrată ca garanție până la confirmare</span></li>
+<li><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#0E9E99" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg><span data-lp-camp="beneficiu_3">Înscriere gratuită pentru firme și PFA</span></li>
+</ul>
+<a class="lp-buton" id="lp-cta" href="/parteneri/inscriere" data-cta="principal" data-cta-partener="" data-cta-panou data-cta-loc="hero"><span data-cta-text data-lp-camp="buton">Devino partener</span></a>
+<p class="lp-sub-buton" data-lp-camp="sub_buton">Gratuit · contul în 60 de secunde</p>
 </div>
-
+</section>
+<script>/* 12-L1: destinația butonului primește profesie, lang și UTM-urile din adresă, iar ?type= (adresele vechi) devine categoria (înainte de DOMContentLoaded) */(function(){var a=document.getElementById("lp-cta"),lp=window.__MYD_LP;if(a){try{var q=new URLSearchParams(location.search),u=new URL(a.getAttribute("href"),location.href);["profesie","lang","utm_source","utm_medium","utm_campaign","utm_content","utm_term"].forEach(function(k){var v=q.get(k);if(v&&!u.searchParams.has(k))u.searchParams.set(k,String(v).slice(0,100))});var t=String(q.get("type")||"").toLowerCase().replace("asigurator","asigurari");if(!u.searchParams.has("categorie")&&u.pathname==="/parteneri/inscriere"&&/^(servicii|materiale|inchirieri|curier|asigurari)$/.test(t))u.searchParams.set("categorie",t);a.setAttribute("href",u.pathname+u.search+u.hash)}catch(e){}}if(lp){lp.erou=true;if(lp.aplica)lp.aplica()}})();</script>
+<!-- lp:erou:sfarsit -->
+<!-- lp:sub:inceput -->
+<section class="lp-sec" id="tipuri" aria-labelledby="lp-tipuri-titlu">
+<h2 class="lp-h2" id="lp-tipuri-titlu">Alege tipul tău de partener</h2>
+<div class="lp-categorii">
+<a class="lp-cat" id="tip-servicii" href="/parteneri/servicii" data-cta="categorie-servicii" data-ico="servicii" data-lp-transmite><span class="lp-cat-ico" aria-hidden="true"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg></span><span class="lp-cat-text"><span class="lp-cat-titlu">Parteneri de servicii</span><span class="lp-cat-desc">Lucrări la clienți, 100% din manoperă</span></span><span class="lp-cat-sageata" aria-hidden="true">›</span></a>
+<a class="lp-cat" id="tip-materiale" href="/parteneri/materiale" data-cta="categorie-materiale" data-ico="materiale" data-lp-transmite><span class="lp-cat-ico" aria-hidden="true"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></span><span class="lp-cat-text"><span class="lp-cat-titlu">Furnizori de materiale</span><span class="lp-cat-desc">Vinzi materiale prin comenzile platformei</span></span><span class="lp-cat-sageata" aria-hidden="true">›</span></a>
+<a class="lp-cat" id="tip-inchirieri" href="/parteneri/inchirieri" data-cta="categorie-inchirieri" data-ico="inchirieri" data-lp-transmite><span class="lp-cat-ico" aria-hidden="true"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="13" height="7" rx="1"/><path d="M16 14h3l2 2v2h-5"/><circle cx="7" cy="19" r="1.5"/><circle cx="18" cy="19" r="1.5"/></svg></span><span class="lp-cat-text"><span class="lp-cat-titlu">Parteneri de închirieri</span><span class="lp-cat-desc">Închiriezi echipamente pe zi, săptămână sau lună</span></span><span class="lp-cat-sageata" aria-hidden="true">›</span></a>
+<a class="lp-cat" id="tip-curier" href="/parteneri/curieri" data-cta="categorie-curier" data-ico="curier" data-lp-transmite><span class="lp-cat-ico" aria-hidden="true"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17l4-8h5l3 8M10 9l-1-3H7"/></svg></span><span class="lp-cat-text"><span class="lp-cat-titlu">Curieri de cartier</span><span class="lp-cat-desc">Livrezi în zona ta, cu vehiculul tău</span></span><span class="lp-cat-sageata" aria-hidden="true">›</span></a>
+<a class="lp-cat" id="tip-asigurari" href="/parteneri/asigurari" data-cta="categorie-asigurari" data-ico="asigurari" data-lp-transmite><span class="lp-cat-ico" aria-hidden="true"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg></span><span class="lp-cat-text"><span class="lp-cat-titlu">Parteneri de asigurări</span><span class="lp-cat-desc">Polițe pentru lucrările din platformă</span></span><span class="lp-cat-sageata" aria-hidden="true">›</span></a>
 </div>
-
-<nav id="mobile-bottom-nav" style="
-  display:none;
-  position:fixed; bottom:0; left:0; right:0; z-index:1000;
-  background:#fff;
-  border-top:1px solid #E8F0FB;
-  box-shadow:0 -4px 24px rgba(0,0,0,.10);
-  padding:0 0 env(safe-area-inset-bottom,0) 0;
-" aria-label="Navigare principală mobilă">
-  <div style="display:flex;align-items:stretch;height:56px">
-
-    <!-- Acasă -->
-    <a href="/" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:#8C9BAD;font-size:9.5px;font-weight:600;font-family:inherit;border-right:1px solid #F0F2F7;transition:color .15s" id="mbn-home"
-       onmousedown="this.style.background='#F4F7F9'" onmouseup="this.style.background=''">
-      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      Acasă
-    </a>
-
-    <!-- Catalog -->
-    <a href="/catalog" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:#8C9BAD;font-size:9.5px;font-weight:600;font-family:inherit;border-right:1px solid #F0F2F7;transition:color .15s" id="mbn-catalog"
-       onmousedown="this.style.background='#F4F7F9'" onmouseup="this.style.background=''">
-      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-      Catalog
-    </a>
-
-    <!-- GPS Locație — buton central proeminent -->
-    <button onclick="detectFromGPS()" id="mbn-gps" style="flex:1.2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:#003366;color:#fff;font-size:9.5px;font-weight:700;font-family:inherit;cursor:pointer;border-right:1px solid rgba(255,255,255,.1);position:relative;transition:background .15s"
-       title="Detectează locația exactă prin GPS">
-      <div id="mbn-gps-icon" style="width:36px;height:36px;border-radius:50%;background:#FF8C00;display:flex;align-items:center;justify-content:center;margin-bottom:2px;position:relative;top:-8px;box-shadow:0 4px 14px rgba(255,140,0,.45);border:3px solid #fff">
-        <svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
-      </div>
-      <span id="mbn-loc-text" style="font-size:8.5px;color:rgba(255,255,255,.7);margin-top:-10px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="mbn-city">Locație</span>
-    </button>
-
-    <!-- Devino partener -->
-    <a href="/parteneri" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:#8C9BAD;font-size:9.5px;font-weight:600;font-family:inherit;border-right:1px solid #F0F2F7;transition:color .15s" id="mbn-partener"
-       onmousedown="this.style.background='#F4F7F9'" onmouseup="this.style.background=''">
-      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-      Partener
-    </a>
-
-    <!-- Cont -->
-    <button onclick="toggleAuthModal()" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:#fff;color:#8C9BAD;font-size:9.5px;font-weight:600;font-family:inherit;cursor:pointer;transition:color .15s" id="mbn-cont">
-      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      Cont
-    </button>
-
-  </div>
+<p class="lp-nota">Înscrierea e pentru firme, PFA și întreprinderi individuale.</p>
+<a class="lp-link" href="/parteneri/intrebari" data-lp-transmite>Întrebări frecvente pentru parteneri →</a>
+</section>
+</main>
+<!-- lp:sub:sfarsit -->
 </nav>
 <footer style="background:#1E2E4D;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
 
@@ -1508,7 +1371,7 @@ function submitNewsletter() {
 
 
 <script>
-lucide.createIcons();
+if (window.lucide) lucide.createIcons();
 
 // Reveal
 const obs=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('visible');}),{threshold:.1});
@@ -1786,7 +1649,7 @@ function daiSendMessage(){
 <script src="/ui-comun.js" defer></script>
 <!-- Pasul 11-R3b: butoanele de înscriere după starea contului -->
 <script src="/cta-partener.js" defer></script>
-<script src="/ruta-partener.js" defer></script>
+
 <script src="/reguli-platforma.js" defer></script>
 <script src="/contact-public.js" defer></script>
 </body>

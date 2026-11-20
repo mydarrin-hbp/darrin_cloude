@@ -215,8 +215,8 @@ async function depaseste(p) {
           const p = await ctx.newPage();
           const erori = []; p.on('pageerror', (e) => erori.push(e.message));
           await p.goto(baza + '/mydarrin-investitori', { waitUntil: 'networkidle' });
-          await p.waitForFunction(() => document.getElementById('hero-intra-runda').getAttribute('data-cta-stare') === 'vizitator', null, { timeout: 10000 }).catch(() => {});
-          await p.click('#hero-intra-runda');
+          await p.waitForFunction(() => document.getElementById('lp-cta').getAttribute('data-cta-stare') === 'vizitator', null, { timeout: 10000 }).catch(() => {});
+          await p.click('#lp-cta');
           await p.waitForFunction(() => { const m = document.getElementById('auth-modal'); return m && !m.classList.contains('hidden'); }, null, { timeout: 8000 }).catch(() => {});
           verifica(!/reason=cont/.test(p.url()) && await p.evaluate(() => { const m = document.getElementById('auth-modal'); return !!m && !m.classList.contains('hidden'); }),
             `${et} A: fără sesiune, „Devino investitor” deschide fereastra de cont pe pagină`);
@@ -243,7 +243,7 @@ async function depaseste(p) {
         verifica(!(await p.$('#mi-fond')), `${et} B: X închide fereastra`);
         verifica(await p.evaluate(() => document.body.style.overflow === ''), `${et} B: după X, pagina se derulează din nou`);
         // redeschidere din buton, apoi Esc; focusul revine pe buton
-        const buton = '#hero-intra-runda';
+        const buton = '#lp-cta';
         await deschide(p, buton);
         await p.waitForSelector('#mi-fer');
         await p.keyboard.press('Escape');
@@ -330,7 +330,7 @@ async function depaseste(p) {
         { const r = await romanaInEn(p, lang, '#inv-private-dashboard'); verifica(!r, `${et} C: dashboard-ul fără text românesc în EN (${r})`); }
         // C2. subscrierea, pe cont
         // Pasul 11-R3h: subscrierea din panoul investitorului („Subscriere nouă”); butonul din #runda s-a scos.
-        await p.evaluate(() => window.pornesteInvestitor(document.getElementById('hero-intra-runda')));
+        await p.evaluate(() => window.pornesteInvestitor(document.getElementById('lp-cta')));
         await p.waitForSelector('#modal-runda', { state: 'visible', timeout: 5000 }).catch(() => {});
         verifica(await p.isVisible('#step-2'), `${et} C2: cu rolul de investitor, „Intră în rundă” deschide achiziția`);
         await p.waitForSelector('#step-2 .ticket-opt', { timeout: 5000 }).catch(() => {});

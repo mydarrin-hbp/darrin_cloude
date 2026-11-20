@@ -218,6 +218,9 @@
     $all('[data-cta-investitor]').forEach(function (b) {
       var text = r.stare === 'provizoriu' ? tr(TEXT.vizitator) : tr(TEXT[r.stare], { n: r.pas });
       var t = b.querySelector('[data-cta-text]');
+      // Pasul 12-L1: butonul principal al paginii de destinație (data-cta-lp) își păstrează,
+      // pentru vizitator, textul din pagină („Creează cont de investitor” sau varianta campaniei).
+      if (b.hasAttribute('data-cta-lp') && (r.stare === 'vizitator' || r.stare === 'provizoriu')) text = (t || b).textContent;
       if (t) t.textContent = text; else b.textContent = text;
       var sag = b.querySelector('[data-cta-sageata]');
       if (sag) sag.textContent = FARA_SAGEATA[r.stare] ? '' : '→';

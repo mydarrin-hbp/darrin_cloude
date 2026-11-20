@@ -314,6 +314,11 @@ input:valid:not(:placeholder-shown):not([type="checkbox"]) {
 <meta charset="UTF-8">
 <!-- Limba (10 oct. 2026): engleza implicită, româna din selector — i18n-loader.js, sincron, primul script -->
 <script src="/i18n-loader.js" data-pagina="mydarrin-investitori"></script>
+<!-- lp:cap:inceput -->
+<script>/* 12-L1: varianta din utm_campaign (cel mult 300 ms; landing.js) */(function(){var h=document.documentElement,P="/investitori",lp=window.__MYD_LP={pagina:P,varianta:null,aplicat:null,date:null,erou:false},c="",ok,inchis=false,rez=null;try{c=(new URLSearchParams(location.search).get("utm_campaign")||"").trim().toLowerCase()}catch(e){}if(!/^[a-z0-9][a-z0-9._-]{0,59}$/.test(c)||c==="implicita")c="";lp.varianta=c||null;lp.gata=new Promise(function(r){ok=r});function gata(v){if(inchis)return;inchis=true;h.classList.remove("lp-asteapta");ok(v)}if(c)h.classList.add("lp-asteapta");setTimeout(function(){gata(lp.aplicat||"default")},300);lp.aplica=function(){if(inchis||!rez||!lp.erou)return;var L=window.MYD_I18N&&window.MYD_I18N.lang==="ro"?"ro":"en",d=rez.continut&&rez.continut[L];if(d){var b=document.getElementById("lp-cta"),st=b&&b.getAttribute("data-cta-stare");Array.prototype.forEach.call(document.querySelectorAll("[data-lp-camp]"),function(el){var k=el.getAttribute("data-lp-camp"),v=d[k];if(!v||el.textContent===v)return;if(k==="buton"&&st&&st!=="vizitator"&&st!=="client"&&st!=="incarca")return;el.textContent=v})}lp.date=rez;lp.aplicat=c&&rez.varianta===c?c:"default";gata(lp.aplicat)};fetch("/api/public/landing?pagina="+encodeURIComponent(P)+(c?"&varianta="+encodeURIComponent(c):""),{headers:{Accept:"application/json"}}).then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.ok&&j.continut){rez=j;lp.aplica()}else gata("default")}).catch(function(){gata("default")})})();</script>
+<link rel="stylesheet" href="/landing.css">
+<script src="/landing.js" defer></script>
+<!-- lp:cap:sfarsit -->
 <link rel="alternate" hreflang="en" href="https://mydarrin.homebestpal.com/investitori?lang=en"/>
 <link rel="alternate" hreflang="ro" href="https://mydarrin.homebestpal.com/investitori?lang=ro"/>
 <link rel="alternate" hreflang="x-default" href="https://mydarrin.homebestpal.com/investitori"/>
@@ -326,13 +331,9 @@ input:valid:not(:placeholder-shown):not([type="checkbox"]) {
 <meta property="og:url" content="https://mydarrin.homebestpal.com/investitori"/>
 <meta property="og:image" content="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1200&q=80"/>
 <meta name="twitter:card" content="summary_large_image"/>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script>if(typeof tailwind!=="undefined"){tailwind.config={theme:{extend:{colors:{
-  primary:{DEFAULT:"#003366"},accent:{DEFAULT:"#FF8C00"},
-  ai:{DEFAULT:"#0E9E99"},surface:{DEFAULT:"#F4F7F9"}
-}}}}}</script>
+<link rel="stylesheet" href="/landing-tailwind.css">
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" defer></script>
+
 <style>
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
 html { scroll-behavior:smooth; }
@@ -668,7 +669,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 <script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="/analytics-loader.js" defer></script><script src="/masurare.js" defer></script><script src="/_vercel/insights/script.js" defer></script>
 <script src="/myd-geo.js"></script>
   <!-- DOMPurify — sanitizare XSS (audit 2026-07-10) -->
-  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js" defer></script>
   <script>
     // Helper escapeHTML — pentru text pur (mesaje chat, nume, etc.)
     // Folosește textContent intern — niciun risc XSS
@@ -1227,18 +1228,62 @@ function pornesteInvestitor(b) {
 
 <div class="rp inv-r3h">
 
-<section class="rp-hero" id="hero">
-  <div class="rp-hero-in">
-    <span class="rp-insigna" id="inv-insigna-runda" hidden><span>Runda curentă:</span> <span data-inv-runda-nume translate="no"></span></span>
-    <h1>Investește în <span class="rp-acc">My Darrin</span></h1>
-    <p class="rp-sub">Dosarul de investitor se completează pe contul tău My Darrin, iar subscrierea se face în runda deschisă.</p>
-    <div class="rp-butoane">
-      <button type="button" class="rp-btn" id="hero-intra-runda" data-cta-investitor data-rp-principal><span data-cta-text>Devino investitor</span> <span aria-hidden="true" data-cta-sageata>→</span></button>
-      <a href="#pitch-deck" class="rp-btn2">Vezi pitch deck-ul</a>
-    </div>
-    <p class="inv-cta-nota" data-cta-nota hidden></p>
+<!-- lp:erou:inceput -->
+<main class="lp" id="main-content" data-lp-pagina="/investitori" data-lp-tip="investitori">
+<section class="lp-erou" id="lp-erou" aria-labelledby="lp-titlu">
+<div class="lp-erou-in">
+<p class="lp-eticheta" data-lp-camp="eticheta">Investitori</p>
+<h1 class="lp-titlu" id="lp-titlu" data-lp-camp="titlu">Investește în My Darrin</h1>
+<p class="lp-sub" data-lp-camp="subtitlu">Platforma care leagă clienții de parteneri verificați pentru servicii, materiale, închirieri și livrări, cu plata păstrată ca garanție.</p>
+<ul class="lp-beneficii">
+<li><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#0E9E99" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg><span data-lp-camp="beneficiu_1">Contul fără date de identitate: email și parolă</span></li>
+<li><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#0E9E99" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg><span data-lp-camp="beneficiu_2">Pitch deck-ul și runda curentă, în panoul tău</span></li>
+<li><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#0E9E99" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg><span data-lp-camp="beneficiu_3">Identificarea (KYC) doar când alegi să investești</span></li>
+</ul>
+<a class="lp-buton" id="lp-cta" href="/investitori?ruta=investitor" data-cta="principal" data-cta-investitor data-cta-lp data-rp-principal data-cta-loc="hero"><span data-cta-text data-lp-camp="buton">Creează cont de investitor</span></a>
+<p class="lp-sub-buton" data-lp-camp="sub_buton">Investițiile implică riscuri, inclusiv pierderea capitalului.</p>
+</div>
+</section>
+<script>/* 12-L1: destinația butonului primește profesie, lang și UTM-urile din adresă, iar ?type= (adresele vechi) devine categoria (înainte de DOMContentLoaded) */(function(){var a=document.getElementById("lp-cta"),lp=window.__MYD_LP;if(a){try{var q=new URLSearchParams(location.search),u=new URL(a.getAttribute("href"),location.href);["profesie","lang","utm_source","utm_medium","utm_campaign","utm_content","utm_term"].forEach(function(k){var v=q.get(k);if(v&&!u.searchParams.has(k))u.searchParams.set(k,String(v).slice(0,100))});var t=String(q.get("type")||"").toLowerCase().replace("asigurator","asigurari");if(!u.searchParams.has("categorie")&&u.pathname==="/parteneri/inscriere"&&/^(servicii|materiale|inchirieri|curier|asigurari)$/.test(t))u.searchParams.set("categorie",t);a.setAttribute("href",u.pathname+u.search+u.hash)}catch(e){}}if(lp){lp.erou=true;if(lp.aplica)lp.aplica()}})();</script>
+<!-- lp:erou:sfarsit -->
 
-    <div class="inv-parcurs-cutie">
+<nav class="inv-sectiuni" aria-label="Secțiunile paginii">
+  <a href="#cum-functioneaza">Cum funcționează</a>
+  <a href="#runda" data-lp-runda-link hidden>Runda</a>
+  <a href="#pitch-deck">Pitch deck</a>
+  <a href="#panou" data-doar-investitor hidden>Panoul meu</a>
+  <a href="#contact">Contact</a>
+</nav>
+
+<!-- lp:sub:inceput -->
+<section class="lp-sec lp-runda" id="runda" aria-labelledby="runda-titlu" hidden>
+<div class="lp-card"><h2 class="lp-runda-titlu" id="runda-titlu">Runda curentă</h2><div class="inv-runda-card" data-runda hidden></div></div>
+</section>
+<section class="lp-sec" id="cum-functioneaza" aria-labelledby="cum-titlu">
+<h2 class="lp-h2" id="cum-titlu">Cum devii investitor</h2>
+<ol class="lp-pasi lp-card">
+<li><span class="lp-nr" aria-hidden="true">1</span><span>Îți faci contul și intri în panoul tău</span></li>
+<li><span class="lp-nr" aria-hidden="true">2</span><span>Citești pitch deck-ul și detaliile rundei</span></li>
+<li><span class="lp-nr" aria-hidden="true">3</span><span>Apeși „Investește”, apoi completezi identificarea</span></li>
+</ol>
+</section>
+<!-- lp:sub:sfarsit -->
+<!-- Pasul 12-L1: pașii în detaliu (cei 5 pași ai ferestrei, plus verificarea și subscrierea) și
+     parcursul tău de investitor (cta-investitor.js), sub cei 3 pași din machetă. -->
+<section class="lp-sec" id="parcurs" aria-label="Parcursul investitorului">
+<details class="lp-detalii"><summary>Pașii în detaliu</summary>
+<p class="lp-sub" style="margin:4px 0 10px">Pe contul tău My Darrin, într-o fereastră cu 5 pași. Progresul se salvează pe server la fiecare „Continuă”, iar cine revine continuă de unde a rămas.</p>
+<ol class="rp-pasi">
+      <li class="rp-pas"><h3>Date personale și cont bancar</h3><p>Datele contului sunt precompletate. Completezi data nașterii, cetățenia, CNP-ul (sau numărul de identificare fiscală), adresa de domiciliu și IBAN-ul, care se verifică și se păstrează criptat.</p></li>
+      <li class="rp-pas"><h3>Identitatea</h3><p>Alegi tipul documentului și încarci fața și verso-ul (sau pagina cu fotografia, la pașaport), cu seria, numărul și valabilitatea actului. Fișierele se păstrează privat.</p></li>
+      <li class="rp-pas"><h3>Profil de risc</h3><p>Chestionarul de profil de risc (MiFID II), declarația PEP și declarația privind sancțiunile internaționale.</p></li>
+      <li class="rp-pas"><h3>Rezidență fiscală</h3><p>Țara în care plătești impozitele. O salvăm în profilul tău de investitor.</p></li>
+      <li class="rp-pas"><h3>Trimitere</h3><p>Verifici pașii și confirmi datele. După trimitere, rolul de investitor se adaugă pe contul tău.</p></li>
+      <li class="rp-pas"><h3>Verificare</h3><p>Echipa My Darrin verifică identitatea. Te anunțăm prin email. Un dosar respins se poate corecta și retrimite.</p></li>
+      <li class="rp-pas"><h3>Subscriere</h3><p>Cu rolul de investitor pe cont, alegi suma și instrumentul în runda deschisă. Subscrierea se aprobă după verificarea identității.</p></li>
+    </ol>
+</details>
+<div class="inv-parcurs-cutie">
       <h2 class="inv-parcurs-titlu" id="inv-parcurs-titlu">Parcursul tău de investitor</h2>
       <ol class="inv-parcurs" data-inv-parcurs="vizitator" aria-labelledby="inv-parcurs-titlu">
         <li class="inv-seg" data-inv-segment="date"><span class="inv-seg-nr" aria-hidden="true">1</span><span class="inv-seg-text"><span>Date și IBAN</span><span class="inv-seg-stare" data-inv-seg-stare hidden></span></span></li>
@@ -1250,48 +1295,8 @@ function pornesteInvestitor(b) {
         <li class="inv-seg" data-inv-segment="subscriere"><span class="inv-seg-nr" aria-hidden="true">7</span><span class="inv-seg-text"><span>Subscriere</span><span class="inv-seg-stare" data-inv-seg-stare hidden></span></span></li>
       </ol>
     </div>
-  </div>
 </section>
-
-<nav class="inv-sectiuni" aria-label="Secțiunile paginii">
-  <a href="#cum-functioneaza">Cum funcționează</a>
-  <a href="#runda">Runda</a>
-  <a href="#pitch-deck">Pitch deck</a>
-  <a href="#panou" data-doar-investitor hidden>Panoul meu</a>
-  <a href="#contact">Contact</a>
-</nav>
-
-<!-- 1. Cum funcționează: aceiași pași ca fereastra reală (investitori-ruta.js), plus verificarea și subscrierea. -->
-<section class="rp-sec rp-gri" id="cum-functioneaza" aria-labelledby="cum-titlu">
-  <div class="rp-in-ingust">
-    <div class="rp-cap">
-      <p class="rp-eticheta">Pas cu pas</p>
-      <h2 class="rp-h2" id="cum-titlu">Cum devii investitor My Darrin</h2>
-      <p>Pe contul tău My Darrin, într-o fereastră cu 5 pași. Progresul se salvează pe server la fiecare „Continuă”, iar cine revine continuă de unde a rămas.</p>
-    </div>
-    <ol class="rp-pasi">
-      <li class="rp-pas"><h3>Date personale și cont bancar</h3><p>Datele contului sunt precompletate. Completezi data nașterii, cetățenia, CNP-ul (sau numărul de identificare fiscală), adresa de domiciliu și IBAN-ul, care se verifică și se păstrează criptat.</p></li>
-      <li class="rp-pas"><h3>Identitatea</h3><p>Alegi tipul documentului și încarci fața și verso-ul (sau pagina cu fotografia, la pașaport), cu seria, numărul și valabilitatea actului. Fișierele se păstrează privat.</p></li>
-      <li class="rp-pas"><h3>Profil de risc</h3><p>Chestionarul de profil de risc (MiFID II), declarația PEP și declarația privind sancțiunile internaționale.</p></li>
-      <li class="rp-pas"><h3>Rezidență fiscală</h3><p>Țara în care plătești impozitele. O salvăm în profilul tău de investitor.</p></li>
-      <li class="rp-pas"><h3>Trimitere</h3><p>Verifici pașii și confirmi datele. După trimitere, rolul de investitor se adaugă pe contul tău.</p></li>
-      <li class="rp-pas"><h3>Verificare</h3><p>Echipa My Darrin verifică identitatea. Te anunțăm prin email. Un dosar respins se poate corecta și retrimite.</p></li>
-      <li class="rp-pas"><h3>Subscriere</h3><p>Cu rolul de investitor pe cont, alegi suma și instrumentul în runda deschisă. Subscrierea se aprobă după verificarea identității.</p></li>
-    </ol>
-  </div>
-</section>
-
-<!-- 2. Runda: doar din /api/public/runda-curenta ([data-runda], completat de incarcaRundaCurenta). -->
-<section class="rp-sec" id="runda" aria-labelledby="runda-titlu">
-  <div class="rp-in-ingust">
-    <div class="rp-cap">
-      <p class="rp-eticheta">Runda</p>
-      <h2 class="rp-h2" id="runda-titlu">Runda curentă</h2>
-    </div>
-    <p class="inv-runda-gol" id="runda-fara-date">Nu există acum o rundă deschisă publicului.</p>
-    <div class="inv-runda-card" data-runda hidden></div>
-  </div>
-</section>
+</main>
 
 <!-- 3. Pitch deck: secțiunea existentă (#pitch-deck-section), cu logica de acum. -->
 <section id="pitch-deck" aria-label="Pitch deck">
@@ -1439,14 +1444,14 @@ function pornesteInvestitor(b) {
   <h2 id="contact-titlu">Interesat să investești?</h2>
   <p>Due diligence la cerere · NDA disponibil · Home Best Pal SRL, Bacău, România</p>
   <div class="rp-butoane">
-    <button type="button" class="rp-btn" data-cta-investitor><span data-cta-text>Devino investitor</span> <span aria-hidden="true" data-cta-sageata>→</span></button>
+    <button type="button" class="rp-btn" data-cta-investitor data-cta-lp><span data-cta-text>Creează cont de investitor</span> <span aria-hidden="true" data-cta-sageata>→</span></button>
     <a data-contact-href="investitori_email" data-contact-rand href="#" class="rp-btn2" hidden><span data-contact="investitori_email"></span></a>
   </div>
   <p class="inv-cta-nota" data-cta-nota hidden></p>
 </section>
 
 <div class="rp-fix" data-rp-fix>
-  <button type="button" class="rp-btn" data-cta-investitor><span data-cta-text>Devino investitor</span> <span aria-hidden="true" data-cta-sageata>→</span></button>
+  <button type="button" class="rp-btn" data-cta-investitor data-cta-lp><span data-cta-text>Creează cont de investitor</span> <span aria-hidden="true" data-cta-sageata>→</span></button>
 </div>
 
 </div>
@@ -1529,7 +1534,8 @@ async function incarcaRundaCurenta() {
   let j = null;
   try { const r = await fetch('/api/public/runda-curenta', { headers: { Accept: 'application/json' } }); j = r.ok ? await r.json() : null; } catch (e) { j = null; }
   const r = j && j.runda;
-  if (!r) return; // fără rundă publică: rămâne textul de azi
+  // Pasul 12-L1: fără rundă publică, secțiunea „Runda curentă” lipsește (nicio cifră fără date).
+  if (!r) return;
   const nume = enInv() ? r.denumire_en : r.denumire_ro;
   const desc = enInv() ? r.descriere_en : r.descriere_ro;
   const rand = (et, v) => `<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #F1F4F8;font-size:13px"><span style="color:#5A6B7D">${escInv(trInv(et))}</span><strong style="color:#1A2332;text-align:right">${v}</strong></div>`;
@@ -1548,8 +1554,9 @@ async function incarcaRundaCurenta() {
     (r.progres ? `<div style="margin-top:12px"><div style="display:flex;justify-content:space-between;font-size:12px;color:#5A6B7D;margin-bottom:5px"><span>${escInv(trInv('Subscrieri aprobate'))}</span><span>${sumaInv(r.progres.stranse, r.moneda)} · ${sumaInv(r.progres.pct)}%</span></div>` +
       `<div style="height:8px;border-radius:99px;background:#EEF2F7;overflow:hidden"><div style="height:100%;width:${Math.min(100, r.progres.pct)}%;background:#FF8C00"></div></div></div>` : '');
   box.hidden = false;
-  const fara = document.getElementById('runda-fara-date');
-  if (fara) fara.hidden = true;
+  const sec = document.getElementById('runda');
+  if (sec) sec.hidden = false;
+  document.querySelectorAll('[data-lp-runda-link]').forEach((a) => { a.hidden = false; });
 }
 
 // ── Portofoliul investitorului ───────────────────────────────
@@ -2317,7 +2324,7 @@ function submitNewsletter() {
 
 
 <script>
-lucide.createIcons();
+if (window.lucide) lucide.createIcons();
 
 // Reveal
 const obs=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('visible');}),{threshold:.1});

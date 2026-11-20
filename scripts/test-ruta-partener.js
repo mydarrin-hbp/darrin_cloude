@@ -22,6 +22,11 @@
 //     fără erori JS; pe telefon bara fixă nu acoperă butonul Darrin AI, bara de
 //     jos sau ultimul conținut al paginii;
 //   - în engleză: „FREE” în insignă, butoanele traduse.
+// Pasul 12-L1 (macheta L1, 19 nov. 2026): șablonul comun e acum landing.css / landing.js
+// (lib/landing-pagini.js, scripts/genereaza-pagini-destinatie.js); primul ecran are un singur
+// buton, cu destinația scrisă în HTML; cardurile hub-ului duc la paginile de categorie; insigna
+// „GRATUIT”, butonul secundar, banda finală și bara fixă au fost scoase. Testul verifică
+// structura nouă (detaliile primului ecran: scripts/test-pagini-destinatie.js).
 // Cu --capturi <dosar>: hub-ul și pagina de materiale, la 390 și 1366 px.
 // Rulare: node scripts/test-ruta-partener.js [--capturi <dosar>]
 
@@ -102,7 +107,7 @@ async function deschide(browser, baza, pagina, o) {
   p.on('pageerror', (e) => erori.push(e.message.slice(0, 160)));
   p.on('console', (m) => { if (m.type() === 'error' && !ZGOMOT.test(m.text())) erori.push('console: ' + m.text().slice(0, 160)); });
   await p.goto(`${baza}/${pagina}`, { waitUntil: 'networkidle', timeout: 60000 }).catch((e) => erori.push('goto: ' + e.message.slice(0, 100)));
-  await p.waitForFunction(() => { const l = [...document.querySelectorAll('.rp [data-cta-partener]')]; return l.length && l.every((b) => b.getAttribute('data-cta-stare') && b.getAttribute('data-cta-stare') !== 'incarca'); }, null, { timeout: 10000 }).catch(() => erori.push('butoanele nu și-au primit starea'));
+  await p.waitForFunction(() => { const l = [...document.querySelectorAll('.lp [data-cta-partener]')]; return l.length && l.every((b) => b.getAttribute('data-cta-stare')); }, null, { timeout: 10000 }).catch(() => erori.push('butoanele nu și-au primit starea'));
   return { ctx, p, erori };
 }
 
@@ -158,7 +163,7 @@ const ADRESA = (f) => require(path.join(RADACINA, 'lib/adrese-curate.js')).adres
       const { ctx, p, erori } = await deschide(browser, baza, 'mydarrin-devino-partener.html?type=curier');
       const u = new URL(p.url());
       verifica(u.pathname === '/parteneri' && u.searchParams.get('type') === 'curier', `redirecționarea în browser: ${p.url()}`);
-      verifica(await p.evaluate(() => document.getElementById('tip-curier').classList.contains('rp-ales')), '?type=curier: cardul curierului nu e marcat');
+      verifica(await p.evaluate(() => document.getElementById('tip-curier').classList.contains('lp-ales')), '?type=curier: cardul curierului nu e marcat');
       verifica(!erori.length, 'hub ?type=curier: ' + erori.join(' | '));
       await ctx.close();
     }
@@ -176,88 +181,80 @@ const ADRESA = (f) => require(path.join(RADACINA, 'lib/adrese-curate.js')).adres
       verifica(!/Configurează profilul/i.test(fs.readdirSync(path.join(RADACINA, 'i18n', 'en')).map((f) => citeste(path.join('i18n', 'en', f))).join('\n')), '„Configurează profilul” încă apare în dicționare');
       const hub = citeste(HUB);
       verifica(!/id="configurare"|servicii-selector|toggleCatGroup/.test(hub), 'hub: formularul vechi de configurare a rămas');
-      verifica(/data-lucide="wrench"[\s\S]*data-lucide="package"[\s\S]*data-lucide="hard-hat"[\s\S]*data-lucide="truck"[\s\S]*data-lucide="shield"/.test(hub), 'hub: cele 5 carduri nu sunt în ordinea din meniu sau fără iconiță Lucide');
+      const carduri = [...hub.matchAll(/<a class="lp-cat" id="tip-([a-z]+)" href="([^"]+)"/g)].map((m) => m[1] + ' ' + m[2]);
+      verifica(JSON.stringify(carduri) === JSON.stringify(PAGINI_TIP.map(([f, t]) => t + ' ' + ADRESA(f))), `hub: cele 5 carduri nu sunt în ordinea din meniu: ${carduri.join(', ')}`);
       for (const f of RUTA) {
         const t = citeste(f);
-        verifica(t.includes('href="/ruta-partener.css"') && t.includes('src="/ruta-partener.js"'), `${f}: fără componenta comună (ruta-partener.css / .js)`);
-        verifica((t.match(/class="rp-hero"/g) || []).length === 1, `${f}: hero-ul comun lipsește sau e dublat`);
-        verifica(!/#7C3AED|#6D28D9|#8B5CF6/i.test(t.slice(t.indexOf('class="rp"'), t.indexOf('<footer'))), `${f}: culoare mov în conținut`);
+        verifica(t.includes('href="/landing.css"') && t.includes('src="/landing.js"'), `${f}: fără componenta comună (landing.css / .js)`);
+        verifica((t.match(/class="lp-erou"/g) || []).length === 1, `${f}: primul ecran comun lipsește sau e dublat`);
+        verifica(!/#7C3AED|#6D28D9|#8B5CF6/i.test(t.slice(t.indexOf('class="lp"'), t.indexOf('<footer'))), `${f}: culoare mov în conținut`);
       }
       const meniu = citeste('meniu-partener.js');
       verifica(meniu.includes("href: '/parteneri/servicii', ico: 'wrench'"), 'meniu-partener.js: „Furnizor de Servicii” nu duce la pagina nouă');
     }
 
-    // ── 3. Hero, butonul principal și fereastra cu tipul bifat (vizitator) ──
+    // ── 3. Primul ecran și butonul principal (vizitator) ──
     {
+      const L = require(path.join(RADACINA, 'lib/landing-pagini.js'));
       const fonturi = new Set();
       for (const f of RUTA) {
         const { ctx, p, erori } = await deschide(browser, baza, f);
         const h = await p.evaluate(() => {
-          const hero = document.querySelector('.rp-hero');
-          const h1 = hero && hero.querySelector('h1');
-          const b = hero && hero.querySelector('[data-rp-principal]');
+          const erou = document.querySelector('.lp-erou');
+          const h1 = erou && erou.querySelector('h1');
+          const b = document.getElementById('lp-cta');
           const cs = h1 && getComputedStyle(h1);
           return {
-            insigna: hero && (hero.querySelector('.rp-insigna') || {}).textContent,
-            font: cs && cs.fontFamily.split(',')[0].replace(/['"]/g, '').trim(), greutate: cs && cs.fontWeight, marime: cs && cs.fontSize, aliniere: cs && cs.textAlign,
-            tip: b && b.getAttribute('data-cta-partener'), text: b && b.textContent.replace(/\s+/g, ' ').trim(), stare: b && b.getAttribute('data-cta-stare'),
-            secundar: hero && [...hero.querySelectorAll('.rp-btn2')].map((x) => x.textContent.trim()),
-            secundarTinta: hero && (hero.querySelector('.rp-btn2') || {}).getAttribute && hero.querySelector('.rp-btn2').getAttribute('href'),
+            font: cs && cs.fontFamily.split(',')[0].replace(/['"]/g, '').trim(), greutate: cs && cs.fontWeight, marime: cs && cs.fontSize,
+            tip: b && b.getAttribute('data-cta-partener'), text: b && b.textContent.replace(/\s+/g, ' ').trim(), stare: b && b.getAttribute('data-cta-stare'), href: b && b.getAttribute('href'),
+            butoane: erou ? erou.querySelectorAll('a, button').length : 0, h1: h1 && h1.textContent.trim(),
           };
         });
         const asteptat = f === HUB ? '' : PAGINI_TIP.find((x) => x[0] === f)[1];
-        verifica(h.insigna && h.insigna.trim() === 'GRATUIT', `${f}: insigna hero e „${h.insigna}”`);
+        const pg = L.PAGINI.find((x) => x.fisier + '.html' === f);
         verifica(h.tip === asteptat, `${f}: butonul principal are data-cta-partener="${h.tip}" (aștept „${asteptat}”)`);
         verifica(h.stare === 'vizitator', `${f}: butonul principal nu e în starea vizitator (${h.stare})`);
-        verifica(h.font === 'Helvetica World' && h.greutate === '700' && h.aliniere === 'center', `${f}: titlul hero ${h.font} / ${h.greutate} / ${h.aliniere}`);
+        verifica(h.butoane === 1, `${f}: ${h.butoane} butoane în primul ecran (aștept unul)`);
+        verifica(h.font === 'Helvetica World' && h.greutate === '700', `${f}: titlul ${h.font} / ${h.greutate}`);
+        verifica(h.h1 === pg.implicit.ro.titlu && h.text === pg.implicit.ro.buton, `${f}: titlul „${h.h1}”, butonul „${h.text}”`);
+        verifica(h.href === L.destinatie(pg), `${f}: butonul principal → ${h.href} (aștept ${L.destinatie(pg)})`);
         fonturi.add(h.marime);
         if (f === HUB) {
-          verifica(h.text === 'Creează-ți contul de partener →', `hub: butonul principal „${h.text}”`);
-          verifica(h.secundar.join() === 'Alege tipul de parteneriat ↓' && h.secundarTinta === '#tipuri', `hub: butonul secundar ${h.secundar} → ${h.secundarTinta}`);
-          // Cardurile: „Creează cont” → pre-înscrierea, cu tipul cardului (pasul 12-P1).
-          for (const [pg, tip, rol] of PAGINI_TIP) {
-            const card = p.locator(`#tip-${tip}`);
-            verifica(await card.locator('a.rp-link').getAttribute('href') === ADRESA(pg), `hub, cardul ${tip}: „Află mai mult” nu duce la ${ADRESA(pg)}`);
-            const href = await card.locator('[data-cta-card]').getAttribute('href');
-            verifica(href === '/parteneri/inscriere?categorie=' + rol.replace('partener_', ''), `hub, cardul ${tip}: „Creează cont” → ${href} (aștept categoria ${rol})`);
+          for (const [pgf, tip] of PAGINI_TIP) {
+            const href = await p.locator(`#tip-${tip}`).getAttribute('href');
+            verifica(href === ADRESA(pgf), `hub, cardul ${tip}: duce la ${href} (aștept ${ADRESA(pgf)})`);
           }
-          await p.locator('#tip-servicii [data-cta-card]').click();
+          await p.locator('#lp-cta').click();
           await p.waitForURL(/parteneri\/inscriere/, { timeout: 8000 }).catch(() => {});
-          verifica(/\/parteneri\/inscriere\?categorie=servicii$/.test(p.url()), `hub: clicul pe cardul servicii duce la pre-înscriere (${p.url()})`);
+          verifica(/\/parteneri\/inscriere$/.test(p.url()), `hub: butonul principal duce la pre-înscriere (${p.url()})`);
         } else {
-          const [, tip, rol] = PAGINI_TIP.find((x) => x[0] === f);
-          verifica(/^Creează-ți cont de .+ →$/.test(h.text), `${f}: butonul principal „${h.text}”`);
-          verifica(h.secundar.join() === 'Cum funcționează ↓' && h.secundarTinta === '#cum-functioneaza', `${f}: butonul secundar ${h.secundar}`);
-          const sec = await p.evaluate(() => ['ce-castigi', 'ce-iti-trebuie', 'cum-functioneaza', 'intrebari'].map((id) => !!document.getElementById(id)).concat(
-            document.querySelectorAll('#ce-castigi .rp-punct').length === 3, document.querySelectorAll('#intrebari .rp-faq details').length <= 5,
-            !!document.querySelector('#detalii') && !document.querySelector('#detalii').open, !!document.querySelector('.rp-banda [data-cta-partener]')));
+          const sec = await p.evaluate(() => [!!document.getElementById('cum-functioneaza'), document.querySelectorAll('#cum-functioneaza .lp-pasi li').length === 3,
+            !!document.querySelector('#cum-functioneaza a[href^="/parteneri/intrebari"]'), !document.querySelector('.rp-banda, [data-rp-fix], .rp-insigna')]);
           verifica(sec.every(Boolean), `${f}: structura șablonului incompletă ${JSON.stringify(sec)}`);
-          const href = await p.locator('.rp-hero [data-rp-principal]').getAttribute('href');
-          verifica(href === '/parteneri/inscriere?categorie=' + rol.replace('partener_', ''), `${f}: butonul principal → ${href} (aștept categoria ${rol})`);
         }
         verifica(!erori.length, `${f}: ${erori.join(' | ')}`);
         await ctx.close();
       }
-      verifica(fonturi.size === 1, `mărimea titlului hero diferă între pagini: ${[...fonturi].join(', ')}`);
+      verifica(fonturi.size === 1, `mărimea titlului diferă între pagini: ${[...fonturi].join(', ')}`);
     }
 
-    // ── 4. Utilizator conectat: butoanele urmează starea contului ──
+    // ── 4. Utilizator conectat: doar contul de partener schimbă textul și destinația ──
     {
       let { ctx, p } = await deschide(browser, baza, 'cum-devii-furnizor-materiale.html', { stare: 'activare', rol: 'partener_materiale' });
-      let b = await p.evaluate(() => { const x = document.querySelector('.rp-hero [data-rp-principal]'); return { text: x.textContent.replace(/\s+/g, ' ').trim(), href: x.getAttribute('href') }; });
-      verifica(b.text === 'Finalizează-ți contul ca să primești comenzi →' && /mydarrin-dashboard-furnizor\?type=materiale/.test(b.href), `materiale, activare: ${JSON.stringify(b)}`);
+      let b = await p.evaluate(() => { const x = document.getElementById('lp-cta'); return { text: x.textContent.replace(/\s+/g, ' ').trim(), href: x.getAttribute('href') }; });
+      verifica(b.text === 'Mergi în panoul tău' && /mydarrin-dashboard-furnizor\?type=materiale/.test(b.href), `materiale, activare: ${JSON.stringify(b)}`);
       await ctx.close();
-      ({ ctx, p } = await deschide(browser, baza, HUB, { stare: 'client' }));
-      b = await p.evaluate(() => [...document.querySelectorAll('[data-cta-card]')].map((x) => x.textContent.trim()));
-      verifica(b.length === 5 && b.every((t) => t === 'Alege acest tip'), `hub, client: cardurile ${b}`);
-      await p.locator('#tip-inchirieri [data-cta-card]').click();
+      ({ ctx, p } = await deschide(browser, baza, 'cum-devii-operator-inchirieri.html', { stare: 'client' }));
+      b = await p.evaluate(() => { const x = document.getElementById('lp-cta'); return { text: x.textContent.trim(), href: x.getAttribute('href') }; });
+      verifica(b.text === 'Devino partener' && b.href === '/parteneri/inscriere?categorie=inchirieri', `închirieri, client: textul și linkul rămân ${JSON.stringify(b)}`);
+      await p.locator('#lp-cta').click();
       await p.waitForFunction(() => { const m = document.getElementById('auth-modal'); return m && !m.classList.contains('hidden'); }, null, { timeout: 8000 }).catch(() => {});
       const ales = await p.evaluate(() => { const r = document.querySelector('input[name="mdc-rol-cont"]:checked'); return r && r.value; });
-      verifica(ales === 'partener_inchirieri', `hub, client: alegerea tipului pe cont (${ales})`);
+      verifica(ales === 'partener_inchirieri', `închirieri, client: clicul alege tipul pe contul existent (${ales})`);
       await ctx.close();
       ({ ctx, p } = await deschide(browser, baza, HUB, { stare: 'activ', rol: 'partener_curier' }));
-      b = await p.evaluate(() => [...document.querySelectorAll('.rp [data-cta-partener]')].map((x) => [x.getAttribute('data-cta-stare'), x.getAttribute('href')]));
-      verifica(b.every(([s, h]) => s === 'activ' && /\/cont\/partener\?type=curier/.test(h)), `hub, partener activ: ${JSON.stringify(b.slice(0, 2))}`);
+      b = await p.evaluate(() => [...document.querySelectorAll('.lp [data-cta-partener]')].map((x) => [x.getAttribute('data-cta-stare'), x.getAttribute('href')]));
+      verifica(b.length === 1 && b.every(([st, h]) => st === 'activ' && /\/cont\/partener\?type=curier/.test(h)), `hub, partener activ: ${JSON.stringify(b)}`);
       await ctx.close();
     }
 
@@ -281,78 +278,40 @@ const ADRESA = (f) => require(path.join(RADACINA, 'lib/adrese-curate.js')).adres
       console.log(`linkuri verificate: ${linkuri.size}`);
     }
 
-    // ── 6. Ecrane: derulare orizontală, erori, bara fixă de pe telefon ──
+    // ── 6. Ecrane: derulare orizontală, erori (pasul 12-L1: fără bara fixă) ──
     for (const [w, h] of ECRANE) {
       for (const f of RUTA) {
         const { ctx, p, erori } = await deschide(browser, baza, f, { w, h });
         const lat = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
         verifica(lat <= 0, `${f} ${w}px: derulare orizontală ${lat}px`);
-        if (w <= 768) {
-          await p.evaluate(() => { const s = document.getElementById('pasi') || document.getElementById('ce-iti-trebuie'); s.scrollIntoView({ behavior: 'instant' }); });
-          await p.waitForTimeout(450);
-          const r = await p.evaluate(() => {
-            const bara = document.querySelector('[data-rp-fix]');
-            const rb = bara.querySelector('.rp-btn').getBoundingClientRect();
-            const vizibil = bara.classList.contains('rp-vizibil') && rb.bottom <= innerHeight && rb.top >= 0;
-            const seSuprapune = (el) => { if (!el) return false; const cs = getComputedStyle(el); if (cs.display === 'none' || cs.visibility === 'hidden') return false; const q = el.getBoundingClientRect(); return q.width > 0 && !(q.right <= rb.left || q.left >= rb.right || q.bottom <= rb.top || q.top >= rb.bottom); };
-            return { vizibil, peste: ['dai-fab', 'mobile-bottom-nav', 'myd-share-fab'].filter((id) => seSuprapune(document.getElementById(id))) };
-          });
-          verifica(r.vizibil, `${f} ${w}px: bara fixă nu apare la derulare`);
-          verifica(!r.peste.length, `${f} ${w}px: bara fixă acoperă ${r.peste.join(', ')}`);
-          // La final, ultimul conținut al paginii rămâne deasupra barei fixe.
-          await p.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
-          await p.waitForTimeout(450);
-          const jos = await p.evaluate(() => {
-            const bara = document.querySelector('[data-rp-fix] .rp-btn').getBoundingClientRect();
-            const vizibil = document.querySelector('[data-rp-fix]').classList.contains('rp-vizibil');
-            const footer = document.querySelector('footer');
-            const fr = footer.getBoundingClientRect();
-            const barajos = document.getElementById('mobile-bottom-nav');
-            const bj = barajos && getComputedStyle(barajos).display !== 'none' ? barajos.getBoundingClientRect().top : innerHeight;
-            return { vizibil, footerJos: fr.bottom, baraSus: bara.top, bj };
-          });
-          verifica(!jos.vizibil || jos.footerJos <= jos.baraSus + 1, `${f} ${w}px: bara fixă acoperă sfârșitul paginii (${Math.round(jos.footerJos)} > ${Math.round(jos.baraSus)})`);
-        } else {
-          const vizibila = await p.evaluate(() => getComputedStyle(document.querySelector('[data-rp-fix]')).display !== 'none');
-          verifica(!vizibila, `${f} ${w}px: bara fixă apare pe ecran mare`);
-        }
+        verifica(!(await p.$('[data-rp-fix]')), `${f} ${w}px: bara fixă veche a rămas`);
         verifica(!erori.length, `${f} ${w}px: ${erori.join(' | ')}`);
         if (dosarCapturi && (w === 390 || w === 1366) && (f === HUB || f === 'cum-devii-furnizor-materiale.html')) {
           fs.mkdirSync(dosarCapturi, { recursive: true });
-          await p.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
-          await p.waitForTimeout(400);
-          const nume = f.replace('.html', '');
-          if (w === 1366) await p.screenshot({ path: path.join(dosarCapturi, `${nume}-${w}.png`), fullPage: true });
-          else {
-            // Pe telefon, captura „full page” ar desena elementele fixe în mijlocul imaginii:
-            // ecranul de sus și ecranul de la mijloc (cu bara fixă).
-            await p.screenshot({ path: path.join(dosarCapturi, `${nume}-${w}-sus.png`) });
-            await p.evaluate(() => (document.getElementById('pasi') || document.getElementById('ce-iti-trebuie')).scrollIntoView({ behavior: 'instant' }));
-            await p.waitForTimeout(500);
-            await p.screenshot({ path: path.join(dosarCapturi, `${nume}-${w}-mijloc.png`) });
-          }
+          await p.screenshot({ path: path.join(dosarCapturi, `${f.replace('.html', '')}-${w}.png`), fullPage: w === 1366 });
         }
         await ctx.close();
       }
       console.log(`${w}px: gata`);
     }
 
-    // ── 7. Engleză (prima vizită): „FREE”, butoanele traduse ──
-    for (const f of RUTA) {
-      const { ctx, p, erori } = await deschide(browser, baza, f, { limba: null });
-      const e = await p.evaluate(() => ({
-        lang: document.documentElement.lang,
-        insigna: document.querySelector('.rp-hero .rp-insigna').textContent.trim(),
-        h1: document.querySelector('.rp-hero h1').textContent.trim(),
-        buton: document.querySelector('.rp-hero [data-rp-principal]').textContent.replace(/\s+/g, ' ').trim(),
-        carduri: [...document.querySelectorAll('[data-cta-card]')].map((x) => x.textContent.trim()),
-      }));
-      verifica(e.lang === 'en' && e.insigna === 'FREE', `${f} EN: ${e.lang} / insigna „${e.insigna}”`);
-      verifica(/^Become a My Darrin /.test(e.h1), `${f} EN: titlul „${e.h1}”`);
-      verifica(/^Create your .+ account →$/.test(e.buton), `${f} EN: butonul „${e.buton}”`);
-      if (f === HUB) verifica(e.carduri.length === 5 && e.carduri.every((t) => t === 'Create account'), `hub EN: cardurile ${e.carduri}`);
-      verifica(!erori.length, `${f} EN: ${erori.join(' | ')}`);
-      await ctx.close();
+    // ── 7. Engleză (prima vizită): primul ecran și butonul traduse ──
+    {
+      const L = require(path.join(RADACINA, 'lib/landing-pagini.js'));
+      for (const f of RUTA) {
+        const { ctx, p, erori } = await deschide(browser, baza, f, { limba: null });
+        const e = await p.evaluate(() => ({
+          lang: document.documentElement.lang,
+          h1: document.querySelector('.lp-erou h1').textContent.trim(),
+          buton: document.getElementById('lp-cta').textContent.replace(/\s+/g, ' ').trim(),
+        }));
+        const pg = L.PAGINI.find((x) => x.fisier + '.html' === f);
+        verifica(e.lang === 'en', `${f} EN: lang ${e.lang}`);
+        verifica(e.h1 === pg.implicit.en.titlu, `${f} EN: titlul „${e.h1}”`);
+        verifica(e.buton === pg.implicit.en.buton, `${f} EN: butonul „${e.buton}”`);
+        verifica(!erori.length, `${f} EN: ${erori.join(' | ')}`);
+        await ctx.close();
+      }
     }
   } finally {
     await browser.close();

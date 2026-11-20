@@ -113,11 +113,12 @@ const asteaptaStare = (p) => p.waitForFunction(() => { const l = [...document.qu
   const baza = 'http://localhost:' + srv.address().port;
   const browser = await chromium.launch();
   const PAGINI = [
-    ['cum-devii-partenerul-nostru.html', 'partener_servicii', 3, null],
-    ['cum-devii-furnizor-materiale.html', 'partener_materiale', 3, 'partener_materiale'],
+    ['cum-devii-partenerul-nostru.html', 'partener_servicii', 1, null],
+    ['cum-devii-furnizor-materiale.html', 'partener_materiale', 1, 'partener_materiale'],
   ];
-  // Pasul 11-R3g: pe paginile de tip, vizitatorul vede „Creează-ți cont de <tip>”.
-  const textAsteptat = (pagina, stare) => (stare === 'vizitator' && pagina === 'cum-devii-furnizor-materiale.html' ? 'Creează-ți cont de furnizor de materiale' : TEXT[stare]);
+  // Pasul 12-L1 (macheta L1): un singur buton pe pagină; vizitatorul și clientul văd textul din
+  // HTML („Devino partener”), contul de partener vede „Mergi în panoul tău” (data-cta-panou).
+  const textAsteptat = (pagina, stare) => (stare === 'vizitator' || stare === 'client' ? 'Devino partener' : 'Mergi în panoul tău');
   try {
     // 0. Static: #partner-types a dispărut; #cum-functioneaza există.
     {
@@ -185,27 +186,25 @@ const asteaptaStare = (p) => p.waitForFunction(() => { const l = [...document.qu
       await ctx.close();
     }
 
-    // 2. Cât se încarcă starea, butonul nu arată textul greșit.
+    // 2. Pasul 12-L1: cât se încarcă starea, butonul se vede și are destinația din HTML (nu se mai ascunde).
     {
       const et = 'încărcarea stării';
       const { ctx, p } = await deschide(browser, baza, 'cum-devii-partenerul-nostru.html', 'activ', 'partener_servicii', { intarziere: 2500, fara_asteptare: true });
       await asteapta(600);
-      const inainte = await p.evaluate(() => [...document.querySelectorAll('[data-cta-partener]')].map((b) => getComputedStyle(b).visibility));
-      verifica(inainte.length && inainte.every((v) => v === 'hidden'), `${et}: butoanele se văd înainte de stare (${inainte.join(',')})`);
+      const inainte = await p.evaluate(() => [...document.querySelectorAll('[data-cta-partener]')].filter((b) => !b.closest('[data-meniu-partener]')).map((b) => [getComputedStyle(b).visibility, b.getAttribute('href')]));
+      verifica(inainte.length && inainte.every((v) => v[0] === 'visible' && v[1] === '/parteneri/inscriere'), `${et}: butonul se vede și duce la înscriere înainte de stare (${JSON.stringify(inainte)})`);
       await asteaptaStare(p);
       const dupa = await p.evaluate(() => [...document.querySelectorAll('[data-cta-partener]')].filter((b) => !b.closest('[data-meniu-partener]')).map((b) => getComputedStyle(b).visibility));
       verifica(dupa.every((v) => v === 'visible'), `${et}: butoanele nu apar după stare (${dupa.join(',')})`);
       await ctx.close();
     }
 
-    // 3. Ancora #cum-functioneaza: butonul și deschiderea directă.
-    // Pasul 11-R3g: pe paginile de tip, butonul secundar „Cum funcționează ↓” din hero.
-    for (const [cum, url] of [['butonul „Cum funcționează ↓”', 'cum-devii-furnizor-materiale.html'], ['deschiderea cu #cum-functioneaza', 'cum-devii-furnizor-materiale.html#cum-functioneaza']]) {
+    // 3. Ancora #cum-functioneaza: deschiderea directă (pasul 12-L1: butonul secundar din hero a fost scos, macheta L1).
+    for (const [cum, url] of [['deschiderea cu #cum-functioneaza', 'cum-devii-furnizor-materiale.html#cum-functioneaza']]) {
       const et = `ancora: ${cum}`;
       const { ctx, p, erori } = await deschide(browser, baza, url, 'vizitator', 'partener_servicii');
-      if (!url.includes('#')) await p.click('.rp-hero .rp-btn2');
       await p.waitForFunction(() => { const s = document.getElementById('cum-functioneaza'); return s && s.getClientRects().length && s.getBoundingClientRect().top < window.innerHeight; }, null, { timeout: 6000 }).catch(() => {});
-      const r = await p.evaluate(() => { const s = document.getElementById('cum-functioneaza'); const b = s.getBoundingClientRect(); return { vizibil: s.getClientRects().length > 0, sus: Math.round(b.top), vh: window.innerHeight, pasi: s.querySelectorAll('.rp-pas').length }; });
+      const r = await p.evaluate(() => { const s = document.getElementById('cum-functioneaza'); const b = s.getBoundingClientRect(); return { vizibil: s.getClientRects().length > 0, sus: Math.round(b.top), vh: window.innerHeight, pasi: s.querySelectorAll('.lp-pasi li').length }; });
       verifica(r.vizibil && r.sus < r.vh && r.pasi > 0, `${et}: secțiunea nu e afișată ${JSON.stringify(r)}`);
       verifica(!erori.length, `${et}: ${erori.length} erori JS (${erori.slice(0, 3).join(' | ')})`);
       await ctx.close();
@@ -217,7 +216,7 @@ const asteaptaStare = (p) => p.waitForFunction(() => { const l = [...document.qu
       const { ctx, p, erori } = await deschide(browser, baza, 'cum-devii-partenerul-nostru.html', 'activare', 'partener_servicii', { limba: null });
       await asteaptaStare(p);
       const b = await butoane(p);
-      verifica(b.every((x) => x.text === 'Finish your account so you can receive orders'), `${et}: ${JSON.stringify(b.map((x) => x.text))}`);
+      verifica(b.every((x) => x.text === 'Go to your dashboard'), `${et}: ${JSON.stringify(b.map((x) => x.text))}`);
       verifica(!erori.length, `${et}: ${erori.length} erori JS`);
       await ctx.close();
     }
