@@ -36,6 +36,19 @@
    Pasul 12-P1 (17 nov. 2026): vizitatorul merge la pre-înscrierea în 60 de
    secunde, /parteneri/inscriere?categorie=<tip> (link real, nu fereastra de
    cont). Clientul conectat păstrează alegerea tipului pe contul lui.
+
+   Pasul 12-L1 (19 nov. 2026; auditul: butonul devenea link abia după sesiune):
+     - butonul nu se mai ascunde cât se încarcă starea și nu se mai blochează;
+     - destinația e scrisă în HTML (paginile de destinație: /parteneri/inscriere
+       ?categorie=<tip> + profesie, lang, UTM) și NU se mai schimbă pentru
+       vizitator (nici spre #tipuri, nici altfel); textul rămâne cel din pagină;
+     - după încărcarea sesiunii se schimbă textul și destinația DOAR pentru cine
+       are deja cont de partener (activare, verificare, activ) → dashboard-ul;
+       cu data-cta-panou (butonul principal al paginilor de destinație) textul
+       e „Mergi în panoul tău”;
+     - clientul conectat fără rol de partener: linkul rămâne, iar clicul
+       păstrează alegerea tipului pe contul lui (fereastra de cont), ca să nu
+       își facă un al doilea cont.
    ════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -72,12 +85,9 @@
     return tipDin(el.getAttribute('data-cta-partener')) || tipDin(new URLSearchParams(location.search).get('type'));
   }
 
-  // Butonul își păstrează locul cât se încarcă starea (fără text greșit).
-  var st = document.createElement('style');
-  st.textContent = '[data-cta-partener][data-cta-stare="incarca"]{visibility:hidden}';
-  (document.head || document.documentElement).appendChild(st);
+  // Pasul 12-L1: fără ascundere cât se încarcă starea — butonul e utilizabil din prima secundă.
   function butoane() { return Array.prototype.slice.call(document.querySelectorAll(SELECTOR)); }
-  function marcheazaIncarcare() { butoane().forEach(function (b) { if (!b.getAttribute('data-cta-stare')) b.setAttribute('data-cta-stare', 'incarca'); }); }
+  var TEXT_PANOU = 'Mergi în panoul tău';
 
   function asteapta(cond, ms) {
     return new Promise(function (ok) {
@@ -151,32 +161,27 @@
 
   function aplica(el, r) {
     var tip = tipButon(el);
-    var text = tr(textPentru(el, r.stare));
-    var tinta = el.querySelector('[data-cta-text]');
-    if (tinta) tinta.textContent = text;
-    else el.textContent = text + (/→\s*$/.test(el.getAttribute('data-cta-original') || '') ? ' →' : '');
-    Array.prototype.forEach.call(el.querySelectorAll('[data-cta-badge]'), function (b) {
-      b.style.display = r.stare === 'vizitator' || r.stare === 'client' ? '' : 'none';
-    });
     el.setAttribute('data-cta-stare', r.stare);
+    // Cont de partener: textul și destinația spre dashboard (singura schimbare după sesiune).
     if (r.destinatie && (r.stare === 'activare' || r.stare === 'verificare' || r.stare === 'activ')) {
+      var text = tr(el.hasAttribute('data-cta-panou') ? TEXT_PANOU : textPentru(el, r.stare));
+      var tinta = el.querySelector('[data-cta-text]');
+      if (tinta) tinta.textContent = text;
+      else el.textContent = text + (/→\s*$/.test(el.getAttribute('data-cta-original') || '') ? ' →' : '');
+      Array.prototype.forEach.call(el.querySelectorAll('[data-cta-badge]'), function (b) { b.style.display = 'none'; });
       el.setAttribute('href', r.destinatie);
       el.onclick = null;
       return;
     }
-    // Pasul 12-P1: vizitatorul → pagina de pre-înscriere, cu categoria butonului.
-    if (r.stare === 'vizitator') {
-      el.setAttribute('href', '/parteneri/inscriere' + (tip ? '?categorie=' + encodeURIComponent(tip) : ''));
-      el.onclick = null;
-      return;
+    // Clientul conectat: linkul din pagină rămâne; clicul alege tipul pe contul existent.
+    if (r.stare === 'client') {
+      el.onclick = function (e) {
+        if (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return;
+        e.preventDefault();
+        cuFereastra(function (c) { c.alegeTipPartener({ rol: tip ? 'partener_' + tip : null }); });
+      };
     }
-    el.setAttribute('href', '#');
-    el.onclick = function (e) {
-      e.preventDefault();
-      var rol = tip ? 'partener_' + tip : null;
-      if (r.stare === 'client') cuFereastra(function (c) { c.alegeTipPartener({ rol: rol }); });
-      else cuFereastra(function (c) { c.deschide(rol ? { tab: 'register', rol: rol } : { tab: 'register', partener: true }); });
-    };
+    // Vizitatorul: nimic de schimbat — destinația și textul sunt cele din HTML.
   }
 
   var promStare = null;
@@ -184,15 +189,13 @@
     var lista = butoane();
     if (!lista.length) return;
     lista.forEach(function (b) { if (!b.hasAttribute('data-cta-original')) b.setAttribute('data-cta-original', b.textContent.trim()); });
-    marcheazaIncarcare();
     if (!promStare) promStare = stareCont();
-    // Cel mult 6 s fără răspuns: starea de vizitator (butonul nu rămâne ascuns).
+    // Cel mult 6 s fără răspuns: starea de vizitator (nimic de schimbat).
     Promise.race([promStare, new Promise(function (ok) { setTimeout(function () { ok({ stare: 'vizitator' }); }, 6000); })])
       .then(function (r) { butoane().forEach(function (b) { aplica(b, r); }); });
   }
 
   window.MYD_CTA_PARTENER = { porneste: porneste, stareCont: function () { return promStare || (promStare = stareCont()); } };
-  marcheazaIncarcare();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', porneste);
   else porneste();
 })();

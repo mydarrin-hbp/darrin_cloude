@@ -82,7 +82,8 @@
   }
 
   function cta(clasa) {
-    return '<a href="/parteneri" class="' + clasa + '" data-cta-partener="" data-cta-scurt="">' +
+    // Pasul 12-L1: destinația e scrisă aici (pre-înscrierea); cta-partener.js o schimbă doar pentru conturile de partener.
+    return '<a href="/parteneri/inscriere" class="' + clasa + '" data-cta-partener="" data-cta-scurt="">' +
       '<span data-cta-text>' + esc(tr('Creează-ți contul de partener')) + '</span>' + (clasa === 'mmp-cta' ? ' ' + ico('arrow-right') : '') + '</a>';
   }
 

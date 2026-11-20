@@ -312,6 +312,11 @@ input:valid:not(:placeholder-shown):not([type="checkbox"]) {
 <meta charset="UTF-8">
 <!-- Limba (10 oct. 2026): engleza implicită, româna din selector — i18n-loader.js, sincron, primul script -->
 <script src="/i18n-loader.js" data-pagina="cum-devii-furnizor-materiale"></script>
+<!-- lp:cap:inceput -->
+<script>/* 12-L1: varianta din utm_campaign (cel mult 300 ms; landing.js) */(function(){var h=document.documentElement,P="/parteneri/materiale",lp=window.__MYD_LP={pagina:P,varianta:null,aplicat:null,date:null,erou:false},c="",ok,inchis=false,rez=null;try{c=(new URLSearchParams(location.search).get("utm_campaign")||"").trim().toLowerCase()}catch(e){}if(!/^[a-z0-9][a-z0-9._-]{0,59}$/.test(c)||c==="implicita")c="";lp.varianta=c||null;lp.gata=new Promise(function(r){ok=r});function gata(v){if(inchis)return;inchis=true;h.classList.remove("lp-asteapta");ok(v)}if(c)h.classList.add("lp-asteapta");setTimeout(function(){gata(lp.aplicat||"default")},300);lp.aplica=function(){if(inchis||!rez||!lp.erou)return;var L=window.MYD_I18N&&window.MYD_I18N.lang==="ro"?"ro":"en",d=rez.continut&&rez.continut[L];if(d){var b=document.getElementById("lp-cta"),st=b&&b.getAttribute("data-cta-stare");Array.prototype.forEach.call(document.querySelectorAll("[data-lp-camp]"),function(el){var k=el.getAttribute("data-lp-camp"),v=d[k];if(!v||el.textContent===v)return;if(k==="buton"&&st&&st!=="vizitator"&&st!=="client"&&st!=="incarca")return;el.textContent=v})}lp.date=rez;lp.aplicat=c&&rez.varianta===c?c:"default";gata(lp.aplicat)};fetch("/api/public/landing?pagina="+encodeURIComponent(P)+(c?"&varianta="+encodeURIComponent(c):""),{headers:{Accept:"application/json"}}).then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.ok&&j.continut){rez=j;lp.aplica()}else gata("default")}).catch(function(){gata("default")})})();</script>
+<link rel="stylesheet" href="/landing.css">
+<script src="/landing.js" defer></script>
+<!-- lp:cap:sfarsit -->
 <link rel="alternate" hreflang="en" href="https://mydarrin.homebestpal.com/parteneri/materiale?lang=en"/>
 <link rel="alternate" hreflang="ro" href="https://mydarrin.homebestpal.com/parteneri/materiale?lang=ro"/>
 <link rel="alternate" hreflang="x-default" href="https://mydarrin.homebestpal.com/parteneri/materiale"/>
@@ -324,13 +329,10 @@ input:valid:not(:placeholder-shown):not([type="checkbox"]) {
 <meta property="og:url" content="https://mydarrin.homebestpal.com/parteneri/materiale"/>
 <meta property="og:image" content="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1200&q=80"/>
 <meta name="twitter:card" content="summary_large_image"/>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script>tailwind.config={theme:{extend:{colors:{
-  primary:{DEFAULT:"#003366"},accent:{DEFAULT:"#FF8C00"},
-  ai:{DEFAULT:"#0E9E99"},surface:{DEFAULT:"#F4F7F9"}
-}}}}</script>
+<link rel="stylesheet" href="/landing-tailwind.css">
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" defer></script>
+
+
 <style>
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
 html { scroll-behavior:smooth; }
@@ -665,7 +667,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 <script src="/cookie-consent.js" defer></script>
 <script>window.__ENV__=window.__ENV__||{};window.__ENV__.GA4_MEASUREMENT_ID=window.__ENV__.GA4_MEASUREMENT_ID||'G-3F5HVDYJPX';</script><script src="/analytics-loader.js" defer></script><script src="/masurare.js" defer></script><script src="/_vercel/insights/script.js" defer></script>
   <!-- DOMPurify — sanitizare XSS (audit 2026-07-10) -->
-  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js" defer></script>
   <script>
     // Helper escapeHTML — pentru text pur (mesaje chat, nume, etc.)
     // Folosește textContent intern — niciun risc XSS
@@ -683,7 +685,7 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
     }
   </script>
 <link rel="stylesheet" href="/ui-public.css">
-<link rel="stylesheet" href="/ruta-partener.css">
+
 </head>
 <body class="bg-[#F4F7F9]" style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
 
@@ -831,82 +833,38 @@ window.MyDarrinAuth = window.MyDarrinAuth || {
 </header>
 
 
-<!-- ════ Pasul 11-R3g (decizia LM, 3 nov. 2026): șablonul comun al paginilor de tip —
-     hero (insigna „GRATUIT”, butonul principal după starea contului, prin
-     cta-partener.js), Ce câștigi, Ce îți trebuie (exact ca la activare:
-     activare-pasi.js), Cum funcționează, întrebări frecvente, Detalii (închise),
-     bandă finală și bara fixă de pe telefon. Stil: ruta-partener.css. ════ -->
-<div class="rp">
-
-<section class="rp-hero" id="rp-hero">
-  <div class="rp-hero-in">
-    <span class="rp-insigna">GRATUIT</span>
-    <h1>Devino furnizor de materiale My Darrin</h1>
-    <p class="rp-sub">Listează produsele tale în marketplace-ul My Darrin și ajunge la clienții care comandă materiale odată cu serviciile.</p>
-    <div class="rp-butoane">
-      <a href="/parteneri?type=materiale" class="rp-btn" data-cta-partener="materiale" data-cta-vizitator="Creează-ți cont de furnizor de materiale" data-rp-principal><span data-cta-text>Creează-ți cont de furnizor de materiale</span> <span aria-hidden="true">→</span></a>
-      <a href="#cum-functioneaza" class="rp-btn2">Cum funcționează ↓</a>
-    </div>
-  </div>
-</section>
-
-<section class="rp-sec rp-gri" id="ce-castigi" aria-labelledby="castigi-titlu">
-  <div class="rp-in">
-    <div class="rp-cap">
-      <p class="rp-eticheta">De ce My Darrin</p>
-      <h2 class="rp-h2" id="castigi-titlu">Ce câștigi</h2>
-    </div>
-    <div class="rp-puncte"><div class="rp-punct"><h3>Clienți cu intenție clară</h3><p>Clientul comandă materialele odată cu serviciul — nu mai trebuie să îl convingi.</p></div><div class="rp-punct"><h3>Asociere automată cu servicii</h3><p>Produsele tale apar recomandate automat când un client comandă un serviciu relevant.</p></div><div class="rp-punct"><h3>Livrare prin Curieri de Cartier</h3><p>Logistica este gestionată de My Darrin. Tu pregătești, ei livrează.</p></div></div>
-  </div>
-</section>
-
-<section class="rp-sec" id="ce-iti-trebuie" aria-labelledby="nevoi-titlu">
-  <div class="rp-in-ingust">
-    <div class="rp-cap">
-      <p class="rp-eticheta">La activarea contului</p>
-      <h2 class="rp-h2" id="nevoi-titlu">Ce îți trebuie</h2>
-      <p>Le completezi din dashboard, după ce creezi contul. Ce scrii se salvează automat.</p>
-    </div>
-    <ul class="rp-nevoi"><li><span><strong>Firma</strong> — introduci CUI-ul; restul datelor vin de la ANAF.</span></li><li><span><strong>Contul bancar</strong> — contul în care primești plățile. IBAN-ul se păstrează criptat.</span></li><li><span><strong>Profesiile</strong> — codul NACE principal al activității tale și, dacă e cazul, coduri secundare (cel mult 15).</span></li><li><span><strong>Catalogul de produse</strong> — produsele pe care le vinzi (cel puțin unul). Le adaugi din catalog, manual sau prin import CSV.</span></li><li><span><strong>Documentele</strong> — recomandat pentru tipul tău: CI / pașaport administrator, certificat de înregistrare firmă, CUI / certificat fiscal. Fișiere PDF, JPG sau PNG, cel mult 10 MB; le verifică echipa My Darrin.</span></li><li><span><strong>Contractul</strong> — contractul-cadru, semnat cu un cod trimis pe email, după verificarea firmei.</span></li></ul>
-    
-  </div>
-</section>
-
-<section class="rp-sec rp-gri" id="cum-functioneaza" aria-labelledby="cum-titlu">
-  <div class="rp-in-ingust">
-    <div class="rp-cap">
-      <p class="rp-eticheta">Pas cu pas</p>
-      <h2 class="rp-h2" id="cum-titlu">Cum funcționează</h2>
-      
-    </div>
-    <ol class="rp-pasi"><li class="rp-pas"><h3>Listezi produsele</h3><p>Din dashboard adaugi produsele: denumire, categorie, descriere, fotografii, preț, unitate de măsură și stoc.</p></li><li class="rp-pas"><h3>Primești comanda</h3><p>Când un client finalizează comanda, primești notificarea cu detaliile comenzii și adresa de livrare.</p></li><li class="rp-pas"><h3>Pregătești marfa</h3><p>O etichetezi conform instrucțiunilor și confirmi că e gata de ridicare de către Curierul de Cartier.</p></li><li class="rp-pas"><h3>Curierul livrează</h3><p>Curierul de Cartier preia marfa de la tine și o transportă la client. Clientul confirmă recepția.</p></li><li class="rp-pas"><h3>Primești plata</h3><p>După confirmarea livrării, se eliberează suma facturată către Home Best Pal SRL, cu discountul tău configurat. <span data-regula-bloc hidden>Primești plata în cel mult <strong data-regula="termen-plata-partener"></strong> de la eliberarea sumei.</span></p></li></ol>
-  </div>
-</section>
-
-<section class="rp-sec" id="intrebari" aria-labelledby="intrebari-titlu">
-  <div class="rp-in-ingust">
-    <div class="rp-cap">
-      <p class="rp-eticheta">Întrebări frecvente</p>
-      <h2 class="rp-h2" id="intrebari-titlu">Ce ne întreabă partenerii</h2>
-    </div>
-    <div class="rp-faq"><details><summary>Pot vinde materiale pe My Darrin?</summary><div class="rp-rasp">Da. Ca furnizor de materiale îți listezi produsele în marketplace-ul My Darrin. Clienții le pot comanda direct sau le pot asocia unui serviciu. Fluxul de livrare este gestionat prin Curierii de Cartier.</div></details><details><summary>Există un număr minim de produse pentru listare?</summary><div class="rp-rasp">Nu există un minim. Poți lista de la un singur produs.</div></details><details><summary>Cine gestionează retururile?</summary><div class="rp-rasp">Dacă un produs livrat are o problemă, clientul o semnalează din pagina Reclamații, iar echipa My Darrin o analizează. Politica de retur se publică separat.</div></details><details><summary>Cum se stabilește prețul în fiecare țară?</summary><div class="rp-rasp">Prețul afișat clientului se calculează cu formula platformei și cu TVA-ul țării în care se livrează.</div></details></div>
-    <details class="rp-detalii" id="detalii" style="margin-top:16px"><summary>Detalii</summary><div class="rp-detalii-corp"><h3>Modelul My Darrin, pe scurt</h3><ul><li><strong>Home Best Pal SRL este antreprenorul general.</strong> Clientul cumpără serviciul integrat de la Home Best Pal SRL, iar tu facturezi către Home Best Pal SRL.</li><li><strong>Acorzi platformei un discount între 5% și 15%</strong>, pe categorie, stabilit în contract; discountul nu este public. Primești prețul public minus discountul tău.</li><li><strong>Prețul public</strong> se calculează cu formula platformei: costul de bază (manoperă, materiale, utilaje), transportul, asigurarea, comisionul platformei, marketingul și mentenanța, plus TVA. Procentele se configurează în back-office, pe țară.</li><li><strong>Primești comenzi și vinzi doar după aprobarea contului</strong>, cu contractul semnat și contul bancar adăugat.</li></ul><h3>Categorii de materiale acceptate</h3><div class="rp-etichete"><span>Materiale de construcții</span><span>Zidărie & Beton</span><span>Lemn & Cherestea</span><span>Instalații electrice</span><span>Instalații sanitare</span><span>Finisaje & Vopsele</span><span>Izolații termice & fonice</span><span>Acoperiș & Tinichigerie</span><span>Materiale industriale</span><span>Electrocasnice</span><span>Bricolaj & Consumabile</span><span>Grădinărit & Agri</span><span>Asfalt & Pavaj</span><span>Metalurgie & Profile</span><span>Altele</span></div></div></details>
-    <p class="rp-mic" data-contact-rand>Alte întrebări? <a data-contact="contact_email" href="/contact" style="color:#003366;font-weight:700">Contactează-ne</a></p>
-  </div>
-</section>
-
-<section class="rp-banda" aria-labelledby="banda-titlu">
-  <span class="rp-insigna">GRATUIT</span>
-  <h2 id="banda-titlu">Gata să listezi produsele tale?</h2>
-  <p>Înscrierea e pentru firme, PFA și întreprinderi individuale.</p>
-  <div class="rp-butoane"><a href="/parteneri?type=materiale" class="rp-btn" data-cta-partener="materiale" data-cta-vizitator="Creează-ți cont de furnizor de materiale"><span data-cta-text>Creează-ți cont de furnizor de materiale</span> <span aria-hidden="true">→</span></a></div>
-</section>
-
-<div class="rp-fix" data-rp-fix>
-  <a href="/parteneri?type=materiale" class="rp-btn" data-cta-partener="materiale" data-cta-vizitator="Creează-ți cont de furnizor de materiale"><span data-cta-text>Creează-ți cont de furnizor de materiale</span> <span aria-hidden="true">→</span></a>
+<!-- lp:erou:inceput -->
+<main class="lp" id="main-content" data-lp-pagina="/parteneri/materiale" data-lp-tip="categorie">
+<section class="lp-erou" id="lp-erou" aria-labelledby="lp-titlu">
+<div class="lp-erou-in">
+<p class="lp-eticheta" data-lp-camp="eticheta">Furnizori de materiale</p>
+<h1 class="lp-titlu" id="lp-titlu" data-lp-camp="titlu">Vinzi materiale? Primește comenzi prin platformă.</h1>
+<p class="lp-sub" data-lp-camp="subtitlu">Clienții comandă materialele odată cu lucrarea și plătesc în platformă. Tu pregătești marfa, curierul o ridică.</p>
+<ul class="lp-beneficii">
+<li><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#0E9E99" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg><span data-lp-camp="beneficiu_1">Clienți care comandă odată cu serviciul</span></li>
+<li><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#0E9E99" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg><span data-lp-camp="beneficiu_2">Produsele tale, recomandate la servicii</span></li>
+<li><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#0E9E99" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg><span data-lp-camp="beneficiu_3">Livrarea o fac Curierii de Cartier</span></li>
+</ul>
+<a class="lp-buton" id="lp-cta" href="/parteneri/inscriere?categorie=materiale" data-cta="principal" data-cta-partener="materiale" data-cta-panou data-cta-loc="hero"><span data-cta-text data-lp-camp="buton">Devino partener</span></a>
+<p class="lp-sub-buton" data-lp-camp="sub_buton">Gratuit · contul în 60 de secunde · firma o adaugi după</p>
 </div>
-
-</div>
+</section>
+<script>/* 12-L1: destinația butonului primește profesie, lang și UTM-urile din adresă, iar ?type= (adresele vechi) devine categoria (înainte de DOMContentLoaded) */(function(){var a=document.getElementById("lp-cta"),lp=window.__MYD_LP;if(a){try{var q=new URLSearchParams(location.search),u=new URL(a.getAttribute("href"),location.href);["profesie","lang","utm_source","utm_medium","utm_campaign","utm_content","utm_term"].forEach(function(k){var v=q.get(k);if(v&&!u.searchParams.has(k))u.searchParams.set(k,String(v).slice(0,100))});var t=String(q.get("type")||"").toLowerCase().replace("asigurator","asigurari");if(!u.searchParams.has("categorie")&&u.pathname==="/parteneri/inscriere"&&/^(servicii|materiale|inchirieri|curier|asigurari)$/.test(t))u.searchParams.set("categorie",t);a.setAttribute("href",u.pathname+u.search+u.hash)}catch(e){}}if(lp){lp.erou=true;if(lp.aplica)lp.aplica()}})();</script>
+<!-- lp:erou:sfarsit -->
+<!-- lp:sub:inceput -->
+<section class="lp-sec" id="cum-functioneaza" aria-labelledby="lp-cum-titlu">
+<figure class="lp-imagine" data-lp-imagine hidden><img alt="" loading="lazy" decoding="async" fetchpriority="low"></figure>
+<h2 class="lp-h2" id="lp-cum-titlu">Cum funcționează</h2>
+<ol class="lp-pasi lp-card">
+<li><span class="lp-nr" aria-hidden="true">1</span><span>Listezi produsele din dashboard</span></li>
+<li><span class="lp-nr" aria-hidden="true">2</span><span>Primești comanda și pregătești marfa</span></li>
+<li><span class="lp-nr" aria-hidden="true">3</span><span>Curierul livrează, tu încasezi</span></li>
+</ol>
+<p class="lp-nota">Înscrierea e pentru firme, PFA și întreprinderi individuale.</p>
+<a class="lp-link" href="/parteneri/intrebari#materiale" data-lp-transmite>Întrebări frecvente pentru parteneri →</a>
+</section>
+</main>
+<!-- lp:sub:sfarsit -->
 
 <footer style="background:#1E2E4D;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
 
@@ -1210,7 +1168,7 @@ function submitNewsletter() {
 <script src="/ui-comun.js" defer></script>
 <!-- Pasul 11-R3b: butoanele de înscriere după starea contului -->
 <script src="/cta-partener.js" defer></script>
-<script src="/ruta-partener.js" defer></script>
+
 <script src="/reguli-platforma.js" defer></script>
 <script src="/contact-public.js" defer></script>
 </body>
