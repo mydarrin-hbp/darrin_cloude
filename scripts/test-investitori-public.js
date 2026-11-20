@@ -64,18 +64,18 @@ function verifica(cond, mesaj) {
         verifica(!html.includes('KPIs Live') && !html.includes('284.000'), `${eticheta}: „KPIs Live” / „284.000” nu sunt în HTML`);
 
         // Mesajul rundei curente
+        // Pasul 12-L1 (macheta L1.4): fără rundă publică, secțiunea „Runda curentă” lipsește.
         const runda = await pagina.$('#runda');
-        verifica(runda && await runda.isVisible(), `${eticheta}: secțiunea #runda e vizibilă`);
-        const textRunda = runda ? await runda.innerText() : '';
-        // Pasul 11-R3h: fără rundă publică, un singur rând de text, fără cifre și fără „Seed”.
+        verifica(runda && !(await runda.isVisible()), `${eticheta}: fără rundă publică, secțiunea #runda lipsește`);
+        const textRunda = runda ? await runda.evaluate((e) => e.textContent) : '';
         verifica(!/Seed/.test(textRunda) && !/\d/.test(textRunda), `${eticheta}: #runda fără „Seed” și fără cifre („${textRunda.replace(/\s+/g, ' ')}”)`);
 
         // Crearea contului de investitor: fără sesiune, „Devino investitor” deschide
         // fereastra de cont pe pagină (pasul 11-R3h; înainte: index.html?reason=cont),
         // cu revenirea la ruta de investitor reținută (11-L).
         verifica(await pagina.$('#step-2 #ticket-lista') !== null, `${eticheta}: lista de tickete a achiziției există (se umple din rundă)`);
-        await pagina.waitForFunction(() => document.getElementById('hero-intra-runda').getAttribute('data-cta-stare') === 'vizitator', null, { timeout: 10000 }).catch(() => {});
-        await pagina.focus('#hero-intra-runda');
+        await pagina.waitForFunction(() => document.getElementById('lp-cta').getAttribute('data-cta-stare') === 'vizitator', null, { timeout: 10000 }).catch(() => {});
+        await pagina.focus('#lp-cta');
         await pagina.keyboard.press('Enter');
         await pagina.waitForFunction(() => { const m = document.getElementById('auth-modal'); return m && !m.classList.contains('hidden'); }, null, { timeout: 8000 }).catch(() => {});
         verifica(!/reason=cont/.test(pagina.url()) && /mydarrin-investitori/.test(pagina.url()) && await pagina.evaluate(() => { const m = document.getElementById('auth-modal'); return !!m && !m.classList.contains('hidden'); }),

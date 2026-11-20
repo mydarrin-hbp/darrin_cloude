@@ -178,7 +178,8 @@ const ZGOMOT_PAGINA = { 'mydarrin-pitch-deck': /^\[pitch-deck\] Error: http 503(
 
     // Deschiderea din URL (pasul 11-R3g): mydarrin-devino-partener.html?type=<tip> duce la
     // hub (cum-devii-partenerul-nostru), cu tipul păstrat: cardul tipului e marcat, iar
-    // butonul principal duce la pre-înscrierea partenerului, cu tipul (pasul 12-P1).
+    // butonul principal duce la pre-înscrierea partenerului, cu tipul (pasul 12-P1; pasul 12-L1:
+    // destinația e scrisă în HTML, iar ?type= devine categoria înainte de DOMContentLoaded).
     // type=asigurator (linkurile „Asigurator” de pe celelalte pagini) → asigurari.
     if (!process.argv.slice(2).length || pagini.includes('cum-devii-partenerul-nostru')) {
       for (const latime of LATIMI) {
@@ -190,11 +191,11 @@ const ZGOMOT_PAGINA = { 'mydarrin-pitch-deck': /^\[pitch-deck\] Error: http 503(
           const p = await ctx.newPage();
           const erori = []; p.on('pageerror', (e) => erori.push(e.message.slice(0, 160)));
           await p.goto(`${baza}/mydarrin-devino-partener.html?type=${tip}`, { waitUntil: 'networkidle', timeout: 60000 });
-          await p.waitForFunction(() => { const b = document.querySelector('.rp-hero [data-rp-principal]'); return b && b.getAttribute('data-cta-stare') === 'vizitator'; }, null, { timeout: 10000 }).catch(() => {});
+          await p.waitForFunction(() => { const b = document.querySelector('#lp-cta'); return b && b.getAttribute('data-cta-stare') === 'vizitator'; }, null, { timeout: 10000 }).catch(() => {});
           const t = tipFormular(tip);
-          const marcat = await p.evaluate((x) => { const c = document.getElementById('tip-' + x); return { cale: location.pathname, tip: new URLSearchParams(location.search).get('type'), marcat: !!c && c.classList.contains('rp-ales') }; }, t);
+          const marcat = await p.evaluate((x) => { const c = document.getElementById('tip-' + x); return { cale: location.pathname, tip: new URLSearchParams(location.search).get('type'), marcat: !!c && c.classList.contains('lp-ales') }; }, t);
           verifica(marcat.cale === '/parteneri' && marcat.tip === tip && marcat.marcat, `${et}: ${JSON.stringify(marcat)}`);
-          await p.click('.rp-hero [data-rp-principal]');
+          await p.click('#lp-cta');
           await p.waitForURL(/parteneri\/inscriere/, { timeout: 8000 }).catch(() => {});
           const dest = new URL(p.url());
           verifica(dest.pathname === '/parteneri/inscriere' && dest.searchParams.get('categorie') === t, `${et}: butonul principal → ${dest.pathname}${dest.search} (așteptat categoria „${t}”)`);

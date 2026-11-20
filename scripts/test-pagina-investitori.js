@@ -29,6 +29,8 @@
 //   J. 360, 390, 768 × 1024, 1024 × 768, 1366 px: fără derulare orizontală,
 //      fără erori JS; pe telefon bara fixă nu acoperă Darrin AI, partajarea,
 //      bara de jos sau sfârșitul paginii.
+// Pasul 12-L1 (macheta L1.4): primul ecran nou (lp-erou), butonul „Creează cont de investitor”;
+// „Runda curentă” înaintea pașilor și doar cu o rundă publică (fără insignă în primul ecran).
 // Cu --capturi <dosar>: vizitator, dosar în ciornă și investitor, la 390 și 1366 px.
 // Sesiunea Supabase și API-urile sunt simulate (nimic nu ajunge la Supabase).
 // Rulare: node scripts/test-pagina-investitori.js [--capturi <dosar>]
@@ -81,7 +83,7 @@ function profil(roluri, rolSolicitat) {
 }
 // Stările din tabelul pasului 11-R3h (text RO, text EN, profilul, dosarul, runda, subscrierile).
 const STARI = {
-  vizitator: { ro: 'Devino investitor →', en: 'Become an investor →' },
+  vizitator: { ro: 'Creează cont de investitor', en: 'Create investor account' },
   fara_dosar: { ro: 'Începe dosarul →', en: 'Start your application →', roluri: ['client'], kyc: null },
   ciorna: { ro: 'Continuă dosarul (pasul 3) →', en: 'Continue your application (step 3) →', roluri: ['client'], kyc: { status: 'ciorna', pas_curent: 3 } },
   // Pasul 11-I2: contul de investitor (rolul `investor` sau „Investitor” ales la înscriere)
@@ -132,7 +134,8 @@ async function deschide(browser, baza, cale, o) {
   return { ctx, p, erori, navigari };
 }
 
-const butoane = (p) => p.evaluate(() => [...document.querySelectorAll('[data-cta-investitor]')].map((b) => b.textContent.replace(/\s+/g, ' ').trim()));
+// Pasul 12-L1: butonul din primul ecran nu are săgeată; textele se compară fără „→”.
+const butoane = (p) => p.evaluate(() => [...document.querySelectorAll('[data-cta-investitor]')].map((b) => b.textContent.replace(/\s+/g, ' ').replace(/\s*→\s*$/, '').trim()));
 const parcurs = (p) => p.evaluate(() => [...document.querySelectorAll('[data-inv-segment]')].map((li) => {
   const c = li.className.match(/inv-seg-(facut|curent|respins)/);
   const st = li.querySelector('[data-inv-seg-stare]');
@@ -167,7 +170,7 @@ const parcurs = (p) => p.evaluate(() => [...document.querySelectorAll('[data-inv
       verifica((inv.match(/data-myd-copyright/g) || []).length === 1 && !/href="mydarrin-app-mobile\.html"[^>]*border-radius:99px/.test(inv), 'pagina Investitori: mini-footer-ul a rămas');
       verifica((inv.match(/<footer/g) || []).length === 1 && /<header id="hdr"/.test(inv), 'pagina Investitori: antetul standard sau footer-ul unic lipsesc');
       verifica(/id="pitch-deck"[\s\S]*id="pitch-deck-section"[\s\S]*id="panou"[\s\S]*id="inv-private-dashboard"[\s\S]*id="contact"/.test(inv), 'pagina Investitori: ordinea secțiunilor');
-      verifica(/id="cum-functioneaza"[\s\S]*id="runda"[\s\S]*id="pitch-deck"/.test(inv), 'pagina Investitori: #cum-functioneaza, #runda, #pitch-deck');
+      verifica(/id="runda"[\s\S]*id="cum-functioneaza"[\s\S]*id="pitch-deck"/.test(inv), 'pagina Investitori: #runda, #cum-functioneaza, #pitch-deck (macheta L1.4)');
       // Logica modulului e neschimbată (fișierele nu sunt atinse de acest pas).
       for (const f of ['investitori-ruta.js', 'api/public/runda-curenta.js', 'api/public/pitch-deck.js', 'lib/permisiuni-investitori.js']) verifica(fs.existsSync(path.join(RADACINA, f)), `${f} lipsește`);
     }
@@ -231,7 +234,7 @@ const parcurs = (p) => p.evaluate(() => [...document.querySelectorAll('[data-inv
     for (const w of [390, 1366]) {
       const masoara = async (pg, opt) => {
         const { ctx, p } = await deschide(browser, baza, pg, Object.assign({ w, faraAsteptare: pg !== PAGINA }, opt || {}));
-        const r = await p.evaluate(() => { const h = document.querySelector('.rp-hero h1'); const c = getComputedStyle(h); return { font: c.fontFamily, marime: c.fontSize, greutate: c.fontWeight, aliniere: c.textAlign, text: h.textContent.trim(), spatiere: c.letterSpacing }; });
+        const r = await p.evaluate(() => { const h = document.querySelector('.lp-erou h1'); const c = getComputedStyle(h); return { font: c.fontFamily, marime: c.fontSize, greutate: c.fontWeight, aliniere: c.textAlign, text: h.textContent.trim(), spatiere: c.letterSpacing }; });
         await ctx.close();
         return r;
       };
@@ -253,7 +256,8 @@ const parcurs = (p) => p.evaluate(() => [...document.querySelectorAll('[data-inv
         const et = `starea ${stare} ${limba || 'en'}`;
         const { ctx, p, erori } = await deschide(browser, baza, PAGINA, { stare: s.roluri ? stare : null, limba });
         const b = await butoane(p);
-        verifica(b.length === 3 && b.every((t) => t === (limba ? s.ro : s.en)), `${et}: butoanele ${JSON.stringify(b)} (aștept „${limba ? s.ro : s.en}”)`);
+        const textAsteptat = (limba ? s.ro : s.en).replace(/\s*→\s*$/, '');
+        verifica(b.length === 3 && b.every((t) => t === textAsteptat), `${et}: butoanele ${JSON.stringify(b)} (aștept „${textAsteptat}”)`);
         if (limba) {
           const nota = await p.evaluate(() => [...document.querySelectorAll('[data-cta-nota]')].filter((n) => !n.hidden).map((n) => n.textContent));
           verifica(!nota.length, `${et}: notă neașteptată ${JSON.stringify(nota)}`);
@@ -275,7 +279,7 @@ const parcurs = (p) => p.evaluate(() => [...document.querySelectorAll('[data-inv
           verifica(panou.sectiune === investitor && panou.meniu === investitor, `${et}: #panou / „Panoul meu” ${JSON.stringify(panou)}`);
           // Acțiunea butonului din hero
           const inainte = p.url();
-          await p.click('#hero-intra-runda');
+          await p.click('#lp-cta');
           await asteapta(900);
           const a = await p.evaluate(() => ({
             ruta: !!document.getElementById('mi-fer') && document.getElementById('mi-fer').offsetParent !== null,
@@ -320,9 +324,9 @@ const parcurs = (p) => p.evaluate(() => [...document.querySelectorAll('[data-inv
     // ── F. Runda ──
     {
       let { ctx, p } = await deschide(browser, baza, PAGINA);
-      let r = await p.evaluate(() => ({ text: document.getElementById('runda').innerText, insigna: getComputedStyle(document.getElementById('inv-insigna-runda')).display }));
+      let r = await p.evaluate(() => ({ text: document.getElementById('runda').textContent, ascunsa: document.getElementById('runda').hidden, link: document.querySelector('[data-lp-runda-link]').hidden }));
       verifica(!/\d/.test(r.text), `fără rundă: cifre în #runda: „${r.text}”`);
-      verifica(r.insigna === 'none', 'fără rundă: insigna e vizibilă');
+      verifica(r.ascunsa && r.link, `fără rundă: secțiunea și linkul „Runda” lipsesc ${JSON.stringify(r)}`);
       // Emailul din back-office: fără răspuns de la /api/public/contact, fără buton gol în banda de contact.
       verifica(await p.evaluate(() => getComputedStyle(document.querySelector('#contact [data-contact-rand]')).display === 'none'), 'fără emailul de contact: butonul gol e vizibil');
       await ctx.close();
@@ -330,8 +334,8 @@ const parcurs = (p) => p.evaluate(() => [...document.querySelectorAll('[data-inv
       await asteapta(500);
       const email = await p.evaluate(() => { const a = document.querySelector('#contact [data-contact-rand]'); return { viz: getComputedStyle(a).display !== 'none', href: a.getAttribute('href'), text: a.textContent.trim() }; });
       verifica(email.viz && email.href === 'mailto:investitori@example.com' && email.text === 'investitori@example.com', `emailul de contact: ${JSON.stringify(email)}`);
-      r = await p.evaluate(() => ({ insigna: document.getElementById('inv-insigna-runda').textContent.replace(/\s+/g, ' ').trim(), viz: getComputedStyle(document.getElementById('inv-insigna-runda')).display, card: !document.querySelector('[data-runda]').hidden }));
-      verifica(r.viz !== 'none' && r.insigna === 'Runda curentă: Runda de test' && r.card, `cu rundă: insigna ${JSON.stringify(r)}`);
+      r = await p.evaluate(() => ({ sectiune: !document.getElementById('runda').hidden, link: !document.querySelector('[data-lp-runda-link]').hidden, card: !document.querySelector('[data-runda]').hidden, text: document.querySelector('[data-runda]').innerText.replace(/\s+/g, ' ').slice(0, 60) }));
+      verifica(r.sectiune && r.link && r.card && /Runda de test/.test(r.text), `cu rundă: secțiunea, linkul și numele rundei ${JSON.stringify(r)}`);
       await ctx.close();
     }
 
@@ -356,7 +360,7 @@ const parcurs = (p) => p.evaluate(() => [...document.querySelectorAll('[data-inv
     // ── H. Vizitatorul nu pleacă la index.html (și cu clicul dat devreme) ──
     {
       const { ctx, p, navigari } = await deschide(browser, baza, PAGINA, { faraAsteptare: true });
-      await p.click('#hero-intra-runda');
+      await p.click('#lp-cta');
       await asteapta(5000);
       const r = await p.evaluate(() => ({ cont: !!document.getElementById('auth-modal') && !document.getElementById('auth-modal').classList.contains('hidden'), url: location.pathname }));
       verifica(r.url === '/mydarrin-investitori.html' && !navigari.some((u) => /index\.html/.test(u)) && r.cont, `vizitator (clic devreme): ${JSON.stringify(r)} ${navigari.join(' ')}`);
@@ -366,9 +370,9 @@ const parcurs = (p) => p.evaluate(() => [...document.querySelectorAll('[data-inv
     // ── I. Cu sesiune: deschiderea rapidă și dublu-clicul ──
     {
       const { ctx, p, erori } = await deschide(browser, baza, PAGINA, { stare: 'ciorna', intarziere: 3000, faraAsteptare: true });
-      await p.waitForFunction(() => !!window.MYD_INVESTITOR && document.getElementById('hero-intra-runda').getAttribute('data-cta-stare') === 'provizoriu', null, { timeout: 8000 }).catch(() => {});
+      await p.waitForFunction(() => !!window.MYD_INVESTITOR && document.getElementById('lp-cta').getAttribute('data-cta-stare') === 'provizoriu', null, { timeout: 8000 }).catch(() => {});
       const t = await p.evaluate(() => new Promise((ok) => {
-        const b = document.getElementById('hero-intra-runda');
+        const b = document.getElementById('lp-cta');
         const t0 = performance.now();
         b.click(); b.click();
         (function v() {
@@ -392,7 +396,8 @@ const parcurs = (p) => p.evaluate(() => [...document.querySelectorAll('[data-inv
         verifica(lat <= 0, `${et}: derulare orizontală ${lat}px`);
         const nav = await p.evaluate(() => { const n = document.querySelector('.inv-sectiuni'); const r = n.getBoundingClientRect(); return { stanga: r.left, dreapta: r.right, vw: document.documentElement.clientWidth }; });
         verifica(nav.stanga >= 0 && nav.dreapta <= nav.vw + 0.5, `${et}: meniul de secțiuni iese din ecran`);
-        await p.evaluate(() => document.getElementById('runda').scrollIntoView({ behavior: 'instant' }));
+        // Pasul 12-L1: fără rundă activă #runda lipsește; meniul se verifică pe #pitch-deck.
+        await p.evaluate(() => document.getElementById('pitch-deck').scrollIntoView({ behavior: 'instant' }));
         await asteapta(450);
         const s = await p.evaluate(() => {
           const n = document.querySelector('.inv-sectiuni').getBoundingClientRect();
@@ -400,18 +405,21 @@ const parcurs = (p) => p.evaluate(() => [...document.querySelectorAll('[data-inv
           const act = document.querySelector('.inv-sectiuni a.activ');
           return { sus: Math.round(n.top), hdr: Math.round(hdr.bottom), activ: act && act.getAttribute('href') };
         });
-        verifica(Math.abs(s.sus - Math.max(0, s.hdr)) <= 2 && s.activ === '#runda', `${et}: meniul de secțiuni nu e fix sub antet sau nu marchează #runda ${JSON.stringify(s)}`);
+        verifica(Math.abs(s.sus - Math.max(0, s.hdr)) <= 2 && s.activ === '#pitch-deck', `${et}: meniul de secțiuni nu e fix sub antet sau nu marchează #pitch-deck ${JSON.stringify(s)}`);
         if (w <= 768) {
-          await p.evaluate(() => document.getElementById('cum-functioneaza').scrollIntoView({ behavior: 'instant' }));
+          await p.evaluate(() => document.getElementById('pitch-deck').scrollIntoView({ behavior: 'instant' }));
           await asteapta(450);
           const r = await p.evaluate(() => {
             const bara = document.querySelector('[data-rp-fix]');
             const rb = bara.querySelector('.rp-btn').getBoundingClientRect();
             const vizibil = bara.classList.contains('rp-vizibil') && rb.bottom <= innerHeight && rb.top >= 0;
             const peste = (el) => { if (!el) return false; const cs = getComputedStyle(el); if (cs.display === 'none' || cs.visibility === 'hidden') return false; const q = el.getBoundingClientRect(); return q.width > 0 && !(q.right <= rb.left || q.left >= rb.right || q.bottom <= rb.top || q.top >= rb.bottom); };
-            return { vizibil, text: bara.textContent.replace(/\s+/g, ' ').trim(), peste: ['dai-fab', 'mobile-bottom-nav', 'myd-share-fab'].filter((id) => peste(document.getElementById(id))) };
+            // Pasul 12-L1: pagina e mai scurtă; bara apare exact când nici butonul principal, nici banda de contact nu se văd.
+            const inEcran = (el) => { if (!el) return false; const q = el.getBoundingClientRect(); return q.bottom > 0 && q.top < innerHeight; };
+            const trebuie = !inEcran(document.querySelector('[data-rp-principal]')) && !inEcran(document.querySelector('.rp-banda'));
+            return { vizibil: trebuie ? vizibil : !bara.classList.contains('rp-vizibil'), trebuie, text: bara.textContent.replace(/\s+/g, ' ').trim(), peste: ['dai-fab', 'mobile-bottom-nav', 'myd-share-fab'].filter((id) => peste(document.getElementById(id))) };
           });
-          verifica(r.vizibil, `${et}: bara fixă nu apare la derulare`);
+          verifica(r.vizibil, `${et}: bara fixă nu urmează regula (trebuie ${r.trebuie ? 'să apară' : 'să lipsească'})`);
           verifica(!r.peste.length, `${et}: bara fixă acoperă ${r.peste.join(', ')}`);
           await p.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
           await asteapta(450);

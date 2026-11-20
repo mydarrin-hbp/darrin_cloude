@@ -53,7 +53,8 @@ const ASTEPTAT = [
 ];
 const TEXT = {
   vizitator: ['Creează-ți contul de partener', 'Create your partner account'],
-  client: ['Devino partener pe contul tău', 'Become a partner on your account'],
+  // Pasul 12-L1: textul se schimbă după sesiune doar pentru conturile de partener; clientul vede textul din pagină.
+  client: ['Creează-ți contul de partener', 'Create your partner account'],
   activare: ['Finalizează-ți contul', 'Finish your account'],
   verificare: ['Contul tău e în verificare', 'Your account is under review'],
   activ: ['Mergi la dashboard-ul tău', 'Go to your dashboard'],
@@ -245,36 +246,26 @@ function profil(stare) {
       }
     }
 
-    // 5. Hub-ul „Devino partener” (pasul 11-R3g; vechea pagină e redirecționată aici):
-    // butonul principal, butonul secundar spre cele 5 tipuri, în ordinea din meniu.
+    // 5. Hub-ul „Devino partener” (pasul 12-L1, macheta L1.3): un singur buton portocaliu în primul
+    // ecran, cu destinația scrisă în HTML, și cele 5 carduri de categorie, în ordinea din meniu.
     for (const [w, h] of [[390, 844], [1366, 900]]) {
       const et = `devino-partener ${w}px`;
       const { ctx, p, erori } = await deschide('cum-devii-partenerul-nostru', { w, h });
-      await p.waitForFunction(() => [...document.querySelectorAll('.rp-hero [data-cta-partener]')].every((b) => b.getAttribute('data-cta-stare') && b.getAttribute('data-cta-stare') !== 'incarca'), null, { timeout: 10000 }).catch(() => {});
       const s = await p.evaluate(() => {
-        const prin = document.querySelector('.rp-hero [data-rp-principal]');
-        const sec = document.querySelector('.rp-hero .rp-btn2');
-        return { prin: prin && prin.querySelector('[data-cta-text]').textContent.trim(), fundal: prin && getComputedStyle(prin).backgroundColor, sec: sec && sec.textContent.replace(/\s+/g, ' ').trim() };
+        const prin = document.getElementById('lp-cta');
+        return { prin: prin && prin.querySelector('[data-cta-text]').textContent.trim(), href: prin && prin.getAttribute('href'), fundal: prin && getComputedStyle(prin).backgroundColor };
       });
-      verifica(s.prin === 'Creează-ți contul de partener' && /255, 140, 0/.test(s.fundal), `${et}: butonul principal ${JSON.stringify(s)}`);
-      verifica(s.sec === 'Alege tipul de parteneriat ↓', `${et}: butonul secundar e „${s.sec}”`);
-      await p.click('.rp-hero .rp-btn2');
-      await asteapta(600);
-      const lista = await p.evaluate(() => {
-        const l = document.getElementById('tipuri');
-        const r = l.getBoundingClientRect();
-        return { vizibil: r.top < window.innerHeight && r.bottom > 0, intrari: [...l.querySelectorAll('a.rp-link')].map((a) => a.getAttribute('href')) };
-      });
-      verifica(lista.vizibil, `${et}: „Alege tipul de parteneriat” nu duce la tipuri`);
-      verifica(JSON.stringify(lista.intrari) === JSON.stringify(ASTEPTAT.slice(1).map((x) => x[0])), `${et}: tipurile ${JSON.stringify(lista.intrari)}`);
+      verifica(s.prin === 'Devino partener' && s.href === '/parteneri/inscriere' && /255, 140, 0/.test(s.fundal), `${et}: butonul principal ${JSON.stringify(s)}`);
+      const lista = await p.evaluate(() => [...document.querySelectorAll('#tipuri a.lp-cat')].map((a) => a.getAttribute('href')));
+      verifica(JSON.stringify(lista) === JSON.stringify(ASTEPTAT.slice(1).map((x) => x[0])), `${et}: tipurile ${JSON.stringify(lista)}`);
       verifica(!erori.length, `${et}: ${erori.length} erori JS (${erori.slice(0, 3).join(' | ')})`);
       await ctx.close();
     }
     {
       const { ctx, p } = await deschide('cum-devii-partenerul-nostru', { stare: 'activare' });
-      await p.waitForFunction(() => { const b = document.querySelector('.rp-hero [data-rp-principal]'); return b && b.getAttribute('data-cta-stare') === 'activare'; }, null, { timeout: 10000 }).catch(() => {});
-      const t = await p.evaluate(() => document.querySelector('.rp-hero [data-rp-principal] [data-cta-text]').textContent.trim());
-      verifica(t === 'Finalizează-ți contul ca să primești comenzi', `devino-partener, activare: butonul principal e „${t}”`);
+      await p.waitForFunction(() => { const b = document.getElementById('lp-cta'); return b && b.getAttribute('data-cta-stare') === 'activare'; }, null, { timeout: 10000 }).catch(() => {});
+      const t = await p.evaluate(() => document.querySelector('#lp-cta [data-cta-text]').textContent.trim());
+      verifica(t === 'Mergi în panoul tău', `devino-partener, activare: butonul principal e „${t}”`);
       await ctx.close();
     }
 

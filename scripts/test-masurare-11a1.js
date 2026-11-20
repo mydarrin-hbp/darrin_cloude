@@ -296,7 +296,7 @@ async function testeBrowser() {
     await page.evaluate(() => {
       window.addEventListener('click', (e) => e.preventDefault(), true);
       document.querySelector('[data-cta-partener][data-cta-scurt]').click();
-      document.querySelector('[data-cta-partener="curier"][data-rp-principal]').click();
+      document.querySelector('[data-cta-partener="curier"][data-cta="principal"]').click(); // pasul 12-L1: butonul principal al paginii
     });
     s = await stare(page);
     const clicuri = s.jurnal.filter((e) => e.nume === 'partner_cta_click');

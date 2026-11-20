@@ -183,7 +183,10 @@ async function completeazaDate(p) {
         // 4. „Devino partener” → servicii: pre-înscrierea, cu „Servicii” ales (pasul 12-P1).
         if (pg === 'cum-devii-partenerul-nostru') {
           verifica(await p.evaluate(() => !document.getElementById('partner-modal') && !document.getElementById('f-firma')), `${et}: fereastra publică cu formularul de 14 câmpuri a rămas`);
-          await p.click('#tip-servicii [data-cta-card]');
+          // Pasul 12-L1 (macheta L1.3): cardul duce la pagina categoriei, iar butonul ei la pre-înscriere.
+          await p.click('#tip-servicii');
+          await p.waitForURL(/parteneri\/servicii/, { timeout: 8000 }).catch(() => {});
+          await p.click('#lp-cta');
           await p.waitForURL(/parteneri\/inscriere/, { timeout: 8000 }).catch(() => {});
           verifica(/\/parteneri\/inscriere\?categorie=servicii$/.test(p.url()), `${et}: din „Devino partener” → servicii: ${p.url()}`);
         }
@@ -261,9 +264,9 @@ async function completeazaDate(p) {
           const erori = [];
           urmaresteErori(p, erori);
           await p.goto(`${baza}/${cale}`, { waitUntil: 'networkidle', timeout: 60000 });
-          // Pasul 11-R3g: adresa veche duce la hub, cu ?type= păstrat; butonul principal are tipul.
-          await p.waitForFunction(() => { const b = document.querySelector('.rp-hero [data-rp-principal]'); return b && b.getAttribute('data-cta-stare') === 'vizitator'; }, null, { timeout: 10000 }).catch(() => {});
-          await p.click('.rp-hero [data-rp-principal]');
+          // Pasul 11-R3g / 12-L1: adresa veche duce la hub, cu ?type= păstrat; butonul principal primește tipul ca categorie.
+          await p.waitForFunction(() => { const b = document.querySelector('#lp-cta'); return b && b.getAttribute('data-cta-stare') === 'vizitator'; }, null, { timeout: 10000 }).catch(() => {});
+          await p.click('#lp-cta');
           await p.waitForURL(/parteneri\/inscriere/, { timeout: 8000 }).catch(() => {});
           verifica(new URL(p.url()).searchParams.get('categorie') === rol.replace('partener_', ''), `${et}: pre-înscriere ${p.url()} (așteptat ${rol})`);
           verifica(!erori.length, `${et}: ${erori.length} erori JS (${erori.slice(0, 3).join(' | ')})`);

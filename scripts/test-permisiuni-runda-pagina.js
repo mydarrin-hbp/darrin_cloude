@@ -105,7 +105,7 @@ const textImediat = (p, sel) => p.evaluate((s) => { const e = document.querySele
 async function deschideSubscrierea(p) {
   await p.waitForFunction(() => !!window.MYD_INVESTITOR, null, { timeout: 8000 }).catch(() => {});
   // Pasul 11-I1: panoul complet s-a mutat pe mydarrin-panou-investitor.html; aceeași funcție, pornesteInvestitor.
-  await p.evaluate(() => { const b = document.getElementById('hero-intra-runda'); b.disabled = false; window.pornesteInvestitor(b); });
+  await p.evaluate(() => { const b = document.getElementById('lp-cta'); b.disabled = false; window.pornesteInvestitor(b); });
   await p.waitForSelector('#step-2', { state: 'visible', timeout: 6000 }).catch(() => {});
   await p.waitForSelector('#step-2 .ticket-opt', { timeout: 6000 }).catch(() => {});
 }

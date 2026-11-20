@@ -222,8 +222,8 @@ async function testeBrowser() {
       const t = T[lang];
       const { ctx, page, stare, erori } = await context(br, B, { lang, latime, telefon: null });
       await page.goto(B + '/mydarrin-investitori.html', { waitUntil: 'load' });
-      await page.waitForSelector('#hero-intra-runda[data-cta-stare]:not([data-cta-stare="incarca"])', { timeout: 15000 }).catch(() => {});
-      await page.focus('#hero-intra-runda');
+      await page.waitForSelector('#lp-cta[data-cta-stare]:not([data-cta-stare="incarca"])', { timeout: 15000 }).catch(() => {});
+      await page.focus('#lp-cta');
       await page.keyboard.press('Enter');
       verifica(await fereastraCont(page), `${et}: „Devino investitor” nu deschide fereastra de cont`);
       await page.click('#mdc-rol-continua');

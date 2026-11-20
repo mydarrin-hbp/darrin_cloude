@@ -125,7 +125,7 @@ async function deschidePagina(ctx, baza) {
 async function deschideSubscrierea(p) {
   await p.waitForFunction(() => !!window.MYD_INVESTITOR, null, { timeout: 8000 }).catch(() => {});
   // Pasul 11-I1: panoul complet s-a mutat pe mydarrin-panou-investitor.html; aceeași funcție, pornesteInvestitor.
-  await p.evaluate(() => { const b = document.getElementById('hero-intra-runda'); b.disabled = false; window.pornesteInvestitor(b); });
+  await p.evaluate(() => { const b = document.getElementById('lp-cta'); b.disabled = false; window.pornesteInvestitor(b); });
   await p.waitForSelector('#step-2', { state: 'visible', timeout: 6000 }).catch(() => {});
   await p.waitForFunction(() => !/…|\.\.\./.test((document.getElementById('ticket-lista') || {}).textContent || ''), null, { timeout: 5000 }).catch(() => {});
 }
@@ -144,7 +144,8 @@ async function deschideSubscrierea(p) {
           const ctx = await context(browser, { lang, latime, rundaCurenta: varianta });
           const { p, erori } = await deschidePagina(ctx, baza);
           const n = varianta === 500 ? 'eroare 500' : 'runda null';
-          verifica(await p.isVisible('#runda-fara-date'), `${et} A (${n}): textul fără rundă e vizibil`);
+          // Pasul 12-L1: fără rundă publică, secțiunea „Runda curentă” lipsește (fără text de înlocuire).
+          verifica(!(await p.isVisible('#runda')), `${et} A (${n}): secțiunea #runda lipsește`);
           verifica(await p.$eval('[data-runda]', (e) => e.hidden), `${et} A (${n}): [data-runda] rămâne ascuns`);
           verifica(!erori.length, `${et} A (${n}): 0 erori JS (${erori.join(' | ')})`);
           await ctx.close();
@@ -170,7 +171,7 @@ async function deschideSubscrierea(p) {
           const { p, erori } = await deschidePagina(ctx, baza);
           const n = progres ? 'cu progres' : 'fără progres';
           verifica(await p.isVisible('[data-runda]'), `${et} C (${n}): [data-runda] e vizibil`);
-          verifica(!(await p.isVisible('#runda-fara-date')), `${et} C (${n}): textul fără rundă dispare`);
+          verifica(await p.isVisible('#runda'), `${et} C (${n}): secțiunea #runda apare`);
           const t = (await p.innerText('[data-runda]')).replace(/\s+/g, ' ');
           verifica(t.includes(lang === 'ro' ? 'Runda de test' : 'Test round'), `${et} C (${n}): numele rundei în limba paginii`);
           verifica(/100[.,\s]?000/.test(t) && /\b10 EUR\b/.test(t) && /10%/.test(t), `${et} C (${n}): ținta, prețul și procentul („${t.slice(0, 200)}”)`);
