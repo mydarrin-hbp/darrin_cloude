@@ -7551,6 +7551,16 @@ window.showPanel = function(id) {
   }
 };
 
+// Pasul 12-P2: categoria principală aleasă la înscriere, sub tipul partenerului.
+function categorieInscriereHtml(c) {
+  const stil = 'font-size:10.5px;color:#8C9BAD;margin-top:2px';
+  if (!c) return '';
+  if (c.altceva) {
+    return `<div style="${stil}">Categorie scrisă de partener: ${c.text ? '<span style="color:#F5A623">„' + escapeHTML(c.text) + '”</span>' : '<i>fără text</i>'}</div>`;
+  }
+  return `<div style="${stil}">Categorie: <span style="color:#C9D4E0">${escapeHTML(c.denumire || c.slug || '—')}</span></div>`;
+}
+
 // panel-parteneri, reconstruit real 1 septembrie 2026 — vezi comentariul de la markup.
 async function loadParteneriGlobali() {
   const tbody = document.getElementById('pgl-tbody');
@@ -7575,7 +7585,7 @@ async function loadParteneriGlobali() {
           <td>${escapeHTML(p.nume_firma || '—')}</td>
           <td style="font-family:monospace;font-size:11.5px">${escapeHTML(p.cui || '—')}${p.verificare_anaf_manuala ? '<div style="font-family:inherit;font-size:10.5px;color:#F5A623;margin-top:2px">de verificat manual la ANAF</div>' : ''}</td>
           <td>${p.forma_juridica ? escapeHTML(p.forma_juridica.ro) + (p.forma_juridica_locala ? ' — ' + escapeHTML(p.forma_juridica_locala) : '') : '<span style="color:#E57373">lipsă — nu poate fi aprobat</span>'}</td>
-          <td>${escapeHTML(p.partner_type || '—')}</td>
+          <td>${escapeHTML(p.partner_type || '—')}${categorieInscriereHtml(p.categorie_inscriere)}</td>
           <td><span style="color:${statusColor};font-weight:700">${escapeHTML(p.status_verificare || 'pending_review')}</span></td>
           <td>${p.contract_semnat ? '<span style="color:#4CBE83">✓ semnat</span>' : '<span style="color:#8C9BAD">nesemnat</span>'}</td>
           <td>${escapeHTML(p.regiune_cod || '—')}</td>

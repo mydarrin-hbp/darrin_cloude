@@ -11,12 +11,18 @@
 // RO și EN din lib/forme-juridice.js, plus forma locală la firma_straina) și cu
 // marcajul „de verificat manual la ANAF” (audit_log, pus la înregistrare când
 // ANAF nu a răspuns sau nu a găsit CUI-ul).
+//
+// Pasul 12-P2 (20 nov. 2026): categorie_inscriere = categoria principală aleasă
+// la /parteneri/inscriere ({ id, slug, denumire, denumire_en } sau, la „Altceva”,
+// { altceva: true, text }), din partener_activare_ciorna.date.preinscriere; null
+// dacă nu există (conturi de dinainte de 12-P2 sau curier / asigurări).
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 const { eticheta } = require('../../lib/forme-juridice');
 const { ACTIUNE_VERIFICARE_MANUALA } = require('../../lib/verifica-firma-partener');
 const { trimiteEroare, trimiteEroareInterna } = require('../../lib/raspuns-eroare');
+const { categorieAleasa } = require('../../lib/categorii-inscriere');
 
 async function handler(req, res) {
   if (req.method !== 'GET') return trimiteEroare(res, 405, 'METODA_NEPERMISA', 'Metodă nepermisă.', 'Method not allowed.');
@@ -37,8 +43,18 @@ async function handler(req, res) {
     (marcaje || []).forEach((m) => deVerificat.add(String(m.entitate_id)));
   }
 
+  // Pasul 12-P2: categoria principală aleasă la înscriere (ciorna activării,
+  // date.preinscriere) — din listă sau scrisă de partener la „Altceva”.
+  const categorii = new Map();
+  if (ids.length) {
+    const { data: ciorne, error: eCiorne } = await supabaseAdmin
+      .from('partener_activare_ciorna').select('user_id, date').in('user_id', ids);
+    if (!eCiorne) (ciorne || []).forEach((c) => categorii.set(String(c.user_id), categorieAleasa(c.date && c.date.preinscriere)));
+  }
+
   const parteneri = (data || []).map((p) => ({
     ...p,
+    categorie_inscriere: categorii.get(String(p.id)) || null,
     forma_juridica: p.tip_entitate_legala
       ? { ro: eticheta(p.tip_entitate_legala, 'ro'), en: eticheta(p.tip_entitate_legala, 'en') }
       : null,
