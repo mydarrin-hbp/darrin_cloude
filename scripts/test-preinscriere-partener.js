@@ -21,16 +21,20 @@
 //      - stările în panou; rândurile deschid pașii în orice ordine și revin în panou;
 //      - butoanele „Devino partener” (vizitator) și „Partener” din fereastră → /parteneri/inscriere;
 //      - un singur buton portocaliu pe ecran; fără depășiri; 0 erori JS.
-// Pasul 12-P2 (20 nov. 2026): categoria principală din arborele unic, în locul profesiei.
+// Pasul 12-P2 (20 nov. 2026), ajustat după macheta R1 (21 nov. 2026): la înscriere
+// rămân doar tipul, numele, telefonul, emailul, parola și acordul; ?domeniu= și
+// ?profesie= sunt un indiciu ascuns, care ordonează „Ce lucrări faci”.
 //   A'. Server: /api/public/categorii (doar principalele active, pe tip, RO / EN,
-//       ?profesie= → categoria cu același NACE); valideazaPreinscriere (inexistentă,
-//       inactivă, subcategorie, alt tip → refuzate; „Altceva” + text curățat; curier /
-//       asigurări fără categorie); API-ul ciornei (400 cu câmpul categorie_id, ce se
-//       salvează, salvarea automată neblocată, DELETE păstrează categoria); portofoliul
-//       contului nou (categoria aleasă primele, 403 fără rol); back-office.
-//   B. Browser: lista se schimbă cu tipul, „Altceva”, câmpul lipsă la curier / asigurări,
-//       ?domeniu= / ?profesie= / ?type=, eroarea sub câmp, lista indisponibilă, categoria
-//       refuzată de server după cont (salvată ca „Altceva”), „Ce lucrări faci” în panou.
+//       ?profesie= → categoria cu același NACE); valideazaPreinscriere (doar tipul e
+//       obligatoriu; indiciu valid → categoria din bază, invalid → ignorat fără eroare;
+//       categorie_id explicit verificat ca înainte; text liber refuzat); API-ul ciornei
+//       (ce se salvează, refuzurile, salvarea automată neblocată, DELETE păstrează
+//       indiciul); portofoliul contului nou (indiciul primul, 403 fără rol); back-office
+//       („Indiciu din reclamă: …” doar dacă există); dicționarul paginii fără chei nefolosite.
+//   B. Browser: formularul R1 (fără categorie, „Altceva” sau oraș), obligatoriile sub
+//       câmp, cele 5 tipuri până la ciornă, ?domeniu= / ?profesie= / ?type= salvate ca
+//       indiciu (și cele invalide, fără eroare), indiciul dezactivat, categorie_id refuzat
+//       de server după cont, „Ce lucrări faci” primul în panou, cu „Recomandate pentru tine”.
 // Nimic nu ajunge la Supabase sau la producție (clientul Supabase e simulat în pagină).
 // Cu --capturi <dosar>: capturile „după”, la 390 px, RO și EN (docs/capturi-12p2/).
 // Cu --doar-server: doar partea A.
@@ -101,9 +105,14 @@ async function testeServer() {
   verifica(inst && inst.nace === '43.22' && inst.cod === '712601', `A9 instalator: slug, cod ESCO, NACE 43.22 (${JSON.stringify(inst)})`);
   verifica(ro.some((p) => p.slug === 'zugravi-si-vopsitori'), 'A10 slug fără diacritice');
   verifica(en.find((p) => p.slug === 'instalator').denumire === 'Plumber', 'A11 EN: „Plumber”, fără „(RO specific)”');
-  verifica(en.find((p) => p.slug === 'pavator').denumire === 'Pavator', 'A12 fără EN în bază: rezerva românească (tradusă în pagină din dicționar)');
+  verifica(en.find((p) => p.slug === 'pavator').denumire === 'Pavator', 'A12 fără EN în bază: rezerva românească');
+  // Pasul 12-P2 (R1): pagina de înscriere nu mai are câmpuri de profesie / categorie / oraș,
+  // iar dicționarul ei nu mai păstrează cheile lor (fără chei rămase fără folos).
   const dict = JSON.parse(fs.readFileSync(path.join(RADACINA, 'i18n/en/mydarrin-inscriere-partener.json'), 'utf8'));
-  verifica(dict._texte.Pavator === 'Paver', 'A12 „Pavator” are traducere în dicționarul paginii');
+  const sursaPagina = fs.readFileSync(path.join(RADACINA, 'mydarrin-inscriere-partener.html'), 'utf8') + fs.readFileSync(path.join(RADACINA, 'inscriere-partener.js'), 'utf8');
+  const nefolosite = Object.keys(dict._texte).filter((k) => !sursaPagina.includes(k));
+  verifica(!nefolosite.length, `A12 dicționarul paginii: fără chei nefolosite (${nefolosite.join(' | ')})`);
+  verifica(!/pi-profesie|pi-domeniu|pi-altceva|pi-oras/.test(sursaPagina), 'A12 pagina: fără câmpurile de profesie, categorie, „Altceva” și oraș');
   DB.tabele = { competente_esco: randuri };
   const res = raspuns();
   await apiProfesii(cerere({ metoda: 'GET', query: { lang: 'en' } }), res);
@@ -183,45 +192,58 @@ async function testeServer12p2() {
   verifica(r.corp.profesie === null, 'P1 profesie necunoscută → profesie: null');
   verifica(!JSON.stringify(r.corp).includes('nace') && !JSON.stringify(r.corp).includes('activ'), 'P1 fără câmpuri interne în răspuns');
 
-  // P2. Verificarea pre-înscrierii (lib/categorii-inscriere.js).
+  // P2. Verificarea pre-înscrierii după macheta R1 (lib/categorii-inscriere.js):
+  //     nimic obligatoriu în afară de tip; indiciul din reclamă (domeniu / profesie)
+  //     devine categoria dacă e valid, altfel se ignoră fără eroare; fără text liber.
   DB.tabele = arbore();
   const V = CI.valideazaPreinscriere;
-  let v = await V({ categorie: 'servicii', oras: 'Iași', categorie_id: CAT.sanitare, categorie_denumire: 'Orice scrie clientul', profesie_slug: 'instalator' });
-  verifica(v.ok && v.pre.categorie_id === CAT.sanitare && v.pre.categorie_slug === 'instalatii-sanitare' && v.pre.categorie_denumire === 'Instalații sanitare' && v.pre.categorie_denumire_en === 'Plumbing' && v.pre.categorie_altceva === false && v.pre.categorie_text === null, `P2 servicii, categorie validă: denumirile din bază (${JSON.stringify(v.pre)})`);
-  verifica(v.ok && v.pre.profesie_slug === 'instalator' && v.pre.nace === '43.22' && v.pre.oras === 'Iași', `P2 profesia din reclamă păstrată ca indiciu, NACE-ul ei (${v.pre && v.pre.nace})`);
-  v = await V({ categorie: 'servicii', categorie_id: UID(999) });
-  verifica(!v.ok && v.cod === 'CATEGORIE_INVALIDA' && v.camp === 'categorie_id', `P2 categorie inexistentă → refuzată (${v.cod})`);
-  v = await V({ categorie: 'servicii', categorie_id: CAT.inactiva });
-  verifica(!v.ok && v.cod === 'CATEGORIE_INVALIDA', `P2 categorie inactivă → refuzată (${v.cod})`);
-  v = await V({ categorie: 'servicii', categorie_id: CAT.sub });
-  verifica(!v.ok && v.cod === 'CATEGORIE_INVALIDA', `P2 subcategorie (nu principală) → refuzată (${v.cod})`);
-  v = await V({ categorie: 'materiale', categorie_id: CAT.sanitare });
-  verifica(!v.ok && v.cod === 'CATEGORIE_ALT_TIP' && v.mesaj.ro && v.mesaj.en, `P2 categorie de alt tip → refuzată, mesaj RO + EN (${v.cod})`);
-  v = await V({ categorie: 'inchirieri', categorie_id: CAT.inc_scule });
-  verifica(v.ok && v.pre.categorie_slug === 'scule-echipamente', 'P2 închirieri: categoria „inchiriere” se potrivește cu tipul „inchirieri”');
-  v = await V({ categorie: 'servicii', categorie_id: 'nu-e-uuid' });
-  verifica(!v.ok && v.cod === 'CATEGORIE_INVALIDA', 'P2 id care nu e UUID → refuzat');
-  for (const tip of ['servicii', 'materiale', 'inchirieri']) {
-    v = await V({ categorie: tip, oras: 'Cluj' });
-    verifica(!v.ok && v.cod === 'CATEGORIE_OBLIGATORIE' && v.camp === 'categorie_id', `P2 ${tip} fără categorie → CATEGORIE_OBLIGATORIE (${v.cod})`);
+  let v;
+  for (const tip of ['servicii', 'materiale', 'inchirieri', 'curier', 'asigurari']) {
+    v = await V({ categorie: tip, rol: 'partener_' + tip });
+    verifica(v.ok && v.pre.categorie === tip && v.pre.categorie_id === null && v.pre.profesie_slug === null, `P2 ${tip}: doar tipul → valid, fără categorie (${JSON.stringify(v.pre || v.cod)})`);
   }
-  const lung = '<b>Sobe</b> de teracotă' + String.fromCharCode(7) + ' și șeminee '.repeat(10);
-  v = await V({ categorie: 'materiale', categorie_altceva: true, categorie_text: lung, categorie_id: null });
-  verifica(v.ok && v.pre.categorie_altceva === true && v.pre.categorie_id === null && v.pre.categorie_text.length <= 80 && !/[<>]/.test(v.pre.categorie_text) && v.pre.categorie_text.startsWith('Sobe de teracotă și'), `P2 „Altceva”: textul curățat, cel mult 80 (${JSON.stringify(v.pre && v.pre.categorie_text)})`);
-  v = await V({ categorie: 'servicii', categorie_altceva: true, categorie_text: '   ' });
-  verifica(v.ok && v.pre.categorie_altceva === true && v.pre.categorie_text === null, 'P2 „Altceva” fără text → valid (textul e opțional)');
-  v = await V({ categorie: 'servicii', categorie_altceva: true, categorie_id: CAT.sanitare });
-  verifica(v.ok && v.pre.categorie_altceva === true && v.pre.categorie_id === null, 'P2 „Altceva” are prioritate: fără id păstrat');
+  v = await V({ categorie: 'servicii', indiciu_domeniu: 'hvac-climatizare' });
+  verifica(v.ok && v.pre.categorie_id === CAT.hvac && v.pre.categorie_slug === 'hvac-climatizare' && v.pre.categorie_denumire === 'HVAC & Climatizare' && v.pre.categorie_denumire_en === 'HVAC & Air Conditioning' && v.pre.categorie_sursa === 'domeniu' && v.pre.nace === '43.22', `P2 ?domeniu= valid → categoria din bază (${JSON.stringify(v.pre)})`);
+  for (const [slug, et] of [['nu-exista', 'necunoscut'], ['retrasa', 'inactiv'], ['desfundari', 'subcategorie'], ['zidarie-beton', 'de alt tip'], ['<script>alert(1)</script>', 'greșit'], ['x'.repeat(300), 'prea lung']]) {
+    v = await V({ categorie: 'servicii', indiciu_domeniu: slug });
+    verifica(v.ok && v.pre.categorie_id === null && v.pre.categorie_slug === null, `P2 ?domeniu= ${et} → ignorat, fără eroare (${JSON.stringify(v.ok ? v.pre.categorie_id : v.cod)})`);
+  }
+  v = await V({ categorie: 'inchirieri', indiciu_domeniu: 'scule-echipamente' });
+  verifica(v.ok && v.pre.categorie_id === CAT.inc_scule, 'P2 închirieri: category_type „inchiriere” se potrivește cu tipul „inchirieri”');
+  v = await V({ categorie: 'servicii', profesie_slug: 'instalator' });
+  verifica(v.ok && v.pre.profesie_slug === 'instalator' && v.pre.categorie_id === CAT.sanitare && v.pre.categorie_sursa === 'profesie' && v.pre.nace === '43.22', `P2 ?profesie=instalator → indiciu păstrat și categoria cu același NACE (${JSON.stringify(v.pre)})`);
+  v = await V({ categorie: 'servicii', profesie_slug: 'instalator', indiciu_domeniu: 'instalatii-electrice' });
+  verifica(v.ok && v.pre.categorie_id === CAT.electrice && v.pre.profesie_slug === 'instalator', 'P2 ?domeniu= are prioritate față de ?profesie=');
+  v = await V({ categorie: 'servicii', profesie_slug: 'zugravi-si-vopsitori' });
+  verifica(v.ok && v.pre.profesie_slug === 'zugravi-si-vopsitori' && v.pre.categorie_id === null, 'P2 profesie fără categorie legată → indiciu păstrat, fără categorie');
+  v = await V({ categorie: 'servicii', profesie_slug: 'nu-exista' });
+  verifica(v.ok && v.pre.profesie_slug === null, 'P2 profesie necunoscută → ignorată, fără eroare');
+  v = await V({ categorie: 'materiale', profesie_slug: 'instalator' });
+  verifica(v.ok && v.pre.categorie_id === null && v.pre.profesie_slug === 'instalator', 'P2 la materiale, profesia nu dă categorie de servicii');
   for (const tip of ['curier', 'asigurari']) {
-    v = await V({ categorie: tip, oras: 'Iași', categorie_id: CAT.sanitare, categorie_text: 'x' });
-    verifica(v.ok && v.pre.categorie_id === null && v.pre.categorie_text === null && v.pre.categorie_altceva === false, `P2 ${tip}: fără categorie, oricare ar veni (${JSON.stringify(v.pre)})`);
+    v = await V({ categorie: tip, indiciu_domeniu: 'instalatii-sanitare' });
+    verifica(v.ok && v.pre.categorie_id === null, `P2 ${tip}: indiciul de categorie se ignoră`);
   }
-  v = await V({ categorie: 'servicii', categorie_id: CAT.sanitare, profesie_slug: '<script>' });
-  verifica(v.ok && v.pre.profesie_slug === null, 'P2 indiciu de profesie necunoscut / greșit → nu se păstrează');
+  // Categorie trimisă explicit (categorie_id): verificată ca înainte.
+  v = await V({ categorie: 'servicii', categorie_id: CAT.sanitare, categorie_denumire: 'Orice scrie clientul' });
+  verifica(v.ok && v.pre.categorie_denumire === 'Instalații sanitare' && v.pre.categorie_sursa === 'id', 'P2 categorie_id valid → denumirea din bază, nu din cerere');
+  for (const [id, cod, et] of [[UID(999), 'CATEGORIE_INVALIDA', 'inexistent'], [CAT.inactiva, 'CATEGORIE_INVALIDA', 'inactiv'], [CAT.sub, 'CATEGORIE_INVALIDA', 'subcategorie'], ['nu-e-uuid', 'CATEGORIE_INVALIDA', 'nu e UUID']]) {
+    v = await V({ categorie: 'servicii', categorie_id: id });
+    verifica(!v.ok && v.cod === cod && v.camp === 'categorie_id', `P2 categorie_id ${et} → ${cod} (${v.cod})`);
+  }
+  v = await V({ categorie: 'materiale', categorie_id: CAT.sanitare });
+  verifica(!v.ok && v.cod === 'CATEGORIE_ALT_TIP' && v.mesaj.ro && v.mesaj.en, `P2 categorie_id de alt tip → CATEGORIE_ALT_TIP, mesaj RO + EN (${v.cod})`);
+  // Text liber: nu se mai acceptă.
+  for (const corp of [{ categorie_text: 'Sobe de teracotă' }, { categorie_altceva: true }, { categorie_altceva: true, categorie_text: 'x' }]) {
+    v = await V(Object.assign({ categorie: 'materiale' }, corp));
+    verifica(!v.ok && v.cod === 'CATEGORIE_TEXT_NEACCEPTAT' && v.mesaj.ro && v.mesaj.en, `P2 text liber ${JSON.stringify(corp)} → refuzat (${v.cod})`);
+  }
+  v = await V({ categorie: 'servicii', categorie_text: '   ' });
+  verifica(v.ok && !('categorie_text' in v.pre) && !('categorie_altceva' in v.pre), 'P2 text gol → ignorat; nicio cheie de text în ce se salvează');
   v = await V({ categorie: 'partener' });
   verifica(!v.ok && v.cod === 'TIP_PARTENER_INVALID', 'P2 tip de partener necunoscut → refuzat');
 
-  // P3. API-ul ciornei: refuzul pe server, ce se salvează, salvarea automată, DELETE.
+  // P3. API-ul ciornei: indiciul salvat, refuzurile, salvarea automată, DELETE.
   const ID = 'u-12p2';
   DB.tabele = Object.assign(arbore(), {
     profiles: [{ id: ID, roles: ['client'], rol_solicitat: 'partener_servicii' }],
@@ -232,23 +254,24 @@ async function testeServer12p2() {
   const salvata = () => (DB.tabele.partener_activare_ciorna.find((x) => x.user_id === ID) || {}).date;
   for (const [id, cod] of [[UID(999), 'CATEGORIE_INVALIDA'], [CAT.inactiva, 'CATEGORIE_INVALIDA'], [CAT.mat_zidarie, 'CATEGORIE_ALT_TIP']]) {
     r = await ciorna('PUT', { pas_curent: 1, date: { preinscriere: { categorie: 'servicii', categorie_id: id } } });
-    verifica(r.statusCode === 400 && r.corp.cod === cod && r.corp.campuri[0].camp === 'categorie_id' && r.corp.mesaj.ro && r.corp.mesaj.en && !salvata(), `P3 PUT cu categorie ${cod} → 400, nimic salvat (${r.statusCode} ${r.corp.cod})`);
+    verifica(r.statusCode === 400 && r.corp.cod === cod && r.corp.campuri[0].camp === 'categorie_id' && r.corp.mesaj.ro && r.corp.mesaj.en && !salvata(), `P3 PUT cu categorie_id ${cod} → 400, nimic salvat (${r.statusCode} ${r.corp.cod})`);
   }
-  r = await ciorna('PUT', { pas_curent: 1, date: { preinscriere: { categorie: 'servicii' } } });
-  verifica(r.statusCode === 400 && r.corp.cod === 'CATEGORIE_OBLIGATORIE', `P3 servicii fără categorie → 400 (${r.corp.cod})`);
-  r = await ciorna('PUT', { pas_curent: 1, date: { preinscriere: { categorie: 'servicii', rol: 'partener_servicii', oras: 'Iași', categorie_id: CAT.sanitare, categorie_slug: 'fals', categorie_denumire: 'Fals', profesie_slug: 'instalator', creat_la: '2026-11-20T08:00:00Z' } } });
+  r = await ciorna('PUT', { pas_curent: 1, date: { preinscriere: { categorie: 'servicii', categorie_text: 'Sobe' } } });
+  verifica(r.statusCode === 400 && r.corp.cod === 'CATEGORIE_TEXT_NEACCEPTAT' && !salvata(), `P3 text liber → 400 (${r.corp.cod})`);
+  r = await ciorna('PUT', { pas_curent: 1, date: { preinscriere: { categorie: 'servicii', rol: 'partener_servicii', indiciu_domeniu: 'nu-exista', creat_la: '2026-11-21T08:00:00Z' } } });
+  verifica(r.statusCode === 200 && salvata().preinscriere.categorie_id === null, `P3 indiciu necunoscut → salvat fără categorie, fără eroare (${r.statusCode})`);
+  r = await ciorna('PUT', { pas_curent: 1, date: { preinscriere: { categorie: 'servicii', rol: 'partener_servicii', indiciu_domeniu: 'instalatii-sanitare', categorie_slug: 'fals', categorie_denumire: 'Fals', profesie_slug: 'instalator', creat_la: '2026-11-21T08:00:00Z' } } });
   let d = salvata();
-  verifica(r.statusCode === 200 && d && d.preinscriere.categorie_id === CAT.sanitare && d.preinscriere.categorie_slug === 'instalatii-sanitare' && d.preinscriere.categorie_denumire === 'Instalații sanitare' && d.preinscriere.profesie_slug === 'instalator' && d.preinscriere.categorie_text === null, `P3 ce se salvează în date.preinscriere (${JSON.stringify(d && d.preinscriere)})`);
+  verifica(r.statusCode === 200 && d && d.preinscriere.categorie_id === CAT.sanitare && d.preinscriere.categorie_slug === 'instalatii-sanitare' && d.preinscriere.categorie_denumire === 'Instalații sanitare' && d.preinscriere.categorie_sursa === 'domeniu' && d.preinscriere.profesie_slug === 'instalator', `P3 ce se salvează în date.preinscriere (${JSON.stringify(d && d.preinscriere)})`);
+  verifica(!('indiciu_domeniu' in d.preinscriere) && !('categorie_text' in d.preinscriere) && !('oras' in d.preinscriere), 'P3 se salvează doar câmpurile verificate (fără slug-ul brut, fără text, fără oraș)');
   // Salvarea automată a pașilor trimite aceeași pre-înscriere: nu se mai verifică (categoria poate fi între timp inactivă).
   DB.tabele.categorii.find((c) => c.id === CAT.sanitare).activ = false;
   r = await ciorna('PUT', { pas_curent: 2, date: Object.assign({}, copie(d), { pas1: { cui: '123' } }) });
   verifica(r.statusCode === 200 && salvata().pas1 && salvata().preinscriere.categorie_id === CAT.sanitare, `P3 salvarea automată a pașilor nu e blocată de categoria dezactivată (${r.statusCode})`);
   DB.tabele.categorii.find((c) => c.id === CAT.sanitare).activ = true;
-  r = await ciorna('PUT', { pas_curent: 2, date: { preinscriere: { categorie: 'servicii', categorie_altceva: true, categorie_text: 'Sobe de teracotă' } } });
-  verifica(r.statusCode === 200 && salvata().preinscriere.categorie_altceva === true && salvata().preinscriere.categorie_text === 'Sobe de teracotă', 'P3 „Altceva” + text, salvat');
   r = await ciorna('DELETE');
   d = salvata();
-  verifica(r.statusCode === 200 && d && Object.keys(d).join() === 'preinscriere' && d.preinscriere.categorie_text === 'Sobe de teracotă', `P3 DELETE (după contract): restul ciornei se șterge, categoria rămâne (${JSON.stringify(d)})`);
+  verifica(r.statusCode === 200 && d && Object.keys(d).join() === 'preinscriere' && d.preinscriere.categorie_id === CAT.sanitare, `P3 DELETE (după contract): restul ciornei se șterge, indiciul rămâne (${JSON.stringify(d)})`);
 
   // P4. Portofoliul: contul nou (doar rol_solicitat, fără rând în partners), categoria aleasă primele.
   DB.tabele = Object.assign(arbore(), {
@@ -291,18 +314,22 @@ async function testeServer12p2() {
     audit_log: [],
     partener_activare_ciorna: [
       { user_id: 'p-a', date: { preinscriere: { categorie: 'servicii', categorie_id: CAT.sanitare, categorie_slug: 'instalatii-sanitare', categorie_denumire: 'Instalații sanitare' } } },
-      { user_id: 'p-b', date: { preinscriere: { categorie: 'materiale', categorie_altceva: true, categorie_text: 'Sobe de teracotă' } } },
+      { user_id: 'p-b', date: { preinscriere: { categorie: 'materiale', categorie_id: null } } },
     ],
   };
   DB.utilizatori = { 'tok-adm': { id: 'adm' } };
   r = raspuns();
   await apiParteneriLista(cerere({ metoda: 'GET', token: 'tok-adm' }), r);
   const dupaId = (id) => (r.corp.parteneri || []).find((p) => p.id === id) || {};
-  verifica(r.statusCode === 200 && dupaId('p-a').categorie_inscriere && dupaId('p-a').categorie_inscriere.denumire === 'Instalații sanitare', `P5 back-office: categoria aleasă (${JSON.stringify(dupaId('p-a').categorie_inscriere)})`);
-  verifica(dupaId('p-b').categorie_inscriere && dupaId('p-b').categorie_inscriere.altceva === true && dupaId('p-b').categorie_inscriere.text === 'Sobe de teracotă', 'P5 back-office: textul de la „Altceva”');
-  verifica(dupaId('p-c').categorie_inscriere === null, 'P5 back-office: fără categorie (curier) → null');
+  verifica(r.statusCode === 200 && dupaId('p-a').categorie_inscriere && dupaId('p-a').categorie_inscriere.denumire === 'Instalații sanitare', `P5 back-office: indiciul din reclamă (${JSON.stringify(dupaId('p-a').categorie_inscriere)})`);
+  verifica(dupaId('p-b').categorie_inscriere === null, 'P5 back-office: fără indiciu → null');
+  verifica(dupaId('p-c').categorie_inscriere === null, 'P5 back-office: fără ciornă (curier) → null');
   const sa = fs.readFileSync(path.join(RADACINA, 'mydarrin-superadmin.html'), 'utf8');
-  verifica(/Categorie scrisă de partener/.test(sa) && /categorieInscriereHtml\(p\.categorie_inscriere\)/.test(sa), 'P5 superadmin: eticheta „Categorie scrisă de partener” în fișa partenerului');
+  verifica(/Indiciu din reclamă:/.test(sa) && !/Categorie scrisă de partener/.test(sa) && /categorieInscriereHtml\(p\.categorie_inscriere\)/.test(sa), 'P5 superadmin: „Indiciu din reclamă: …”, fără „Categorie scrisă de partener”');
+  // Funcția de afișare, rulată: cu indiciu → textul; fără → nimic.
+  const fn = sa.match(/function categorieInscriereHtml\(c\) \{[\s\S]*?\n\}/);
+  const afis = fn ? new Function('escapeHTML', fn[0] + '; return categorieInscriereHtml;')((x) => String(x).replace(/</g, '&lt;')) : null;
+  verifica(afis && /Indiciu din reclamă: <span[^>]*>Instalații sanitare<\/span>/.test(afis({ denumire: 'Instalații sanitare' })) && afis(null) === '' && afis({ denumire: null, slug: null }) === '', 'P5 superadmin: indiciul apare doar dacă există');
 }
 
 // ── B. Browser ────────────────────────────────────────────────────────────
@@ -486,55 +513,42 @@ async function testeBrowser() {
     for (const lang of ['ro', 'en']) {
       for (const latime of [390, 1366]) {
         const et = `${lang} ${latime}`;
-        // ── B1. Pagina: obligatorii, categoria din reclamă (?profesie=), lang, UTM ──
+        // ── B1. Pagina (macheta R1): doar tipul, numele, telefonul, emailul, parola și acordul;
+        //        ?profesie= e un indiciu ascuns; obligatorii, lang, UTM ──
         {
           const server = serverSimulat();
           const { ctx, p, erori } = await context(latime, null, server);
           await p.goto(`${baza}${PAGINA}?profesie=instalator&lang=${lang}&utm_source=facebook&utm_campaign=instalatori-iasi`, { waitUntil: 'load' });
-          await p.waitForFunction(() => document.querySelectorAll('#pi-domeniu option').length > 2, null, { timeout: 10000 });
+          await p.waitForFunction(() => window.MDFeedback && window.MDCont && !document.documentElement.classList.contains('myd-i18n-pending'), null, { timeout: 10000 }).catch(() => {});
           verifica(await p.evaluate(() => document.documentElement.lang) === lang, `${et} B1: ?lang=${lang} aplicat`);
-          verifica(!(await p.$('#pi-profesie')), `${et} B1: câmpul „Profesia” nu mai există`);
-          const eticheta = await p.evaluate(() => document.getElementById('pi-domeniu-camp').firstChild.textContent.trim());
-          verifica(eticheta === (lang === 'ro' ? 'Categoria principală' : 'Main category'), `${et} B1: eticheta „${eticheta}”`);
-          verifica(await p.inputValue('#pi-domeniu') === CAT.sanitare, `${et} B1: ?profesie=instalator preselectează categoria legată (${await p.inputValue('#pi-domeniu')})`);
-          verifica(await p.isVisible('#pi-domeniu-reclama'), `${et} B1: „Aleasă deja din reclamă” vizibil`);
-          const optiuni = await p.evaluate(() => [...document.querySelectorAll('#pi-domeniu option')].map((o) => [o.value, o.textContent]));
-          verifica(optiuni.length === 5 && optiuni[1][1] === (lang === 'ro' ? 'Instalații sanitare' : 'Plumbing') && optiuni[4][0] === 'altceva' && optiuni[4][1] === (lang === 'ro' ? 'Altceva' : 'Something else'), `${et} B1: lista din arbore, „${lang === 'ro' ? 'Altceva' : 'Something else'}” ultima (${optiuni.map((o) => o[1]).join(' | ')})`);
-          const ajutor = (await p.textContent('#pi-domeniu-ajutor')).trim();
-          verifica(ajutor === (lang === 'ro' ? 'Profesia, serviciile și zona le alegi în panoul tău, după ce îți faci contul.' : 'You choose your trade, services and area in your dashboard after you sign up.'), `${et} B1: textul de sub câmp (${ajutor})`);
-          verifica(await p.getAttribute('#pi-domeniu', 'required') !== null, `${et} B1: câmpul e obligatoriu`);
+          // Câmpurile formularului: exact cele din R1, fără întrebare despre profesie / categorie / oraș.
+          const campuri = await p.evaluate(() => [...document.querySelectorAll('#pi-form input, #pi-form select, #pi-form textarea')].filter((e) => e.getClientRects().length || e.type === 'radio').map((e) => e.type === 'radio' ? 'radio:' + e.value : e.id));
+          verifica(JSON.stringify(campuri) === JSON.stringify(['radio:servicii', 'radio:materiale', 'radio:inchirieri', 'radio:curier', 'radio:asigurari', 'pi-prenume', 'pi-nume', 'pi-tel', 'pi-email', 'pi-parola', 'pi-gdpr']), `${et} B1: doar tipul, numele, telefonul, emailul, parola și acordul (${campuri.join(',')})`);
+          verifica(!(await p.$('select')) && !(await p.$('#pi-domeniu, #pi-altceva, #pi-oras, #pi-profesie')), `${et} B1: nicio listă de categorii / profesii, niciun „Altceva”, niciun oraș`);
+          const text = await p.evaluate(() => document.body.innerText);
+          verifica(!/Categoria principală|Main category|Altceva|Something else|Orașul|The city where|Aleasă deja din reclamă|Already chosen from the ad/.test(text), `${et} B1: niciun text al câmpurilor scoase`);
           verifica(await p.isChecked('input[name="pi-categorie"][value="servicii"]'), `${et} B1: Servicii ales implicit`);
           verifica(await portocalii(p) === 1, `${et} B1: un singur buton portocaliu (${await portocalii(p)})`);
           verifica(await depaseste(p) <= 0, `${et} B1: pagina nu iese din ecran (${await depaseste(p)} px)`);
           // Obligatorii: trimitere goală → erorile sub câmpuri.
           await p.click('#pi-trimite');
-          await p.waitForSelector('#pi-oras[aria-invalid="true"]', { timeout: 5000 }).catch(() => {});
-          const invalide = await p.evaluate(() => [...document.querySelectorAll('#pi-form [aria-invalid="true"]')].map((e) => e.id));
-          verifica(['pi-oras', 'pi-prenume', 'pi-nume', 'pi-tel', 'pi-email', 'pi-parola', 'pi-gdpr'].every((id) => invalide.includes(id)), `${et} B1: câmpurile obligatorii marcate (${invalide.join(',')})`);
-          // Materiale: lista se schimbă cu tipul (categoriile de materiale).
+          await p.waitForSelector('#pi-prenume[aria-invalid="true"]', { timeout: 5000 }).catch(() => {});
+          const invalide = await p.evaluate(() => [...document.querySelectorAll('#pi-form [aria-invalid="true"]')].map((e) => e.id).sort());
+          verifica(JSON.stringify(invalide) === JSON.stringify(['pi-email', 'pi-gdpr', 'pi-nume', 'pi-parola', 'pi-prenume', 'pi-tel']), `${et} B1: câmpurile obligatorii marcate (${invalide.join(',')})`);
+          const subPrenume = await p.evaluate(() => { const el = document.getElementById('pi-prenume'); const m = (el.getAttribute('aria-describedby') || '').split(/\s+/).map((i) => document.getElementById(i)).find((x) => x && x.classList.contains('md-camp-eroare')); return m ? m.textContent : null; });
+          verifica(subPrenume && subPrenume.includes(lang === 'ro' ? 'Prenume' : 'First name'), `${et} B1: mesajul sub câmp (MDFeedback): ${subPrenume}`);
           await p.click('label.pi-cip:has(input[value="materiale"])');
-          await p.waitForFunction(() => document.querySelectorAll('#pi-domeniu option').length === 4, null, { timeout: 8000 }).catch(() => {});
-          const mat = await p.evaluate(() => [...document.querySelectorAll('#pi-domeniu option')].map((o) => o.textContent));
-          verifica(await p.isVisible('#pi-domeniu') && mat[1] === (lang === 'ro' ? 'Sanitare & Termice' : 'Plumbing & Heating') && mat.length === 4, `${et} B1: la Materiale, categoriile de materiale (${mat.join(' | ')})`);
-          verifica(await p.inputValue('#pi-domeniu') === '', `${et} B1: la Materiale, nimic preselectat din profesie`);
           const nota = await p.textContent('#pi-nota');
           verifica(!/0%/.test(nota), `${et} B1: „0% comision din manoperă” doar la servicii și curieri (${nota.trim()})`);
-          // Curier și Asigurări: câmpul nu apare și nu e obligatoriu.
-          for (const tipFara of ['curier', 'asigurari']) {
-            await p.click(`label.pi-cip:has(input[value="${tipFara}"])`);
-            verifica(!(await p.isVisible('#pi-domeniu')) && !(await p.isVisible('#pi-altceva')) && await p.getAttribute('#pi-domeniu', 'required') === null, `${et} B1: la ${tipFara}, fără categorie`);
-          }
           await p.click('label.pi-cip:has(input[value="servicii"])');
-          verifica(await p.inputValue('#pi-domeniu') === CAT.sanitare, `${et} B1: înapoi la Servicii, categoria din reclamă rămâne`);
           // Româna nu apare în EN (textul vizibil).
           if (lang === 'en') {
-            const text = await p.evaluate(() => document.body.innerText);
+            const textEn = await p.evaluate(() => document.body.innerText);
             const { eRo } = require('./recunoaste-ro');
-            const ro = text.split('\n').map((x) => x.trim()).filter((x) => x && eRo(x));
+            const ro = textEn.split('\n').map((x) => x.trim()).filter((x) => x && eRo(x));
             verifica(!ro.length, `${et} B1: text românesc în EN: ${ro.slice(0, 4).join(' | ')}`);
           }
           // Înregistrarea completă (Servicii), cu UTM-ul păstrat.
-          await p.fill('#pi-oras', 'Iași');
           await p.fill('#pi-prenume', 'Ion');
           await p.fill('#pi-nume', 'Popescu');
           await p.fill('#pi-tel', '+40 712 345 678');
@@ -548,7 +562,7 @@ async function testeBrowser() {
           verifica(su && su.options.data.sursa && su.options.data.sursa.utm_source === 'facebook', `${et} B1: UTM-ul ajunge la cont (sursa: ${su && JSON.stringify(su.options.data.sursa)})`);
           verifica(su && su.options.data.limba === lang || su && su.options.data.limba, `${et} B1: limba trimisă la înregistrare`);
           const pre = await p.evaluate(() => JSON.parse(sessionStorage.getItem('myd_preinscriere_v1') || 'null'));
-          verifica(pre && pre.categorie === 'servicii' && pre.categorie_id === CAT.sanitare && pre.categorie_slug === 'instalatii-sanitare' && pre.categorie_altceva === false && pre.profesie_slug === 'instalator' && pre.oras === 'Iași', `${et} B1: datele pre-înscrierii păstrate (${JSON.stringify(pre)})`);
+          verifica(pre && pre.categorie === 'servicii' && pre.profesie_slug === 'instalator' && pre.indiciu_domeniu === null && !('oras' in pre) && !('categorie_text' in pre) && !('categorie_id' in pre), `${et} B1: în sesiune, tipul și indiciul (${JSON.stringify(pre)})`);
 
           // ── B2. Ecranul de cod ──
           verifica(await p.isVisible('#auth-verify-cod'), `${et} B2: ecranul de cod`);
@@ -576,11 +590,12 @@ async function testeBrowser() {
           verifica(await p.isVisible('#myd-panou-nou'), `${et} B3: panoul „cont nou” deschis`);
           verifica(!(await p.$('#myd-activare-pagina')), `${et} B3: nu se deschide pasul „Firma”`);
           const salvat = server.s.ciorna && server.s.ciorna.date && server.s.ciorna.date.preinscriere;
-          verifica(salvat && salvat.categorie_id === CAT.sanitare && salvat.categorie_denumire === 'Instalații sanitare' && salvat.categorie_denumire_en === 'Plumbing' && salvat.profesie_slug === 'instalator' && salvat.nace === '43.22' && salvat.oras === 'Iași', `${et} B3: datele pre-înscrierii în ciornă, verificate (${JSON.stringify(salvat)})`);
+          verifica(salvat && salvat.categorie_id === CAT.sanitare && salvat.categorie_denumire === 'Instalații sanitare' && salvat.categorie_denumire_en === 'Plumbing' && salvat.categorie_sursa === 'profesie' && salvat.profesie_slug === 'instalator' && salvat.nace === '43.22', `${et} B3: indiciul din reclamă în ciornă, verificat pe server (${JSON.stringify(salvat)})`);
+          // Indiciul nu e o alegere a partenerului: nu apare în salut și nici pe cardul turcoaz.
           const salut = await p.textContent('.mpn-salut');
-          verifica(salut.includes(lang === 'ro' ? 'Bun venit, Ion' : 'Welcome, Ion') && salut.includes(lang === 'ro' ? 'Instalații sanitare' : 'Plumbing') && salut.includes('Iași'), `${et} B3: salutul și categoria (${salut.replace(/\s+/g, ' ').trim()})`);
+          verifica(salut.includes(lang === 'ro' ? 'Bun venit, Ion' : 'Welcome, Ion') && !/Instalații sanitare|Plumbing|Instalator/.test(salut), `${et} B3: salutul, fără indiciu (${salut.replace(/\s+/g, ' ').trim()})`);
           const info = await p.textContent('.mpn-info b');
-          verifica(info === (lang === 'ro' ? 'Comenzi în zona ta · Instalații sanitare · Iași' : 'Orders in your area · Plumbing · Iași'), `${et} B3: cardul turcoaz (${info})`);
+          verifica(info === (lang === 'ro' ? 'Comenzi în zona ta · Furnizor de Servicii' : 'Orders in your area · Service Provider'), `${et} B3: cardul turcoaz (${info})`);
           // „Ce lucrări faci”: primul rând al listei.
           const randuri = await p.evaluate(() => [...document.querySelectorAll('.mpn-lista .mpn-rand')].map((r) => r.getAttribute('data-mpn-rand')));
           verifica(randuri[0] === 'lucrari', `${et} B3: primul rând e „Ce lucrări faci” (${randuri.join(',')})`);
@@ -605,7 +620,7 @@ async function testeBrowser() {
           const gol = await p.textContent('[data-mpn-gol="comenzi"]');
           verifica(!/\d/.test(gol), `${et} B3: „Comenzi” fără cifre (${gol.trim().slice(0, 80)})`);
           await p.click(`${latime < 1024 ? '.mpn-jos' : '.mpn-meniu'} [data-mpn-sec="activitate"]`);
-          // ── B3b. „Ce lucrări faci” → portofoliul, categoria aleasă primele; bifarea cu feedback ──
+          // ── B3b. „Ce lucrări faci” → portofoliul, lucrările din indiciu primele; bifarea cu feedback ──
           await p.click('.mpn-rand[data-mpn-rand="lucrari"]');
           await p.waitForSelector('#mpn-lucrari-lista input[data-mpn-serviciu]', { timeout: 10000 }).catch(() => {});
           const lucr = await p.evaluate(() => ({
@@ -614,7 +629,7 @@ async function testeBrowser() {
             prim: (document.querySelector('#mpn-lucrari-lista .mpn-txt b') || {}).textContent,
             bifat: (document.querySelector('input[data-mpn-serviciu="s-boiler"]') || {}).checked,
           }));
-          verifica(lucr.cap === (lang === 'ro' ? 'Din categoria ta: Instalații sanitare' : 'From your category: Plumbing') && lucr.ids.join() === 's-robinet,s-boiler,s-zugrav' && lucr.bifat, `${et} B3b: portofoliul, categoria aleasă primele (${JSON.stringify(lucr)})`);
+          verifica(lucr.cap === (lang === 'ro' ? 'Recomandate pentru tine: Instalații sanitare' : 'Recommended for you: Plumbing') && lucr.ids.join() === 's-robinet,s-boiler,s-zugrav' && lucr.bifat, `${et} B3b: portofoliul, lucrările din indiciu primele (${JSON.stringify(lucr)})`);
           verifica(lucr.prim === (lang === 'ro' ? 'Montaj robinet' : 'Tap fitting'), `${et} B3b: titlul serviciului în limba paginii (${lucr.prim})`);
           await p.check('input[data-mpn-serviciu="s-robinet"]');
           await p.waitForSelector('#mpn-lucrari-msg .md-feedback-ok, #mpn-lucrari-msg [class*="ok"]', { timeout: 8000 }).catch(() => {});
@@ -688,10 +703,8 @@ async function testeBrowser() {
       }
     }
 
-    // ── B5. Cele 5 tipuri → rol_solicitat, categoria, contul creat, ce ajunge în ciornă ──
-    // Servicii și Materiale: o categorie din listă; Închirieri: „Altceva” + text; Curier și Asigurări: fără câmp.
+    // ── B5. Cele 5 tipuri (macheta R1): doar câmpurile R1 → contul se creează, tipul ajunge în ciornă ──
     const completeaza = async (p, email) => {
-      await p.fill('#pi-oras', 'Cluj-Napoca');
       await p.fill('#pi-prenume', 'Ana');
       await p.fill('#pi-nume', 'Test');
       await p.fill('#pi-tel', '+40712345679');
@@ -706,32 +719,13 @@ async function testeBrowser() {
       await p.waitForSelector('#myd-panou-nou .mpn-stare', { timeout: 15000 }).catch(() => {});
       return server.s.ciorna && server.s.ciorna.date ? server.s.ciorna.date.preinscriere : null;
     };
-    const ASTEPTAT = {
-      servicii: { id: CAT.sanitare, slug: 'instalatii-sanitare' },
-      materiale: { id: CAT.mat_sanitare, slug: 'sanitare-termice' },
-      inchirieri: { altceva: 'Remorci auto' },
-    };
     for (const cat of ['servicii', 'materiale', 'inchirieri', 'curier', 'asigurari']) {
       const server = serverSimulat({ categorie: cat });
       const { ctx, p, erori } = await context(390, 'ro', server);
       await p.goto(`${baza}${PAGINA}?categorie=${cat}`, { waitUntil: 'load' });
       await p.waitForFunction(() => window.MDFeedback && window.MDCont, null, { timeout: 10000 });
       verifica(await p.isChecked(`input[name="pi-categorie"][value="${cat}"]`), `B5 ${cat}: tipul din ?categorie=`);
-      const a = ASTEPTAT[cat];
-      if (a) {
-        await p.waitForFunction(() => document.querySelectorAll('#pi-domeniu option').length > 2, null, { timeout: 10000 });
-        if (a.altceva) {
-          await p.selectOption('#pi-domeniu', 'altceva');
-          verifica(await p.isVisible('#pi-altceva'), `B5 ${cat}: „Altceva” arată câmpul de text opțional`);
-          verifica(await p.getAttribute('#pi-altceva', 'maxlength') === '80', `B5 ${cat}: textul are cel mult 80 de caractere`);
-          await p.fill('#pi-altceva', a.altceva);
-        } else {
-          await p.selectOption('#pi-domeniu', { index: 1 });
-          verifica(!(await p.isVisible('#pi-altceva')), `B5 ${cat}: fără „Altceva”, câmpul de text ascuns`);
-        }
-      } else {
-        verifica(!(await p.isVisible('#pi-domeniu')) && !(await p.isVisible('#pi-altceva')), `B5 ${cat}: câmpul de categorie nu apare`);
-      }
+      verifica(!(await p.$('#pi-domeniu, #pi-altceva, #pi-oras, select')), `B5 ${cat}: fără întrebare despre categorie sau oraș`);
       await completeaza(p);
       await p.click('#pi-trimite');
       await p.waitForSelector('#auth-verify-cod:not([hidden])', { timeout: 10000 }).catch(() => {});
@@ -739,112 +733,70 @@ async function testeBrowser() {
       verifica(su && su.options.data.rol_solicitat === 'partener_' + cat, `B5 ${cat}: contul se creează, rol_solicitat ${su && su.options.data.rol_solicitat}`);
       verifica(!(await p.isVisible('#mdc-gmail')), `B5 ${cat}: fără „Deschide Gmail” la o adresă care nu e Gmail`);
       const pre = await prinCod(p, server);
-      if (a && a.id) verifica(pre && pre.categorie === cat && pre.categorie_id === a.id && pre.categorie_slug === a.slug && pre.categorie_altceva === false && pre.categorie_text === null, `B5 ${cat}: în ciornă, categoria din listă (${JSON.stringify(pre)})`);
-      else if (a) verifica(pre && pre.categorie === cat && pre.categorie_id === null && pre.categorie_altceva === true && pre.categorie_text === a.altceva, `B5 ${cat}: în ciornă, „Altceva” + text (${JSON.stringify(pre)})`);
-      else verifica(pre && pre.categorie === cat && pre.categorie_id === null && pre.categorie_altceva === false && pre.categorie_text === null, `B5 ${cat}: în ciornă, fără categorie (${JSON.stringify(pre)})`);
+      verifica(pre && pre.categorie === cat && pre.rol === 'partener_' + cat && pre.categorie_id === null && pre.profesie_slug === null, `B5 ${cat}: în ciornă, tipul, fără categorie (${JSON.stringify(pre)})`);
       verifica(!server.s.refuzuri.length && await p.isVisible('#myd-panou-nou'), `B5 ${cat}: după cod, panoul; serverul nu a refuzat nimic (${server.s.refuzuri.join(',')})`);
+      if (cat === 'curier' || cat === 'asigurari') verifica(!(await p.$('.mpn-rand[data-mpn-rand="lucrari"]')), `B5 ${cat}: fără „Ce lucrări faci” (nu are portofoliu de bifat)`);
+      else verifica(await p.evaluate(() => (document.querySelector('.mpn-lista .mpn-rand') || {}).getAttribute && document.querySelector('.mpn-lista .mpn-rand').getAttribute('data-mpn-rand')) === 'lucrari', `B5 ${cat}: „Ce lucrări faci” primul în panou`);
       verifica(!erori.length, `B5 ${cat}: erori JS (${erori.slice(0, 3).join(' | ')})`);
       await ctx.close();
     }
 
-    // ── B5b. Fără lista de categorii (API indisponibil): doar textul opțional, contul se creează ──
-    {
-      const server = serverSimulat();
-      server.s.faraCategorii = true;
-      const { ctx, p } = await context(390, 'ro', server);
-      await p.goto(`${baza}${PAGINA}?profesie=instalator`, { waitUntil: 'load' });
-      await p.waitForFunction(() => window.MDCont && document.getElementById('pi-domeniu-camp').hidden && !document.getElementById('pi-altceva-camp').hidden, null, { timeout: 10000 }).catch(() => {});
-      verifica(!(await p.isVisible('#pi-domeniu')) && await p.isVisible('#pi-altceva'), 'B5b: fără lista de categorii, rămâne doar textul opțional');
-      await completeaza(p, 'ion@example.com');
-      await p.click('#pi-trimite');
-      verifica(await p.waitForSelector('#auth-verify-cod:not([hidden])', { timeout: 10000 }).then(() => true, () => false), 'B5b: contul se creează și fără listă');
-      const pre = await prinCod(p, server);
-      verifica(pre && pre.categorie_altceva === true && pre.categorie_id === null, `B5b: salvat ca „Altceva” (${JSON.stringify(pre)})`);
-      await ctx.close();
-    }
-
-    // ── B5c. Parametrii din reclame: ?domeniu= și ?profesie= ──
-    for (const [adresa, asteptat, et] of [
-      ['?domeniu=hvac-climatizare', CAT.hvac, '?domeniu=hvac-climatizare'],
-      ['?categorie=materiale&domeniu=zidarie-beton', CAT.mat_zidarie, '?categorie=materiale&domeniu=zidarie-beton'],
-      ['?categorie=inchirieri&domeniu=scule-echipamente&lang=en', CAT.inc_scule, 'închirieri, EN'],
-      ['?domeniu=nu-exista', '', '?domeniu necunoscut'],
-      ['?profesie=instalator&domeniu=instalatii-electrice', CAT.electrice, '?domeniu are prioritate față de ?profesie'],
-      ['?profesie=zugravi-si-vopsitori', '', '?profesie fără categorie legată'],
-      ['?type=servicii&profesie=instalator', CAT.sanitare, '?type= (reclamele vechi)'],
+    // ── B5c. Parametrii din reclame: indiciu ascuns, salvat în ciornă (verificat pe server); niciodată eroare ──
+    for (const [adresa, asteptat, profesie, et] of [
+      ['?domeniu=hvac-climatizare', CAT.hvac, null, '?domeniu=hvac-climatizare'],
+      ['?categorie=materiale&domeniu=zidarie-beton', CAT.mat_zidarie, null, '?categorie=materiale&domeniu=zidarie-beton'],
+      ['?categorie=inchirieri&domeniu=scule-echipamente&lang=en', CAT.inc_scule, null, 'închirieri, EN'],
+      ['?domeniu=nu-exista', null, null, '?domeniu necunoscut → ignorat'],
+      ['?domeniu=%3Cscript%3E', null, null, '?domeniu greșit → ignorat'],
+      ['?categorie=materiale&domeniu=hvac-climatizare', null, null, '?domeniu de alt tip → ignorat'],
+      ['?profesie=instalator&domeniu=instalatii-electrice', CAT.electrice, 'instalator', '?domeniu are prioritate față de ?profesie'],
+      ['?profesie=zugravi-si-vopsitori', null, 'zugravi-si-vopsitori', '?profesie fără categorie legată'],
+      ['?type=servicii&profesie=instalator', CAT.sanitare, 'instalator', '?type= (reclamele vechi)'],
+      ['?categorie=curier&domeniu=hvac-climatizare', null, null, 'curier: indiciul de categorie ignorat'],
     ]) {
-      const server = serverSimulat();
+      const server = serverSimulat({ categorie: /categorie=(\w+)/.test(adresa) ? adresa.match(/categorie=(\w+)/)[1] : 'servicii' });
       const { ctx, p, erori } = await context(390, 'ro', server);
       await p.goto(`${baza}${PAGINA}${adresa}`, { waitUntil: 'load' });
-      await p.waitForFunction(() => document.querySelectorAll('#pi-domeniu option').length > 2, null, { timeout: 10000 }).catch(() => {});
-      const val = await p.inputValue('#pi-domeniu');
-      verifica(val === asteptat, `B5c ${et}: preselecție „${val}” (așteptat „${asteptat}”)`);
-      verifica(await p.isVisible('#pi-domeniu-reclama') === !!asteptat, `B5c ${et}: „Aleasă deja din reclamă” ${asteptat ? 'vizibil' : 'ascuns'}`);
-      if (adresa.includes('zugravi')) {
-        // Profesia rămâne indiciu chiar fără categorie legată.
-        await p.selectOption('#pi-domeniu', { index: 2 });
-        verifica(!(await p.isVisible('#pi-domeniu-reclama')), 'B5c: alegerea utilizatorului ascunde „Aleasă deja din reclamă”');
-        await completeaza(p);
-        await p.click('#pi-trimite');
-        const pre = await prinCod(p, server);
-        verifica(pre && pre.profesie_slug === 'zugravi-si-vopsitori' && pre.categorie_id === CAT.electrice, `B5c: profesia salvată ca indiciu, categoria aleasă de utilizator (${JSON.stringify(pre)})`);
-      }
+      await p.waitForFunction(() => window.MDFeedback && window.MDCont, null, { timeout: 10000 }).catch(() => {});
+      verifica(!(await p.$('select')) && !/reclam/i.test(await p.evaluate(() => document.body.innerText)), `B5c ${et}: indiciul nu apare ca întrebare`);
+      await completeaza(p);
+      await p.click('#pi-trimite');
+      const pre = await prinCod(p, server);
+      verifica(pre && pre.categorie_id === asteptat && pre.profesie_slug === profesie, `B5c ${et}: în ciornă categorie_id=${pre && pre.categorie_id} (așteptat ${asteptat}), profesie_slug=${pre && pre.profesie_slug}`);
+      verifica(!server.s.refuzuri.length && await p.isVisible('#myd-panou-nou'), `B5c ${et}: fără eroare, partenerul ajunge în panou (${server.s.refuzuri.join(',')})`);
       verifica(!erori.length, `B5c ${et}: erori JS (${erori.slice(0, 3).join(' | ')})`);
       await ctx.close();
     }
 
-    // ── B5d. Fără categorie: mesaj clar sub câmp (MDFeedback.aplicaErori), apoi „Altceva” merge ──
-    for (const lang of ['ro', 'en']) {
-      for (const latime of [390, 1366]) {
-        const et = `${lang} ${latime}`;
-        const server = serverSimulat();
-        const { ctx, p, erori } = await context(latime, lang, server);
-        await p.goto(`${baza}${PAGINA}`, { waitUntil: 'load' });
-        await p.waitForFunction(() => document.querySelectorAll('#pi-domeniu option').length > 2 && !document.documentElement.classList.contains('myd-i18n-pending'), null, { timeout: 10000 }).catch(() => {});
-        verifica(await p.inputValue('#pi-domeniu') === '', `${et} B5d: fără parametri, nimic preselectat`);
-        await completeaza(p);
-        await p.click('#pi-trimite');
-        await p.waitForSelector('#pi-domeniu[aria-invalid="true"]', { timeout: 5000 }).catch(() => {});
-        const err = await p.evaluate(() => {
-          const s = document.getElementById('pi-domeniu');
-          const ids = (s.getAttribute('aria-describedby') || '').split(/\s+/);
-          const m = ids.map((i) => document.getElementById(i)).find((x) => x && x.classList.contains('md-camp-eroare'));
-          return { invalid: s.getAttribute('aria-invalid'), text: m ? m.textContent : null, focus: document.activeElement === s, cod: !document.getElementById('auth-verify-cod') || document.getElementById('auth-verify-cod').hidden };
-        });
-        verifica(err.invalid === 'true' && err.text && err.text.includes(lang === 'ro' ? 'Categoria principală' : 'Main category') && err.focus, `${et} B5d: mesajul sub câmp, focus pe câmp (${JSON.stringify(err)})`);
-        const su = await p.evaluate(() => localStorage.getItem('__signup'));
-        verifica(!su, `${et} B5d: fără categorie, contul nu se trimite`);
-        verifica(await p.inputValue('#pi-email') === 'ana@example.com' && await p.inputValue('#pi-oras') === 'Cluj-Napoca', `${et} B5d: valorile introduse rămân`);
-        if (lang === 'en') {
-          const { eRo } = require('./recunoaste-ro');
-          const text = await p.evaluate(() => document.body.innerText);
-          const ro = text.split('\n').map((x) => x.trim()).filter((x) => x && eRo(x));
-          verifica(!ro.length, `${et} B5d: text românesc în EN: ${ro.slice(0, 4).join(' | ')}`);
-        }
-        verifica(await depaseste(p) <= 0, `${et} B5d: fără depășire`);
-        await p.selectOption('#pi-domeniu', 'altceva');
-        verifica(await p.getAttribute('#pi-domeniu', 'aria-invalid') === null, `${et} B5d: eroarea dispare când câmpul e corectat`);
-        await p.click('#pi-trimite');
-        verifica(await p.waitForSelector('#auth-verify-cod:not([hidden])', { timeout: 10000 }).then(() => true, () => false), `${et} B5d: „Altceva” fără text e o alegere validă, contul se creează`);
-        verifica(!erori.length, `${et} B5d: erori JS (${erori.slice(0, 3).join(' | ')})`);
-        await ctx.close();
-      }
-    }
-
-    // ── B5e. Categoria dezactivată între încărcarea paginii și cod: serverul o refuză, contul nu e blocat ──
+    // ── B5e. Categoria din indiciu dezactivată între încărcarea paginii și cod: ignorată, fără eroare ──
     {
       const server = serverSimulat();
       const { ctx, p } = await context(390, 'ro', server);
       await p.goto(`${baza}${PAGINA}?domeniu=hvac-climatizare`, { waitUntil: 'load' });
-      await p.waitForFunction(() => document.querySelectorAll('#pi-domeniu option').length > 2, null, { timeout: 10000 });
+      await p.waitForFunction(() => window.MDFeedback && window.MDCont, null, { timeout: 10000 });
       await completeaza(p);
       await p.click('#pi-trimite');
       await p.waitForSelector('#auth-verify-cod:not([hidden])', { timeout: 10000 }).catch(() => {});
       DB.tabele.categorii.find((c) => c.id === CAT.hvac).activ = false;
       const pre = await prinCod(p, server);
       DB.tabele.categorii.find((c) => c.id === CAT.hvac).activ = true;
-      verifica(server.s.refuzuri.includes('CATEGORIE_INVALIDA'), `B5e: serverul refuză categoria inactivă (${server.s.refuzuri.join(',')})`);
-      verifica(pre && pre.categorie_altceva === true && pre.categorie_id === null && await p.isVisible('#myd-panou-nou'), `B5e: salvat ca „Altceva”, partenerul ajunge în panou (${JSON.stringify(pre)})`);
+      verifica(!server.s.refuzuri.length && pre && pre.categorie_id === null && await p.isVisible('#myd-panou-nou'), `B5e: indiciul inactiv se ignoră, partenerul ajunge în panou (${JSON.stringify(pre)})`);
+      await ctx.close();
+    }
+
+    // ── B5f. Un categorie_id refuzat de server (sesiune veche, categorie inactivă): contul nu rămâne blocat ──
+    {
+      const server = serverSimulat();
+      const { ctx, p } = await context(390, 'ro', server);
+      await p.goto(`${baza}${PAGINA}`, { waitUntil: 'load' });
+      await p.waitForFunction(() => window.MDFeedback && window.MDCont, null, { timeout: 10000 });
+      await completeaza(p);
+      await p.click('#pi-trimite');
+      await p.waitForSelector('#auth-verify-cod:not([hidden])', { timeout: 10000 }).catch(() => {});
+      // Datele din sesiune, ca de la o pagină veche: un categorie_id între timp inactiv.
+      await p.evaluate((id) => { const k = 'myd_preinscriere_v1'; const d = JSON.parse(sessionStorage.getItem(k)); d.categorie_id = id; sessionStorage.setItem(k, JSON.stringify(d)); }, CAT.inactiva);
+      const pre = await prinCod(p, server);
+      verifica(server.s.refuzuri.includes('CATEGORIE_INVALIDA') && pre && pre.categorie === 'servicii' && pre.categorie_id === null && await p.isVisible('#myd-panou-nou'), `B5f: refuzat o dată, salvat fără categorie, panoul deschis (${server.s.refuzuri.join(',')} ${JSON.stringify(pre)})`);
       await ctx.close();
     }
 
@@ -917,13 +869,13 @@ async function testeBrowser() {
       return { ctx, p: await ctx.newPage() };
     };
     const completeaza = async (p) => {
-      await p.fill('#pi-oras', 'Iași'); await p.fill('#pi-prenume', 'Ion'); await p.fill('#pi-nume', 'Popescu');
+      await p.fill('#pi-prenume', 'Ion'); await p.fill('#pi-nume', 'Popescu');
       await p.fill('#pi-tel', '+40 712 345 678'); await p.fill('#pi-email', 'ion@gmail.com'); await p.fill('#pi-parola', 'Parola-Test-1'); await p.check('#pi-gdpr');
     };
-    const gata = (p) => p.waitForFunction(() => document.querySelectorAll('#pi-domeniu option').length > 2 && !document.documentElement.classList.contains('myd-i18n-pending'), null, { timeout: 10000 }).catch(() => {});
+    const gata = (p) => p.waitForFunction(() => window.MDFeedback && window.MDCont && !document.documentElement.classList.contains('myd-i18n-pending'), null, { timeout: 10000 }).catch(() => {});
     try {
       for (const lang of ['ro', 'en']) {
-        // 1. Servicii, din reclamă (?profesie=instalator): categoria preselectată.
+        // 1. Servicii, din reclamă (?profesie=instalator): formularul R1, indiciul ascuns.
         {
           const server = serverSimulat();
           const { ctx, p } = await pagina(server, lang);
@@ -941,7 +893,7 @@ async function testeBrowser() {
           await p.setViewportSize({ width: 390, height: Math.max(844, Math.min(h, 2200)) });
           await asteapta(300);
           await p.screenshot({ path: cale(`dupa-panou-${lang}-390.png`) });
-          // 3. „Ce lucrări faci”: portofoliul, categoria aleasă primele.
+          // 3. „Ce lucrări faci”: portofoliul, lucrările din indiciu primele („Recomandate pentru tine”).
           await p.setViewportSize({ width: 390, height: 844 });
           await p.click('.mpn-rand[data-mpn-rand="lucrari"]');
           await p.waitForSelector('#mpn-lucrari-lista input[data-mpn-serviciu]', { timeout: 10000 }).catch(() => {});
@@ -951,18 +903,15 @@ async function testeBrowser() {
           await p.screenshot({ path: cale(`dupa-lucrari-${lang}-390.png`) });
           await ctx.close();
         }
-        // 4. Materiale: lista de materiale. 5. Închirieri: „Altceva” + text. 6. Fără categorie: eroarea sub câmp.
+        // 4. Materiale (același formular). 5. Trimitere goală: erorile sub câmpuri (MDFeedback).
         for (const [adresa, nume, actiune] of [
-          ['?categorie=materiale', 'materiale', async (p) => { await p.selectOption('#pi-domeniu', { index: 2 }); }],
-          ['?categorie=inchirieri', 'altceva', async (p) => { await p.selectOption('#pi-domeniu', 'altceva'); await p.fill('#pi-altceva', lang === 'ro' ? 'Remorci auto' : 'Car trailers'); }],
-          ['', 'eroare', async (p) => { await p.click('#pi-trimite'); await p.waitForSelector('#pi-domeniu[aria-invalid="true"]', { timeout: 5000 }).catch(() => {}); await p.evaluate(() => window.scrollTo(0, 0)); }],
-          ['?categorie=curier', 'curier', async () => {}],
+          ['?categorie=materiale&domeniu=zidarie-beton', 'materiale', async (p) => { await completeaza(p); }],
+          ['', 'eroare', async (p) => { await p.click('#pi-trimite'); await p.waitForSelector('#pi-prenume[aria-invalid="true"]', { timeout: 5000 }).catch(() => {}); await p.evaluate(() => window.scrollTo(0, 0)); }],
         ]) {
           const server = serverSimulat();
           const { ctx, p } = await pagina(server, lang);
           await p.goto(`${bazaUrl}${PAGINA}${adresa}`, { waitUntil: 'load' });
-          if (nume !== 'curier') await gata(p); else await asteapta(800);
-          await completeaza(p);
+          await gata(p);
           await actiune(p);
           await asteapta(500);
           await p.screenshot({ path: cale(`dupa-preinscriere-${nume}-${lang}-390.png`), fullPage: true });

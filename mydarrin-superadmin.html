@@ -7551,14 +7551,11 @@ window.showPanel = function(id) {
   }
 };
 
-// Pasul 12-P2: categoria principală aleasă la înscriere, sub tipul partenerului.
+// Pasul 12-P2: indiciul din reclamă, sub tipul partenerului.
+// Macheta R1 (21 nov. 2026): doar indiciul din reclamă (?domeniu= / ?profesie=), dacă există; altfel nimic.
 function categorieInscriereHtml(c) {
-  const stil = 'font-size:10.5px;color:#8C9BAD;margin-top:2px';
-  if (!c) return '';
-  if (c.altceva) {
-    return `<div style="${stil}">Categorie scrisă de partener: ${c.text ? '<span style="color:#F5A623">„' + escapeHTML(c.text) + '”</span>' : '<i>fără text</i>'}</div>`;
-  }
-  return `<div style="${stil}">Categorie: <span style="color:#C9D4E0">${escapeHTML(c.denumire || c.slug || '—')}</span></div>`;
+  if (!c || !(c.denumire || c.slug)) return '';
+  return `<div style="font-size:10.5px;color:#8C9BAD;margin-top:2px">Indiciu din reclamă: <span style="color:#C9D4E0">${escapeHTML(c.denumire || c.slug)}</span></div>`;
 }
 
 // panel-parteneri, reconstruit real 1 septembrie 2026 — vezi comentariul de la markup.

@@ -17,11 +17,13 @@
 // din panoul contului nou (panou-cont-nou.js) folosește acest portofoliu.
 // - accesul: rolul de partener acordat (profiles.roles) SAU ales la înscriere
 //   (profiles.rol_solicitat) — contul nou nu are încă rând în partners; bifarea
-//   nu dă comenzi: alocarea cere și disponibilitate, aprobare, contract și IBAN;
+//   nu dă comenzi: alocarea (lib/aloca-partener.js) cere poatePrimiComenzi —
+//   aprobare, contract și IBAN — plus disponibilitatea în zonă;
 // - tipul catalogului: partners.partner_type, altfel din rol_solicitat;
-// - serviciile din categoria principală aleasă la înscriere (ciorna activării,
-//   date.preinscriere.categorie_id, cu subcategoriile ei) vin primele, marcate
-//   din_categoria_aleasa; răspunsul are și categoria_aleasa { id, denumire, denumire_en, text }.
+// - serviciile din categoria indicată de reclamă (macheta R1: indiciu ascuns,
+//   ciorna activării, date.preinscriere.categorie_id, cu subcategoriile ei) vin
+//   primele, marcate din_categoria_aleasa; răspunsul are și categoria_aleasa
+//   { id, slug, denumire, denumire_en, sursa }.
 //   Doar catalogul de servicii are azi categorie_id / subcategorie_id completate.
 
 const { requireAuth } = require('../../lib/auth-middleware');
@@ -109,7 +111,7 @@ async function actionList(req, res, user, profil) {
     .eq('partener_id', user.id);
   const activeSet = new Set((active || []).filter((a) => a.activ).map((a) => a.catalog_serviciu_id));
 
-  // Pasul 12-P2: serviciile din categoria aleasă la înscriere (și subcategoriile ei), primele.
+  // Pasul 12-P2: serviciile din categoria indicată de reclamă (și subcategoriile ei), primele.
   const aleasa = await categorieDinInscriere(user.id);
   const iduri = new Set();
   if (aleasa && aleasa.id) {

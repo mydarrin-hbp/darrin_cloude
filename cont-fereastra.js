@@ -919,7 +919,7 @@
   }
 
   // ── Pasul 12-P1: datele pre-înscrierii, în ciorna activării ──
-  // Categoria, profesia și orașul (/parteneri/inscriere) intră în
+  // Tipul și indiciul din reclamă (/parteneri/inscriere; pasul 12-P2, macheta R1) intră în
   // partener_activare_ciorna.date.preinscriere, prin API-ul ciornei
   // (/api/partener/activare-ciorna): pașii activării le găsesc precompletate.
   // Cel mult 4 s: intrarea în panou nu așteaptă mai mult; la eșec datele rămân
@@ -945,12 +945,15 @@
           return pune(date);
         }).then(function (res) {
           if (res && res.ok) { ss(CHEIE_PREINSCRIERE, null); return true; }
-          // Pasul 12-P2: serverul a refuzat categoria (între timp inactivă sau de alt tip).
-          // Contul există deja: se salvează ca „Altceva”, iar categoria se alege în panou.
+          // Pasul 12-P2: serverul a refuzat categoria trimisă (inexistentă, inactivă, de alt
+          // tip sau text liber). Contul există deja: se salvează fără categorie (doar tipul);
+          // lucrările se aleg în panou.
           if (res && res.status === 400) {
             return res.json().catch(function () { return {}; }).then(function (j) {
               if (!/^CATEGORIE_/.test(String(j && j.cod))) return false;
-              var faraCategorie = Object.assign({}, date, { categorie_id: null, categorie_slug: null, categorie_denumire: null, categorie_altceva: true, categorie_text: date.categorie_text || null });
+              var faraCategorie = Object.assign({}, date, { categorie_id: null, categorie_slug: null, categorie_denumire: null, indiciu_domeniu: null });
+              delete faraCategorie.categorie_altceva;
+              delete faraCategorie.categorie_text;
               return pune(faraCategorie).then(function (r2) {
                 if (r2 && r2.ok) { ss(CHEIE_PREINSCRIERE, null); return true; }
                 return false;

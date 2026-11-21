@@ -12,10 +12,10 @@
 // marcajul „de verificat manual la ANAF” (audit_log, pus la înregistrare când
 // ANAF nu a răspuns sau nu a găsit CUI-ul).
 //
-// Pasul 12-P2 (20 nov. 2026): categorie_inscriere = categoria principală aleasă
-// la /parteneri/inscriere ({ id, slug, denumire, denumire_en } sau, la „Altceva”,
-// { altceva: true, text }), din partener_activare_ciorna.date.preinscriere; null
-// dacă nu există (conturi de dinainte de 12-P2 sau curier / asigurări).
+// Pasul 12-P2 (20 nov. 2026; macheta R1, 21 nov.): categorie_inscriere = indiciul
+// din reclamă (?domeniu= / ?profesie=) salvat la /parteneri/inscriere
+// ({ id, slug, denumire, denumire_en, sursa }), din
+// partener_activare_ciorna.date.preinscriere; null dacă nu există.
 
 const { requireAuth } = require('../../lib/auth-middleware');
 const { supabaseAdmin } = require('../../lib/supabaseAdmin');
@@ -43,8 +43,7 @@ async function handler(req, res) {
     (marcaje || []).forEach((m) => deVerificat.add(String(m.entitate_id)));
   }
 
-  // Pasul 12-P2: categoria principală aleasă la înscriere (ciorna activării,
-  // date.preinscriere) — din listă sau scrisă de partener la „Altceva”.
+  // Pasul 12-P2: indiciul din reclamă (ciorna activării, date.preinscriere).
   const categorii = new Map();
   if (ids.length) {
     const { data: ciorne, error: eCiorne } = await supabaseAdmin

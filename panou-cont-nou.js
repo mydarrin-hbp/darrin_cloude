@@ -12,7 +12,8 @@
        → stareContPartener), într-un singur loc;
      - pasul 12-P2 (temporar, până la B2): primul rând al listei, „Ce lucrări faci”,
        deschide în panou portofoliul existent (/api/partener/portofoliu), cu serviciile
-       din categoria aleasă la înscriere primele; subtitlul arată categoria aleasă;
+       din categoria indicată de reclamă primele („Recomandate pentru tine”); indiciul
+       nu apare în subtitlu (macheta R1: la înscriere nu se alege categoria);
      - „Ce mai ai de făcut”, {n} din 6 pași: fiecare rând deschide pasul existent
        din activare-pasi.js (MYD_ACTIVARE, modul „un singur pas”), în orice
        ordine; după salvare, panoul se reîncarcă cu starea nouă;
@@ -174,25 +175,25 @@
   // ── Date ─────────────────────────────────────────────────────────────
   function pre() { return (st.ciorna && st.ciorna.date && st.ciorna.date.preinscriere) || {}; }
   function tip() { return (st.profil && st.profil.activare && st.profil.activare.tip) || 'servicii'; }
+  // Profesia aleasă de partener (doar conturile din pasul 12-P1, cu profesie_cod).
+  // Pasul 12-P2 (R1): profesia din reclamă (profesie_slug) e doar un indiciu, nu o alegere.
   function numeProfesie() {
     var p = pre();
-    if (!p.profesie_cod && !p.profesie_slug) return null;
-    var din = (st.profesii || []).filter(function (x) { return x.cod === p.profesie_cod || x.slug === p.profesie_slug; })[0];
+    if (!p.profesie_cod) return null;
+    var din = (st.profesii || []).filter(function (x) { return x.cod === p.profesie_cod; })[0];
     return din ? din.denumire : (en() ? null : p.profesie_ro);
   }
-  // Pasul 12-P2: categoria principală aleasă la înscriere (denumirea în limba paginii),
-  // sau textul scris la „Altceva”.
-  function numeCategorie() {
+  // Pasul 12-P2 (R1): indiciul din reclamă (categoria), în limba paginii; ordonează
+  // doar „Ce lucrări faci” și nu apare ca alegere a partenerului.
+  function numeIndiciu() {
     var p = pre();
-    if (p.categorie_id) return en() ? (p.categorie_denumire_en || null) : (p.categorie_denumire || null);
-    if (p.categorie_altceva && p.categorie_text) return p.categorie_text;
-    return null;
+    if (!p.categorie_id) return null;
+    return en() ? (p.categorie_denumire_en || null) : (p.categorie_denumire || null);
   }
   function eticheta() {
     var d = window.MYD_DESTINATIE_ROL && window.MYD_DESTINATIE_ROL.definitie(st.profil.activare.rol);
     var rol = tr(d ? d.titlu : 'Partener');
-    if (CU_LUCRARI[tip()]) return numeCategorie() || (tip() === 'servicii' ? numeProfesie() : null) || rol;
-    return rol;
+    return (tip() === 'servicii' ? numeProfesie() : null) || rol;
   }
   // Tipurile cu portofoliu de bifat (/api/partener/portofoliu): „Ce lucrări faci”.
   var CU_LUCRARI = { servicii: true, materiale: true, inchirieri: true };
@@ -298,11 +299,10 @@
 
   // ── Pasul 12-P2 (temporar, până la B2): „Ce lucrări faci” ────────────
   // Rândul deschide, în panou, portofoliul existent (/api/partener/portofoliu):
-  // serviciile din categoria aleasă la înscriere apar primele. Fără ecran nou:
-  // aceleași carduri și rânduri ale panoului.
+  // serviciile din categoria indicată de reclamă (?domeniu= / ?profesie=, macheta R1)
+  // apar primele, ca recomandare. Fără ecran nou: aceleași carduri și rânduri ale panoului.
   function randLucrariHtml() {
-    var cat = numeCategorie();
-    var sub = cat ? tr('Primele: {categorie}', { categorie: cat }) : tr('Alege serviciile pe care le faci');
+    var sub = tr('Alege serviciile pe care le faci');
     return '<button type="button" class="mpn-rand" data-mpn-rand="lucrari">' +
       '<span class="mpn-cerc"></span>' +
       '<span class="mpn-txt"><b>' + esc(tr('Ce lucrări faci')) + ' <span class="mpn-sub-d">· ' + esc(sub) + '</span></b><small>' + esc(sub) + '</small></span>' +
@@ -334,9 +334,9 @@
       if (!lista.length) { z.innerHTML = '<p class="mpn-mic">' + esc(tr('Niciun serviciu public disponibil momentan în această categorie de catalog.')) + '</p>'; return; }
       var aleasa = lista.filter(function (s) { return s.din_categoria_aleasa; });
       var restul = lista.filter(function (s) { return !s.din_categoria_aleasa; });
-      var cat = numeCategorie();
+      var cat = numeIndiciu();
       z.innerHTML =
-        (aleasa.length ? '<h3 class="mpn-mic" style="font-weight:700;margin:6px 0 0">' + esc(cat ? tr('Din categoria ta: {categorie}', { categorie: cat }) : tr('Din categoria ta')) + '</h3>' + aleasa.map(bifaHtml).join('') : '') +
+        (aleasa.length ? '<h3 class="mpn-mic" style="font-weight:700;margin:6px 0 0">' + esc(cat ? tr('Recomandate pentru tine: {categorie}', { categorie: cat }) : tr('Recomandate pentru tine')) + '</h3>' + aleasa.map(bifaHtml).join('') : '') +
         (aleasa.length && restul.length ? '<h3 class="mpn-mic" style="font-weight:700;margin:12px 0 0">' + esc(tr('Alte servicii')) + '</h3>' : '') +
         restul.map(bifaHtml).join('');
       Array.prototype.forEach.call(z.querySelectorAll('input[data-mpn-serviciu]'), function (b) {

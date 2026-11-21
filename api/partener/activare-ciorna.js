@@ -11,13 +11,15 @@
 //          sensibile (IBAN, coduri) se scot pe server, oricum ar veni;
 // DELETE → { ok }   (după pasul 6, „Contractul”)
 //
-// Pasul 12-P2 (20 nov. 2026): date.preinscriere (categoria principală aleasă la
-// /parteneri/inscriere) se verifică pe server când se schimbă: categorie_id
-// trebuie să existe, să fie activ, principal și de tipul ales; la Servicii,
-// Materiale și Închirieri e obligatoriu un categorie_id valid sau „Altceva”
-// (categorie_altceva, cu textul curățat, cel mult 80) — lib/categorii-inscriere.js.
-// Altfel 400 CATEGORIE_* cu câmpul categorie_id. Denumirile categoriei se iau
-// din bază. La DELETE, datele pre-înscrierii rămân (fișa din back-office le arată).
+// Pasul 12-P2 (20 nov. 2026; macheta R1, 21 nov.): date.preinscriere de la
+// /parteneri/inscriere se verifică pe server când se schimbă
+// (lib/categorii-inscriere.js → valideazaPreinscriere): indiciul din reclamă
+// (indiciu_domeniu / profesie_slug) devine categoria principală, dacă e valid,
+// altfel se ignoră fără eroare; un categorie_id trimis explicit trebuie să existe,
+// să fie activ, principal și de tipul ales (altfel 400 CATEGORIE_* pe câmpul
+// categorie_id); textul liber la categorie nu se mai acceptă (400
+// CATEGORIE_TEXT_NEACCEPTAT). Denumirile categoriei se iau din bază. La DELETE,
+// datele pre-înscrierii rămân (fișa din back-office arată indiciul).
 //
 // Ciorna e doar un ajutor: nu acordă nimic și nu înlocuiește salvarea pasului.
 // Tabelul vine din docs/migrations-propuse/2026-11-02_activare_ciorna.sql;
@@ -98,7 +100,7 @@ async function handler(req, res, user) {
     }
 
     if (req.method === 'DELETE') {
-      // Pasul 12-P2: categoria aleasă la înscriere rămâne (fără migrare, ciorna e
+      // Pasul 12-P2: indiciul din reclamă rămâne (fără migrare, ciorna e
       // singurul loc unde e salvată); restul ciornei se șterge.
       const { data: veche, error: eCit } = await supabaseAdmin.from(TABEL).select('date').eq('user_id', user.id).maybeSingle();
       if (tabelLipsa(eCit)) return res.status(200).json({ ok: true });
