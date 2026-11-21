@@ -108,6 +108,11 @@ const PRODUSE = ['/servicii/inlocuire-calorifer', '/materiale/mat-acoperis', '/i
     ['/catalog/servicii/instalatii-electrice?' + PARAM, '/servicii', { subcategorie: 'instalatii-electrice' }],
     ['/inchiriere/schele?' + PARAM, '/inchirieri', { subcategorie: 'schele' }],
     ['/mydarrin-serviciu?' + PARAM, '/catalog'],
+    // Pasul 12-U1b: adresele stricate de bug-ul din 12-U1 (lipsea „?”).
+    ['/catalogservicii&subcategorie=instalatii-electrice&' + PARAM, '/servicii', { subcategorie: 'instalatii-electrice' }],
+    ['/catalogmateriale&subcategorie=betoane?' + PARAM, '/materiale', { subcategorie: 'betoane' }],
+    ['/cataloginchirieri&subcategorie=vacanta&' + PARAM, '/inchirieri', { subcategorie: 'vacanta' }],
+    ['/catalogservicii?' + PARAM, '/servicii'],
   ];
   for (const [vechiU, nou, extra] of CU_PARAM) {
     const r = await cere(vechiU);

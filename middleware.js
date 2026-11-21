@@ -86,11 +86,12 @@ function ruteazaPublic(pathname) {
 // doar pe cele după cale, care rulează înaintea middleware-ului):
 //   /mydarrin-catalog?categorie=servicii → /servicii, /mydarrin-catalog → /catalog;
 //   /mydarrin-produs?slug=x&type=serviciu → /servicii/x;
-//   /catalog/<tip>/<categorie>/<slug> → /<servicii|materiale|inchirieri>/<slug>.
+//   /catalog/<tip>/<categorie>/<slug> → /<servicii|materiale|inchirieri>/<slug>;
+//   /catalogservicii&subcategorie=x (bug 12-U1) → /servicii?subcategorie=x.
 // 301, cu ceilalți parametri păstrați. Nu face niciun apel spre Supabase.
 function redirectAdresaVeche(url) {
   const p = url.pathname;
-  if (p !== '/mydarrin-catalog' && p !== '/mydarrin-produs' && !/^\/catalog\/[^/]+\/[^/]+\/[^/]+$/.test(p)) return null;
+  if (p !== '/mydarrin-catalog' && p !== '/mydarrin-produs' && !/^\/catalog\/[^/]+\/[^/]+\/[^/]+$/.test(p) && !/^\/catalog(servicii|materiale|inchirieri)(&.*)?$/.test(p)) return null;
   const tinta = adreseCurate.redirect(p, url.search);
   if (!tinta) return null;
   return new Response(null, { status: 301, headers: { location: tinta } });

@@ -106,7 +106,7 @@ function redirect(url, res) {
     return trimiteRedirect(res, r.statusCode || (r.permanent ? 308 : 307), d.pathname + d.search);
   }
   // 3. middleware.js (aceeași regulă ca redirectAdresaVeche)
-  if (url.pathname === '/mydarrin-catalog' || url.pathname === '/mydarrin-produs' || /^\/catalog\/[^/]+\/[^/]+\/[^/]+$/.test(url.pathname)) {
+  if (url.pathname === '/mydarrin-catalog' || url.pathname === '/mydarrin-produs' || /^\/catalog\/[^/]+\/[^/]+\/[^/]+$/.test(url.pathname) || /^\/catalog(servicii|materiale|inchirieri)(&.*)?$/.test(url.pathname)) {
     const tinta = adreseCurate.redirect(url.pathname, url.search);
     if (tinta) return trimiteRedirect(res, 301, tinta);
   }
