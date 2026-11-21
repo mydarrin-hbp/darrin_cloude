@@ -15,6 +15,9 @@
 - căutarea codului sau un fișier mare → `harta-proiectului`;
 - rularea testelor → subagentul `rulare-teste` sau `npm run test:rezumat`.
 
+## Aliniere globală (decizie LM, 20 nov. 2026)
+- Tot ce se auditează (rute, fluxuri, pagini, logică) și tot ce se decide (modificări, ajustări, implementări) se aplică aliniat în toate modulele, toate rutele și toate fluxurile care folosesc același lucru: site public, cont client, cont partener, back-office, Darrin AI, e-mailuri, aplicația mobilă. Înainte de o modificare se caută toate locurile afectate; raportul spune unde s-a aplicat și ce a rămas, cu motivul. Rutele se construiesc doar cu funcțiile comune (`lib/adrese-curate.js`), nu cu șiruri lipite de mână. `scripts/test-linkuri-interne.js` rulează înainte de fiecare PR și trebuie să dea 0.
+
 ## Limba
 - În română: răspunsurile și rapoartele către LM, PR.md, mesajele de commit, comentariile din cod, textele pentru utilizatori. Termenii tehnici și numele de fișiere, tabele și funcții rămân neschimbate.
 - Prompturile de la LM vin în RO și EN, cu conținut identic.
