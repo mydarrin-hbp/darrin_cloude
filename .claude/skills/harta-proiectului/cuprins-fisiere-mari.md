@@ -1,0 +1,1024 @@
+# Cuprinsul fișierelor mari (peste 150 KB)
+
+Generat de `node scripts/genereaza-harta.js` la 2026-11-21. Nu se editează de mână — se rulează din nou scriptul după modificări mari.
+Regula: aceste fișiere se citesc pe intervale de rânduri (Read cu offset / limit) sau se caută în ele cu Grep, niciodată întregi. Intervalele sunt orientative: se verifică cu Grep înainte de editare.
+
+| Fișier | KB | Rânduri |
+|---|---:|---:|
+| mydarrin-superadmin.html | 506 | 7632 |
+| mydarrin-catalog.html | 376 | 5939 |
+| mydarrin-produs.html | 351 | 5020 |
+| docs/migrations-propuse/2026-11-12_traduceri_en_catalog.sql | 256 | 568 |
+| scripts/traduceri-catalog-en.sql | 242 | 991 |
+| mydarrin-checkout.html | 240 | 3858 |
+| mydarrin-deviz-engine.html | 220 | 2930 |
+| index.html | 195 | 3121 |
+| mydarrin-dashboard-partener.html | 194 | 3413 |
+| mydarrin-marketplace.html | 191 | 2923 |
+| mydarrin-dashboard-client.html | 182 | 2919 |
+| mydarrin-investitori.html | 178 | 2610 |
+| mydarrin-cum-functioneaza.html | 175 | 2672 |
+| docs/traduceri/11t1_catalog_en.csv | 166 | 1098 |
+| i18n/en.json | 165 | 1943 |
+| docs/traduceri/11t1_continut_public.json | 157 | 4617 |
+| afla-ce-facem.html | 156 | 2227 |
+
+## mydarrin-superadmin.html — 506 KB, 7632 rânduri
+- 1–4: început (head, meta)
+- 5–25: <style>
+- 26–58: UV2: TOUCH TARGETS minim 44×44px
+- 59–78: UV4: FONT SIZE MINIMUM 12px min pe mobile
+- 79–98: UV5: LOADING STATE pe butoane
+- 99–114: UV6: HOVER STATES consistente
+- 115–134: UV7: OVERFLOW FIX nu ies din ecran pe mobile
+- 135–174: UV8: BURGER MENU INDICATOR pe mobile
+- 175–190: UV11: SKIP TO CONTENT (Accessibility)
+- 191–220: UV12: CONTRAST FIX specific
+- 221–240: UV14: RESPONSIVE GRID FIX cataloguri
+- 241–242: <script>
+- 243–311: UV GLOBAL JS FIXES
+- 312–419: <style>
+- 420–436: <script>
+- 437–441: <body>
+- 442–480: <script>
+- 481–494: <script> (module)
+- 495–676: SIDEBAR
+- 677–703: MAIN
+- 704–832: PANEL: DASHBOARD GLOBAL
+- 833–863: PANEL: ȚĂRI & ZONE
+- 864–986: PANEL: RBAC
+- 987–1042: SECȚIUNE REALĂ Permisiuni pentru admini existenți (conectat live la Supabase)
+- 1043–1082: PANEL: UTILIZATORI
+- 1083–1101: PANEL: AUDIT LOG
+- 1102–1231: PANEL: COMISIOANE
+- 1232–1322: PANEL: CONFIG SISTEM
+- 1323–1339: PANEL: BRANDING & DESIGN
+- 1340–1364: SLOT: LOGO HEADER
+- 1365–1389: SLOT: LOGO FOOTER
+- 1390–1441: SLOT: MASCOTĂ DARRIN AI
+- 1442–1497: PANEL: SEO Titluri & Descrieri (G22; pe limbă, OG și campanii: pasul 11 S)
+- 1498–1520: #panel-manual
+- 1521–1776: <style>
+- 1777–1877: PANEL: ACCOUNTANCY (restricționat superadmin sau contabil aprobat)
+- 1878–1950: #panel-platforme
+- 1951–1982: #panel-vmc
+- 1983–2017: #panel-parteneri
+- 2018–2072: #panel-prospecti
+- 2073–2109: #panel-email-gateway
+- 2110–2157: #panel-facturare-parteneri
+- 2158–2176: #panel-b2g-plati
+- 2177–2219: #panel-preturi-niveluri
+- 2220–2268: #panel-tarife-manopera
+- 2269–2297: #panel-tarife-resurse
+- 2298–2321: #panel-marketplace-aprobari
+- 2322–2393: #panel-acces-temporar
+- 2394–2461: #panel-catalog
+- 2462–2649: #panel-consultanta
+- 2650–2839: #panel-investitori
+- 2840–2847: <style>
+- 2848–2848: <script>
+- 2849–2883: NAVIGATION
+- 2884–2969: RBAC PERMISSIONS
+- 2970–3001: USERS TABLE
+- 3002–3044: AUDIT LOG (Etapa 4, audit 2026 07 12)
+- 3045–3074: FEATURE FLAGS
+- 3075–3092: UTILS
+- 3093–3137: Dashboard Global date reale (audit 25 august 2026)
+- 3138–3153: FOOTER STANDARD My Darrin
+- 3154–3177: <script>
+- 3178–3215: 1. CORE ROUTER handlePartnerNavigation(type)
+- 3216–3242: 3. INTERNAL: switch type on devino partener.html without reload
+- 3243–3265: 4. INTERNAL: cross page navigation with ?type deep link
+- 3266–3290: 5. AUTO OPEN on devino partener.html: read ?type from URL
+- 3291–3327: 6. INTERCEPT all a tags pointing to devino partener.html
+- 3328–3355: 7. SIDEBAR HELPER sb item with data partner type
+- 3356–3373: 9. INIT
+- 3374–3584: <script>
+- 3585–3628: MODAL: Invită Admin Nou (Etapa 2.2 2.3 conectat real la api admin invite admin)
+- 3629–3685: <script>
+- 3686–3686: <script>
+- 3687–3770: Permisiuni admini existenți conectat real la Supabase (tabelul admin_permissions)
+- 3771–3771: <script>
+- 3772–3844: Pasul 9: adminii de catalog numire, modificare, revocare (api admin permisiuni catalog.js)
+- 3845–3845: <script>
+- 3846–4327: ACCOUNTANCY verificare acces + date reale din Supabase API
+- 4328–4342: Pasul 11 N2: modul „doar citire”
+- 4343–4368: Load principal (pasul 11 J: api admin investitori dashboard, calcul pe server)
+- 4369–4385: Render KPIs
+- 4386–4410: Runda deschisă (din runde_finantare)
+- 4411–4443: Render tabel investitori
+- 4444–4459: KYC în verificare: decizia se ia în cardul KYC, cu documentele
+- 4460–4608: Pasul 11 L: cererile KYC și subscrierile (api admin investitori kyc)
+- 4609–4663: Cereri de subscriere
+- 4664–4818: Pasul 11 J: rundele de finanțare (api admin runde finantare)
+- 4819–4900: Pasul 11 K: pitch deck ul pe limbi (api admin pitch deck)
+- 4901–4994: Pasul 11 K4: „Ce mai lipsește pentru aprobare”
+- 4995–5080: Pasul 11 K: acțiunile unei versiuni
+- 5081–5347: Pasul 11 K: editorul unei ciorne (câmpurile vin din pitch deck schema.js)
+- 5348–5398: Pasul 11 K: previzualizarea renderul public (pitch deck render.js)
+- 5399–5436: Export CSV
+- 5437–5437: <script>
+- 5438–5570: BACKOFFICE CONSULTANȚĂ
+- 5571–5744: <script>
+- 5745–5817: NOREPLY & TRANSACTIONAL GATEWAY MANAGER (audit Secțiunea 39, 30 Iulie 2026)
+- 5818–5879: FACTURARE PARTENERI (audit Secțiunea 41 42, 31 Iulie 2026)
+- 5880–5980: Entitatea RO și furnizorul propriu (16 oct. 2026)
+- 5981–6154: B2G & METODE DE PLATĂ (audit Secțiunea 43 44, 31 Iulie 2026)
+- 6155–6271: NIVELURI DE PREȚ (cerință explicită 31 Iulie 2026)
+- 6272–6354: TARIFE TRANSPORT G2, partea 2
+- 6355–6455: TARIFE MANOPERĂ (ESCO) CAT 3a, 29 august 2026
+- 6456–6571: TARIFE MATERIALE & UTILAJE CAT 3a, 29 august 2026
+- 6572–6712: MARKETPLACE APROBĂRI (2 August 2026)
+- 6713–6834: <script>
+- 6835–7115: <script>
+- 7116–7287: <script>
+- 7288–7316: <script>
+- 7317–7317: <script>
+- 7318–7369: BACKOFFICE COMISIOANE & TARIFARE
+- 7370–7453: Exemplu de calcul live (pasul 10b)
+- 7454–7617: EXPORT IMPORT CSV panoul Comisioane
+- 7618–7632: <script>
+
+## mydarrin-catalog.html — 376 KB, 5939 rânduri
+- 1–5: început (head, meta)
+- 6–6: Supabase ENV (injectat direct __ENV__ nu e disponibil în catalog)
+- 7–13: <script>
+- 14–34: <style>
+- 35–67: UV2: TOUCH TARGETS minim 44×44px
+- 68–87: UV4: FONT SIZE MINIMUM 12px min pe mobile
+- 88–107: UV5: LOADING STATE pe butoane
+- 108–123: UV6: HOVER STATES consistente
+- 124–142: UV7: OVERFLOW FIX nu ies din ecran pe mobile
+- 143–182: UV8: BURGER MENU INDICATOR pe mobile
+- 183–198: UV11: SKIP TO CONTENT (Accessibility)
+- 199–228: UV12: CONTRAST FIX specific
+- 229–248: UV14: RESPONSIVE GRID FIX cataloguri
+- 249–250: <script>
+- 251–318: UV GLOBAL JS FIXES
+- 319–352: <script>
+- 353–358: <script>
+- 359–400: <style>
+- 401–460: SIDEBAR
+- 461–481: BASKET PANEL
+- 482–522: FLOW
+- 523–565: HERO
+- 566–582: LANG DROPDOWN
+- 583–603: SOCIAL BUTTONS
+- 604–644: HELVETICA WORLD Master Font Override
+- 645–701: <style>
+- 702–797: RICH CARD (from v3)
+- 798–814: <style>
+- 815–830: <style>
+- 831–847: MOBIL ( 768px): CTA uri STIVUITE vertical, 100% width, min 48px, font în rem
+- 848–861: <style>
+- 862–880: <script>
+- 881–903: <script>
+- 904–904: <style>
+- 905–1062: Sidebar NACE
+- 1063–1079: <style>
+- 1080–1097: <style>
+- 1098–1157: <body>
+- 1158–1177: LOCATION MODAL
+- 1178–1238: HEADER PRINCIPAL
+- 1239–1261: ③ DREAPTA: search + cos + cont + AI + Hamburger
+- 1262–1271: <script>
+- 1272–1492: <script>
+- 1493–1537: TEXT + CTA full width, centrat
+- 1538–1583: 3 CTA uri PRINCIPALE Servicii · Materiale · Închirieri
+- 1584–1599: <style>
+- 1600–1616: <script>
+- 1617–1887: CARUSEL CATEGORII identic homepage, 15 carduri
+- 1888–1913: LEFT SIDEBAR NACE CAEN structurat + Filtre tip serviciu
+- 1914–2078: SIDEBAR SERVICII
+- 2079–2107: SIDEBAR MATERIALE
+- 2108–2133: SIDEBAR ÎNCHIRIERI
+- 2134–2301: SIDEBAR CONSULTANȚĂ & PROIECTARE
+- 2302–2325: #tab-inchiriere
+- 2326–2336: <style>
+- 2337–2363: Row 2: 4 coloane nav
+- 2364–2392: Row 4: Bottom
+- 2393–2424: ROW 1: Newsletter stânga + App dreapta
+- 2425–2496: ROW 2: Coloane navigare
+- 2497–2560: ROW 3: Urmărește ne
+- 2561–2619: <script>
+- 2620–2629: <style>
+- 2630–2637: <style>
+- 2638–2751: <script>
+- 2752–2772: COUNTERS
+- 2773–2792: <style>
+- 2793–2821: MODAL HEADER
+- 2822–2935: BRONZ: DARRIN AI CHAT
+- 2936–2987: ARGINT: CONSULTANT ONLINE
+- 2988–3045: AUR: EVALUARE LA ADRESĂ
+- 3046–3056: <style>
+- 3057–3057: <script>
+- 3058–3097: CONSULTANȚĂ MODAL
+- 3098–3180: HERO CATALOG SEARCH BAR → Darrin AI
+- 3181–3211: FIȘIERE (pasul 12 D2)
+- 3212–3418: DARRIN AI motor real (Anthropic, constrâns la catalogul My Darrin)
+- 3419–3442: ARGINT
+- 3443–3478: AUR
+- 3479–3533: SECȚIUNEA 1: Cele 4 tipuri de intervenție cu consultanță integrată
+- 3534–3645: SECȚIUNEA 2: Tiere Consultanță & Evaluare
+- 3646–3702: SECȚIUNEA 3: Servicii de proiectare
+- 3703–3703: <script>
+- 3704–3737: URGENT FILTER AUTO ACTIVATE
+- 3738–3761: <script>
+- 3762–3799: 1. CORE ROUTER handlePartnerNavigation(type)
+- 3800–3826: 3. INTERNAL: switch type on devino partener.html without reload
+- 3827–3848: 4. INTERNAL: cross page navigation with ?type deep link
+- 3849–3873: 5. AUTO OPEN on devino partener.html: read ?type from URL
+- 3874–3910: 6. INTERCEPT all a tags pointing to devino partener.html
+- 3911–3938: 7. SIDEBAR HELPER sb item with data partner type
+- 3939–3957: 9. INIT
+- 3958–3958: <script>
+- 3959–4072: Pasul 11 C4: filtrul de categorie din adresă
+- 4073–4073: <script>
+- 4074–4101: URL ?q HANDLER pre populează search input și rulează căutarea
+- 4102–4102: <script>
+- 4103–4148: URL ?openAI true HANDLER auto deschide modalul Darrin AI
+- 4149–4152: <script>
+- 4153–4241: Mapare domeniu → {cat, sub, img} (toate domeniile din DB)
+- 4242–4406: Pasul 11 C7 (5 nov. 2026): imaginea după subiectul din titlul produsului
+- 4407–4470: Emoji per categorie
+- 4471–4540: Build card HTML
+- 4541–4621: Injectează carduri în grid
+- 4622–4650: Actualizează sidebar cu numere reale
+- 4651–4735: LOAD PRINCIPAL
+- 4736–4786: MOBILE BOTTOM NAV BAR (doar pe ecrane 1024px)
+- 4787–4800: <style>
+- 4801–4819: <script>
+- 4820–4820: <script>
+- 4821–4865: NACE CAEN filter logic
+- 4866–4893: Tip intervenție filter
+- 4894–4942: Mobile sidebar toggle
+- 4943–5063: Căutare live (debounce 250ms) pornește filtrarea automat pe
+- 5064–5091: Actualizare sidebar după load DB
+- 5092–5092: <script>
+- 5093–5108: Funcție deschidere consultanță cu tip pre selectat
+- 5109–5123: Extinde openConsultanta să accepte tier ca parametru
+- 5124–5174: Încarc prețuri din backoffice_config via Supabase
+- 5175–5237: Extindere switchMainTab pentru tabul consultanta
+- 5238–5323: <script>
+- 5324–5349: Dispatch event
+- 5350–5392: Nivel 1: GPS (±0 15m)
+- 5393–5440: START
+- 5441–5469: API publică
+- 5470–5470: <script>
+- 5471–5524: STATE
+- 5525–5543: MAIN TAB SWITCH
+- 5544–5565: CATEGORY FILTER
+- 5566–5614: APPLY ALL FILTERS
+- 5615–5722: CART DRAWER
+- 5723–5739: COȘ
+- 5740–5777: OPEN SERVICE
+- 5778–5801: SIDEBAR FUNCTIONS (from v3 shared header)
+- 5802–5814: <style>
+- 5815–5828: <style>
+- 5829–5868: DARRIN AI CHAT WIDGET FLOTANT (colț dreapta jos)
+- 5869–5877: <style>
+- 5878–5939: <script>
+
+## mydarrin-produs.html — 351 KB, 5020 rânduri
+- 1–5: început (head, meta)
+- 6–12: <script>
+- 13–33: <style>
+- 34–66: UV2: TOUCH TARGETS minim 44×44px
+- 67–86: UV4: FONT SIZE MINIMUM 12px min pe mobile
+- 87–106: UV5: LOADING STATE pe butoane
+- 107–122: UV6: HOVER STATES consistente
+- 123–142: UV7: OVERFLOW FIX nu ies din ecran pe mobile
+- 143–182: UV8: BURGER MENU INDICATOR pe mobile
+- 183–198: UV11: SKIP TO CONTENT (Accessibility)
+- 199–228: UV12: CONTRAST FIX specific
+- 229–255: UV14: RESPONSIVE GRID FIX cataloguri
+- 256–257: <script>
+- 258–340: UV GLOBAL JS FIXES
+- 341–346: <script>
+- 347–388: <style>
+- 389–448: SIDEBAR
+- 449–469: BASKET PANEL
+- 470–510: FLOW
+- 511–553: HERO
+- 554–570: LANG DROPDOWN
+- 571–591: SOCIAL BUTTONS
+- 592–632: HELVETICA WORLD Master Font Override
+- 633–691: <style>
+- 692–765: TIER TABLE (ca în screenshot)
+- 766–820: DISPATCH MODAL
+- 821–821: <script>
+- 822–912: SAFARI iOS NAV FIX My Darrin
+- 913–926: <style>
+- 927–945: <script>
+- 946–962: <script>
+- 963–984: <style>
+- 985–1069: <body>
+- 1070–1089: LOCATION MODAL
+- 1090–1174: HEADER PRINCIPAL
+- 1175–1184: <script>
+- 1185–1193: <script>
+- 1194–1225: QUICK NAV navigare rapidă (mutat din footer)
+- 1226–1436: END QUICK NAV
+- 1437–1486: SEC 1: CONFIGURARE
+- 1487–1608: TIER TABLE (dark, ca în screenshot)
+- 1609–1662: ADAUGĂ MATERIALE ECHIPAMENTE (G16, 26 Iulie 2026)
+- 1663–1710: SEC 2: ASIGURARE
+- 1711–1777: SEC 3: CONTRACT
+- 1778–1824: SEC 4: PROGRAMARE
+- 1825–1851: SEC 5: CARD BANCAR
+- 1852–1898: SEC 6: LANSARE
+- 1899–1957: RIGHT: STICKY SUMMARY
+- 1958–1968: <style>
+- 1969–1995: Row 2: 4 coloane nav
+- 1996–2024: Row 4: Bottom
+- 2025–2056: ROW 1: Newsletter stânga + App dreapta
+- 2057–2128: ROW 2: Coloane navigare
+- 2129–2192: ROW 3: Urmărește ne
+- 2193–2251: <script>
+- 2252–2264: <style>
+- 2265–2350: <script>
+- 2351–2394: CURRENCY & ZONE DETECTION (simulat din IP locatie)
+- 2395–2416: COUNTERS
+- 2417–2437: EXPLICAȚIE NIVELURI SERVICE
+- 2438–2445: <script>
+- 2446–2469: <script>
+- 2470–2507: 1. CORE ROUTER handlePartnerNavigation(type)
+- 2508–2534: 3. INTERNAL: switch type on devino partener.html without reload
+- 2535–2556: 4. INTERNAL: cross page navigation with ?type deep link
+- 2557–2581: 5. AUTO OPEN on devino partener.html: read ?type from URL
+- 2582–2618: 6. INTERCEPT all a tags pointing to devino partener.html
+- 2619–2646: 7. SIDEBAR HELPER sb item with data partner type
+- 2647–2665: 9. INIT
+- 2666–2671: <script>
+- 2672–2715: Aplică date geo în UI
+- 2716–2774: Zonă indisponibilă blochează configurarea (1 septembrie 2026)
+- 2775–2792: Nivel 1: IP
+- 2793–2877: Nivel 2: GPS browser (3 15m precizie)
+- 2878–2928: MOBILE BOTTOM NAV BAR (doar pe ecrane 1024px)
+- 2929–2942: <style>
+- 2943–2960: <script>
+- 2961–2980: <script>
+- 2981–2984: <script>
+- 2985–3043: PRODUCTS DB
+- 3044–3076: SERVICII CONSULTANȚĂ (adăugate din Backoffice)
+- 3077–3111: STATE
+- 3112–3512: CATALOG REAL MATERIALE ÎNCHIRIERI (G16)
+- 3513–4060: MOD PILOT conectare la motorul de preț real (22 august 2026, aprobat)
+- 4061–4308: INIT
+- 4309–4407: RECALC
+- 4408–4660: ADDRESS
+- 4661–4680: AI MENTIONS
+- 4681–4707: INSURANCE
+- 4708–4809: CALENDAR
+- 4810–4879: STEP MANAGEMENT
+- 4880–4895: LAUNCH
+- 4896–4912: UTILS
+- 4913–4952: DARRIN AI CHAT WIDGET FLOTANT (colț dreapta jos)
+- 4953–4961: <style>
+- 4962–5020: <script>
+
+## docs/migrations-propuse/2026-11-12_traduceri_en_catalog.sql — 256 KB, 568 rânduri
+Fișier de date: nu are secțiuni; se caută cheia sau textul cu Grep și se citește doar intervalul găsit.
+
+## scripts/traduceri-catalog-en.sql — 242 KB, 991 rânduri
+Fișier de date: nu are secțiuni; se caută cheia sau textul cu Grep și se citește doar intervalul găsit.
+
+## mydarrin-checkout.html — 240 KB, 3858 rânduri
+- 1–10: început (head, meta)
+- 11–17: <script>
+- 18–38: <style>
+- 39–71: UV2: TOUCH TARGETS minim 44×44px
+- 72–91: UV4: FONT SIZE MINIMUM 12px min pe mobile
+- 92–111: UV5: LOADING STATE pe butoane
+- 112–127: UV6: HOVER STATES consistente
+- 128–147: UV7: OVERFLOW FIX nu ies din ecran pe mobile
+- 148–187: UV8: BURGER MENU INDICATOR pe mobile
+- 188–203: UV11: SKIP TO CONTENT (Accessibility)
+- 204–233: UV12: CONTRAST FIX specific
+- 234–256: Checkout pe tabletă și telefon (8 oct. 2026)
+- 257–283: UV14: RESPONSIVE GRID FIX cataloguri
+- 284–285: <script>
+- 286–352: UV GLOBAL JS FIXES
+- 353–361: <script>
+- 362–403: <style>
+- 404–463: SIDEBAR
+- 464–484: BASKET PANEL
+- 485–525: FLOW
+- 526–568: HERO
+- 569–585: LANG DROPDOWN
+- 586–606: SOCIAL BUTTONS
+- 607–647: HELVETICA WORLD Master Font Override
+- 648–668: <style>
+- 669–689: <style>
+- 690–703: <style>
+- 704–727: <script>
+- 728–757: <script>
+- 758–776: <script>
+- 777–830: <body>
+- 831–850: LOCATION MODAL
+- 851–935: HEADER PRINCIPAL
+- 936–945: <script>
+- 946–954: <script>
+- 955–1304: QUICK NAV navigare rapidă
+- 1305–1440: FLUX B2G companii instituții guvernamentale (audit Secțiunea 43 44, 31 Iulie 2026)
+- 1441–1486: POLIȚĂ ASIGURARE EXTINSĂ OPȚIONAL
+- 1487–1497: <style>
+- 1498–1524: Row 2: 4 coloane nav
+- 1525–1553: Row 4: Bottom
+- 1554–1585: ROW 1: Newsletter stânga + App dreapta
+- 1586–1657: ROW 2: Coloane navigare
+- 1658–1721: ROW 3: Urmărește ne
+- 1722–1780: <script>
+- 1781–1793: <style>
+- 1794–1945: <script>
+- 1946–1969: COUNTERS
+- 1970–1970: <script>
+- 1971–2018: CHECKOUT FIXES My Darrin
+- 2019–2062: CONFIRMARE COMANDĂ
+- 2063–2237: HOOK PE SUBMIT CHECKOUT
+- 2238–2261: <script>
+- 2262–2299: 1. CORE ROUTER handlePartnerNavigation(type)
+- 2300–2326: 3. INTERNAL: switch type on devino partener.html without reload
+- 2327–2348: 4. INTERNAL: cross page navigation with ?type deep link
+- 2349–2373: 5. AUTO OPEN on devino partener.html: read ?type from URL
+- 2374–2410: 6. INTERCEPT all a tags pointing to devino partener.html
+- 2411–2438: 7. SIDEBAR HELPER sb item with data partner type
+- 2439–2457: 9. INIT
+- 2458–2459: <script>
+- 2460–2478: Dropdown manual de țară (topbar) restul detectării geo monedă e
+- 2479–2529: MOBILE BOTTOM NAV BAR (doar pe ecrane 1024px)
+- 2530–2543: <style>
+- 2544–2563: <script>
+- 2564–2669: <script>
+- 2670–2693: Zonă indisponibilă blochează efectiv checkout ul
+- 2694–2719: Dispatch event
+- 2720–2762: Nivel 1: GPS (±0 15m)
+- 2763–2810: START
+- 2811–2851: API publică
+- 2852–2861: <script>
+- 2862–3006: ASIGURARE EXTINSĂ OPȚIONALĂ
+- 3007–3120: Navigarea între pași (8 oct. 2026)
+- 3121–3318: Datele de facturare (pasul 11 P2b)
+- 3319–3346: Agenda contului în checkout (pasul 11 P3a)
+- 3347–3601: Prețul și disponibilitatea pentru adresa aleasă din agendă (corecția PR 36)
+- 3602–3634: Flux B2G (audit Secțiunea 43 44, 31 Iulie 2026) izolat, nu atinge selectPayment() de mai s
+- 3635–3674: DARRIN AI CHAT WIDGET FLOTANT (colț dreapta jos)
+- 3675–3683: <style>
+- 3684–3730: <script>
+- 3731–3761: MODAL: ZONĂ INDISPONIBILĂ (Etapa 4, audit 2026 07 12)
+- 3762–3786: <script>
+- 3787–3858: <script>
+
+## mydarrin-deviz-engine.html — 220 KB, 2930 rânduri
+- 1–4: început (head, meta)
+- 5–25: <style>
+- 26–58: UV2: TOUCH TARGETS minim 44×44px
+- 59–78: UV4: FONT SIZE MINIMUM 12px min pe mobile
+- 79–98: UV5: LOADING STATE pe butoane
+- 99–114: UV6: HOVER STATES consistente
+- 115–134: UV7: OVERFLOW FIX nu ies din ecran pe mobile
+- 135–174: UV8: BURGER MENU INDICATOR pe mobile
+- 175–190: UV11: SKIP TO CONTENT (Accessibility)
+- 191–220: UV12: CONTRAST FIX specific
+- 221–240: UV14: RESPONSIVE GRID FIX cataloguri
+- 241–242: <script>
+- 243–311: UV GLOBAL JS FIXES
+- 312–364: <style>
+- 365–377: <script>
+- 378–394: <script>
+- 395–399: <body>
+- 400–411: <script> (module)
+- 412–426: MINI NAV BAR My Darrin Standard
+- 427–476: BREADCRUMB
+- 477–598: 1. FORMULA DE CALCUL aliniată la lib calculeaza pret.js (28 sept. 2026)
+- 599–735: 2. REȚETA SERVICIULUI Resurse
+- 736–823: 2b. VIZIBILITATE COMPONENTE Configurat din Backoffice
+- 824–944: 3. NACE CAEN + ESCO + UNICLASS
+- 945–1043: 4. GEO FISCAL MULTI ȚARĂ
+- 1044–1171: 5. FLUX COMPLET CREARE SERVICIU
+- 1172–1395: 3b. CERTIFICĂRI INTERNAȚIONALE
+- 1396–1522: 6. PRAG MINIM COMANDĂ (VMC) aliniat la cod (28 sept. 2026)
+- 1523–2109: 7. ZONE GEOGRAFICE + RATE CARD ESCO
+- 2110–2114: <script>
+- 2115–2202: ZONE JS
+- 2203–2537: RATE CARD JS LIVE SUPABASE (manopera_costuri + competente_esco)
+- 2538–2685: MULTI COUNTRY PARTNER JS
+- 2686–2706: FOOTER STANDARD My Darrin
+- 2707–2730: <script>
+- 2731–2768: 1. CORE ROUTER handlePartnerNavigation(type)
+- 2769–2795: 3. INTERNAL: switch type on devino partener.html without reload
+- 2796–2818: 4. INTERNAL: cross page navigation with ?type deep link
+- 2819–2843: 5. AUTO OPEN on devino partener.html: read ?type from URL
+- 2844–2880: 6. INTERCEPT all a tags pointing to devino partener.html
+- 2881–2908: 7. SIDEBAR HELPER sb item with data partner type
+- 2909–2930: 9. INIT
+
+## index.html — 195 KB, 3121 rânduri
+- 1–4: început (head, meta)
+- 5–25: <style>
+- 26–58: UV2: TOUCH TARGETS minim 44×44px
+- 59–78: UV4: FONT SIZE MINIMUM 12px min pe mobile
+- 79–98: UV5: LOADING STATE pe butoane
+- 99–114: UV6: HOVER STATES consistente
+- 115–134: UV7: OVERFLOW FIX nu ies din ecran pe mobile
+- 135–174: UV8: BURGER MENU INDICATOR pe mobile
+- 175–190: UV11: SKIP TO CONTENT (Accessibility)
+- 191–220: UV12: CONTRAST FIX specific
+- 221–240: UV14: RESPONSIVE GRID FIX cataloguri
+- 241–242: <script>
+- 243–333: UV GLOBAL JS FIXES
+- 334–366: <script>
+- 367–367: <style>
+- 368–380: <script>
+- 381–393: <script>
+- 394–417: <script>
+- 418–459: <style>
+- 460–519: SIDEBAR
+- 520–540: BASKET PANEL
+- 541–588: FLOW
+- 589–631: HERO
+- 632–648: LANG DROPDOWN
+- 649–669: SOCIAL BUTTONS
+- 670–711: HELVETICA WORLD Master Font Override
+- 712–729: <style>
+- 730–743: <style>
+- 744–757: <script>
+- 758–773: <script>
+- 774–792: <script>
+- 793–871: <body>
+- 872–891: LOCATION MODAL
+- 892–913: HEADER PRINCIPAL
+- 914–992: ③ NAV CENTRAL simplificat: Acasă · Servicii · Contact
+- 993–1011: <script> (module)
+- 1012–1021: <script>
+- 1022–1195: <script>
+- 1196–1213: HERO
+- 1214–1235: SEARCH BAR + DARRIN AI
+- 1236–1256: DUAL CTA CLIENȚI ↔ PARTENERI, dimensiuni egale
+- 1257–1291: SERVICII RAPIDE: URGENT PROGRAMAT
+- 1292–1544: CARUSEL CATEGORII slide stânga→dreapta, 10 carduri
+- 1545–1566: <script>
+- 1567–1598: ZONA INACTIVĂ banner detectat din IP
+- 1599–1599: <style>
+- 1600–1651: CATALOG CARDS RICH
+- 1652–1673: CAT TILE card unificat compact, Servicii Materiale Închiriere
+- 1674–1728: <section #catalog>
+- 1729–1729: <script>
+- 1730–1835: CAT TILE carduri unificate Servicii Materiale Închiriere, randate din Supabase (tabel cate
+- 1836–1846: <style>
+- 1847–1873: Row 2: 4 coloane nav
+- 1874–1902: Row 4: Bottom
+- 1903–1934: ROW 1: Newsletter stânga + App dreapta
+- 1935–2006: ROW 2: Coloane navigare
+- 2007–2070: ROW 3: Urmărește ne
+- 2071–2129: <script>
+- 2130–2142: <style>
+- 2143–2211: <script>
+- 2212–2288: AUTH STATE
+- 2289–2338: COUNTERS
+- 2339–2339: <script>
+- 2340–2387: ZONE ACTIVE CHECK My Darrin
+- 2388–2411: <script>
+- 2412–2449: 1. CORE ROUTER handlePartnerNavigation(type)
+- 2450–2476: 3. INTERNAL: switch type on devino partener.html without reload
+- 2477–2498: 4. INTERNAL: cross page navigation with ?type deep link
+- 2499–2523: 5. AUTO OPEN on devino partener.html: read ?type from URL
+- 2524–2560: 6. INTERCEPT all a tags pointing to devino partener.html
+- 2561–2588: 7. SIDEBAR HELPER sb item with data partner type
+- 2589–2611: 9. INIT
+- 2612–2657: <style>
+- 2658–2666: <style>
+- 2667–2713: <script>
+- 2714–2764: MOBILE BOTTOM NAV BAR (doar pe ecrane 1024px)
+- 2765–2778: <style>
+- 2779–2797: <script>
+- 2798–2816: <script>
+- 2817–2891: <script>
+- 2892–2913: Banner zonă inactivă
+- 2914–2993: Dispatch event
+- 2994–3036: Nivel 1: GPS (±0 15m)
+- 3037–3084: START
+- 3085–3121: API publică
+
+## mydarrin-dashboard-partener.html — 194 KB, 3413 rânduri
+- 1–4: început (head, meta)
+- 5–25: <style>
+- 26–58: UV2: TOUCH TARGETS minim 44×44px
+- 59–78: UV4: FONT SIZE MINIMUM 12px min pe mobile
+- 79–98: UV5: LOADING STATE pe butoane
+- 99–114: UV6: HOVER STATES consistente
+- 115–135: UV7: OVERFLOW FIX nu ies din ecran pe mobile
+- 136–175: UV8: BURGER MENU INDICATOR pe mobile
+- 176–191: UV11: SKIP TO CONTENT (Accessibility)
+- 192–221: UV12: CONTRAST FIX specific
+- 222–241: UV14: RESPONSIVE GRID FIX cataloguri
+- 242–243: <script>
+- 244–321: UV GLOBAL JS FIXES
+- 322–393: <style>
+- 394–412: MAP PLACEHOLDER
+- 413–429: <script>
+- 430–430: <body>
+- 431–441: <script>
+- 442–470: <script>
+- 471–548: <script> (module)
+- 549–602: <script>
+- 603–635: SIDEBAR
+- 636–695: MAIN
+- 696–697: <script>
+- 698–765: DASHBOARD PARTENER DINAMIC
+- 766–809: SWITCH TYPE
+- 810–867: SHOW PANEL
+- 868–1023: PANELS SERVICII
+- 1024–1237: Scanare QR (metodă secundară de identificare, completează codul
+- 1238–1349: PANELS CURIER
+- 1350–1483: PANELS ASIGURĂRI
+- 1484–1550: #modal-emite-factura
+- 1551–1824: Facturare parteneri → Home Best Pal (audit Secțiunea 41 42, 31 Iulie 2026)
+- 1825–1958: Echipa mea Utilajele mele Certificările mele (Etapa 2 2i, 26 august
+- 1959–2055: Utilajele mele
+- 2056–2146: Certificările mele
+- 2147–2238: Cont bancar (27 august 2026) descoperit la pregătirea reminder ului
+- 2239–2323: Zona de acoperire curier (Etapa CAT 3b, 28 august 2026)
+- 2324–2413: Tipuri de poliță asigurări (Etapa CAT 3b, 28 august 2026)
+- 2414–2509: Status aplicare partener (Etapa 2 2i, 26 august 2026)
+- 2510–2833: CONT REAL antet, KPI, venituri, garanții, profil, documente, polițe
+- 2834–2857: <script>
+- 2858–2895: 1. CORE ROUTER handlePartnerNavigation(type)
+- 2896–2922: 3. INTERNAL: switch type on devino partener.html without reload
+- 2923–2944: 4. INTERNAL: cross page navigation with ?type deep link
+- 2945–2969: 5. AUTO OPEN on devino partener.html: read ?type from URL
+- 2970–3006: 6. INTERCEPT all a tags pointing to devino partener.html
+- 3007–3034: 7. SIDEBAR HELPER sb item with data partner type
+- 3035–3052: 9. INIT
+- 3053–3054: <script>
+- 3055–3134: BC1 FILTRU TEHNIC VEHICUL: 10kg sau 50L → EXCLUSIV Utilitară Auto Camion
+- 3135–3195: BC2 STATUS „OCUPAT ÎN CURSĂ" management stare concurentă
+- 3196–3297: BC6 CMR DIGITAL SIMPLIFICAT la confirmare pickup
+- 3298–3362: IO1 BUTON PAUZA RAPIDĂ
+- 3363–3413: SANDBOX MODE pentru asigurări (BC4)
+
+## mydarrin-marketplace.html — 191 KB, 2923 rânduri
+- 1–3: început (head, meta)
+- 4–10: <script>
+- 11–31: <style>
+- 32–64: UV2: TOUCH TARGETS minim 44×44px
+- 65–84: UV4: FONT SIZE MINIMUM 12px min pe mobile
+- 85–104: UV5: LOADING STATE pe butoane
+- 105–120: UV6: HOVER STATES consistente
+- 121–140: UV7: OVERFLOW FIX nu ies din ecran pe mobile
+- 141–180: UV8: BURGER MENU INDICATOR pe mobile
+- 181–196: UV11: SKIP TO CONTENT (Accessibility)
+- 197–226: UV12: CONTRAST FIX specific
+- 227–246: UV14: RESPONSIVE GRID FIX cataloguri
+- 247–248: <script>
+- 249–329: UV GLOBAL JS FIXES
+- 330–338: <script>
+- 339–380: <style>
+- 381–440: SIDEBAR
+- 441–461: BASKET PANEL
+- 462–502: FLOW
+- 503–545: HERO
+- 546–562: LANG DROPDOWN
+- 563–583: SOCIAL BUTTONS
+- 584–624: HELVETICA WORLD Master Font Override
+- 625–707: <style>
+- 708–724: TOAST
+- 725–738: <style>
+- 739–757: <script>
+- 758–775: <script>
+- 776–812: <body>
+- 813–832: LOCATION MODAL
+- 833–916: HEADER PRINCIPAL
+- 917–926: <script>
+- 927–1104: <script>
+- 1105–1172: HERO
+- 1173–1207: BENEFICII
+- 1208–1233: TABS PRINCIPALE
+- 1234–1353: TAB: CONT FURNIZOR
+- 1354–1428: TAB: COMISIOANE & PLĂȚI
+- 1429–1493: CUM ADAUGI PRODUSELE
+- 1494–1504: <style>
+- 1505–1531: Row 2: 4 coloane nav
+- 1532–1560: Row 4: Bottom
+- 1561–1592: ROW 1: Newsletter stânga + App dreapta
+- 1593–1664: ROW 2: Coloane navigare
+- 1665–1728: ROW 3: Urmărește ne
+- 1729–1786: <script>
+- 1787–1795: <style>
+- 1796–1878: <script>
+- 1879–1913: CURRENCY & ZONE DETECTION (simulat din IP locatie)
+- 1914–1930: COUNTERS
+- 1931–1954: <script>
+- 1955–1992: 1. CORE ROUTER handlePartnerNavigation(type)
+- 1993–2019: 3. INTERNAL: switch type on devino partener.html without reload
+- 2020–2041: 4. INTERNAL: cross page navigation with ?type deep link
+- 2042–2066: 5. AUTO OPEN on devino partener.html: read ?type from URL
+- 2067–2103: 6. INTERCEPT all a tags pointing to devino partener.html
+- 2104–2131: 7. SIDEBAR HELPER sb item with data partner type
+- 2132–2150: 9. INIT
+- 2151–2152: <script>
+- 2153–2191: GEO simplu: detectăm ȚARA (din IP) pentru monedă și prețuri.
+- 2192–2242: MOBILE BOTTOM NAV BAR (doar pe ecrane 1024px)
+- 2243–2256: <style>
+- 2257–2278: <script>
+- 2279–2279: <script>
+- 2280–2294: TABS
+- 2295–2311: SIMULATOR VENITURI
+- 2312–2331: PREVIZUALIZARE DISCOUNT la formular produs (5 15%)
+- 2332–2380: AVAILABILITY CALENDAR
+- 2381–2596: FORM ACTIONS Marketplace real (audit + implementare, 2 August 2026)
+- 2597–2702: CSV bulk import (materiale)
+- 2703–2790: Cont furnizor + KYC
+- 2791–2815: UTILS
+- 2816–2818: <style>
+- 2819–2858: DARRIN AI CHAT WIDGET FLOTANT (colț dreapta jos)
+- 2859–2867: <style>
+- 2868–2923: <script>
+
+## mydarrin-dashboard-client.html — 182 KB, 2919 rânduri
+- 1–4: început (head, meta)
+- 5–25: <style>
+- 26–58: UV2: TOUCH TARGETS minim 44×44px
+- 59–78: UV4: FONT SIZE MINIMUM 12px min pe mobile
+- 79–98: UV5: LOADING STATE pe butoane
+- 99–114: UV6: HOVER STATES consistente
+- 115–134: UV7: OVERFLOW FIX nu ies din ecran pe mobile
+- 135–174: UV8: BURGER MENU INDICATOR pe mobile
+- 175–190: UV11: SKIP TO CONTENT (Accessibility)
+- 191–220: UV12: CONTRAST FIX specific
+- 221–240: UV14: RESPONSIVE GRID FIX cataloguri
+- 241–242: <script>
+- 243–315: UV GLOBAL JS FIXES
+- 316–318: <script>
+- 319–360: <style>
+- 361–420: SIDEBAR
+- 421–441: BASKET PANEL
+- 442–482: FLOW
+- 483–525: HERO
+- 526–542: LANG DROPDOWN
+- 543–563: SOCIAL BUTTONS
+- 564–604: HELVETICA WORLD Master Font Override
+- 605–619: <style>
+- 620–658: <style>
+- 659–667: <style>
+- 668–682: KPI
+- 683–696: <style>
+- 697–707: <script>
+- 708–728: <script>
+- 729–747: <script>
+- 748–752: <body>
+- 753–910: <script> (module)
+- 911–930: LOCATION MODAL
+- 931–1021: HEADER PRINCIPAL
+- 1022–1031: <script>
+- 1032–1302: <script>
+- 1303–1342: #tab-comenzi
+- 1343–1357: #tab-escrow
+- 1358–1445: #tab-profil
+- 1446–1456: <style>
+- 1457–1483: Row 2: 4 coloane nav
+- 1484–1512: Row 4: Bottom
+- 1513–1544: ROW 1: Newsletter stânga + App dreapta
+- 1545–1616: ROW 2: Coloane navigare
+- 1617–1680: ROW 3: Urmărește ne
+- 1681–1739: <script>
+- 1740–1752: <style>
+- 1753–1860: <script>
+- 1861–1885: COUNTERS
+- 1886–1909: <script>
+- 1910–1947: 1. CORE ROUTER handlePartnerNavigation(type)
+- 1948–1974: 3. INTERNAL: switch type on devino partener.html without reload
+- 1975–1996: 4. INTERNAL: cross page navigation with ?type deep link
+- 1997–2021: 5. AUTO OPEN on devino partener.html: read ?type from URL
+- 2022–2058: 6. INTERCEPT all a tags pointing to devino partener.html
+- 2059–2086: 7. SIDEBAR HELPER sb item with data partner type
+- 2087–2105: 9. INIT
+- 2106–2156: MOBILE BOTTOM NAV BAR (doar pe ecrane 1024px)
+- 2157–2170: <style>
+- 2171–2190: <script>
+- 2191–2281: <script>
+- 2282–2307: Dispatch event
+- 2308–2350: Nivel 1: GPS (±0 15m)
+- 2351–2398: START
+- 2399–2426: API publică
+- 2427–2434: <script>
+- 2435–2813: G18 (26 Iulie 2026) TRACKER REAL DE COMENZI
+- 2814–2853: DARRIN AI CHAT WIDGET FLOTANT (colț dreapta jos)
+- 2854–2862: <style>
+- 2863–2919: <script>
+
+## mydarrin-investitori.html — 178 KB, 2610 rânduri
+- 1–5: început (head, meta)
+- 6–12: <script>
+- 13–33: <style>
+- 34–66: UV2: TOUCH TARGETS minim 44×44px
+- 67–86: UV4: FONT SIZE MINIMUM 12px min pe mobile
+- 87–106: UV5: LOADING STATE pe butoane
+- 107–122: UV6: HOVER STATES consistente
+- 123–142: UV7: OVERFLOW FIX nu ies din ecran pe mobile
+- 143–182: UV8: BURGER MENU INDICATOR pe mobile
+- 183–198: UV11: SKIP TO CONTENT (Accessibility)
+- 199–228: UV12: CONTRAST FIX specific
+- 229–248: UV14: RESPONSIVE GRID FIX cataloguri
+- 249–250: <script>
+- 251–336: UV GLOBAL JS FIXES
+- 337–378: <style>
+- 379–438: SIDEBAR
+- 439–459: BASKET PANEL
+- 460–500: FLOW
+- 501–543: HERO
+- 544–560: LANG DROPDOWN
+- 561–581: SOCIAL BUTTONS
+- 582–622: HELVETICA WORLD Master Font Override
+- 623–641: <style>
+- 642–655: <style>
+- 656–672: <script>
+- 673–690: <script>
+- 691–778: <style>
+- 779–830: <style>
+- 831–882: <body>
+- 883–902: LOCATION MODAL
+- 903–988: HEADER PRINCIPAL
+- 989–998: <script>
+- 999–1174: <script>
+- 1175–1189: <script>
+- 1190–1203: <script>
+- 1204–1215: <script>
+- 1216–1232: <script>
+- 1233–1272: <section #lp-erou>
+- 1273–1303: <section #parcurs>
+- 1304–1343: <style>
+- 1344–1374: <section #pitch-deck-section>
+- 1375–1423: <script>
+- 1424–1441: <section #investor-dashboard-section>
+- 1442–1458: <section #contact>
+- 1459–1480: <style>
+- 1481–1482: <script>
+- 1483–1529: Pasul 11 J (21 oct. 2026): runda curentă și portofoliul, calculate pe server.
+- 1530–1561: Runda curentă, pe pagina publică
+- 1562–1606: Portofoliul investitorului
+- 1607–1649: Pasul 11 L: dashboard ul privat și starea verificării identității
+- 1650–1791: #modal-runda
+- 1792–1792: <script>
+- 1793–1818: MODAL RUNDA
+- 1819–1848: STEPS
+- 1849–1953: Subscrierea, legată de cont (11 L) și de runda deschisă (11 J)
+- 1954–2018: <script>
+- 2019–2029: <style>
+- 2030–2056: Row 2: 4 coloane nav
+- 2057–2071: Row 4: Bottom
+- 2072–2087: Responsive
+- 2088–2119: ROW 1: Newsletter stânga + App dreapta
+- 2120–2191: ROW 2: Coloane navigare
+- 2192–2255: ROW 3: Urmărește ne
+- 2256–2314: <script>
+- 2315–2325: <style>
+- 2326–2419: <script>
+- 2420–2470: CURRENCY & ZONE DETECTION (simulat din IP locatie)
+- 2471–2488: COUNTERS
+- 2489–2499: <script>
+- 2500–2539: DARRIN AI CHAT WIDGET FLOTANT (colț dreapta jos)
+- 2540–2548: <style>
+- 2549–2610: <script>
+
+## mydarrin-cum-functioneaza.html — 175 KB, 2672 rânduri
+- 1–3: început (head, meta)
+- 4–10: <script>
+- 11–31: <style>
+- 32–64: UV2: TOUCH TARGETS minim 44×44px
+- 65–84: UV4: FONT SIZE MINIMUM 12px min pe mobile
+- 85–104: UV5: LOADING STATE pe butoane
+- 105–120: UV6: HOVER STATES consistente
+- 121–140: UV7: OVERFLOW FIX nu ies din ecran pe mobile
+- 141–180: UV8: BURGER MENU INDICATOR pe mobile
+- 181–196: UV11: SKIP TO CONTENT (Accessibility)
+- 197–226: UV12: CONTRAST FIX specific
+- 227–246: UV14: RESPONSIVE GRID FIX cataloguri
+- 247–248: <script>
+- 249–329: UV GLOBAL JS FIXES
+- 330–335: <script>
+- 336–377: <style>
+- 378–437: SIDEBAR
+- 438–458: BASKET PANEL
+- 459–499: FLOW
+- 500–542: HERO
+- 543–559: LANG DROPDOWN
+- 560–580: SOCIAL BUTTONS
+- 581–621: HELVETICA WORLD Master Font Override
+- 622–640: <style>
+- 641–654: <style>
+- 655–670: <script>
+- 671–689: <script>
+- 690–726: <body>
+- 727–746: LOCATION MODAL
+- 747–832: HEADER PRINCIPAL
+- 833–842: <script>
+- 843–1050: <script>
+- 1051–1088: <section #flux>
+- 1089–1164: <script>
+- 1165–1252: CATALOG SYNC
+- 1253–1269: COUNTERS
+- 1270–1293: <script>
+- 1294–1331: 1. CORE ROUTER handlePartnerNavigation(type)
+- 1332–1358: 3. INTERNAL: switch type on devino partener.html without reload
+- 1359–1380: 4. INTERNAL: cross page navigation with ?type deep link
+- 1381–1405: 5. AUTO OPEN on devino partener.html: read ?type from URL
+- 1406–1442: 6. INTERCEPT all a tags pointing to devino partener.html
+- 1443–1470: 7. SIDEBAR HELPER sb item with data partner type
+- 1471–1489: 9. INIT
+- 1490–1490: <script>
+- 1491–1528: Geo cache
+- 1529–1575: Aplică date geo în UI
+- 1576–1644: Nivel 2: GPS browser (3 15m precizie)
+- 1645–1659: Init loc input manual
+- 1660–1710: MOBILE BOTTOM NAV BAR (doar pe ecrane 1024px)
+- 1711–1724: <style>
+- 1725–1742: <script>
+- 1743–1760: <script>
+- 1761–1851: <script>
+- 1852–1882: Dispatch event
+- 1883–1925: Nivel 1: GPS (±0 15m)
+- 1926–1973: START
+- 1974–1997: API publică
+- 1998–2079: END GEO MODULE
+- 2080–2123: <style>
+- 2124–2148: <style>
+- 2149–2159: <style>
+- 2160–2186: Row 2: 4 coloane nav
+- 2187–2215: Row 4: Bottom
+- 2216–2247: ROW 1: Newsletter stânga + App dreapta
+- 2248–2319: ROW 2: Coloane navigare
+- 2320–2383: ROW 3: Urmărește ne
+- 2384–2442: <script>
+- 2443–2453: <style>
+- 2454–2533: <script>
+- 2534–2555: COUNTERS
+- 2556–2566: <script>
+- 2567–2606: DARRIN AI CHAT WIDGET FLOTANT (colț dreapta jos)
+- 2607–2615: <style>
+- 2616–2672: <script>
+
+## docs/traduceri/11t1_catalog_en.csv — 166 KB, 1098 rânduri
+Fișier de date: nu are secțiuni; se caută cheia sau textul cu Grep și se citește doar intervalul găsit.
+
+## i18n/en.json — 165 KB, 1943 rânduri
+Fișier de date: nu are secțiuni; se caută cheia sau textul cu Grep și se citește doar intervalul găsit.
+
+## docs/traduceri/11t1_continut_public.json — 157 KB, 4617 rânduri
+Fișier de date: nu are secțiuni; se caută cheia sau textul cu Grep și se citește doar intervalul găsit.
+
+## afla-ce-facem.html — 156 KB, 2227 rânduri
+- 1–3: început (head, meta)
+- 4–10: <script>
+- 11–31: <style>
+- 32–64: UV2: TOUCH TARGETS minim 44×44px
+- 65–84: UV4: FONT SIZE MINIMUM 12px min pe mobile
+- 85–104: UV5: LOADING STATE pe butoane
+- 105–120: UV6: HOVER STATES consistente
+- 121–140: UV7: OVERFLOW FIX nu ies din ecran pe mobile
+- 141–180: UV8: BURGER MENU INDICATOR pe mobile
+- 181–196: UV11: SKIP TO CONTENT (Accessibility)
+- 197–226: UV12: CONTRAST FIX specific
+- 227–246: UV14: RESPONSIVE GRID FIX cataloguri
+- 247–248: <script>
+- 249–333: UV GLOBAL JS FIXES
+- 334–375: <style>
+- 376–435: SIDEBAR
+- 436–456: BASKET PANEL
+- 457–497: FLOW
+- 498–540: HERO
+- 541–557: LANG DROPDOWN
+- 558–578: SOCIAL BUTTONS
+- 579–619: HELVETICA WORLD Master Font Override
+- 620–638: <style>
+- 639–652: <style>
+- 653–669: <script>
+- 670–687: <script>
+- 688–739: <body>
+- 740–759: LOCATION MODAL
+- 760–845: HEADER PRINCIPAL
+- 846–855: <script>
+- 856–1028: <script>
+- 1029–1030: <style>
+- 1031–1073: HERO
+- 1074–1277: PROCESUL PAS CU PAS
+- 1278–1428: DOCUMENTE & GARANȚII
+- 1429–1466: AVANTAJE CHEIE
+- 1467–1527: RECENZII & FEEDBACK CLIENȚI
+- 1528–1528: <script>
+- 1529–1582: Feedback modal
+- 1583–1654: CTA FINAL CLIENT
+- 1655–1665: <style>
+- 1666–1692: Row 2: 4 coloane nav
+- 1693–1721: Row 4: Bottom
+- 1722–1753: ROW 1: Newsletter stânga + App dreapta
+- 1754–1825: ROW 2: Coloane navigare
+- 1826–1889: ROW 3: Urmărește ne
+- 1890–1947: <script>
+- 1948–2041: <script>
+- 2042–2092: CURRENCY & ZONE DETECTION (simulat din IP locatie)
+- 2093–2109: COUNTERS
+- 2110–2120: <script>
+- 2121–2160: DARRIN AI CHAT WIDGET FLOTANT (colț dreapta jos)
+- 2161–2169: <style>
+- 2170–2227: <script>

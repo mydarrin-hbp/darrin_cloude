@@ -1,71 +1,58 @@
 # My Darrin — reguli de lucru
 
+## Conceptul My Darrin
+- Marketplace de antreprenor general: servicii, materiale, închirieri, curier, asigurări — clientul comandă tot dintr-un singur loc.
+- Firma: Home Best Pal SRL (România) / Home Best Pal LTD.
+- Un singur arbore de categorii (catalog, înscrierea partenerilor, alocare).
+- Prețul public se calculează doar pe server; plata trece prin escrow.
+- Darrin AI caută și propune doar din catalogul My Darrin. Aplicațiile mobile se fac prin Capacitor.
+
+## Înainte de…
+- migrare, funcție sau politică Supabase → skill-ul `migrari`;
+- buton care salvează / trimite / șterge, formular, erori din API → `feedback-salvare`;
+- prețuri, coș, checkout, comenzi, devize, discounturi, escrow → `preturi`;
+- orice text vizibil, email, mesaj, titlu, pagină → `bilingv`;
+- căutarea codului sau un fișier mare → `harta-proiectului`;
+- rularea testelor → subagentul `rulare-teste` sau `npm run test:rezumat`.
+
 ## Limba
-- Răspunsurile către LM, rapoartele, PR.md, mesajele de commit, comentariile din cod și textele vizibile utilizatorilor se scriu în limba română. Termenii tehnici și numele de fișiere, tabele și funcții rămân neschimbate.
+- În română: răspunsurile și rapoartele către LM, PR.md, mesajele de commit, comentariile din cod, textele pentru utilizatori. Termenii tehnici și numele de fișiere, tabele și funcții rămân neschimbate.
+- Prompturile de la LM vin în RO și EN, cu conținut identic.
+
+## Spațiu de lucru (decizie LM, 14 oct. 2026)
+- DOAR folderul C:\Users\admin\Desktop\darrin_cloude, repo-ul mydarrin-hbp/darrin_cloude. Fără copii temporare (AppData\Local\Temp, scratchpad); nu atingi alte proiecte (de exemplu mydarrin-platform).
+- Remote: https://mydarrin-hbp@github.com/mydarrin-hbp/darrin_cloude.git. Push doar cu contul mydarrin-hbp, niciodată cu altul (de exemplu openstaffeu-lab).
 
 ## Git și publicare
-- Nu se lucrează și nu se face commit direct pe main. Fiecare sarcină are branch propriu, creat din main actualizat (git pull).
+- Înainte de lucru: `git checkout main && git pull`, git status curat, branch nou din main pentru fiecare sarcină; se lucrează doar pe branch-ul corect, nimic direct pe main.
 - Fără push și fără merge fără confirmarea explicită a lui LM. Merge în main = publicare automată pe Vercel (darrin-cloude, mydarrin-api-hbp, mydarrin-admin-panel-hbp).
-- Înainte de lucru: git status curat și branch-ul corect; la final: raport cu commit-urile și ce s-a testat.
+- La final: raport cu commit-urile și ce s-a testat.
 
 ## Baza de date (Supabase)
-- Nicio modificare directă în producție din cod. Orice schimbare de schemă se scrie ca fișier în docs/migrations-propuse/, într-o singură tranzacție (begin/commit), rulabil de mai multe ori fără erori (if not exists / drop ... if exists), cu verificare la final.
-- Migrările se aplică de LM în SQL Editor, ÎNAINTE de publicarea codului care le folosește.
-- Funcțiile noi: search_path fix; funcțiile security definer nu se lasă executabile de anon.
+- Nimic direct în producție din cod. Schimbările de schemă: fișier în docs/migrations-propuse/, o singură tranzacție (begin/commit), rulabil de mai multe ori (if not exists / drop ... if exists), cu verificare la final.
+- LM aplică migrările în SQL Editor, ÎNAINTE de publicarea codului care le folosește.
+- Funcții noi: search_path fix; security definer neexecutabil de anon.
 
 ## Feedback la salvare (decizie LM, 8 oct. 2026)
-- Orice buton care salvează, trimite sau șterge date arată rezultatul: „Se salvează…” (buton blocat) → „✓ Salvat” verde + mesaj verde, sau „✕ Nu s-a salvat” roșu + mesaj roșu care rămâne până e închis, cu eroarea explicată în română; valorile introduse nu se pierd.
-- Niciodată succes fals: mesajul verde apare doar după răspunsul real al serverului.
-- Se folosește componenta comună ui-feedback.js (MDFeedback), nu alert() și nici mesaje proprii pe fiecare pagină.
-- Funcțiile MDFeedback (pasul 11-N1, 22 oct. 2026):
-  - `salveaza(buton, zona, fn, { form, toast, textSalveaza, textOk })` — blochează butonul (fără clic dublu), timeout 15 s → eroare cu „Reîncearcă”; cu `form`, verifică întâi câmpurile obligatorii (`required` / `data-obligatoriu`) și marchează câmpurile primite de la server; fără zonă de mesaj, rezultatul apare ca toast;
-  - `mesaj(zona, 'ok' | 'eroare' | 'info', text)` — mesajul de sub formular;
-  - `toast('succes' | 'eroare' | 'info', text, { reincearca })` — succesul dispare după ~4 s, eroarea rămâne până e închisă;
-  - `confirma(text, { textOk, textAnulare, periculos })` → Promise<boolean> — fereastră proprie, nu `confirm()`; la acțiunile periculoase focusul e pe „Anulează”;
-  - `aplicaErori(form, campuri)` — `aria-invalid`, chenar roșu, mesajul sub câmp (`aria-describedby`), focus pe primul câmp greșit; eroarea dispare când câmpul e corectat;
-  - `cerere(url, optiuni)` — fetch cu timeout de 15 s; citește forma comună de eroare.
-- Erorile din `api/admin/*` folosesc forma comună din `lib/raspuns-eroare.js`: `trimiteEroare(res, status, cod, mesaj_ro, mesaj_en, campuri)` → `{ ok:false, cod, mesaj:{ro,en}, campuri:[{camp, mesaj:{ro,en}}] }`; mesajul spune ce câmp e greșit și ce trebuie făcut.
-- În `mydarrin-superadmin.html` nu se folosesc `alert(` și `confirm(` (verificat de `scripts/test-texte-interzise.js`).
+- Orice salvare / trimitere / ștergere arată rezultatul: „Se salvează…” (buton blocat) → „✓ Salvat” verde, sau „✕ Nu s-a salvat” roșu, cu mesaj care rămâne până e închis și eroarea explicată în română; valorile introduse nu se pierd.
+- Niciodată succes fals: verde doar după răspunsul real al serverului.
+- Doar componenta comună ui-feedback.js (MDFeedback); fără alert() și fără mesaje proprii pe pagină; în superadmin fără `alert(` / `confirm(`. Erorile din `api/admin/*`: `trimiteEroare` (`lib/raspuns-eroare.js`).
 
 ## Prețuri și bani
-- Prețul public: cost de bază (manoperă + materiale + utilaje) + transport + asigurare (1% din costul de bază) + comision platformă (12% din costul de bază) + marketing 3% și mentenanță 2% (pe subtotal) + TVA. Procentele se citesc din backoffice_config, pe țară, cu ALL implicit.
+- Preț public = cost de bază + transport + asigurare + comision platformă + marketing + mentenanță + TVA; procentele din backoffice_config, pe țară, cu ALL implicit (formula completă în `preturi`).
 - Discounturile partenerilor (5–15%, pe categorie) nu sunt publice și nu apar în niciun API public; la escrow, furnizorul primește prețul public minus discountul lui.
 - Nicio cifră sau dată inventată în interfață; ce nu e real se marchează clar sau se ascunde.
 
 ## Bilingv RO + EN (decizie LM, 9 oct. 2026)
-- Tot ce se implementează sau se modifică pe platformă se face în ambele limbi, română și engleză, în același commit:
-  - texte din HTML și JS (chei în `i18n/ro.json` și `i18n/en.json` sau în dicționarele din `i18n/en/`, cu `window.t`);
-  - conținut din baza de date (`traduceri.en`, după aplicarea migrării);
-  - emailuri (`lib/i18n.js`);
-  - mesaje de eroare și de succes;
-  - titluri și meta.
-- Engleza e limba implicită la prima vizită; româna se alege din selector (`myd_lang_v1`). Geolocalizarea nu schimbă limba.
-- Un text adăugat doar într-o limbă nu se acceptă. Detectorul de română (`scripts/detector-ro.js`) rulează în modul EN înainte de fiecare PR și trebuie să dea 0 (excepții: nume proprii, orașe, adrese).
+- Tot ce se implementează sau se modifică pe platformă: în română și engleză, în același commit (texte HTML / JS, `traduceri.en`, emailuri, mesaje de eroare și succes, titluri și meta). Textul într-o singură limbă nu se acceptă.
+- Engleza e implicită la prima vizită; româna din selector (`myd_lang_v1`); geolocalizarea nu schimbă limba.
+- `scripts/detector-ro.js` în modul EN înainte de fiecare PR: 0 (excepții: nume proprii, orașe, adrese).
 - Paginile interne (superadmin, back-office) rămân în română.
-- Prompturile primite de la LM vin în română și în engleză, cu conținut identic.
-- Rapoartele către LM rămân în română.
 
-## Bilingual RO + EN (LM's decision, 9 Oct 2026)
-- Everything implemented or changed on the platform is done in both languages, Romanian and English, in the same commit:
-  - HTML and JS text (keys in `i18n/ro.json` and `i18n/en.json`, or in the dictionaries in `i18n/en/`, via `window.t`);
-  - database content (`traduceri.en`, once the migration is applied);
-  - emails (`lib/i18n.js`);
-  - error and success messages;
-  - titles and meta tags.
-- English is the default language on first visit; Romanian is chosen from the selector (`myd_lang_v1`). Geolocation does not change the language.
-- Text added in only one language is not accepted. The Romanian detector (`scripts/detector-ro.js`) runs in EN mode before every PR and must return 0 (exceptions: proper names, cities, addresses).
-- Internal pages (superadmin, back-office) stay in Romanian.
-- Prompts from LM come in Romanian and English, with the same content.
-- Reports to LM stay in Romanian.
+## Consum mic
+- Fișierele de peste 150 KB (`mydarrin-superadmin.html`, `mydarrin-catalog.html`, `mydarrin-produs.html` etc.) se citesc pe intervale de rânduri sau cu Grep, nu întregi (cuprinsul în `harta-proiectului`).
+- Testele se rulează doar cu `node scripts/ruleaza-teste.js [filtre]` / `npm run test:rezumat` (doar picatele + totalul); ieșirea completă (`--complet`) doar la cerere.
+- Proiectul pornește cu Sonnet, effort medium. Pentru migrări, alocare, prețuri sau arhitectură: `/model opusplan` sau `/effort high`.
 
-## Spațiu de lucru (decizie LM, 14 oct. 2026)
-- Lucrezi DOAR pe proiectul My Darrin: folderul C:\Users\admin\Desktop\darrin_cloude, repo-ul GitHub mydarrin-hbp/darrin_cloude.
-- Nu lucrezi în copii temporare (AppData\Local\Temp, scratchpad) și nu atingi alte proiecte sau foldere (de exemplu mydarrin-platform).
-- Remote-ul este https://mydarrin-hbp@github.com/mydarrin-hbp/darrin_cloude.git. Push doar cu contul mydarrin-hbp; nu folosești alt cont GitHub (de exemplu openstaffeu-lab).
-- Înainte de orice lucru: git checkout main && git pull, apoi branch nou din main.
-
-## Workspace (LM's decision, 14 Oct 2026)
-- Work ONLY on the My Darrin project: the folder C:\Users\admin\Desktop\darrin_cloude, the GitHub repo mydarrin-hbp/darrin_cloude.
-- Do not work in temporary copies (AppData\Local\Temp, scratchpad) and do not touch other projects or folders (e.g. mydarrin-platform).
-- The remote is https://mydarrin-hbp@github.com/mydarrin-hbp/darrin_cloude.git. Push only with the mydarrin-hbp account; never use another GitHub account (e.g. openstaffeu-lab).
-- Before any work: git checkout main && git pull, then a new branch from main.
+## Compact instructions
+La compactare se păstrează: branch-ul, deciziile LM, fișierele modificate (și migrările), testele picate și cauza, ce s-a testat, pașii rămași.
