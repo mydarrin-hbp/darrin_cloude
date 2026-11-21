@@ -5,6 +5,7 @@
 // poată verifica fără `vercel dev` și fără acces la producție:
 //   /api/public/reguli-platforma  → REGULI_SIMULATE (sau 503 cu REGULI=off)
 //   /api/public/tari-active       → aceleași țări
+//   /api/public/categorii         → CATEGORII_SIMULATE (pasul 12-P2)
 //   orice alt /api/...            → 503 (paginile trebuie să se randeze și așa)
 //   /_vercel/insights/script.js   → script gol (Web Analytics, pasul 11-A1)
 //   rescrierile fixe din vercel.json (ex. /parteneri/inscriere), pasul 12-P1
@@ -35,6 +36,11 @@ const TARI = [
   ['AT', 'Austria', 'EUR', null], ['BG', 'Bulgaria', 'EUR', null], ['GB', 'Marea Britanie', 'GBP', null],
   ['GR', 'Grecia', 'EUR', null], ['MD', 'Moldova', 'MDL', null], ['RO', 'România', 'RON', 100],
 ];
+const CATEGORII_SIMULATE = {
+  servicii: [['00000000-0000-4000-8000-000000000101', 'instalatii-sanitare', 'Instalații sanitare', 'Plumbing'], ['00000000-0000-4000-8000-000000000102', 'instalatii-electrice', 'Instalații electrice', 'Electrical installations']],
+  materiale: [['00000000-0000-4000-8000-000000000201', 'electrice-cabluri', 'Electrice & Cabluri', 'Electrical & Cables'], ['00000000-0000-4000-8000-000000000202', 'zidarie-beton', 'Zidărie & Beton', 'Masonry & Concrete']],
+  inchirieri: [['00000000-0000-4000-8000-000000000301', 'utilaje-constructii', 'Utilaje construcții', 'Construction machinery']],
+};
 const REGULI_SIMULATE = {
   ok: true,
   tari: TARI.map(([tara_cod, tara_nume, moneda, prag]) => ({ tara_cod, tara_nume, moneda, prag_minim_comanda: prag, metode_plata: ['card'], termen_plata_partener_zile: 6 })),
@@ -130,6 +136,15 @@ function cerere(req, res, opt) {
     }
     if (p === '/api/public/tari-active') {
       return json(res, 200, { ok: true, active: TARI.map((t) => t[0]), tari: TARI.map(([tara_cod, tara_nume]) => ({ tara_cod, tara_nume })), tva: { RO: 21 } });
+    }
+    // Pasul 12-P2: câteva categorii principale (denumirile din arborele real, audit 20 nov. 2026),
+    // ca detectorul să vadă lista de pe /parteneri/inscriere; date simulate, nu din bază.
+    if (p === '/api/public/categorii') {
+      const tip = url.searchParams.get('tip');
+      const en = url.searchParams.get('lang') !== 'ro';
+      const L = CATEGORII_SIMULATE[tip];
+      if (!L) return json(res, 400, { ok: false, cod: 'TIP_INVALID' });
+      return json(res, 200, { ok: true, tip, lang: en ? 'en' : 'ro', categorii: L.map(([id, slug, ro, eng]) => ({ id, slug, denumire: en ? eng : ro })), profesie: null });
     }
     // Mesajul e în engleză: paginile îl pot afișa ca eroare de server, iar
     // detectorul de română (modul EN) nu trebuie să-l numere ca text al paginii.

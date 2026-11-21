@@ -1,247 +1,200 @@
-# Pasul 12-L1: paginile de destinație după macheta L1, cu conținutul editabil din back-office
+# Pasul 12-P2 (temporar, până la B2): înscriere fără profesie și fără categorie, după macheta R1; alocarea doar spre parteneri eligibili
 
-Branch: `12l1-pagini-destinatie` → `main` (fără push și fără merge până la confirmarea LM).
+Branch: `12p2-categorie-inscriere` → `main` (fără push și fără merge până la confirmarea LM).
 
-**Înainte de merge:** LM rulează migrarea `docs/migrations-propuse/2026-11-19_pagini-destinatie.sql` în SQL Editor (SHA-256 mai jos). Fără migrare, paginile se afișează cu textele implicite, iar tabul din back-office spune „aplicați migrarea”.
+**Fără migrare.** Datele se salvează în `partener_activare_ciorna.date.preinscriere`, care există deja.
+
+**Macheta R1** (aprobată de LM pe 21 nov.) înlocuiește prima variantă a pasului, cea cu câmpul „Categoria principală” și „Altceva”. Ce scrie mai jos e starea finală a branch-ului.
 
 ## Ce se schimbă
 
-### Primul ecran (macheta L1.1–L1.4)
-Pe `/parteneri`, `/parteneri/servicii`, `/materiale`, `/inchirieri`, `/curieri`, `/asigurari` și `/investitori`, primul ecran are:
-- eticheta;
-- titlul;
-- subtitlul;
-- 3 beneficii;
-- un singur buton portocaliu;
-- textul de sub buton.
+### 1. Formularul `/parteneri/inscriere`
+- La crearea contului rămân doar:
+  - tipul (Servicii · Materiale · Închirieri · Curier · Asigurări);
+  - prenumele și numele;
+  - telefonul;
+  - emailul;
+  - parola;
+  - acordul pentru Termeni și Politica de confidențialitate.
+- **Scoase**, în RO și EN:
+  - profesia (lista celor 23 de meserii, care bloca înscrierea);
+  - „Categoria principală” și „Altceva” cu text liber;
+  - **orașul** (vezi „De decis”, punctul 1).
+- Cheile de traducere rămase fără folos sunt șterse:
+  - din `i18n/en/mydarrin-inscriere-partener.json`, 14: cele 6 vechi (profesia, orașul, două nume de profesii) și cele 8 adăugate în prima variantă;
+  - din `i18n/en.json`, cele 3 ale primei variante din panou („Primele: …”, „Din categoria ta…”).
 
-Totul încape fără derulare la 360 × 640 și la 390 × 844, în RO și în EN.
+  Un test verifică acum că dicționarul paginii nu mai are chei nefolosite.
 
-Cele 5 categorii de partener folosesc același șablon (`landing.css`). Markup-ul îl scrie `scripts/genereaza-pagini-destinatie.js` din sursa unică `lib/landing-pagini.js`, cu textele RO + EN. Testul pică dacă paginile nu sunt la zi.
+### 2. Indiciul din reclame (ascuns)
+- `?categorie=` (și vechiul `?type=`) alege tipul, ca înainte.
+- `?domeniu=<slug>` și `?profesie=<slug>` nu apar ca întrebare. Se salvează în ciornă, iar serverul le verifică:
+  - `?domeniu=`: slug-ul unei categorii principale active a tipului ales → `categorie_id`, `categorie_slug`, denumirile RO / EN din bază, `categorie_sursa: 'domeniu'`;
+  - `?profesie=`: profesia cunoscută se păstrează ca `profesie_slug`; la servicii, dacă lipsește `?domeniu=`, dă categoria cu același cod NACE (de exemplu `instalator` → „Instalații sanitare”), cu `categorie_sursa: 'profesie'`;
+  - orice slug necunoscut, greșit, inactiv, subcategorie sau de alt tip **se ignoră fără eroare**;
+  - la curier și asigurări, indiciul de categorie se ignoră.
+- Indiciul ordonează „Ce lucrări faci” din panou. Nu apare ca alegere a partenerului: nici în salut, nici pe cardul turcoaz.
+- Linkurile reclamelor active merg mai departe.
 
-Textele de pe `/parteneri/servicii` sunt cele din machetă, în forma generală. Exemplul „Instalator? …” din machetă a devenit varianta „instalatori”.
+### 3. Serverul (`lib/categorii-inscriere.js`, `/api/partener/activare-ciorna`)
+- La pre-înscriere nu mai e nimic obligatoriu în afară de tip.
+- Textul liber la categorie (`categorie_text` / `categorie_altceva`) **nu se mai acceptă**: 400 `CATEGORIE_TEXT_NEACCEPTAT`, mesaj RO + EN.
+- Un `categorie_id` trimis explicit se verifică ca înainte: inexistent, inactiv sau subcategorie → `CATEGORIE_INVALIDA`; de alt tip → `CATEGORIE_ALT_TIP` (400 pe câmpul `categorie_id`).
+- Pre-înscrierea se verifică doar când se schimbă. Salvarea automată a pașilor nu e blocată nici dacă o categorie devine inactivă mai târziu.
+- La DELETE (după contract), restul ciornei se șterge, dar indiciul rămâne.
+- Dacă serverul refuză totuși o categorie după ce contul există (de exemplu, o sesiune veche), pagina salvează datele fără categorie. Partenerul nu rămâne blocat.
 
-### Butonul merge din prima secundă
-- **Destinația e scrisă în HTML:**
-  - categoriile: `/parteneri/inscriere?categorie=<categorie>`;
-  - `/parteneri`: `/parteneri/inscriere`;
-  - `/investitori`: `/investitori?ruta=investitor`, adică fluxul existent din 11-I2.
-- **Parametrii adresei:** un script mic, scris imediat după buton, adaugă `profesie`, `lang` și UTM-urile, înainte de `DOMContentLoaded` și de orice cod de sesiune. `fbclid` nu se transmite.
-- **`cta-partener.js`:**
-  - nu mai ascunde butonul;
-  - nu mai schimbă destinația vizitatorului (nici spre `#tipuri`);
-  - după sesiune schimbă textul și destinația doar pentru conturile de partener (activare, verificare, activ): „Mergi în panoul tău”, spre dashboard.
-- **Adresele vechi cu `?type=`** (ex. `/mydarrin-devino-partener?type=curier`, redirecționată 301 spre `/parteneri?type=curier`): același script transformă `type` în `categorie`, iar cardul tipului e marcat pe hub, ca înainte.
-- **Butonul din meniul „Devino partener”** are acum direct `/parteneri/inscriere`.
-- **Investitori:** butonul se numește „Creează cont de investitor”. Vizitatorul primește fereastra de cont de azi (cont fără date de identitate, KYC doar la „Investește”).
+### 4. Panoul partenerului (neschimbat față de prima variantă, cu o excepție)
+- „Ce lucrări faci” / „What work you do” e primul rând din „Ce mai ai de făcut”, deasupra lui „Cont creat”. Nu intră în cei 6 pași.
+- Rândul deschide portofoliul existent (`/api/partener/portofoliu`):
+  - serviciile din categoria indicată de reclamă (și din subcategoriile ei) apar primele;
+  - bifarea afișează mesajele MDFeedback („Se salvează…” → „✓ Salvat” / „✕ Nu s-a salvat”, după răspunsul serverului).
+- **Excepția:** titlul grupului e acum „Recomandate pentru tine: …” / „Recommended for you: …”, în loc de „Din categoria ta: …”. Partenerul nu mai alege categoria, deci „a ta” nu mai era adevărat.
+- `/api/partener/portofoliu` merge și pentru contul nou (rol ales la înscriere, fără firmă).
 
-> **De decis de LM:** clientul conectat fără rol de partener păstrează comportamentul de azi: linkul rămâne, iar clicul alege tipul pe contul existent. Altfel ar ajunge la pre-înscriere și și-ar face un al doilea cont. Dacă LM vrea strict linkul, se scoate un singur bloc din `cta-partener.js`.
+### 5. Back-office
+În superadmin → Parteneri, sub tipul partenerului:
+- apare „Indiciu din reclamă: Instalații sanitare”, doar dacă există un indiciu;
+- altfel nu apare nimic.
 
-### Sub primul ecran
-- **Categoriile:**
-  - imaginea campaniei, doar dacă varianta publicată are una;
-  - „Cum funcționează” în 3 pași;
-  - linkul spre `/parteneri/intrebari#<categorie>`.
-- **`/parteneri`:** cele 5 carduri de categorie, cu `data-cta="categorie-<tip>"`, și linkul spre întrebări.
-- **`/investitori`:**
-  - „Runda curentă”, doar cu valorile publicate din `/api/public/runda-curenta`. Fără rundă activă, secțiunea și linkul „Runda” din meniu lipsesc. Nicio cifră nu e scrisă în cod.
-  - „Cum devii investitor” în 3 pași, apoi „Pașii în detaliu” (închis) și parcursul investitorului.
-  - Pitch deck-ul, panoul și contactul rămân neschimbate.
+### 6. Alocarea automată (reparație, cerută de LM)
+- `lib/aloca-partener.js` filtrează candidații cu serviciul bifat prin regula unică `poatePrimiComenzi` (`lib/eligibilitate-partener.js`): aprobat, contract semnat, cont bancar activ, cont nesuspendat; furnizorul propriu, aprobat.
+- Starea se citește o singură dată, cu `incarcaEligibilitate`.
+- Abia apoi urmează competențele, disponibilitatea (`status_live`), zona și echipa, ca înainte.
+- Fără niciun partener eligibil, comanda rămâne `in_cautare_partener`, cu motivul `niciun_partener_eligibil`.
+- Dacă eligibilitatea nu se poate citi, comanda tot rămâne în căutare (`eligibilitate_indisponibila`); nu se alocă fără verificare.
+- În log apar doar id-ul comenzii și numărul de candidați pe motiv, de exemplu `{"fara_contract":1}`. Fără id de partener, nume sau email.
 
-### Ce s-a mutat în `/parteneri/intrebari`
-Secțiune nouă, „Pe tipuri de partener” (`#pe-tipuri`), cu ancore pe tip: `#general`, `#servicii`, `#materiale`, `#inchirieri`, `#curieri` și `#asigurari`. Fiecare bloc are textul de azi, neschimbat, cu traducerea EN existentă (284 de texte, 0 lipsă).
+**Locurile care scriu `comenzi.partener_id`:**
 
-| Pagina | Ce s-a mutat |
+| Loc | Regula |
 |---|---|
-| `/parteneri` | Tipurile de parteneriat (descrierile celor 5 carduri vechi); „Pașii înregistrării” (4 pași); cele 5 întrebări (documente, aprobare, escrow, comision, factură) |
-| `/parteneri/servicii` | Ce câștigi (3); Ce îți trebuie la activare (6 + nota); Pas cu pas (5); 5 întrebări; „Modelul My Darrin, pe scurt” |
-| `/parteneri/materiale` | Ce câștigi (3); Ce îți trebuie (6); Pas cu pas (5); 4 întrebări; Modelul + categoriile de materiale acceptate |
-| `/parteneri/inchirieri` | Ce câștigi (3); Ce îți trebuie (6); Pas cu pas (5); 4 întrebări; Modelul + categoriile de echipamente acceptate |
-| `/parteneri/curieri` | Ce câștigi (3); Ce îți trebuie (6); Pas cu pas (4); 3 întrebări; Modelul |
-| `/parteneri/asigurari` | Ce câștigi (3); Ce îți trebuie (6); Pas cu pas (4); 5 întrebări; tabelele „Comparativ acoperire client” și „Constatarea și plata daunelor” |
-| `/investitori` | Cei 7 pași detaliați au rămas pe pagină, în „Pașii în detaliu” (închis) |
+| `lib/aloca-partener.js` (alocarea automată; apelat din `api/comenzi/creeaza.js` și `api/admin/comenzi-b2g.js`) | **reparat acum**: `poatePrimiComenzi` |
+| `api/partener/accept-comanda.js` (partenerul acceptă) | folosea deja `poatePrimiComenzi` (neschimbat) |
 
-Propoziția „Înscrierea e pentru firme, PFA și întreprinderi individuale.” (decizia LM din 25 oct.) rămâne pe `/parteneri` și pe cele 5 categorii, sub primul ecran.
+În afara codului, în producție (citit doar cu SELECT): tabelul `comenzi` are doar politici RLS de citire, iar funcțiile SQL care îl ating doar raportează. Clientul nu poate scrie `partener_id`.
 
-**Scos, pentru că nu mai e folosit:**
-- insigna „GRATUIT” și butonul secundar „Cum funcționează ↓”;
-- banda finală „Gata să…” și bara fixă de pe telefon (paginile de partener);
-- rândul „Alte întrebări? Contactează-ne” (există pe pagina de întrebări);
-- insigna „Runda curentă: …” din hero-ul investitorilor;
-- textul „Nu există acum o rundă deschisă publicului”;
-- din dicționarele EN ale celor 6 pagini de partener: 555 de intrări care nu mai apar nicăieri (nici în pagină, nici în scripturi). Pe `/investitori` s-au scos doar cele 5 ale blocurilor înlocuite.
+`lib/aloca-subcontractori.js` scrie subcontractorii comenzii (`partener_id` pe alt tabel) și folosea deja regula unică (`parteneriCarePotVinde`).
 
-### Back-office → SEO → „Pagini de destinație” (macheta L1.5)
-În `mydarrin-superadmin.html` → SEO există acum două secțiuni: „Titluri, partajare și campanii” (cea de azi) și „Pagini de destinație” (`seo-panou-landing.js`). Pagina internă rămâne în română.
-- **Lista:** cele 7 pagini și variantele fiecăreia: „Implicită” plus câte una pe `utm_campaign`, fiecare cu starea ei (Din fișier / Ciornă / Publicată vN / Modificată).
-- **Câmpurile, pe limbă (tab Română / English), cu contoare:**
-  - eticheta (40);
-  - titlul (60);
-  - subtitlul (140);
-  - beneficiile 1–3 (60);
-  - textul butonului (24);
-  - textul de sub buton (60);
-  - textul alternativ al imaginii (140).
+**Efect în producție:** singurul partener „disponibil” azi e aprobat, dar fără contract semnat. După publicare nu mai primește comenzi alocate automat până semnează contractul.
 
-  Limitele se verifică în panou, pe server și în baza de date.
-- **Ciornă / Publică:**
-  - publicul vede doar varianta publicată;
-  - publicarea cere RO și EN complete. Fără EN, mesajul spune ce lipsește și se deschide tabul „English”, cu câmpurile marcate;
-  - fiecare publicare mută versiunea anterioară în istoric;
-  - „Revino la vN” publică din nou acea versiune, ca versiune nouă, după confirmarea în fereastra proprie (MDFeedback).
-- **Previzualizarea:** telefon (390 px) sau desktop (1280 px), cu stilul real al paginii, din ciorna din formular.
-- **Linkul pentru reclamă:** ex. `https://mydarrin.homebestpal.com/parteneri/servicii?utm_campaign=instalatori&profesie=instalator`, cu „Copiază”. Adresa vine din `SITE_URL` (12-U1).
-- **Imaginea:**
-  - se convertește în browser în WebP: latura mare de cel mult 1600 px, cel mult 300 KB, fără EXIF / XMP, în 3 mărimi (1600 / 800 / 480) pentru `srcset`;
-  - se încarcă direct în Storage, pe adresa semnată, ca în `seo-panou-media.js`;
-  - serverul verifică conținutul: WebP real, ≤ 300 KB, ≤ 1600 px, fără EXIF / XMP. Altfel fișierul se șterge și mesajul explică de ce.
-  - Pe pagina publică: `srcset` + `sizes`, `loading="lazy"`, `fetchpriority="low"`, cu lățimea și înălțimea scrise. Imaginea e sub primul ecran și nu întârzie titlul.
-- **Permisiuni:**
-  - citirea: dreptul SEO (`lib/permisiuni-seo.js`);
-  - scrierea: SEO cu `poate_scrie`, altfel 403;
-  - erorile au forma comună (`trimiteEroare`), RO + EN, cu câmpul greșit;
-  - salvările folosesc MDFeedback, fără `alert(` / `confirm(`;
-  - fiecare scriere se auditează.
+## Câmpurile obligatorii pe tot drumul
 
-### Pagina publică și varianta campaniei
-- **Fără `utm_campaign`:** conținutul implicit din HTML și din dicționarele RO / EN se afișează imediat, fără să aștepte API-ul.
-- **Cu `utm_campaign`:**
-  - doar textele primului ecran sunt ascunse vizual (locul lor rămâne), cel mult 300 ms;
-  - varianta publicată sosită în fereastra de 300 ms se aplică; mai târziu nu (rămâne implicita, fără schimbări bruște);
-  - nepublicată sau inexistentă → implicita.
-- **„Implicită”, publicată din back-office,** se aplică tot în fereastra de 300 ms, dar fără ascundere. Ca textul nou să fie în HTML de la prima afișare, LM poate cere actualizarea lui la următoarea publicare de cod.
-- **API-ul public:** `/api/public/landing`, cu cache de 60 s (CDN + memorie). Întoarce doar rânduri publicate, fără autor sau date interne.
+| Etapă | Câmpuri obligatorii | Ce poate bloca |
+|---|---|---|
+| **Pre-înscriere** | tipul (implicit Servicii); prenumele; numele; telefonul (cu prefixul țării); emailul; parola (min. 8); acordul | emailul are deja cont (apare linkul de logare / recuperare); limita de emailuri a Supabase |
+| **Codul** | codul de 6 cifre din email | codul expirat sau greșit (retrimitere după 45 s) |
+| **Panoul** | nimic | — |
+| **1. Firma** | forma juridică; CUI; denumirea (firmă străină: și forma juridică locală) | CUI folosit de alt cont (409); firmă inactivă / radiată la ANAF; **persoana fizică fără PFA / II / firmă nu poate trece** (regula existentă) |
+| **2. Cont bancar** | titularul; IBAN valid; banca; moneda | IBAN invalid |
+| **3. Profesii** | codul NACE principal (precompletat din indiciu, dacă există); curier: județul și raza 1–200 km | la închirieri, categoriile nu au NACE: se alege manual |
+| **4. Dotări** | servicii / închirieri: cel puțin un utilaj sau o sculă; curier: vehiculul; materiale: cel puțin un produs în catalog; asigurări: cel puțin un tip de poliță | la materiale, pasul cere catalogul plin |
+| **5. Documente** | cel puțin un document (PDF / JPG / PNG, max. 10 MB) | — |
+| **6. Contract** | codul OTP din email | se semnează doar după aprobarea firmei |
 
-### Viteza
-- **Cauza:** cele 7 pagini foloseau Tailwind de pe CDN, adică ~100 KB de JavaScript, compilat în browser, cu ~1 s de procesor pe telefon.
-- **Ce s-a schimbat:**
-  - același CSS, precompilat: `landing-tailwind.css`, 14 KB, 3,6 KB comprimat. Îl generează `scripts/genereaza-tailwind-destinatie.js`, iar testul verifică amprenta claselor;
-  - Lucide și DOMPurify se încarcă acum cu `defer`;
-  - fonturile Google (Syne, Inter), nefolosite pe aceste pagini, au fost scoase.
-- Antetul, meniul și subsolul arată la fel (capturile).
+Pașii 2–6 așteaptă firma (pasul 1), ca înainte. **Comenzile** vin doar după aprobare, contract și IBAN, acum și la alocarea automată.
 
-### Măsurarea (pregătită pentru 12-M1)
-- `data-cta="principal"` pe butonul principal și `data-cta="categorie-<tip>"` pe cardurile de pe `/parteneri`.
-- `partner_landing_view` primește `variant`: `default` sau numele campaniei. Cheia permisă e nouă în `masurare.js`, iar evenimentul pleacă după alegerea variantei (≤ 300 ms).
-
-### Butoanele plutitoare
-`landing.js` compară dreptunghiurile la derulare și la redimensionare. Dacă butonul de distribuire sau Darrin AI s-ar suprapune peste butonul principal, se ascunde cât durează suprapunerea.
-
-Pe paginile scurte, butonul „Abonează-te” din subsol intra în primul ecran pe telefon. Pe aceste pagini e bleumarin, ca în primul ecran să rămână un singur buton portocaliu.
-
-## Migrarea
-`docs/migrations-propuse/2026-11-19_pagini-destinatie.sql` — SHA-256: `884348160858a4f762e993c3b7c1a3dd066f069762996d1b70791c99c1a9867b` (fișierul din repo, cu capete de rând LF)
-- `landing_continut`: pagina, varianta, limba, starea (ciorna / publicat), câmpurile cu limitele lor, imaginea, profesia, versiunea, autorul, datele. Cheie unică (pagina, varianta, limba, stare).
-- `landing_continut_istoric`: versiunile anterioare.
-- **RLS:** activ, fără politici, fără drepturi pentru `anon` / `authenticated`. Citirea publică trece doar prin `/api/public/landing`, iar scrierea doar prin `api/admin/seo-landing.js`.
-- **Funcțiile `landing_publica` și `landing_revino`:**
-  - atomice;
-  - SECURITY INVOKER, `search_path` fix;
-  - executabile doar de `service_role`;
-  - publicarea refuză lipsa EN (`LANDING_LIPSA_LIMBA` / `LANDING_INCOMPLET_EN`).
-- **Imaginile:** bucket-ul public existent `seo-og`, subfolderul `landing/`. Regulile lui (public, WebP permis, scriere doar prin adrese semnate de server) sunt exact ce trebuie, deci nu e nevoie de un bucket nou. Limita de 300 KB și formatul WebP le verifică serverul. Migrarea creează bucket-ul doar dacă lipsește și nu îl modifică dacă există.
-- O tranzacție, rulabilă de mai multe ori, cu verificare la final.
-
-## Viteza (Android simulat, Slow 4G: RTT 150 ms, 1,6 Mbit/s, procesor × 4; mediana din 3)
-
-| Pagina | LCP înainte | LCP după | CLS înainte | CLS după |
-|---|---|---|---|---|
-| `/parteneri` EN | 2 956 ms | 1 212 ms | 0,012 | 0,004 |
-| `/parteneri` RO | 2 860 ms | 1 044 ms | 0,012 | 0,004 |
-| `/parteneri/servicii` EN | 2 672 ms | 1 112 ms | 0 | 0 |
-| `/parteneri/materiale` EN | 2 808 ms | 1 124 ms | 0 | 0 |
-| `/parteneri/inchirieri` EN | 2 716 ms | 1 116 ms | 0 | 0 |
-| `/parteneri/curieri` EN | 2 580 ms | 1 116 ms | 0 | 0 |
-| `/parteneri/asigurari` EN | 3 140 ms | 1 140 ms | 0 | 0 |
-| `/investitori` EN | 2 956 ms | 1 372 ms | 0,012 | 0,012 |
-| `/parteneri/servicii?utm_campaign=instalatori` RO | — | 908 ms | — | 0 |
-
-Rețeaua e modelată în Playwright (`scripts/retea-modelata.js`, același model ca `test-viteza-investitor.js`), deci nu e o măsurătoare pe un telefon real. Concurența cererilor pentru aceeași bandă nu e modelată.
+**Doar raportate** (nu blochează crearea contului):
+- persoana fizică fără firmă;
+- catalogul obligatoriu la materiale;
+- NACE manual la închirieri.
 
 ## Testele
-**Noi:**
-
 | Test | Rezultat | Ce verifică |
 |---|---|---|
-| `scripts/test-pagini-destinatie.js` (Playwright) | 378 / 378 | primul ecran la 360 × 640 și 390 × 844, RO + EN, 7 pagini; un singur buton portocaliu; destinația corectă la `DOMContentLoaded` și înaintea oricărui cod de sesiune, cu `profesie`, `lang`, UTM; fără JavaScript; contul de partener → „Mergi în panoul tău”; variantele (publicată / nepublicată / fără parametru, ≤ 300 ms, `variant` în `partner_landing_view`); viteza (Slow 4G, CPU × 4); butoanele plutitoare la 360–1920 px; runda; paginile generate și CSS-ul precompilat la zi |
-| `scripts/test-pagini-destinatie-server.js` | 77 / 77 | publicul nu vede ciornele; 401 / 403 fără dreptul SEO; doar citire → 403 la scriere; limitele de caractere pe server, cu câmpul greșit; publicarea fără EN → refuzată, cu mesaj clar; publicare, istoric, revenire; imaginea: alt format, peste 300 KB, peste 1600 px, EXIF → refuzate |
-| `scripts/test-migrare-pagini-destinatie.js` (PGlite) | 51 / 51 | rulare dublă; constrângerile și limitele; RLS: `anon` / `authenticated` nu citesc ciorne și nu pot executa funcțiile; publicarea fără EN refuzată; istoric și revenire; funcțiile fără `security definer`, cu `search_path` fix |
-| `scripts/test-pagini-destinatie-backoffice.js` (Playwright) | 31 / 31 | lista, varianta nouă, contoarele; salvarea ciornei („✓ Salvat”, mesaj verde); limita depășită (mesaj roșu, câmpul marcat, valorile rămân); publicarea fără EN (tabul „English” deschis); publicare v1 / v2, istoric, revenire (fereastra MDFeedback); previzualizarea telefon / desktop; linkul copiat; imaginea PNG 2400 × 1350 → WebP 1600 × 900 în 3 mărimi; doar citire; fără `alert(` / `confirm(` |
+| `scripts/test-preinscriere-partener.js` | **401 / 401** | vezi mai jos |
+| `scripts/test-alocare-eligibilitate.js` (nou) | **12 / 12** | vezi mai jos |
 
-**Suita completă:** 101 / 101 fișiere de test trec.
+**`test-preinscriere-partener.js`:**
+- **Server:**
+  - `/api/public/categorii`: active, pe tip, ordinea, RO / EN, `?profesie=`;
+  - pre-înscrierea: doar tipul obligatoriu; indiciul valid / necunoscut / inactiv / subcategorie / de alt tip / greșit / prea lung; `?domeniu=` înaintea lui `?profesie=`; `categorie_id` verificat; text liber refuzat;
+  - API-ul ciornei: ce se salvează, refuzurile, salvarea automată, DELETE;
+  - portofoliul contului nou; back-office (indiciul doar dacă există);
+  - dicționarul paginii fără chei nefolosite.
+- **Browser, RO + EN, 390 și 1366 px:**
+  - formularul are exact câmpurile R1; obligatoriile marcate sub câmp (MDFeedback);
+  - cele 5 tipuri până la ciornă și panou;
+  - 10 combinații de parametri din reclame, inclusiv cele invalide, fără eroare;
+  - indiciul dezactivat între pagină și cod; `categorie_id` refuzat după cont, fără blocaj;
+  - „Ce lucrări faci” primul, cu „Recomandate pentru tine”, bifarea cu feedback;
+  - un singur buton portocaliu, fără depășiri, 0 erori JS, 0 texte românești în EN.
 
-Am actualizat 14 teste vechi care verificau șablonul 11-R3g, înlocuit acum de macheta L1:
-- `test-cta-partener`, `test-ruta-partener`, `test-meniu-devino-partener`, `test-clicuri-meniu`, `test-emailuri-cod`, `test-fereastra-cont`, `test-masurare-11a1`;
-- `test-pagina-investitori`, `test-investitori-public`, `test-runda-pagina`, `test-permisiuni-runda-pagina`, `test-ruta-investitor`, `test-ruta-investitor-cont`, `test-panou-investitor-cont-nou`.
+**`test-alocare-eligibilitate.js`** (cele 9 cazuri cerute):
+- control eligibil → alocat;
+- `status_live` „indisponibil” și fără rând de disponibilitate → nealocate;
+- neaprobat, respins, fără contract, fără IBAN, suspendat, cont nou 12-P2 fără firmă → nealocate, comanda rămâne `in_cautare_partener`;
+- în plus: un candidat neaprobat lângă unul eligibil → e ales cel eligibil; jurnalul fără id / firmă / email; eligibilitatea necitibilă → comanda rămâne în căutare.
 
-Ce s-a schimbat în ele:
-- selectorii: butonul `#lp-cta` în loc de `.rp-hero [data-rp-principal]` / `#hero-intra-runda`;
-- textele noi ale butoanelor;
-- fără rundă activă, secțiunea lipsește;
-- „Runda curentă” stă înaintea pașilor.
+Înainte de reparație, 6 din cele 9 cazuri picau.
 
-Verificările de comportament (redirecționările, `?type=`, fereastra de cont, ruta KYC, „0 lei”, linkurile 200) au rămas.
+`test-regiune.js`: modulul de eligibilitate înlocuit în test (unde toți partenerii sunt eligibili) a primit și funcțiile noi; 21 / 21.
 
-Două eșecuri din prima rulare au fost de rețea și au trecut la reluare: Tailwind de pe CDN pe `reclamatii` (pagină neatinsă) și `test-pitch-deck-prezentare`.
+**Suita completă: 100 / 102 fișiere trec.**
+- Prima rulare: 98 / 102.
+  - `test-emailuri-cod` și `test-fereastra-cont` completau încă orașul scos. Le-am aliniat, iar la reluare trec: 117 / 117 și 422 / 422.
+- Cele 2 care pică, pică și pe `main` și nu țin de acest pas:
+  - `test-pagini-destinatie`: `✗ genereaza-pagini-destinatie.js --verifica: ✗ /parteneri/asigurari: ghidul-asiguratorului.html nu e la zi … | ✗ /investitori: mydarrin-investitori.html nu e la zi …`. Diferența e doar de terminații de rând (CRLF pe Windows); conținutul e identic.
+  - `test-panou-investitor`: 7 × `✗ console: Access to fetch at 'https://ipapi.co/json/' … has been blocked by CORS policy`. Depinde de rețea: pe `main` și pe branch a picat și a trecut la fel; fișierele investitorului nu sunt atinse.
 
-**Detectorul EN:** 0 texte românești pe toate paginile publice (80 de combinații pagină × lățime), fără erori JS și fără depășiri.
+**Detectorul EN:** 0 texte românești, 80 de combinații pagină × lățime (inclusiv `/parteneri/inscriere` și `?profesie=instalator`, la 390 și 1366 px), 0 pagini nerandate, 0 erori JS, 0 depășiri.
 
-## Capturi (`docs/capturi-12l1/`)
-- Înainte / după, la 390 și 1366 px, RO și EN, pentru cele 7 pagini și varianta „instalatori”: `inainte-*` / `dupa-*`.
-- Back-office, după:
-  - `dupa-backoffice-lista`;
-  - `dupa-backoffice-editor` (și `-390`);
-  - `dupa-backoffice-previzualizare`;
-  - `dupa-backoffice-istoric`.
-- Back-office, înainte: `inainte-backoffice-seo-*` (tabul nu exista).
+## Capturi (`docs/capturi-12p2/`, 390 px, RO și EN)
+- Înainte:
+  - `inainte-preinscriere-*` (câmpul „Profesia” și orașul);
+  - `inainte-panou-*`.
+- După:
+  - `dupa-preinscriere-*` (formularul R1, din reclamă);
+  - `dupa-preinscriere-materiale-*`;
+  - `dupa-preinscriere-eroare-*` (obligatoriile sub câmp);
+  - `dupa-panou-*` („Ce lucrări faci” primul);
+  - `dupa-lucrari-*` („Recomandate pentru tine”, „✓ Salvat”).
+- Capturile primei variante („Altceva”, Curier cu categorie) sunt scoase.
 
-## Pașii pentru LM
-**1. Varianta „instalatori”**
-1. Rulați migrarea în SQL Editor (înainte de merge).
-2. Back-office → SEO → „Pagini de destinație” → `/parteneri/servicii`.
-3. „+ Variantă nouă” → numele `instalatori` (exact valoarea `utm_campaign` din reclamă) → „Creează varianta”. Varianta pornește cu textele variantei deschise.
-4. În tabul „Română” completați eticheta, titlul, subtitlul, cele 3 beneficii, butonul și textul de sub buton. Opțional: „Încarcă imaginea” și textul alternativ.
-5. În tabul „English”, aceleași câmpuri în engleză.
-6. La „Profesia din linkul pentru reclamă” alegeți `instalator`.
-7. „Salvează ciorna” → verificați în previzualizare (Telefon / Desktop) → „Publică”. Publicarea cere RO și EN complete.
-
-**2. Linkul pentru reclamă**
-- În dreapta, sub previzualizare: „Link pentru reclamă” → „Copiază”.
-- Rezultatul: `https://mydarrin.homebestpal.com/parteneri/servicii?utm_campaign=instalatori&profesie=instalator`.
-- În Ads Manager, adăugați la link, dacă vreți, `utm_source` / `utm_medium`; se transmit mai departe la înscriere.
-
-**3. Revenirea**
-„Istoricul modificărilor” → „Revino la vN” → confirmați.
-
-## De decis de LM
-1. **Clientul conectat fără rol de partener** (vezi mai sus): păstrează alegerea tipului pe contul existent sau merge la pre-înscriere?
-2. **`/parteneri`:** macheta L1.3 nu are etichetă și beneficii, dar cerința pasului le cere pe toate cele 7 pagini. Le-am pus; textele sunt de confirmat.
-3. **Textele implicite noi ale primului ecran** (RO + EN, în `lib/landing-pagini.js`) sunt scrise din faptele de pe paginile de azi. Toate se pot schimba din back-office, fără cod.
+## De decis / de știut
+1. **Orașul scos:** „rămân doar tipul, numele, emailul, telefonul, parola și acordul” nu include orașul, așa că l-am scos.
+   - Efecte: cardul turcoaz din panou nu mai arată orașul („Comenzi în zona ta · Furnizor de Servicii”); la curier, localitatea nu mai e precompletată la pasul „Profesii”.
+   - Zona se alege oricum în panou. Dacă orașul trebuie păstrat, revin cu el.
+2. **„Recomandate pentru tine”** în loc de „Din categoria ta” (motivul e mai sus, la punctul 4).
+3. **Alocarea:** partenerul de azi fără contract nu mai primește comenzi automat după publicare.
+4. **Ordonarea după indiciu** funcționează azi doar la servicii: produsele de materiale (38) și închirieri (10) din catalog nu au `categorie_id`.
+5. **Lista din back-office** arată doar partenerii cu firmă salvată (ca înainte).
+6. **Închirierile** au 7 categorii principale și **0 subcategorii** în bază.
+7. **Testele care picau la prima rulare** (și pe `main`):
+   - `test-pagini-destinatie`: diferența e doar de terminații de rând (CRLF pe Windows, din `core.autocrlf`); conținutul paginilor e identic;
+   - `test-panou-investitor`: cereri spre `ipapi.co`, dependente de rețea; la reluare a trecut pe ambele.
 
 ## Ce nu s-a testat
-- Pe un telefon real și în browserul Facebook (doar Chromium, prin Playwright).
-- Migrarea pe Supabase: doar pe PGlite (Postgres local). LM o rulează.
-- Încărcarea imaginii în Storage-ul real (adresa semnată e simulată; conținutul e verificat de server, real).
+- Pe un telefon real (doar Chromium, prin Playwright).
+- Pe baza reală: datele din teste sunt simulate. Structura tabelelor, politicile RLS și numerele de mai sus le-am citit din producție, doar cu SELECT.
 
 ## Commit-uri
 | Commit | Descriere |
 |---|---|
-| `35fcd3e` | (A) Migrarea, `lib/landing-pagini.js`, `/api/public/landing`, `/api/admin/seo-landing`; testele migrării și ale serverului |
-| `47fdaf3` | (B) Primul ecran pe cele 7 pagini, butonul cu destinația în HTML, variantele, viteza, textele mutate în `/parteneri/intrebari` (RO + EN) |
-| `3287a0e` | (C) Back-office → SEO → „Pagini de destinație” și testul lui |
-| `2eaae30` | (D) Testele vechi aliniate la macheta L1 |
-| `5e2616d` | (E) Capturile înainte / după |
+| `4c43828` | (A) `lib/categorii-inscriere.js`, `/api/public/categorii`, verificarea în `/api/partener/activare-ciorna` |
+| `6756d8b` | (B) Pagina de înscriere, prima variantă (categorie + „Altceva”) |
+| `d2e7bc1` | (C) Panoul: „Ce lucrări faci”, portofoliul ordonat |
+| `e2fcda3` | (D) Back-office |
+| `bf4a3dc` | (E) Testele, prima variantă |
+| `b1e9e82` | (F) Capturile, prima variantă, și categoriile simulate pentru detector |
+| `5edec85` | `PR.md`, prima variantă |
+| `e325b9c` | (G) Alocarea automată doar spre partenerii eligibili + `test-alocare-eligibilitate.js` |
+| `e20a2ff` | (H) Macheta R1: formular fără categorie / oraș, indiciul ascuns, text liber refuzat, back-office, testele și capturile refăcute |
+| `420042e` | (I) `test-emailuri-cod`, `test-fereastra-cont` aliniate la formularul fără oraș |
 | _(acest commit)_ | `PR.md` |
 
 **Fișiere noi:**
-- `landing.css`, `landing.js`, `landing-tailwind.css`, `lib/landing-pagini.js`, `seo-panou-landing.js`;
-- `api/public/landing.js`, `api/admin/seo-landing.js`, `docs/migrations-propuse/2026-11-19_pagini-destinatie.sql`;
-- `scripts/genereaza-pagini-destinatie.js`, `scripts/genereaza-tailwind-destinatie.js`, `scripts/retea-modelata.js`, `scripts/landing-rpc-simulat.js`;
-- `scripts/test-pagini-destinatie*.js`, `scripts/test-migrare-pagini-destinatie.js`;
-- `docs/capturi-12l1/`.
+- `lib/categorii-inscriere.js`;
+- `api/public/categorii.js`;
+- `scripts/test-alocare-eligibilitate.js`;
+- `docs/capturi-12p2/`.
 
 **Fișiere modificate:**
-- cele 7 pagini și `intrebari-frecvente-parteneri.html`;
-- dicționarele EN ale lor și `i18n/en.json`;
-- `cta-partener.js`, `cta-investitor.js`, `meniu-partener.js`, `masurare.js`, `lib/verifica-fisier.js`;
-- `mydarrin-superadmin.html`, `seo-panou.css`.
+- `mydarrin-inscriere-partener.html`, `inscriere-partener.js`, `cont-fereastra.js`, `panou-cont-nou.js`;
+- `api/partener/activare-ciorna.js`, `api/partener/portofoliu.js`, `api/admin/parteneri-lista.js`;
+- `lib/aloca-partener.js`;
+- `mydarrin-superadmin.html`;
+- `i18n/en.json`, `i18n/en/mydarrin-inscriere-partener.json`;
+- `scripts/test-preinscriere-partener.js`, `scripts/test-regiune.js`, `scripts/test-emailuri-cod.js`, `scripts/test-fereastra-cont.js`, `scripts/server-test.js`.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)

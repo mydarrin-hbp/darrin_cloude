@@ -919,7 +919,7 @@
   }
 
   // ── Pasul 12-P1: datele pre-înscrierii, în ciorna activării ──
-  // Categoria, profesia și orașul (/parteneri/inscriere) intră în
+  // Tipul și indiciul din reclamă (/parteneri/inscriere; pasul 12-P2, macheta R1) intră în
   // partener_activare_ciorna.date.preinscriere, prin API-ul ciornei
   // (/api/partener/activare-ciorna): pașii activării le găsesc precompletate.
   // Cel mult 4 s: intrarea în panou nu așteaptă mai mult; la eșec datele rămân
@@ -935,12 +935,31 @@
         var s = r && r.data && r.data.session;
         if (!s) return false;
         var h = { Authorization: 'Bearer ' + s.access_token, 'Content-Type': 'application/json' };
-        return fetch('/api/partener/activare-ciorna', { headers: h, cache: 'no-store' }).then(function (res) { return res.ok ? res.json() : null; }).then(function (j) {
-          var c = (j && j.ciorna) || {};
-          var dateCiorna = Object.assign({}, c.date || {}, { preinscriere: date });
+        var c = {};
+        var pune = function (pre) {
+          var dateCiorna = Object.assign({}, c.date || {}, { preinscriere: pre });
           return fetch('/api/partener/activare-ciorna', { method: 'PUT', headers: h, body: JSON.stringify({ pas_curent: c.pas_curent || 1, date: dateCiorna }) });
+        };
+        return fetch('/api/partener/activare-ciorna', { headers: h, cache: 'no-store' }).then(function (res) { return res.ok ? res.json() : null; }).then(function (j) {
+          c = (j && j.ciorna) || {};
+          return pune(date);
         }).then(function (res) {
           if (res && res.ok) { ss(CHEIE_PREINSCRIERE, null); return true; }
+          // Pasul 12-P2: serverul a refuzat categoria trimisă (inexistentă, inactivă, de alt
+          // tip sau text liber). Contul există deja: se salvează fără categorie (doar tipul);
+          // lucrările se aleg în panou.
+          if (res && res.status === 400) {
+            return res.json().catch(function () { return {}; }).then(function (j) {
+              if (!/^CATEGORIE_/.test(String(j && j.cod))) return false;
+              var faraCategorie = Object.assign({}, date, { categorie_id: null, categorie_slug: null, categorie_denumire: null, indiciu_domeniu: null });
+              delete faraCategorie.categorie_altceva;
+              delete faraCategorie.categorie_text;
+              return pune(faraCategorie).then(function (r2) {
+                if (r2 && r2.ok) { ss(CHEIE_PREINSCRIERE, null); return true; }
+                return false;
+              });
+            });
+          }
           return false;
         });
       });

@@ -230,7 +230,7 @@ async function testeBrowser() {
       // Pasul 12-P1: partenerul își creează contul pe pagina de pre-înscriere.
       await p.waitForURL(/parteneri\/inscriere/, { timeout: 8000 });
       await p.waitForFunction(() => window.MDCont && window.MDFeedback, null, { timeout: 10000 });
-      await p.fill('#pi-oras', 'Iași');
+      // Pasul 12-P2 (macheta R1): formularul nu mai are orașul.
       await p.fill('#pi-prenume', 'Ana');
       await p.fill('#pi-nume', 'Popescu');
       await p.fill('#pi-tel', '+40 712 345 678');

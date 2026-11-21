@@ -352,7 +352,7 @@ async function completeazaDate(p) {
           await p.click('#mdc-rol-continua');
           await p.waitForURL(/parteneri\/inscriere\?categorie=servicii/, { timeout: 8000 });
           await p.waitForFunction(() => window.MDCont && window.MDFeedback, null, { timeout: 10000 });
-          await p.fill('#pi-oras', 'Iași');
+          // Pasul 12-P2 (macheta R1): formularul nu mai are orașul.
           await p.fill('#pi-prenume', 'Ana');
           await p.fill('#pi-nume', 'Popescu');
           await p.fill('#pi-tel', '+40 712 345 678');

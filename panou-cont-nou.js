@@ -10,6 +10,10 @@
        plus „Necesită completări” (firma sau un document respinse, cu motivul);
        starea vine de pe server (activare.stare_cont, lib/activare-partener.js
        → stareContPartener), într-un singur loc;
+     - pasul 12-P2 (temporar, până la B2): primul rând al listei, „Ce lucrări faci”,
+       deschide în panou portofoliul existent (/api/partener/portofoliu), cu serviciile
+       din categoria indicată de reclamă primele („Recomandate pentru tine”); indiciul
+       nu apare în subtitlu (macheta R1: la înscriere nu se alege categoria);
      - „Ce mai ai de făcut”, {n} din 6 pași: fiecare rând deschide pasul existent
        din activare-pasi.js (MYD_ACTIVARE, modul „un singur pas”), în orice
        ordine; după salvare, panoul se reîncarcă cu starea nouă;
@@ -171,16 +175,28 @@
   // ── Date ─────────────────────────────────────────────────────────────
   function pre() { return (st.ciorna && st.ciorna.date && st.ciorna.date.preinscriere) || {}; }
   function tip() { return (st.profil && st.profil.activare && st.profil.activare.tip) || 'servicii'; }
+  // Profesia aleasă de partener (doar conturile din pasul 12-P1, cu profesie_cod).
+  // Pasul 12-P2 (R1): profesia din reclamă (profesie_slug) e doar un indiciu, nu o alegere.
   function numeProfesie() {
     var p = pre();
-    if (!p.profesie_cod && !p.profesie_slug) return null;
-    var din = (st.profesii || []).filter(function (x) { return x.cod === p.profesie_cod || x.slug === p.profesie_slug; })[0];
+    if (!p.profesie_cod) return null;
+    var din = (st.profesii || []).filter(function (x) { return x.cod === p.profesie_cod; })[0];
     return din ? din.denumire : (en() ? null : p.profesie_ro);
+  }
+  // Pasul 12-P2 (R1): indiciul din reclamă (categoria), în limba paginii; ordonează
+  // doar „Ce lucrări faci” și nu apare ca alegere a partenerului.
+  function numeIndiciu() {
+    var p = pre();
+    if (!p.categorie_id) return null;
+    return en() ? (p.categorie_denumire_en || null) : (p.categorie_denumire || null);
   }
   function eticheta() {
     var d = window.MYD_DESTINATIE_ROL && window.MYD_DESTINATIE_ROL.definitie(st.profil.activare.rol);
-    return tip() === 'servicii' ? (numeProfesie() || tr(d ? d.titlu : 'Partener')) : tr(d ? d.titlu : 'Partener');
+    var rol = tr(d ? d.titlu : 'Partener');
+    return (tip() === 'servicii' ? numeProfesie() : null) || rol;
   }
+  // Tipurile cu portofoliu de bifat (/api/partener/portofoliu): „Ce lucrări faci”.
+  var CU_LUCRARI = { servicii: true, materiale: true, inchirieri: true };
   function oras() { return String(pre().oras || '').trim(); }
   function prenume() {
     var p = st.profil || {};
@@ -281,6 +297,71 @@
     '</button>';
   }
 
+  // ── Pasul 12-P2 (temporar, până la B2): „Ce lucrări faci” ────────────
+  // Rândul deschide, în panou, portofoliul existent (/api/partener/portofoliu):
+  // serviciile din categoria indicată de reclamă (?domeniu= / ?profesie=, macheta R1)
+  // apar primele, ca recomandare. Fără ecran nou: aceleași carduri și rânduri ale panoului.
+  function randLucrariHtml() {
+    var sub = tr('Alege serviciile pe care le faci');
+    return '<button type="button" class="mpn-rand" data-mpn-rand="lucrari">' +
+      '<span class="mpn-cerc"></span>' +
+      '<span class="mpn-txt"><b>' + esc(tr('Ce lucrări faci')) + ' <span class="mpn-sub-d">· ' + esc(sub) + '</span></b><small>' + esc(sub) + '</small></span>' +
+      '<span class="mpn-sageata" aria-hidden="true">›</span>' +
+    '</button>';
+  }
+  function lucrariHtml() {
+    return '<section class="mpn-card" data-mpn-lucrari aria-labelledby="mpn-t-lucrari">' +
+      '<h2 id="mpn-t-lucrari">' + esc(tr('Ce lucrări faci')) + '</h2>' +
+      '<p class="mpn-mic">' + esc(tr('Bifează serviciile pe care le faci. Comenzile vin doar pentru ce ai bifat, după ce contul devine activ.')) + '</p>' +
+      '<div id="mpn-lucrari-lista" class="mpn-lista"><p class="mpn-mic">' + esc(tr('Se încarcă…')) + '</p></div>' +
+      '<div id="mpn-lucrari-msg" aria-live="polite"></div>' +
+      '<div class="mpn-legaturi"><button type="button" class="mpn-secundar" id="mpn-lucrari-inapoi">' + esc(tr('Înapoi la panou')) + '</button></div>' +
+    '</section>';
+  }
+  function titluServiciu(s) { return en() && s.titlu_en ? s.titlu_en : s.titlu; }
+  function bifaHtml(s) {
+    return '<label class="mpn-rand" style="cursor:pointer"><input type="checkbox" data-mpn-serviciu="' + esc(s.id) + '"' + (s.bifat ? ' checked' : '') + ' style="width:22px;height:22px;flex:0 0 auto;accent-color:#003366;margin:0">' +
+      '<span class="mpn-txt"><b>' + esc(titluServiciu(s)) + '</b>' + (s.domeniu && !en() ? '<small style="display:block">' + esc(s.domeniu) + '</small>' : '') + '</span></label>';
+  }
+  function incarcaLucrari() {
+    var zona = $('mpn-lucrari-lista');
+    if (!zona) return Promise.resolve();
+    return cerere('/api/partener/portofoliu').then(function (j) {
+      var z = $('mpn-lucrari-lista');
+      if (!z) return;
+      if (!j.categorie) { z.innerHTML = '<p class="mpn-mic">' + esc(tr('Tipul tău de partener nu folosește un catalog de bifat — alocarea comenzilor se face pe zonă/disponibilitate.')) + '</p>'; return; }
+      var lista = j.servicii || [];
+      if (!lista.length) { z.innerHTML = '<p class="mpn-mic">' + esc(tr('Niciun serviciu public disponibil momentan în această categorie de catalog.')) + '</p>'; return; }
+      var aleasa = lista.filter(function (s) { return s.din_categoria_aleasa; });
+      var restul = lista.filter(function (s) { return !s.din_categoria_aleasa; });
+      var cat = numeIndiciu();
+      z.innerHTML =
+        (aleasa.length ? '<h3 class="mpn-mic" style="font-weight:700;margin:6px 0 0">' + esc(cat ? tr('Recomandate pentru tine: {categorie}', { categorie: cat }) : tr('Recomandate pentru tine')) + '</h3>' + aleasa.map(bifaHtml).join('') : '') +
+        (aleasa.length && restul.length ? '<h3 class="mpn-mic" style="font-weight:700;margin:12px 0 0">' + esc(tr('Alte servicii')) + '</h3>' : '') +
+        restul.map(bifaHtml).join('');
+      Array.prototype.forEach.call(z.querySelectorAll('input[data-mpn-serviciu]'), function (b) {
+        b.addEventListener('change', function () { bifeaza(b, lista.filter(function (s) { return s.id === b.getAttribute('data-mpn-serviciu'); })[0]); });
+      });
+    }).catch(function (e) {
+      var z = $('mpn-lucrari-lista');
+      if (z) z.innerHTML = '';
+      window.MDFeedback.mesaj($('mpn-lucrari-msg'), 'eroare', (e && e.message) || tr('Nu am putut încărca serviciile. Încearcă din nou.'));
+    });
+  }
+  // Bifarea: „Se salvează…” (bifa blocată), apoi mesajul verde sau roșu, după răspunsul serverului.
+  function bifeaza(b, s) {
+    var activ = b.checked;
+    var zona = $('mpn-lucrari-msg');
+    b.disabled = true;
+    window.MDFeedback.mesaj(zona, 'info', tr('Se salvează…'));
+    cerere('/api/partener/portofoliu', { method: 'POST', body: { action: 'toggle', catalog_serviciu_id: s.id, activ: activ } }).then(function () {
+      window.MDFeedback.mesaj(zona, 'ok', activ ? tr('✓ Salvat: {serviciu} e în lista ta.', { serviciu: titluServiciu(s) }) : tr('✓ Salvat: {serviciu} a ieșit din lista ta.', { serviciu: titluServiciu(s) }));
+    }, function (e) {
+      b.checked = !activ;
+      window.MDFeedback.mesaj(zona, 'eroare', tr('✕ Nu s-a salvat: {motiv}', { motiv: (e && e.message) || tr('Încearcă din nou.') }));
+    }).then(function () { b.disabled = false; });
+  }
+
   function infoHtml() {
     var t = tip();
     // Decizia LM (17 nov. 2026): „Comenzi în zona ta · {profesie} · {oraș}”, pentru orice tip
@@ -308,6 +389,8 @@
       '<div class="mpn-cap-lista"><h2>' + esc(tr('Ce mai ai de făcut')) + '</h2><span>' + esc(tr('{n} din 6 pași', { n: sc.pasi_facuti })) + '</span></div>' +
       '<h2 id="mpn-t-lista" class="mpn-t-lista-tel">' + esc(tr('Ce mai ai de făcut')) + '</h2>' +
       '<p class="mpn-mic">' + esc(tr('Începi cu firma; restul îl faci în ce ordine vrei.')) + '</p>' +
+      // Pasul 12-P2: primul rând, „Ce lucrări faci” → portofoliul (nu intră în cei 6 pași).
+      (CU_LUCRARI[tip()] ? randLucrariHtml() : '') +
       sc.randuri.map(function (r) { return randHtml(r, sc); }).join('') +
       (urm ? '<button type="button" class="mpn-buton" id="mpn-continua" data-mpn-pas="' + (sc.randuri.filter(function (r) { return r.cheie === sc.urmatorul; })[0] || {}).pas + '">' + esc(tr(pePaTip(urm.urm, tip()))) + '</button>' : '') +
     '</section>';
@@ -353,7 +436,7 @@
     rad.scrollLeft = 0;
     rad.innerHTML = antetHtml() +
       '<div class="mpn-corp">' + meniuHtml() +
-        '<main class="mpn-main" id="mpn-main">' + (st.sectiune === 'activitate' ? activitateHtml() : golHtml(st.sectiune)) + '</main>' +
+        '<main class="mpn-main" id="mpn-main">' + (st.sectiune === 'activitate' ? activitateHtml() : st.sectiune === 'lucrari' ? lucrariHtml() : golHtml(st.sectiune)) + '</main>' +
       '</div>' + josHtml();
     // Pe desktop, subtitlul are și tipul contului (macheta B1.5).
     var subD = rad.querySelector('[data-mpn-desktop-sub]');
@@ -363,6 +446,7 @@
     if (tTel && window.matchMedia && window.matchMedia('(min-width:1024px)').matches) tTel.hidden = true;
     if (window.MYD_PAZA && window.MYD_PAZA.leagaSelectorLimba) window.MYD_PAZA.leagaSelectorLimba($('mpn-limba'));
     leaga(rad);
+    if (st.sectiune === 'lucrari') incarcaLucrari();
     // În I18N EN, textele generate se traduc la inserare (observatorul din i18n-loader.js).
   }
 
@@ -379,6 +463,18 @@
     Array.prototype.forEach.call(rad.querySelectorAll('.mpn-rand[data-mpn-pas]:not([disabled]), #mpn-continua'), function (b) {
       b.addEventListener('click', function () { deschidePas(Number(b.getAttribute('data-mpn-pas'))); });
     });
+    // Pasul 12-P2: „Ce lucrări faci” și înapoi.
+    var mergiLa = function (sec) {
+      st.sectiune = sec;
+      randeaza();
+      rad.scrollTop = 0;
+      var m = $('mpn-main');
+      if (m) { m.setAttribute('tabindex', '-1'); try { m.focus({ preventScroll: true }); } catch (e) {} }
+    };
+    var lucrari = rad.querySelector('[data-mpn-rand="lucrari"]');
+    if (lucrari) lucrari.addEventListener('click', function () { mergiLa('lucrari'); });
+    var inapoi = $('mpn-lucrari-inapoi');
+    if (inapoi) inapoi.addEventListener('click', function () { mergiLa('activitate'); });
     var c = $('mpn-complet');
     if (c) c.addEventListener('click', function () { ss(CHEIE_INCHIS, '1'); inchide(); });
     var iesi = $('mpn-iesi');

@@ -30,7 +30,13 @@ stub('lib/rate-limit.js', { checkRateLimit: async () => true });
 stub('lib/notificari-comanda.js', { notificaAdminFaraPartener: async () => true, notificaPartenerAlocat: async () => true, MOTIVE: {} });
 stub('lib/competente-parteneri.js', { filtreazaDupaCompetente: async (ids) => ids });
 // Regula „poate primi comenzi” (contract, cont bancar) nu e testată aici: toți pot.
-stub('lib/eligibilitate-partener.js', { parteneriCarePotVinde: async (ids) => new Set(ids) });
+// (Pasul 12-P2: aloca-partener citește eligibilitatea cu incarcaEligibilitate; regula e în test-alocare-eligibilitate.js.)
+stub('lib/eligibilitate-partener.js', {
+  parteneriCarePotVinde: async (ids) => new Set(ids),
+  incarcaEligibilitate: async (ids) => new Map(ids.map((id) => [id, { id, poate_vinde: true }])),
+  poatePrimiComenzi: (p) => !!p,
+  motivNuPoateVinde: (p) => (p ? null : 'inexistent'),
+});
 supabaseAdmin.auth.admin = Object.assign(supabaseAdmin.auth.admin || {}, { getUserById: async () => ({ data: { user: null }, error: null }) });
 
 const R = require(path.join(RADACINA, 'lib/regiune.js'));
