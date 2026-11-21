@@ -44,7 +44,7 @@ Promptul cerea reverificarea listei din `categorii`. Citirea directă din Supaba
 - `test-adrese-curate.js`: 1355 trecute, 0 picate (cu cele 4 cazuri noi de 301 + țintă 200).
 - `test-rute-catalog.js` (Chromium, 390 / 1366 px, RO / EN): 86 trecute, 0 picate. Acoperă: cardurile de serviciu, material și închiriere din pagina principală (adresă + 200), meniurile din antet și laterale din `/cum-comanzi`, 3 adrese stricate (301 → 200), 3 subcategorii inexistente (mesajul RO / EN, parametrul scos din adresă, fără erori JS), o subcategorie existentă (fără mesaj).
 - Detectorul de română în modul EN: **0** texte românești, 80 pagini × lățimi, 0 erori JS, 0 depășiri.
-- Suita completă: vezi rezultatul de mai jos.
+- Suita completă (`npm run test:rezumat`): 104 teste, 101 trecute, 3 picate (11549 verificări trecute, 1 picată). Picate: `test-pagini-destinatie` (paginile generate `ghidul-asiguratorului` / `mydarrin-investitori` etc. „nu sunt la zi”) și `test-panou-investitor` (CORS spre ipapi.co în Chromium) — **la fel pe main**, verificat; `test-profiluri-partener-en` a picat o dată, instabil, și trece la rerulare separată.
 - Capturile Playwright se pot genera cu `CAPTURI=<folder> node scripts/test-rute-catalog.js`.
 
 ## Ce rămâne pentru M1 și de ce
