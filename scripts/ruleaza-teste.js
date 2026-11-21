@@ -6,9 +6,9 @@
 //   node scripts/ruleaza-teste.js                  toată suita
 //   node scripts/ruleaza-teste.js pret alocare     doar testele care conțin „pret” sau „alocare” în nume
 //   node scripts/ruleaza-teste.js --complet        ieșirea completă a testelor picate (doar la cerere)
-//   node scripts/ruleaza-teste.js --paralel 2      câte teste rulează deodată (implicit 4)
+//   node scripts/ruleaza-teste.js --paralel 2      câte teste rulează deodată (implicit 2; testele de viteză sunt sensibile la încărcare)
 //   node scripts/ruleaza-teste.js --randuri 15     câte rânduri de eroare se arată (implicit 8)
-//   node scripts/ruleaza-teste.js --timeout 300    secunde maxime pe test (implicit 240)
+//   node scripts/ruleaza-teste.js --timeout 300    secunde maxime pe test (implicit 900)
 // Variabilele de mediu (de exemplu FARA_BROWSER=1) trec mai departe la teste.
 'use strict';
 
@@ -20,13 +20,13 @@ const DIR = __dirname;
 const RADACINA = path.join(DIR, '..');
 
 const arg = process.argv.slice(2);
-const opt = { complet: false, paralel: 4, randuri: 8, timeout: 240, filtre: [] };
+const opt = { complet: false, paralel: 2, randuri: 8, timeout: 900, filtre: [] };
 for (let i = 0; i < arg.length; i++) {
   const a = arg[i];
   if (a === '--complet') opt.complet = true;
   else if (a === '--paralel') opt.paralel = Math.max(1, parseInt(arg[++i], 10) || 1);
   else if (a === '--randuri') opt.randuri = Math.max(1, parseInt(arg[++i], 10) || 8);
-  else if (a === '--timeout') opt.timeout = Math.max(10, parseInt(arg[++i], 10) || 240);
+  else if (a === '--timeout') opt.timeout = Math.max(10, parseInt(arg[++i], 10) || 900);
   else opt.filtre.push(a.replace(/^scripts[\\/]/, '').replace(/\.js$/, '').toLowerCase());
 }
 
@@ -92,7 +92,7 @@ function totaluri(iesire) {
     if (opt.complet) {
       console.log(randuri.map((l) => '    ' + l).join('\n'));
     } else {
-      let erori = randuri.filter((l) => SEMN_EROARE.test(l) && !/\b0 picate\b/.test(l));
+      let erori = randuri.filter((l) => SEMN_EROARE.test(l) && !/^\s*✓/.test(l) && !/\b0 picate\b/.test(l));
       if (!erori.length) erori = randuri.slice(-opt.randuri);
       for (const l of erori.slice(0, opt.randuri)) console.log('    ' + l.trim().slice(0, 240));
       if (erori.length > opt.randuri) console.log(`    … încă ${erori.length - opt.randuri} rânduri (--complet pentru tot)`);

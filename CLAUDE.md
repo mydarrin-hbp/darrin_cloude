@@ -24,7 +24,7 @@
 - Remote: https://mydarrin-hbp@github.com/mydarrin-hbp/darrin_cloude.git. Push doar cu contul mydarrin-hbp, niciodată cu altul (de exemplu openstaffeu-lab).
 
 ## Git și publicare
-- Înainte de lucru: `git checkout main && git pull`, git status curat, branch nou din main pentru fiecare sarcină. Nimic direct pe main.
+- Înainte de lucru: `git checkout main && git pull`, git status curat, branch nou din main pentru fiecare sarcină; se lucrează doar pe branch-ul corect, nimic direct pe main.
 - Fără push și fără merge fără confirmarea explicită a lui LM. Merge în main = publicare automată pe Vercel (darrin-cloude, mydarrin-api-hbp, mydarrin-admin-panel-hbp).
 - La final: raport cu commit-urile și ce s-a testat.
 

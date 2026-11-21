@@ -1,200 +1,98 @@
-# Pasul 12-P2 (temporar, până la B2): înscriere fără profesie și fără categorie, după macheta R1; alocarea doar spre parteneri eligibili
+# Pasul 13-C0: configurarea Claude Code pentru consum mai mic, fără să se piardă vreo regulă
 
-Branch: `12p2-categorie-inscriere` → `main` (fără push și fără merge până la confirmarea LM).
+Branch: `13c0-configurare-claude-code` → `main` (fără push și fără merge până la confirmarea LM).
 
-**Fără migrare.** Datele se salvează în `partener_activare_ciorna.date.preinscriere`, care există deja.
+**Fără migrare. Codul platformei nu se schimbă** — doar `CLAUDE.md`, `.claude/` (skill-uri, subagent, setări), două scripturi noi în `scripts/` și un script în `package.json`. Merge-ul nu schimbă nimic pe site.
 
-**Macheta R1** (aprobată de LM pe 21 nov.) înlocuiește prima variantă a pasului, cea cu câmpul „Categoria principală” și „Altceva”. Ce scrie mai jos e starea finală a branch-ului.
-
-## Ce se schimbă
-
-### 1. Formularul `/parteneri/inscriere`
-- La crearea contului rămân doar:
-  - tipul (Servicii · Materiale · Închirieri · Curier · Asigurări);
-  - prenumele și numele;
-  - telefonul;
-  - emailul;
-  - parola;
-  - acordul pentru Termeni și Politica de confidențialitate.
-- **Scoase**, în RO și EN:
-  - profesia (lista celor 23 de meserii, care bloca înscrierea);
-  - „Categoria principală” și „Altceva” cu text liber;
-  - **orașul** (vezi „De decis”, punctul 1).
-- Cheile de traducere rămase fără folos sunt șterse:
-  - din `i18n/en/mydarrin-inscriere-partener.json`, 14: cele 6 vechi (profesia, orașul, două nume de profesii) și cele 8 adăugate în prima variantă;
-  - din `i18n/en.json`, cele 3 ale primei variante din panou („Primele: …”, „Din categoria ta…”).
-
-  Un test verifică acum că dicționarul paginii nu mai are chei nefolosite.
-
-### 2. Indiciul din reclame (ascuns)
-- `?categorie=` (și vechiul `?type=`) alege tipul, ca înainte.
-- `?domeniu=<slug>` și `?profesie=<slug>` nu apar ca întrebare. Se salvează în ciornă, iar serverul le verifică:
-  - `?domeniu=`: slug-ul unei categorii principale active a tipului ales → `categorie_id`, `categorie_slug`, denumirile RO / EN din bază, `categorie_sursa: 'domeniu'`;
-  - `?profesie=`: profesia cunoscută se păstrează ca `profesie_slug`; la servicii, dacă lipsește `?domeniu=`, dă categoria cu același cod NACE (de exemplu `instalator` → „Instalații sanitare”), cu `categorie_sursa: 'profesie'`;
-  - orice slug necunoscut, greșit, inactiv, subcategorie sau de alt tip **se ignoră fără eroare**;
-  - la curier și asigurări, indiciul de categorie se ignoră.
-- Indiciul ordonează „Ce lucrări faci” din panou. Nu apare ca alegere a partenerului: nici în salut, nici pe cardul turcoaz.
-- Linkurile reclamelor active merg mai departe.
-
-### 3. Serverul (`lib/categorii-inscriere.js`, `/api/partener/activare-ciorna`)
-- La pre-înscriere nu mai e nimic obligatoriu în afară de tip.
-- Textul liber la categorie (`categorie_text` / `categorie_altceva`) **nu se mai acceptă**: 400 `CATEGORIE_TEXT_NEACCEPTAT`, mesaj RO + EN.
-- Un `categorie_id` trimis explicit se verifică ca înainte: inexistent, inactiv sau subcategorie → `CATEGORIE_INVALIDA`; de alt tip → `CATEGORIE_ALT_TIP` (400 pe câmpul `categorie_id`).
-- Pre-înscrierea se verifică doar când se schimbă. Salvarea automată a pașilor nu e blocată nici dacă o categorie devine inactivă mai târziu.
-- La DELETE (după contract), restul ciornei se șterge, dar indiciul rămâne.
-- Dacă serverul refuză totuși o categorie după ce contul există (de exemplu, o sesiune veche), pagina salvează datele fără categorie. Partenerul nu rămâne blocat.
-
-### 4. Panoul partenerului (neschimbat față de prima variantă, cu o excepție)
-- „Ce lucrări faci” / „What work you do” e primul rând din „Ce mai ai de făcut”, deasupra lui „Cont creat”. Nu intră în cei 6 pași.
-- Rândul deschide portofoliul existent (`/api/partener/portofoliu`):
-  - serviciile din categoria indicată de reclamă (și din subcategoriile ei) apar primele;
-  - bifarea afișează mesajele MDFeedback („Se salvează…” → „✓ Salvat” / „✕ Nu s-a salvat”, după răspunsul serverului).
-- **Excepția:** titlul grupului e acum „Recomandate pentru tine: …” / „Recommended for you: …”, în loc de „Din categoria ta: …”. Partenerul nu mai alege categoria, deci „a ta” nu mai era adevărat.
-- `/api/partener/portofoliu` merge și pentru contul nou (rol ales la înscriere, fără firmă).
-
-### 5. Back-office
-În superadmin → Parteneri, sub tipul partenerului:
-- apare „Indiciu din reclamă: Instalații sanitare”, doar dacă există un indiciu;
-- altfel nu apare nimic.
-
-### 6. Alocarea automată (reparație, cerută de LM)
-- `lib/aloca-partener.js` filtrează candidații cu serviciul bifat prin regula unică `poatePrimiComenzi` (`lib/eligibilitate-partener.js`): aprobat, contract semnat, cont bancar activ, cont nesuspendat; furnizorul propriu, aprobat.
-- Starea se citește o singură dată, cu `incarcaEligibilitate`.
-- Abia apoi urmează competențele, disponibilitatea (`status_live`), zona și echipa, ca înainte.
-- Fără niciun partener eligibil, comanda rămâne `in_cautare_partener`, cu motivul `niciun_partener_eligibil`.
-- Dacă eligibilitatea nu se poate citi, comanda tot rămâne în căutare (`eligibilitate_indisponibila`); nu se alocă fără verificare.
-- În log apar doar id-ul comenzii și numărul de candidați pe motiv, de exemplu `{"fara_contract":1}`. Fără id de partener, nume sau email.
-
-**Locurile care scriu `comenzi.partener_id`:**
-
-| Loc | Regula |
-|---|---|
-| `lib/aloca-partener.js` (alocarea automată; apelat din `api/comenzi/creeaza.js` și `api/admin/comenzi-b2g.js`) | **reparat acum**: `poatePrimiComenzi` |
-| `api/partener/accept-comanda.js` (partenerul acceptă) | folosea deja `poatePrimiComenzi` (neschimbat) |
-
-În afara codului, în producție (citit doar cu SELECT): tabelul `comenzi` are doar politici RLS de citire, iar funcțiile SQL care îl ating doar raportează. Clientul nu poate scrie `partener_id`.
-
-`lib/aloca-subcontractori.js` scrie subcontractorii comenzii (`partener_id` pe alt tabel) și folosea deja regula unică (`parteneriCarePotVinde`).
-
-**Efect în producție:** singurul partener „disponibil” azi e aprobat, dar fără contract semnat. După publicare nu mai primește comenzi alocate automat până semnează contractul.
-
-## Câmpurile obligatorii pe tot drumul
-
-| Etapă | Câmpuri obligatorii | Ce poate bloca |
-|---|---|---|
-| **Pre-înscriere** | tipul (implicit Servicii); prenumele; numele; telefonul (cu prefixul țării); emailul; parola (min. 8); acordul | emailul are deja cont (apare linkul de logare / recuperare); limita de emailuri a Supabase |
-| **Codul** | codul de 6 cifre din email | codul expirat sau greșit (retrimitere după 45 s) |
-| **Panoul** | nimic | — |
-| **1. Firma** | forma juridică; CUI; denumirea (firmă străină: și forma juridică locală) | CUI folosit de alt cont (409); firmă inactivă / radiată la ANAF; **persoana fizică fără PFA / II / firmă nu poate trece** (regula existentă) |
-| **2. Cont bancar** | titularul; IBAN valid; banca; moneda | IBAN invalid |
-| **3. Profesii** | codul NACE principal (precompletat din indiciu, dacă există); curier: județul și raza 1–200 km | la închirieri, categoriile nu au NACE: se alege manual |
-| **4. Dotări** | servicii / închirieri: cel puțin un utilaj sau o sculă; curier: vehiculul; materiale: cel puțin un produs în catalog; asigurări: cel puțin un tip de poliță | la materiale, pasul cere catalogul plin |
-| **5. Documente** | cel puțin un document (PDF / JPG / PNG, max. 10 MB) | — |
-| **6. Contract** | codul OTP din email | se semnează doar după aprobarea firmei |
-
-Pașii 2–6 așteaptă firma (pasul 1), ca înainte. **Comenzile** vin doar după aprobare, contract și IBAN, acum și la alocarea automată.
-
-**Doar raportate** (nu blochează crearea contului):
-- persoana fizică fără firmă;
-- catalogul obligatoriu la materiale;
-- NACE manual la închirieri.
-
-## Testele
-| Test | Rezultat | Ce verifică |
-|---|---|---|
-| `scripts/test-preinscriere-partener.js` | **401 / 401** | vezi mai jos |
-| `scripts/test-alocare-eligibilitate.js` (nou) | **12 / 12** | vezi mai jos |
-
-**`test-preinscriere-partener.js`:**
-- **Server:**
-  - `/api/public/categorii`: active, pe tip, ordinea, RO / EN, `?profesie=`;
-  - pre-înscrierea: doar tipul obligatoriu; indiciul valid / necunoscut / inactiv / subcategorie / de alt tip / greșit / prea lung; `?domeniu=` înaintea lui `?profesie=`; `categorie_id` verificat; text liber refuzat;
-  - API-ul ciornei: ce se salvează, refuzurile, salvarea automată, DELETE;
-  - portofoliul contului nou; back-office (indiciul doar dacă există);
-  - dicționarul paginii fără chei nefolosite.
-- **Browser, RO + EN, 390 și 1366 px:**
-  - formularul are exact câmpurile R1; obligatoriile marcate sub câmp (MDFeedback);
-  - cele 5 tipuri până la ciornă și panou;
-  - 10 combinații de parametri din reclame, inclusiv cele invalide, fără eroare;
-  - indiciul dezactivat între pagină și cod; `categorie_id` refuzat după cont, fără blocaj;
-  - „Ce lucrări faci” primul, cu „Recomandate pentru tine”, bifarea cu feedback;
-  - un singur buton portocaliu, fără depășiri, 0 erori JS, 0 texte românești în EN.
-
-**`test-alocare-eligibilitate.js`** (cele 9 cazuri cerute):
-- control eligibil → alocat;
-- `status_live` „indisponibil” și fără rând de disponibilitate → nealocate;
-- neaprobat, respins, fără contract, fără IBAN, suspendat, cont nou 12-P2 fără firmă → nealocate, comanda rămâne `in_cautare_partener`;
-- în plus: un candidat neaprobat lângă unul eligibil → e ales cel eligibil; jurnalul fără id / firmă / email; eligibilitatea necitibilă → comanda rămâne în căutare.
-
-Înainte de reparație, 6 din cele 9 cazuri picau.
-
-`test-regiune.js`: modulul de eligibilitate înlocuit în test (unde toți partenerii sunt eligibili) a primit și funcțiile noi; 21 / 21.
-
-**Suita completă: 100 / 102 fișiere trec.**
-- Prima rulare: 98 / 102.
-  - `test-emailuri-cod` și `test-fereastra-cont` completau încă orașul scos. Le-am aliniat, iar la reluare trec: 117 / 117 și 422 / 422.
-- Cele 2 care pică, pică și pe `main` și nu țin de acest pas:
-  - `test-pagini-destinatie`: `✗ genereaza-pagini-destinatie.js --verifica: ✗ /parteneri/asigurari: ghidul-asiguratorului.html nu e la zi … | ✗ /investitori: mydarrin-investitori.html nu e la zi …`. Diferența e doar de terminații de rând (CRLF pe Windows); conținutul e identic.
-  - `test-panou-investitor`: 7 × `✗ console: Access to fetch at 'https://ipapi.co/json/' … has been blocked by CORS policy`. Depinde de rețea: pe `main` și pe branch a picat și a trecut la fel; fișierele investitorului nu sunt atinse.
-
-**Detectorul EN:** 0 texte românești, 80 de combinații pagină × lățime (inclusiv `/parteneri/inscriere` și `?profesie=instalator`, la 390 și 1366 px), 0 pagini nerandate, 0 erori JS, 0 depășiri.
-
-## Capturi (`docs/capturi-12p2/`, 390 px, RO și EN)
-- Înainte:
-  - `inainte-preinscriere-*` (câmpul „Profesia” și orașul);
-  - `inainte-panou-*`.
-- După:
-  - `dupa-preinscriere-*` (formularul R1, din reclamă);
-  - `dupa-preinscriere-materiale-*`;
-  - `dupa-preinscriere-eroare-*` (obligatoriile sub câmp);
-  - `dupa-panou-*` („Ce lucrări faci” primul);
-  - `dupa-lucrari-*` („Recomandate pentru tine”, „✓ Salvat”).
-- Capturile primei variante („Altceva”, Curier cu categorie) sunt scoase.
-
-## De decis / de știut
-1. **Orașul scos:** „rămân doar tipul, numele, emailul, telefonul, parola și acordul” nu include orașul, așa că l-am scos.
-   - Efecte: cardul turcoaz din panou nu mai arată orașul („Comenzi în zona ta · Furnizor de Servicii”); la curier, localitatea nu mai e precompletată la pasul „Profesii”.
-   - Zona se alege oricum în panou. Dacă orașul trebuie păstrat, revin cu el.
-2. **„Recomandate pentru tine”** în loc de „Din categoria ta” (motivul e mai sus, la punctul 4).
-3. **Alocarea:** partenerul de azi fără contract nu mai primește comenzi automat după publicare.
-4. **Ordonarea după indiciu** funcționează azi doar la servicii: produsele de materiale (38) și închirieri (10) din catalog nu au `categorie_id`.
-5. **Lista din back-office** arată doar partenerii cu firmă salvată (ca înainte).
-6. **Închirierile** au 7 categorii principale și **0 subcategorii** în bază.
-7. **Testele care picau la prima rulare** (și pe `main`):
-   - `test-pagini-destinatie`: diferența e doar de terminații de rând (CRLF pe Windows, din `core.autocrlf`); conținutul paginilor e identic;
-   - `test-panou-investitor`: cereri spre `ipapi.co`, dependente de rețea; la reluare a trecut pe ambele.
-
-## Ce nu s-a testat
-- Pe un telefon real (doar Chromium, prin Playwright).
-- Pe baza reală: datele din teste sunt simulate. Structura tabelelor, politicile RLS și numerele de mai sus le-am citit din producție, doar cu SELECT.
+## Ce s-a făcut
+1. **`CLAUDE.md` doar în română, scurt:** toate regulile, formulate scurt, plus secțiunile noi „Conceptul My Darrin”, „Înainte de…”, „Consum mic” și „Compact instructions”. Secțiunile în engleză (Bilingual, Workspace) erau dublura secțiunilor în română și au fost scoase; conținutul lor e în rândurile românești echivalente (vezi tabelul).
+2. **Skill-uri în proiect** (`.claude/skills/<nume>/SKILL.md`), cu detaliile procedurale, cuvânt cu cuvânt din vechiul `CLAUDE.md`:
+   - `migrari` — regulile, șablonul de migrare (begin / commit, `if not exists`, verificarea în același bloc, fără tabele temporare, `search_path`, `security definer` fără anon), ordinea „LM rulează înainte de merge”;
+   - `feedback-salvare` — principiul, toate funcțiile MDFeedback cu parametrii, `trimiteEroare`, interdicția `alert(` / `confirm(` în superadmin;
+   - `preturi` — formula completă, pe pași, discounturile, escrow, unde e codul;
+   - `bilingv` — regula întreagă, unde sunt textele (i18n, `traduceri.en`, emailuri), cum se rulează detectorul EN;
+   - `harta-proiectului` — unde e fiecare modul (pagini, `api/`, `lib/`, `scripts/`, `i18n/`, `docs/`) și `cuprins-fisiere-mari.md`: cuprinsul celor 17 fișiere de peste 150 KB, cu intervalele de rânduri pe secțiuni. Cuprinsul se generează cu `node scripts/genereaza-harta.js` (se poate rula din nou oricând). Regula: fișierele mari se citesc pe intervale de rânduri, nu întregi.
+3. **Testele, cu rezumat:** `scripts/ruleaza-teste.js` și `npm run test:rezumat` rulează `scripts/test-*.js` (2 deodată, cel mult 900 s pe test) și arată doar testele picate, cu primele 8 rânduri de eroare, plus totalul. Filtre pe nume (`node scripts/ruleaza-teste.js pret alocare`), `--complet` pentru ieșirea completă, `--paralel`, `--randuri`, `--timeout`.
+4. **Subagentul** `.claude/agents/rulare-teste.md` (`model: haiku`, doar Bash / Read / Grep): rulează suita sau testele cerute și întoarce doar rezumatul; nu modifică fișiere.
+5. **Setările proiectului** `.claude/settings.json`: `"model": "sonnet"`, `"effortLevel": "medium"`. Fără `settings.local.json`, fără chei. În `CLAUDE.md`: pentru migrări, alocare, prețuri sau arhitectură se pornește cu `/model opusplan` sau `/effort high`.
 
 ## Commit-uri
-| Commit | Descriere |
-|---|---|
-| `4c43828` | (A) `lib/categorii-inscriere.js`, `/api/public/categorii`, verificarea în `/api/partener/activare-ciorna` |
-| `6756d8b` | (B) Pagina de înscriere, prima variantă (categorie + „Altceva”) |
-| `d2e7bc1` | (C) Panoul: „Ce lucrări faci”, portofoliul ordonat |
-| `e2fcda3` | (D) Back-office |
-| `bf4a3dc` | (E) Testele, prima variantă |
-| `b1e9e82` | (F) Capturile, prima variantă, și categoriile simulate pentru detector |
-| `5edec85` | `PR.md`, prima variantă |
-| `e325b9c` | (G) Alocarea automată doar spre partenerii eligibili + `test-alocare-eligibilitate.js` |
-| `e20a2ff` | (H) Macheta R1: formular fără categorie / oraș, indiciul ascuns, text liber refuzat, back-office, testele și capturile refăcute |
-| `420042e` | (I) `test-emailuri-cod`, `test-fereastra-cont` aliniate la formularul fără oraș |
-| _(acest commit)_ | `PR.md` |
+- `af48d22` (A) `scripts/ruleaza-teste.js` și `npm run test:rezumat`
+- `895ba0c` (B) skill-ul `harta-proiectului` și `scripts/genereaza-harta.js`
+- `f8ea6d7` (C) skill-urile `migrari`, `feedback-salvare`, `preturi`, `bilingv`
+- `6a308c4` (D) subagentul `rulare-teste` și `.claude/settings.json`
+- `22c0e6a` (E) `CLAUDE.md` nou
+- (F) „branch-ul corect” readus în `CLAUDE.md`, plus acest PR.md
 
-**Fișiere noi:**
-- `lib/categorii-inscriere.js`;
-- `api/public/categorii.js`;
-- `scripts/test-alocare-eligibilitate.js`;
-- `docs/capturi-12p2/`.
+## Verificarea „nu se pierde nimic”: fiecare regulă din vechiul CLAUDE.md
+„La fel” = textul e identic. Unde scrie „scurtat”, textul vechi întreg e păstrat cuvânt cu cuvânt în skill-ul indicat.
 
-**Fișiere modificate:**
-- `mydarrin-inscriere-partener.html`, `inscriere-partener.js`, `cont-fereastra.js`, `panou-cont-nou.js`;
-- `api/partener/activare-ciorna.js`, `api/partener/portofoliu.js`, `api/admin/parteneri-lista.js`;
-- `lib/aloca-partener.js`;
-- `mydarrin-superadmin.html`;
-- `i18n/en.json`, `i18n/en/mydarrin-inscriere-partener.json`;
-- `scripts/test-preinscriere-partener.js`, `scripts/test-regiune.js`, `scripts/test-emailuri-cod.js`, `scripts/test-fereastra-cont.js`, `scripts/server-test.js`.
+| # | Regula veche (secțiunea) | Unde e acum | Textul nou, dacă diferă |
+|---|---|---|---|
+| 1 | Limba: răspunsurile către LM, rapoartele, PR.md, commit-urile, comentariile, textele pentru utilizatori în română; termenii tehnici și numele rămân | `CLAUDE.md` › Limba | „În română: răspunsurile și rapoartele către LM, PR.md, mesajele de commit, comentariile din cod, textele pentru utilizatori. Termenii tehnici și numele de fișiere, tabele și funcții rămân neschimbate.” |
+| 2 | Git: nu se lucrează și nu se face commit direct pe main; fiecare sarcină are branch propriu, din main actualizat (git pull) | `CLAUDE.md` › Git | „…branch nou din main pentru fiecare sarcină; se lucrează doar pe branch-ul corect, nimic direct pe main.” |
+| 3 | Git: fără push și fără merge fără confirmarea explicită a lui LM; merge = publicare pe Vercel (3 proiecte) | `CLAUDE.md` › Git | la fel |
+| 4 | Git: înainte de lucru git status curat și branch-ul corect; la final raport cu commit-urile și ce s-a testat | `CLAUDE.md` › Git | împărțit: „Înainte de lucru: … git status curat … branch-ul corect” și „La final: raport cu commit-urile și ce s-a testat.” |
+| 5 | Supabase: nicio modificare directă în producție; fișier în docs/migrations-propuse/, o tranzacție, rulabil de mai multe ori, verificare la final | `CLAUDE.md` › Baza de date (scurtat) + `migrari` (cuvânt cu cuvânt) | „Nimic direct în producție din cod. Schimbările de schemă: fișier în docs/migrations-propuse/, o singură tranzacție (begin/commit), rulabil de mai multe ori (if not exists / drop ... if exists), cu verificare la final.” |
+| 6 | Supabase: migrările le aplică LM în SQL Editor, ÎNAINTE de publicarea codului | `CLAUDE.md` + `migrari` | „LM aplică migrările în SQL Editor, ÎNAINTE de publicarea codului care le folosește.” |
+| 7 | Supabase: funcțiile noi cu search_path fix; security definer neexecutabil de anon | `CLAUDE.md` + `migrari` | „Funcții noi: search_path fix; security definer neexecutabil de anon.” |
+| 8 | Feedback: „Se salvează…” → „✓ Salvat” / „✕ Nu s-a salvat”, mesajul roșu rămâne, eroarea explicată în română, valorile nu se pierd | `CLAUDE.md` (scurtat) + `feedback-salvare` (cuvânt cu cuvânt) | „Orice salvare / trimitere / ștergere arată rezultatul: „Se salvează…” (buton blocat) → „✓ Salvat” verde, sau „✕ Nu s-a salvat” roșu, cu mesaj care rămâne până e închis și eroarea explicată în română; valorile introduse nu se pierd.” |
+| 9 | Feedback: niciodată succes fals | `CLAUDE.md` + `feedback-salvare` | „Niciodată succes fals: verde doar după răspunsul real al serverului.” |
+| 10 | Feedback: componenta comună ui-feedback.js (MDFeedback), nu alert(), nu mesaje proprii | `CLAUDE.md` + `feedback-salvare` | „Doar componenta comună ui-feedback.js (MDFeedback); fără alert() și fără mesaje proprii pe pagină” |
+| 11 | Funcția `salveaza(...)` cu parametrii | `feedback-salvare` | la fel |
+| 12 | Funcția `mesaj(...)` | `feedback-salvare` | la fel |
+| 13 | Funcția `toast(...)` | `feedback-salvare` | la fel |
+| 14 | Funcția `confirma(...)` | `feedback-salvare` | la fel |
+| 15 | Funcția `aplicaErori(...)` | `feedback-salvare` | la fel |
+| 16 | Funcția `cerere(...)` | `feedback-salvare` | la fel |
+| 17 | Erorile din `api/admin/*`: `trimiteEroare(...)` → forma comună | `feedback-salvare` (întreg) + `CLAUDE.md` (trimitere) | în `CLAUDE.md`: „Erorile din `api/admin/*`: `trimiteEroare` (`lib/raspuns-eroare.js`).” |
+| 18 | În `mydarrin-superadmin.html` fără `alert(` / `confirm(` (test-texte-interzise.js) | `CLAUDE.md` + `feedback-salvare` (cu numele testului) | „în superadmin fără `alert(` / `confirm(`” |
+| 19 | Prețul public: formula completă; procentele din backoffice_config, pe țară, ALL implicit | `CLAUDE.md` (principiul) + `preturi` (cuvânt cu cuvânt și pe pași) | „Preț public = cost de bază + transport + asigurare + comision platformă + marketing + mentenanță + TVA; procentele din backoffice_config, pe țară, cu ALL implicit (formula completă în `preturi`).” |
+| 20 | Discounturile partenerilor 5–15% nepublice; la escrow furnizorul primește prețul public minus discountul | `CLAUDE.md` + `preturi` | la fel |
+| 21 | Nicio cifră sau dată inventată în interfață | `CLAUDE.md` + `preturi` | la fel |
+| 22 | Bilingv: totul în RO și EN, în același commit (HTML/JS cu chei i18n și `window.t`, `traduceri.en`, emailuri `lib/i18n.js`, mesaje, titluri și meta) | `CLAUDE.md` (scurtat) + `bilingv` (cuvânt cu cuvânt, cu toate cele 5 puncte) | „Tot ce se implementează sau se modifică pe platformă: în română și engleză, în același commit (texte HTML / JS, `traduceri.en`, emailuri, mesaje de eroare și succes, titluri și meta).” |
+| 23 | Engleza implicită la prima vizită; româna din selector (`myd_lang_v1`); geolocalizarea nu schimbă limba | `CLAUDE.md` + `bilingv` | „Engleza e implicită la prima vizită; româna din selector (`myd_lang_v1`); geolocalizarea nu schimbă limba.” |
+| 24 | Text într-o singură limbă nu se acceptă | `CLAUDE.md` + `bilingv` | „Textul într-o singură limbă nu se acceptă.” |
+| 25 | Detectorul de română în modul EN înainte de fiecare PR = 0 (excepții: nume proprii, orașe, adrese) | `CLAUDE.md` + `bilingv` (cu modul de rulare) | „`scripts/detector-ro.js` în modul EN înainte de fiecare PR: 0 (excepții: nume proprii, orașe, adrese).” |
+| 26 | Paginile interne (superadmin, back-office) rămân în română | `CLAUDE.md` + `bilingv` | la fel |
+| 27 | Prompturile de la LM vin în RO și EN, cu conținut identic | `CLAUDE.md` › Limba | „Prompturile de la LM vin în RO și EN, cu conținut identic.” |
+| 28 | Rapoartele către LM rămân în română | `CLAUDE.md` › Limba | inclus în rândul 1: „În română: răspunsurile și rapoartele către LM…” |
+| 29–34 | Secțiunea în engleză „Bilingual RO + EN” (aceleași 6 reguli ca 22–28) | aceleași locuri ca 22–28 | scoasă ca dublură; conținutul identic rămâne în rândurile românești |
+| 35 | Spațiu de lucru: DOAR folderul darrin_cloude, repo-ul mydarrin-hbp/darrin_cloude | `CLAUDE.md` › Spațiu de lucru | „DOAR folderul C:\Users\admin\Desktop\darrin_cloude, repo-ul mydarrin-hbp/darrin_cloude.” |
+| 36 | Fără copii temporare (AppData\Local\Temp, scratchpad); nu atingi alte proiecte (mydarrin-platform) | `CLAUDE.md` › Spațiu de lucru | „Fără copii temporare (AppData\Local\Temp, scratchpad); nu atingi alte proiecte (de exemplu mydarrin-platform).” |
+| 37 | Remote-ul; push doar cu mydarrin-hbp, niciodată cu alt cont (openstaffeu-lab) | `CLAUDE.md` › Spațiu de lucru | „Push doar cu contul mydarrin-hbp, niciodată cu altul (de exemplu openstaffeu-lab).” |
+| 38 | Înainte de orice lucru: git checkout main && git pull, apoi branch nou din main | `CLAUDE.md` › Git | „Înainte de lucru: `git checkout main && git pull`, … branch nou din main pentru fiecare sarcină” |
+| 39–42 | Secțiunea în engleză „Workspace” (aceleași 4 reguli ca 35–38) | aceleași locuri ca 35–38 | scoasă ca dublură |
+| — | Datele deciziilor LM (8 oct., 9 oct., 14 oct. 2026; pasul 11-N1, 22 oct. 2026) | titlurile din `CLAUDE.md` și din skill-uri | păstrate |
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
+Nicio regulă nu a rămas fără loc. Alinierea globală (12-U1b) nu era în `CLAUDE.md`, deci nu a fost nimic de mutat.
+
+**Reguli noi** (cerute de 13-C0): conceptul My Darrin, „Înainte de…”, citirea fișierelor mari pe intervale, testele doar cu rezumat, `/model opusplan` / `/effort high` pentru task-urile grele, compact instructions; în `migrari`: verificarea în același bloc, fără tabele temporare.
+
+## Dimensiunile înainte / după
+| Fișier | Rânduri | Caractere | Când se încarcă |
+|---|---:|---:|---|
+| `CLAUDE.md` înainte | 71 | 6 668 | la fiecare mesaj |
+| `CLAUDE.md` după | 58 | 4 729 | la fiecare mesaj (**−29%**) |
+| `skills/migrari/SKILL.md` | 62 | 3 193 | doar când e folosit |
+| `skills/feedback-salvare/SKILL.md` | 29 | 2 498 | doar când e folosit |
+| `skills/preturi/SKILL.md` | 34 | 2 096 | doar când e folosit |
+| `skills/bilingv/SKILL.md` | 31 | 2 419 | doar când e folosit |
+| `skills/harta-proiectului/SKILL.md` | 45 | 5 719 | doar când e folosit |
+| `skills/harta-proiectului/cuprins-fisiere-mari.md` | 1 024 | 37 049 | doar secțiunea necesară, la cerere |
+| `agents/rulare-teste.md` | 25 | 1 566 | doar în subagent |
+
+La pornire, din skill-uri se încarcă doar numele și descrierea (câte un rând).
+Câștigul mare nu e în `CLAUDE.md`, ci în cele două obiceiuri noi: un fișier de 510 KB citit întreg înseamnă peste 100 000 de tokeni, iar un interval de 150 de rânduri câteva mii; la teste, rezumatul are câteva rânduri, față de mii de rânduri pentru toată suita.
+
+## Ce s-a testat
+- Skill-urile și subagentul: o sesiune `claude -p` (Haiku) pornită în proiect le vede pe toate — skill-urile `bilingv`, `feedback-salvare`, `harta-proiectului`, `migrari`, `preturi` (ce apare în `/skills`) și subagentul `rulare-teste` (ce apare în `/agents`).
+- `node scripts/genereaza-harta.js`: 17 fișiere, 961 de secțiuni; rulat din nou, dă același rezultat.
+- Suita cu `node scripts/ruleaza-teste.js`: prima rulare (4 deodată, 240 s pe test): 102 teste, 92 trecute, 10 picate — 7 opriți de limita de 240 s și 2 de viteză sub încărcare. De aceea valorile implicite au devenit 2 deodată și 900 s. Cele 10 rulate din nou pe rând: **toate trec, în afară de 2**, care nu țin de acest pas (branch-ul nu schimbă niciun fișier al platformei, deci pică la fel pe main):
+  - `test-pagini-destinatie.js` (1 din 378): `ghidul-asiguratorului.html` și `mydarrin-investitori.html` „nu sunt la zi” față de `scripts/genereaza-pagini-destinatie.js` — de reparat într-un pas separat (rularea generatorului);
+  - `test-panou-investitor.js`: cererea către `https://ipapi.co/json/` e blocată de CORS pe localhost și apare ca eroare în consolă — ține de mediul local / serviciul extern, nu de cod nou.
+- Rezumatul a scos din ieșire doar rândurile utile: la 102 teste, câteva zeci de rânduri în loc de mii.
+- Regulile: tabelul de mai sus, verificat rând cu rând față de `git show main:CLAUDE.md`.
+
+## După merge
+Nimic de rulat în Supabase. La următoarea sesiune Claude Code în folder, modelul implicit e Sonnet cu effort medium; `/model` sau `/effort` schimbă pe loc.
